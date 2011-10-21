@@ -89,4 +89,97 @@
       <antcall target="test" />
     </target>
 
+    <!-- overriding androidsdk's -build-setup 
+         to handle the fact there is no app project (tested.project.dir is .) -->
+    <target name="-build-setup" depends="-setup">
+
+        <!-- read the previous build mode -->
+        <property file="${out.build.prop.file}" />
+        <!-- if empty the prop won't be set, so set it to the current target
+             to provide a default value equal to the current build -->
+        <property name="build.last.target" value="${build.target}" />
+        <!-- also set the default value for whether the build is instrumented -->
+        <property name="build.last.is.instrumented" value="${build.is.instrumented}" />
+        <property name="build.last.is.packaging.debug" value="${build.is.packaging.debug}" />
+        <property name="build.last.is.signing.debug" value="${build.is.signing.debug}" />
+
+        <!-- compile the libraries if any -->
+        <if>
+            <condition>
+                <isreference refid="project.libraries" />
+            </condition>
+            <then>
+                <echo>Building Libraries</echo>
+                <subant
+                        buildpathref="project.libraries"
+                        antfile="build.xml"
+                        target="${build.target}"
+                        failonerror="true"/>
+                <echo></echo>
+                <echo>############################################</echo>
+                <echo>**** Back to project ${ant.project.name} ****</echo>
+                <echo>############################################</echo>
+            </then>
+        </if>
+
+        <!-- compile the main project if this is a test project -->
+        <if condition="${project.is.test}">
+            <then>
+                <!-- figure out which target must be used to build the tested project.
+                     If emma is enabled, then use 'instrument' otherwise, use 'debug' -->
+                <condition property="tested.project.target" value="instrument" else="debug">
+                    <isset property="emma.enabled" />
+                </condition>
+
+<!--
+                <echo>Building tested project at ${tested.project.absolute.dir}</echo>
+                <subant target="${tested.project.target}" failonerror="true">
+                    <fileset dir="${tested.project.absolute.dir}" includes="build.xml" />
+                </subant>
+-->
+                <echo></echo>
+                <echo>############################################</echo>
+                <echo>**** Back to project ${ant.project.name} ****</echo>
+                <echo>############################################</echo>
+            </then>
+        </if>
+
+        <!-- Value of the hasCode attribute (Application node) extracted from manifest file -->
+        <xpath input="AndroidManifest.xml" expression="/manifest/application/@android:hasCode"
+                    output="manifest.hasCode" default="true"/>
+
+        <!-- create a path with all the jar files, from the main project and the
+             libraries -->
+        <path id="jar.libs.ref">
+            <fileset dir="${jar.libs.absolute.dir}" includes="*.jar" />
+            <path refid="project.libraries.jars" />
+        </path>
+
+        <!-- special case for instrumented: if the previous build was
+             instrumented but not this one, clear out the compiled code -->
+        <if>
+            <condition>
+                <and>
+                    <istrue value="${build.last.is.instrumented}" />
+                    <isfalse value="${build.is.instrumented}" />
+                </and>
+            </condition>
+            <then>
+                <echo>Switching from instrumented to non-instrumented build.</echo>
+                <echo>Deleting previous compilation output:</echo>
+                <delete dir="${out.classes.absolute.dir}" verbose="${verbose}" />
+            </then>
+        </if>
+
+        <echo>Creating output directories if needed...</echo>
+        <mkdir dir="${resource.absolute.dir}" />
+        <mkdir dir="${jar.libs.absolute.dir}" />
+        <mkdir dir="${out.absolute.dir}" />
+        <mkdir dir="${out.res.absolute.dir}" />
+        <do-only-if-manifest-hasCode>
+            <mkdir dir="${gen.absolute.dir}" />
+            <mkdir dir="${out.classes.absolute.dir}" />
+        </do-only-if-manifest-hasCode>
+    </target>
+    
 </project>
