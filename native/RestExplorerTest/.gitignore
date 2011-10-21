@@ -1,0 +1,6 @@
+local.properties
+coverage.em
+bin
+gen
+coverage
+instrumented
