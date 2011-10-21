@@ -32,10 +32,10 @@ There are four projects:
 6. Create a res folder for the SalesforceSDK project.
 You are done.
 
-**A word about building in Eclipse**: With the latest version of the Android SDK Tools (v14), there are issues around cleaning your workspace
-(Project -> Clean...) and rebuilding it.  Specifically, for projects that are dependent on Android Library projects, they do not properly follow
+**Cleaning and rebuilding in Eclipse**: With the latest version of the Android SDK Tools (v14), there are issues around cleaning your workspace
+(Project -> Clean...) and rebuilding it.  Specifically, projects that are dependent on Android Library projects do not properly follow
 the build dependency ordering, so when every project is cleaned, these do not pick up the existence of the Library project.  The result is that
-if you clean your workspace, all of the non-Library projects will have build errors.
+all of the non-Library projects will have build errors after a clean.
 
 If you would like to rebuild everything, we recommend cleaning/rebuilding the Library (SalesforceSDK) project *by itself* first, followed by
 the cleaning and rebuilding of the dependent projects, to avoid these build errors.
