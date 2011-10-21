@@ -70,13 +70,17 @@ and jar
 To run the SDK tests, first plug in a device or start an emulator then do:
 <pre>
 cd $FORCE_DOT_COM_DIR/SalesforceSDKTest
-ant debug installt test
+ant debug 
+ant installt 
+ant ftest
 </pre>
 
 To get code coverage, do:
 <pre>
 cd $FORCE_DOT_COM_DIR/SalesforceSDKTest
-ant emma debug installt test
+ant emma debug 
+ant emma installt 
+ant emma ftest
 firefox file:///$NATIVE_DIR/SalesforceSDKTest/coverage/coverage.html
 </pre>
 Note: Code coverage is only supported on the emulator and rooted devices.
@@ -87,20 +91,25 @@ The RestExplorer is a sample app that demonstrates how to use SalesforceSDK OAut
 
 To compile and deploy the RestExplorer, first plug in a device or start an emulator then do:
 <pre>
-ant debug installd
+ant debug 
+ant installd
 </pre>
 
 To run the tests, first plug in a device or start an emulator then do:
 <pre>
 cd $FORCE_DOT_COM_DIR/RestExplorerTest
-ant debug installt test
+ant emma debug 
+ant emma installt 
+ant emma ftest
 </pre>
 
 
 To get code coverage, do:
 <pre>
 cd $FORCE_DOT_COM_DIR/RestExplorerTest
-ant emma debug installt test
+ant emma debug 
+ant installt 
+ant ftest
 firefox file:///$NATIVE_DIR/RestExplorerSDKTest/coverage/coverage.html
 </pre>
 Note: Code coverage is only supported on the emulator and rooted devices.
