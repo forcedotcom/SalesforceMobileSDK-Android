@@ -377,6 +377,11 @@ public abstract class AbstractLoginActivity extends
 	protected abstract String getOAuthClientId();
 
 	/**
+	 * @return oauth callback url
+	 */
+	protected abstract String getOAuthCallbackUrl();
+	
+	/**
 	 * @return account type
 	 */
 	protected abstract String getAccountType();
@@ -412,14 +417,6 @@ public abstract class AbstractLoginActivity extends
 	 */
 	protected String getGenericAuthErrorBody() {
 		return "Authentication error. Please try again.";		
-	}
-
-	/**
-	 * Override if you are using a different oauth callback url.
-	 * @return default oauth callback url
-	 */
-	protected String getOAuthCallbackUrl() {
-		return "sfdc:///axm/detect/oauth/done";		
 	}
 
 	/**
