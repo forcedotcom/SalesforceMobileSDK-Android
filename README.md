@@ -14,8 +14,8 @@ git clone git@github.com:forcedotcom/SalesforceMobileSDK-Android-dev.git
 
 For the rest of this document, we assume that you have setup two shell variables:
 1. ANDROID_SDK_DIR pointing to the Android SDK directory
-2. SALEFORCE_SDK_DIR pointing to the directory where you have a clone of the salesforce SDK repo.
-<b>If you haven't, just make sure to replace $ANDROID_SDK_DIR and $SALESFORCE_SDK_DIR in the snippets below with the actual paths.</b>
+2. NATIVE_DIR pointing to the native directory of your clone of the SalesforceMobileSDK-Android-dev
+<b>If you haven't, just make sure to replace $ANDROID_SDK_DIR and $NATIVE_DIR in the snippets below with the actual paths.</b>
 
 There are four projects:
 1. <b>SalesforceSDK</b>: the Salesforce SDK which provides support for OAuth2 and REST API calls.
@@ -24,10 +24,10 @@ There are four projects:
 4. <b>RestExplorerTest</b>: tests for RestExplorer
 
 # Building from eclipse
-1. Launch eclipse and select $SALESFORCE_SDK_DIR as your workspace directory.
+1. Launch eclipse and select $NATIVE_DIR as your workspace directory.
 2. Go to Window -> Preferences and pick Android. Enter the the SDK location.
 3. Go to File -> Import and select General -> Existing Projects into Workspace.
-4. Select $SALESFORCE_SDK_DIR as your root directory and import the four projects.
+4. Select $NATIVE_DIR as your root directory and import the four projects.
 5. Create a gen folder and SalesforceSDKTest, RestExplorer and RestExplorerTest (right click the project and choose new -> folder), create a res folder for the SalesforceSDK project.
 You are done.
 
@@ -68,7 +68,7 @@ To get code coverage, do:
 <pre>
 cd $FORCE_DOT_COM_DIR/SalesforceSDKTest
 ant emma debug installt test
-firefox file:///$SALESFORCE_SDK_DIR/SalesforceSDKTest/coverage/coverage.html
+firefox file:///$NATIVE_DIR/SalesforceSDKTest/coverage/coverage.html
 </pre>
 Note: Code coverage is only supported on the emulator and rooted devices.
 
@@ -92,7 +92,7 @@ To get code coverage, do:
 <pre>
 cd $FORCE_DOT_COM_DIR/RestExplorerTest
 ant emma debug installt test
-firefox file:///$SALESFORCE_SDK_DIR/RestExplorerSDKTest/coverage/coverage.html
+firefox file:///$NATIVE_DIR/RestExplorerSDKTest/coverage/coverage.html
 </pre>
 Note: Code coverage is only supported on the emulator and rooted devices.
 
