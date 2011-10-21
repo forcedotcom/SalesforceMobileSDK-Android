@@ -79,7 +79,16 @@
          In all cases you must update the value of version-tag below to read 'custom' instead of an integer,
          in order to avoid having your file be overridden by tools such as "android update project"
     -->
-    <!-- version-tag: 1 -->
+    <!-- version-tag: custom -->
+
     <import file="${sdk.dir}/tools/ant/build.xml" />
+
+    <!-- r14 test target buggy - here is the workaround -->
+    <target name="ftest">
+      <xpath input="AndroidManifest.xml" expression="/manifest/@package"
+             output="manifest.package" />
+      <antcall target="test" />
+    </target>
+
 
 </project>
