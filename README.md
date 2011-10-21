@@ -28,8 +28,17 @@ There are four projects:
 2. Go to Window -> Preferences and pick Android. Enter the the SDK location.
 3. Go to File -> Import and select General -> Existing Projects into Workspace.
 4. Select $NATIVE_DIR as your root directory and import the four projects.
-5. Create a gen folder and SalesforceSDKTest, RestExplorer and RestExplorerTest (right click the project and choose new -> folder), create a res folder for the SalesforceSDK project.
+5. Create a gen folder for the SalesforceSDKTest, RestExplorer and RestExplorerTest projects (right click the project and choose new -> folder).
+6. Create a res folder for the SalesforceSDK project.
 You are done.
+
+**A word about building in Eclipse**: With the latest version of the Android SDK Tools (v14), there are issues around cleaning your workspace
+(Project -> Clean...) and rebuilding it.  Specifically, for projects that are dependent on Android Library projects, they do not properly follow
+the build dependency ordering, so when every project is cleaned, these do not pick up the existence of the Library project.  The result is that
+if you clean your workspace, all of the non-Library projects will have build errors.
+
+If you would like to rebuild everything, we recommend cleaning/rebuilding the Library (SalesforceSDK) project *by itself* first, followed by
+the cleaning and rebuilding of the dependent projects, to avoid these build errors.
 
 ## Using the SalesforceSDK
 In you Android application project, you can either:
