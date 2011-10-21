@@ -117,7 +117,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertEquals("Wrong account name", TEST_USERNAME, account.name);
 		assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
 		assertEquals("Wrong auth token", TEST_AUTH_TOKEN, accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN));
-		assertEquals("Wrong refresh token", TEST_REFRESH_TOKEN, accountManager.getPassword(account));
+		assertEquals("Wrong refresh token", (clientManager.isAccountManagerSecure() ? TEST_REFRESH_TOKEN :  ""), accountManager.getPassword(account));
 		assertEquals("Wrong instance url", TEST_INSTANCE_URL, accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_SERVER));
 		assertEquals("Wrong login url", TEST_LOGIN_URL, accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_SERVER));
 		assertEquals("Wrong client id", TEST_CLIENT_ID, accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID));
