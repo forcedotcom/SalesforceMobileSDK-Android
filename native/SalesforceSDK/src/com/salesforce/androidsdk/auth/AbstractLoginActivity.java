@@ -372,46 +372,71 @@ public abstract class AbstractLoginActivity extends
 	protected abstract int getWebViewId();
 
 	/**
-	 * The method is called when an unexpected error takes place.
-	 * Sub-class will typically show a toast to the user.
-	 * @param e
-	 */
-	protected abstract void showError(Exception e);
-
-	/**
-	 * @return string to show as title of toast for generic auth error
-	 */
-	protected abstract String getGenericAuthErrorTitle();
-
-	/**
-	 * @return string to show as body of toast for generic auth error
-	 */
-	protected abstract String getGenericAuthErrorBody();
-
-	/**
 	 * @return oauth client id for this application
 	 */
 	protected abstract String getOAuthClientId();
 
 	/**
-	 * @return oauth callback url for this application
-	 */
-	protected abstract String getOAuthCallbackUrl();
-
-	/**
-	 * @return api version to use for this application
-	 */
-	protected abstract String getApiVersion();
-	
-	/**
-	 * @return login server url to use
-	 */
-    protected abstract String getLoginServerUrl();
-	
-	/**
 	 * @return account type
 	 */
 	protected abstract String getAccountType();
+
+	/**************************************************************************************************
+	 * 
+	 * Other methods: likely to be overridden by sub class
+	 * 
+	 **************************************************************************************************/
+	/**
+	 * The method is called when an unexpected error takes place.
+	 * Default implementation shows a toast with the exception message.
+	 * Override if you want a different behavior or a user friendly message to be shown instead.
+	 * @param exception
+	 */
+	protected void showError(Exception exception) {
+		Toast.makeText(this,
+				exception.toString(),
+				Toast.LENGTH_LONG).show();
+	}
+	
+	/**
+	 * Override to have a localized error message title.
+	 * @return english generic error message title.
+	 */
+	protected String getGenericAuthErrorTitle() {
+		return "Error";
+	}
+
+	/**
+	 * Override to have a localized error message.
+	 * @return english generic error message.
+	 */
+	protected String getGenericAuthErrorBody() {
+		return "Authentication error. Please try again.";		
+	}
+
+	/**
+	 * Override if you are using a different oauth callback url.
+	 * @return default oauth callback url
+	 */
+	protected String getOAuthCallbackUrl() {
+		return "sfdc:///axm/detect/oauth/done";		
+	}
+
+	/**
+	 * Override if you want to use a different api version
+	 * @return string for api version v23.0
+	 */
+	protected String getApiVersion() {
+		return "v23.0";
+	}
+	
+	/**
+	 * Override if you want to use a different server (e.g. production).x
+	 * @return sandbox login server url to use
+	 */
+    protected String getLoginServerUrl() {
+    	return "https://test.salesforce.com";
+    }
 	
 	/**
 	 * Override this method to configure which scopes your application requires.
