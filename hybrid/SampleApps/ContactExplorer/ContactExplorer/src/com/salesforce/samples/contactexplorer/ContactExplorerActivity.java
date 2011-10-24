@@ -4,11 +4,10 @@ import java.util.HashMap;
 
 import org.json.JSONObject;
 
-import android.content.Intent;
 import android.os.Bundle;
 
 import com.phonegap.DroidGap;
-import com.salesforce.androidsdk.auth.AbstractLoginActivity;
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -24,20 +23,17 @@ public class ContactExplorerActivity extends DroidGap {
 		new ClientManager(this, accountType).getRestClient(this, new RestClientCallback() {
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
-					// Go back to login screen
-			    	new ClientManager(ContactExplorerActivity.this, accountType).removeAccountAsync(null);
-			    	Intent i = new Intent(AbstractLoginActivity.ACTION_LOGIN);
-			    	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-			    	startActivity(i);
-			    	return;
+					ForceApp.APP.logout(accountType);
+					return;
 				}
 				
 				HashMap<String, String> data = new HashMap<String, String>();
 				data.put("clientId", getString(R.string.oauth_client_id));
 				data.put("loginUrl", getString(R.string.login_url));
 				data.put("apiVersion", getString(R.string.api_version));
-				data.put("authToken", client.getAuthToken());
-				// TODO: also send down instanceUrl and refreshToken
+				data.put("accessToken", client.getAuthToken());
+				data.put("instanceUrl", client.getBaseUrl().toString());
+				// TODO: also send down refreshToken
 				
 				String eventJs = "{'data':" + new JSONObject(data).toString() + "}";
 				String jsCall = "onSalesforceOAuthLogin(" + eventJs + ")";

@@ -106,7 +106,11 @@ public class LoginActivity extends AbstractLoginActivity {
 	protected String getAccountType() {
 		return getString(R.string.account_type);
 	}
-	
+
+	@Override
+    protected String[] getOAuthScopes() {
+	    return new String[] {"web", "api"};
+	}
 	
     /**************************************************************************************************
      *
