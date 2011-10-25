@@ -99,7 +99,7 @@ public class LoginActivity extends AbstractLoginActivity {
 	
 	@Override
 	protected String getApiVersion() {
-		return getString(R.string.api_version_id);
+		return getString(R.string.api_version);
 	}
 	
 	@Override
