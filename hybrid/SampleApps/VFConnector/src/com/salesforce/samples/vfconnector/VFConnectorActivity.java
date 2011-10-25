@@ -17,10 +17,15 @@ import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 
 public class VFConnectorActivity extends DroidGap {
+    public static String TAG = "VFConnector";
+
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+    	//ensure we have a CookieSyncManager
+    	CookieSyncManager.createInstance(this);
+
         //ensure that we allow urls from all salesforce domains to be loaded
         this.addWhiteListEntry("force.com", true);
         this.addWhiteListEntry("salesforce.com", true);
@@ -38,6 +43,18 @@ public class VFConnectorActivity extends DroidGap {
 				loggedIn(client);			
 			}
 		});
+    }
+    
+    @Override
+    public void onResume() {
+    	CookieSyncManager.getInstance().startSync();
+    	super.onResume();
+    }
+    
+    @Override
+    public void onPause() {
+    	CookieSyncManager.getInstance().stopSync();
+    	super.onPause();
     }
     
     protected void loggedIn(RestClient client) {
@@ -59,27 +76,25 @@ public class VFConnectorActivity extends DroidGap {
     protected void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
         String cookieStr = "sid=" + sid + "; domain=" + domain;
     	cookieMgr.setCookie(domain, cookieStr);
-    	Log.i("Cookiez","addSidCookie: " + cookieStr);
+    	Log.i(TAG,"addSidCookieForDomain: " + domain);
     }
     
     protected void setSidCookies(RestClient client) {
-    	//ensure we have a CookieSyncManager
-    	CookieSyncManager cookieSyncMgr = CookieSyncManager.createInstance(this);
-
+    	CookieSyncManager cookieSyncMgr = CookieSyncManager.getInstance();
+    	
     	CookieManager cookieMgr = CookieManager.getInstance();
-    	//cookieMgr.removeSessionCookie(); //tODO check
+    	cookieMgr.removeSessionCookie();
+
     	String accessToken = client.getAuthToken();
     	String domain = client.getBaseUrl().getHost();
 
+    	//set the cookie on all possible domains we could access
+    	addSidCookieForDomain(cookieMgr,domain,accessToken);
     	addSidCookieForDomain(cookieMgr,".force.com",accessToken);
     	addSidCookieForDomain(cookieMgr,".salesforce.com",accessToken);
-    	addSidCookieForDomain(cookieMgr,domain,accessToken);
 
 	    cookieSyncMgr.sync();
 	    
-    	
-
-
     }
     
 //    protected void sendJavascriptLoginEvent(RestClient client) {
