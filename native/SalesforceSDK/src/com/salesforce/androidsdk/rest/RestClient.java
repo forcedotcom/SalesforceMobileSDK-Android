@@ -54,6 +54,7 @@ public class RestClient {
 	 */
 	public interface AuthTokenProvider {
 		public String getNewAuthToken(RestClient client);
+		public String getRefreshToken();
 	}
 	
     /**
@@ -96,6 +97,13 @@ public class RestClient {
 	 */
 	public synchronized String getAuthToken() {
 		return authToken;
+	}
+	
+	/**
+	 * @return refresh token if available
+	 */
+	public String getRefreshToken() {
+		return (authTokenProvider != null ? authTokenProvider.getRefreshToken() : null);
 	}
 	
 	/**

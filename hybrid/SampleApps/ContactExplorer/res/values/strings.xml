@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="hello">Hello World, ContactExplorerActivity!</string>
+    <string name="app_name">ContactExplorer</string>
+
+	<!-- Errors -->
+	<string name="generic_authentication_error_title">Error</string>
+	<string name="generic_authentication_error">Authentication error. Please try again.</string>
+	<string name="generic_error">An error has occurred %s\nPlease try again</string>
+	<string name="invalid_server_url">Please type in a valid URL starting with https://
+	</string>
+
+	<!-- Login -->
+	<string name="login_title"><b>RestExplorer - Login</b></string>
+	<string name="clear_cookies_button">Clear Cookies</string>
+
+</resources>

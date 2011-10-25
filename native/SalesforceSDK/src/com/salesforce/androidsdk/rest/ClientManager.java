@@ -140,6 +140,7 @@ public class ClientManager {
 		String server = accountManager.getUserData(acc,
 				AuthenticatorService.KEY_INSTANCE_SERVER);
 		String userId = accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID);
+		String refreshToken = accountManager.getPassword(acc);
 
 		if (authToken == null)
 			throw new AccountInfoNotFoundException(AccountManager.KEY_AUTHTOKEN);
@@ -149,7 +150,7 @@ public class ClientManager {
 			throw new AccountInfoNotFoundException(AuthenticatorService.KEY_USER_ID);
 
 		try {
-			return new RestClient(new URI(server), authToken, HttpAccess.DEFAULT, new AccountManagerTokenProvider(this));
+			return new RestClient(new URI(server), authToken, HttpAccess.DEFAULT, new AccountManagerTokenProvider(this, refreshToken));
 		} 
 		catch (URISyntaxException e) {
 			Log.w("ClientManager:peekRestClient", "Invalid server URL", e);
@@ -351,9 +352,11 @@ public class ClientManager {
 		private static String lastNewAuthToken;
 		private static final Object lock = new Object();
 		private final ClientManager clientManager;
+		private final String refreshToken;
 
-		AccountManagerTokenProvider(ClientManager clientManager) {
+		AccountManagerTokenProvider(ClientManager clientManager, String refreshToken) {
 			this.clientManager = clientManager;
+			this.refreshToken = refreshToken;
 		}
 
 		/**
@@ -420,6 +423,11 @@ public class ClientManager {
 				return null;
 
 			return fetchNewAuthToken(acc);
+		}
+		
+		@Override
+		public String getRefreshToken() {
+			return refreshToken;
 		}
 	}
 

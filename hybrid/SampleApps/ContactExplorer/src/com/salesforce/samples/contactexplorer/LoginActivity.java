@@ -24,18 +24,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.restexplorer;
+package com.salesforce.samples.contactexplorer;
 
 
-import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.view.View;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.auth.AbstractLoginActivity;
-import com.salesforce.androidsdk.auth.OAuth2;
 
 /**
  * Activity responsible for login
@@ -104,17 +99,18 @@ public class LoginActivity extends AbstractLoginActivity {
 	
 	@Override
 	protected String getLoginServerUrl() {
-		SharedPreferences settings = getSharedPreferences(
-				SERVER_URL_PREFS_SETTINGS, Context.MODE_PRIVATE);
-
-		return settings.getString(LoginActivity.SERVER_URL_CURRENT_SELECTION, OAuth2.DEFAULT_LOGIN_URL);
+		return getString(R.string.login_url);
 	}
 
 	@Override
 	protected String getAccountType() {
 		return getString(R.string.account_type);
 	}
-	
+
+	@Override
+    protected String[] getOAuthScopes() {
+	    return new String[] {"api"};
+	}
 	
     /**************************************************************************************************
      *
@@ -129,29 +125,5 @@ public class LoginActivity extends AbstractLoginActivity {
 	 */
 	public void onClearCookiesClick(View v) {
 		clearCookies();
-	}
-	
-	/**
-	 * Called when "Pick server" button is clicked.
-	 * Start ServerPickerActivity
-	 * @param v
-	 */
-	public void onPickServerClick(View v) {
-	    Intent i = new Intent(this, ServerPickerActivity.class);
-	    startActivityForResult(i, PICK_SERVER_CODE);
-	}
-	
-	/*
-	 * Called when ServerPickerActivity completes.
-	 * Reload login page.
-	 */
-	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (requestCode == PICK_SERVER_CODE && resultCode == Activity.RESULT_OK) {
-            loadLoginPage();
-		}
-		else {
-	        super.onActivityResult(requestCode, resultCode, data);
-	    }
 	}
 }
