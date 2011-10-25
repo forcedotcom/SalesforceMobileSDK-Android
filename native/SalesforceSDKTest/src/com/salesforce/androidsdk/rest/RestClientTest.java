@@ -115,6 +115,11 @@ public class RestClientTest extends TestCase {
 			public String getNewAuthToken(RestClient client) {
 				return authToken;
 			}
+
+			@Override
+			public String getRefreshToken() {
+				return null;
+			}
 		};
 		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, authTokenProvider);
 

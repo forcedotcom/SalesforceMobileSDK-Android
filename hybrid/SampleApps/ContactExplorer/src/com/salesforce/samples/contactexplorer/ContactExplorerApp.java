@@ -30,7 +30,9 @@ import com.salesforce.androidsdk.app.ForceApp;
 
 
 /**
- * Application class for our rest explorer
+ * Application class for the contact explorer.
+ * All Salesforce mobile app must extend ForceApp. 
+ * ForceApp takes care of intializing the network http clients (among other things).x
  */
 public class ContactExplorerApp extends ForceApp {
 

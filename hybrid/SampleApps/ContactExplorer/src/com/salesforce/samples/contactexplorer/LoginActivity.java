@@ -109,7 +109,7 @@ public class LoginActivity extends AbstractLoginActivity {
 
 	@Override
     protected String[] getOAuthScopes() {
-	    return new String[] {"web", "api"};
+	    return new String[] {"api"};
 	}
 	
     /**************************************************************************************************

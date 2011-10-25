@@ -17,7 +17,7 @@ public class ContactExplorerActivity extends DroidGap {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ContactExplorerActivity.super.loadUrl("file:///android_asset/www/index.html");
+        super.loadUrl("file:///android_asset/www/index.html");
         
         final String accountType = getString(R.string.account_type);
 		new ClientManager(this, accountType).getRestClient(this, new RestClientCallback() {
@@ -33,7 +33,7 @@ public class ContactExplorerActivity extends DroidGap {
 				data.put("apiVersion", getString(R.string.api_version));
 				data.put("accessToken", client.getAuthToken());
 				data.put("instanceUrl", client.getBaseUrl().toString());
-				// TODO: also send down refreshToken
+				data.put("refreshToken", client.getRefreshToken());
 				
 				String eventJs = "{'data':" + new JSONObject(data).toString() + "}";
 				String jsCall = "onSalesforceOAuthLogin(" + eventJs + ")";
