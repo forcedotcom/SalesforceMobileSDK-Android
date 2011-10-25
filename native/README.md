@@ -11,8 +11,9 @@ git clone git@github.com:forcedotcom/SalesforceMobileSDK-Android-dev.git
 </pre>
 
 For the rest of this document, we assume that you have setup two shell variables:
-1. ANDROID_SDK_DIR pointing to the Android SDK directory  
-2. NATIVE_DIR pointing to the native directory of your clone of the Salesforce Mobile SDK repository, e.g. `/home/jon/SalesforceMobileSDK-Android/native`.  
+1. ANDROID_SDK_DIR pointing to the Android SDK directory	
+2. NATIVE_DIR pointing to the native directory of your clone of the Salesforce Mobile SDK repository, e.g. `/home/jon/SalesforceMobileSDK-Android/native`.	
+
 <b>If you haven't, just make sure to replace $ANDROID_SDK_DIR and $NATIVE_DIR in the snippets below with the actual paths.</b>
 
 There are four projects:
