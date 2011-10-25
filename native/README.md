@@ -111,6 +111,7 @@ firefox file:///$NATIVE_DIR/RestExplorerSDKTest/coverage/coverage.html
 # Using the Salesforce SDK in your projects
 
 In your Android application project, you can either:
+
 * Add SalesforceSDK.jar to a 'libs' folder in your project (the latest version of SalesforceSDK.jar is checked into the dist/ folder of the repository, or you can build it yourself from the SDK source).
 * In Project -> Properties, select Android, and click Add... in the Library section to add a reference to the SalesforceSDK library project.  **Note:** The SalesforceSDK project must be included in your workspace for this method.
 * If you change the SDK you can regenerate the jar by running the `jar` target of the ant build script.
