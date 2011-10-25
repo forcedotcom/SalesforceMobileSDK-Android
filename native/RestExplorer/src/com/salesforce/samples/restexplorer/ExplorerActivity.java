@@ -102,7 +102,7 @@ public class ExplorerActivity extends TabActivity {
 		accountType = getString(R.string.account_type);		
 		
 		// ApiVersion
-		apiVersion = getString(R.string.api_version_id);
+		apiVersion = getString(R.string.api_version);
 
 		// Setup view
 		setContentView(R.layout.explorer);
