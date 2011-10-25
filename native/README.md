@@ -11,16 +11,18 @@ git clone git@github.com:forcedotcom/SalesforceMobileSDK-Android-dev.git
 </pre>
 
 For the rest of this document, we assume that you have setup two shell variables:
+
 1. ANDROID_SDK_DIR pointing to the Android SDK directory	
 2. NATIVE_DIR pointing to the native directory of your clone of the Salesforce Mobile SDK repository, e.g. `/home/jon/SalesforceMobileSDK-Android/native`.	
 
-<b>If you haven't, just make sure to replace $ANDROID_SDK_DIR and $NATIVE_DIR in the snippets below with the actual paths.</b>
+**If you haven't, just make sure to replace $ANDROID_SDK_DIR and $NATIVE_DIR in the snippets below with the actual paths.**
 
 There are four projects:
-1. <b>SalesforceSDK</b>: The Salesforce SDK which provides support for OAuth2 and REST API calls
-2. <b>SalesforceSDKTest</b>: Tests for SalesforceSDK
-3. <b>RestExplorer</b>: A sample app using SalesforceSDK to exercise the REST API calls
-4. <b>RestExplorerTest</b>: Tests for the RestExplorer project
+
+1. **SalesforceSDK**: The Salesforce SDK which provides support for OAuth2 and REST API calls
+2. **SalesforceSDKTest**: Tests for SalesforceSDK
+3. **RestExplorer**: A sample app using SalesforceSDK to exercise the REST API calls
+4. **RestExplorerTest**: Tests for the RestExplorer project
 
 # Setting up projects and building from Eclipse
 
