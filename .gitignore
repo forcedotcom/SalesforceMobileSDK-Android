@@ -1,4 +1,7 @@
 .metadata/
 bin/
+coverage.em
+coverage/
 gen/
-
+instrumentation/
+local.properties
