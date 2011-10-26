@@ -1,9 +1,6 @@
 package com.salesforce.samples.vfconnector;
 
-import java.util.HashMap;
-
-import org.apache.http.cookie.Cookie;
-import org.json.JSONObject;
+import java.net.URI;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -57,21 +54,16 @@ public class VFConnectorActivity extends DroidGap {
     	super.onPause();
     }
     
-    protected void loggedIn(RestClient client) {
-    	//TODO setup cookies
-    	
-    	//TODO load real content
-        //super.loadUrl("file:///android_asset/www/index.html");
-
+    protected void loggedIn(RestClient client) {    	
     	this.setSidCookies(client);
-    
-
-    	String host = client.getBaseUrl().getHost();
-    	String finalURL = "https://" + host + "/apex/BasicVFPage";
-    	super.loadUrl(finalURL);
-    	
+    	this.loadStartPage(client.getBaseUrl());    	
     }
     
+    protected void loadStartPage(URI baseUrl) {
+    	String host = baseUrl.getHost();
+    	String finalURL = "https://" + host + "/apex/BasicVFPage";
+    	super.loadUrl(finalURL);
+    }
     
     protected void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
         String cookieStr = "sid=" + sid + "; domain=" + domain;
@@ -97,17 +89,5 @@ public class VFConnectorActivity extends DroidGap {
 	    
     }
     
-//    protected void sendJavascriptLoginEvent(RestClient client) {
-//		HashMap<String, String> data = new HashMap<String, String>();
-//		data.put("clientId", getString(R.string.oauth_client_id));
-//		data.put("loginUrl", getString(R.string.login_url));
-//		data.put("apiVersion", getString(R.string.api_version));
-//		data.put("accessToken", client.getAuthToken());
-//		data.put("instanceUrl", client.getBaseUrl().toString());
-//		data.put("refreshToken", client.getRefreshToken());
-//		
-//		String eventJs = "{'data':" + new JSONObject(data).toString() + "}";
-//		String jsCall = "onSalesforceOAuthLogin(" + eventJs + ")";
-//		sendJavascript(jsCall);
-//    }
+
 }
