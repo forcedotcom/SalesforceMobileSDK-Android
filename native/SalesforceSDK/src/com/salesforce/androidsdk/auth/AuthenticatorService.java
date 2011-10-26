@@ -44,6 +44,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 
@@ -166,7 +167,7 @@ public class AuthenticatorService extends Service {
 		 */
 		private Bundle makeAuthIntentBundle(AccountAuthenticatorResponse response, Bundle options) {
             Bundle reply = new Bundle();
-            Intent i = new Intent(AbstractLoginActivity.ACTION_LOGIN);
+            Intent i = new Intent(context, ForceApp.APP.getLoginActivityClass());
             i.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
             if (options != null)
                 i.putExtras(options);

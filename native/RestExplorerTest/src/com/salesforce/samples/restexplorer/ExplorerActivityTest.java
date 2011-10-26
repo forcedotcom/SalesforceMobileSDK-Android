@@ -52,7 +52,6 @@ import android.widget.Button;
 import android.widget.TabHost;
 import android.widget.TextView;
 
-import com.salesforce.androidsdk.auth.AbstractLoginActivity;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
 
@@ -156,7 +155,7 @@ public class ExplorerActivityTest extends
 		assertTrue("Logout confirmation dialog showing", getActivity().logoutConfirmationDialog.isShowing());
 
 		// Setup activity monitor
-		ActivityMonitor monitor = getInstrumentation().addMonitor(new IntentFilter(AbstractLoginActivity.ACTION_LOGIN), null, false);
+		ActivityMonitor monitor = getInstrumentation().addMonitor(new IntentFilter(LoginActivity.class.getName()), null, false);
 		
 		// Click yes
 		clickView(getActivity().logoutConfirmationDialog.getButton(AlertDialog.BUTTON_POSITIVE));

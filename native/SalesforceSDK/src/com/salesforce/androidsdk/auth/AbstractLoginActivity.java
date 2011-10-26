@@ -58,9 +58,6 @@ import com.salesforce.androidsdk.rest.ClientManager;
 public abstract class AbstractLoginActivity extends
 		AccountAuthenticatorActivity {
 
-	// Actual login activity should filter for this intent
-	public static final String ACTION_LOGIN = "salesforce.intent.action.LOGIN";
-
 	private WebView webView;
 	private String loginServerUrl;
 	private boolean wasBackgrounded;
@@ -385,7 +382,7 @@ public abstract class AbstractLoginActivity extends
 	 * @return account type
 	 */
 	protected abstract String getAccountType();
-
+	
 	/**************************************************************************************************
 	 * 
 	 * Other methods: likely to be overridden by sub class
@@ -445,5 +442,5 @@ public abstract class AbstractLoginActivity extends
     protected String[] getOAuthScopes() {
 	    return null;
 	}
-	
+    
 }
