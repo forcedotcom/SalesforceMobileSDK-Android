@@ -27,6 +27,7 @@
 package com.salesforce.samples.contactexplorer;
 
 import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.auth.AbstractLoginActivity;
 
 
 /**
@@ -36,4 +37,8 @@ import com.salesforce.androidsdk.app.ForceApp;
  */
 public class ContactExplorerApp extends ForceApp {
 
+	@Override
+	public Class<? extends AbstractLoginActivity> getLoginActivityClass() {
+		return LoginActivity.class;
+	}
 }

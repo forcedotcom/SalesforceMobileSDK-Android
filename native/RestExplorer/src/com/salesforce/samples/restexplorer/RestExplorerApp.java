@@ -27,11 +27,17 @@
 package com.salesforce.samples.restexplorer;
 
 import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.auth.AbstractLoginActivity;
 
 
 /**
  * Application class for our rest explorer
  */
 public class RestExplorerApp extends ForceApp {
+
+	@Override
+	public Class<? extends AbstractLoginActivity> getLoginActivityClass() {
+		return LoginActivity.class;
+	}
 
 }

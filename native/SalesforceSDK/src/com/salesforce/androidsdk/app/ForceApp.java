@@ -56,8 +56,13 @@ public abstract class ForceApp extends Application  {
      */
     public void logout(String accountType) {
     	new ClientManager(this, accountType).removeAccountAsync(null);
-    	Intent i = new Intent(AbstractLoginActivity.ACTION_LOGIN);
+    	Intent i = new Intent(this, getLoginActivityClass());
     	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     	this.startActivity(i);
     }
+    
+    /**
+     * @return class for login activity
+     */
+    abstract public Class<? extends AbstractLoginActivity> getLoginActivityClass();
 }
