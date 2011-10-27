@@ -57,7 +57,7 @@ The RestExplorer is a sample app that demonstrates how to use the OAuth and REST
 Make sure to generate the local.properties file for each project by doing:
 <pre>
 cd $NATIVE_DIR/[project dir]
-android update project
+android update project --path .
 </pre>
 
 To build the SDK jar, run the following ant target:
