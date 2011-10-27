@@ -83,7 +83,7 @@
     <import file="${sdk.dir}/tools/ant/build.xml" />
 
     <!-- Path to dist directory (where we place the SDK jar) -->
-    <property name="jar.dir" value="../dist"/>
+    <property name="jar.dir" value="../../dist"/>
 
     <!-- Copy salesforcesdk.jar to dist directory -->
     <target name="jar" depends="-compile">
