@@ -26,9 +26,7 @@ public class VFConnectorActivity extends DroidGap {
         //ensure that we allow urls from all salesforce domains to be loaded
         this.addWhiteListEntry("force.com", true);
         this.addWhiteListEntry("salesforce.com", true);
-        
-        //super.loadUrl("file:///android_asset/www/unauthorized.html");
-        
+                
         final String accountType = getString(R.string.account_type);
 		new ClientManager(this, accountType).getRestClient(this, new RestClientCallback() {
 			public void authenticatedRestClient(RestClient client) {
@@ -64,6 +62,7 @@ public class VFConnectorActivity extends DroidGap {
     	String finalURL = "https://" + host + "/apex/BasicVFPage";
     	super.loadUrl(finalURL);
     }
+    
     
     protected void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
         String cookieStr = "sid=" + sid + "; domain=" + domain;

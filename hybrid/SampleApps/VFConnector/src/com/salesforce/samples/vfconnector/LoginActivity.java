@@ -109,7 +109,10 @@ public class LoginActivity extends AbstractLoginActivity {
 
 	@Override
     protected String[] getOAuthScopes() {
-	    return new String[] {"web","api"}; //TODO update to use "visualforce" scope once it's fixed
+        //NOTE we use "visualforce" scope here because this sample app only loads
+        //a visualforce page in the embedded web view; however, you may mix and
+        //match scopes if needed, eg {"visualforce","api"}
+	    return new String[] {"visualforce"}; 
 	}
 	
     /**************************************************************************************************
