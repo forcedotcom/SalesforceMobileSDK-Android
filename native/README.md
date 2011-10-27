@@ -1,7 +1,15 @@
+# Introduction
+
+This folder contains the native libraries of the Salesforce SDK, as well as test and sample projects that can be used to exercise the SDK.
+
+### SDK notes
+
+* The SDK is supported and tested for Android 2.2 and above.
+* The SalesforceSDK project is built with the Android 3.0 (Honeycomb) library.  The primary reason for this is that we want to be able to make a conditional check at runtime for file system encryption capabilities.  This check is guarded from being called on earlier Android platforms, the net result being that you can still use the salesforcesdk.jar in earlier Android application versions, down to the mininum-supported Android 2.2.
+
 # Setting up your development environment
 
-Please follow the instructions for setting up your development environment from the README file
-at the root of this repo, prior to working with the Salesforce SDK.
+Please follow the instructions for setting up your development environment from the README file at the root of this repo, prior to working with the Salesforce SDK.
 
 # Downloading the Salesforce SDK
 
@@ -33,13 +41,9 @@ There are four projects:
 5. Create a gen folder for the SalesforceSDKTest, RestExplorer and RestExplorerTest projects (right-click the project and choose new -> folder).
 6. Create a res folder for the SalesforceSDK project.
 
-**Cleaning and rebuilding in Eclipse**: With the latest version of the Android SDK Tools (v14), there are issues around cleaning your workspace
-(Project -> Clean...) and rebuilding it.  Specifically, projects that are dependent on Android Library projects do not properly follow
-the build dependency ordering, so when every project is cleaned, dependent projects do not pick up the existence of the Library project.  The
-result is that all of the non-Library projects will have build errors after a clean.
+**Cleaning and rebuilding in Eclipse**: With the latest version of the Android SDK Tools (v14), there are issues around cleaning your workspace (Project -> Clean...) and rebuilding it.  Specifically, projects that are dependent on Android Library projects do not properly follow the build dependency ordering, so when every project is cleaned, dependent projects do not pick up the existence of the Library project.  The result is that all of the non-Library projects will have build errors after a clean.
 
-If you would like to rebuild everything, we recommend cleaning/rebuilding the Library (SalesforceSDK) project *by itself* first, followed by
-the cleaning and rebuilding of the dependent projects, to avoid these build errors.
+If you would like to rebuild everything, we recommend cleaning/rebuilding the Library (SalesforceSDK) project *by itself* first, followed by the cleaning and rebuilding of the dependent projects, to avoid these build errors.
 
 ## Running the RestExplorer application and tests from Eclipse
 

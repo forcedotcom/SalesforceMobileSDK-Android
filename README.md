@@ -20,6 +20,8 @@ The following steps will help you get started with your development environment,
 4. Install the Android Development Tools (ADT) plugin for Eclipse (r14 or above): http://developer.android.com/sdk/eclipse-adt.html
 5. Get setup on github: http://help.github.com/
 
+**A word about the Android 4.0 (API 14) SDK:** Starting with the SDK that's deployed with API 14, Google has introduced some fundamental changes in Eclipse project configurations, build configuratons, library project configurations, and other areas.  Because of this, **you will not be able to build any of the projects in this repository without upgrading to API 14**.  Note that updating to r14 will not impact your ability to build for earlier Android platforms.  It's just the toolset changes of the SDK that require the upgrade.
+
 # Discussion
 
 If you would like to make suggestions, have questions, or encounter any issues, we'd love to hear from you.  Post any feedback you have to the [Mobile Community Discussion Board](http://boards.developerforce.com/t5/Mobile/bd-p/mobile) on developerforce.com.
