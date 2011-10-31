@@ -9,7 +9,7 @@
     </application>
 
     <instrumentation android:targetPackage="com.salesforce.samples.restexplorer" 
-                     android:name="android.test.InstrumentationTestRunner" 
+                     android:name="com.zutubi.android.junitreport.JUnitReportTestRunner" 
                      android:label="Tests for RestExplorer" />
 	
 	<!-- device os versions http://developer.android.com/guide/publishing/versioning.html -->
