@@ -180,8 +180,8 @@ public abstract class AbstractLoginActivity extends
 	}
 	
 	protected void addAccount(String username, String refreshToken, String authToken,
-			String instanceUrl, String loginUrl, String clientId, String userId,
-			String apiVersion) {
+			String instanceUrl, String loginUrl, String clientId, String orgId,
+			String userId, String apiVersion) {
 
 		ClientManager clientManager = new ClientManager(this, getAccountType());
 		
@@ -189,7 +189,7 @@ public abstract class AbstractLoginActivity extends
 		Account[] oldAccounts = clientManager.getAccounts();
 
 		// New account
-		Bundle extras = clientManager.createNewAccount(username, refreshToken, authToken, instanceUrl, loginUrl, clientId, userId);
+		Bundle extras = clientManager.createNewAccount(username, refreshToken, authToken, instanceUrl, loginUrl, clientId, orgId, userId);
 		setAccountAuthenticatorResult(extras);
 
 		// Remove old accounts
@@ -234,10 +234,8 @@ public abstract class AbstractLoginActivity extends
 				onAuthFlowError(getGenericAuthErrorTitle(),
 						getGenericAuthErrorBody());
 			} else {
-				String userId = tr.id.substring(tr.id.lastIndexOf('/') + 1,
-						tr.id.length());
 				addAccount(tr.username, tr.refreshToken, tr.authToken,
-						tr.instanceUrl, loginServerUrl, getOAuthClientId(), userId, getApiVersion());
+						tr.instanceUrl, loginServerUrl, getOAuthClientId(), tr.orgId, tr.userId, getApiVersion());
 
 				finish();
 			}
@@ -251,13 +249,8 @@ public abstract class AbstractLoginActivity extends
 
 		protected TokenEndpointResponse performRequest(TokenEndpointResponse tr)
 				throws Exception {
-			// Plugging instanceUrl's host in identity url (seems necessary on sandbox)
-			URI idUri = new URI(tr.id);
-			URI instanceUri = new URI(tr.instanceUrl);
-			String modifiedIdUrl = tr.id.replace(idUri.getHost(), instanceUri.getHost());
-			
 			tr.username = OAuth2.getUsernameFromIdentityService(
-					HttpAccess.DEFAULT, modifiedIdUrl, tr.authToken);
+					HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
 			return tr;
 		}
 	}
@@ -296,12 +289,7 @@ public abstract class AbstractLoginActivity extends
 				}
 				// Or succeed?
 				else {
-					TokenEndpointResponse tr = new TokenEndpointResponse();
-					tr.authToken = params.get("access_token");
-					tr.refreshToken = params.get("refresh_token");
-					tr.instanceUrl = params.get("instance_url");
-					tr.id = params.get("id");
-					
+					TokenEndpointResponse tr = new TokenEndpointResponse(params);
 					onAuthFlowComplete(tr);
 				}
 			}

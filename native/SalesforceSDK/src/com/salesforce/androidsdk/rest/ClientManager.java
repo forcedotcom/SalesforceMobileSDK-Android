@@ -139,7 +139,9 @@ public class ClientManager {
 				AccountManager.KEY_AUTHTOKEN);
 		String server = accountManager.getUserData(acc,
 				AuthenticatorService.KEY_INSTANCE_SERVER);
+		String orgId = accountManager.getUserData(acc, AuthenticatorService.KEY_ORG_ID);
 		String userId = accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID);
+		String username = accountManager.getUserData(acc, AccountManager.KEY_ACCOUNT_NAME);
 		String refreshToken = accountManager.getPassword(acc);
 
 		if (authToken == null)
@@ -148,9 +150,11 @@ public class ClientManager {
 			throw new AccountInfoNotFoundException(AuthenticatorService.KEY_INSTANCE_SERVER);
 		if (userId == null)
 			throw new AccountInfoNotFoundException(AuthenticatorService.KEY_USER_ID);
+		if (orgId == null)
+			throw new AccountInfoNotFoundException(AuthenticatorService.KEY_ORG_ID);
 
 		try {
-			return new RestClient(new URI(server), authToken, HttpAccess.DEFAULT, new AccountManagerTokenProvider(this, refreshToken));
+			return new RestClient(new URI(server), authToken, HttpAccess.DEFAULT, new AccountManagerTokenProvider(this, refreshToken), username, userId, orgId);
 		} 
 		catch (URISyntaxException e) {
 			Log.w("ClientManager:peekRestClient", "Invalid server URL", e);
@@ -218,11 +222,12 @@ public class ClientManager {
 	 * @param instanceUrl
 	 * @param loginUrl
 	 * @param clientId
+	 * @param orgId 
 	 * @param userId
 	 * @return
 	 */
 	public Bundle createNewAccount(String username, String refreshToken, String authToken,
-			String instanceUrl, String loginUrl, String clientId, String userId) {
+			String instanceUrl, String loginUrl, String clientId, String orgId, String userId) {
 				
 		Bundle extras = new Bundle();
 		extras.putString(AccountManager.KEY_ACCOUNT_NAME, username);
@@ -231,6 +236,7 @@ public class ClientManager {
 		extras.putString(AuthenticatorService.KEY_LOGIN_SERVER, loginUrl);
 		extras.putString(AuthenticatorService.KEY_INSTANCE_SERVER, instanceUrl);
 		extras.putString(AuthenticatorService.KEY_CLIENT_ID, clientId);
+		extras.putString(AuthenticatorService.KEY_ORG_ID, orgId);
 		extras.putString(AuthenticatorService.KEY_USER_ID, userId);
 
 		Account acc = new Account(username, getAccountType());

@@ -299,10 +299,22 @@ public class OAuth2 {
 		public String authToken;
 		public String refreshToken;
 		public String instanceUrl;
-		public String id;
+		public String idUrl;
+		public String idUrlWithInstance;
+		public String orgId;
+		public String userId;
 		public String username;
 
-		public TokenEndpointResponse() {
+		public TokenEndpointResponse(Map<String, String> callbackUrlParams) {
+			try {
+				authToken = callbackUrlParams.get("access_token");
+				refreshToken = callbackUrlParams.get("refresh_token");
+				instanceUrl = callbackUrlParams.get("instance_url");
+				idUrl = callbackUrlParams.get("id");
+				computeOtherFields();
+			} catch (Exception e) {
+				Log.w("TokenEndpointResponse:contructor", "", e);
+			}
 		}
 
 		public TokenEndpointResponse(HttpResponse httpResponse) {
@@ -311,10 +323,17 @@ public class OAuth2 {
 				authToken = parsedResponse.getString("access_token");
 				refreshToken = parsedResponse.getString("refresh_token");
 				instanceUrl = parsedResponse.getString("instance_url");
-				id = parsedResponse.getString("id");
+				idUrl  = parsedResponse.getString("id");
 			} catch (Exception e) {
 				Log.w("TokenEndpointResponse:contructor", "", e);
 			}
+		}
+		
+		private void computeOtherFields() throws URISyntaxException {
+			idUrlWithInstance = idUrl.replace(new URI(idUrl).getHost(), new URI(instanceUrl).getHost());
+			String[] idUrlFragments = idUrl.split("/");
+			userId = idUrlFragments[idUrlFragments.length - 1];
+			orgId = idUrlFragments[idUrlFragments.length - 2];
 		}
 	}
 }
