@@ -22,7 +22,7 @@
 	</application>
 
     <instrumentation android:targetPackage="com.salesforce.androidsdk.tests" 
-                     android:name="android.test.InstrumentationTestRunner" 
+                     android:name="com.zutubi.android.junitreport.JUnitReportTestRunner" 
                      android:label="Tests for SalesforceSDK" />
 	    
 	    

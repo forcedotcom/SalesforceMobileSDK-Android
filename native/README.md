@@ -71,7 +71,7 @@ To run the SDK tests, first connect a device or start an emulator, then run the 
 cd $NATIVE_DIR/SalesforceSDKTest
 ant debug 
 ant installt 
-ant ftest
+ant test
 </pre>
 
 To get code coverage, run the following ant targets:
@@ -79,7 +79,7 @@ To get code coverage, run the following ant targets:
 cd $NATIVE_DIR/SalesforceSDKTest
 ant emma debug 
 ant emma installt 
-ant emma ftest
+ant emma test
 firefox file:///$NATIVE_DIR/SalesforceSDKTest/coverage/coverage.html
 </pre>
 **Note:** Code coverage is only supported on the emulator and rooted devices.
@@ -98,7 +98,7 @@ To run the RestExplorer tests, first plug in a device or start an emulator then 
 cd $NATIVE_DIR/RestExplorerTest
 ant emma debug 
 ant emma installt 
-ant emma ftest
+ant emma test
 </pre>
 
 
@@ -107,7 +107,7 @@ To get code coverage, do:
 cd $NATIVE_DIR/RestExplorerTest
 ant emma debug 
 ant installt 
-ant ftest
+ant test
 firefox file:///$NATIVE_DIR/RestExplorerSDKTest/coverage/coverage.html
 </pre>
 **Note:** Code coverage is only supported on the emulator and rooted devices.
