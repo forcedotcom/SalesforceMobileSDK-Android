@@ -34,6 +34,9 @@ public class ContactExplorerActivity extends DroidGap {
 				data.put("accessToken", client.getAuthToken());
 				data.put("instanceUrl", client.getBaseUrl().toString());
 				data.put("refreshToken", client.getRefreshToken());
+				data.put("userId", client.getUserId());
+				data.put("username", client.getUsername());
+				data.put("orgId", client.getOrgId());
 				
 				String eventJs = "{'data':" + new JSONObject(data).toString() + "}";
 				String jsCall = "onSalesforceOAuthLogin(" + eventJs + ")";

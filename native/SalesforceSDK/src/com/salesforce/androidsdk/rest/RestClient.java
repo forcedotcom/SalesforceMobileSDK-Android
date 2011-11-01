@@ -47,6 +47,9 @@ public class RestClient {
 	private HttpAccess httpAccessor;
 	private final URI baseUrl;
 	private String authToken;
+	private String userId;
+	private String orgId;
+	private String username;
 	
 	/** 
 	 * AuthTokenProvider interface
@@ -64,7 +67,7 @@ public class RestClient {
      * @param authToken
      */
     public RestClient(URI baseUrl, String authToken) {
-		this(baseUrl, authToken, HttpAccess.DEFAULT, null);
+		this(baseUrl, authToken, HttpAccess.DEFAULT, null, null, null, null);
 	}
 	
 	/**
@@ -75,20 +78,29 @@ public class RestClient {
 	 * @param authToken
 	 * @param httpAccessor
 	 * @param authTokenProvider
+	 * @param username 
+	 * @param userId 
+	 * @param orgId 
 	 */
-	public RestClient(URI baseUrl, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
+	public RestClient(URI baseUrl, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider, String username, String userId, String orgId) {
 		super();
 		this.authToken = authToken;
 		this.baseUrl = baseUrl;
 		this.httpAccessor = httpAccessor;
 		this.authTokenProvider = authTokenProvider;
+		this.username = username;
+		this.userId = userId;
+		this.orgId = orgId;
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("   baseUrl: ").append(baseUrl.toString()).append(",\n")
-		  .append("   authToken: ").append(authToken).append("\n");
+		  .append("   authToken: ").append(authToken).append("\n")
+		  .append("   username: ").append(username).append("\n")
+		  .append("   userId: ").append(userId).append("\n")
+		  .append("   orgId: ").append(orgId).append("\n");
 		return sb.toString();
 	}
 	
@@ -104,6 +116,27 @@ public class RestClient {
 	 */
 	public String getRefreshToken() {
 		return (authTokenProvider != null ? authTokenProvider.getRefreshToken() : null);
+	}
+	
+	/**
+	 * @return salesforce username
+	 */
+	public String getUsername() {
+		return userId;
+	}
+	
+	/**
+	 * @return salesforce user id
+	 */
+	public String getUserId() {
+		return userId;
+	}
+	
+	/**
+	 * @return salesforce org id
+	 */
+	public String getOrgId() {
+		return orgId;
 	}
 	
 	/**

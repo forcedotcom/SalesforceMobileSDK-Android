@@ -65,7 +65,7 @@ public class RestClientTest extends TestCase {
 		httpAccess = new HttpAccess(null);
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
 		authToken = refreshResponse.authToken;
-		restClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), authToken, httpAccess, null);
+		restClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), authToken, httpAccess, null, null, null, null);
 	}
 	
 	@Override
@@ -97,7 +97,7 @@ public class RestClientTest extends TestCase {
 	 * @throws IOException 
 	 */
 	public void testCallWithBadAuthToken() throws URISyntaxException, IOException {
-		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, null);
+		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, null, null, null, null);
 		RestResponse response = unauthenticatedRestClient.send(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
 		assertFalse("Expected error", response.isSuccess());
 		checkResponse(response, HttpStatus.SC_UNAUTHORIZED, true);
@@ -121,7 +121,7 @@ public class RestClientTest extends TestCase {
 				return null;
 			}
 		};
-		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, authTokenProvider);
+		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, authTokenProvider, null, null, null);
 
 		assertEquals("RestClient should be using the bad token initially", BAD_TOKEN, unauthenticatedRestClient.getAuthToken());
 		RestResponse response = unauthenticatedRestClient.send(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
@@ -138,7 +138,7 @@ public class RestClientTest extends TestCase {
 	 */
 	public void testGetVersions() throws Exception {
 		// We don't need to be authenticated
-		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, null);
+		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, null, null, null, null);
 		RestResponse response = unauthenticatedRestClient.send(RestRequest.getRequestForVersions());
 		checkResponse(response, HttpStatus.SC_OK, true);
 		checkKeys(response.asJSONArray().getJSONObject(0), "label", "url", "version");

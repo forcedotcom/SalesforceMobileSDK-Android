@@ -40,6 +40,7 @@ import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.content.Context;
+import android.os.Bundle;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.auth.AuthenticatorService;
@@ -49,13 +50,14 @@ import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 
 public class ClientManagerTest extends InstrumentationTestCase {
 
+	private static final String TEST_ORG_ID = "test_org_id";
 	private static final String TEST_USER_ID = "test_user_id";
+	private static final String TEST_USERNAME = "test_username";
 	private static final String TEST_CLIENT_ID = "test_client_d";
 	private static final String TEST_LOGIN_URL = "https://test.salesforce.com";
 	private static final String TEST_INSTANCE_URL = "https://tapp0.salesforce.com";
 	private static final String TEST_AUTH_TOKEN = "test_auth_token";
 	private static final String TEST_REFRESH_TOKEN = "test_refresh_token";
-	private static final String TEST_USERNAME = "test_username";
 	private static final String TEST_OTHER_USERNAME = "test_other_username";
 	private static final String TEST_ACCOUNT_TYPE = "com.salesforce.androisdk.test"; // must match authenticator.xml in SalesforceSDK project
 	
@@ -92,7 +94,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNoAccounts();
 		
 		// Call createNewAccount
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
+		createTestAccount();
 	
 		// Check that the account did get created
 		Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
@@ -109,7 +111,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNoAccounts();
 		
 		// Call createNewAccount
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
+		createTestAccount();
 	
 		// Call getAccount
 		Account account = clientManager.getAccount();
@@ -133,7 +135,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNoAccounts();
 		
 		// Call createNewAccount
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
+		createTestAccount();
 	
 		// Call getAccounts
 		Account[] accounts = clientManager.getAccounts();
@@ -151,8 +153,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNoAccounts();
 		
 		// Call two accounts
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
-		clientManager.createNewAccount(TEST_OTHER_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);	
+		createTestAccount();
+		createOtherTestAccount();	
 
 		// Call getAccounts
 		Account[] accounts = clientManager.getAccounts();
@@ -167,8 +169,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertEquals("Wrong account name", TEST_USERNAME, accounts[1].name);
 		assertEquals("Wrong account name", TEST_OTHER_USERNAME, accounts[0].name);
 	}
-	
-	
+
 	/**
 	 * Test getAccountByName
 	 */
@@ -177,8 +178,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNoAccounts();
 		
 		// Create two accounts
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
-		clientManager.createNewAccount(TEST_OTHER_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
+		createTestAccount();
+		createOtherTestAccount();
 
 		// Check that the accounts did get created
 		Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
@@ -206,7 +207,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNoAccounts();
 		
 		// Create an account
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
+		createTestAccount();
 
 		// Check that the account did get created
 		Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
@@ -228,8 +229,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNoAccounts();
 		
 		// Create two accounts
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
-		clientManager.createNewAccount(TEST_OTHER_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
+		createTestAccount();
+		createOtherTestAccount();
 		
 		// Check that the accounts did get created
 		Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
@@ -252,8 +253,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNoAccounts();
 		
 		// Create two accounts
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
-		clientManager.createNewAccount(TEST_OTHER_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
+		createTestAccount();
+		createOtherTestAccount();
 		
 		// Check that the accounts did get created
 		Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
@@ -291,7 +292,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNoAccounts();
 		
 		// Create account
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
+		createTestAccount();
 
 		// Call peekRestClient - expect restClient
 		try {
@@ -314,7 +315,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNoAccounts();
 		
 		// Create account
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
+		createTestAccount();
 
 		// Call getkRestClient - expect restClient
 		final BlockingQueue<RestClient> q = new ArrayBlockingQueue<RestClient>(1);
@@ -347,7 +348,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNoAccounts();
 		
 		// Create account
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
+		createTestAccount();
 
 		RestClient restClient = null;
 
@@ -381,7 +382,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNoAccounts();
 		
 		// Create account
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_USER_ID);
+		createTestAccount();
 		
 		// Check that the accounts did get created
 		Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
@@ -425,7 +426,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		String badToken = "bad token";
 
 		// Create real account
-		clientManager.createNewAccount(TestCredentials.USERNAME, TestCredentials.REFRESH_TOKEN, badToken, TestCredentials.INSTANCE_URL, TEST_LOGIN_URL, TestCredentials.CLIENT_ID, TestCredentials.USER_ID);
+		clientManager.createNewAccount(TestCredentials.USERNAME, TestCredentials.REFRESH_TOKEN, badToken, TestCredentials.INSTANCE_URL, TEST_LOGIN_URL, TestCredentials.CLIENT_ID, TestCredentials.ORG_ID, TestCredentials.USER_ID);
 		
 		// Peek rest client
 		RestClient restClient = clientManager.peekRestClient(targetContext);
@@ -453,5 +454,23 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private void cleanupAccounts() throws Exception {
         clientManager.removeAccounts(accountManager.getAccountsByType(TEST_ACCOUNT_TYPE));
     }
+
+    
+	/**
+	 * Create test account
+	 * @return
+	 */
+	private Bundle createTestAccount() {
+		return clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
+	}
+
+
+	/**
+	 * Create other test account
+	 * @return
+	 */
+	private Bundle createOtherTestAccount() {
+		return clientManager.createNewAccount(TEST_OTHER_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
+	}
 	
 }
