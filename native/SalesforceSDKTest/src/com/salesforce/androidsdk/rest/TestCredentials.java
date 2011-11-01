@@ -52,6 +52,6 @@ public class TestCredentials {
 	public static final String INSTANCE_URL = "https://tapp0.salesforce.com";
 
 	public static final String CLIENT_ID = "3MVG92.uWdyphVj4bnolD7yuIpCQsNgddWtqRND3faxrv9uKnbj47H4RkwheHA2lKY4cBusvDVp0M6gdGE8hp";
-	public static final String REFRESH_TOKEN = "5Aep861_OKMvio5gy9sGt9Z9mdt62xXK.9ugif6j6O_rF1QcY.bko.5uzMm0GjbH_c4KpdhoLnEWQ==";
+	public static final String REFRESH_TOKEN = "5Aep861_OKMvio5gy9sGt9Z9mdt62xXK.9ugif6j6O_rF1QcY8WR6lnHr3G5o0cBdXLPYAtELonLQ==";
 	
 }
