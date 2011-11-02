@@ -128,7 +128,7 @@ public class HttpAccess extends BroadcastReceiver {
 	 * @return user agent
 	 */
 	private String getUserAgent() {
-		return "SalesforceSDK-android" + Build.VERSION.RELEASE;
+		return "SalesforceMobileSDK-android-nREST" + Build.VERSION.RELEASE;
 	}
 
 	/**
