@@ -7,6 +7,7 @@ import org.json.JSONObject;
 import android.os.Bundle;
 
 import com.phonegap.DroidGap;
+import com.phonegap.WebSettings;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -17,6 +18,10 @@ public class ContactExplorerActivity extends DroidGap {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        WebSettings webSettings = this.appView.getSettings();
+        webSettings.setUserAgentString("SalesforceMobileSDK-android-hybrid-0.9");
+        
         super.loadUrl("file:///android_asset/www/index.html");
         
         final String accountType = getString(R.string.account_type);

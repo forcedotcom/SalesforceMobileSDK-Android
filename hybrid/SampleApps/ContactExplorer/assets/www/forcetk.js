@@ -177,6 +177,7 @@ if (forcetk.Client === undefined) {
                 }
                 xhr.setRequestHeader(that.authzHeader, "OAuth " + that.sessionId);
                 xhr.setRequestHeader('X-User-Agent', 'salesforce-toolkit-rest-javascript/' + that.apiVersion);
+                xhr.setRequestHeader('User-Agent','SalesforceMobileSDK-android-hREST-0.9');
             }
         });
     }

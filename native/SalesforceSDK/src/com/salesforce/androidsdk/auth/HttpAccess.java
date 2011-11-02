@@ -47,10 +47,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.http.AndroidHttpClient;
 import android.os.Build;
+import android.os.Parcelable.Creator;
+
 import android.util.Log;
 
 /**
@@ -128,7 +132,19 @@ public class HttpAccess extends BroadcastReceiver {
 	 * @return user agent
 	 */
 	private String getUserAgent() {
-		return "SalesforceMobileSDK-android-nREST" + Build.VERSION.RELEASE;
+		
+		String sdkVersion = "0.9";
+				
+	    try {
+	    	//attempt to pull version string from package info
+	    	PackageManager pkgMgr = this.app.getPackageManager();
+	    	PackageInfo pkgInfo = pkgMgr.getPackageInfo("com.salesforce.androidsdk", PackageManager.GET_META_DATA);
+	        sdkVersion = pkgInfo.versionName;
+	    } catch (Exception ex) {
+	        Log.e(this.getClass().getSimpleName(), "Could not get version: ", ex);
+	    }
+	    
+		return "SalesforceMobileSDK-android-nREST-" + sdkVersion;
 	}
 
 	/**
