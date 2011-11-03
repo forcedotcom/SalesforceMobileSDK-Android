@@ -42,17 +42,17 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 
+import com.salesforce.androidsdk.app.ForceApp;
+
 import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
+
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.http.AndroidHttpClient;
-import android.os.Build;
 
 import android.util.Log;
 
@@ -123,33 +123,12 @@ public class HttpAccess extends BroadcastReceiver {
 	 * @return
 	 */
 	private AndroidHttpClient getHttpClient() {
-		return AndroidHttpClient.newInstance(getUserAgent(), app);
+		final String uaStr = ForceApp.APP.getUserAgent();
+		return AndroidHttpClient.newInstance(uaStr, app);
 	}
 	
 
-	/**
-	 * @return user agent
-	 */
-	private String getUserAgent() {
-		
-		String sdkVersion = "0.9";
-				
-        //set a user agent string based on the mobile sdk version
-        //We are building a user agent of the form:
-		//SalesforceMobileSDK-nREST/1.0 android/3.2.0 
 
-	    try {
-	    	//attempt to pull version string from package info
-	    	PackageManager pkgMgr = this.app.getPackageManager();
-	    	PackageInfo pkgInfo = pkgMgr.getPackageInfo("com.salesforce.androidsdk", PackageManager.GET_META_DATA);
-	        sdkVersion = pkgInfo.versionName;
-	    } catch (Exception ex) {
-	        Log.e(this.getClass().getSimpleName(), "Could not get version: ", ex);
-	    }
-
-	    String constructedUserAgent =  "SalesforceMobileSDK-nREST/" + sdkVersion + " android/"+ Build.VERSION.RELEASE  ;
-	    return constructedUserAgent;
-	}
 
 	/**
 	 * Detects network changes and resetting network when needed 
