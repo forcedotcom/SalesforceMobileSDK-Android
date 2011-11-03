@@ -75,7 +75,8 @@ public class HttpAccess extends BroadcastReceiver {
     private boolean    hasNetwork      = true;
     private int        currentNetworkSubType = -1;
     private String     networkFailReason;
-
+    private String		constructedUserAgent;
+    
     // Connection manager
 	private final ConnectivityManager conMgr;
 	
@@ -133,8 +134,16 @@ public class HttpAccess extends BroadcastReceiver {
 	 */
 	private String getUserAgent() {
 		
+		if (null != constructedUserAgent) {
+			return constructedUserAgent;
+		}
+		
 		String sdkVersion = "0.9";
 				
+        //set a user agent string based on the mobile sdk version
+        //We are building a user agent of the form:
+		//SalesforceMobileSDK-nREST/1.0 android/3.2.0 
+
 	    try {
 	    	//attempt to pull version string from package info
 	    	PackageManager pkgMgr = this.app.getPackageManager();
@@ -143,8 +152,9 @@ public class HttpAccess extends BroadcastReceiver {
 	    } catch (Exception ex) {
 	        Log.e(this.getClass().getSimpleName(), "Could not get version: ", ex);
 	    }
-	    
-		return "SalesforceMobileSDK-android-nREST-" + sdkVersion;
+
+	    constructedUserAgent =  "SalesforceMobileSDK-nREST/" + sdkVersion + " android/"+ Build.VERSION.RELEASE  ;
+	    return constructedUserAgent;
 	}
 
 	/**
