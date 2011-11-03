@@ -53,7 +53,6 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.http.AndroidHttpClient;
 import android.os.Build;
-import android.os.Parcelable.Creator;
 
 import android.util.Log;
 
@@ -75,7 +74,6 @@ public class HttpAccess extends BroadcastReceiver {
     private boolean    hasNetwork      = true;
     private int        currentNetworkSubType = -1;
     private String     networkFailReason;
-    private String		constructedUserAgent;
     
     // Connection manager
 	private final ConnectivityManager conMgr;
@@ -134,10 +132,6 @@ public class HttpAccess extends BroadcastReceiver {
 	 */
 	private String getUserAgent() {
 		
-		if (null != constructedUserAgent) {
-			return constructedUserAgent;
-		}
-		
 		String sdkVersion = "0.9";
 				
         //set a user agent string based on the mobile sdk version
@@ -153,7 +147,7 @@ public class HttpAccess extends BroadcastReceiver {
 	        Log.e(this.getClass().getSimpleName(), "Could not get version: ", ex);
 	    }
 
-	    constructedUserAgent =  "SalesforceMobileSDK-nREST/" + sdkVersion + " android/"+ Build.VERSION.RELEASE  ;
+	    String constructedUserAgent =  "SalesforceMobileSDK-nREST/" + sdkVersion + " android/"+ Build.VERSION.RELEASE  ;
 	    return constructedUserAgent;
 	}
 

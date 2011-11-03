@@ -87,6 +87,7 @@
         forcetkClient = new forcetk.Client(event.data.clientId, event.data.loginUrl);
         forcetkClient.setSessionToken(event.data.accessToken, event.data.apiVersion, event.data.instanceUrl);
         forcetkClient.setRefreshToken(event.data.refreshToken);
+        forcetkClient.setUserAgentString(event.data.userAgent);
     }
 
     function onSuccessDevice(contacts) {
