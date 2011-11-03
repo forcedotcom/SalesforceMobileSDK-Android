@@ -4,9 +4,7 @@ import java.util.HashMap;
 
 import org.json.JSONObject;
 
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.os.Build;
+
 import android.os.Bundle;
 import android.util.Log;
 import android.webkit.WebSettings;
@@ -24,9 +22,7 @@ public class ContactExplorerActivity extends DroidGap {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        final String uaStr = ForceApp.APP.getUserAgent();
-        WebSettings webSettings = this.appView.getSettings();
-        webSettings.setUserAgentString(uaStr);
+		final String uaStr = ForceApp.APP.getUserAgent();
         
         super.loadUrl("file:///android_asset/www/index.html");
         
@@ -59,5 +55,14 @@ public class ContactExplorerActivity extends DroidGap {
 		});
     }
     
+    @Override
+    public void init() {
+    	super.init();
+		final String uaStr = ForceApp.APP.getUserAgent();
+		if (null != this.appView) {
+	        WebSettings webSettings = this.appView.getSettings();
+	        webSettings.setUserAgentString(uaStr);
+		}
+    }
  
 }

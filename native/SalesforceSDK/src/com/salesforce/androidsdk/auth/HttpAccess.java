@@ -42,8 +42,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 
-import com.salesforce.androidsdk.app.ForceApp;
-
 import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -53,6 +51,7 @@ import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.http.AndroidHttpClient;
+import android.os.Build;
 
 import android.util.Log;
 
@@ -74,6 +73,7 @@ public class HttpAccess extends BroadcastReceiver {
     private boolean    hasNetwork      = true;
     private int        currentNetworkSubType = -1;
     private String     networkFailReason;
+    protected String	defaultUserAgentString = "SalesforceMobileSDK/0.9 android/"+ Build.VERSION.RELEASE;
     
     // Connection manager
 	private final ConnectivityManager conMgr;
@@ -123,10 +123,17 @@ public class HttpAccess extends BroadcastReceiver {
 	 * @return
 	 */
 	private AndroidHttpClient getHttpClient() {
-		final String uaStr = ForceApp.APP.getUserAgent();
+		String uaStr = this.defaultUserAgentString;
 		return AndroidHttpClient.newInstance(uaStr, app);
 	}
 	
+	/**
+	 * Set the user agent string to be used for requests.
+	 * @param uaStr
+	 */
+	public void setUserAgentString(String uaStr) {
+		this.defaultUserAgentString = uaStr;
+	}
 
 
 
