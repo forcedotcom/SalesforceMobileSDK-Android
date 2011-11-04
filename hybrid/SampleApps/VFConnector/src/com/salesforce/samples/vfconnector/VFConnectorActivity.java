@@ -28,7 +28,7 @@ public class VFConnectorActivity extends DroidGap {
         this.addWhiteListEntry("salesforce.com", true);
                 
         final String accountType = getString(R.string.account_type);
-		new ClientManager(this, accountType).getRestClient(ForceApp.APP.getPasscodeHash(), this, new RestClientCallback() {
+		new ClientManager(this, accountType, ForceApp.APP.getPasscodeHash()).getRestClient(this, new RestClientCallback() {
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
 					ForceApp.APP.logout(accountType);

@@ -59,7 +59,7 @@ public abstract class ForceApp extends Application  {
      * Remove user account and launch the login activity with a clean task stack.
      */
     public void logout(String accountType) {
-    	new ClientManager(this, accountType).removeAccountAsync(null);
+    	new ClientManager(this, accountType, null /* we just want to removed accounts, we don't need the actual value */).removeAccountAsync(null);
     	Intent i = new Intent(this, getLoginActivityClass());
     	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     	this.startActivity(i);
@@ -71,14 +71,10 @@ public abstract class ForceApp extends Application  {
     abstract public Class<? extends AbstractLoginActivity> getLoginActivityClass();
     
     /**
-     * Return key to encrypt auth tokens when storing them in the acccount manager.
-     * Return null when no encryption should be used.
+     * Return key to encrypt oauth tokens when storing them in the acccount manager.
      * 
-     * If the device has filesystem encryption turned on, you can return null, and let the tokens be stored in clear.
-     * If the device doesn't have filesystem encryption, and you return null, the login flow will fail when trying to 
-     * create an account.
-     *
-     * FIXME should be abstract
+     * When filesystem encryption is turned on not to encrypt.
+     * Otherwise the key should be derived from a user entered pin.
      * 
 	 * @return 
      */
@@ -87,6 +83,7 @@ public abstract class ForceApp extends Application  {
     		return null;
     	}
     	else {
+    		// TODO build key from user entered pin
     		return "q21opx09asd1!sad9p-=2#";
     	}
     }

@@ -122,7 +122,7 @@ public class AuthenticatorService extends Service {
 			Log.i("Authenticator:getAuthToken", "Get auth token for " + account.name);
 			AccountManager mgr = AccountManager.get(context);
 			String passcodeHash = options.getString(PASSCODE_HASH);
-			String refreshToken = Encryptor.decrypt(passcodeHash, mgr.getPassword(account));
+			String refreshToken = Encryptor.decrypt(mgr.getPassword(account), passcodeHash);
 			String loginServer = mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_SERVER);
 			String clientId = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID);
 			String instServer = mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_SERVER);
@@ -136,7 +136,7 @@ public class AuthenticatorService extends Service {
     				mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_SERVER, tr.instanceUrl);
     			
     			// Update auth token in account
-    			mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(passcodeHash, tr.authToken));
+    			mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(tr.authToken, passcodeHash));
 
     			resBundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
                 resBundle.putString(AccountManager.KEY_ACCOUNT_TYPE, account.type);

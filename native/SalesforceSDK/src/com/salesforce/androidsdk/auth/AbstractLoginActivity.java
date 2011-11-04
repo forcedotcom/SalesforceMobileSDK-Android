@@ -184,13 +184,13 @@ public abstract class AbstractLoginActivity extends
 			String instanceUrl, String loginUrl, String clientId, String orgId,
 			String userId, String apiVersion) {
 
-		ClientManager clientManager = new ClientManager(this, getAccountType());
+		ClientManager clientManager = new ClientManager(this, getAccountType(), passcodeHash);
 		
 		// Old account
 		Account[] oldAccounts = clientManager.getAccounts();
 
 		// New account
-		Bundle extras = clientManager.createNewAccount(passcodeHash, username, refreshToken, authToken, instanceUrl, loginUrl, clientId, orgId, userId);
+		Bundle extras = clientManager.createNewAccount(username, refreshToken, authToken, instanceUrl, loginUrl, clientId, orgId, userId);
 		setAccountAuthenticatorResult(extras);
 
 		// Remove old accounts

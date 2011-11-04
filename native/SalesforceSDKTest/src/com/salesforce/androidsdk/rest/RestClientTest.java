@@ -112,7 +112,7 @@ public class RestClientTest extends TestCase {
 	public void testCallWithBadTokenAndTokenProvider() throws URISyntaxException, IOException {
 		AuthTokenProvider authTokenProvider = new AuthTokenProvider() {
 			@Override
-			public String getNewAuthToken(RestClient client) {
+			public String getNewAuthToken() {
 				return authToken;
 			}
 

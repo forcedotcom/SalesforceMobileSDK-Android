@@ -131,7 +131,7 @@ public class ExplorerActivity extends TabActivity {
 
 		// First get a rest client - this will bring up the login screen if
 		// needed
-		new ClientManager(this, accountType).getRestClient(ForceApp.APP.getPasscodeHash(), this, new RestClientCallback() {
+		new ClientManager(this, accountType, ForceApp.APP.getPasscodeHash()).getRestClient(this, new RestClientCallback() {
 			@Override
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
