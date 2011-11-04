@@ -375,6 +375,8 @@ public class ClientManager {
 				// getBlockingAuthToken doesn't do much of a job of
 				// transferring errors, you just get a null new token, so
 				// don't try and use null as the new token.
+				
+				// TODO change this call - we need to pass the passcodeHash in the options bundle
 				newAuthToken = clientManager.accountManager.blockingGetAuthToken(acc,
 						AccountManager.KEY_AUTHTOKEN, false);
 			} catch (Exception e) {
