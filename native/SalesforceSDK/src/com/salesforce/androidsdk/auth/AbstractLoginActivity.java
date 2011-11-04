@@ -46,6 +46,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ClientManager;
 
@@ -179,7 +180,7 @@ public abstract class AbstractLoginActivity extends
 		}
 	}
 	
-	protected void addAccount(String username, String refreshToken, String authToken,
+	protected void addAccount(String passcodeHash, String username, String refreshToken, String authToken,
 			String instanceUrl, String loginUrl, String clientId, String orgId,
 			String userId, String apiVersion) {
 
@@ -189,7 +190,7 @@ public abstract class AbstractLoginActivity extends
 		Account[] oldAccounts = clientManager.getAccounts();
 
 		// New account
-		Bundle extras = clientManager.createNewAccount(username, refreshToken, authToken, instanceUrl, loginUrl, clientId, orgId, userId);
+		Bundle extras = clientManager.createNewAccount(passcodeHash, username, refreshToken, authToken, instanceUrl, loginUrl, clientId, orgId, userId);
 		setAccountAuthenticatorResult(extras);
 
 		// Remove old accounts
@@ -234,7 +235,7 @@ public abstract class AbstractLoginActivity extends
 				onAuthFlowError(getGenericAuthErrorTitle(),
 						getGenericAuthErrorBody());
 			} else {
-				addAccount(tr.username, tr.refreshToken, tr.authToken,
+				addAccount(ForceApp.APP.getPasscodeHash(), tr.username, tr.refreshToken, tr.authToken,
 						tr.instanceUrl, loginServerUrl, getOAuthClientId(), tr.orgId, tr.userId, getApiVersion());
 
 				finish();

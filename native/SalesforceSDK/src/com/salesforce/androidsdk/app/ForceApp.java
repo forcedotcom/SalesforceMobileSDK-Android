@@ -32,6 +32,7 @@ import android.content.Intent;
 import com.salesforce.androidsdk.auth.AbstractLoginActivity;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.security.Encryptor;
 
 /**
  * Super class for all force applications.
@@ -41,12 +42,15 @@ public abstract class ForceApp extends Application  {
 
 	// instance of the ForceApp for this process
     public static ForceApp APP;
-	
+    
     @Override
     public void onCreate() {
         super.onCreate();
         APP = this;
 
+        // Initialize encryption module
+        Encryptor.init(this);
+        
         // Initialize the http client        
         HttpAccess.init(this);
     }
@@ -65,4 +69,26 @@ public abstract class ForceApp extends Application  {
      * @return class for login activity
      */
     abstract public Class<? extends AbstractLoginActivity> getLoginActivityClass();
+    
+    /**
+     * Return key to encrypt auth tokens when storing them in the acccount manager.
+     * Return null when no encryption should be used.
+     * 
+     * If the device has filesystem encryption turned on, you can return null, and let the tokens be stored in clear.
+     * If the device doesn't have filesystem encryption, and you return null, the login flow will fail when trying to 
+     * create an account.
+     *
+     * FIXME should be abstract
+     * 
+	 * @return 
+     */
+    public String getPasscodeHash() {
+    	if (Encryptor.isFileSystemEncrypted()) {
+    		return null;
+    	}
+    	else {
+    		return "q21opx09asd1!sad9p-=2#";
+    	}
+    }
+    
 }

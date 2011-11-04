@@ -38,15 +38,13 @@ import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.accounts.AccountsException;
 import android.app.Activity;
-import android.app.Service;
-import android.app.admin.DevicePolicyManager;
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.security.Encryptor;
 
 /**
  * Use ClientManager to build RestClient's when authentication information is stored with the AccountManager.
@@ -60,7 +58,6 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 public class ClientManager {
 
 	private final AccountManager accountManager;
-	private DevicePolicyManager devicePolicyManager;
 	private final String accountType;
 
 	/**
@@ -71,24 +68,8 @@ public class ClientManager {
 	public ClientManager(Context ctx, String accountType) {
 		this.accountManager = AccountManager.get(ctx);		
 		this.accountType = accountType;
-		this.devicePolicyManager = (DevicePolicyManager) ctx.getSystemService(Service.DEVICE_POLICY_SERVICE);
 	}
 
-	/**
-	 * We will only store sensitive data in the account manager when the file system is encrypted
-	 * 
-	 * @return true if file system encryption is available and turned on 
-	 */
-	public boolean isAccountManagerSecure() {
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-			return false;
-		}
-		else {
-			// Note: Following method only exists if linking to an android.jar api 11 and above
-			return devicePolicyManager.getStorageEncryptionStatus() == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE;
-		}
-	}
-	
 	/**
 	 * This will asynchronously create a RestClient for you.
 	 * It will kick off the login flow if needed.
@@ -98,7 +79,7 @@ public class ClientManager {
 	 * The work is actually be done by the service registered to handle authentication for this application account type)
 	 * @see AuthenticatorService
 	 */
-	public void getRestClient(Activity activityContext,
+	public void getRestClient(String passcodeHash, Activity activityContext,
 			RestClientCallback callback) {
 
 		Account acc = getAccount();
@@ -106,15 +87,14 @@ public class ClientManager {
 		if (acc == null) {
 			accountManager.addAccount(getAccountType(),
 					AccountManager.KEY_AUTHTOKEN, null, null,
-					activityContext, new Callback(activityContext, callback),
+					activityContext, new Callback(passcodeHash, activityContext, callback),
 					null);
 		
 		} else {
 			Log.i("ClientManager:getRestClient",
 					"Get auth token for account name: " + acc.name);
 			accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN,
-					null, activityContext, new Callback(
-							activityContext, callback), null);
+					null, activityContext, new Callback(passcodeHash, activityContext, callback), null);
 		
 		}
 	}
@@ -124,7 +104,7 @@ public class ClientManager {
 	 * otherwise it throws exceptions This is intended to be used by code not on
 	 * the UI thread (.e.g. ContentProviders).
 	 */
-	public RestClient peekRestClient(Context ctx)
+	public RestClient peekRestClient(String passcodeHash, Context ctx)
 			throws AccountInfoNotFoundException {
 		
 		Account acc = getAccount();
@@ -135,14 +115,14 @@ public class ClientManager {
 			throw e;
 		}
 
-		String authToken = accountManager.getUserData(acc,
-				AccountManager.KEY_AUTHTOKEN);
+		String authToken = Encryptor.decrypt(passcodeHash, accountManager.getUserData(acc,
+				AccountManager.KEY_AUTHTOKEN));
 		String server = accountManager.getUserData(acc,
 				AuthenticatorService.KEY_INSTANCE_SERVER);
 		String orgId = accountManager.getUserData(acc, AuthenticatorService.KEY_ORG_ID);
 		String userId = accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID);
 		String username = accountManager.getUserData(acc, AccountManager.KEY_ACCOUNT_NAME);
-		String refreshToken = accountManager.getPassword(acc);
+		String refreshToken = Encryptor.decrypt(passcodeHash, accountManager.getPassword(acc));
 
 		if (authToken == null)
 			throw new AccountInfoNotFoundException(AccountManager.KEY_AUTHTOKEN);
@@ -226,8 +206,10 @@ public class ClientManager {
 	 * @param userId
 	 * @return
 	 */
-	public Bundle createNewAccount(String username, String refreshToken, String authToken,
+	public Bundle createNewAccount(String passcodeHash, String username, String refreshToken, String authToken,
 			String instanceUrl, String loginUrl, String clientId, String orgId, String userId) {
+		
+		assert (passcodeHash == null && !Encryptor.isFileSystemEncrypted()) : "No passcodeHash specified even though filesystem encryption is not turned on"; 
 				
 		Bundle extras = new Bundle();
 		extras.putString(AccountManager.KEY_ACCOUNT_NAME, username);
@@ -240,9 +222,7 @@ public class ClientManager {
 		extras.putString(AuthenticatorService.KEY_USER_ID, userId);
 
 		Account acc = new Account(username, getAccountType());
-		accountManager.addAccountExplicitly(acc,
-				(isAccountManagerSecure() ? refreshToken : ""), // only storing refresh token when it's secure to do so 
-				extras);
+		accountManager.addAccountExplicitly(acc, Encryptor.encrypt(passcodeHash, refreshToken), extras);
 		accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
 		
 		return extras;
@@ -295,6 +275,7 @@ public class ClientManager {
 	 */
 	private class Callback implements AccountManagerCallback<Bundle> {
 
+		private final String passcodeHash;
 		private final Context context;
 		private final RestClientCallback restCallback;
 
@@ -303,9 +284,10 @@ public class ClientManager {
 		 *            who to directly call when we get a result for getAuthToken
 		 * @param accServer
 		 */
-		Callback(Context ctx, RestClientCallback restCallback) {
+		Callback(String passcodeHash, Context ctx, RestClientCallback restCallback) {
 			assert restCallback != null : "you must supply a RestClientAvailable instance";
 			assert ctx != null : "you must supply a valid Context";
+			this.passcodeHash = passcodeHash;
 			this.context = ctx;
 			this.restCallback = restCallback;
 		}
@@ -324,7 +306,7 @@ public class ClientManager {
 				// 2.2, given that we might as well just use peekClient to build
 				// the client from the data in the AccountManager, rather than
 				// trying to build it from the bundle.
-				client = peekRestClient(context);
+				client = peekRestClient(passcodeHash, context);
 
 			} catch (AccountsException e) {
 				Log.w("ClientManager:Callback:run", "", e);

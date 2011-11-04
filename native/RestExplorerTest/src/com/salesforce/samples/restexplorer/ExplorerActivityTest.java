@@ -65,6 +65,7 @@ import com.salesforce.androidsdk.rest.ClientManager;
 public class ExplorerActivityTest extends
 		BaseActivityInstrumentationTestCase<ExplorerActivity> {
 
+	private static final String TEST_PASSCODE_HASH = "test_passcode_hash";
 	private static final String TEST_ORG_ID = "test_org_id";	
 	private static final String TEST_USER_ID = "test_user_id";
 	private static final String TEST_CLIENT_ID = "test_client_d";
@@ -102,7 +103,7 @@ public class ExplorerActivityTest extends
 		setActivityInitialTouchMode(false);
 		targetContext = getInstrumentation().getTargetContext();
 		clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type));
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
+		clientManager.createNewAccount(TEST_PASSCODE_HASH, TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
 		mockHttpAccessor = new MockHttpAccess(RestExplorerApp.APP);
 	}
 
