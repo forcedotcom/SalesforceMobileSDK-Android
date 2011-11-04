@@ -43,6 +43,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.test.InstrumentationTestCase;
 
+import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
