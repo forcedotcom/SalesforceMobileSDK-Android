@@ -47,10 +47,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.http.AndroidHttpClient;
 import android.os.Build;
+
 import android.util.Log;
 
 /**
@@ -71,7 +73,8 @@ public class HttpAccess extends BroadcastReceiver {
     private boolean    hasNetwork      = true;
     private int        currentNetworkSubType = -1;
     private String     networkFailReason;
-
+    protected String	defaultUserAgentString = "SalesforceMobileSDK/0.9 android/"+ Build.VERSION.RELEASE;
+    
     // Connection manager
 	private final ConnectivityManager conMgr;
 	
@@ -120,16 +123,19 @@ public class HttpAccess extends BroadcastReceiver {
 	 * @return
 	 */
 	private AndroidHttpClient getHttpClient() {
-		return AndroidHttpClient.newInstance(getUserAgent(), app);
+		String uaStr = this.defaultUserAgentString;
+		return AndroidHttpClient.newInstance(uaStr, app);
 	}
 	
-
 	/**
-	 * @return user agent
+	 * Set the user agent string to be used for requests.
+	 * @param uaStr
 	 */
-	private String getUserAgent() {
-		return "SalesforceSDK-android" + Build.VERSION.RELEASE;
+	public void setUserAgentString(String uaStr) {
+		this.defaultUserAgentString = uaStr;
 	}
+
+
 
 	/**
 	 * Detects network changes and resetting network when needed 

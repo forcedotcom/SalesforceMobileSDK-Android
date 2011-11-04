@@ -4,9 +4,13 @@ import java.util.HashMap;
 
 import org.json.JSONObject;
 
+
 import android.os.Bundle;
+import android.util.Log;
+import android.webkit.WebSettings;
 
 import com.phonegap.DroidGap;
+
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -17,6 +21,9 @@ public class ContactExplorerActivity extends DroidGap {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+		final String uaStr = ForceApp.APP.getUserAgent();
+        
         super.loadUrl("file:///android_asset/www/index.html");
         
         final String accountType = getString(R.string.account_type);
@@ -37,11 +44,25 @@ public class ContactExplorerActivity extends DroidGap {
 				data.put("userId", client.getUserId());
 				data.put("username", client.getUsername());
 				data.put("orgId", client.getOrgId());
+				data.put("userAgent", uaStr);
 				
 				String eventJs = "{'data':" + new JSONObject(data).toString() + "}";
 				String jsCall = "onSalesforceOAuthLogin(" + eventJs + ")";
 				sendJavascript(jsCall);
+				
+				
 			}
 		});
     }
+    
+    @Override
+    public void init() {
+    	super.init();
+		final String uaStr = ForceApp.APP.getUserAgent();
+		if (null != this.appView) {
+	        WebSettings webSettings = this.appView.getSettings();
+	        webSettings.setUserAgentString(uaStr);
+		}
+    }
+ 
 }

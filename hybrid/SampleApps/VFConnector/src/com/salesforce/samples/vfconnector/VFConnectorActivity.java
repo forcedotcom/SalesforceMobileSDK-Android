@@ -2,10 +2,12 @@ package com.salesforce.samples.vfconnector;
 
 import java.net.URI;
 
+
 import android.os.Bundle;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
+import android.webkit.WebSettings;
 
 import com.phonegap.DroidGap;
 import com.salesforce.androidsdk.app.ForceApp;
@@ -22,7 +24,7 @@ public class VFConnectorActivity extends DroidGap {
         super.onCreate(savedInstanceState);
     	//ensure we have a CookieSyncManager
     	CookieSyncManager.createInstance(this);
-
+        
         //ensure that we allow urls from all salesforce domains to be loaded
         this.addWhiteListEntry("force.com", true);
         this.addWhiteListEntry("salesforce.com", true);
@@ -38,6 +40,16 @@ public class VFConnectorActivity extends DroidGap {
 				loggedIn(client);			
 			}
 		});
+    }
+    
+    @Override
+    public void init() {
+    	super.init();
+		final String uaStr = ForceApp.APP.getUserAgent();
+		if (null != this.appView) {
+	        WebSettings webSettings = this.appView.getSettings();
+	        webSettings.setUserAgentString(uaStr);
+		}
     }
     
     @Override
