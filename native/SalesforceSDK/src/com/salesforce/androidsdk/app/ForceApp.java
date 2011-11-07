@@ -70,22 +70,4 @@ public abstract class ForceApp extends Application  {
      */
     abstract public Class<? extends AbstractLoginActivity> getLoginActivityClass();
     
-    /**
-     * Return key to encrypt oauth tokens when storing them in the acccount manager.
-     * 
-     * When filesystem encryption is turned on not to encrypt.
-     * Otherwise the key should be derived from a user entered pin.
-     * 
-	 * @return 
-     */
-    public String getPasscodeHash() {
-    	if (Encryptor.isFileSystemEncrypted()) {
-    		return null;
-    	}
-    	else {
-    		// TODO build key from user entered pin
-    		return "q21opx09asd1!sad9p-=2#";
-    	}
-    }
-    
 }
