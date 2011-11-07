@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.app;
 
 import android.app.Application;
 import android.content.Intent;
+import android.os.Build;
 
 import com.salesforce.androidsdk.auth.AbstractLoginActivity;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -39,6 +40,8 @@ import com.salesforce.androidsdk.security.Encryptor;
  * You should extend this class or make sure to initialize HttpAccess in your application's onCreate method.
  */
 public abstract class ForceApp extends Application  {
+
+    public static final String SDK_VERSION = "0.9";
 
 	// instance of the ForceApp for this process
     public static ForceApp APP;
@@ -53,6 +56,7 @@ public abstract class ForceApp extends Application  {
         
         // Initialize the http client        
         HttpAccess.init(this);
+        HttpAccess.DEFAULT.setUserAgentString(getUserAgent());
     }
 
     /**
@@ -70,4 +74,17 @@ public abstract class ForceApp extends Application  {
      */
     abstract public Class<? extends AbstractLoginActivity> getLoginActivityClass();
     
+	/**
+	 * @return user agent string to use for all requests
+	 */
+	public String getUserAgent() {
+		
+				
+        //set a user agent string based on the mobile sdk version
+        //We are building a user agent of the form:
+		//SalesforceMobileSDK-hREST/1.0 android/3.2.0 
+
+	    String constructedUserAgent =  "SalesforceMobileSDK/" + SDK_VERSION + " android/"+ Build.VERSION.RELEASE  ;
+	    return constructedUserAgent;
+	}
 }
