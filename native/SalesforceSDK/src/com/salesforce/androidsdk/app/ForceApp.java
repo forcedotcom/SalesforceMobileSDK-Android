@@ -29,11 +29,11 @@ package com.salesforce.androidsdk.app;
 import android.app.Application;
 import android.content.Intent;
 import android.os.Build;
-import android.util.Log;
 
 import com.salesforce.androidsdk.auth.AbstractLoginActivity;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.security.Encryptor;
 
 /**
  * Super class for all force applications.
@@ -45,23 +45,25 @@ public abstract class ForceApp extends Application  {
 
 	// instance of the ForceApp for this process
     public static ForceApp APP;
-	
     
     @Override
     public void onCreate() {
         super.onCreate();
         APP = this;
 
+        // Initialize encryption module
+        Encryptor.init(this);
+        
         // Initialize the http client        
         HttpAccess.init(this);
-        HttpAccess.DEFAULT.setUserAgentString(this.getUserAgent());
+        HttpAccess.DEFAULT.setUserAgentString(getUserAgent());
     }
 
     /**
      * Remove user account and launch the login activity with a clean task stack.
      */
     public void logout(String accountType) {
-    	new ClientManager(this, accountType).removeAccountAsync(null);
+    	new ClientManager(this, accountType, null /* we just want to removed accounts, we don't need the actual value */).removeAccountAsync(null);
     	Intent i = new Intent(this, getLoginActivityClass());
     	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     	this.startActivity(i);

@@ -61,11 +61,18 @@ public abstract class AbstractLoginActivity extends
 	private WebView webView;
 	private String loginServerUrl;
 	private boolean wasBackgrounded;
+	private String passcodeHash;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		// Getting passcodeHash (used to encrypt/decrypt stored oauth tokens) from extras
+		Bundle options = getIntent().getExtras();
+		if (options != null) {
+			passcodeHash = options.getString(AuthenticatorService.PASSCODE_HASH);
+		}
+		
 		// we'll show progress in the window title bar.
 		getWindow().requestFeature(Window.FEATURE_PROGRESS);
 		getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
@@ -179,11 +186,11 @@ public abstract class AbstractLoginActivity extends
 		}
 	}
 	
-	protected void addAccount(String username, String refreshToken, String authToken,
-			String instanceUrl, String loginUrl, String clientId, String orgId,
-			String userId, String apiVersion) {
+	protected void addAccount(String username, String refreshToken, String authToken, String instanceUrl,
+			String loginUrl, String clientId, String orgId, String userId,
+			String apiVersion) {
 
-		ClientManager clientManager = new ClientManager(this, getAccountType());
+		ClientManager clientManager = new ClientManager(this, getAccountType(), passcodeHash);
 		
 		// Old account
 		Account[] oldAccounts = clientManager.getAccounts();
@@ -234,8 +241,8 @@ public abstract class AbstractLoginActivity extends
 				onAuthFlowError(getGenericAuthErrorTitle(),
 						getGenericAuthErrorBody());
 			} else {
-				addAccount(tr.username, tr.refreshToken, tr.authToken,
-						tr.instanceUrl, loginServerUrl, getOAuthClientId(), tr.orgId, tr.userId, getApiVersion());
+				addAccount(tr.username, tr.refreshToken, tr.authToken, tr.instanceUrl,
+						loginServerUrl, getOAuthClientId(), tr.orgId, tr.userId, getApiVersion());
 
 				finish();
 			}

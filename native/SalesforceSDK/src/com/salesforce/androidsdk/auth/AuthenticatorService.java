@@ -47,6 +47,7 @@ import android.util.Log;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.security.Encryptor;
 
 /**
  * Service taking care of authentication for salesforce application
@@ -56,6 +57,9 @@ public class AuthenticatorService extends Service {
 
 	private static Authenticator authenticator;
 
+	// Key to passcodeHash in options bundle passed to getAuthToken
+	public static final String PASSCODE_HASH = "passcodeHash";
+	
 	// Keys to extra info in the account
 	public static final String KEY_LOGIN_SERVER = "loginServer";
 	public static final String KEY_INSTANCE_SERVER = "instanceServer";
@@ -117,7 +121,8 @@ public class AuthenticatorService extends Service {
 			
 			Log.i("Authenticator:getAuthToken", "Get auth token for " + account.name);
 			AccountManager mgr = AccountManager.get(context);
-			String refreshToken = mgr.getPassword(account);
+			String passcodeHash = options.getString(PASSCODE_HASH);
+			String refreshToken = Encryptor.decrypt(mgr.getPassword(account), passcodeHash);
 			String loginServer = mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_SERVER);
 			String clientId = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID);
 			String instServer = mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_SERVER);
@@ -129,6 +134,9 @@ public class AuthenticatorService extends Service {
     			// handle the case where the org has been migrated to a new instance, or has turned on my domains.
     			if (!instServer.equalsIgnoreCase(tr.instanceUrl))
     				mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_SERVER, tr.instanceUrl);
+    			
+    			// Update auth token in account
+    			mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(tr.authToken, passcodeHash));
 
     			resBundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
                 resBundle.putString(AccountManager.KEY_ACCOUNT_TYPE, account.type);
@@ -160,7 +168,6 @@ public class AuthenticatorService extends Service {
 
 		/**
 		 * Return bundle with intent to start the login flow.
-		 * You need to declare you login activity with the intent-filter for salesforce.intent.action.LOGIN.
 		 * 
 		 * @param response
 		 * @param options

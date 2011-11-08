@@ -38,111 +38,102 @@ import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.accounts.AccountsException;
 import android.app.Activity;
-import android.app.Service;
-import android.app.admin.DevicePolicyManager;
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.security.Encryptor;
 
 /**
- * Use ClientManager to build RestClient's when authentication information is stored with the AccountManager.
- * When called from an activity, the login flow (which should create a account with the authentication information) is 
- * launched if required.
- * 
- * NB: we only store sensitive data (refresh token) in the account manager when the file system is encrypted
- *     when we don't store the refresh token, the user should expect to see the login screen again as soon as their auth token becomes invalid
+ * ClientManager is a factory class for RestClient which stores oauth credentials in the AccountManager.
+ * If no account is found, it kicks off the login flow which create a new account if successful.
  * 
  */
 public class ClientManager {
 
 	private final AccountManager accountManager;
-	private DevicePolicyManager devicePolicyManager;
 	private final String accountType;
+	private String passcodeHash;
 
 	/**
 	 * Construct a ClientManager using a custom account type
 	 * @param ctx
 	 * @param accountType
+	 * @param passcodeHash           key to encrypt/decrypt oauth tokens that get stored in the account manager 
 	 */
-	public ClientManager(Context ctx, String accountType) {
+	public ClientManager(Context ctx, String accountType, String passcodeHash) {
 		this.accountManager = AccountManager.get(ctx);		
 		this.accountType = accountType;
-		this.devicePolicyManager = (DevicePolicyManager) ctx.getSystemService(Service.DEVICE_POLICY_SERVICE);
+		this.passcodeHash = passcodeHash;
 	}
 
 	/**
-	 * We will only store sensitive data in the account manager when the file system is encrypted
+	 * Method to create a RestClient asynchronously. It is intended to be used by code on the UI thread.
 	 * 
-	 * @return true if file system encryption is available and turned on 
-	 */
-	public boolean isAccountManagerSecure() {
-		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-			return false;
-		}
-		else {
-			// Note: Following method only exists if linking to an android.jar api 11 and above
-			return devicePolicyManager.getStorageEncryptionStatus() == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE;
-		}
-	}
-	
-	/**
-	 * This will asynchronously create a RestClient for you.
-	 * It will kick off the login flow if needed.
-	 * Once the user has authenticated, the RestClientCallback will fire passing you the constructed client or null
-	 * if authentication failed.
+	 * If no accounts is found, it will kick off the login flow which will create a new account if successful.
+	 * After the account is created or if an account already existed, it creates a RestClient and returns it through restClientCallback. 
 	 * 
-	 * The work is actually be done by the service registered to handle authentication for this application account type)
+	 * Note: The work is actually be done by the service registered to handle authentication for this application account type
 	 * @see AuthenticatorService
+	 *
+	 * @param activityContext        current activity
+	 * @param restClientCallback     callback invoked once the RestClient is ready
 	 */
-	public void getRestClient(Activity activityContext,
-			RestClientCallback callback) {
+	public void getRestClient(Activity activityContext, RestClientCallback restClientCallback) {
 
 		Account acc = getAccount();
 
+		// Passing the passcodeHash to the authenticator service to that it can encrypt/decrypt oauth tokens
+		Bundle options = new Bundle();
+		options.putString(AuthenticatorService.PASSCODE_HASH, passcodeHash);
+
+		// No account found - let's add one - the AuthenticatorService add account method will start the login activity
 		if (acc == null) {
+			Log.i("ClientManager:getRestClient", "No account of type " + accountType + "found");
 			accountManager.addAccount(getAccountType(),
-					AccountManager.KEY_AUTHTOKEN, null, null,
-					activityContext, new Callback(activityContext, callback),
-					null);
+					AccountManager.KEY_AUTHTOKEN, null /*required features*/, options,
+					activityContext, new AccMgrCallback(restClientCallback),
+					null /* handler */);
 		
-		} else {
-			Log.i("ClientManager:getRestClient",
-					"Get auth token for account name: " + acc.name);
+		}
+		// Account found
+		else {
+			Log.i("ClientManager:getRestClient", "Found account of type " + accountType);
 			accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN,
-					null, activityContext, new Callback(
-							activityContext, callback), null);
+					options, activityContext, new AccMgrCallback(restClientCallback), null /* handler */);
 		
 		}
 	}
 	
 	/**
-	 * This will peek for an auth token and build you a rest client if possible,
-	 * otherwise it throws exceptions This is intended to be used by code not on
-	 * the UI thread (.e.g. ContentProviders).
+	 * Method to create RestClient synchronously. It is intended to be used by code not on the UI thread (e.g. ContentProvider). 
+	 * 
+	 * If there is no account, it will throw an exception.
+	 * 
+	 * @return
+	 * @throws AccountInfoNotFoundException
 	 */
-	public RestClient peekRestClient(Context ctx)
+	public RestClient peekRestClient()
 			throws AccountInfoNotFoundException {
 		
 		Account acc = getAccount();
 		if (acc == null) {
-			AccountInfoNotFoundException e = new AccountInfoNotFoundException(
-					"No user account found");
+			AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
 			Log.i("ClientManager:peekRestClient", "No user account found", e);
 			throw e;
 		}
 
-		String authToken = accountManager.getUserData(acc,
-				AccountManager.KEY_AUTHTOKEN);
-		String server = accountManager.getUserData(acc,
-				AuthenticatorService.KEY_INSTANCE_SERVER);
+		// OAuth tokens are stored encrypted
+		String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
+		String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), passcodeHash);
+		
+		// We also store the instance url, org id, user id and username in the account manager
+		String server = accountManager.getUserData(acc, AuthenticatorService.KEY_INSTANCE_SERVER);
 		String orgId = accountManager.getUserData(acc, AuthenticatorService.KEY_ORG_ID);
 		String userId = accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID);
 		String username = accountManager.getUserData(acc, AccountManager.KEY_ACCOUNT_NAME);
-		String refreshToken = accountManager.getPassword(acc);
 
 		if (authToken == null)
 			throw new AccountInfoNotFoundException(AccountManager.KEY_AUTHTOKEN);
@@ -154,7 +145,8 @@ public class ClientManager {
 			throw new AccountInfoNotFoundException(AuthenticatorService.KEY_ORG_ID);
 
 		try {
-			return new RestClient(new URI(server), authToken, HttpAccess.DEFAULT, new AccountManagerTokenProvider(this, refreshToken), username, userId, orgId);
+			AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, refreshToken);
+			return new RestClient(new URI(server), authToken, HttpAccess.DEFAULT, authTokenProvider, username, userId, orgId);
 		} 
 		catch (URISyntaxException e) {
 			Log.w("ClientManager:peekRestClient", "Invalid server URL", e);
@@ -188,7 +180,6 @@ public class ClientManager {
 		return null;
 	}
 	
-	
 	/**
 	 * @return all accounts found for this application account type
 	 */
@@ -216,33 +207,31 @@ public class ClientManager {
 	
 	/**
 	 * Create new account and return bundle that new account details in a bundle
-	 * @param username
+	 * @param username                 
 	 * @param refreshToken
 	 * @param authToken
 	 * @param instanceUrl
 	 * @param loginUrl
 	 * @param clientId
-	 * @param orgId 
+	 * @param orgId
 	 * @param userId
 	 * @return
 	 */
-	public Bundle createNewAccount(String username, String refreshToken, String authToken,
-			String instanceUrl, String loginUrl, String clientId, String orgId, String userId) {
-				
+	public Bundle createNewAccount(String username, String refreshToken, String authToken, String instanceUrl,
+			String loginUrl, String clientId, String orgId, String userId) {
+		
 		Bundle extras = new Bundle();
 		extras.putString(AccountManager.KEY_ACCOUNT_NAME, username);
 		extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
-		extras.putString(AccountManager.KEY_AUTHTOKEN, authToken);
 		extras.putString(AuthenticatorService.KEY_LOGIN_SERVER, loginUrl);
 		extras.putString(AuthenticatorService.KEY_INSTANCE_SERVER, instanceUrl);
 		extras.putString(AuthenticatorService.KEY_CLIENT_ID, clientId);
 		extras.putString(AuthenticatorService.KEY_ORG_ID, orgId);
 		extras.putString(AuthenticatorService.KEY_USER_ID, userId);
+		extras.putString(AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, passcodeHash));
 
 		Account acc = new Account(username, getAccountType());
-		accountManager.addAccountExplicitly(acc,
-				(isAccountManagerSecure() ? refreshToken : ""), // only storing refresh token when it's secure to do so 
-				extras);
+		accountManager.addAccountExplicitly(acc, Encryptor.encrypt(refreshToken, passcodeHash), extras);
 		accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
 		
 		return extras;
@@ -265,19 +254,6 @@ public class ClientManager {
 
 
 	/**
-	 * Invalidate the account with the given authToken
-	 * @param authToken
-	 */
-	public void invalidateAuthToken(String authToken) {
-		Log.i("ClientManager:invalidateAuthToken", "Entering invalidateAuthToken");
-
-		Account acc = getAccount();
-		if (acc != null) {
-			accountManager.invalidateAuthToken(acc.type, authToken);
-		}
-	}
-	
-	/**
 	 * Removes the user account from the account manager, this is an
 	 * asynchronous process, the callback is called on completion if
 	 * specified.
@@ -293,20 +269,17 @@ public class ClientManager {
 	 * Callback from either user account creation or a call to getAuthToken used
 	 * by the android account management bits
 	 */
-	private class Callback implements AccountManagerCallback<Bundle> {
+	private class AccMgrCallback implements AccountManagerCallback<Bundle> {
 
-		private final Context context;
 		private final RestClientCallback restCallback;
 
 		/**
-		 * @param restCallback
-		 *            who to directly call when we get a result for getAuthToken
-		 * @param accServer
+		 * Constructor
+		 * @param restCallback who to directly call when we get a result for getAuthToken
+		 * 			  
 		 */
-		Callback(Context ctx, RestClientCallback restCallback) {
+		AccMgrCallback(RestClientCallback restCallback) {
 			assert restCallback != null : "you must supply a RestClientAvailable instance";
-			assert ctx != null : "you must supply a valid Context";
-			this.context = ctx;
 			this.restCallback = restCallback;
 		}
 
@@ -317,21 +290,19 @@ public class ClientManager {
 
 			try {
 				f.getResult();
-				Log.i("ClientManager:Callback:run",
-						"AccountManager callback called");
 
 				// the O.S. strips the auth_token from the response bundle on
 				// 2.2, given that we might as well just use peekClient to build
 				// the client from the data in the AccountManager, rather than
 				// trying to build it from the bundle.
-				client = peekRestClient(context);
+				client = peekRestClient();
 
 			} catch (AccountsException e) {
-				Log.w("ClientManager:Callback:run", "", e);
+				Log.w("AccMgrCallback:run", "", e);
 			} catch (IOException e) {
-				Log.w("ClientManager:Callback:run", "", e);
+				Log.w("AccMgrCallback:run", "", e);
 			} catch (AccountInfoNotFoundException e) {
-				Log.w("ClientManager:Callback:run", "", e);
+				Log.w("AccMgrCallback:run", "", e);
 			}
 
 			// response. if we failed, null
@@ -352,7 +323,7 @@ public class ClientManager {
 	 * The AccountManager actually calls ForceAuthenticatorService to do the actual refresh.
 	 * @see AuthenticatorService
 	 */
-	public static class AccountManagerTokenProvider implements RestClient.AuthTokenProvider {
+	public static class AccMgrAuthTokenProvider implements RestClient.AuthTokenProvider {
 
 		private static boolean gettingAuthToken;
 		private static String lastNewAuthToken;
@@ -360,7 +331,12 @@ public class ClientManager {
 		private final ClientManager clientManager;
 		private final String refreshToken;
 
-		AccountManagerTokenProvider(ClientManager clientManager, String refreshToken) {
+		/**
+		 * Constructor
+		 * @param clientManager
+		 * @param refreshToken
+		 */
+		AccMgrAuthTokenProvider(ClientManager clientManager, String refreshToken) {
 			this.clientManager = clientManager;
 			this.refreshToken = refreshToken;
 		}
@@ -369,35 +345,44 @@ public class ClientManager {
 		 * Fetch a new access token from the account manager, if another thread
 		 * is already in the progress of doing this we'll just wait for it to finish and use that access token.
 		 * Return null if we can't get a new access token for any reason.
-		 * @param acc
-		 * @return
 		 */
-		private String fetchNewAuthToken(Account acc) {
+		@Override
+		public String getNewAuthToken() {
+			Log.i("AccMgrAuthTokenProvider:getNewAuthToken", "Need new access token");
+
+			Account acc = clientManager.getAccount();
+			if (acc == null)
+				return null;
+			
+			// Wait if another thread is already fetching an access token
 			synchronized (lock) {
 				if (gettingAuthToken) {
-					// another thread is already fetching an access token, wait
-					// for that.
 					try {
 						lock.wait();
 					} catch (InterruptedException e) {
-						Log.w("ClientManager:Callback:fetchNewAuthToken", "",
-								e);
+						Log.w("ClientManager:Callback:fetchNewAuthToken", "", e);
 					}
 					return lastNewAuthToken;
 				}
 				gettingAuthToken = true;
 			}
-
+			
 			String newAuthToken = null;
 			try {
-				// getBlockingAuthToken doesn't do much of a job of
-				// transferring errors, you just get a null new token, so
-				// don't try and use null as the new token.
-				newAuthToken = clientManager.accountManager.blockingGetAuthToken(acc,
-						AccountManager.KEY_AUTHTOKEN, false);
+				Bundle options = new Bundle();
+				options.putString(AuthenticatorService.PASSCODE_HASH, clientManager.passcodeHash);
+				Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, options, null /* activity */, null /* callback */,
+								null /* handler */).getResult();
+			
+				if (bundle == null) {
+					Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
+				}
+				else {
+					newAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+				}
 			} catch (Exception e) {
-				Log.w("ClientManager:Callback:fetchNewAuthToken",
-						"Exception during blockingGetAuthToken call", e);
+				Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken:getNewAuthToken",
+						"Exception during getAuthToken call", e);
 			} finally {
 				synchronized (lock) {
 					gettingAuthToken = false;
@@ -406,29 +391,6 @@ public class ClientManager {
 				}
 			}
 			return newAuthToken;
-		}
-
-		/**
-		 * WARNING This method can only be called from a background thread, see
-		 * blockingGetAuthToken
-		 */
-		@Override
-		public String getNewAuthToken(RestClient client) {
-			Log.i("ClientManager:Callback:getNewAuthToken",
-					"Need new access token");
-
-			String authToken = client.getAuthToken();
-			if (authToken == null) {
-				Log.w("ClientManager:Callback:getNewAuthToken", "Access token not set");
-			} else {
-				clientManager.invalidateAuthToken(authToken);
-			}
-
-			Account acc = clientManager.getAccount();
-			if (acc == null)
-				return null;
-
-			return fetchNewAuthToken(acc);
 		}
 		
 		@Override

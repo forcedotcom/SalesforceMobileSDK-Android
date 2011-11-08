@@ -43,13 +43,16 @@ import android.content.Context;
 import android.os.Bundle;
 import android.test.InstrumentationTestCase;
 
+import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
+import com.salesforce.androidsdk.security.Encryptor;
 
 public class ClientManagerTest extends InstrumentationTestCase {
 
+	private static final String TEST_PASSCODE_HASH = "test_passcode_hash";
 	private static final String TEST_ORG_ID = "test_org_id";
 	private static final String TEST_USER_ID = "test_user_id";
 	private static final String TEST_USERNAME = "test_username";
@@ -69,7 +72,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE);
+		clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, TEST_PASSCODE_HASH);
 		accountManager = clientManager.getAccountManager();
 	}
 	
@@ -118,8 +121,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertNotNull("Account should have been returned", account);
 		assertEquals("Wrong account name", TEST_USERNAME, account.name);
 		assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
-		assertEquals("Wrong auth token", TEST_AUTH_TOKEN, accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN));
-		assertEquals("Wrong refresh token", (clientManager.isAccountManagerSecure() ? TEST_REFRESH_TOKEN :  ""), accountManager.getPassword(account));
+		assertEquals("Wrong auth token", Encryptor.encrypt(TEST_AUTH_TOKEN, TEST_PASSCODE_HASH), accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN));
+		assertEquals("Wrong refresh token", Encryptor.encrypt(TEST_REFRESH_TOKEN, TEST_PASSCODE_HASH), accountManager.getPassword(account));
 		assertEquals("Wrong instance url", TEST_INSTANCE_URL, accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_SERVER));
 		assertEquals("Wrong login url", TEST_LOGIN_URL, accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_SERVER));
 		assertEquals("Wrong client id", TEST_CLIENT_ID, accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID));
@@ -276,7 +279,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
 		// Call peekRestClient - expect exception
 		try {
-			clientManager.peekRestClient(targetContext);
+			clientManager.peekRestClient();
 			fail("Expected AccountInfoNotFoundException");
 		} catch (AccountInfoNotFoundException e) {
 			// as expected
@@ -296,7 +299,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
 		// Call peekRestClient - expect restClient
 		try {
-			RestClient restClient = clientManager.peekRestClient(targetContext);
+			RestClient restClient = clientManager.peekRestClient();
 			assertNotNull("RestClient expected", restClient);
 			assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
 			assertEquals("Wrong base Url", new URI(TEST_INSTANCE_URL), restClient.getBaseUrl());
@@ -334,43 +337,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
 			assertEquals("Wrong base Url", new URI(TEST_INSTANCE_URL), restClient.getBaseUrl());
 		} catch (InterruptedException e) {
 			fail("getRestClient did not return after 5s");
-		}
-	}
-	
-	/**
-	 * Test invalidateAuthToken
-	 * @throws URISyntaxException
-	 * 
-	 *  FIXME invalidate doesn't seem to work
-	 */
-	public void _testInvalidateAuthToken() throws URISyntaxException {
-		// Make sure we have no accounts initially
-		assertNoAccounts();
-		
-		// Create account
-		createTestAccount();
-
-		RestClient restClient = null;
-
-		// Call peekRestClient - expect restClient
-		try {
-			restClient = clientManager.peekRestClient(targetContext);
-			assertNotNull("RestClient expected", restClient);
-			assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
-			assertEquals("Wrong base Url", new URI(TEST_INSTANCE_URL), restClient.getBaseUrl());
-		} 
-		catch (AccountInfoNotFoundException e) {
-			fail("Did not expect AccountInfoNotFoundException");
-		}
-		
-		clientManager.invalidateAuthToken(restClient.getAuthToken());
-		
-		// Call peekRestClient again - now expect exception
-		try {
-			clientManager.peekRestClient(targetContext);
-			fail("Expected AccountInfoNotFoundException");
-		} catch (AccountInfoNotFoundException e) {
-			// as expected
 		}
 	}
 	
@@ -429,7 +395,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		clientManager.createNewAccount(TestCredentials.USERNAME, TestCredentials.REFRESH_TOKEN, badToken, TestCredentials.INSTANCE_URL, TEST_LOGIN_URL, TestCredentials.CLIENT_ID, TestCredentials.ORG_ID, TestCredentials.USER_ID);
 		
 		// Peek rest client
-		RestClient restClient = clientManager.peekRestClient(targetContext);
+		RestClient restClient = clientManager.peekRestClient();
 		restClient.setHttpAccessor(new HttpAccess(null)); // clientManager initializes the client with HttpAccess.DEFAULT -- but that's null without an app 
 		
 		// Check the client

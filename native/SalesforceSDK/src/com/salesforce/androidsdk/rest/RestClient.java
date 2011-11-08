@@ -56,7 +56,7 @@ public class RestClient {
 	 * RestClient will call its authTokenProvider to refresh its authToken once it has expired. 
 	 */
 	public interface AuthTokenProvider {
-		public String getNewAuthToken(RestClient client);
+		public String getNewAuthToken();
 		public String getRefreshToken();
 	}
 	
@@ -73,7 +73,7 @@ public class RestClient {
 	/**
      * Constructs a RestClient with the given baseUrl, authToken, httpAccessor and authTokenProvider.
      * When it gets a 401 (not authorized) response from the server, it will ask the authTokenProvider for a new access token
-     * and retry the request a second time. 
+     * and retry the request a second time.
 	 * @param baseUrl
 	 * @param authToken
 	 * @param httpAccessor
@@ -212,7 +212,7 @@ public class RestClient {
 			// If we haven't retried already and we have an accessTokeProvider
 			// Then let's try to get a new authToken
 			if (retryInvalidToken && authTokenProvider != null) {
-				String newAuthToken = authTokenProvider.getNewAuthToken(this);
+				String newAuthToken = authTokenProvider.getNewAuthToken();
 				if (newAuthToken != null) {
 					setAuthToken(newAuthToken);
 					// Retry with the new authToken

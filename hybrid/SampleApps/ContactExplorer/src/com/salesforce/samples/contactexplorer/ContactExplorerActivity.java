@@ -27,7 +27,7 @@ public class ContactExplorerActivity extends DroidGap {
         super.loadUrl("file:///android_asset/www/index.html");
         
         final String accountType = getString(R.string.account_type);
-		new ClientManager(this, accountType).getRestClient(this, new RestClientCallback() {
+		new ClientManager(this, accountType, null /* FIXME build hash from user pin */).getRestClient(this, new RestClientCallback() {
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
 					ForceApp.APP.logout(accountType);
