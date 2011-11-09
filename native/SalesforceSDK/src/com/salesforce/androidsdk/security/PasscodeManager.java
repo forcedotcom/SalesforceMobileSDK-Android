@@ -73,9 +73,9 @@ public class PasscodeManager  {
 		this.deviceId = DeviceId.getDeviceId(ctx);
 		this.timeoutMs = lockTimeoutMinutes * 60 * 1000;
 		this.passcodeActivityClass = passcodeActivityClass;
-
-		// Locked at app startup if you're authenticated.
 		this.lastActivity = now();
+
+		// Locked at app startup if you're authenticated
 		this.locked = true;
 
 		// timeoutMs == 0 means never
@@ -142,7 +142,7 @@ public class PasscodeManager  {
 	 * @return true if locked
 	 */
 	public boolean isLocked() {
-		return locked;
+		return timeoutMs > 0 && locked;
 	}
 
 	/**

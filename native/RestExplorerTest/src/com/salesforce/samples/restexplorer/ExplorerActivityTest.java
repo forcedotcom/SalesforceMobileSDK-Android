@@ -52,6 +52,7 @@ import android.widget.Button;
 import android.widget.TabHost;
 import android.widget.TextView;
 
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
 
@@ -101,6 +102,7 @@ public class ExplorerActivityTest extends
 		super.setUp();
 		setActivityInitialTouchMode(false);
 		targetContext = getInstrumentation().getTargetContext();
+		ForceApp.APP.getPasscodeManager().setTimeoutMs(0 /* never */);
 		clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null);
 		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
 		mockHttpAccessor = new MockHttpAccess(RestExplorerApp.APP);
