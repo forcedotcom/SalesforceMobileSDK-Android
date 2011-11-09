@@ -138,22 +138,20 @@ public class ExplorerActivity extends TabActivity {
 			return;
 		}
 		
-		// Get a rest client if we don't already have one - this will bring up the login screen if needed
-		if (client == null) {
-			new ClientManager(this, ForceApp.APP.getAccountType(), ForceApp.APP.getPasscodeManager().getUserPasscode()).getRestClient(this, new RestClientCallback() {
-				@Override
-				public void authenticatedRestClient(RestClient client) {
-					if (client == null) {
-						ForceApp.APP.logout();
-					}
-					
-					ExplorerActivity.this.client = client;
-	
-					printHeader("RestClient");
-					println(client);
+		// Get a rest client
+		new ClientManager(this, ForceApp.APP.getAccountType(), ForceApp.APP.getPasscodeManager().getUserPasscode()).getRestClient(this, new RestClientCallback() {
+			@Override
+			public void authenticatedRestClient(RestClient client) {
+				if (client == null) {
+					ForceApp.APP.logout();
 				}
-			});
-		}
+				
+				ExplorerActivity.this.client = client;
+
+				printHeader("RestClient");
+				println(client);
+			}
+		});
 	}
 
 	@Override
@@ -508,6 +506,8 @@ public class ExplorerActivity extends TabActivity {
 	private void sendRequest(RestRequest request) {
 		hideKeyboard();
 
+		ForceApp.APP.getPasscodeManager().recordUserInteraction();
+		
 		println("");
 		printHeader(request);
 
