@@ -81,7 +81,6 @@ public class ExplorerActivity extends TabActivity {
 	private static final String SINGLE_LINE = "------------------------------------------------------------------------------";
 	private static final int LOGOUT_CONFIRMATION_DIALOG_ID = 0;
 
-	private String accountType;
 	private String apiVersion;
 	private RestClient client;
 	private TextView resultText;
@@ -98,9 +97,6 @@ public class ExplorerActivity extends TabActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		// Account type
-		accountType = getString(R.string.account_type);		
-		
 		// ApiVersion
 		apiVersion = getString(R.string.api_version);
 
@@ -128,22 +124,31 @@ public class ExplorerActivity extends TabActivity {
 		// Make result area scrollable
 		resultText = (TextView) findViewById(R.id.result_text);
 		resultText.setMovementMethod(new ScrollingMovementMethod());
-
-		// First get a rest client - this will bring up the login screen if
-		// needed
-		new ClientManager(this, accountType, null /* FIXME build hash from user pin */).getRestClient(this, new RestClientCallback() {
-			@Override
-			public void authenticatedRestClient(RestClient client) {
-				if (client == null) {
-					ForceApp.APP.logout(accountType);
+		
+		// Bring up passcode screen if needed
+		ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
+	}
+	
+	@Override 
+	public void onResume() {
+		super.onResume();
+		
+		// Get a rest client if we don't already have one - this will bring up the login screen if needed
+		if (client == null) {
+			new ClientManager(this, ForceApp.APP.getAccountType(), ForceApp.APP.getPasscodeManager().getUserPasscode()).getRestClient(this, new RestClientCallback() {
+				@Override
+				public void authenticatedRestClient(RestClient client) {
+					if (client == null) {
+						ForceApp.APP.logout();
+					}
+					
+					ExplorerActivity.this.client = client;
+	
+					printHeader("RestClient");
+					println(client);
 				}
-				
-				ExplorerActivity.this.client = client;
-
-				printHeader("RestClient");
-				println(client);
-			}
-		});
+			});
+		}
 	}
 
 	@Override
@@ -156,7 +161,7 @@ public class ExplorerActivity extends TabActivity {
 							@Override
 							public void onClick(DialogInterface dialog,
 									int which) {
-								ForceApp.APP.logout(accountType);
+								ForceApp.APP.logout();
 							}
 						})
 				.setNegativeButton(R.string.logout_cancel, null)

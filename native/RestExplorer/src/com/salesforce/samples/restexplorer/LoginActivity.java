@@ -39,7 +39,6 @@ import com.salesforce.androidsdk.auth.OAuth2;
 
 /**
  * Activity responsible for login
- *
  */
 public class LoginActivity extends AbstractLoginActivity {
 	

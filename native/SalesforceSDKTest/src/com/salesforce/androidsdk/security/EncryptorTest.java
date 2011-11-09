@@ -35,7 +35,7 @@ import android.test.InstrumentationTestCase;
  */
 public class EncryptorTest extends InstrumentationTestCase {
 
-	private static final String[] TEST_KEYS = new String[] {null, "test1234", "123456"};
+	private static final String[] TEST_KEYS = new String[] {null, makeKey("test1234"), makeKey("123456")};
 	private static final String[] TEST_DATA = new String[] {"hello world", "fake-token"};
 
 	@Override
@@ -73,7 +73,7 @@ public class EncryptorTest extends InstrumentationTestCase {
 	 * Make sure that two distinct strings have different encryption.
 	 */
 	public void testEncryptDecryptWithDifferentData() {
-		String key = "123456";
+		String key = makeKey("123456");
 		for (String data : TEST_DATA) {
 			assertFalse("Encrypted string should be different from original", data.equals(Encryptor.encrypt(data, key)));
 			assertEquals("Decrypt should restore original", data, Encryptor.decrypt(Encryptor.encrypt(data, key), key));
@@ -100,5 +100,12 @@ public class EncryptorTest extends InstrumentationTestCase {
 		}
 	}
 
+	/**
+	 * @param passcode
+	 * @return base64 encoded 256 bits key based on passcode 
+	 */
+	private static String makeKey(String passcode) {
+		return Encryptor.hash(passcode, "hashing-key", "data-salt", "key-salt");
+	}
 	
 }

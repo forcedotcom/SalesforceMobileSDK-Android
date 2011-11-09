@@ -26,30 +26,39 @@
  */
 package com.salesforce.samples.restexplorer;
 
-import android.app.Activity;
 
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.AbstractLoginActivity;
+import android.widget.EditText;
+import android.widget.TextView;
 
+import com.salesforce.androidsdk.security.AbstractPasscodeActivity;
 
 /**
- * Application class for our rest explorer
+ * Activity responsible for passcode creation/validation
  */
-public class RestExplorerApp extends ForceApp {
+public class PasscodeActivity extends AbstractPasscodeActivity {
 
 	@Override
-	public Class<? extends AbstractLoginActivity> getLoginActivityClass() {
-		return LoginActivity.class;
-	}
-	
-	@Override
-	public String getAccountType() {
-		return getString(R.string.account_type);		
+	protected int getLayoutId() {
+		return R.layout.passcode;
 	}
 
 	@Override
-	public Class<? extends Activity> getPasscodeActivityClass() {
-		return PasscodeActivity.class;
+	protected TextView getTitleView() {
+		return (TextView) findViewById(R.id.passcode_title);
 	}
 
+	@Override
+	protected TextView getErrorView() {
+		return (TextView) findViewById(R.id.passcode_error);
+	}
+
+	@Override
+	protected TextView getInstructionsView() {
+		return (TextView) findViewById(R.id.passcode_instructions);
+	}
+
+	@Override
+	protected EditText getEntryView() {
+		return (EditText) findViewById(R.id.passcode_text);
+	}
 }

@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.security;
 
-import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -34,6 +33,7 @@ import java.security.NoSuchAlgorithmException;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -45,17 +45,12 @@ import android.util.Base64;
 import android.util.Log;
 
 /**
- * Helper class to encrypt/decrypt strings
+ * Helper class for encryption/decryption/hash computations
  */
 public class Encryptor {
 	private static final String UTF8 = "UTF-8";
-    private static final String algorithm = "AES";
-    private static final String encryptXform = "AES/ECB/NoPadding";
-    private static final String decryptXform = "AES/ECB/NoPadding";
-    
-    // Instead of static screen we could use something unique to the device
-    private static final String MASTER_KEY = "hif^'qh*=j91qQr,m#RZsagwQkYDJr}[";
-	private static final String NOISE = "jEgN,s.c:v7(^hTV\\1Ra-Im%bSPzTPY*";
+    private static final String CIPHER_TRANSFORMATION = "AES/ECB/NoPadding";
+    private static final String MAC_TRANSFORMATION = "HmacSHA256";
 
 	private static boolean isFileSystemEncrypted;
     
@@ -65,7 +60,7 @@ public class Encryptor {
 	 * @throws GeneralSecurityException
 	 */
 	public static boolean init(Context ctx) {
-		// Check if filesystem is available and active 
+		// Check if file system encryption is available and active 
 		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
 			isFileSystemEncrypted = false;
 		}
@@ -75,14 +70,12 @@ public class Encryptor {
 			isFileSystemEncrypted = devicePolicyManager.getStorageEncryptionStatus() == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE;
 		}
 		
-		// Initialize encryption module
+		// Make sure the cryptographic transformations we want to use are available
 		try {
-	    	byte[] masterKeyBytes = MASTER_KEY.getBytes(UTF8);
-	        SecretKeySpec skeySpec = new SecretKeySpec(masterKeyBytes, algorithm);
-	        Cipher cipher = Cipher.getInstance(decryptXform);
-	        cipher.init(Cipher.DECRYPT_MODE, skeySpec);
+			Cipher.getInstance(CIPHER_TRANSFORMATION);
+			Mac.getInstance(MAC_TRANSFORMATION);
 		}
-		catch (Exception e) {
+		catch (GeneralSecurityException e) {
 			Log.w("Encryptor:init", e);
 			return false;
 		}
@@ -101,7 +94,7 @@ public class Encryptor {
     /**
      * Decrypt data with key using aes256
      * @param data
-     * @param key when null - data is returned unchanged
+     * @param key base64 encoded 256 bits key or null to leave data unchanged
      * @return decrypted data
      */
     public static String decrypt(String data, String key) {
@@ -109,9 +102,8 @@ public class Encryptor {
     		return data;
 
     	try {
-        	byte[] keyBytes = getKeyBytes(key);
-
         	// Decode with base64
+    		byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = Base64.decode(data, Base64.DEFAULT);
             
             // Decrypt with aes256
@@ -137,7 +129,7 @@ public class Encryptor {
     /**
      * Encrypt data with key using aes256
      * @param data
-     * @param key when null - data is returned unchanged
+     * @param key base64 encoded 256 bits key or null to leave data unchanged
      * @return base64, aes256 encrypted data
      */
     public static String encrypt(String data, String key) {
@@ -145,9 +137,8 @@ public class Encryptor {
     		return data;
     	
         try {
-        	byte[] keyBytes = getKeyBytes(key);
-        	
-            // Encrypt with aes256, use 0 as the padding value, not the default of 0xFF
+        	// Encrypt with aes256, use 0 as the padding value, not the default of 0xFF
+        	byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = data.getBytes(UTF8);
             byte[] encryptedData = encrypt(dataBytes, keyBytes, (byte)0);
             
@@ -156,6 +147,35 @@ public class Encryptor {
             
         } catch (Exception ex) {
             Log.w("Encryptor:encrypt", "error during encryption", ex);
+            return null;
+        }
+    }
+    
+    /**
+     * Return hmac-sha256 hash of data using key
+     * @param data
+     * @param key
+     * @param dataSalt
+     * @param keySalt
+     * @return
+     */
+    public static String hash(String data, String key, String dataSalt, String keySalt) {
+    	try {
+			
+			// Sign with sha256
+			byte [] keyBytes = (keySalt+key).getBytes(UTF8);
+			byte [] dataBytes = (dataSalt+data).getBytes(UTF8);
+
+			Mac sha = Mac.getInstance(MAC_TRANSFORMATION);
+			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());
+			sha.init(keySpec);
+			byte [] sig = sha.doFinal(dataBytes);
+
+			// Encode with bas64
+			return Base64.encodeToString(sig, Base64.DEFAULT);
+			
+        } catch (Exception ex) {
+            Log.w("Encryptor:hash", "error during hashing", ex);
             return null;
         }
     }
@@ -189,8 +209,8 @@ public class Encryptor {
         length = len;
 
         // encrypt
-        SecretKeySpec skeySpec = new SecretKeySpec(key, algorithm);
-        Cipher cipher = Cipher.getInstance(encryptXform);
+        Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
+        SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
         cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
         return cipher.doFinal(padded);
     }
@@ -210,19 +230,9 @@ public class Encryptor {
      */
     private static byte[] decrypt(byte[] data, int offset, int length, byte[] key) throws NoSuchAlgorithmException,
             NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-    	SecretKeySpec skeySpec = new SecretKeySpec(key, algorithm);
-        Cipher cipher = Cipher.getInstance(decryptXform);
+        Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
+    	SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
         cipher.init(Cipher.DECRYPT_MODE, skeySpec);
-    	
         return cipher.doFinal(data, offset, length);
-    }
-    
-    /**
-     * @param keyString
-     * @return 256 bytes key built from keyString 
-     * @throws UnsupportedEncodingException 
-     */
-    private static byte[] getKeyBytes(String keyString) throws UnsupportedEncodingException {
-    	return (keyString + NOISE).substring(0, 32).getBytes(UTF8); 
     }
 }

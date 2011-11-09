@@ -58,7 +58,7 @@ public class OAuth2Test extends TestCase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		httpAccess = new HttpAccess(null);		
+		httpAccess = new HttpAccess(null, "dummy-agent");		
 	}
 	
 	@Override

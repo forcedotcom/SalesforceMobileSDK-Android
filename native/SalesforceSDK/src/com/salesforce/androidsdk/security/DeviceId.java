@@ -24,32 +24,41 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.restexplorer;
+package com.salesforce.androidsdk.security;
 
-import android.app.Activity;
+import java.util.UUID;
 
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.AbstractLoginActivity;
-
+import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 
 /**
- * Application class for our rest explorer
+ * See http://stackoverflow.com/questions/2785485/is-there-a-unique-android-device-id
+ * and http://android-developers.blogspot.com/2011/03/identifying-app-installations.html
+ *
+ * for good info/commentary on all the issues related to a deviceId. We'll skip that and use
+ * a one per install generated Id.
  */
-public class RestExplorerApp extends ForceApp {
+public class DeviceId {
 
-	@Override
-	public Class<? extends AbstractLoginActivity> getLoginActivityClass() {
-		return LoginActivity.class;
+	private static final String PREF_NAME = "device";
+	private static final String KEY_DEVICE_ID ="deviceId";
+	private static String id;
+	
+	public static synchronized String getDeviceId(Context ctx) {
+		if (id != null) return id;
+		SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+		if (!sp.contains(KEY_DEVICE_ID)) {
+			final String devId = UUID.randomUUID().toString();
+			Editor e = sp.edit();
+			e.putString(KEY_DEVICE_ID, Encryptor.encrypt(devId, getKey()));
+			e.commit();
+		}
+		id = Encryptor.decrypt(sp.getString(KEY_DEVICE_ID, null), getKey());
+		return id;
 	}
 	
-	@Override
-	public String getAccountType() {
-		return getString(R.string.account_type);		
+	private static String getKey() {
+		return "5L/sZbQBhIcGs+dkP1GZHITEYDbV1AyFUgSEoYylDAk=";
 	}
-
-	@Override
-	public Class<? extends Activity> getPasscodeActivityClass() {
-		return PasscodeActivity.class;
-	}
-
 }

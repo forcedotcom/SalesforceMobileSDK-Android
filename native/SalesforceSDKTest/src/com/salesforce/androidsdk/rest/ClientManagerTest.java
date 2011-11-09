@@ -52,7 +52,7 @@ import com.salesforce.androidsdk.security.Encryptor;
 
 public class ClientManagerTest extends InstrumentationTestCase {
 
-	private static final String TEST_PASSCODE_HASH = "test_passcode_hash";
+	private static final String TEST_PASSCODE_HASH = Encryptor.hash("passcode", "hash-key", "data-salt", "key-salt");
 	private static final String TEST_ORG_ID = "test_org_id";
 	private static final String TEST_USER_ID = "test_user_id";
 	private static final String TEST_USERNAME = "test_username";
@@ -396,7 +396,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		
 		// Peek rest client
 		RestClient restClient = clientManager.peekRestClient();
-		restClient.setHttpAccessor(new HttpAccess(null)); // clientManager initializes the client with HttpAccess.DEFAULT -- but that's null without an app 
+		restClient.setHttpAccessor(new HttpAccess(null, "dummy-agent")); // clientManager initializes the client with HttpAccess.DEFAULT -- but that's null without an app 
 		
 		// Check the client
 		assertEquals("RestClient should be using authToken from account", badToken, restClient.getAuthToken());

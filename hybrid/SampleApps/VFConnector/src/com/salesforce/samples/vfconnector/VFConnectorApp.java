@@ -26,6 +26,8 @@
  */
 package com.salesforce.samples.vfconnector;
 
+import android.app.Activity;
+
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AbstractLoginActivity;
 
@@ -40,6 +42,16 @@ public class VFConnectorApp extends ForceApp {
 	@Override
 	public Class<? extends AbstractLoginActivity> getLoginActivityClass() {
 		return LoginActivity.class;
+	}
+
+	@Override
+	public String getAccountType() {
+		return getString(R.string.account_type);
+	}
+
+	@Override
+	public Class<? extends Activity> getPasscodeActivityClass() {
+		return null;
 	}
 	
 }

@@ -57,7 +57,7 @@ public class HttpAccessTest extends TestCase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		httpAccess = new HttpAccess(null);
+		httpAccess = new HttpAccess(null, "dummy-agent");
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
 		headers = new HashMap<String, String>();
 		headers.put("Content-Type", "application/json");
