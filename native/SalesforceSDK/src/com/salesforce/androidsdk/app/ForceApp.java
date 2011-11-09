@@ -73,10 +73,10 @@ public abstract class ForceApp extends Application  {
      * Remove user account and launch the login activity with a clean task stack.
      */
     public void logout() {
-    	new ClientManager(this, getAccountType(), null /* we just want to removed accounts, we don't need the actual value */).removeAccountAsync(null);
+    	new ClientManager(this).removeAccountAsync(null);
     	Intent i = new Intent(this, getLoginActivityClass());
     	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-    	i.putExtra(AuthenticatorService.PASSCODE_HASH, getPasscodeManager().getUserPasscode());
+    	i.putExtra(AuthenticatorService.PASSCODE_HASH, getPasscodeManager().getPasscodeHash());
     	this.startActivity(i);
     }
     

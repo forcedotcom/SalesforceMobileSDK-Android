@@ -29,7 +29,7 @@ public class VFConnectorActivity extends DroidGap {
         this.addWhiteListEntry("force.com", true);
         this.addWhiteListEntry("salesforce.com", true);
                 
-		new ClientManager(this, ForceApp.APP.getAccountType(), null /* FIXME build hash from user pin */)
+		new ClientManager(this)
 			.getRestClient(this, new RestClientCallback() {
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {

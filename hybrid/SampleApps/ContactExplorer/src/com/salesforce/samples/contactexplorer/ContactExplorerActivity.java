@@ -23,7 +23,7 @@ public class ContactExplorerActivity extends DroidGap {
         
         super.loadUrl("file:///android_asset/www/index.html");
         
-		new ClientManager(this, ForceApp.APP.getAccountType(), null /* FIXME build hash from user pin */).getRestClient(this, new RestClientCallback() {
+		new ClientManager(this).getRestClient(this, new RestClientCallback() {
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
 					ForceApp.APP.logout();

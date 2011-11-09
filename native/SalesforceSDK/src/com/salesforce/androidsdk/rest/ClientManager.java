@@ -42,6 +42,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.security.Encryptor;
@@ -57,6 +58,14 @@ public class ClientManager {
 	private final String accountType;
 	private String passcodeHash;
 
+	/**
+	 * Construct a ClientManager using the app's accountType and passcodeHash
+	 * @param ctx
+	 */
+	public ClientManager(Context ctx) {
+		this(ctx, ForceApp.APP.getAccountType(), ForceApp.APP.getPasscodeManager().getPasscodeHash());
+	}
+	
 	/**
 	 * Construct a ClientManager using a custom account type
 	 * @param ctx

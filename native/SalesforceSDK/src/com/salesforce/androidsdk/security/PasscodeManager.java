@@ -134,7 +134,7 @@ public class PasscodeManager  {
 	/** 
 	 * @return a hash of the passcode that can be used for encrypting oauth tokens
 	 */
-	public String getUserPasscode() {
+	public String getPasscodeHash() {
 		return passcodeHash;
 	}
 	

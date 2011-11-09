@@ -139,7 +139,7 @@ public class ExplorerActivity extends TabActivity {
 		}
 		
 		// Get a rest client
-		new ClientManager(this, ForceApp.APP.getAccountType(), ForceApp.APP.getPasscodeManager().getUserPasscode()).getRestClient(this, new RestClientCallback() {
+		new ClientManager(this).getRestClient(this, new RestClientCallback() {
 			@Override
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
