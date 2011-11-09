@@ -32,6 +32,7 @@ import android.content.Intent;
 import android.os.Build;
 
 import com.salesforce.androidsdk.auth.AbstractLoginActivity;
+import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.Encryptor;
@@ -75,6 +76,7 @@ public abstract class ForceApp extends Application  {
     	new ClientManager(this, getAccountType(), null /* we just want to removed accounts, we don't need the actual value */).removeAccountAsync(null);
     	Intent i = new Intent(this, getLoginActivityClass());
     	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    	i.putExtra(AuthenticatorService.PASSCODE_HASH, getPasscodeManager().getUserPasscode());
     	this.startActivity(i);
     }
     

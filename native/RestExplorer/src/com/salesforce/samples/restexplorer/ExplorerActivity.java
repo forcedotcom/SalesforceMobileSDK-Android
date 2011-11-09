@@ -133,6 +133,11 @@ public class ExplorerActivity extends TabActivity {
 	public void onResume() {
 		super.onResume();
 		
+		// Do nothing - when the app gets unlocked we will be back here
+		if (ForceApp.APP.getPasscodeManager().isLocked()) {
+			return;
+		}
+		
 		// Get a rest client if we don't already have one - this will bring up the login screen if needed
 		if (client == null) {
 			new ClientManager(this, ForceApp.APP.getAccountType(), ForceApp.APP.getPasscodeManager().getUserPasscode()).getRestClient(this, new RestClientCallback() {
