@@ -124,14 +124,14 @@ public class ExplorerActivity extends TabActivity {
 		// Make result area scrollable
 		resultText = (TextView) findViewById(R.id.result_text);
 		resultText.setMovementMethod(new ScrollingMovementMethod());
-		
-		// Bring up passcode screen if needed
-		ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
 	}
 	
 	@Override 
 	public void onResume() {
 		super.onResume();
+
+		// Bring up passcode screen if needed
+		ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
 		
 		// Do nothing - when the app gets unlocked we will be back here
 		if (ForceApp.APP.getPasscodeManager().isLocked()) {
@@ -143,15 +143,17 @@ public class ExplorerActivity extends TabActivity {
 			@Override
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
-					ForceApp.APP.logout();
+					ForceApp.APP.logout(ExplorerActivity.this);
+					return;
 				}
-				
 				ExplorerActivity.this.client = client;
-
-				printHeader("RestClient");
-				println(client);
 			}
 		});
+	}
+	
+	@Override
+	public void onUserInteraction() {
+		ForceApp.APP.getPasscodeManager().recordUserInteraction();
 	}
 
 	@Override
@@ -164,7 +166,7 @@ public class ExplorerActivity extends TabActivity {
 							@Override
 							public void onClick(DialogInterface dialog,
 									int which) {
-								ForceApp.APP.logout();
+								ForceApp.APP.logout(ExplorerActivity.this);
 							}
 						})
 				.setNegativeButton(R.string.logout_cancel, null)
@@ -185,6 +187,15 @@ public class ExplorerActivity extends TabActivity {
 	 * Buttons click handlers
 	 * 
 	 **************************************************************************************************/
+
+	/**
+	 * Called when "print info" button is clicked.
+	 * 
+	 * @param v
+	 */
+	public void onPrintInfoClick(View v) {
+		printInfo();
+	}
 
 	/**
 	 * Called when "clear" button is clicked.
@@ -506,8 +517,6 @@ public class ExplorerActivity extends TabActivity {
 	private void sendRequest(RestRequest request) {
 		hideKeyboard();
 
-		ForceApp.APP.getPasscodeManager().recordUserInteraction();
-		
 		println("");
 		printHeader(request);
 
@@ -630,6 +639,15 @@ public class ExplorerActivity extends TabActivity {
 					- resultText.getHeight();
 			resultText.scrollTo(0, scroll > 0 ? scroll : 0);
 		}
+	}
+	
+	/**
+	 * Dump info about app and rest client 
+	 */
+	private void printInfo() {
+		printHeader("Info");
+		println(ForceApp.APP);
+		println(client);
 	}
 
 	/**

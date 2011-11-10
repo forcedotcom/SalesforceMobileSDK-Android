@@ -30,6 +30,7 @@ import android.app.Activity;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AbstractLoginActivity;
+import com.salesforce.androidsdk.security.AbstractPasscodeActivity;
 
 
 /**
@@ -40,8 +41,18 @@ import com.salesforce.androidsdk.auth.AbstractLoginActivity;
 public class VFConnectorApp extends ForceApp {
 
 	@Override
+	public Class<? extends Activity> getMainActivityClass() {
+		return VFConnectorActivity.class;
+	}
+	
+	@Override
 	public Class<? extends AbstractLoginActivity> getLoginActivityClass() {
 		return LoginActivity.class;
+	}
+
+	@Override
+	public Class<? extends AbstractPasscodeActivity> getPasscodeActivityClass() {
+		return null;
 	}
 
 	@Override
@@ -50,8 +61,12 @@ public class VFConnectorApp extends ForceApp {
 	}
 
 	@Override
-	public Class<? extends Activity> getPasscodeActivityClass() {
-		return null;
+	public int getLockTimeoutMinutes() {
+		return 0;
 	}
-	
+
+	@Override
+	protected String getKey(String name) {
+		return null; 
+	}
 }

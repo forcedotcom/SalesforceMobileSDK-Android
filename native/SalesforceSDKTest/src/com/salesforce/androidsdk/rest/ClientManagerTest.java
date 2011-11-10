@@ -52,7 +52,7 @@ import com.salesforce.androidsdk.security.Encryptor;
 
 public class ClientManagerTest extends InstrumentationTestCase {
 
-	private static final String TEST_PASSCODE_HASH = Encryptor.hash("passcode", "hash-key", "data-salt", "key-salt");
+	private static final String TEST_PASSCODE_HASH = Encryptor.hash("passcode", "hash-key");
 	private static final String TEST_ORG_ID = "test_org_id";
 	private static final String TEST_USER_ID = "test_user_id";
 	private static final String TEST_USERNAME = "test_username";

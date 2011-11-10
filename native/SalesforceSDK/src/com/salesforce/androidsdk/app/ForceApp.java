@@ -26,23 +26,36 @@
  */
 package com.salesforce.androidsdk.app;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.accounts.OnAccountsUpdateListener;
 import android.app.Activity;
 import android.app.Application;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.Build;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.auth.AbstractLoginActivity;
-import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.security.AbstractPasscodeActivity;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
 
 /**
  * Super class for all force applications.
  * You should extend this class or make sure to initialize HttpAccess in your application's onCreate method.
  */
-public abstract class ForceApp extends Application  {
+public abstract class ForceApp extends Application implements OnAccountsUpdateListener  {
 
 	// current SDK version
     public static final String SDK_VERSION = "0.9";
@@ -52,6 +65,9 @@ public abstract class ForceApp extends Application  {
     
     // passcode manager
     private PasscodeManager passcodeManager;
+    
+    // to avoid logout re-entry
+    private boolean inLogout = false;
     
     
     @Override
@@ -66,18 +82,80 @@ public abstract class ForceApp extends Application  {
         HttpAccess.init(this, getUserAgent());
         
         // Initialize the passcode manager
-        passcodeManager = new PasscodeManager(this, getLockTimeoutMinutes(), getPasscodeActivityClass());
+		passcodeManager = new PasscodeManager(this, getLockTimeoutMinutes(),
+				getPasscodeActivityClass(), getVerificationHashConfig(),
+				getEncryptionHashConfig());
+		
+		// Listen for accounts update
+		AccountManager.get(this).addOnAccountsUpdatedListener(this, null, false);
     }
+    
+    @Override
+    public void onTerminate() {
+    	AccountManager.get(this).removeOnAccountsUpdatedListener(this);
+        super.onTerminate();
+    }    
 
 	/**
-     * Remove user account and launch the login activity with a clean task stack.
+	 * @return passcodeManager
+	 */
+	public PasscodeManager getPasscodeManager() {
+		return passcodeManager;
+	}
+
+    /**
+     * @return hash salts + key to use for creating the hash of the passcode used for encryption
+	 * Unique for installation.
      */
-    public void logout() {
+    protected HashConfig getEncryptionHashConfig() {
+		return new HashConfig(getUuId("eprefix"), getUuId("esuffix"), getUuId("ekey"));
+	}
+
+    /**
+     * @return hash salt + key to use for creating the hash of the passcode used for verification
+     * Unique to the installation.
+     */
+	protected HashConfig getVerificationHashConfig() {
+		return new HashConfig(getUuId("vprefix"), getUuId("vsuffix"), getUuId("vkey"));
+	}
+	
+	@Override
+    public void onAccountsUpdated(Account[] accounts) {
+		if (inLogout) {
+			return;
+		}
+		
+        // see if there's an entry for our account type, if not fire the callback
+        for (Account a : accounts) {
+            if (getAccountType().equals(a.type)) return;
+        }
+        logout(null);
+    }	
+	
+	/**
+     * Wipe out stored auth (remove account) and restart app
+     */
+    public void logout(Activity frontActivity) {
+    	inLogout = true;
+    	
+    	// Finish front activity if specified
+    	if (frontActivity != null) {
+    		frontActivity.finish();
+    	}
+    	
+    	// Remove account if any
     	new ClientManager(this).removeAccountAsync(null);
-    	Intent i = new Intent(this, getLoginActivityClass());
-    	i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-    	i.putExtra(AuthenticatorService.PASSCODE_HASH, getPasscodeManager().getPasscodeHash());
-    	this.startActivity(i);
+    	
+        // Clear cookies 
+        CookieSyncManager.createInstance(this);
+        CookieManager.getInstance().removeAllCookie();
+    	
+        // Restart application
+        Intent i = new Intent(this, getMainActivityClass());
+        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(i);
+        
+        inLogout = false;
     }
     
     /**
@@ -91,37 +169,74 @@ public abstract class ForceApp extends Application  {
 	    return "SalesforceMobileSDK/" + SDK_VERSION + " android/"+ Build.VERSION.RELEASE;
 	}
 
-	/**
-	 * @return passcodeManager
-	 */
-	public PasscodeManager getPasscodeManager() {
-		return passcodeManager;
-	}
-	
-	/**
-	 * @return lock timeout in minutes or 0 for never 
-	 */
-	public int getLockTimeoutMinutes() {
-		if (Encryptor.isFileSystemEncrypted()) {
-			return 0; // never
-		}
-		else {
-			return 5;
-		}
-	}
-	
+    @Override
+    public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(this.getClass()).append(": {\n")
+		  .append("   accountType: ").append(getAccountType()).append("\n")
+		  .append("   userAgent: ").append(getUserAgent()).append("\n")
+		  .append("   loginActivityClass: ").append(getLoginActivityClass()).append("\n")
+		  .append("   passcodeActivityClass: ").append(getPasscodeActivityClass()).append("\n")
+		  .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n")
+		  .append("   lockTimeoutMinutes: ").append(getLockTimeoutMinutes()).append("\n")
+		  .append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n")
+		  .append("}\n");
+		return sb.toString();
+
+    }
+
     /**
+	 * If you return 0, the user will not have to enter a passcode
+	 * Only use that option if file system encryption is on
+	 * @return lock timeout in minutes or 0 for never
+	 *  
+	 */
+	abstract public int getLockTimeoutMinutes();
+	
+
+    /**
+     * @return class for main activity
+     */
+	abstract public Class<? extends Activity> getMainActivityClass();
+	
+	/**
      * @return class for login activity
      */
-    public abstract Class<? extends AbstractLoginActivity> getLoginActivityClass();
+	abstract public Class<? extends AbstractLoginActivity> getLoginActivityClass();
 
     /**
      * @return class for passcode activity
      */
-    public abstract Class<? extends Activity> getPasscodeActivityClass();
+    abstract public Class<? extends AbstractPasscodeActivity> getPasscodeActivityClass();
     
     /**
      * @return account type (should match authenticator.xml)
      */
-    public abstract String getAccountType();
+    abstract public String getAccountType();
+
+	/*
+	 * Random keys persisted encrypted in a private preference file
+	 * This is provided as an example.
+	 * We recommend you provide you own implementation for creating the HashConfig's.
+	 * 
+	 */
+	private Map<String, String> uuids = new HashMap<String, String>();
+	private synchronized String getUuId(String name) {
+		if (uuids.get(name) != null) return uuids.get(name);
+		SharedPreferences sp = getSharedPreferences("uuids", Context.MODE_PRIVATE);
+		if (!sp.contains(name)) {
+			String uuid = UUID.randomUUID().toString();
+			Editor e = sp.edit();
+			e.putString(name, Encryptor.encrypt(uuid, getKey(name)));
+			e.commit();
+		}
+		return Encryptor.decrypt(sp.getString(name, null), getKey(name));
+	}
+	
+	/**
+	 * This function must return the same value for name even when application is restarted 
+	 * @param name
+	 * @return key for encrypting salts and keys 
+	 */
+	protected abstract String getKey(String name);
 }

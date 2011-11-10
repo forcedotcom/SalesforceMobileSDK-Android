@@ -58,6 +58,7 @@ public class RestClient {
 	public interface AuthTokenProvider {
 		public String getNewAuthToken();
 		public String getRefreshToken();
+		public long getLastRefreshTime();
 	}
 	
     /**
@@ -96,11 +97,15 @@ public class RestClient {
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("   baseUrl: ").append(baseUrl.toString()).append(",\n")
-		  .append("   authToken: ").append(authToken).append("\n")
+		sb.append("RestClient: {\n")
+		  .append("   baseUrl: ").append(baseUrl.toString()).append("\n")
 		  .append("   username: ").append(username).append("\n")
 		  .append("   userId: ").append(userId).append("\n")
-		  .append("   orgId: ").append(orgId).append("\n");
+		  .append("   orgId: ").append(orgId).append("\n")
+		  .append("   authToken: ").append(authToken).append("\n")
+		  .append("   refreshToken: ").append(getRefreshToken()).append("\n")
+		  .append("   timeSinceLastRefresh: ").append(getElapsedTimeSinceLastRefresh()).append("\n")
+		  .append("}\n");
 		return sb.toString();
 	}
 	
@@ -116,6 +121,19 @@ public class RestClient {
 	 */
 	public String getRefreshToken() {
 		return (authTokenProvider != null ? authTokenProvider.getRefreshToken() : null);
+	}
+
+	/**
+	 * @return elapsed time (ms) since last refresh
+	 */
+	public long getElapsedTimeSinceLastRefresh() {
+		long lastRefreshTime = (authTokenProvider != null ? authTokenProvider.getLastRefreshTime() : -1);
+		if (lastRefreshTime < 0) {
+			return -1;
+		}
+		else {
+			return System.currentTimeMillis() - lastRefreshTime;
+		}
 	}
 	
 	/**

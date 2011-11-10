@@ -121,6 +121,11 @@ public class RestClientTest extends TestCase {
 			public String getRefreshToken() {
 				return null;
 			}
+
+			@Override
+			public long getLastRefreshTime() {
+				return -1;
+			}
 		};
 		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, authTokenProvider, null, null, null);
 

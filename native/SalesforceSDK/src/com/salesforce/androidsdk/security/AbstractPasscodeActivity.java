@@ -42,8 +42,8 @@ import com.salesforce.androidsdk.app.ForceApp;
  */
 public abstract class AbstractPasscodeActivity extends Activity implements OnEditorActionListener {
 
-	protected static final int MAX_PASSCODE_ATTEMPTS = 10;
-	protected static final int MIN_PASSCODE_LENGTH = 4;
+	protected static final int MAX_PASSCODE_ATTEMPTS = 3;
+	protected static final int MIN_PASSCODE_LENGTH = 6;
 
 	private PasscodeMode currentMode;
 	private TextView title, instr, error;
@@ -100,7 +100,7 @@ public abstract class AbstractPasscodeActivity extends Activity implements OnEdi
 		entry.requestFocus();
 	}
 	
-    // OnEditorActionListener
+	@Override
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
     	Log.i("onEditorAction", "view=" + v + " actionId=" + actionId + " event=" + event);
     	String pc = entry.getText().toString();
@@ -125,7 +125,7 @@ public abstract class AbstractPasscodeActivity extends Activity implements OnEdi
 				finish();
 			}
 			else {
-				error.setText(getPasscodeDontMatchError());
+				error.setText(getPasscodesDontMatchError());
 			}
 			return true;
 
@@ -143,7 +143,8 @@ public abstract class AbstractPasscodeActivity extends Activity implements OnEdi
 				} else if (attempts < maxAttempts) {
 					error.setText(getPasscodeFinalAttemptError());
 				} else {
-					ForceApp.APP.logout();
+					passcodeManager.reset(this);
+					ForceApp.APP.logout(this);
 				}
 			}
 			return true;
@@ -259,7 +260,7 @@ public abstract class AbstractPasscodeActivity extends Activity implements OnEdi
 	 * Override to have a localized error message.
 	 * @return english error message for wrong passcode when only one attempt is left
 	 */
-	protected String getPasscodeDontMatchError() {
+	protected String getPasscodesDontMatchError() {
 		return "Passcodes don't match!";
 	}
 

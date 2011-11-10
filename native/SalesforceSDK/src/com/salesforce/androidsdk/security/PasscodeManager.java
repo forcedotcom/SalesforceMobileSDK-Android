@@ -38,6 +38,10 @@ import android.util.Log;
 /**
  * This class manages the inactivity timeout, and keeps track of if the UI should locked etc.
  */
+/**
+ * @author wmathurin
+ *
+ */
 public class PasscodeManager  {
 
 	// Key in preference for the passcode
@@ -46,15 +50,13 @@ public class PasscodeManager  {
 	// Private preference where we stored the passcode (hashed)
 	private static final String PREF_NAME = "user";
 
-	// Device id
-	private final String deviceId;
-
-	
 	// this is a hash of the passcode to be used as part of the key to encrypt/decrypt oauth tokens 
 	// It's using a different salt/key than the one used to verify the entry
 	private String passcodeHash;
 	
-	// Misc 
+	// Misc
+	private HashConfig verificationHashConfig;
+	private HashConfig encryptionHashConfig;
 	private int failedPasscodeAttempts;
 	private Activity frontActivity;
 	private Handler handler;
@@ -68,12 +70,17 @@ public class PasscodeManager  {
 	 * @param ctx
 	 * @param lockTimeoutMinutes
 	 * @param passcodeActivityClass
+	 * @param verificationHashConfig
+	 * @param encryptionHashConfig
 	 */
-	public PasscodeManager(Context ctx, int lockTimeoutMinutes, Class<? extends Activity> passcodeActivityClass) {
-		this.deviceId = DeviceId.getDeviceId(ctx);
+	public PasscodeManager(Context ctx, int lockTimeoutMinutes,
+			Class<? extends Activity> passcodeActivityClass,
+			HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
 		this.timeoutMs = lockTimeoutMinutes * 60 * 1000;
 		this.passcodeActivityClass = passcodeActivityClass;
 		this.lastActivity = now();
+		this.verificationHashConfig = verificationHashConfig;
+		this.encryptionHashConfig = encryptionHashConfig;
 
 		// Locked at app startup if you're authenticated
 		this.locked = true;
@@ -83,6 +90,20 @@ public class PasscodeManager  {
 			handler = new Handler();
 			handler.postDelayed(new LockChecker(), 20 * 1000);
 		}
+	}
+	
+	/**
+	 * Reset this passcode manager: delete stored passcode and reset fields to their starting value
+	 */
+	public void reset(Context ctx) {
+		lastActivity = now();
+		locked = true;
+		failedPasscodeAttempts = 0;
+		passcodeHash = null;
+		SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+		Editor e = sp.edit();
+		e.remove(KEY_PASSCODE);
+		e.commit();
 	}
 	
 	/** 
@@ -100,7 +121,7 @@ public class PasscodeManager  {
 	public boolean check(Context ctx, String passcode) {
 		SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
 		String hashedPasscode = sp.getString(KEY_PASSCODE, null);
-		return hashedPasscode.equals(hashForVerification(passcode));
+		return hashedPasscode.equals(hash(passcode, verificationHashConfig));
 	}
 	
 	/**
@@ -111,13 +132,13 @@ public class PasscodeManager  {
 	public void store(Context ctx, String passcode) {
 		SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
 		Editor e = sp.edit();
-		e.putString(KEY_PASSCODE, hashForVerification(passcode));
+		e.putString(KEY_PASSCODE, hash(passcode, verificationHashConfig));
 		e.commit();
 	}
 	
 	/**
 	 * @param ctx
-	 * @return true if passcode was already create
+	 * @return true if passcode was already created
 	 */
 	public boolean hasStoredPasscode(Context ctx) {
 		SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
@@ -193,14 +214,15 @@ public class PasscodeManager  {
 	public void showLockActivity(Context ctx) {
 		if (ctx == null) return;
 		Intent i = new Intent(ctx, passcodeActivityClass);
-		i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+		i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
 		ctx.startActivity(i);
 	}
 
 	public void unlock(String passcode) {
 		locked = false;
 		failedPasscodeAttempts = 0;
-		passcodeHash = hashForEncryption(passcode);
+		passcodeHash = hash(passcode, encryptionHashConfig);
 		updateLast();
 	}
 
@@ -212,14 +234,10 @@ public class PasscodeManager  {
 		lastActivity = now();
 	}
 
-	private String hashForEncryption(String passcode) {
-		return Encryptor.hash(passcode, deviceId, "slad123lkasx-9xas", "12lkju3az123njas0");
+	private String hash(String passcode, HashConfig hashConfig) {
+		return Encryptor.hash(hashConfig.prefix + passcode + hashConfig.suffix, hashConfig.key);
 	}
 	
-	private String hashForVerification(String passcode) {
-		return Encryptor.hash(passcode, deviceId, "12i12sa-9nkak.dsh", "aspoi1239-a1n23as");
-	}
-
 	/** 
 	 * Thread checking periodically to see how much has elapsed since the last recorded activity
  	 * When that elapsed time exceed timeoutMs, it locks the app
@@ -233,6 +251,20 @@ public class PasscodeManager  {
 			} finally {
 				handler.postDelayed(this, 20 * 1000);
 			}
+		}
+	}
+	
+	/**
+	 * Key for hashing and salts to be preprended and appended to data to increase entropy.
+	 */
+	public static class HashConfig {
+		public final String prefix;
+		public final String suffix;
+		public final String key;
+		public HashConfig(String prefix, String suffix, String key) {
+			this.prefix = prefix;
+			this.suffix = suffix;
+			this.key = key;
 		}
 	}
 

@@ -33,7 +33,7 @@ public class VFConnectorActivity extends DroidGap {
 			.getRestClient(this, new RestClientCallback() {
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
-					ForceApp.APP.logout();
+					ForceApp.APP.logout(VFConnectorActivity.this);
 					return;
 				}
 				

@@ -105,7 +105,7 @@ public class EncryptorTest extends InstrumentationTestCase {
 	 * @return base64 encoded 256 bits key based on passcode 
 	 */
 	private static String makeKey(String passcode) {
-		return Encryptor.hash(passcode, "hashing-key", "data-salt", "key-salt");
+		return Encryptor.hash(passcode, "hashing-key");
 	}
 	
 }

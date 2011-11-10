@@ -26,7 +26,7 @@ public class ContactExplorerActivity extends DroidGap {
 		new ClientManager(this).getRestClient(this, new RestClientCallback() {
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
-					ForceApp.APP.logout();
+					ForceApp.APP.logout(ContactExplorerActivity.this);
 					return;
 				}
 				

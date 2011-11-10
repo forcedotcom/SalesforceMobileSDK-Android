@@ -34,6 +34,7 @@
 
 	<!-- Explorer -->
 	<string name="explorer_title">@string/app_name</string>
+	<string name="print_info_button">Print Info</string>
 	<string name="clear_button">Clear</string>
 	<string name="logout_button">Logout</string>
 	<string name="versions_tab">Versions</string>

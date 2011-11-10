@@ -116,6 +116,7 @@ public class ExplorerActivityTest extends
 		TextView resultText = (TextView) getActivity().findViewById(R.id.result_text);
 		
 		// Putting some text in the result text area
+		setText(R.id.result_text, "dummy-text");
 		assertFalse("Result text area should not be empty", resultText.getText().length() == 0);
 		
 		// Click on clear

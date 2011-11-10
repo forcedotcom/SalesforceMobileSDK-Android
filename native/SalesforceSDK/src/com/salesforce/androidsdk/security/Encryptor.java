@@ -155,16 +155,14 @@ public class Encryptor {
      * Return hmac-sha256 hash of data using key
      * @param data
      * @param key
-     * @param dataSalt
-     * @param keySalt
      * @return
      */
-    public static String hash(String data, String key, String dataSalt, String keySalt) {
+    public static String hash(String data, String key) {
     	try {
 			
 			// Sign with sha256
-			byte [] keyBytes = (keySalt+key).getBytes(UTF8);
-			byte [] dataBytes = (dataSalt+data).getBytes(UTF8);
+			byte [] keyBytes = key.getBytes(UTF8);
+			byte [] dataBytes = data.getBytes(UTF8);
 
 			Mac sha = Mac.getInstance(MAC_TRANSFORMATION);
 			SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());

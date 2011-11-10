@@ -33,7 +33,7 @@
 		<!-- Login activity -->
 		<activity android:name=".LoginActivity" />
 
-		<!-- Login activity -->
+		<!-- Passcode activity -->
 		<activity android:name=".PasscodeActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
 		
 		<!-- Choose server activity -->
