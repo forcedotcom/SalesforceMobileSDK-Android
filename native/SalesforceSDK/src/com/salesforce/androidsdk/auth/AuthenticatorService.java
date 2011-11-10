@@ -176,6 +176,8 @@ public class AuthenticatorService extends Service {
 		private Bundle makeAuthIntentBundle(AccountAuthenticatorResponse response, Bundle options) {
             Bundle reply = new Bundle();
             Intent i = new Intent(context, ForceApp.APP.getLoginActivityClass());
+            i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
             i.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
             if (options != null)
                 i.putExtras(options);

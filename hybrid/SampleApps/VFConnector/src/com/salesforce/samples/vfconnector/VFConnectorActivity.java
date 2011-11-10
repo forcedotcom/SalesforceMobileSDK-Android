@@ -29,11 +29,11 @@ public class VFConnectorActivity extends DroidGap {
         this.addWhiteListEntry("force.com", true);
         this.addWhiteListEntry("salesforce.com", true);
                 
-        final String accountType = getString(R.string.account_type);
-		new ClientManager(this, accountType, null /* FIXME build hash from user pin */).getRestClient(this, new RestClientCallback() {
+		new ClientManager(this)
+			.getRestClient(this, new RestClientCallback() {
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
-					ForceApp.APP.logout(accountType);
+					ForceApp.APP.logout(VFConnectorActivity.this);
 					return;
 				}
 				

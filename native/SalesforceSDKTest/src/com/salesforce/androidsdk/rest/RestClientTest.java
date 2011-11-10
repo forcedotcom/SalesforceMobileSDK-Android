@@ -63,7 +63,7 @@ public class RestClientTest extends TestCase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		httpAccess = new HttpAccess(null);
+		httpAccess = new HttpAccess(null, null);
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
 		authToken = refreshResponse.authToken;
 		restClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), authToken, httpAccess, null, null, null, null);
@@ -120,6 +120,11 @@ public class RestClientTest extends TestCase {
 			@Override
 			public String getRefreshToken() {
 				return null;
+			}
+
+			@Override
+			public long getLastRefreshTime() {
+				return -1;
 			}
 		};
 		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, authTokenProvider, null, null, null);

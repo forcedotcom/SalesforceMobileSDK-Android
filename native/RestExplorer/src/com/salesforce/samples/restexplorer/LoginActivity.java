@@ -34,12 +34,12 @@ import android.content.SharedPreferences;
 import android.view.View;
 import android.widget.Toast;
 
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AbstractLoginActivity;
 import com.salesforce.androidsdk.auth.OAuth2;
 
 /**
  * Activity responsible for login
- *
  */
 public class LoginActivity extends AbstractLoginActivity {
 	
@@ -52,7 +52,15 @@ public class LoginActivity extends AbstractLoginActivity {
 	
 	// Request code when calling PickServerActivity
     public static final int PICK_SERVER_CODE = 10;
-	
+
+	@Override 
+	public void onResume() {
+		super.onResume();
+
+		// Bring up passcode screen first (unless we already have a passcode)
+		ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
+	}    
+    
     /**************************************************************************************************
      *
      * Implementations for abstract methods of AbstractLoginActivity

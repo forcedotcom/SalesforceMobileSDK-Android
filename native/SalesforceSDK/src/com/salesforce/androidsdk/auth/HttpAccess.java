@@ -47,12 +47,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.http.AndroidHttpClient;
-import android.os.Build;
-
 import android.util.Log;
 
 /**
@@ -73,7 +70,7 @@ public class HttpAccess extends BroadcastReceiver {
     private boolean    hasNetwork      = true;
     private int        currentNetworkSubType = -1;
     private String     networkFailReason;
-    protected String	defaultUserAgentString = "SalesforceMobileSDK/0.9 android/"+ Build.VERSION.RELEASE;
+    private String	   userAgent;
     
     // Connection manager
 	private final ConnectivityManager conMgr;
@@ -86,20 +83,23 @@ public class HttpAccess extends BroadcastReceiver {
 	 * Initialize HttpAccess
 	 * Should be called from application
 	 */
-	public static void init(Application app) {
+	public static void init(Application app, String userAgent) {
 		assert DEFAULT == null : "HttpAccess.init should be called once per process";
-		DEFAULT = new HttpAccess(app);
+		DEFAULT = new HttpAccess(app, userAgent);
 	}
 
 	/**
 	 * Constructor
 	 * @param ctx
 	 */
-	public HttpAccess(Application app) {
+	public HttpAccess(Application app, String userAgent) {
 		// Using android http client
         http = getHttpClient();
         ((AndroidHttpClient) http).enableCurlLogging("HttpAccess", Log.DEBUG);
 
+        // Set user agent
+        this.userAgent = userAgent;
+        
         // Only null in tests
         if (app == null) {
         	conMgr = null;
@@ -123,20 +123,9 @@ public class HttpAccess extends BroadcastReceiver {
 	 * @return
 	 */
 	private AndroidHttpClient getHttpClient() {
-		String uaStr = this.defaultUserAgentString;
-		return AndroidHttpClient.newInstance(uaStr, app);
+		return AndroidHttpClient.newInstance(userAgent, app);
 	}
 	
-	/**
-	 * Set the user agent string to be used for requests.
-	 * @param uaStr
-	 */
-	public void setUserAgentString(String uaStr) {
-		this.defaultUserAgentString = uaStr;
-	}
-
-
-
 	/**
 	 * Detects network changes and resetting network when needed 
 	 * 

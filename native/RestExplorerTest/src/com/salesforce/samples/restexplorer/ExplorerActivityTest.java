@@ -52,6 +52,7 @@ import android.widget.Button;
 import android.widget.TabHost;
 import android.widget.TextView;
 
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
 
@@ -65,7 +66,6 @@ import com.salesforce.androidsdk.rest.ClientManager;
 public class ExplorerActivityTest extends
 		BaseActivityInstrumentationTestCase<ExplorerActivity> {
 
-	private static final String TEST_PASSCODE_HASH = "q21opx09asd1!sad9p-=2#"; // matching static key currently used by ForceApp
 	private static final String TEST_ORG_ID = "test_org_id";	
 	private static final String TEST_USER_ID = "test_user_id";
 	private static final String TEST_CLIENT_ID = "test_client_d";
@@ -102,7 +102,8 @@ public class ExplorerActivityTest extends
 		super.setUp();
 		setActivityInitialTouchMode(false);
 		targetContext = getInstrumentation().getTargetContext();
-		clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), TEST_PASSCODE_HASH);
+		ForceApp.APP.getPasscodeManager().setTimeoutMs(0 /* never */);
+		clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null);
 		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
 		mockHttpAccessor = new MockHttpAccess(RestExplorerApp.APP);
 	}
@@ -115,6 +116,7 @@ public class ExplorerActivityTest extends
 		TextView resultText = (TextView) getActivity().findViewById(R.id.result_text);
 		
 		// Putting some text in the result text area
+		setText(R.id.result_text, "dummy-text");
 		assertFalse("Result text area should not be empty", resultText.getText().length() == 0);
 		
 		// Click on clear
@@ -388,7 +390,7 @@ public class ExplorerActivityTest extends
 	 */
 	private static class MockHttpAccess extends HttpAccess {
 		protected MockHttpAccess(Application app) {
-			super(app);
+			super(app, null);
 		}
 
 		public final BlockingQueue<String> q = new ArrayBlockingQueue<String>(1);

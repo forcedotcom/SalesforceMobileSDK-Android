@@ -42,6 +42,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.security.Encryptor;
@@ -57,6 +58,14 @@ public class ClientManager {
 	private final String accountType;
 	private String passcodeHash;
 
+	/**
+	 * Construct a ClientManager using the app's accountType and passcodeHash
+	 * @param ctx
+	 */
+	public ClientManager(Context ctx) {
+		this(ctx, ForceApp.APP.getAccountType(), ForceApp.APP.getPasscodeManager().getPasscodeHash());
+	}
+	
 	/**
 	 * Construct a ClientManager using a custom account type
 	 * @param ctx
@@ -330,6 +339,7 @@ public class ClientManager {
 		private static final Object lock = new Object();
 		private final ClientManager clientManager;
 		private final String refreshToken;
+		private long lastRefreshTime = -1 /* never refreshed */;
 
 		/**
 		 * Constructor
@@ -353,6 +363,9 @@ public class ClientManager {
 			Account acc = clientManager.getAccount();
 			if (acc == null)
 				return null;
+			
+			// Invalidate current auth token
+			clientManager.accountManager.invalidateAuthToken(clientManager.getAccountType(), null);
 			
 			// Wait if another thread is already fetching an access token
 			synchronized (lock) {
@@ -387,6 +400,7 @@ public class ClientManager {
 				synchronized (lock) {
 					gettingAuthToken = false;
 					lastNewAuthToken = newAuthToken;
+					lastRefreshTime  = System.currentTimeMillis();
 					lock.notifyAll();
 				}
 			}
@@ -396,6 +410,11 @@ public class ClientManager {
 		@Override
 		public String getRefreshToken() {
 			return refreshToken;
+		}
+		
+		@Override
+		public long getLastRefreshTime() {
+			return lastRefreshTime;
 		}
 	}
 

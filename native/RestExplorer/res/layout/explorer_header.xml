@@ -17,4 +17,10 @@
 		android:layout_height="wrap_content" android:layout_toLeftOf="@id/logout_button"
 		android:layout_centerVertical="true" android:layout_marginRight="3dp"
 		android:onClick="onClearClick" android:text="@string/clear_button" />
+	
+	<Button android:id="@+id/print_info_button" android:layout_width="wrap_content"
+		android:layout_height="wrap_content" android:layout_toLeftOf="@id/clear_button"
+		android:layout_centerVertical="true" android:layout_marginRight="3dp"
+		android:onClick="onPrintInfoClick" android:text="@string/print_info_button" />
+	
 </RelativeLayout>

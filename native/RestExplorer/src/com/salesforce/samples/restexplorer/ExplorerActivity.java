@@ -32,8 +32,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 import java.util.Map.Entry;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,11 +65,11 @@ import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
+import com.salesforce.androidsdk.rest.RestResponse;
 
 /**
  * Activity for explorer
@@ -81,7 +81,6 @@ public class ExplorerActivity extends TabActivity {
 	private static final String SINGLE_LINE = "------------------------------------------------------------------------------";
 	private static final int LOGOUT_CONFIRMATION_DIALOG_ID = 0;
 
-	private String accountType;
 	private String apiVersion;
 	private RestClient client;
 	private TextView resultText;
@@ -98,9 +97,6 @@ public class ExplorerActivity extends TabActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		// Account type
-		accountType = getString(R.string.account_type);		
-		
 		// ApiVersion
 		apiVersion = getString(R.string.api_version);
 
@@ -128,22 +124,36 @@ public class ExplorerActivity extends TabActivity {
 		// Make result area scrollable
 		resultText = (TextView) findViewById(R.id.result_text);
 		resultText.setMovementMethod(new ScrollingMovementMethod());
+	}
+	
+	@Override 
+	public void onResume() {
+		super.onResume();
 
-		// First get a rest client - this will bring up the login screen if
-		// needed
-		new ClientManager(this, accountType, null /* FIXME build hash from user pin */).getRestClient(this, new RestClientCallback() {
+		// Bring up passcode screen if needed
+		ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
+		
+		// Do nothing - when the app gets unlocked we will be back here
+		if (ForceApp.APP.getPasscodeManager().isLocked()) {
+			return;
+		}
+		
+		// Get a rest client
+		new ClientManager(this).getRestClient(this, new RestClientCallback() {
 			@Override
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
-					ForceApp.APP.logout(accountType);
+					ForceApp.APP.logout(ExplorerActivity.this);
+					return;
 				}
-				
 				ExplorerActivity.this.client = client;
-
-				printHeader("RestClient");
-				println(client);
 			}
 		});
+	}
+	
+	@Override
+	public void onUserInteraction() {
+		ForceApp.APP.getPasscodeManager().recordUserInteraction();
 	}
 
 	@Override
@@ -156,7 +166,7 @@ public class ExplorerActivity extends TabActivity {
 							@Override
 							public void onClick(DialogInterface dialog,
 									int which) {
-								ForceApp.APP.logout(accountType);
+								ForceApp.APP.logout(ExplorerActivity.this);
 							}
 						})
 				.setNegativeButton(R.string.logout_cancel, null)
@@ -177,6 +187,15 @@ public class ExplorerActivity extends TabActivity {
 	 * Buttons click handlers
 	 * 
 	 **************************************************************************************************/
+
+	/**
+	 * Called when "print info" button is clicked.
+	 * 
+	 * @param v
+	 */
+	public void onPrintInfoClick(View v) {
+		printInfo();
+	}
 
 	/**
 	 * Called when "clear" button is clicked.
@@ -620,6 +639,15 @@ public class ExplorerActivity extends TabActivity {
 					- resultText.getHeight();
 			resultText.scrollTo(0, scroll > 0 ? scroll : 0);
 		}
+	}
+	
+	/**
+	 * Dump info about app and rest client 
+	 */
+	private void printInfo() {
+		printHeader("Info");
+		println(ForceApp.APP);
+		println(client);
 	}
 
 	/**

@@ -24,49 +24,41 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.contactexplorer;
+package com.salesforce.samples.restexplorer;
 
-import android.app.Activity;
 
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.AbstractLoginActivity;
+import android.widget.EditText;
+import android.widget.TextView;
+
 import com.salesforce.androidsdk.security.AbstractPasscodeActivity;
 
-
 /**
- * Application class for the contact explorer.
- * All Salesforce mobile app must extend ForceApp. 
- * ForceApp takes care of intializing the network http clients (among other things).x
+ * Activity responsible for passcode creation/validation
  */
-public class ContactExplorerApp extends ForceApp {
+public class PasscodeActivity extends AbstractPasscodeActivity {
 
 	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return ContactExplorerActivity.class;
-	}
-	
-	@Override
-	public Class<? extends AbstractLoginActivity> getLoginActivityClass() {
-		return LoginActivity.class;
+	protected int getLayoutId() {
+		return R.layout.passcode;
 	}
 
 	@Override
-	public Class<? extends AbstractPasscodeActivity> getPasscodeActivityClass() {
-		return null;
+	protected TextView getTitleView() {
+		return (TextView) findViewById(R.id.passcode_title);
 	}
 
 	@Override
-	public String getAccountType() {
-		return getString(R.string.account_type);
+	protected TextView getErrorView() {
+		return (TextView) findViewById(R.id.passcode_error);
 	}
 
 	@Override
-	public int getLockTimeoutMinutes() {
-		return 0;
+	protected TextView getInstructionsView() {
+		return (TextView) findViewById(R.id.passcode_instructions);
 	}
 
 	@Override
-	protected String getKey(String name) {
-		return null;
+	protected EditText getEntryView() {
+		return (EditText) findViewById(R.id.passcode_text);
 	}
 }
