@@ -154,7 +154,7 @@ public class ClientManager {
 			throw new AccountInfoNotFoundException(AuthenticatorService.KEY_ORG_ID);
 
 		try {
-			AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, refreshToken);
+			AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, authToken, refreshToken);
 			return new RestClient(new URI(server), authToken, HttpAccess.DEFAULT, authTokenProvider, username, userId, orgId);
 		} 
 		catch (URISyntaxException e) {
@@ -335,9 +335,9 @@ public class ClientManager {
 	public static class AccMgrAuthTokenProvider implements RestClient.AuthTokenProvider {
 
 		private static boolean gettingAuthToken;
-		private static String lastNewAuthToken;
 		private static final Object lock = new Object();
 		private final ClientManager clientManager;
+		private static String lastNewAuthToken;
 		private final String refreshToken;
 		private long lastRefreshTime = -1 /* never refreshed */;
 
@@ -346,9 +346,10 @@ public class ClientManager {
 		 * @param clientManager
 		 * @param refreshToken
 		 */
-		AccMgrAuthTokenProvider(ClientManager clientManager, String refreshToken) {
+		AccMgrAuthTokenProvider(ClientManager clientManager, String authToken, String refreshToken) {
 			this.clientManager = clientManager;
 			this.refreshToken = refreshToken;
+			lastNewAuthToken = authToken;
 		}
 
 		/**
@@ -364,8 +365,6 @@ public class ClientManager {
 			if (acc == null)
 				return null;
 			
-			// Invalidate current auth token
-			clientManager.accountManager.invalidateAuthToken(clientManager.getAccountType(), null);
 			
 			// Wait if another thread is already fetching an access token
 			synchronized (lock) {
@@ -379,6 +378,10 @@ public class ClientManager {
 				}
 				gettingAuthToken = true;
 			}
+
+			
+			// Invalidate current auth token
+			clientManager.accountManager.invalidateAuthToken(clientManager.getAccountType(), lastNewAuthToken);
 			
 			String newAuthToken = null;
 			try {
