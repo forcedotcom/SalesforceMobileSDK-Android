@@ -175,6 +175,7 @@ public abstract class ForceApp extends Application implements OnAccountsUpdateLi
 		sb.append(this.getClass()).append(": {\n")
 		  .append("   accountType: ").append(getAccountType()).append("\n")
 		  .append("   userAgent: ").append(getUserAgent()).append("\n")
+		  .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
 		  .append("   loginActivityClass: ").append(getLoginActivityClass()).append("\n")
 		  .append("   passcodeActivityClass: ").append(getPasscodeActivityClass()).append("\n")
 		  .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n")

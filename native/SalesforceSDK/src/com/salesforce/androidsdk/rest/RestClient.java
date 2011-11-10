@@ -102,8 +102,9 @@ public class RestClient {
 		  .append("   username: ").append(username).append("\n")
 		  .append("   userId: ").append(userId).append("\n")
 		  .append("   orgId: ").append(orgId).append("\n")
-		  .append("   authToken: ").append(authToken).append("\n")
-		  .append("   refreshToken: ").append(getRefreshToken()).append("\n")
+		  // Un-comment if you must: tokens should not be printed to the log
+		  // .append("   authToken: ").append(authToken).append("\n")
+		  // .append("   refreshToken: ").append(getRefreshToken()).append("\n")
 		  .append("   timeSinceLastRefresh: ").append(getElapsedTimeSinceLastRefresh()).append("\n")
 		  .append("}\n");
 		return sb.toString();

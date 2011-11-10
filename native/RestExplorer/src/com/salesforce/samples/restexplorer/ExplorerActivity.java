@@ -102,7 +102,7 @@ public class ExplorerActivity extends TabActivity {
 
 		// Setup view
 		setContentView(R.layout.explorer);
-
+		
 		// Setup tabs
 		TabHost tabHost = (TabHost) findViewById(android.R.id.tabhost);
 		addTab(tabHost, "versions", R.string.versions_tab, R.id.versions_tab);
@@ -129,7 +129,10 @@ public class ExplorerActivity extends TabActivity {
 	@Override 
 	public void onResume() {
 		super.onResume();
-
+		
+		// Hide everything until we are logged in
+		findViewById(R.id.root).setVisibility(View.INVISIBLE);
+		
 		// Bring up passcode screen if needed
 		ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
 		
@@ -147,6 +150,9 @@ public class ExplorerActivity extends TabActivity {
 					return;
 				}
 				ExplorerActivity.this.client = client;
+				
+				// Show everything
+				findViewById(R.id.root).setVisibility(View.VISIBLE);				
 			}
 		});
 	}

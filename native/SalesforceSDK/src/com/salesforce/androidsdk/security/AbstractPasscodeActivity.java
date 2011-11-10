@@ -89,7 +89,7 @@ public abstract class AbstractPasscodeActivity extends Activity implements OnEdi
 			instr.setText(getCreateInstructions());
 			break;
 		case CreateConfirm:
-			title.setText(getEnterTitle());
+			title.setText(getConfirmTitle());
 			instr.setText(getConfirmInstructions());
 			break;
 		}
@@ -204,6 +204,14 @@ public abstract class AbstractPasscodeActivity extends Activity implements OnEdi
 	 */
 	protected String getEnterTitle() {
 		return "Enter Salesforce Passcode";
+	}
+	
+	/**
+	 * Override to have a localized error message.
+	 * @return english confirm title
+	 */
+	protected String getConfirmTitle() {
+		return "Re-enter Salesforce Passcode";
 	}
 	
 	/**

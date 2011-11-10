@@ -12,7 +12,7 @@
         android:layout_centerHorizontal="true"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:background="#AAAAAA">
+        android:background="#888888">
 
 	    <TextView 
 	    	android:id="@+id/passcode_title"
