@@ -46,13 +46,13 @@ public class TestCredentials {
 	public static final String ACCOUNT_TYPE = "com.salesforce.androidsdk.test"; // must match authenticator.xml
 	
 	public static final String ORG_ID = "00DT0000000FPl2MAG";
-	public static final String USERNAME = "w@cs0.com";
+	public static final String USERNAME = "sdktest@cs0.com";
 	public static final String ACCOUNT_NAME = USERNAME + " (test)";
-	public static final String USER_ID = "005T0000000rr9rIAA";
+	public static final String USER_ID = "005T0000000sTGcIAM";
 	public static final String LOGIN_URL = "https://test.salesforce.com";
 	public static final String INSTANCE_URL = "https://tapp0.salesforce.com";
 
 	public static final String CLIENT_ID = "3MVG92.uWdyphVj4bnolD7yuIpCQsNgddWtqRND3faxrv9uKnbj47H4RkwheHA2lKY4cBusvDVp0M6gdGE8hp";
-	public static final String REFRESH_TOKEN = "5Aep861_OKMvio5gy9sGt9Z9mdt62xXK.9ugif6j6O_rF1QcY.FpUp.1QKouWLlZ.H5wpsk9ZnWtQ==";
+	public static final String REFRESH_TOKEN = "5Aep861_OKMvio5gy9sGt9Z9mdt62xXK.9ugif6nZJYknXeANTICBf4ityN9j6YDgHjFvbzu6FTUQ==";
 	
 }
