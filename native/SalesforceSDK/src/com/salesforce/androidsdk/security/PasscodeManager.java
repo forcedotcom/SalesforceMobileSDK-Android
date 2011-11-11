@@ -226,7 +226,7 @@ public class PasscodeManager  {
 		updateLast();
 	}
 
-	private long now() {
+	protected long now() {
 		return System.currentTimeMillis();
 	}
 	
