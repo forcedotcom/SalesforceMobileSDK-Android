@@ -56,14 +56,6 @@ import com.salesforce.androidsdk.rest.ClientManager;
  * we swap it for an access and refresh token a create an account through the
  * account manager to store them.
  */
-/**
- * @author wmathurin
- *
- */
-/**
- * @author wmathurin
- *
- */
 public abstract class AbstractLoginActivity extends
 		AccountAuthenticatorActivity {
 
