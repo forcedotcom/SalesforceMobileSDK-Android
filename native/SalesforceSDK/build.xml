@@ -88,7 +88,14 @@
     <!-- Copy salesforcesdk.jar to dist directory -->
     <target name="jar" depends="-compile">
         <mkdir dir="${jar.dir}"/>
-        <copy file="${out.library.jar.file}" tofile="${jar.dir}/SalesforceSDK.jar" />
+
+        <xpath input="AndroidManifest.xml" expression="/manifest/@android:versionName"
+                    output="sdk.version"/>
+
+        <jar destfile="${jar.dir}/SalesforceSDK-${sdk.version}.jar">
+          <fileset dir="${out.classes.absolute.dir}" excludes="**/R.class **/R$*.class"/>
+          <fileset dir="${source.absolute.dir}" includes="**/*.java" excludes="**/R.java" />
+        </jar>
     </target>
 
 </project>
