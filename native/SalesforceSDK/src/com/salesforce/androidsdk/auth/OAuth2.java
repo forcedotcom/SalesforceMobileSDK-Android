@@ -303,7 +303,6 @@ public class OAuth2 {
 		public String idUrlWithInstance;
 		public String orgId;
 		public String userId;
-		public String username;
 
 		public TokenEndpointResponse(Map<String, String> callbackUrlParams) {
 			try {

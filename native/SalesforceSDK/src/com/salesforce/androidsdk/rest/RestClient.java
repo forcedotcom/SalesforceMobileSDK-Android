@@ -50,6 +50,7 @@ public class RestClient {
 	private String userId;
 	private String orgId;
 	private String username;
+	private String accountName;
 	
 	/** 
 	 * AuthTokenProvider interface
@@ -68,10 +69,10 @@ public class RestClient {
      * @param authToken
      */
     public RestClient(URI baseUrl, String authToken) {
-		this(baseUrl, authToken, HttpAccess.DEFAULT, null, null, null, null);
+		this(baseUrl, authToken, HttpAccess.DEFAULT, null, null, null, null, null);
 	}
-	
-	/**
+
+    /**
      * Constructs a RestClient with the given baseUrl, authToken, httpAccessor and authTokenProvider.
      * When it gets a 401 (not authorized) response from the server, it will ask the authTokenProvider for a new access token
      * and retry the request a second time.
@@ -79,16 +80,18 @@ public class RestClient {
 	 * @param authToken
 	 * @param httpAccessor
 	 * @param authTokenProvider
+	 * @param accountName 
 	 * @param username 
 	 * @param userId 
 	 * @param orgId 
 	 */
-	public RestClient(URI baseUrl, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider, String username, String userId, String orgId) {
+	public RestClient(URI baseUrl, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider, String accountName, String username, String userId, String orgId) {
 		super();
 		this.authToken = authToken;
 		this.baseUrl = baseUrl;
 		this.httpAccessor = httpAccessor;
 		this.authTokenProvider = authTokenProvider;
+		this.accountName = accountName;
 		this.username = username;
 		this.userId = userId;
 		this.orgId = orgId;
@@ -99,6 +102,7 @@ public class RestClient {
 		StringBuilder sb = new StringBuilder();
 		sb.append("RestClient: {\n")
 		  .append("   baseUrl: ").append(baseUrl.toString()).append("\n")
+		  .append("   accountName: ").append(accountName).append("\n")
 		  .append("   username: ").append(username).append("\n")
 		  .append("   userId: ").append(userId).append("\n")
 		  .append("   orgId: ").append(orgId).append("\n")

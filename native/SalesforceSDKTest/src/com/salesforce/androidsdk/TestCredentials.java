@@ -47,6 +47,7 @@ public class TestCredentials {
 	
 	public static final String ORG_ID = "00DT0000000FPl2MAG";
 	public static final String USERNAME = "w@cs0.com";
+	public static final String ACCOUNT_NAME = USERNAME + " (test)";
 	public static final String USER_ID = "005T0000000rr9rIAA";
 	public static final String LOGIN_URL = "https://test.salesforce.com";
 	public static final String INSTANCE_URL = "https://tapp0.salesforce.com";

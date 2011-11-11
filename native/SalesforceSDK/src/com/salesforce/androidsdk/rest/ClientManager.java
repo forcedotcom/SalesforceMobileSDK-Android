@@ -138,11 +138,12 @@ public class ClientManager {
 		String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
 		String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), passcodeHash);
 		
-		// We also store the instance url, org id, user id and username in the account manager
+		// We also store the username, instance url, org id, user id and username in the account manager
 		String server = accountManager.getUserData(acc, AuthenticatorService.KEY_INSTANCE_SERVER);
 		String orgId = accountManager.getUserData(acc, AuthenticatorService.KEY_ORG_ID);
 		String userId = accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID);
-		String username = accountManager.getUserData(acc, AccountManager.KEY_ACCOUNT_NAME);
+		String username = accountManager.getUserData(acc, AuthenticatorService.KEY_USERNAME);
+		String accountName = accountManager.getUserData(acc, AccountManager.KEY_ACCOUNT_NAME);
 
 		if (authToken == null)
 			throw new AccountInfoNotFoundException(AccountManager.KEY_AUTHTOKEN);
@@ -155,7 +156,7 @@ public class ClientManager {
 
 		try {
 			AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, authToken, refreshToken);
-			return new RestClient(new URI(server), authToken, HttpAccess.DEFAULT, authTokenProvider, username, userId, orgId);
+			return new RestClient(new URI(server), authToken, HttpAccess.DEFAULT, authTokenProvider, accountName, username, userId, orgId);
 		} 
 		catch (URISyntaxException e) {
 			Log.w("ClientManager:peekRestClient", "Invalid server URL", e);
@@ -216,6 +217,7 @@ public class ClientManager {
 	
 	/**
 	 * Create new account and return bundle that new account details in a bundle
+	 * @param accountName 
 	 * @param username                 
 	 * @param refreshToken
 	 * @param authToken
@@ -226,12 +228,13 @@ public class ClientManager {
 	 * @param userId
 	 * @return
 	 */
-	public Bundle createNewAccount(String username, String refreshToken, String authToken, String instanceUrl,
-			String loginUrl, String clientId, String orgId, String userId) {
+	public Bundle createNewAccount(String accountName, String username, String refreshToken, String authToken,
+			String instanceUrl, String loginUrl, String clientId, String orgId, String userId) {
 		
 		Bundle extras = new Bundle();
-		extras.putString(AccountManager.KEY_ACCOUNT_NAME, username);
+		extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
 		extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
+		extras.putString(AuthenticatorService.KEY_USERNAME, username);
 		extras.putString(AuthenticatorService.KEY_LOGIN_SERVER, loginUrl);
 		extras.putString(AuthenticatorService.KEY_INSTANCE_SERVER, instanceUrl);
 		extras.putString(AuthenticatorService.KEY_CLIENT_ID, clientId);
@@ -239,7 +242,7 @@ public class ClientManager {
 		extras.putString(AuthenticatorService.KEY_USER_ID, userId);
 		extras.putString(AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, passcodeHash));
 
-		Account acc = new Account(username, getAccountType());
+		Account acc = new Account(accountName, getAccountType());
 		accountManager.addAccountExplicitly(acc, Encryptor.encrypt(refreshToken, passcodeHash), extras);
 		accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
 		

@@ -46,6 +46,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ClientManager;
 
@@ -194,9 +195,12 @@ public abstract class AbstractLoginActivity extends
 		
 		// Old account
 		Account[] oldAccounts = clientManager.getAccounts();
+		
+		// Create account name (shown in Settings -> Accounts & sync)
+		String accountName = buildAccountName(username);
 
 		// New account
-		Bundle extras = clientManager.createNewAccount(username, refreshToken, authToken, instanceUrl, loginUrl, clientId, orgId, userId);
+		Bundle extras = clientManager.createNewAccount(accountName, username, refreshToken, authToken, instanceUrl, loginUrl, clientId, orgId, userId);
 		setAccountAuthenticatorResult(extras);
 
 		// Remove old accounts
@@ -219,31 +223,35 @@ public abstract class AbstractLoginActivity extends
 	 * Background task that takes care of finishing the authentication flow
 	 */
 	protected class FinishAuthTask extends
-			AsyncTask<TokenEndpointResponse, Boolean, TokenEndpointResponse> {
-
-		protected volatile Exception backgroundException;
+			AsyncTask<TokenEndpointResponse, Boolean, Exception> {
 
 		@Override
-		protected final TokenEndpointResponse doInBackground(
+		protected final Exception doInBackground(
 				TokenEndpointResponse... params) {
 			try {
 				publishProgress(true);
-				return performRequest(params[0]);
+
+				TokenEndpointResponse tr= params[0];
+				String username = OAuth2.getUsernameFromIdentityService(
+					HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
+				addAccount(username, tr.refreshToken, tr.authToken, tr.instanceUrl,
+						loginServerUrl, getOAuthClientId(), tr.orgId, tr.userId, getApiVersion());
+				
 			} catch (Exception ex) {
-				backgroundException = ex;
+				return ex;
 			}
+			
 			return null;
 		}
 
 		@Override
-		protected void onPostExecute(OAuth2.TokenEndpointResponse tr) {
-			if (backgroundException != null) {
+		protected void onPostExecute(Exception ex) {
+			if (ex != null) {
+				// Error
 				onAuthFlowError(getGenericAuthErrorTitle(),
 						getGenericAuthErrorBody());
 			} else {
-				addAccount(tr.username, tr.refreshToken, tr.authToken, tr.instanceUrl,
-						loginServerUrl, getOAuthClientId(), tr.orgId, tr.userId, getApiVersion());
-
+				// Done
 				finish();
 			}
 		}
@@ -252,13 +260,6 @@ public abstract class AbstractLoginActivity extends
 		protected void onProgressUpdate(Boolean... values) {
 			setProgressBarIndeterminateVisibility(values[0]);
 			setProgressBarIndeterminate(values[0]);
-		}
-
-		protected TokenEndpointResponse performRequest(TokenEndpointResponse tr)
-				throws Exception {
-			tr.username = OAuth2.getUsernameFromIdentityService(
-					HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
-			return tr;
 		}
 	}
 
@@ -437,5 +438,15 @@ public abstract class AbstractLoginActivity extends
     protected String[] getOAuthScopes() {
 	    return null;
 	}
+    
+    /**
+     * Override this method to customize the name for the account.
+     * Return name to be shown for account in Settings -> Accounts & Sync
+     * @param username
+     * @return
+     */
+    protected String buildAccountName(String username) {
+    	return String.format("%s (%s)", username, ForceApp.APP.getApplicationName());
+    }
     
 }
