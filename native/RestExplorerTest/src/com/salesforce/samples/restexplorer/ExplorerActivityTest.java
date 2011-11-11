@@ -74,6 +74,8 @@ public class ExplorerActivityTest extends
 	private static final String TEST_ACCESS_TOKEN = "test_access_token";
 	private static final String TEST_REFRESH_TOKEN = "test_refresh_token";
 	private static final String TEST_USERNAME = "test_username";
+	private static final String TEST_ACCOUNT_NAME = "test_account_name";
+	
 
 	private static final int VERSIONS_TAB = 0;
 	private static final int RESOURCES_TAB = 1;
@@ -104,7 +106,7 @@ public class ExplorerActivityTest extends
 		targetContext = getInstrumentation().getTargetContext();
 		ForceApp.APP.getPasscodeManager().setTimeoutMs(0 /* never */);
 		clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null);
-		clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
+		clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
 		mockHttpAccessor = new MockHttpAccess(RestExplorerApp.APP);
 	}
 

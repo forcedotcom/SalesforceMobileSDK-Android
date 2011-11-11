@@ -55,6 +55,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 	private static final String TEST_PASSCODE_HASH = Encryptor.hash("passcode", "hash-key");
 	private static final String TEST_ORG_ID = "test_org_id";
 	private static final String TEST_USER_ID = "test_user_id";
+	private static final String TEST_ACCOUNT_NAME = "test_accountname";
 	private static final String TEST_USERNAME = "test_username";
 	private static final String TEST_CLIENT_ID = "test_client_d";
 	private static final String TEST_LOGIN_URL = "https://test.salesforce.com";
@@ -119,7 +120,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		// Call getAccount
 		Account account = clientManager.getAccount();
 		assertNotNull("Account should have been returned", account);
-		assertEquals("Wrong account name", TEST_USERNAME, account.name);
+		assertEquals("Wrong account name", TEST_ACCOUNT_NAME, account.name);
 		assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
 		assertEquals("Wrong auth token", Encryptor.encrypt(TEST_AUTH_TOKEN, TEST_PASSCODE_HASH), accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN));
 		assertEquals("Wrong refresh token", Encryptor.encrypt(TEST_REFRESH_TOKEN, TEST_PASSCODE_HASH), accountManager.getPassword(account));
@@ -127,6 +128,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertEquals("Wrong login url", TEST_LOGIN_URL, accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_SERVER));
 		assertEquals("Wrong client id", TEST_CLIENT_ID, accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID));
 		assertEquals("Wrong user id", TEST_USER_ID, accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID));
+		assertEquals("Wrong org id", TEST_ORG_ID, accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID));
+		assertEquals("Wrong username", TEST_USERNAME, accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME));
 	}
 
 	
@@ -392,7 +395,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		String badToken = "bad token";
 
 		// Create real account
-		clientManager.createNewAccount(TestCredentials.USERNAME, TestCredentials.REFRESH_TOKEN, badToken, TestCredentials.INSTANCE_URL, TEST_LOGIN_URL, TestCredentials.CLIENT_ID, TestCredentials.ORG_ID, TestCredentials.USER_ID);
+		clientManager.createNewAccount(TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME, TestCredentials.REFRESH_TOKEN, badToken, TestCredentials.INSTANCE_URL, TEST_LOGIN_URL, TestCredentials.CLIENT_ID, TestCredentials.ORG_ID, TestCredentials.USER_ID);
 		
 		// Peek rest client
 		RestClient restClient = clientManager.peekRestClient();
@@ -427,7 +430,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 	 * @return
 	 */
 	private Bundle createTestAccount() {
-		return clientManager.createNewAccount(TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
+		return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
 	}
 
 
@@ -436,7 +439,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 	 * @return
 	 */
 	private Bundle createOtherTestAccount() {
-		return clientManager.createNewAccount(TEST_OTHER_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
+		return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_OTHER_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
 	}
 	
 }

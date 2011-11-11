@@ -103,6 +103,13 @@ public abstract class ForceApp extends Application implements OnAccountsUpdateLi
 		return passcodeManager;
 	}
 
+	/**
+	 * @return name of application (as defined in AndroidManifest.xml)
+	 */
+	public String getApplicationName() {
+		return getPackageManager().getApplicationLabel(getApplicationInfo()).toString();
+	}
+	
     /**
      * @return hash salts + key to use for creating the hash of the passcode used for encryption
 	 * Unique for installation.
@@ -240,4 +247,5 @@ public abstract class ForceApp extends Application implements OnAccountsUpdateLi
 	 * @return key for encrypting salts and keys 
 	 */
 	protected abstract String getKey(String name);
+
 }
