@@ -62,6 +62,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 	private static final String TEST_INSTANCE_URL = "https://tapp0.salesforce.com";
 	private static final String TEST_AUTH_TOKEN = "test_auth_token";
 	private static final String TEST_REFRESH_TOKEN = "test_refresh_token";
+	private static final String TEST_OTHER_ACCOUNT_NAME = "test_other_accountname";
 	private static final String TEST_OTHER_USERNAME = "test_other_username";
 	private static final String TEST_ACCOUNT_TYPE = "com.salesforce.androisdk.test"; // must match authenticator.xml in SalesforceSDK project
 	
@@ -103,7 +104,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		// Check that the account did get created
 		Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
 		assertEquals("One account should have been returned", 1, accounts.length);
-		assertEquals("Wrong account name", TEST_USERNAME, accounts[0].name);
+		assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
 		assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, accounts[0].type);
 	}
 
@@ -146,7 +147,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		// Call getAccounts
 		Account[] accounts = clientManager.getAccounts();
 		assertEquals("One account should have been returned", 1, accounts.length);
-		assertEquals("Wrong account name", TEST_USERNAME, accounts[0].name);
+		assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
 		assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, accounts[0].type);
 	}
 
@@ -172,8 +173,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
 			public int compare(Account account1, Account account2) {
 				return account1.name.compareTo(account2.name);
 			}});
-		assertEquals("Wrong account name", TEST_USERNAME, accounts[1].name);
-		assertEquals("Wrong account name", TEST_OTHER_USERNAME, accounts[0].name);
+		assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
+		assertEquals("Wrong account name", TEST_OTHER_ACCOUNT_NAME, accounts[1].name);
 	}
 
 	/**
@@ -192,15 +193,15 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertEquals("Two accounts should have been returned", 2, accounts.length);
 		
 		// Get the first one by name
-		Account account = clientManager.getAccountByName(TEST_USERNAME);
+		Account account = clientManager.getAccountByName(TEST_ACCOUNT_NAME);
 		assertNotNull("An account should have been returned", account);
-		assertEquals("Wrong account name", TEST_USERNAME, account.name);
+		assertEquals("Wrong account name", TEST_ACCOUNT_NAME, account.name);
 		assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
 		
 		// Get the second one by name
-		account = clientManager.getAccountByName(TEST_OTHER_USERNAME);
+		account = clientManager.getAccountByName(TEST_OTHER_ACCOUNT_NAME);
 		assertNotNull("An account should have been returned", account);
-		assertEquals("Wrong account name", TEST_OTHER_USERNAME, account.name);
+		assertEquals("Wrong account name", TEST_OTHER_ACCOUNT_NAME, account.name);
 		assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
 	}
 	
@@ -218,7 +219,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		// Check that the account did get created
 		Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
 		assertEquals("One account should have been returned", 1, accounts.length);
-		assertEquals("Wrong account name", TEST_USERNAME, accounts[0].name);
+		assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
 		
 		// Remove the account
 		clientManager.removeAccounts(accounts);
@@ -439,7 +440,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 	 * @return
 	 */
 	private Bundle createOtherTestAccount() {
-		return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_OTHER_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
+		return clientManager.createNewAccount(TEST_OTHER_ACCOUNT_NAME, TEST_OTHER_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
 	}
 	
 }

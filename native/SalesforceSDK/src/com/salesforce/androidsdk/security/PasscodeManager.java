@@ -65,6 +65,7 @@ public class PasscodeManager  {
 	private Class<? extends Activity> passcodeActivityClass;
 	private int timeoutMs;
 
+	private static boolean disabled = false;
 	
 	/**
 	 * @param ctx
@@ -76,7 +77,7 @@ public class PasscodeManager  {
 	public PasscodeManager(Context ctx, int lockTimeoutMinutes,
 			Class<? extends Activity> passcodeActivityClass,
 			HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
-		this.timeoutMs = lockTimeoutMinutes * 60 * 1000;
+		this.timeoutMs = (disabled ? 0 :lockTimeoutMinutes * 60 * 1000);
 		this.passcodeActivityClass = passcodeActivityClass;
 		this.lastActivity = now();
 		this.verificationHashConfig = verificationHashConfig;
@@ -85,11 +86,17 @@ public class PasscodeManager  {
 		// Locked at app startup if you're authenticated
 		this.locked = true;
 
-		// timeoutMs == 0 means never
-		if (timeoutMs > 0) {
+		if (!disabled) {
 			handler = new Handler();
 			handler.postDelayed(new LockChecker(), 20 * 1000);
 		}
+	}
+	
+	/**
+	 * To disable passcode entirely for the application - not reversible
+	 */
+	public static void disable() {
+		disabled = true;
 	}
 	
 	/**
@@ -204,7 +211,7 @@ public class PasscodeManager  {
 	}
 
 	public void setTimeoutMs(int newTimeout) {
-		timeoutMs = newTimeout;
+		timeoutMs = (disabled ? 0 : newTimeout);
 	}
 	
 	public boolean shouldLock() {
