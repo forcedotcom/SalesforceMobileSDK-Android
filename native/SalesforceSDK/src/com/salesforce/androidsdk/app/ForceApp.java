@@ -50,6 +50,8 @@ import com.salesforce.androidsdk.security.AbstractPasscodeActivity;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * Super class for all force applications.
@@ -73,7 +75,6 @@ public abstract class ForceApp extends Application implements OnAccountsUpdateLi
     @Override
     public void onCreate() {
         super.onCreate();
-        APP = this;
 
         // Initialize encryption module
         Encryptor.init(this);
@@ -88,6 +89,10 @@ public abstract class ForceApp extends Application implements OnAccountsUpdateLi
 		
 		// Listen for accounts update
 		AccountManager.get(this).addOnAccountsUpdatedListener(this, null, false);
+		
+		// Done
+		EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
+        APP = this;
     }
     
     @Override

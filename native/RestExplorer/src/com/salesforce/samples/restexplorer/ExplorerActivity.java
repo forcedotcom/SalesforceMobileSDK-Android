@@ -70,6 +70,8 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * Activity for explorer
@@ -532,7 +534,6 @@ public class ExplorerActivity extends TabActivity {
 		} catch (Exception e) {
 			printException(e);
 		}
-
 	}
 
 	/**
@@ -583,6 +584,8 @@ public class ExplorerActivity extends TabActivity {
 			} catch (Exception e) {
 				printException(e);
 			}
+		
+			EventsObservable.get().notifyEvent(EventType.RenditionComplete);
 		}
 	}
 

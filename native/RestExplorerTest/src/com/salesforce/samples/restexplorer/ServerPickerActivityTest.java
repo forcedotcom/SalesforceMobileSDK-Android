@@ -30,7 +30,7 @@ import android.widget.Button;
 import android.widget.EditText;
 
 /**
- * Tests for ServerPickerActivityTest
+ * Tests for ServerPickerActivity
  */
 public class ServerPickerActivityTest extends
 		BaseActivityInstrumentationTestCase<ServerPickerActivity> {

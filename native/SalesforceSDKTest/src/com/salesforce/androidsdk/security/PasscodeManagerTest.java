@@ -58,10 +58,10 @@ public class PasscodeManagerTest extends InstrumentationTestCase {
 	private class TestPasscodeManager extends PasscodeManager {
 
 		TestPasscodeManager() {
-			super(getInstrumentation().getTargetContext(), 1000, null, TEST_HASH_CONFIG, TEST_HASH_CONFIG);
+			super(getInstrumentation().getTargetContext(), 0, null, TEST_HASH_CONFIG, TEST_HASH_CONFIG);
+			setTimeoutMs(TEST_TIMEOUT_MS);
 			// start in a known state.
 			unlock(TEST_PASSCODE);
-			setTimeoutMs(TEST_TIMEOUT_MS);
 		}
 
 		@Override

@@ -26,6 +26,9 @@
  */
 package com.salesforce.samples.restexplorer;
 
+import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
+
 import android.app.Activity;
 import android.test.ActivityInstrumentationTestCase2;
 import android.view.View;
@@ -39,10 +42,33 @@ import android.widget.TextView;
  */
 public class BaseActivityInstrumentationTestCase<T extends Activity> extends ActivityInstrumentationTestCase2<T> {
 
+	private EventsListenerQueue eq;
+
 	public BaseActivityInstrumentationTestCase(String pkg, Class<T> activityClass) {
 		super(pkg, activityClass);
 	}
+	
+	@Override
+	public void setUp() throws Exception {
+		super.setUp();
+		setActivityInitialTouchMode(false);
 
+		eq = new EventsListenerQueue();
+		// Wait for app initialization to complete
+		if (ForceApp.APP == null) {
+			eq.waitForEvent(EventType.AppCreateComplete, 5000);
+		}
+	}
+	
+	@Override
+	public void tearDown() throws Exception {
+		if (eq != null) {
+			eq.tearDown();
+			eq = null;
+		}
+		super.tearDown();
+	}
+	
     protected void clickTab(final TabHost tabHost, final int tabIndex) {
     	try {
 			runTestOnUiThread(new Runnable() {
@@ -100,6 +126,21 @@ public class BaseActivityInstrumentationTestCase<T extends Activity> extends Act
     		fail("Failed to set text " + text);
     	}
     }
+    
+    protected void doEditorAction(final int textViewId, final int actionCode) {
+    	try {
+	        runTestOnUiThread(new Runnable() {
+	            @Override public void run() {
+	            	TextView v = (TextView) getActivity().findViewById(textViewId);
+	                v.onEditorAction(actionCode);
+	            }
+	        });
+    	}
+    	catch (Throwable t) {
+    		fail("Failed do editor action " + actionCode);
+    	}
+    	    	
+    }
 	
 
     protected void setText(final TextView v, final String text) {
@@ -144,5 +185,8 @@ public class BaseActivityInstrumentationTestCase<T extends Activity> extends Act
 			fail("Test interrupted");
 		}
 	}
-    	
+
+	protected void waitForRender() {
+		eq.waitForEvent(EventType.RenditionComplete, 5000);
+	}
 }

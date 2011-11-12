@@ -52,9 +52,9 @@ import android.widget.Button;
 import android.widget.TabHost;
 import android.widget.TextView;
 
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.security.PasscodeManager;
 
 /**
  * Tests for ExplorerActivity
@@ -94,6 +94,8 @@ public class ExplorerActivityTest extends
 	private Context targetContext;
 	private ClientManager clientManager;
 	private MockHttpAccess mockHttpAccessor;
+	EventsListenerQueue eq;
+	
 	
 	public ExplorerActivityTest() {
 		super("com.salesforce.samples.restexplorer", ExplorerActivity.class);
@@ -104,12 +106,11 @@ public class ExplorerActivityTest extends
 		super.setUp();
 		setActivityInitialTouchMode(false);
 		targetContext = getInstrumentation().getTargetContext();
-		PasscodeManager.disable(); 
 		clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null);
 		clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
 		mockHttpAccessor = new MockHttpAccess(RestExplorerApp.APP);
+		ForceApp.APP.getPasscodeManager().setTimeoutMs(0 /* disabled */); 
 	}
-
 	
 	/**
 	 * Test clicking clear.
@@ -382,7 +383,7 @@ public class ExplorerActivityTest extends
 		
 		
 		// Check result area
-		waitSome();
+		waitForRender();
 		TextView resultText = (TextView) getActivity().findViewById(R.id.result_text);
 		assertTrue("Response not found in text area", resultText.getText().toString().indexOf(expectedResponse) > 0);
 	}

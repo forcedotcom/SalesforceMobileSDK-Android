@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.security;
 
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -65,8 +68,6 @@ public class PasscodeManager  {
 	private Class<? extends Activity> passcodeActivityClass;
 	private int timeoutMs;
 
-	private static boolean disabled = false;
-	
 	/**
 	 * @param ctx
 	 * @param lockTimeoutMinutes
@@ -77,7 +78,7 @@ public class PasscodeManager  {
 	public PasscodeManager(Context ctx, int lockTimeoutMinutes,
 			Class<? extends Activity> passcodeActivityClass,
 			HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
-		this.timeoutMs = (disabled ? 0 :lockTimeoutMinutes * 60 * 1000);
+		this.timeoutMs = lockTimeoutMinutes * 60 * 1000;
 		this.passcodeActivityClass = passcodeActivityClass;
 		this.lastActivity = now();
 		this.verificationHashConfig = verificationHashConfig;
@@ -85,18 +86,8 @@ public class PasscodeManager  {
 
 		// Locked at app startup if you're authenticated
 		this.locked = true;
-
-		if (!disabled) {
-			handler = new Handler();
-			handler.postDelayed(new LockChecker(), 20 * 1000);
-		}
-	}
-	
-	/**
-	 * To disable passcode entirely for the application - not reversible
-	 */
-	public static void disable() {
-		disabled = true;
+		handler = new Handler();
+		handler.postDelayed(new LockChecker(), 20 * 1000);
 	}
 	
 	/**
@@ -179,6 +170,7 @@ public class PasscodeManager  {
 	public void lock(Context ctx) {
 		locked = true;
 		showLockActivity(ctx);
+		EventsObservable.get().notifyEvent(EventType.AppLocked);		
 	}
 	
 	/**
@@ -211,7 +203,11 @@ public class PasscodeManager  {
 	}
 
 	public void setTimeoutMs(int newTimeout) {
-		timeoutMs = (disabled ? 0 : newTimeout);
+		timeoutMs = newTimeout;
+	}
+	
+	public int getTimeoutMs() {
+		return timeoutMs;
 	}
 	
 	public boolean shouldLock() {
@@ -231,6 +227,7 @@ public class PasscodeManager  {
 		failedPasscodeAttempts = 0;
 		passcodeHash = hash(passcode, encryptionHashConfig);
 		updateLast();
+		EventsObservable.get().notifyEvent(EventType.AppUnlocked);
 	}
 
 	protected long now() {

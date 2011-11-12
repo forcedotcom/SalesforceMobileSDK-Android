@@ -33,7 +33,6 @@ import android.view.KeyEvent;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
-import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.ForceApp;
 
@@ -51,7 +50,7 @@ public abstract class AbstractPasscodeActivity extends Activity implements OnEdi
 	private PasscodeManager passcodeManager;
 	private String firstPasscode;
 	
-	enum PasscodeMode {
+	public enum PasscodeMode {
 		Create,
 		CreateConfirm,
 		Check;
@@ -72,11 +71,11 @@ public abstract class AbstractPasscodeActivity extends Activity implements OnEdi
 		setMode(passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create);
 	}
 	
-	protected PasscodeMode getMode() {
+	public PasscodeMode getMode() {
 		return currentMode;
 	}
 	
-	protected void setMode(PasscodeMode newMode) {
+	public void setMode(PasscodeMode newMode) {
 		if (newMode == currentMode) return;
 
 		switch(newMode) {
@@ -105,7 +104,7 @@ public abstract class AbstractPasscodeActivity extends Activity implements OnEdi
     	Log.i("onEditorAction", "view=" + v + " actionId=" + actionId + " event=" + event);
     	String pc = entry.getText().toString();
     	if (pc.length() > 0 && pc.length() < getMinPasscodeLength()) {
-    		Toast.makeText(this, getMinLengthInstructions(getMinPasscodeLength()), Toast.LENGTH_SHORT).show();
+    		error.setText(getMinLengthInstructions(getMinPasscodeLength()));
     		return false;
     	}
     	return pc.length() > 0 ? onSubmit(pc) : false;
