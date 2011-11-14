@@ -31,6 +31,18 @@
 	<string name="server_url_default_cancel">Cancel</string>
 	<string name="server_url_default_apply">Apply</string>
 	<string name="server_url_reset">Reset</string>
+	
+	<!-- passcode entry screen -->
+	<string name="passcode_create_title">Create Salesforce passcode</string>
+	<string name="passcode_create_instructions">For increased security, please create a passcode that you will use to access Salesforce when the session has timed out due to inactivity.</string>
+	<string name="passcode_confirm_title">Re-enter your Salesforce passcode</string>
+	<string name="passcode_confirm_instructions">Confirm your mobile passcode for Salesforce</string>
+	<string name="passcode_enter_title">Enter Salesforce Passcode</string>
+	<string name="passcode_enter_instructions">Enter your mobile passcode for Salesforce</string>
+	<string name="passcodes_dont_match">Passcodes don\'t match!</string>
+	<string name="passcode_try_again">The passcode you entered is incorrect. Please try again. You have %d attempts remaining.</string>
+	<string name="passcode_final">Final passcode attempt</string>
+	<string name="passcode_min_length">The passcode must be at least %d characters long</string>	    
 
 	<!-- Explorer -->
 	<string name="explorer_title">@string/app_name</string>
