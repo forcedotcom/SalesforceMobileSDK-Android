@@ -73,6 +73,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
+		TestCredentials.init(getInstrumentation().getContext());
 		targetContext = getInstrumentation().getTargetContext();
 		clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, TEST_PASSCODE_HASH);
 		accountManager = clientManager.getAccountManager();

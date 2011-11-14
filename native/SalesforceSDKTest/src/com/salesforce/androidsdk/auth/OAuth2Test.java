@@ -34,15 +34,13 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 
+import android.test.InstrumentationTestCase;
+
 import com.salesforce.androidsdk.TestCredentials;
-import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.HttpAccess.Execution;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
@@ -51,13 +49,14 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
  * Tests for OAuth2
  *
  */
-public class OAuth2Test extends TestCase {
+public class OAuth2Test extends InstrumentationTestCase {
 
 	private HttpAccess httpAccess;
 
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
+		TestCredentials.init(getInstrumentation().getContext());
 		httpAccess = new HttpAccess(null, "dummy-agent");		
 	}
 	

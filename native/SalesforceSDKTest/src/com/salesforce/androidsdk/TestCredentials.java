@@ -26,33 +26,41 @@
  */
 package com.salesforce.androidsdk;
 
+import android.content.Context;
+
 
 /**
  * Authentication credentials used to make live server calls in tests
  * 
  * Use web app to figure out login/instance urls, orgId, userId, username and clientId
  * 
- * For refresh token:
- * - run RestExplorer in emulator, login to a test org
- * - in DDMS, pull /data/system/accounts.db out of emulator
- * - from a shell, do sqlite3 accounts.db 
- * - then do: select * from accounts; 
- * 
- *  TODO don't checkin actual values
+ * For refresh token, edit RestClient.java toString() to print out refresh token and use "print info" button in RestExplorer.
+ * Attaching a debugger to the RestExplorer and having a break point in RestClient.java toString() is probably the easiest way to go.
  */
 public class TestCredentials {
 
-	public static final String API_VERSION = "v23.0";
-	public static final String ACCOUNT_TYPE = "com.salesforce.androidsdk.test"; // must match authenticator.xml
+	public static String API_VERSION;
+	public static String ACCOUNT_TYPE;
+	public static String ORG_ID;
+	public static String USERNAME;
+	public static String ACCOUNT_NAME;
+	public static String USER_ID;
+	public static String LOGIN_URL;
+	public static String INSTANCE_URL;
+	public static String CLIENT_ID;
+	public static String REFRESH_TOKEN;
 	
-	public static final String ORG_ID = "00DT0000000FPl2MAG";
-	public static final String USERNAME = "sdktest@cs0.com";
-	public static final String ACCOUNT_NAME = USERNAME + " (test)";
-	public static final String USER_ID = "005T0000000sTGcIAM";
-	public static final String LOGIN_URL = "https://test.salesforce.com";
-	public static final String INSTANCE_URL = "https://tapp0.salesforce.com";
-
-	public static final String CLIENT_ID = "3MVG92.uWdyphVj4bnolD7yuIpCQsNgddWtqRND3faxrv9uKnbj47H4RkwheHA2lKY4cBusvDVp0M6gdGE8hp";
-	public static final String REFRESH_TOKEN = "5Aep861_OKMvio5gy9sGt9Z9mdt62xXK.9ugif6nZJYknXeANTICBf4ityN9j6YDgHjFvbzu6FTUQ==";
+	public static void init(Context ctx) {
+		API_VERSION = ctx.getString(R.string.api_version);
+		ACCOUNT_TYPE = ctx.getString(R.string.account_type);
+		ORG_ID = ctx.getString(R.string.org_id);
+		USERNAME = ctx.getString(R.string.username);
+		ACCOUNT_NAME = ctx.getString(R.string.account_name);
+		USER_ID = ctx.getString(R.string.user_id);
+		LOGIN_URL = ctx.getString(R.string.login_url);
+		INSTANCE_URL = ctx.getString(R.string.instance_url);
+		CLIENT_ID = ctx.getString(R.string.oauth_client_id);
+		REFRESH_TOKEN = ctx.getString(R.string.oauth_refresh_token);
+	}
 	
 }
