@@ -34,7 +34,6 @@ import android.content.SharedPreferences;
 import android.view.View;
 import android.widget.Toast;
 
-import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AbstractLoginActivity;
 import com.salesforce.androidsdk.auth.OAuth2;
 
@@ -56,9 +55,6 @@ public class LoginActivity extends AbstractLoginActivity {
 	@Override 
 	public void onResume() {
 		super.onResume();
-
-		// Bring up passcode screen first (unless we already have a passcode)
-		ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
 	}    
     
     /**************************************************************************************************
