@@ -200,7 +200,6 @@ public abstract class ForceApp extends Application implements OnAccountsUpdateLi
 
     /**
 	 * If you return 0, the user will not have to enter a passcode
-	 * Only use that option if file system encryption is on
 	 * @return lock timeout in minutes or 0 for never
 	 *  
 	 */

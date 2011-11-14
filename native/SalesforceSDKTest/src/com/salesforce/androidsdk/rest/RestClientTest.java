@@ -34,11 +34,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
 import org.apache.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -52,7 +52,7 @@ import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
  * Does live calls to a test org
  *
  */
-public class RestClientTest extends TestCase {
+public class RestClientTest extends InstrumentationTestCase {
 
 	private static final String ENTITY_NAME_PREFIX = "RestClientTest";
 	private static final String BAD_TOKEN = "bad-token";
@@ -63,6 +63,7 @@ public class RestClientTest extends TestCase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
+		TestCredentials.init(getInstrumentation().getContext());
 		httpAccess = new HttpAccess(null, null);
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
 		authToken = refreshResponse.authToken;

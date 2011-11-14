@@ -61,7 +61,7 @@ public class RestExplorerApp extends ForceApp {
 
 	@Override
 	public int getLockTimeoutMinutes() {
-		return 1;
+		return 10;
 	}
 
 	@Override

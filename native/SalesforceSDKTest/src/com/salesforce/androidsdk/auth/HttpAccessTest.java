@@ -32,15 +32,13 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.util.EntityUtils;
 
+import android.test.InstrumentationTestCase;
+
 import com.salesforce.androidsdk.TestCredentials;
-import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.HttpAccess.Execution;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 
@@ -48,7 +46,7 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
  * Tests for HttpAccess
  *
  */
-public class HttpAccessTest extends TestCase {
+public class HttpAccessTest extends InstrumentationTestCase {
 
 	private HttpAccess httpAccess;
 	Map<String, String> headers;
@@ -57,6 +55,7 @@ public class HttpAccessTest extends TestCase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
+		TestCredentials.init(getInstrumentation().getContext());
 		httpAccess = new HttpAccess(null, "dummy-agent");
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
 		headers = new HashMap<String, String>();
