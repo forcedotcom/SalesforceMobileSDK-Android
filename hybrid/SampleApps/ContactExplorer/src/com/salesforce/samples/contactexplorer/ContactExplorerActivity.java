@@ -1,9 +1,5 @@
 package com.salesforce.samples.contactexplorer;
 
-import java.util.HashMap;
-
-import org.json.JSONObject;
-
 import android.os.Bundle;
 import android.webkit.WebSettings;
 
@@ -29,24 +25,27 @@ public class ContactExplorerActivity extends DroidGap {
 					ForceApp.APP.logout(ContactExplorerActivity.this);
 					return;
 				}
+
+				StringBuilder jsCall = new StringBuilder()
+					.append("(function() {")
+					.append("  var e = document.createEvent('Events');")
+					.append("  e.initEvent('salesforce_oauth_login');")
+					.append("  e.data = {")
+					.append("    'accessToken': '").append(client.getAuthToken()).append("',")
+					.append("    'refreshToken': '").append(client.getRefreshToken()).append("',")
+					.append("    'clientId': '").append(getString(R.string.oauth_client_id)).append("',")
+					.append("    'loginUrl': '").append(getString(R.string.login_url)).append("',")
+					.append("    'instanceUrl': '").append(client.getBaseUrl().toString()).append("',")
+					.append("    'apiVersion': '").append(getString(R.string.api_version)).append("',")
+					.append("    'userId': '").append(client.getUserId()).append("',")
+					.append("    'username': '").append(client.getUsername()).append("',")
+					.append("    'orgId': '").append(client.getOrgId()).append("',")
+					.append("    'userAgent': '").append(uaStr).append("'")
+					.append("  };")
+					.append("  document.dispatchEvent(e);")
+					.append("})();");
 				
-				HashMap<String, String> data = new HashMap<String, String>();
-				data.put("clientId", getString(R.string.oauth_client_id));
-				data.put("loginUrl", getString(R.string.login_url));
-				data.put("apiVersion", getString(R.string.api_version));
-				data.put("accessToken", client.getAuthToken());
-				data.put("instanceUrl", client.getBaseUrl().toString());
-				data.put("refreshToken", client.getRefreshToken());
-				data.put("userId", client.getUserId());
-				data.put("username", client.getUsername());
-				data.put("orgId", client.getOrgId());
-				data.put("userAgent", uaStr);
-				
-				String eventJs = "{'data':" + new JSONObject(data).toString() + "}";
-				String jsCall = "onSalesforceOAuthLogin(" + eventJs + ")";
-				sendJavascript(jsCall);
-				
-				
+				sendJavascript(jsCall.toString());
 			}
 		});
     }
