@@ -61,4 +61,55 @@ public class PasscodeActivity extends AbstractPasscodeActivity {
 	protected EditText getEntryView() {
 		return (EditText) findViewById(R.id.passcode_text);
 	}
+	
+	@Override
+	protected String getCreateTitle() {
+		return getString(R.string.passcode_create_title);
+	}
+	
+	@Override
+	protected String getEnterTitle() {
+		return getString(R.string.passcode_enter_title);
+	}
+	
+	@Override
+	protected String getConfirmTitle() {
+		return getString(R.string.passcode_confirm_title);
+	}
+	
+	@Override
+	protected String getEnterInstructions() {
+		return getString(R.string.passcode_enter_instructions);
+	}
+	
+	@Override
+	protected String getCreateInstructions() {
+		return getString(R.string.passcode_create_instructions);
+	}
+	
+	@Override
+	protected String getConfirmInstructions() {
+		return getString(R.string.passcode_confirm_instructions);
+	}
+	
+	@Override
+	protected String getMinLengthInstructions(int minPasscodeLength) {
+		return getString(R.string.passcode_min_length, minPasscodeLength);
+	}
+	
+	@Override
+	protected String getPasscodeTryAgainError(int countAttemptsLeft) {
+		return getString(R.string.passcode_try_again, countAttemptsLeft);
+	}
+
+	@Override
+	protected String getPasscodeFinalAttemptError() {
+		return getString(R.string.passcode_final);
+	}
+
+	@Override
+	protected String getPasscodesDontMatchError() {
+		return getString(R.string.passcodes_dont_match);
+	}
+	
 }
