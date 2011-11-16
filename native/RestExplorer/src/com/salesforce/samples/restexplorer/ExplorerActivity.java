@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeSet;
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -50,7 +49,6 @@ import android.app.Dialog;
 import android.app.TabActivity;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
@@ -67,6 +65,7 @@ import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -537,56 +536,36 @@ public class ExplorerActivity extends TabActivity {
 	}
 
 	/**
-	 * Network calls can't be done from UI thread, so using a AsyncTask to do
-	 * call from the UI thread
-	 * 
+	 * Send restRequest using RestClient's sendAsync method.
+	 * Note: Synchronous calls are not allowed from code running on the UI thread. 
 	 * @param restRequest
-	 * @return
-	 * @return
-	 * @throws ExecutionException
-	 * @throws InterruptedException
 	 */
-	private void sendFromUIThread(RestRequest restRequest)
-			throws InterruptedException, ExecutionException {
-		new RestCallTask().execute(restRequest);
-	}
+	private void sendFromUIThread(RestRequest restRequest) {
+		client.sendAsync(restRequest, new AsyncRequestCallback() {
+			private long start = System.nanoTime();
 
-	private class RestCallTask extends
-			AsyncTask<RestRequest, Void, RestResponse> {
-		private long start;
-		private Exception exceptionThrown = null;
-
-		@Override
-		protected RestResponse doInBackground(RestRequest... requests) {
-			try {
-				start = System.nanoTime();
-				return getClient().send(requests[0]);
-			} catch (Exception e) {
-				exceptionThrown = e;
-				return null;
+			@Override
+			public void onSuccess(RestResponse result) {
+				try {
+					long duration = System.nanoTime() - start;
+					println(result);
+					int size = result.asString().length();
+					int statusCode = result.getStatusCode();
+					printRequestInfo(duration, size, statusCode);
+					extractIdsFromResponse(result.asString());
+				} catch (Exception e) {
+					printException(e);
+				}
+			
+				EventsObservable.get().notifyEvent(EventType.RenditionComplete);
 			}
-		}
-
-		@Override
-		protected void onPostExecute(RestResponse result) {
-			if (exceptionThrown != null) {
-				printException(exceptionThrown);
-				return;
+			
+			@Override
+			public void onError(Exception exception) {
+				printException(exception);
+				EventsObservable.get().notifyEvent(EventType.RenditionComplete);				
 			}
-
-			try {
-				long duration = System.nanoTime() - start;
-				println(result);
-				int size = result.asString().length();
-				int statusCode = result.getStatusCode();
-				printRequestInfo(duration, size, statusCode);
-				extractIdsFromResponse(result.asString());
-			} catch (Exception e) {
-				printException(e);
-			}
-		
-			EventsObservable.get().notifyEvent(EventType.RenditionComplete);
-		}
+		});
 	}
 
 	/**
