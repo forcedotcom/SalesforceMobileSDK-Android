@@ -100,7 +100,7 @@ public class RestClientTest extends InstrumentationTestCase {
 	 */
 	public void testCallWithBadAuthToken() throws URISyntaxException, IOException {
 		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, null, null, null, null, null);
-		RestResponse response = unauthenticatedRestClient.send(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
+		RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
 		assertFalse("Expected error", response.isSuccess());
 		checkResponse(response, HttpStatus.SC_UNAUTHORIZED, true);
 	}
@@ -131,7 +131,7 @@ public class RestClientTest extends InstrumentationTestCase {
 		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, authTokenProvider, null, null, null, null);
 
 		assertEquals("RestClient should be using the bad token initially", BAD_TOKEN, unauthenticatedRestClient.getAuthToken());
-		RestResponse response = unauthenticatedRestClient.send(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
+		RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
 		assertEquals("RestClient should now be using the good token", authToken, unauthenticatedRestClient.getAuthToken());
 		
 		assertTrue("Expected success", response.isSuccess());
@@ -146,7 +146,7 @@ public class RestClientTest extends InstrumentationTestCase {
 	public void testGetVersions() throws Exception {
 		// We don't need to be authenticated
 		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, null, null, null, null, null);
-		RestResponse response = unauthenticatedRestClient.send(RestRequest.getRequestForVersions());
+		RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForVersions());
 		checkResponse(response, HttpStatus.SC_OK, true);
 		checkKeys(response.asJSONArray().getJSONObject(0), "label", "url", "version");
 	}
@@ -156,7 +156,7 @@ public class RestClientTest extends InstrumentationTestCase {
 	 * @throws Exception
 	 */
 	public void testGetResources() throws Exception {
-		RestResponse response = restClient.send(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
+		RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
 		checkResponse(response, HttpStatus.SC_OK, false);
 		checkKeys(response.asJSONObject(), "sobjects", "search", "recent");
 	}
@@ -167,7 +167,7 @@ public class RestClientTest extends InstrumentationTestCase {
 	 * @throws Exception 
 	 */
 	public void testDescribeGlobal() throws Exception {
-		RestResponse response = restClient.send(RestRequest.getRequestForDescribeGlobal(TestCredentials.API_VERSION));
+		RestResponse response = restClient.sendSync(RestRequest.getRequestForDescribeGlobal(TestCredentials.API_VERSION));
 		checkResponse(response, HttpStatus.SC_OK, false);
 		JSONObject jsonResponse = response.asJSONObject();
 		checkKeys(jsonResponse, "encoding", "maxBatchSize", "sobjects");
@@ -179,7 +179,7 @@ public class RestClientTest extends InstrumentationTestCase {
 	 * @throws Exception
 	 */
 	public void testMetadata() throws Exception {
-		RestResponse response = restClient.send(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"));
+		RestResponse response = restClient.sendSync(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"));
 		checkResponse(response, HttpStatus.SC_OK, false);
 		JSONObject jsonResponse = response.asJSONObject();
 		checkKeys(jsonResponse, "objectDescribe", "recentItems");
@@ -192,7 +192,7 @@ public class RestClientTest extends InstrumentationTestCase {
 	 * @throws Exception
 	 */
 	public void testDescribe() throws Exception {
-		RestResponse response = restClient.send(RestRequest.getRequestForDescribe(TestCredentials.API_VERSION, "account"));
+		RestResponse response = restClient.sendSync(RestRequest.getRequestForDescribe(TestCredentials.API_VERSION, "account"));
 		checkResponse(response, HttpStatus.SC_OK, false);
 		JSONObject jsonResponse = response.asJSONObject();
 		checkKeys(jsonResponse, "name", "fields", "urls", "label");
@@ -207,7 +207,7 @@ public class RestClientTest extends InstrumentationTestCase {
 		Map<String, Object> fields = new HashMap<String, Object>();
 		String newAccountName = ENTITY_NAME_PREFIX + System.nanoTime();
 		fields.put("name", newAccountName);
-		RestResponse response = restClient.send(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields));
+		RestResponse response = restClient.sendSync(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields));
 		JSONObject jsonResponse = response.asJSONObject();
 		checkKeys(jsonResponse, "id", "errors", "success");
 		assertTrue("Create failed", jsonResponse.getBoolean("success"));
@@ -221,7 +221,7 @@ public class RestClientTest extends InstrumentationTestCase {
 	public void testRetrieve() throws Exception {
 		List<String> fields = Arrays.asList(new String[] {"name", "ownerId"});
 		IdName newAccountIdName = createAccount();
-		RestResponse response = restClient.send(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, "account", newAccountIdName.id, fields));
+		RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, "account", newAccountIdName.id, fields));
 		checkResponse(response, HttpStatus.SC_OK, false);
 		JSONObject jsonResponse = response.asJSONObject();
 		checkKeys(jsonResponse, "attributes", "Name", "OwnerId", "Id");
@@ -241,11 +241,11 @@ public class RestClientTest extends InstrumentationTestCase {
 		Map<String, Object> fields = new HashMap<String, Object>();
 		String updatedAccountName = ENTITY_NAME_PREFIX + "-" + System.nanoTime();
 		fields.put("name", updatedAccountName);
-		RestResponse updateResponse = restClient.send(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", newAccountIdName.id, fields));
+		RestResponse updateResponse = restClient.sendSync(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", newAccountIdName.id, fields));
 		assertTrue("Update failed", updateResponse.isSuccess());
 		
 		// Retrieve - expect updated name
-		RestResponse response = restClient.send(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, "account", newAccountIdName.id, Arrays.asList(new String[] {"name"})));
+		RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, "account", newAccountIdName.id, Arrays.asList(new String[] {"name"})));
 		assertEquals("Wrong row returned", updatedAccountName, response.asJSONObject().getString("Name"));
 	}
 
@@ -260,12 +260,12 @@ public class RestClientTest extends InstrumentationTestCase {
 		IdName newAccountIdName = createAccount();
 		
 		// Delete
-		RestResponse deleteResponse = restClient.send(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, "account", newAccountIdName.id));
+		RestResponse deleteResponse = restClient.sendSync(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, "account", newAccountIdName.id));
 		assertTrue("Delete failed", deleteResponse.isSuccess());
 		
 		// Retrieve - expect 404
 		List<String> fields = Arrays.asList(new String[] {"name"});
-		RestResponse response = restClient.send(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, "account", newAccountIdName.id, fields));
+		RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, "account", newAccountIdName.id, fields));
 		assertEquals("404 was expected", HttpStatus.SC_NOT_FOUND, response.getStatusCode());
 	}
 	
@@ -277,7 +277,7 @@ public class RestClientTest extends InstrumentationTestCase {
 	 */
 	public void testQuery() throws Exception {
 		IdName newAccountIdName = createAccount();
-		RestResponse response = restClient.send(RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select name from account where id = '" + newAccountIdName.id + "'"));
+		RestResponse response = restClient.sendSync(RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select name from account where id = '" + newAccountIdName.id + "'"));
 		checkResponse(response, HttpStatus.SC_OK, false);
 		JSONObject jsonResponse = response.asJSONObject();
 		checkKeys(jsonResponse, "done", "totalSize", "records");
@@ -292,7 +292,7 @@ public class RestClientTest extends InstrumentationTestCase {
 	 */
 	public void testSearch() throws Exception {
 		IdName newAccountIdName = createAccount();
-		RestResponse response = restClient.send(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
+		RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
 		checkResponse(response, HttpStatus.SC_OK, true);
 		JSONArray matchingRows = response.asJSONArray();
 		assertEquals("Expected one row", 1, matchingRows.length());
@@ -309,7 +309,7 @@ public class RestClientTest extends InstrumentationTestCase {
 		Map<String, Object> fields = new HashMap<String, Object>();
 		String newAccountName = ENTITY_NAME_PREFIX + "-" + System.nanoTime();
 		fields.put("name", newAccountName);
-		RestResponse response = restClient.send(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields));
+		RestResponse response = restClient.sendSync(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields));
 		String newAccountId = response.asJSONObject().getString("id");
 		return new IdName(newAccountId, newAccountName);
 	}
@@ -319,13 +319,13 @@ public class RestClientTest extends InstrumentationTestCase {
 	 */
 	private void cleanup() {
 		try {
-			RestResponse searchResponse = restClient.send(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
+			RestResponse searchResponse = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
 			JSONArray matchingRows = searchResponse.asJSONArray();
 			for (int i=0; i<matchingRows.length(); i++) {
 				JSONObject matchingRow = matchingRows.getJSONObject(i);
 				String matchingRowType = matchingRow.getJSONObject("attributes").getString("type"); 
 				String matchingRowId = matchingRow.getString("Id");
-				restClient.send(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, matchingRowType, matchingRowId));
+				restClient.sendSync(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, matchingRowType, matchingRowId));
 			}
 		}
 		catch(Exception e) {

@@ -34,6 +34,8 @@ import java.util.Map;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 
+import android.os.AsyncTask;
+
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.HttpAccess.Execution;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
@@ -57,9 +59,18 @@ public class RestClient {
 	 * RestClient will call its authTokenProvider to refresh its authToken once it has expired. 
 	 */
 	public interface AuthTokenProvider {
-		public String getNewAuthToken();
-		public String getRefreshToken();
-		public long getLastRefreshTime();
+		String getNewAuthToken();
+		String getRefreshToken();
+		long getLastRefreshTime();
+	}
+	
+	/**
+	 * AsyncRequestCallback interface
+	 * Interface through which the result of asynchronous request is handled 
+	 */
+	public interface AsyncRequestCallback {
+		void onSuccess(RestResponse response);
+		void onError(Exception exception);
 	}
 	
     /**
@@ -178,28 +189,40 @@ public class RestClient {
 	}
 	
 	/**
-	 * Send the given restRequest and return a RestResponse
+	 * Send the given restRequest and process the result asynchronously with callback
+	 * Note: intented to be used by code on the UI thread.
+	 * @param restRequest
+	 * @param callback
+	 */
+	public void sendAsync(RestRequest restRequest, AsyncRequestCallback callback) {
+		new RestCallTask(callback).execute(restRequest);
+	}
+
+	/**
+	 * Send the given restRequest synchronously and return a RestResponse
+	 * Note: cannot be used by code on the UI thread (use sendAsync instead)
 	 * @param restRequest
 	 * @return
 	 * @throws IOException 
 	 */
-	public RestResponse send(RestRequest restRequest) throws IOException {
-		return send(restRequest.getMethod(), restRequest.getPath(), restRequest.getRequestEntity());
+	public RestResponse sendSync(RestRequest restRequest) throws IOException {
+		return sendSync(restRequest.getMethod(), restRequest.getPath(), restRequest.getRequestEntity());
 	}
 
 	/**
-	 * Send an arbitrary HTTP request given by its method, path and httpEntity
+	 * Send an arbitrary HTTP request synchronously given by its method, path and httpEntity
+	 * Note: cannot be used by code on the UI thread (use sendAsync instead)
 	 * @param method
 	 * @param path
 	 * @param httpEntity
 	 * @return
 	 * @throws IOException
 	 */
-	public RestResponse send(RestMethod method, String path, HttpEntity httpEntity) throws IOException {
-		return send(method, path, httpEntity, true);
+	public RestResponse sendSync(RestMethod method, String path, HttpEntity httpEntity) throws IOException {
+		return sendSync(method, path, httpEntity, true);
 	}
 	
-	private RestResponse send(RestMethod method, String path, HttpEntity httpEntity, boolean retryInvalidToken) throws IOException {
+	private RestResponse sendSync(RestMethod method, String path, HttpEntity httpEntity, boolean retryInvalidToken) throws IOException {
 		Execution exec = null;
 
 		// Prepare headers
@@ -239,7 +262,7 @@ public class RestClient {
 				if (newAuthToken != null) {
 					setAuthToken(newAuthToken);
 					// Retry with the new authToken
-					return send(method, path, httpEntity, false);
+					return sendSync(method, path, httpEntity, false);
 				}
 			}
 		}
@@ -247,6 +270,41 @@ public class RestClient {
 		// Done
 		return restResponse;
 	}
+	
+	/**
+	 * Async task used to send request asynchronously
+	 */
+	private class RestCallTask extends
+			AsyncTask<RestRequest, Void, RestResponse> {
+
+		private Exception exceptionThrown = null;
+		private AsyncRequestCallback callback;
+
+		public RestCallTask(AsyncRequestCallback callback) {
+			this.callback = callback;
+		}
+		
+		@Override
+		protected RestResponse doInBackground(RestRequest... requests) {
+			try {
+				return sendSync(requests[0]);
+			} catch (Exception e) {
+				exceptionThrown = e;
+				return null;
+			}
+		}
+
+		@Override
+		protected void onPostExecute(RestResponse result) {
+			if (exceptionThrown != null) {
+				callback.onError(exceptionThrown);
+			}
+			else {
+				callback.onSuccess(result);
+			}
+		}
+	}
+	
 	
 	/**
 	 * Only used in tests

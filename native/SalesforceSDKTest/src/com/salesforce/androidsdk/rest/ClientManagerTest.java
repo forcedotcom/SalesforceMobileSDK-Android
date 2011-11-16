@@ -407,7 +407,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertEquals("RestClient should be using authToken from account", badToken, restClient.getAuthToken());
 		
 		// Try a call - it should succeed and client should end up with a new auth token
-		RestResponse response = restClient.send(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
+		RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
 		assertFalse("RestClient should now be using a new token", badToken.equals(restClient.getAuthToken()));
 		assertTrue("Call should have succeeded", response.isSuccess());
 	}
