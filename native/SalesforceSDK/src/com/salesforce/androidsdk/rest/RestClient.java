@@ -53,6 +53,7 @@ public class RestClient {
 	private String orgId;
 	private String username;
 	private String accountName;
+	private String clientId;
 	
 	/** 
 	 * AuthTokenProvider interface
@@ -80,7 +81,7 @@ public class RestClient {
      * @param authToken
      */
     public RestClient(URI baseUrl, String authToken) {
-		this(baseUrl, authToken, HttpAccess.DEFAULT, null, null, null, null, null);
+		this(baseUrl, authToken, HttpAccess.DEFAULT, null, null, null, null, null, null);
 	}
 
     /**
@@ -88,15 +89,16 @@ public class RestClient {
      * When it gets a 401 (not authorized) response from the server, it will ask the authTokenProvider for a new access token
      * and retry the request a second time.
 	 * @param baseUrl
-	 * @param authToken
-	 * @param httpAccessor
-	 * @param authTokenProvider
-	 * @param accountName 
-	 * @param username 
-	 * @param userId 
-	 * @param orgId 
+     * @param authToken
+     * @param httpAccessor
+     * @param authTokenProvider
+     * @param accountName 
+     * @param username 
+     * @param userId 
+     * @param orgId 
+     * @param clientId TODO
 	 */
-	public RestClient(URI baseUrl, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider, String accountName, String username, String userId, String orgId) {
+	public RestClient(URI baseUrl, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider, String accountName, String username, String userId, String orgId, String clientId) {
 		super();
 		this.authToken = authToken;
 		this.baseUrl = baseUrl;
@@ -171,6 +173,13 @@ public class RestClient {
 	 */
 	public String getOrgId() {
 		return orgId;
+	}
+	
+	/**
+	 * @return oauth client id
+	 */
+	public String getClientId() {
+		return clientId;
 	}
 	
 	/**

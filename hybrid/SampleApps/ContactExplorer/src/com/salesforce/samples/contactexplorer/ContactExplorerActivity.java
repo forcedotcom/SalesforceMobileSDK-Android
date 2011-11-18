@@ -33,7 +33,7 @@ public class ContactExplorerActivity extends DroidGap {
 					.append("  e.data = {")
 					.append("    'accessToken': '").append(client.getAuthToken()).append("',")
 					.append("    'refreshToken': '").append(client.getRefreshToken()).append("',")
-					.append("    'clientId': '").append(getString(R.string.oauth_client_id)).append("',")
+					.append("    'clientId': '").append(client.getClientId()).append("',")
 					.append("    'loginUrl': '").append(getString(R.string.login_url)).append("',")
 					.append("    'instanceUrl': '").append(client.getBaseUrl().toString()).append("',")
 					.append("    'apiVersion': '").append(getString(R.string.api_version)).append("',")

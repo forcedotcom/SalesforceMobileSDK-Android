@@ -144,6 +144,7 @@ public class ClientManager {
 		String userId = accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID);
 		String username = accountManager.getUserData(acc, AuthenticatorService.KEY_USERNAME);
 		String accountName = accountManager.getUserData(acc, AccountManager.KEY_ACCOUNT_NAME);
+		String clientId = accountManager.getUserData(acc, AuthenticatorService.KEY_CLIENT_ID);
 
 		if (authToken == null)
 			throw new AccountInfoNotFoundException(AccountManager.KEY_AUTHTOKEN);
@@ -156,7 +157,7 @@ public class ClientManager {
 
 		try {
 			AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, authToken, refreshToken);
-			return new RestClient(new URI(server), authToken, HttpAccess.DEFAULT, authTokenProvider, accountName, username, userId, orgId);
+			return new RestClient(new URI(server), authToken, HttpAccess.DEFAULT, authTokenProvider, accountName, username, userId, orgId, clientId);
 		} 
 		catch (URISyntaxException e) {
 			Log.w("ClientManager:peekRestClient", "Invalid server URL", e);

@@ -73,10 +73,10 @@ public class ForcePlugin extends Plugin {
 						data.put("refreshToken", client.getRefreshToken());
 						data.put("userId", client.getUserId());
 						data.put("orgId", client.getOrgId());
-						data.put("clientId", "FIXME--client-id");
-						data.put("loginUrl", "FIXME--login-url");
+						data.put("clientId", client.getClientId());
+						// data.put("loginUrl", "FIXME--login-url"); // Why is it needed? 
 						data.put("instanceUrl", client.getBaseUrl().toString());
-						data.put("apiVersion", "FIXME--apiVersion");
+						// data.put("apiVersion", "FIXME--apiVersion"); // What's expected here?
 						data.put("userAgent", ForceApp.APP.getUserAgent());
 						
 						ForcePlugin.this.success(new PluginResult(PluginResult.Status.OK, new JSONObject(data), "JSON.parse"), cId);
