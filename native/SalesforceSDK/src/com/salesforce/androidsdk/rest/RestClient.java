@@ -96,7 +96,7 @@ public class RestClient {
      * @param username 
      * @param userId 
      * @param orgId 
-     * @param clientId TODO
+     * @param clientId
 	 */
 	public RestClient(URI baseUrl, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider, String accountName, String username, String userId, String orgId, String clientId) {
 		super();
