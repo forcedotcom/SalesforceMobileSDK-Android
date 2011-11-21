@@ -38,11 +38,12 @@ import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 
 /**
  * Phonegap plugin for Force
  */
-public class ForcePlugin extends Plugin {
+public class SalesforceOAuthPlugin extends Plugin {
     
     /**
      * Executes the request and returns PluginResult.
@@ -56,30 +57,27 @@ public class ForcePlugin extends Plugin {
         PluginResult.Status status = PluginResult.Status.INVALID_ACTION;
         String result = "Unsupported Operation: " + action; 
                 
-        if (action.equals("getLoginHost")) {
-        	return new PluginResult(PluginResult.Status.OK, "FIXME--login-host");
-        }
-        else if (action.equals("authenticate")) {
+        if (action.equals("authenticate")) {
         	final String cId = callbackId;
 			new ClientManager(ctx).getRestClient(ctx, new RestClientCallback() {
 				@Override
 				public void authenticatedRestClient(RestClient client) {
 					if (client == null) {
-						ForcePlugin.this.error("FIXME--authentication-failed", cId);						
+						SalesforceOAuthPlugin.this.error("Authentication failed", cId);						
 					}
 					else {
+						ClientInfo clientInfo = client.getClientInfo();
 						Map<String, String> data = new HashMap<String, String>();
 						data.put("accessToken", client.getAuthToken());
 						data.put("refreshToken", client.getRefreshToken());
-						data.put("userId", client.getUserId());
-						data.put("orgId", client.getOrgId());
-						data.put("clientId", client.getClientId());
-						// data.put("loginUrl", "FIXME--login-url"); // Why is it needed? 
-						data.put("instanceUrl", client.getBaseUrl().toString());
-						// data.put("apiVersion", "FIXME--apiVersion"); // What's expected here?
+						data.put("userId", clientInfo.userId);
+						data.put("orgId", clientInfo.orgId);
+						data.put("clientId", clientInfo.clientId);
+						data.put("loginUrl", clientInfo.loginUrl.toString()); 
+						data.put("instanceUrl", clientInfo.instanceUrl.toString());
 						data.put("userAgent", ForceApp.APP.getUserAgent());
 						
-						ForcePlugin.this.success(new PluginResult(PluginResult.Status.OK, new JSONObject(data), "JSON.parse"), cId);
+						SalesforceOAuthPlugin.this.success(new PluginResult(PluginResult.Status.OK, new JSONObject(data), "JSON.parse"), cId);
 					}
 				}
 			});

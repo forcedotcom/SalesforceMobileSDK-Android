@@ -45,6 +45,7 @@ import android.util.Log;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.security.Encryptor;
 
 /**
@@ -139,7 +140,8 @@ public class ClientManager {
 		String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), passcodeHash);
 		
 		// We also store the username, instance url, org id, user id and username in the account manager
-		String server = accountManager.getUserData(acc, AuthenticatorService.KEY_INSTANCE_SERVER);
+		String loginServer = accountManager.getUserData(acc, AuthenticatorService.KEY_LOGIN_SERVER);
+		String instanceServer = accountManager.getUserData(acc, AuthenticatorService.KEY_INSTANCE_SERVER);
 		String orgId = accountManager.getUserData(acc, AuthenticatorService.KEY_ORG_ID);
 		String userId = accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID);
 		String username = accountManager.getUserData(acc, AuthenticatorService.KEY_USERNAME);
@@ -148,7 +150,7 @@ public class ClientManager {
 
 		if (authToken == null)
 			throw new AccountInfoNotFoundException(AccountManager.KEY_AUTHTOKEN);
-		if (server == null)
+		if (instanceServer == null)
 			throw new AccountInfoNotFoundException(AuthenticatorService.KEY_INSTANCE_SERVER);
 		if (userId == null)
 			throw new AccountInfoNotFoundException(AuthenticatorService.KEY_USER_ID);
@@ -157,7 +159,8 @@ public class ClientManager {
 
 		try {
 			AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, authToken, refreshToken);
-			return new RestClient(new URI(server), authToken, HttpAccess.DEFAULT, authTokenProvider, accountName, username, userId, orgId, clientId);
+			ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer), new URI(loginServer), accountName, username, userId, orgId);
+			return new RestClient(clientInfo, authToken, HttpAccess.DEFAULT, authTokenProvider);
 		} 
 		catch (URISyntaxException e) {
 			Log.w("ClientManager:peekRestClient", "Invalid server URL", e);

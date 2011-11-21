@@ -307,7 +307,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 			RestClient restClient = clientManager.peekRestClient();
 			assertNotNull("RestClient expected", restClient);
 			assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
-			assertEquals("Wrong base Url", new URI(TEST_INSTANCE_URL), restClient.getBaseUrl());
+			assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
 		} 
 		catch (AccountInfoNotFoundException e) {
 			fail("Did not expect AccountInfoNotFoundException");
@@ -339,7 +339,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 			RestClient restClient = q.poll(5L, TimeUnit.SECONDS);
 			assertNotNull("RestClient expected", restClient);
 			assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
-			assertEquals("Wrong base Url", new URI(TEST_INSTANCE_URL), restClient.getBaseUrl());
+			assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
 		} catch (InterruptedException e) {
 			fail("getRestClient did not return after 5s");
 		}

@@ -66,7 +66,7 @@ public class VFConnectorActivity extends DroidGap {
     
     protected void loggedIn(RestClient client) {    	
     	this.setSidCookies(client);
-    	this.loadStartPage(client.getBaseUrl());    	
+    	this.loadStartPage(client.getClientInfo().instanceUrl);    	
     }
     
     protected void loadStartPage(URI baseUrl) {
@@ -89,7 +89,7 @@ public class VFConnectorActivity extends DroidGap {
     	cookieMgr.removeSessionCookie();
 
     	String accessToken = client.getAuthToken();
-    	String domain = client.getBaseUrl().getHost();
+    	String domain = client.getClientInfo().instanceUrl.getHost();
 
     	//set the cookie on all possible domains we could access
     	addSidCookieForDomain(cookieMgr,domain,accessToken);
