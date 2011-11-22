@@ -64,7 +64,7 @@ public class ClientManager {
 	 * @param ctx
 	 */
 	public ClientManager(Context ctx) {
-		this(ctx, ForceApp.APP.getAccountType(), ForceApp.APP.getPasscodeManager().getPasscodeHash());
+		this(ctx, ForceApp.APP.getAccountType(), ForceApp.APP.getPasscodeHash());
 	}
 	
 	/**
@@ -101,7 +101,7 @@ public class ClientManager {
 
 		// No account found - let's add one - the AuthenticatorService add account method will start the login activity
 		if (acc == null) {
-			Log.i("ClientManager:getRestClient", "No account of type " + accountType + "found");
+			Log.i("ClientManager:getRestClient", "No account of type " + accountType + " found");
 			accountManager.addAccount(getAccountType(),
 					AccountManager.KEY_AUTHTOKEN, null /*required features*/, options,
 					activityContext, new AccMgrCallback(restClientCallback),

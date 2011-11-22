@@ -60,7 +60,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 public abstract class ForceApp extends Application implements OnAccountsUpdateListener  {
 
 	// current SDK version
-    public static final String SDK_VERSION = "0.9";
+    public static final String SDK_VERSION = "1.0";
 
 	// instance of the ForceApp for this process
     public static ForceApp APP;
@@ -82,10 +82,12 @@ public abstract class ForceApp extends Application implements OnAccountsUpdateLi
         // Initialize the http client        
         HttpAccess.init(this, getUserAgent());
         
-        // Initialize the passcode manager
-		passcodeManager = new PasscodeManager(this, getLockTimeoutMinutes(),
-				getPasscodeActivityClass(), getVerificationHashConfig(),
-				getEncryptionHashConfig());
+        // Initialize the passcode manager if required
+        if (getLockTimeoutMinutes() > 0) {
+			passcodeManager = new PasscodeManager(this, getLockTimeoutMinutes(),
+					getPasscodeActivityClass(), getVerificationHashConfig(),
+					getEncryptionHashConfig());
+        }
 		
 		// Listen for accounts update
 		AccountManager.get(this).addOnAccountsUpdatedListener(this, null, false);
@@ -108,6 +110,14 @@ public abstract class ForceApp extends Application implements OnAccountsUpdateLi
 		return passcodeManager;
 	}
 
+	/**
+	 * @return passcodeHash or null if none required
+	 */
+	public String getPasscodeHash() {
+		return passcodeManager == null ? null : passcodeManager.getPasscodeHash();
+	}
+	
+	
 	/**
 	 * @return name of application (as defined in AndroidManifest.xml)
 	 */
