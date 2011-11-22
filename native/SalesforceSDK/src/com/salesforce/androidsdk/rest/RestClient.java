@@ -45,14 +45,10 @@ import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
  */
 public class RestClient {
 
+	private final ClientInfo clientInfo;
 	private final AuthTokenProvider authTokenProvider;
 	private HttpAccess httpAccessor;
-	private final URI baseUrl;
 	private String authToken;
-	private String userId;
-	private String orgId;
-	private String username;
-	private String accountName;
 	
 	/** 
 	 * AuthTokenProvider interface
@@ -74,49 +70,27 @@ public class RestClient {
 	}
 	
     /**
-     * Constructs a RestClient with the given baseUrl and authToken.
-     * It uses the default httpAccess and has no AuthTokenProvider so it will not refresh the access token once it expires.
-     * @param baseUrl
+     * Constructs a RestClient with the given clientInfo, authToken, httpAccessor and authTokenProvider.
+     * When it gets a 401 (not authorized) response from the server:
+     * - if authTokenProvider is not null, it will ask the authTokenProvider for a new access token and retry the request a second time,
+     * - otherwise it will return the 401 response
+	 * @param clientInfo
      * @param authToken
-     */
-    public RestClient(URI baseUrl, String authToken) {
-		this(baseUrl, authToken, HttpAccess.DEFAULT, null, null, null, null, null);
-	}
-
-    /**
-     * Constructs a RestClient with the given baseUrl, authToken, httpAccessor and authTokenProvider.
-     * When it gets a 401 (not authorized) response from the server, it will ask the authTokenProvider for a new access token
-     * and retry the request a second time.
-	 * @param baseUrl
-	 * @param authToken
-	 * @param httpAccessor
-	 * @param authTokenProvider
-	 * @param accountName 
-	 * @param username 
-	 * @param userId 
-	 * @param orgId 
+     * @param httpAccessor
+     * @param authTokenProvider
 	 */
-	public RestClient(URI baseUrl, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider, String accountName, String username, String userId, String orgId) {
-		super();
+	public RestClient(ClientInfo clientInfo, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
+		this.clientInfo = clientInfo;
 		this.authToken = authToken;
-		this.baseUrl = baseUrl;
 		this.httpAccessor = httpAccessor;
 		this.authTokenProvider = authTokenProvider;
-		this.accountName = accountName;
-		this.username = username;
-		this.userId = userId;
-		this.orgId = orgId;
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("RestClient: {\n")
-		  .append("   baseUrl: ").append(baseUrl.toString()).append("\n")
-		  .append("   accountName: ").append(accountName).append("\n")
-		  .append("   username: ").append(username).append("\n")
-		  .append("   userId: ").append(userId).append("\n")
-		  .append("   orgId: ").append(orgId).append("\n")
+		  .append(clientInfo)
 		  // Un-comment if you must: tokens should not be printed to the log
 		  // .append("   authToken: ").append(authToken).append("\n")
 		  // .append("   refreshToken: ").append(getRefreshToken()).append("\n")
@@ -133,12 +107,27 @@ public class RestClient {
 	}
 	
 	/**
+	 * Change authToken for this RestClient
+	 * @param newAuthToken
+	 */
+	private synchronized void setAuthToken(String newAuthToken) {
+		authToken = newAuthToken;
+	}
+
+	/**
 	 * @return refresh token if available
 	 */
 	public String getRefreshToken() {
 		return (authTokenProvider != null ? authTokenProvider.getRefreshToken() : null);
 	}
-
+	
+	/**
+	 * @return client info
+	 */
+	public ClientInfo getClientInfo() {
+		return clientInfo;
+	}
+	
 	/**
 	 * @return elapsed time (ms) since last refresh
 	 */
@@ -151,43 +140,7 @@ public class RestClient {
 			return System.currentTimeMillis() - lastRefreshTime;
 		}
 	}
-	
-	/**
-	 * @return salesforce username
-	 */
-	public String getUsername() {
-		return userId;
-	}
-	
-	/**
-	 * @return salesforce user id
-	 */
-	public String getUserId() {
-		return userId;
-	}
-	
-	/**
-	 * @return salesforce org id
-	 */
-	public String getOrgId() {
-		return orgId;
-	}
-	
-	/**
-	 * Change authToken for this RestClient
-	 * @param newAuthToken
-	 */
-	private synchronized void setAuthToken(String newAuthToken) {
-		authToken = newAuthToken;
-	}
-	
-	/**
-	 * @return baseUrl for this RestClient
-	 */
-	public URI getBaseUrl() {
-		return baseUrl;
-	}
-	
+
 	/**
 	 * Send the given restRequest and process the result asynchronously with callback
 	 * Note: intented to be used by code on the UI thread.
@@ -235,17 +188,17 @@ public class RestClient {
 		// Do the actual call
 		switch(method) {
 		case DELETE:
-			exec = httpAccessor.doDelete(headers, baseUrl.resolve(path)); break;
+			exec = httpAccessor.doDelete(headers, clientInfo.instanceUrl.resolve(path)); break;
 		case GET:
-			exec = httpAccessor.doGet(headers, baseUrl.resolve(path)); break;
+			exec = httpAccessor.doGet(headers, clientInfo.instanceUrl.resolve(path)); break;
 		case HEAD:
-			exec = httpAccessor.doHead(headers, baseUrl.resolve(path)); break;
+			exec = httpAccessor.doHead(headers, clientInfo.instanceUrl.resolve(path)); break;
 		case PATCH:
-			exec = httpAccessor.doPatch(headers, baseUrl.resolve(path), httpEntity); break;
+			exec = httpAccessor.doPatch(headers, clientInfo.instanceUrl.resolve(path), httpEntity); break;
 		case POST:
-			exec = httpAccessor.doPost(headers, baseUrl.resolve(path), httpEntity); break;
+			exec = httpAccessor.doPost(headers, clientInfo.instanceUrl.resolve(path), httpEntity); break;
 		case PUT:
-			exec = httpAccessor.doPut(headers, baseUrl.resolve(path), httpEntity); break;
+			exec = httpAccessor.doPut(headers, clientInfo.instanceUrl.resolve(path), httpEntity); break;
 		}
 
 		// Build response object
@@ -312,5 +265,41 @@ public class RestClient {
 	 */
 	public void setHttpAccessor(HttpAccess httpAccessor) {
 		this.httpAccessor = httpAccessor; 
+	}
+	
+	/**
+	 * All immutable information for an authenticated client (e.g. username, org id etc)
+	 */
+	public static class ClientInfo {
+		public final String clientId;
+		public final URI instanceUrl;
+		public final URI loginUrl;
+		public  final String accountName;
+		public final String username;
+		public final String userId;
+		public final String orgId;
+		
+		public ClientInfo(String clientId, URI instanceUrl, URI loginUrl, String accountName, String username, String userId, String orgId) {
+			this.clientId = clientId;
+			this.instanceUrl = instanceUrl;
+			this.loginUrl = loginUrl;
+			this.accountName = accountName;
+			this.username = username;
+			this.userId = userId;
+			this.orgId = orgId;
+		}
+		
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			sb.append("  ClientInfo: {\n")
+			  .append("     loginUrl: ").append(loginUrl.toString()).append("\n")
+			  .append("     instanceUrl: ").append(instanceUrl.toString()).append("\n")
+			  .append("     accountName: ").append(accountName).append("\n")
+			  .append("     username: ").append(username).append("\n")
+			  .append("     userId: ").append(userId).append("\n")
+			  .append("     orgId: ").append(orgId).append("\n")
+			  .append("  }\n");
+			return sb.toString();
+		}
 	}
 }

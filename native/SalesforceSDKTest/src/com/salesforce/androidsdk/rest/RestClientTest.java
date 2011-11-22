@@ -45,6 +45,7 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 
 /**
  * Tests for RestClient
@@ -56,6 +57,7 @@ public class RestClientTest extends InstrumentationTestCase {
 
 	private static final String ENTITY_NAME_PREFIX = "RestClientTest";
 	private static final String BAD_TOKEN = "bad-token";
+	private ClientInfo clientInfo;
 	private HttpAccess httpAccess;
 	private RestClient restClient;
 	private String authToken;
@@ -67,7 +69,8 @@ public class RestClientTest extends InstrumentationTestCase {
 		httpAccess = new HttpAccess(null, null);
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
 		authToken = refreshResponse.authToken;
-		restClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), authToken, httpAccess, null, null, null, null, null);
+		clientInfo = new ClientInfo(TestCredentials.CLIENT_ID, new URI(TestCredentials.INSTANCE_URL), new URI(TestCredentials.LOGIN_URL), TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME, TestCredentials.USER_ID, TestCredentials.ORG_ID);
+		restClient = new RestClient(clientInfo, authToken, httpAccess, null);
 	}
 	
 	@Override
@@ -77,11 +80,17 @@ public class RestClientTest extends InstrumentationTestCase {
 	}
 	
 	/**
-	 * Testing getBaseUrl
+	 * Testing getClientInfo
 	 * @throws URISyntaxException 
 	 */
-	public void testGetBaseUrl() throws URISyntaxException {
-		assertEquals("Wrong base url", new URI(TestCredentials.INSTANCE_URL), restClient.getBaseUrl());
+	public void testGetClientInfo() throws URISyntaxException {
+		assertEquals("Wrong client id", TestCredentials.CLIENT_ID, restClient.getClientInfo().clientId);
+		assertEquals("Wrong instance url", new URI(TestCredentials.INSTANCE_URL), restClient.getClientInfo().instanceUrl);
+		assertEquals("Wrong login url", new URI(TestCredentials.LOGIN_URL), restClient.getClientInfo().loginUrl);
+		assertEquals("Wrong account name", TestCredentials.ACCOUNT_NAME, restClient.getClientInfo().accountName);
+		assertEquals("Wrong username", TestCredentials.USERNAME, restClient.getClientInfo().username);
+		assertEquals("Wrong userId", TestCredentials.USER_ID, restClient.getClientInfo().userId);
+		assertEquals("Wrong orgId", TestCredentials.ORG_ID, restClient.getClientInfo().orgId);
 	}
 
 	
@@ -99,7 +108,7 @@ public class RestClientTest extends InstrumentationTestCase {
 	 * @throws IOException 
 	 */
 	public void testCallWithBadAuthToken() throws URISyntaxException, IOException {
-		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, null, null, null, null, null);
+		RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
 		RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
 		assertFalse("Expected error", response.isSuccess());
 		checkResponse(response, HttpStatus.SC_UNAUTHORIZED, true);
@@ -128,7 +137,7 @@ public class RestClientTest extends InstrumentationTestCase {
 				return -1;
 			}
 		};
-		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, authTokenProvider, null, null, null, null);
+		RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, authTokenProvider);
 
 		assertEquals("RestClient should be using the bad token initially", BAD_TOKEN, unauthenticatedRestClient.getAuthToken());
 		RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
@@ -145,7 +154,7 @@ public class RestClientTest extends InstrumentationTestCase {
 	 */
 	public void testGetVersions() throws Exception {
 		// We don't need to be authenticated
-		RestClient unauthenticatedRestClient = new RestClient(new URI(TestCredentials.INSTANCE_URL), BAD_TOKEN, httpAccess, null, null, null, null, null);
+		RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
 		RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForVersions());
 		checkResponse(response, HttpStatus.SC_OK, true);
 		checkKeys(response.asJSONArray().getJSONObject(0), "label", "url", "version");
