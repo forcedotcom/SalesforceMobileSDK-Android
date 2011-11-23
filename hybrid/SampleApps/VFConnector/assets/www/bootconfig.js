@@ -10,11 +10,11 @@ var debugMode = false;
 
 // The client ID value specified for your remote access object that defines
 // your application in Salesforce.
-var remoteAccessConsumerKey = "___VARIABLE_publicKey___";
+var remoteAccessConsumerKey = "3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa";
 
 // The redirect URI value specified for your remote access object that defines
 // your application in Salesforce.
-var oauthRedirectURI = "___VARIABLE_redirectURL___";
+var oauthRedirectURI = "testsfdc:///mobilesdk/detect/oauth/done";
 
 // The authorization/access scope(s) you wish to define for your application.
 var oauthScopes = ["visualforce", "api"];
@@ -37,6 +37,6 @@ var autoRefreshOnForeground = false; //Use true for Visualforce-based apps
 //-----------------------------------------------------------------
 // End configuration block
 //-----------------------------------------------------------------
-        
+
             
 

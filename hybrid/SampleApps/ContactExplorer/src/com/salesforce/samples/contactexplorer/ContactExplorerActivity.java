@@ -6,6 +6,7 @@ import android.webkit.WebSettings;
 import com.phonegap.DroidGap;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 
@@ -18,8 +19,22 @@ public class ContactExplorerActivity extends DroidGap {
 		final String uaStr = ForceApp.APP.getUserAgent();
         
         super.loadUrl("file:///android_asset/www/index.html");
+
         
-		new ClientManager(this).getRestClient(this, new RestClientCallback() {
+        //
+        // TODO change to use PG plugin
+        // 
+        
+		// Login options
+		String accountType = getString(R.string.account_type);
+    	LoginOptions loginOptions = new LoginOptions(
+    			"https://test.salesforce.com", 
+    			ForceApp.APP.getPasscodeHash(),
+    			getString(R.string.oauth_callback_url),
+    			getString(R.string.oauth_client_id),
+    			new String[] {"api"});
+        
+		new ClientManager(this, accountType, loginOptions).getRestClient(this, new RestClientCallback() {
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
 					ForceApp.APP.logout(ContactExplorerActivity.this);

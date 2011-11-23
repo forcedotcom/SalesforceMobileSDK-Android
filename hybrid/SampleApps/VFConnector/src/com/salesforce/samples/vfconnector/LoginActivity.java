@@ -82,39 +82,12 @@ public class LoginActivity extends AbstractLoginActivity {
 		return getString(R.string.generic_authentication_error);
 	}
 	
-	@Override
-	protected String getOAuthClientId() {
-		return getString(R.string.oauth_client_id);
-	}
-
-	@Override
-	protected String getOAuthCallbackUrl() {
-		return getString(R.string.oauth_callback_url);
-	}
-	
-	@Override
-	protected String getApiVersion() {
-		return getString(R.string.api_version);
-	}
-	
-	@Override
-	protected String getLoginServerUrl() {
-		return getString(R.string.login_url);
-	}
 
 	@Override
 	protected String getAccountType() {
 		return getString(R.string.account_type);
 	}
 
-	@Override
-    protected String[] getOAuthScopes() {
-        //NOTE we use "visualforce" scope here because this sample app only loads
-        //a visualforce page in the embedded web view; however, you may mix and
-        //match scopes if needed, eg {"visualforce","api"}
-	    return new String[] {"visualforce"}; 
-	}
-	
     /**************************************************************************************************
      *
      * Buttons click handlers

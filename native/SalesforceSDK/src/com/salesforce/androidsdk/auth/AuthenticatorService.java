@@ -47,6 +47,7 @@ import android.util.Log;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
 
 /**
@@ -57,12 +58,9 @@ public class AuthenticatorService extends Service {
 
 	private static Authenticator authenticator;
 
-	// Key to passcodeHash in options bundle passed to getAuthToken
-	public static final String PASSCODE_HASH = "passcodeHash";
-	
 	// Keys to extra info in the account
-	public static final String KEY_LOGIN_SERVER = "loginServer";
-	public static final String KEY_INSTANCE_SERVER = "instanceServer";
+	public static final String KEY_LOGIN_URL = "loginUrl";
+	public static final String KEY_INSTANCE_URL = "instanceUrl";
 	public static final String KEY_USER_ID = "userId";
 	public static final String KEY_CLIENT_ID = "clientId";
 	public static final String KEY_ORG_ID = "orgId";
@@ -122,11 +120,11 @@ public class AuthenticatorService extends Service {
 			
 			Log.i("Authenticator:getAuthToken", "Get auth token for " + account.name);
 			AccountManager mgr = AccountManager.get(context);
-			String passcodeHash = options.getString(PASSCODE_HASH);
+			String passcodeHash = LoginOptions.fromBundle(options).passcodeHash;
 			String refreshToken = Encryptor.decrypt(mgr.getPassword(account), passcodeHash);
-			String loginServer = mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_SERVER);
+			String loginServer = mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_URL);
 			String clientId = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID);
-			String instServer = mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_SERVER);
+			String instServer = mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL);
             Bundle resBundle = new Bundle();
 
 			try {
@@ -134,7 +132,7 @@ public class AuthenticatorService extends Service {
 
     			// handle the case where the org has been migrated to a new instance, or has turned on my domains.
     			if (!instServer.equalsIgnoreCase(tr.instanceUrl))
-    				mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_SERVER, tr.instanceUrl);
+    				mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, tr.instanceUrl);
     			
     			// Update auth token in account
     			mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(tr.authToken, passcodeHash));

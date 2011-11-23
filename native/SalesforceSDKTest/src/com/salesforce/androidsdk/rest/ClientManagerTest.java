@@ -47,6 +47,7 @@ import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.security.Encryptor;
 
@@ -65,17 +66,21 @@ public class ClientManagerTest extends InstrumentationTestCase {
 	private static final String TEST_OTHER_ACCOUNT_NAME = "test_other_accountname";
 	private static final String TEST_OTHER_USERNAME = "test_other_username";
 	private static final String TEST_ACCOUNT_TYPE = "com.salesforce.androisdk.test"; // must match authenticator.xml in SalesforceSDK project
+	private static final String[] TEST_SCOPES = new String[] {"web"};
+	private static final String TEST_CALLBACK_URL = "test://callback";
 	
 	private Context targetContext;
 	private ClientManager clientManager;
 	private AccountManager accountManager;
+	private LoginOptions loginOptions;
 	
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 		TestCredentials.init(getInstrumentation().getContext());
 		targetContext = getInstrumentation().getTargetContext();
-		clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, TEST_PASSCODE_HASH);
+		loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_PASSCODE_HASH, TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES);
+		clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, loginOptions);
 		accountManager = clientManager.getAccountManager();
 	}
 	
@@ -126,8 +131,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
 		assertEquals("Wrong auth token", Encryptor.encrypt(TEST_AUTH_TOKEN, TEST_PASSCODE_HASH), accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN));
 		assertEquals("Wrong refresh token", Encryptor.encrypt(TEST_REFRESH_TOKEN, TEST_PASSCODE_HASH), accountManager.getPassword(account));
-		assertEquals("Wrong instance url", TEST_INSTANCE_URL, accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_SERVER));
-		assertEquals("Wrong login url", TEST_LOGIN_URL, accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_SERVER));
+		assertEquals("Wrong instance url", TEST_INSTANCE_URL, accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL));
+		assertEquals("Wrong login url", TEST_LOGIN_URL, accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL));
 		assertEquals("Wrong client id", TEST_CLIENT_ID, accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID));
 		assertEquals("Wrong user id", TEST_USER_ID, accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID));
 		assertEquals("Wrong org id", TEST_ORG_ID, accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID));

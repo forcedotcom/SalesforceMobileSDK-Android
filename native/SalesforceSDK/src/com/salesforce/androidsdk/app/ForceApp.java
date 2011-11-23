@@ -166,7 +166,7 @@ public abstract class ForceApp extends Application implements OnAccountsUpdateLi
     	}
     	
     	// Remove account if any
-    	new ClientManager(this).removeAccountAsync(null);
+    	new ClientManager(this, null, null/* we are not doing any login*/).removeAccountAsync(null);
     	
         // Clear cookies 
         CookieSyncManager.createInstance(this);

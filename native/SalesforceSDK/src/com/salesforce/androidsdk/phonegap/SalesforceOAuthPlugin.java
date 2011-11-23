@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.webkit.CookieManager;
@@ -39,6 +40,7 @@ import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
@@ -61,10 +63,29 @@ public class SalesforceOAuthPlugin extends Plugin {
         String result = "Unsupported Operation: " + action; 
                 
         if (action.equals("authenticate")) {
-        	// TODO use arguments passed in (remoteAccessConsumerKey, oauthRedirectURI, oauthScopes, userAccountIdentifier, autoRefreshOnForeground)
+        	
+        	LoginOptions loginOptions = null;
+        	try {
+	        	JSONArray scopesJson = args.getJSONObject(0).getJSONArray("oauthScopes");
+	        	String[] scopes = scopesJson == null ? null : scopesJson.join(",").split(",");
+	        	
+	        	loginOptions = new LoginOptions(
+	        			"https://test.salesforce.com", /* FIXME should be args.getJSONObject(0).getString("loginUrl")*/ 
+	        			ForceApp.APP.getPasscodeHash(),
+	        			args.getJSONObject(0).getString("oauthRedirectURI"),
+	        			args.getJSONObject(0).getString("remoteAccessConsumerKey"),
+	        			scopes);
+        	}
+        	catch (JSONException e) {
+        		return new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());	
+        	}
+        			
+        	//
+        	// TODO don't ignore userAccountIdentifier, autoRefreshOnForeground
+        	//
         	
         	final String cId = callbackId;
-			new ClientManager(ctx).getRestClient(ctx, new RestClientCallback() {
+			new ClientManager(ctx, ForceApp.APP.getAccountType(), loginOptions).getRestClient(ctx, new RestClientCallback() {
 				@Override
 				public void authenticatedRestClient(RestClient client) {
 					if (client == null) {

@@ -38,16 +38,6 @@ import com.salesforce.androidsdk.auth.AbstractLoginActivity;
  */
 public class LoginActivity extends AbstractLoginActivity {
 	
-	// Key for login servers properties stored in preferences
-	public static final String SERVER_URL_PREFS_SETTINGS = "server_url_prefs";
-	public static final String SERVER_URL_PREFS_CUSTOM_LABEL = "server_url_custom_label";
-	public static final String SERVER_URL_PREFS_CUSTOM_URL = "server_url_custom_url";
-	public static final String SERVER_URL_PREFS_WHICH_SERVER = "which_server_index";
-	public static final String SERVER_URL_CURRENT_SELECTION = "server_url_current_string";
-	
-	// Request code when calling PickServerActivity
-    public static final int PICK_SERVER_CODE = 10;
-	
     /**************************************************************************************************
      *
      * Implementations for abstract methods of AbstractLoginActivity
@@ -83,35 +73,10 @@ public class LoginActivity extends AbstractLoginActivity {
 	}
 	
 	@Override
-	protected String getOAuthClientId() {
-		return getString(R.string.oauth_client_id);
-	}
-
-	@Override
-	protected String getOAuthCallbackUrl() {
-		return getString(R.string.oauth_callback_url);
-	}
-	
-	@Override
-	protected String getApiVersion() {
-		return getString(R.string.api_version);
-	}
-	
-	@Override
-	protected String getLoginServerUrl() {
-		return getString(R.string.login_url);
-	}
-
-	@Override
 	protected String getAccountType() {
 		return getString(R.string.account_type);
 	}
 
-	@Override
-    protected String[] getOAuthScopes() {
-	    return new String[] {"api"};
-	}
-	
     /**************************************************************************************************
      *
      * Buttons click handlers

@@ -49,6 +49,7 @@ import android.widget.Toast;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 
 /**
  * Abstract super class that takes care of authenticating the user.
@@ -59,20 +60,16 @@ import com.salesforce.androidsdk.rest.ClientManager;
 public abstract class AbstractLoginActivity extends
 		AccountAuthenticatorActivity {
 
-	private WebView webView;
-	private String loginServerUrl;
 	private boolean wasBackgrounded;
-	private String passcodeHash;
+	private WebView webView;
+	private LoginOptions loginOptions;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		// Getting passcodeHash (used to encrypt/decrypt stored oauth tokens) from extras
-		Bundle options = getIntent().getExtras();
-		if (options != null) {
-			passcodeHash = options.getString(AuthenticatorService.PASSCODE_HASH);
-		}
+		// Getting login options from intent's extras
+		loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 		
 		// we'll show progress in the window title bar.
 		getWindow().requestFeature(Window.FEATURE_PROGRESS);
@@ -129,15 +126,13 @@ public abstract class AbstractLoginActivity extends
 	 */
 	protected void loadLoginPage() {
 
-		loginServerUrl = getLoginServerUrl();
-
 		try {
 			URI uri = OAuth2.getAuthorizationUrl(
-			        new URI(loginServerUrl), 
-			        getOAuthClientId(), 
-			        getOAuthCallbackUrl(),
-			        getOAuthScopes());
-			setTitle(loginServerUrl);
+			        new URI(loginOptions.loginUrl), 
+			        loginOptions.oauthClientId, 
+			        loginOptions.oauthCallbackUrl,
+			        loginOptions.oauthScopes);
+			setTitle(loginOptions.loginUrl);
 			webView.loadUrl(uri.toString());
 		} catch (URISyntaxException ex) {
 			showError(ex);
@@ -188,10 +183,9 @@ public abstract class AbstractLoginActivity extends
 	}
 	
 	protected void addAccount(String username, String refreshToken, String authToken, String instanceUrl,
-			String loginUrl, String clientId, String orgId, String userId,
-			String apiVersion) {
+			String loginUrl, String clientId, String orgId, String userId) {
 
-		ClientManager clientManager = new ClientManager(this, getAccountType(), passcodeHash);
+		ClientManager clientManager = new ClientManager(this, getAccountType(), loginOptions);
 		
 		// Old account
 		Account[] oldAccounts = clientManager.getAccounts();
@@ -211,6 +205,10 @@ public abstract class AbstractLoginActivity extends
 		CookieManager cm = CookieManager.getInstance();
 		cm.removeAllCookie();
 		loadLoginPage();
+	}
+	
+    protected void setLoginUrl(String l) {
+    	loginOptions.loginUrl = l;
 	}
 
 	/**************************************************************************************************
@@ -235,7 +233,7 @@ public abstract class AbstractLoginActivity extends
 				String username = OAuth2.getUsernameFromIdentityService(
 					HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
 				addAccount(username, tr.refreshToken, tr.authToken, tr.instanceUrl,
-						loginServerUrl, getOAuthClientId(), tr.orgId, tr.userId, getApiVersion());
+						loginOptions.loginUrl, loginOptions.oauthClientId, tr.orgId, tr.userId);
 				
 			} catch (Exception ex) {
 				return ex;
@@ -283,7 +281,7 @@ public abstract class AbstractLoginActivity extends
 	class AuthWebViewClient extends WebViewClient {
 		@Override
 		public boolean shouldOverrideUrlLoading(WebView view, String url) {
-			boolean isDone = url.startsWith(getOAuthCallbackUrl());
+			boolean isDone = url.startsWith(loginOptions.oauthCallbackUrl);
 			
 			if (isDone) {
 				Uri callbackUri = Uri.parse(url);
@@ -358,6 +356,7 @@ public abstract class AbstractLoginActivity extends
 	 * @return id of layout to use for login screen
 	 */
 	protected abstract int getLayoutId();
+	
 
 	/**
 	 * @return id of web view in login screen to use to show the server login page
@@ -365,16 +364,7 @@ public abstract class AbstractLoginActivity extends
 	protected abstract int getWebViewId();
 
 	/**
-	 * @return oauth client id for this application
-	 */
-	protected abstract String getOAuthClientId();
-
-	/**
-	 * @return oauth callback url
-	 */
-	protected abstract String getOAuthCallbackUrl();
-	
-	/**
+	 * 
 	 * @return account type
 	 */
 	protected abstract String getAccountType();
@@ -384,6 +374,8 @@ public abstract class AbstractLoginActivity extends
 	 * Other methods: likely to be overridden by sub class
 	 * 
 	 **************************************************************************************************/
+	
+	
 	/**
 	 * The method is called when an unexpected error takes place.
 	 * Default implementation shows a toast with the exception message.
@@ -412,33 +404,6 @@ public abstract class AbstractLoginActivity extends
 		return "Authentication error. Please try again.";		
 	}
 
-	/**
-	 * Override if you want to use a different api version
-	 * @return string for api version v23.0
-	 */
-	protected String getApiVersion() {
-		return "v23.0";
-	}
-	
-	/**
-	 * Override if you want to use a different server (e.g. production).x
-	 * @return sandbox login server url to use
-	 */
-    protected String getLoginServerUrl() {
-    	return "https://test.salesforce.com";
-    }
-	
-	/**
-	 * Override this method to configure which scopes your application requires.
-	 * By default you obtain "api" scope.
-     * (@see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a> )
-	 * 
-	 * @return An array of scopes to use for your oauth token, eg {"visualforce","api"}.  You need not provide refresh_token scope as it is always added automatically.
-	 */
-    protected String[] getOAuthScopes() {
-	    return null;
-	}
-    
     /**
      * Override this method to customize the name for the account.
      * Return name to be shown for account in Settings -> Accounts & Sync
