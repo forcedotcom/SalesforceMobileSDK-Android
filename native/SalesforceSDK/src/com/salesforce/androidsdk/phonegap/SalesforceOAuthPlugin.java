@@ -26,7 +26,9 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.json.JSONArray;
@@ -49,73 +51,127 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
  * Phonegap plugin for Force
  */
 public class SalesforceOAuthPlugin extends Plugin {
+
+	/**
+	 * Supported actions
+	 */
+	enum Action {
+		authenticate,
+		getAuthCredentials;
+	}
+	
+	private RestClient client;
     
     /**
      * Executes the request and returns PluginResult.
      * 
-     * @param action        The action to execute.
-     * @param args          JSONArry of arguments for the plugin.
+     * @param actionStr     The action to execute.
+     * @param args          JSONArray of arguments for the plugin.
      * @param callbackId    The callback id used when calling back into JavaScript.
      * @return              A PluginResult object with a status and message.
      */
-    public PluginResult execute(String action, JSONArray args, String callbackId) {
-        PluginResult.Status status = PluginResult.Status.INVALID_ACTION;
-        String result = "Unsupported Operation: " + action; 
-                
-        if (action.equals("authenticate")) {
-        	
-        	LoginOptions loginOptions = null;
-        	try {
-	        	JSONArray scopesJson = args.getJSONObject(0).getJSONArray("oauthScopes");
-	        	String[] scopes = scopesJson == null ? null : scopesJson.join(",").split(",");
-	        	
-	        	loginOptions = new LoginOptions(
-	        			"https://test.salesforce.com", /* FIXME should be args.getJSONObject(0).getString("loginUrl")*/ 
-	        			ForceApp.APP.getPasscodeHash(),
-	        			args.getJSONObject(0).getString("oauthRedirectURI"),
-	        			args.getJSONObject(0).getString("remoteAccessConsumerKey"),
-	        			scopes);
-        	}
-        	catch (JSONException e) {
-        		return new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());	
-        	}
-        			
-        	//
-        	// TODO don't ignore userAccountIdentifier, autoRefreshOnForeground
-        	//
-        	
-        	final String cId = callbackId;
-			new ClientManager(ctx, ForceApp.APP.getAccountType(), loginOptions).getRestClient(ctx, new RestClientCallback() {
-				@Override
-				public void authenticatedRestClient(RestClient client) {
-					if (client == null) {
-						SalesforceOAuthPlugin.this.error("Authentication failed", cId);						
-					}
-					else {
-						ClientInfo clientInfo = client.getClientInfo();
-						Map<String, String> data = new HashMap<String, String>();
-						data.put("accessToken", client.getAuthToken());
-						data.put("refreshToken", client.getRefreshToken());
-						data.put("userId", clientInfo.userId);
-						data.put("orgId", clientInfo.orgId);
-						data.put("clientId", clientInfo.clientId);
-						data.put("loginUrl", clientInfo.loginUrl.toString()); 
-						data.put("instanceUrl", clientInfo.instanceUrl.toString());
-						data.put("userAgent", ForceApp.APP.getUserAgent());
-			
-						setSidCookies(client);
-						SalesforceOAuthPlugin.this.success(new PluginResult(PluginResult.Status.OK, new JSONObject(data)), cId);
-					}
-				}
-			});
-        	
-            return new PluginResult(PluginResult.Status.OK);
-        }
-        
-        return new PluginResult(status, result);
+    public PluginResult execute(String actionStr, JSONArray args, String callbackId) {
+    	// Figure out action
+    	Action action = null;
+    	try {
+    		action = Action.valueOf(actionStr);
+    	}
+    	catch (IllegalArgumentException e) {
+    		return new PluginResult(PluginResult.Status.INVALID_ACTION);
+    	}
+    	
+    	// Run action
+		switch(action) {
+			case authenticate:       authenticate(args, callbackId); break; 
+			case getAuthCredentials: getAuthCredentials(callbackId); break; 
+    	}
+
+		// Done
+    	return new PluginResult(PluginResult.Status.OK);
     }
+
+	/**
+	 * Native implementation for "authenticate" action
+	 * @param args
+	 * @param callbackId
+	 */
+	protected void authenticate(JSONArray args, String callbackId) {
+		LoginOptions loginOptions = null;
+		try {
+			loginOptions = parseLoginOptions(args);
+		}
+		catch (JSONException e) {
+			error(new PluginResult(PluginResult.Status.JSON_EXCEPTION), e.getMessage());	
+		}
+
+		final String cId = callbackId;
+		new ClientManager(ctx, ForceApp.APP.getAccountType(), loginOptions).getRestClient(ctx, new RestClientCallback() {
+			@Override
+			public void authenticatedRestClient(RestClient client) {
+				SalesforceOAuthPlugin.this.client = client;
+				
+				if (client == null) {
+					SalesforceOAuthPlugin.this.error("Authentication failed", cId);						
+				}
+				else {
+					setSidCookies(client);
+					SalesforceOAuthPlugin.this.success(buildCredentialsResult(client), cId);
+				}
+			}
+		});
+	}
+
+	/**
+	 * Native implementation for "getAuthCredentials" action
+	 * @param callbackId
+	 */
+	protected void getAuthCredentials(String callbackId) {
+		if (client == null) {
+			error(new PluginResult(PluginResult.Status.ERROR), "Never authenticated");
+		}
+		else {
+			success(buildCredentialsResult(client), callbackId);				
+		}
+	}
+
+	/**************************************************************************************************
+	 * 
+	 * Helper methods for parsing oauth properties
+	 * 
+	 **************************************************************************************************/
+
+	private LoginOptions parseLoginOptions(JSONArray args) throws JSONException {
+		LoginOptions loginOptions;
+		JSONObject oauthProperties = new JSONObject((String) args.get(0));
+
+		JSONArray scopesJson = oauthProperties.getJSONArray("oauthScopes");
+		String[] scopes = jsonArrayToArray(scopesJson);
+		
+		loginOptions = new LoginOptions(
+				"https://test.salesforce.com", /* FIXME */ 
+				ForceApp.APP.getPasscodeHash(),
+				oauthProperties.getString("oauthRedirectURI"),
+				oauthProperties.getString("remoteAccessConsumerKey"),
+				scopes);
+		
+		return loginOptions;
+	}
     
-    private void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
+    private String[] jsonArrayToArray(JSONArray jsonArray) throws JSONException {
+    	List<String> list = new ArrayList<String>(jsonArray.length());
+		for (int i=0; i<jsonArray.length(); i++) {
+			list.add(jsonArray.getString(i));
+		}
+		return list.toArray(new String[0]);
+	}
+
+	/**************************************************************************************************
+	 * 
+	 * Helper methods for managing cookies
+	 * 
+	 **************************************************************************************************/
+
+	private void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
         String cookieStr = "sid=" + sid + "; domain=" + domain;
     	cookieMgr.setCookie(domain, cookieStr);
     }
@@ -136,5 +192,28 @@ public class SalesforceOAuthPlugin extends Plugin {
 
 	    cookieSyncMgr.sync();
     }
-    
+
+	/**************************************************************************************************
+	 * 
+	 * Helper method for building js credentials
+	 * 
+	 **************************************************************************************************/
+
+    private PluginResult buildCredentialsResult(RestClient client) {
+    	assert client != null : "Client is null";
+    	
+		ClientInfo clientInfo = client.getClientInfo();
+		Map<String, String> data = new HashMap<String, String>();
+		data.put("accessToken", client.getAuthToken());
+		data.put("refreshToken", client.getRefreshToken());
+		data.put("userId", clientInfo.userId);
+		data.put("orgId", clientInfo.orgId);
+		data.put("clientId", clientInfo.clientId);
+		data.put("loginUrl", clientInfo.loginUrl.toString()); 
+		data.put("instanceUrl", clientInfo.instanceUrl.toString());
+		data.put("userAgent", ForceApp.APP.getUserAgent());
+		JSONObject credentials = new JSONObject(data);
+		
+		return new PluginResult(PluginResult.Status.OK, credentials, "JSON.parse");
+    }
 }

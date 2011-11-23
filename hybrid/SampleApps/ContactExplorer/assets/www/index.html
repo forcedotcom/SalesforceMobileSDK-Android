@@ -2,14 +2,19 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no;" />
-
     <meta http-equiv="Content-type" content="text/html; charset=utf-8">
 
+    <!-- include jquery mobile -->
     <link rel="stylesheet" href="jquery/jquery.mobile-1.0b2.min.css" />
     <script src="jquery/jquery-1.6.2.min.js"></script>
     <script src="jquery/jquery.mobile-1.0b2.min.js"></script>
         
+    <!-- include phonegap / callback -->
 	<script type="text/javascript" charset="utf-8" src="phonegap-1.2.0.js"></script>
+    <!-- required for oauth plugin support -->    
+    <script type="text/javascript" src="SalesforceOAuthPlugin.js"></script>
+
+    <!-- include forcetk for REST transaction support -->
     <script src="forcetk.js"></script>       
 
     <script type="text/javascript" charset="utf-8">
@@ -24,117 +29,88 @@
 	document.addEventListener("touchmove", preventBehavior, false);
 	*/
 	
+	/* If you are supporting your own protocol, the var invokeString will contain any arguments to the app launch.
+	see http://iphonedevelopertips.com/cocoa/launching-your-own-application-via-a-custom-url-scheme.html
+	for more details -jm */
+	/*
+	function handleOpenURL(url)
+	{
+		// do something with the url passed in.
+	}
+	*/
+	
     var forcetkClient;
     var appStartTime = new Date();
 
     function logToConsole(txt) {
         var now = new Date();
-        $('#console').append("<br><i> * " + (now.getTime() - appStartTime.getTime()) + "ms:</i> " + txt);        
+        $('#console').append("<br><i> * " + (now.getTime() - appStartTime.getTime()) + "ms:</i> " + txt); 
+        //this utilizes the PhoneGap console object to log
+        console.log("jslog:" + txt);
     }
 
     $(function() {
+        //Add event listeners and so forth here
         logToConsole("onLoad: jquery ready");
-		document.addEventListener("salesforce_oauth_login", onSalesforceOAuthLogin,false);
 		document.addEventListener("deviceready", onDeviceReady,false);
+
     });
 
-	/* When this function is called, PhoneGap has been initialized and is ready to roll */
-	function onDeviceReady() {
+    // When this function is called, PhoneGap has been initialized and is ready to roll 
+    function onDeviceReady() {
         logToConsole("onDeviceReady: PhoneGap ready");
-
-        $('#link_fetch_device_contacts').click(function() {
-            logToConsole("link_fetch_device_contacts clicked");
-            var options = new ContactFindOptions();
-            options.filter = "";          // empty search string returns all contacts
-            options.multiple = true;
-            //var fields = ["name"];
-            var fields = ["*"];
-            navigator.contacts.find(fields, onSuccessDevice, onErrorDevice, options);
-        });
+        SalesforceOAuthPlugin.getAuthCredentials(receivedAuthCredentials, getAuthCredentialsError);
+        //enable buttons
+        regLinkClickHandlers();
+    }
         
-        $('#link_fetch_sfdc_contacts').click(function() {
-            logToConsole("link_fetch_sfdc_contacts clicked");
-            forcetkClient.query("SELECT Name FROM Contact", onSuccessSfdc, onErrorSfdc); 
-        });
-
-        $('#link_reset').click(function() {
-            logToConsole("link_reset clicked");
-            $("#div_device_contact_list").html("")
-            $("#div_sfdc_contact_list").html("")
-        });
+    // When this function is called, the app has been foregrounded
+    function onAppResume() {
+        logToConsole("onAppResume:");
+        SalesforceOAuthPlugin.getAuthCredentials(receivedAuthCredentials, getAuthCredentialsError);
     }
 
-    function onSalesforceOAuthLogin(event) {
-        logToConsole("onSalesforceOAuthLogin: Salesforce ready");
-        forcetkClient = new forcetk.Client(event.data.clientId, event.data.loginUrl);
-        forcetkClient.setSessionToken(event.data.accessToken, event.data.apiVersion, event.data.instanceUrl);
-        forcetkClient.setRefreshToken(event.data.refreshToken);
-        forcetkClient.setUserAgentString(event.data.userAgent);
+    function receivedAuthCredentials(creds) {
+        logToConsole("receivedAuthCredentials" );
+        //make sure we know when the app re-foregrounds so we can refresh if necessary
+        document.addEventListener("resume", onAppResume,false);
+
+        forcetkClient = new forcetk.Client(creds.clientId, creds.loginUrl);
+        forcetkClient.setSessionToken(creds.accessToken, creds.apiVersion, creds.instanceUrl);
+        forcetkClient.setRefreshToken(creds.refreshToken);
+        forcetkClient.setUserAgentString(creds.userAgent);
+
     }
 
-    function onSuccessDevice(contacts) {
-        logToConsole("onSuccessDevice: received " + contacts.length + " contacts");
-        $("#div_device_contact_list").html("")
-        var ul = $('<ul data-role="listview" data-inset="true" data-theme="a" data-dividertheme="a"></ul>');
-        $("#div_device_contact_list").append(ul);
 
-        ul.append($('<li data-role="list-divider">Device Contacts: ' + contacts.length + '</li>'));
-        $.each(contacts, function(i, contact) {
-           //var formattedName = contact.name.formatted;
-           var formattedName = contact.displayName;
-           if (formattedName) {
-               var newLi = $("<li><a href='#'>" + (i+1) + " - " + formattedName + "</a></li>");
-               ul.append(newLi);
-           }
-        });
-
-        $("#div_device_contact_list").trigger( "create" )
+    function getAuthCredentialsError(error) {
+        logError("getAuthCredentialsError: " + error);
     }
-
-    function onErrorDevice() {
-        logToConsole("onErrorDevice");
-        alert('Error getting device contacts!');
-    }
-
-    function onSuccessSfdc(response) {
-        logToConsole("onSuccessSfdc: received " + response.totalSize + " contacts");
-
-        $("#div_sfdc_contact_list").html("")
-        var ul = $('<ul data-role="listview" data-inset="true" data-theme="a" data-dividertheme="a"></ul>');
-        $("#div_sfdc_contact_list").append(ul);
-
-        ul.append($('<li data-role="list-divider">Salesforce Contacts: ' + response.totalSize + '</li>'));
-        $.each(response.records, function(i, contact) {
-           var newLi = $("<li><a href='#'>" + (i+1) + " - " + contact.Name + "</a></li>");
-               ul.append(newLi);
-        });
-
-        $("#div_sfdc_contact_list").trigger( "create" )
-    }
-
-    function onErrorSfdc(error) {
-        logToConsole("onErrorSfdc: " + JSON.stringify(error));
-        alert('Error getting sfdc contacts!');
-    }
+        
     </script>
+        
+    <script src="inline.js"></script>       
+
   </head>
   <body>
       <div data-role="page" data-theme="b" id="jqm-home"> 
           <div  data-role="header"> 
-              <h1>Hybrid Contact Explorer (PhoneGap 1.2 + SFDC SDK 1.0 + JQM 1.0b2)</h1> 
+              <h1>Hybrid Contact Explorer (SalesforceMobileSDK + callback-Android + JQM)</h1> 
           </div> 
 
           <div id="#content" data-role="content"> 
 
               <p><a href="#" id="link_fetch_device_contacts" data-role="button" data-inline="true">Fetch Device contacts</a></p>
-              <p><a href="#" id="link_fetch_sfdc_contacts" data-role="button" data-inline="true">Fetch Sfdc contacts</a></p>
+              <p><a href="#" id="link_fetch_sfdc_contacts" data-role="button" data-inline="true">Fetch SFDC contacts</a></p>
+              <p><a href="#" id="link_fetch_sfdc_accounts" data-role="button" data-inline="true">Fetch SFDC Accounts</a></p>
               <p><a href="#" id="link_reset" data-role="button" data-inline="true">Reset</a></p>
 
               <div id="div_device_contact_list"></div>
               <div id="div_sfdc_contact_list"></div>
+              <div id="div_sfdc_account_list"></div>
 
+              <h3>console:</h3>
               <p id="console">
-                  <b>console:</b>
               </p>
 
           </div> 
