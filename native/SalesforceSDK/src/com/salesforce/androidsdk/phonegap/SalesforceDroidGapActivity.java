@@ -24,50 +24,50 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.vfconnector;
+package com.salesforce.androidsdk.phonegap;
 
-import android.app.Activity;
+import android.os.Bundle;
+import android.webkit.CookieSyncManager;
+import android.webkit.WebSettings;
 
+import com.phonegap.DroidGap;
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.AbstractLoginActivity;
-import com.salesforce.androidsdk.phonegap.SalesforceDroidGapActivity;
-import com.salesforce.androidsdk.security.AbstractPasscodeActivity;
 
-
-/**
- * Application class 
- * All Salesforce mobile apps must extend ForceApp. 
- * ForceApp takes care of intializing the network http clients (among other things).x
- */
-public class VFConnectorApp extends ForceApp {
-
-	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return SalesforceDroidGapActivity.class;
-	}
-	
-	@Override
-	public Class<? extends AbstractLoginActivity> getLoginActivityClass() {
-		return LoginActivity.class;
-	}
-
-	@Override
-	public Class<? extends AbstractPasscodeActivity> getPasscodeActivityClass() {
-		return null;
-	}
-
-	@Override
-	public String getAccountType() {
-		return getString(R.string.account_type);
-	}
-
-	@Override
-	public int getLockTimeoutMinutes() {
-		return 0;
-	}
-
-	@Override
-	protected String getKey(String name) {
-		return null; 
-	}
+public class SalesforceDroidGapActivity extends DroidGap {
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+    	//ensure we have a CookieSyncManager
+    	CookieSyncManager.createInstance(this);
+        
+        //ensure that we allow urls from all salesforce domains to be loaded
+        this.addWhiteListEntry("force.com", true);
+        this.addWhiteListEntry("salesforce.com", true);
+        
+        // Load bootstrap
+        super.loadUrl("file:///android_asset/www/bootstrap.html");
+    }
+    
+    @Override
+    public void init() {
+    	super.init();
+		final String uaStr = ForceApp.APP.getUserAgent();
+		if (null != this.appView) {
+	        WebSettings webSettings = this.appView.getSettings();
+	        webSettings.setUserAgentString(uaStr);
+		}
+    }
+    
+    @Override
+    public void onResume() {
+    	CookieSyncManager.getInstance().startSync();
+    	super.onResume();
+    }
+    
+    @Override
+    public void onPause() {
+    	CookieSyncManager.getInstance().stopSync();
+    	super.onPause();
+    }
 }

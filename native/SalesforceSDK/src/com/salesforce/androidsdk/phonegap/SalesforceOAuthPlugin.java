@@ -32,6 +32,9 @@ import java.util.Map;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
+
 import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
@@ -58,6 +61,8 @@ public class SalesforceOAuthPlugin extends Plugin {
         String result = "Unsupported Operation: " + action; 
                 
         if (action.equals("authenticate")) {
+        	// TODO use arguments passed in (remoteAccessConsumerKey, oauthRedirectURI, oauthScopes, userAccountIdentifier, autoRefreshOnForeground)
+        	
         	final String cId = callbackId;
 			new ClientManager(ctx).getRestClient(ctx, new RestClientCallback() {
 				@Override
@@ -76,8 +81,9 @@ public class SalesforceOAuthPlugin extends Plugin {
 						data.put("loginUrl", clientInfo.loginUrl.toString()); 
 						data.put("instanceUrl", clientInfo.instanceUrl.toString());
 						data.put("userAgent", ForceApp.APP.getUserAgent());
-						
-						SalesforceOAuthPlugin.this.success(new PluginResult(PluginResult.Status.OK, new JSONObject(data), "JSON.parse"), cId);
+			
+						setSidCookies(client);
+						SalesforceOAuthPlugin.this.success(new PluginResult(PluginResult.Status.OK, new JSONObject(data)), cId);
 					}
 				}
 			});
@@ -87,4 +93,27 @@ public class SalesforceOAuthPlugin extends Plugin {
         
         return new PluginResult(status, result);
     }
+    
+    private void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
+        String cookieStr = "sid=" + sid + "; domain=" + domain;
+    	cookieMgr.setCookie(domain, cookieStr);
+    }
+    
+    private void setSidCookies(RestClient client) {
+    	CookieSyncManager cookieSyncMgr = CookieSyncManager.getInstance();
+    	
+    	CookieManager cookieMgr = CookieManager.getInstance();
+    	cookieMgr.removeSessionCookie();
+
+    	String accessToken = client.getAuthToken();
+    	String domain = client.getClientInfo().instanceUrl.getHost();
+
+    	//set the cookie on all possible domains we could access
+    	addSidCookieForDomain(cookieMgr,domain,accessToken);
+    	addSidCookieForDomain(cookieMgr,".force.com",accessToken);
+    	addSidCookieForDomain(cookieMgr,".salesforce.com",accessToken);
+
+	    cookieSyncMgr.sync();
+    }
+    
 }
