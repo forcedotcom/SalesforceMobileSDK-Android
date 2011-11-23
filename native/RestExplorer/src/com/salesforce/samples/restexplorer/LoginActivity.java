@@ -52,12 +52,18 @@ public class LoginActivity extends AbstractLoginActivity {
 	// Request code when calling PickServerActivity
     public static final int PICK_SERVER_CODE = 10;
 
-	@Override 
-	public void onResume() {
-		super.onResume();
+
+    @Override
+    protected void loadLoginPage() {
+    	// Read login url from pref before loading web view
+		SharedPreferences settings = getSharedPreferences(
+				SERVER_URL_PREFS_SETTINGS, Context.MODE_PRIVATE);
+
+		setLoginUrl(settings.getString(LoginActivity.SERVER_URL_CURRENT_SELECTION, OAuth2.DEFAULT_LOGIN_URL));
+		super.loadLoginPage();
 	}    
     
-    /**************************************************************************************************
+	/**************************************************************************************************
      *
      * Implementations for abstract methods of AbstractLoginActivity
      * 
@@ -89,29 +95,6 @@ public class LoginActivity extends AbstractLoginActivity {
 	@Override
 	protected String getGenericAuthErrorBody() {
 		return getString(R.string.generic_authentication_error);
-	}
-	
-	@Override
-	protected String getOAuthClientId() {
-		return getString(R.string.oauth_client_id);
-	}
-
-	@Override
-	protected String getOAuthCallbackUrl() {
-		return getString(R.string.oauth_callback_url);
-	}
-	
-	@Override
-	protected String getApiVersion() {
-		return getString(R.string.api_version);
-	}
-	
-	@Override
-	protected String getLoginServerUrl() {
-		SharedPreferences settings = getSharedPreferences(
-				SERVER_URL_PREFS_SETTINGS, Context.MODE_PRIVATE);
-
-		return settings.getString(LoginActivity.SERVER_URL_CURRENT_SELECTION, OAuth2.DEFAULT_LOGIN_URL);
 	}
 
 	@Override

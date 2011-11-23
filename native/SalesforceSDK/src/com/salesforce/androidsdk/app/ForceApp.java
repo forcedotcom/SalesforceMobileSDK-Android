@@ -30,9 +30,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
-import android.accounts.OnAccountsUpdateListener;
+import android.accounts.AccountManagerCallback;
+import android.accounts.AccountManagerFuture;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
@@ -57,20 +56,16 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  * Super class for all force applications.
  * You should extend this class or make sure to initialize HttpAccess in your application's onCreate method.
  */
-public abstract class ForceApp extends Application implements OnAccountsUpdateListener  {
+public abstract class ForceApp extends Application {
 
 	// current SDK version
-    public static final String SDK_VERSION = "0.9";
+    public static final String SDK_VERSION = "1.0";
 
 	// instance of the ForceApp for this process
     public static ForceApp APP;
     
     // passcode manager
     private PasscodeManager passcodeManager;
-    
-    // to avoid logout re-entry
-    private boolean inLogout = false;
-    
     
     @Override
     public void onCreate() {
@@ -82,25 +77,18 @@ public abstract class ForceApp extends Application implements OnAccountsUpdateLi
         // Initialize the http client        
         HttpAccess.init(this, getUserAgent());
         
-        // Initialize the passcode manager
-		passcodeManager = new PasscodeManager(this, getLockTimeoutMinutes(),
-				getPasscodeActivityClass(), getVerificationHashConfig(),
-				getEncryptionHashConfig());
-		
-		// Listen for accounts update
-		AccountManager.get(this).addOnAccountsUpdatedListener(this, null, false);
+        // Initialize the passcode manager if required
+        if (getLockTimeoutMinutes() > 0) {
+			passcodeManager = new PasscodeManager(this, getLockTimeoutMinutes(),
+					getPasscodeActivityClass(), getVerificationHashConfig(),
+					getEncryptionHashConfig());
+        }
 		
 		// Done
 		EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
         APP = this;
     }
     
-    @Override
-    public void onTerminate() {
-    	AccountManager.get(this).removeOnAccountsUpdatedListener(this);
-        super.onTerminate();
-    }    
-
 	/**
 	 * @return passcodeManager
 	 */
@@ -108,6 +96,14 @@ public abstract class ForceApp extends Application implements OnAccountsUpdateLi
 		return passcodeManager;
 	}
 
+	/**
+	 * @return passcodeHash or null if none required
+	 */
+	public String getPasscodeHash() {
+		return passcodeManager == null ? null : passcodeManager.getPasscodeHash();
+	}
+	
+	
 	/**
 	 * @return name of application (as defined in AndroidManifest.xml)
 	 */
@@ -131,43 +127,30 @@ public abstract class ForceApp extends Application implements OnAccountsUpdateLi
 		return new HashConfig(getUuId("vprefix"), getUuId("vsuffix"), getUuId("vkey"));
 	}
 	
-	@Override
-    public void onAccountsUpdated(Account[] accounts) {
-		if (inLogout) {
-			return;
-		}
-		
-        // see if there's an entry for our account type, if not fire the callback
-        for (Account a : accounts) {
-            if (getAccountType().equals(a.type)) return;
-        }
-        logout(null);
-    }	
-	
 	/**
      * Wipe out stored auth (remove account) and restart app
      */
     public void logout(Activity frontActivity) {
-    	inLogout = true;
-    	
     	// Finish front activity if specified
     	if (frontActivity != null) {
     		frontActivity.finish();
     	}
     	
     	// Remove account if any
-    	new ClientManager(this).removeAccountAsync(null);
-    	
-        // Clear cookies 
-        CookieSyncManager.createInstance(this);
-        CookieManager.getInstance().removeAllCookie();
-    	
-        // Restart application
-        Intent i = new Intent(this, getMainActivityClass());
-        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(i);
-        
-        inLogout = false;
+    	new ClientManager(this, null, null/* we are not doing any login*/).removeAccountAsync(new AccountManagerCallback<Boolean>() {
+			
+			@Override
+			public void run(AccountManagerFuture<Boolean> arg0) {
+		        // Clear cookies 
+		        CookieSyncManager.createInstance(ForceApp.this);
+		        CookieManager.getInstance().removeAllCookie();
+		    	
+		        // Restart application
+		        Intent i = new Intent(ForceApp.this, getMainActivityClass());
+		        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		        startActivity(i);
+			}
+		});
     }
     
     /**

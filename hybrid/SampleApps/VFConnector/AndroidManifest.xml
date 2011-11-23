@@ -35,23 +35,17 @@
 
     <application
         android:icon="@drawable/ic_launcher"
-        android:label="@string/app_name" 
+        android:label="@string/app_name"
         android:name=".VFConnectorApp">
+        <!--  Main activity -->
         <activity
             android:label="@string/app_name"
-            android:name=".VFConnectorActivity"
+            android:name="com.salesforce.androidsdk.phonegap.SalesforceDroidGapActivity"
             android:configChanges="orientation|keyboardHidden" >
             <intent-filter >
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity
-            android:name="com.phonegap.DroidGap"
-            android:label="@string/app_name"
-            android:configChanges="orientation|keyboardHidden">
-            <intent-filter> </intent-filter>
         </activity>
         
         <!-- Login activity -->

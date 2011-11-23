@@ -30,6 +30,7 @@ import android.app.Activity;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AbstractLoginActivity;
+import com.salesforce.androidsdk.phonegap.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.security.AbstractPasscodeActivity;
 
 
@@ -42,7 +43,7 @@ public class ContactExplorerApp extends ForceApp {
 
 	@Override
 	public Class<? extends Activity> getMainActivityClass() {
-		return ContactExplorerActivity.class;
+		return SalesforceDroidGapActivity.class;
 	}
 	
 	@Override

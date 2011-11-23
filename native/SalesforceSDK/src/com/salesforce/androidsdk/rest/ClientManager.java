@@ -42,7 +42,6 @@ import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
@@ -57,26 +56,18 @@ public class ClientManager {
 
 	private final AccountManager accountManager;
 	private final String accountType;
-	private String passcodeHash;
+	private final LoginOptions loginOptions;
 
-	/**
-	 * Construct a ClientManager using the app's accountType and passcodeHash
-	 * @param ctx
-	 */
-	public ClientManager(Context ctx) {
-		this(ctx, ForceApp.APP.getAccountType(), ForceApp.APP.getPasscodeManager().getPasscodeHash());
-	}
-	
 	/**
 	 * Construct a ClientManager using a custom account type
 	 * @param ctx
 	 * @param accountType
-	 * @param passcodeHash           key to encrypt/decrypt oauth tokens that get stored in the account manager 
+	 * @param loginOptions
 	 */
-	public ClientManager(Context ctx, String accountType, String passcodeHash) {
+	public ClientManager(Context ctx, String accountType, LoginOptions loginOptions) {
 		this.accountManager = AccountManager.get(ctx);		
 		this.accountType = accountType;
-		this.passcodeHash = passcodeHash;
+		this.loginOptions = loginOptions;
 	}
 
 	/**
@@ -96,12 +87,11 @@ public class ClientManager {
 		Account acc = getAccount();
 
 		// Passing the passcodeHash to the authenticator service to that it can encrypt/decrypt oauth tokens
-		Bundle options = new Bundle();
-		options.putString(AuthenticatorService.PASSCODE_HASH, passcodeHash);
+		Bundle options = loginOptions.asBundle();
 
 		// No account found - let's add one - the AuthenticatorService add account method will start the login activity
 		if (acc == null) {
-			Log.i("ClientManager:getRestClient", "No account of type " + accountType + "found");
+			Log.i("ClientManager:getRestClient", "No account of type " + accountType + " found");
 			accountManager.addAccount(getAccountType(),
 					AccountManager.KEY_AUTHTOKEN, null /*required features*/, options,
 					activityContext, new AccMgrCallback(restClientCallback),
@@ -136,12 +126,12 @@ public class ClientManager {
 		}
 
 		// OAuth tokens are stored encrypted
-		String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
-		String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), passcodeHash);
+		String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), loginOptions.passcodeHash);
+		String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), loginOptions.passcodeHash);
 		
 		// We also store the username, instance url, org id, user id and username in the account manager
-		String loginServer = accountManager.getUserData(acc, AuthenticatorService.KEY_LOGIN_SERVER);
-		String instanceServer = accountManager.getUserData(acc, AuthenticatorService.KEY_INSTANCE_SERVER);
+		String loginServer = accountManager.getUserData(acc, AuthenticatorService.KEY_LOGIN_URL);
+		String instanceServer = accountManager.getUserData(acc, AuthenticatorService.KEY_INSTANCE_URL);
 		String orgId = accountManager.getUserData(acc, AuthenticatorService.KEY_ORG_ID);
 		String userId = accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID);
 		String username = accountManager.getUserData(acc, AuthenticatorService.KEY_USERNAME);
@@ -151,7 +141,7 @@ public class ClientManager {
 		if (authToken == null)
 			throw new AccountInfoNotFoundException(AccountManager.KEY_AUTHTOKEN);
 		if (instanceServer == null)
-			throw new AccountInfoNotFoundException(AuthenticatorService.KEY_INSTANCE_SERVER);
+			throw new AccountInfoNotFoundException(AuthenticatorService.KEY_INSTANCE_URL);
 		if (userId == null)
 			throw new AccountInfoNotFoundException(AuthenticatorService.KEY_USER_ID);
 		if (orgId == null)
@@ -236,11 +226,12 @@ public class ClientManager {
 			String instanceUrl, String loginUrl, String clientId, String orgId, String userId) {
 		
 		Bundle extras = new Bundle();
+		String passcodeHash = loginOptions == null ? null : loginOptions.passcodeHash;
 		extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
 		extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
 		extras.putString(AuthenticatorService.KEY_USERNAME, username);
-		extras.putString(AuthenticatorService.KEY_LOGIN_SERVER, loginUrl);
-		extras.putString(AuthenticatorService.KEY_INSTANCE_SERVER, instanceUrl);
+		extras.putString(AuthenticatorService.KEY_LOGIN_URL, loginUrl);
+		extras.putString(AuthenticatorService.KEY_INSTANCE_URL, instanceUrl);
 		extras.putString(AuthenticatorService.KEY_CLIENT_ID, clientId);
 		extras.putString(AuthenticatorService.KEY_ORG_ID, orgId);
 		extras.putString(AuthenticatorService.KEY_USER_ID, userId);
@@ -392,8 +383,7 @@ public class ClientManager {
 			
 			String newAuthToken = null;
 			try {
-				Bundle options = new Bundle();
-				options.putString(AuthenticatorService.PASSCODE_HASH, clientManager.passcodeHash);
+				Bundle options = clientManager.loginOptions.asBundle();
 				Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, options, null /* activity */, null /* callback */,
 								null /* handler */).getResult();
 			
@@ -440,6 +430,53 @@ public class ClientManager {
 
 		AccountInfoNotFoundException(String msg, Throwable cause) {
 			super(msg, cause);
+		}
+	}
+	
+	/**
+	 * Class encapsulating login options
+	 * There are passed in a bundle to the auth service, which passes them as "extras" when starting the login activity
+	 */
+	public static class LoginOptions {
+		private static final String OAUTH_SCOPES = "oauthScopes";
+		private static final String OAUTH_CLIENT_ID = "oauthClientId";
+		private static final String OAUTH_CALLBACK_URL = "oauthCallbackUrl";
+		private static final String PASSCODE_HASH = "passcodeHash";
+		private static final String LOGIN_URL = "loginUrl";
+
+		public String loginUrl;
+		public final String passcodeHash;
+		public final String oauthCallbackUrl;
+		public final String oauthClientId;
+		public final String[] oauthScopes;
+		private final Bundle bundle; 
+		
+		public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl, String oauthClientId, String[] oauthScopes) {
+			this.loginUrl = loginUrl;
+			this.passcodeHash = passcodeHash;
+			this.oauthCallbackUrl = oauthCallbackUrl;
+			this.oauthClientId = oauthClientId;
+			this.oauthScopes = oauthScopes;
+
+			bundle = new Bundle();
+			bundle.putString(LOGIN_URL, loginUrl);
+			bundle.putString(PASSCODE_HASH, passcodeHash);
+			bundle.putString(OAUTH_CALLBACK_URL, oauthCallbackUrl);
+			bundle.putString(OAUTH_CLIENT_ID, oauthClientId);
+			bundle.putStringArray(OAUTH_SCOPES, oauthScopes);
+		
+		}
+		
+		public Bundle asBundle() {
+			return bundle;
+		}
+		
+		public static LoginOptions fromBundle(Bundle options) {
+			return new LoginOptions(options.getString(LOGIN_URL), 
+									options.getString(PASSCODE_HASH),
+									options.getString(OAUTH_CALLBACK_URL),
+									options.getString(OAUTH_CLIENT_ID),
+									options.getStringArray(OAUTH_SCOPES));
 		}
 	}
 }
