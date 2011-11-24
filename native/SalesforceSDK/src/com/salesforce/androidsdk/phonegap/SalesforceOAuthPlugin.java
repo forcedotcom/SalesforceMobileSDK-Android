@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -87,7 +89,7 @@ public class SalesforceOAuthPlugin extends Plugin {
     	}
 
 		// Done
-    	return new PluginResult(PluginResult.Status.OK);
+		return new PluginResult(PluginResult.Status.OK);
     }
 
 	/**
@@ -96,6 +98,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 	 * @param callbackId
 	 */
 	protected void authenticate(JSONArray args, String callbackId) {
+		// Get login options
 		LoginOptions loginOptions = null;
 		try {
 			loginOptions = parseLoginOptions(args);
@@ -104,21 +107,27 @@ public class SalesforceOAuthPlugin extends Plugin {
 			error(new PluginResult(PluginResult.Status.JSON_EXCEPTION), e.getMessage());	
 		}
 
-		final String cId = callbackId;
+		// Block until login completes
+		final BlockingQueue<RestClient> q = new ArrayBlockingQueue<RestClient>(1);
 		new ClientManager(ctx, ForceApp.APP.getAccountType(), loginOptions).getRestClient(ctx, new RestClientCallback() {
 			@Override
 			public void authenticatedRestClient(RestClient client) {
-				SalesforceOAuthPlugin.this.client = client;
-				
-				if (client == null) {
-					SalesforceOAuthPlugin.this.error("Authentication failed", cId);						
-				}
-				else {
-					setSidCookies(client);
-					SalesforceOAuthPlugin.this.success(buildCredentialsResult(client), cId);
-				}
+				q.offer(client);
 			}
 		});
+		
+		try {
+			client = q.take();
+		}
+		catch (InterruptedException e) {
+			error(new PluginResult(PluginResult.Status.ERROR), e.getMessage());
+		}
+		
+		// Update cookies
+		setSidCookies(client);
+		
+		// Return credentials
+		getAuthCredentials(callbackId);
 	}
 
 	/**
@@ -214,6 +223,6 @@ public class SalesforceOAuthPlugin extends Plugin {
 		data.put("userAgent", ForceApp.APP.getUserAgent());
 		JSONObject credentials = new JSONObject(data);
 		
-		return new PluginResult(PluginResult.Status.OK, credentials, "JSON.parse");
+		return new PluginResult(PluginResult.Status.OK, credentials);
     }
 }
