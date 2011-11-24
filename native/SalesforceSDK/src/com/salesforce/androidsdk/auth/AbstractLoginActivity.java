@@ -71,6 +71,9 @@ public abstract class AbstractLoginActivity extends
 		// Getting login options from intent's extras
 		loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 		
+		// Filling in loginUrl
+		loginOptions.loginUrl = getLoginUrl();
+		
 		// we'll show progress in the window title bar.
 		getWindow().requestFeature(Window.FEATURE_PROGRESS);
 		getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
@@ -364,10 +367,10 @@ public abstract class AbstractLoginActivity extends
 	protected abstract int getWebViewId();
 
 	/**
-	 * 
 	 * @return account type
 	 */
 	protected abstract String getAccountType();
+	
 	
 	/**************************************************************************************************
 	 * 
@@ -413,5 +416,14 @@ public abstract class AbstractLoginActivity extends
     protected String buildAccountName(String username) {
     	return String.format("%s (%s)", username, ForceApp.APP.getApplicationName());
     }
+
+	/**
+	 * Override this method to customize the login url.
+	 * @return login url
+	 */
+	protected String getLoginUrl() {
+		return OAuth2.SANDBOX_LOGIN_URL;
+	}
+	
     
 }
