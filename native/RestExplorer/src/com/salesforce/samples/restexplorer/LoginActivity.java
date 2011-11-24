@@ -53,16 +53,6 @@ public class LoginActivity extends AbstractLoginActivity {
     public static final int PICK_SERVER_CODE = 10;
 
 
-    @Override
-    protected void loadLoginPage() {
-    	// Read login url from pref before loading web view
-		SharedPreferences settings = getSharedPreferences(
-				SERVER_URL_PREFS_SETTINGS, Context.MODE_PRIVATE);
-
-		setLoginUrl(settings.getString(LoginActivity.SERVER_URL_CURRENT_SELECTION, OAuth2.DEFAULT_LOGIN_URL));
-		super.loadLoginPage();
-	}    
-    
 	/**************************************************************************************************
      *
      * Implementations for abstract methods of AbstractLoginActivity
@@ -102,6 +92,13 @@ public class LoginActivity extends AbstractLoginActivity {
 		return getString(R.string.account_type);
 	}
 	
+    @Override
+    protected String getLoginUrl() {
+		SharedPreferences settings = getSharedPreferences(
+				SERVER_URL_PREFS_SETTINGS, Context.MODE_PRIVATE);
+
+		return settings.getString(LoginActivity.SERVER_URL_CURRENT_SELECTION, OAuth2.DEFAULT_LOGIN_URL);
+	}    
 	
     /**************************************************************************************************
      *
