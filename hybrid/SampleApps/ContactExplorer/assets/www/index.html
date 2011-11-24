@@ -56,6 +56,15 @@
         //Add event listeners and so forth here
         logToConsole("onLoad: jquery ready");
 
+		document.addEventListener("deviceready", onDeviceReady,false);
+
+    });
+
+    // When this function is called, PhoneGap has been initialized and is ready to roll 
+    function onDeviceReady() {
+        logToConsole("onDeviceReady: PhoneGap ready");
+        
+        
         //Call getAuthCredentials to get the initial session credentials
         SalesforceOAuthPlugin.getAuthCredentials(salesforceSessionRefreshed, getAuthCredentialsError);
 
@@ -64,7 +73,7 @@
 
         //enable buttons
         regLinkClickHandlers();
-    });
+    }
         
 
     function salesforceSessionRefreshed(creds) {
