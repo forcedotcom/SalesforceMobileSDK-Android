@@ -16,6 +16,7 @@ import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -52,13 +53,20 @@ public class AlbumListActivity extends ListActivity{
 		});
 	}
  
-	//Uncomment this block
-	
 	@Override
 	public void onResume(){
 		super.onResume();
 		
-		new ClientManager(this).getRestClient(this, new RestClientCallback() {
+		// Login options
+		String accountType = getString(R.string.account_type);
+		LoginOptions loginOptions = new LoginOptions(
+				null, // gets overridden by LoginActivity based on server picked by uuser 
+				ForceApp.APP.getPasscodeHash(),
+				getString(R.string.oauth_callback_url),
+				getString(R.string.oauth_client_id),
+				new String[] {"api"});
+		
+		new ClientManager(this, accountType, loginOptions).getRestClient(this, new RestClientCallback() {
 			@Override
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
