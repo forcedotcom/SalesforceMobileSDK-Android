@@ -30,7 +30,7 @@ public class CloudTunesApp extends ForceApp {
 
 	@Override
 	public int getLockTimeoutMinutes() {
-		return 10;
+		return 0;
 	}
 
 	@Override
