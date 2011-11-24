@@ -157,7 +157,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 		String[] scopes = jsonArrayToArray(scopesJson);
 		
 		loginOptions = new LoginOptions(
-				"https://test.salesforce.com", /* FIXME */ 
+				null, // set by app 
 				ForceApp.APP.getPasscodeHash(),
 				oauthProperties.getString("oauthRedirectURI"),
 				oauthProperties.getString("remoteAccessConsumerKey"),
