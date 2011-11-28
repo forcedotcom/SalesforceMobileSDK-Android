@@ -31,8 +31,9 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.security.AbstractPasscodeActivity.PasscodeMode;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.ui.PasscodeActivity;
+import com.salesforce.androidsdk.ui.PasscodeActivity.PasscodeMode;
 
 
 /**

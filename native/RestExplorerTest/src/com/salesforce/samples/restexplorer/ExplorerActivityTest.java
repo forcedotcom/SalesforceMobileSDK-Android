@@ -55,6 +55,7 @@ import android.widget.TextView;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.ui.LoginActivity;
 
 /**
  * Tests for ExplorerActivity
