@@ -31,13 +31,13 @@
 		</activity>
 
 		<!-- Login activity -->
-		<activity android:name=".LoginActivity" />
+		<activity android:name="com.salesforce.androidsdk.ui.LoginActivity" />
 
 		<!-- Passcode activity -->
-		<activity android:name=".PasscodeActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
+		<activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
 		
 		<!-- Choose server activity -->
-		<activity android:name=".ServerPickerActivity" android:excludeFromRecents="true" />
+		<activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity" android:excludeFromRecents="true" />
 	</application>
 
 	<uses-permission android:name="android.permission.INTERNET" />

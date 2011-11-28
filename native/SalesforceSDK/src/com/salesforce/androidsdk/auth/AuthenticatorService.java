@@ -44,11 +44,11 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.ui.LoginActivity;
 
 /**
  * Service taking care of authentication for salesforce application
@@ -174,7 +174,7 @@ public class AuthenticatorService extends Service {
 		 */
 		private Bundle makeAuthIntentBundle(AccountAuthenticatorResponse response, Bundle options) {
             Bundle reply = new Bundle();
-            Intent i = new Intent(context, ForceApp.APP.getLoginActivityClass());
+            Intent i = new Intent(context, LoginActivity.class);
             i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
             i.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);

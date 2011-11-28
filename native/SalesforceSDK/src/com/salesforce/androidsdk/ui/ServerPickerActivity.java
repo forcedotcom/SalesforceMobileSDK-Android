@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.restexplorer;
+package com.salesforce.androidsdk.ui;
 
 import java.util.ArrayList;
 import java.util.logging.Level;
@@ -55,6 +55,7 @@ import android.widget.RadioGroup;
 import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView.BufferType;
 
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.OAuth2;
 
 /**
@@ -96,7 +97,8 @@ public class ServerPickerActivity extends Activity implements
 	/** who we are in the logs */
 	protected final String TAG = this.getClass().getSimpleName();
 
-	CustomServerUrlEditor urlEditDialog;
+	public CustomServerUrlEditor urlEditDialog;
+	private SalesforceR salesforceR;
 
 	/**
 	 * hooks for the edit url dialog dismiss is positive (apply) cancel is back
@@ -164,25 +166,33 @@ public class ServerPickerActivity extends Activity implements
 	public void onClick(View v) {
 		RadioButton rb = (RadioButton) v;
 		if (rb.isChecked()) {
-			RadioGroup radioGroup = (RadioGroup) findViewById(R.id.serverListGroup);
+			RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
 			radioGroup.clearCheck();
 		}
+	}
+
+	protected int getServerListGroupId() {
+		return salesforceR.idServerListGroup();
 	}
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.server_picker);
+
+		// Object which allows reference to resources living outside the SDK
+		salesforceR = ForceApp.APP.getSalesforceR();
+
+		setContentView(salesforceR.layoutServerPicker());
 
 		defaultServers = new ArrayList<Pair<String, String>>();
 
 		// start in one place for standard urls
 		defaultServers.add(new Pair<String, String>(
-				getString(R.string.auth_login_production),
+                getString(salesforceR.stringAuthLoginProduction()),
 				OAuth2.DEFAULT_LOGIN_URL));
 		defaultServers.add(new Pair<String, String>(
-				getString(R.string.auth_login_sandbox),
+				getString(salesforceR.stringAuthLoginSandbox()),
 				OAuth2.SANDBOX_LOGIN_URL));
 
 		SavedConfig savedConfig = (SavedConfig) getLastNonConfigurationInstance();
@@ -213,7 +223,7 @@ public class ServerPickerActivity extends Activity implements
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		super.onCreateOptionsMenu(menu);
-		getMenuInflater().inflate(R.menu.clear_custom_url, menu);
+		getMenuInflater().inflate(salesforceR.menuClearCustomUrl(), menu);
 		return true;
 	}
 
@@ -226,11 +236,11 @@ public class ServerPickerActivity extends Activity implements
 
 	@Override
 	public boolean onMenuItemSelected(int featureId, MenuItem item) {
-		switch (item.getItemId()) {
-		case R.id.menu_clear_custom_url:
+		if(item.getItemId() == salesforceR.idMenuClearCustomUrl()) {
 			clearCustomUrlSetting();
 			return true;
-		default:
+        }
+        else {
 			return super.onMenuItemSelected(featureId, item);
 		}
 	}
@@ -244,13 +254,13 @@ public class ServerPickerActivity extends Activity implements
 	 */
 	@Override
 	public Object onRetainNonConfigurationInstance() {
-		RadioGroup radioGroup = (RadioGroup) findViewById(R.id.serverListGroup);
+		RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
 		return new SavedConfig(radioGroup.getCheckedRadioButtonId(),
 				startingIndex);
 	}
 
 	private void rebuildDisplay() {
-		RadioGroup radioGroup = (RadioGroup) findViewById(R.id.serverListGroup);
+		RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
 		radioGroup.removeAllViews();
 		radioGroup.clearCheck();
 
@@ -292,7 +302,7 @@ public class ServerPickerActivity extends Activity implements
 		// the id is also the index, but use findViewById to get the actual
 		// radio button,
 		// not childAtIndex, which can be anything
-		RadioGroup radioGroup = (RadioGroup) findViewById(R.id.serverListGroup);
+		RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
 
 		// if the selected item is the custom radio this won't return it
 		int selectedId = radioGroup.getCheckedRadioButtonId();
@@ -337,8 +347,7 @@ public class ServerPickerActivity extends Activity implements
 
 	/**
 	 * set the retval of the activity. selection is stored in the prefs,
-	 * AuthActivity pull from the prefs or an OAuth2 default (which would be
-	 * just a pref if i store the default server in a default xml TODO)
+	 * AuthActivity pull from the prefs or an OAuth2 default
 	 * 
 	 * @param v
 	 */
@@ -408,7 +417,7 @@ public class ServerPickerActivity extends Activity implements
 					| Gravity.CENTER_VERTICAL;
 
 			ImageView iv = new ImageView(this);
-			iv.setImageResource(R.drawable.edit_icon);
+			iv.setImageResource(salesforceR.drawableEditIcon());
 			iv.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {
@@ -459,7 +468,7 @@ public class ServerPickerActivity extends Activity implements
 				LoginActivity.SERVER_URL_PREFS_SETTINGS,
 				Context.MODE_PRIVATE);
 
-		RadioGroup radioGroup = (RadioGroup) findViewById(R.id.serverListGroup);
+		RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
 
 		int index = 0;
 		for (Pair<String, String> currServer : defaultServers) {
@@ -470,7 +479,7 @@ public class ServerPickerActivity extends Activity implements
 
 		// custom url set, may or may not be selected. ui is a radio with an
 		// edit link either way.
-		View postView = findViewById(R.id.showCustomUrlEdit);
+		View postView = findViewById(salesforceR.idShowCustomUrlEdit());
 
 		if (settings.getString(
 				LoginActivity.SERVER_URL_PREFS_CUSTOM_URL, null) != null) {

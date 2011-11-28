@@ -42,13 +42,12 @@ import android.os.Build;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
-import com.salesforce.androidsdk.auth.AbstractLoginActivity;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.security.AbstractPasscodeActivity;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
+import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -80,7 +79,7 @@ public abstract class ForceApp extends Application {
         // Initialize the passcode manager if required
         if (getLockTimeoutMinutes() > 0) {
 			passcodeManager = new PasscodeManager(this, getLockTimeoutMinutes(),
-					getPasscodeActivityClass(), getVerificationHashConfig(),
+					getVerificationHashConfig(),
 					getEncryptionHashConfig());
         }
 		
@@ -164,6 +163,13 @@ public abstract class ForceApp extends Application {
 	    return "SalesforceMobileSDK/" + SDK_VERSION + " android/"+ Build.VERSION.RELEASE;
 	}
 
+    /**
+     * @return account type (should match authenticator.xml)
+     */
+	public String getAccountType() {
+		return getString(getSalesforceR().stringAccountType());
+	}
+	
     @Override
     public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -171,8 +177,6 @@ public abstract class ForceApp extends Application {
 		  .append("   accountType: ").append(getAccountType()).append("\n")
 		  .append("   userAgent: ").append(getUserAgent()).append("\n")
 		  .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
-		  .append("   loginActivityClass: ").append(getLoginActivityClass()).append("\n")
-		  .append("   passcodeActivityClass: ").append(getPasscodeActivityClass()).append("\n")
 		  .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n")
 		  .append("   lockTimeoutMinutes: ").append(getLockTimeoutMinutes()).append("\n")
 		  .append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n")
@@ -180,35 +184,7 @@ public abstract class ForceApp extends Application {
 		return sb.toString();
 
     }
-
-    /**
-	 * If you return 0, the user will not have to enter a passcode
-	 * @return lock timeout in minutes or 0 for never
-	 *  
-	 */
-	abstract public int getLockTimeoutMinutes();
-	
-
-    /**
-     * @return class for main activity
-     */
-	abstract public Class<? extends Activity> getMainActivityClass();
-	
-	/**
-     * @return class for login activity
-     */
-	abstract public Class<? extends AbstractLoginActivity> getLoginActivityClass();
-
-    /**
-     * @return class for passcode activity
-     */
-    abstract public Class<? extends AbstractPasscodeActivity> getPasscodeActivityClass();
     
-    /**
-     * @return account type (should match authenticator.xml)
-     */
-    abstract public String getAccountType();
-
 	/*
 	 * Random keys persisted encrypted in a private preference file
 	 * This is provided as an example.
@@ -227,12 +203,37 @@ public abstract class ForceApp extends Application {
 		}
 		return Encryptor.decrypt(sp.getString(name, null), getKey(name));
 	}
+
+	
+	
+	/**************************************************************************************************
+	 * 
+	 * Abstract methods: to be implemented by subclass
+	 * 
+	 **************************************************************************************************/
+    
+    /**
+	 * If you return 0, the user will not have to enter a passcode
+	 * @return lock timeout in minutes or 0 for never
+	 *  
+	 */
+	public abstract int getLockTimeoutMinutes();
+	
+    /**
+     * @return class for main activity
+     */
+	public abstract Class<? extends Activity> getMainActivityClass();
+	
+    /*
+     * @return SalesforceR object which allows reference to resources living outside the SDK
+     */
+    public abstract SalesforceR getSalesforceR();
 	
 	/**
 	 * This function must return the same value for name even when application is restarted 
 	 * @param name
 	 * @return key for encrypting salts and keys 
 	 */
-	protected abstract String getKey(String name);
+    protected abstract String getKey(String name);
 
 }

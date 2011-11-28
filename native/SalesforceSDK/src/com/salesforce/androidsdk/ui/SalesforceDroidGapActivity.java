@@ -24,39 +24,50 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.restexplorer;
+package com.salesforce.androidsdk.ui;
 
-import android.app.Activity;
+import android.os.Bundle;
+import android.webkit.CookieSyncManager;
+import android.webkit.WebSettings;
 
+import com.phonegap.DroidGap;
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.security.Encryptor;
-import com.salesforce.androidsdk.ui.SalesforceR;
 
-
-/**
- * Application class for our rest explorer
- */
-public class RestExplorerApp extends ForceApp {
-
-	private SalesforceR salesforceR = new SalesforceRImpl();
-	
-	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return ExplorerActivity.class;
-	}
-	
-	@Override
-	public int getLockTimeoutMinutes() {
-		return 10;
-	}
-
-	@Override
-	protected String getKey(String name) {
-		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
-	}
-
-	@Override
-	public SalesforceR getSalesforceR() {
-		return salesforceR;
-	}
+public class SalesforceDroidGapActivity extends DroidGap {
+    /** Called when the activity is first created. */
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+    	//ensure we have a CookieSyncManager
+    	CookieSyncManager.createInstance(this);
+        
+        //ensure that we allow urls from all salesforce domains to be loaded
+        this.addWhiteListEntry("force.com", true);
+        this.addWhiteListEntry("salesforce.com", true);
+        
+        // Load bootstrap
+        super.loadUrl("file:///android_asset/www/bootstrap.html");
+    }
+    
+    @Override
+    public void init() {
+    	super.init();
+		final String uaStr = ForceApp.APP.getUserAgent();
+		if (null != this.appView) {
+	        WebSettings webSettings = this.appView.getSettings();
+	        webSettings.setUserAgentString(uaStr);
+		}
+    }
+    
+    @Override
+    public void onResume() {
+    	CookieSyncManager.getInstance().startSync();
+    	super.onResume();
+    }
+    
+    @Override
+    public void onPause() {
+    	CookieSyncManager.getInstance().stopSync();
+    	super.onPause();
+    }
 }

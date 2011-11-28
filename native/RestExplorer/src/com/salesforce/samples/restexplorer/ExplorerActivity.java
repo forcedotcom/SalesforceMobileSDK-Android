@@ -144,7 +144,7 @@ public class ExplorerActivity extends TabActivity {
 		}
 		
 		// Login options
-		String accountType = getString(R.string.account_type);
+		String accountType = ForceApp.APP.getAccountType();
     	LoginOptions loginOptions = new LoginOptions(
     			null, // gets overridden by LoginActivity based on server picked by uuser 
     			ForceApp.APP.getPasscodeHash(),

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<!-- Errors -->
+	<string name="generic_authentication_error_title">Error</string>
+	<string name="generic_authentication_error">Authentication error. Please try again.</string>
+	<string name="generic_error">An error has occurred %s\nPlease try again</string>
+	<string name="invalid_server_url">Please type in a valid URL starting with https://</string>
+
+	<!-- Login -->
+	<string name="login_title"><b>RestExplorer - Login</b></string>
+	<string name="pick_server_button">Change Server</string>
+	<string name="clear_cookies_button">Clear Cookies</string>
+
+	<!-- Server picker -->
+	<string name="server_picker_title">Pick Login Server</string>
+	<string name="auth_login_production">Production</string>
+	<string name="auth_login_sandbox">Sandbox</string>
+	<string name="custom_url_button">Add Connection</string>
+	<string name="server_url_edit_title">Edit Connection</string>
+	<string name="server_url_add_title">Add Connection</string>
+	<string name="server_url_default_custom_label">Name</string>
+	<string name="server_url_default_custom_url">URL</string>
+	<string name="server_url_default_cancel">Cancel</string>
+	<string name="server_url_default_apply">Apply</string>
+	<string name="server_url_reset">Reset</string>
+	
+	<!-- passcode entry screen -->
+	<string name="passcode_create_title">Create Salesforce passcode</string>
+	<string name="passcode_create_instructions">For increased security, please create a passcode that you will use to access Salesforce when the session has timed out due to inactivity.</string>
+	<string name="passcode_confirm_title">Re-enter your Salesforce passcode</string>
+	<string name="passcode_confirm_instructions">Confirm your mobile passcode for Salesforce</string>
+	<string name="passcode_enter_title">Enter Salesforce Passcode</string>
+	<string name="passcode_enter_instructions">Enter your mobile passcode for Salesforce</string>
+	<string name="passcodes_dont_match">Passcodes don\'t match!</string>
+	<string name="passcode_try_again">The passcode you entered is incorrect. Please try again. You have %d attempts remaining.</string>
+	<string name="passcode_final">Final passcode attempt</string>
+	<string name="passcode_min_length">The passcode must be at least %d characters long</string>	    
+
+</resources>
