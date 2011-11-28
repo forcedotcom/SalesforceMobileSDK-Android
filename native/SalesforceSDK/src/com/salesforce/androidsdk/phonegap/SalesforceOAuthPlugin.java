@@ -142,6 +142,14 @@ public class SalesforceOAuthPlugin extends Plugin {
 			success(buildCredentialsResult(client), callbackId);				
 		}
 	}
+	
+	/**
+	 * Native implementation for "logout" action
+	 */
+	protected void logoutCurrentUser() {
+		ForceApp.APP.logout(null);
+
+	}
 
 	/**************************************************************************************************
 	 * 

@@ -174,9 +174,15 @@ public abstract class ForceApp extends Application {
 		  .append("   loginActivityClass: ").append(getLoginActivityClass()).append("\n")
 		  .append("   passcodeActivityClass: ").append(getPasscodeActivityClass()).append("\n")
 		  .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n")
-		  .append("   lockTimeoutMinutes: ").append(getLockTimeoutMinutes()).append("\n")
-		  .append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n")
-		  .append("}\n");
+		  .append("   lockTimeoutMinutes: ").append(getLockTimeoutMinutes()).append("\n");
+		
+		if (null != passcodeManager) {
+			//passcodeManager may be null at startup if the app is running in debug mode
+		  sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n");
+		}
+		
+		sb.append("}\n");
+		
 		return sb.toString();
 
     }
