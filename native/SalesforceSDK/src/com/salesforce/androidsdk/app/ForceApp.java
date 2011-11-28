@@ -137,7 +137,8 @@ public abstract class ForceApp extends Application {
     	}
     	
     	// Remove account if any
-    	new ClientManager(this, null, null/* we are not doing any login*/).removeAccountAsync(new AccountManagerCallback<Boolean>() {
+    	ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
+    	clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
 			
 			@Override
 			public void run(AccountManagerFuture<Boolean> arg0) {
@@ -175,7 +176,7 @@ public abstract class ForceApp extends Application {
 		  .append("   passcodeActivityClass: ").append(getPasscodeActivityClass()).append("\n")
 		  .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n")
 		  .append("   lockTimeoutMinutes: ").append(getLockTimeoutMinutes()).append("\n");
-		
+
 		if (null != passcodeManager) {
 			//passcodeManager may be null at startup if the app is running in debug mode
 		  sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n");

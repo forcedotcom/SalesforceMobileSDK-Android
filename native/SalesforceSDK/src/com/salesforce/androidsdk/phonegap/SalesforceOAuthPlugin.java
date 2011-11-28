@@ -37,6 +37,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
@@ -54,12 +55,15 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
  */
 public class SalesforceOAuthPlugin extends Plugin {
 
+	public static final String TAG = "SalesforceOAuthPlugin";
+	
 	/**
 	 * Supported actions
 	 */
 	enum Action {
 		authenticate,
-		getAuthCredentials;
+		getAuthCredentials,
+		logoutCurrentUser
 	}
 	
 	private RestClient client;
@@ -84,8 +88,9 @@ public class SalesforceOAuthPlugin extends Plugin {
     	
     	// Run action
 		switch(action) {
-			case authenticate:       authenticate(args, callbackId); break; 
-			case getAuthCredentials: getAuthCredentials(callbackId); break; 
+			case authenticate:       	authenticate(args, callbackId); break; 
+			case getAuthCredentials: 	getAuthCredentials(callbackId); break; 
+			case logoutCurrentUser:		logoutCurrentUser(); break;
     	}
 
 		// Done
@@ -147,8 +152,8 @@ public class SalesforceOAuthPlugin extends Plugin {
 	 * Native implementation for "logout" action
 	 */
 	protected void logoutCurrentUser() {
-		ForceApp.APP.logout(null);
-
+		Log.i(TAG, "logoutCurrentUser " + this.ctx);
+		ForceApp.APP.logout(this.ctx);
 	}
 
 	/**************************************************************************************************
