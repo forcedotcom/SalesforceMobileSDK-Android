@@ -97,9 +97,6 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 		// Getting login options from intent's extras
 		loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 		
-		// Filling in loginUrl
-		loginOptions.loginUrl = getLoginUrl();
-		
 		// We'll show progress in the window title bar
 		getWindow().requestFeature(Window.FEATURE_PROGRESS);
 		getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
@@ -164,6 +161,8 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 	 * see which system you're logging in to
 	 */
 	protected void loadLoginPage() {
+		// Filling in loginUrl
+		loginOptions.loginUrl = getLoginUrl();
 
 		try {
 			URI uri = OAuth2.getAuthorizationUrl(
