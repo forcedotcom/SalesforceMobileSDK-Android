@@ -97,9 +97,6 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 		// Getting login options from intent's extras
 		loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 		
-		// Filling in loginUrl
-		loginOptions.loginUrl = getLoginUrl();
-		
 		// We'll show progress in the window title bar
 		getWindow().requestFeature(Window.FEATURE_PROGRESS);
 		getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
@@ -118,6 +115,10 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 		// once the auth process has been kicked off.
 		if (savedInstanceState != null) {
 			webView.restoreState(savedInstanceState);
+		}
+		// Otherwise start clean
+		else {
+			clearCookies();
 		}
 		loadLoginPage();
 	}
@@ -160,6 +161,8 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 	 * see which system you're logging in to
 	 */
 	protected void loadLoginPage() {
+		// Filling in loginUrl
+		loginOptions.loginUrl = getLoginUrl();
 
 		try {
 			URI uri = OAuth2.getAuthorizationUrl(
@@ -198,6 +201,7 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 				@Override
 				public void run() {
 					clearCookies();
+					loadLoginPage();
 				}
 			});
 
@@ -283,12 +287,12 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 	 */
 	public void onClearCookiesClick(View v) {
 		clearCookies();
+		loadLoginPage();
 	}
 
 	protected void clearCookies() {
 		CookieManager cm = CookieManager.getInstance();
 		cm.removeAllCookie();
-		loadLoginPage();
 	}
 	
 	/**

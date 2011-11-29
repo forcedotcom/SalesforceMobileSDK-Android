@@ -66,6 +66,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 		logoutCurrentUser
 	}
 	
+	private LoginOptions loginOptions;
 	private RestClient client;
     
     /**
@@ -104,7 +105,6 @@ public class SalesforceOAuthPlugin extends Plugin {
 	 */
 	protected void authenticate(JSONArray args, String callbackId) {
 		// Get login options
-		LoginOptions loginOptions = null;
 		try {
 			loginOptions = parseLoginOptions(args);
 		}
@@ -112,27 +112,53 @@ public class SalesforceOAuthPlugin extends Plugin {
 			error(new PluginResult(PluginResult.Status.JSON_EXCEPTION), e.getMessage());	
 		}
 
+		// Get rest client (blocking call)
+		client = getRestClient(loginOptions);
+		
+		if (client == null) {
+			// Failed
+			error(new PluginResult(PluginResult.Status.ERROR), "Authentication failed");			
+		}
+		else {
+			// Update cookies
+			setSidCookies(client);
+			
+			// Succeeded
+			success(buildCredentialsResult(client), callbackId);
+		}
+	}
+
+	/**
+	 * @param loginOptions
+	 * @return
+	 */
+	protected RestClient getRestClient(LoginOptions loginOptions) {
 		// Block until login completes
-		final BlockingQueue<RestClient> q = new ArrayBlockingQueue<RestClient>(1);
+		final BlockingQueue<List<RestClient>> q = new ArrayBlockingQueue<List<RestClient>>(1);
 		new ClientManager(ctx, ForceApp.APP.getAccountType(), loginOptions).getRestClient(ctx, new RestClientCallback() {
 			@Override
-			public void authenticatedRestClient(RestClient client) {
-				q.offer(client);
+			public void authenticatedRestClient(RestClient c) {
+				// Returning a list to handle the null case
+				List<RestClient> l = new ArrayList<RestClient>();
+				if (c != null) {
+					l.add(c);
+				}
+				q.offer(l);
 			}
 		});
 		
 		try {
-			client = q.take();
+			List<RestClient> l = q.take();
+			if (!l.isEmpty()) {
+				return l.get(0);
+			}
 		}
 		catch (InterruptedException e) {
-			error(new PluginResult(PluginResult.Status.ERROR), e.getMessage());
+			Log.w(TAG, "getRestClient", e);
 		}
 		
-		// Update cookies
-		setSidCookies(client);
-		
-		// Return credentials
-		getAuthCredentials(callbackId);
+		// Failed
+		return null;
 	}
 
 	/**
