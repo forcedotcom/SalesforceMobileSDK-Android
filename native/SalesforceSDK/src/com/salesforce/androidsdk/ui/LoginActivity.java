@@ -119,6 +119,10 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 		if (savedInstanceState != null) {
 			webView.restoreState(savedInstanceState);
 		}
+		// Otherwise start clean
+		else {
+			clearCookies();
+		}
 		loadLoginPage();
 	}
 
@@ -198,6 +202,7 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 				@Override
 				public void run() {
 					clearCookies();
+					loadLoginPage();
 				}
 			});
 
@@ -283,12 +288,12 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 	 */
 	public void onClearCookiesClick(View v) {
 		clearCookies();
+		loadLoginPage();
 	}
 
 	protected void clearCookies() {
 		CookieManager cm = CookieManager.getInstance();
 		cm.removeAllCookie();
-		loadLoginPage();
 	}
 	
 	/**
