@@ -176,7 +176,6 @@ public class AuthenticatorService extends Service {
             Bundle reply = new Bundle();
             Intent i = new Intent(context, LoginActivity.class);
             i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
             i.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
             if (options != null)
                 i.putExtras(options);
