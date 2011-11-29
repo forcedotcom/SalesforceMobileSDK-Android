@@ -30,8 +30,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -66,9 +64,11 @@ public class SalesforceOAuthPlugin extends Plugin {
 		logoutCurrentUser
 	}
 	
-	private LoginOptions loginOptions;
-	private RestClient client;
-    
+	/* static because it needs to survice plugin being torn down when a new URL is loaded */
+	public static RestClient client;
+	public static boolean autoRefresh;
+	
+	
     /**
      * Executes the request and returns PluginResult.
      * 
@@ -82,104 +82,78 @@ public class SalesforceOAuthPlugin extends Plugin {
     	Action action = null;
     	try {
     		action = Action.valueOf(actionStr);
+			switch(action) {
+				case authenticate:       	return authenticate(args, callbackId);  
+				case getAuthCredentials: 	return getAuthCredentials(callbackId);  
+				case logoutCurrentUser:		return logoutCurrentUser(); 
+				default: return new PluginResult(PluginResult.Status.INVALID_ACTION, actionStr); // should never happen
+	    	}
     	}
     	catch (IllegalArgumentException e) {
-    		return new PluginResult(PluginResult.Status.INVALID_ACTION);
+    		return new PluginResult(PluginResult.Status.INVALID_ACTION, e.getMessage());
     	}
-    	
-    	// Run action
-		switch(action) {
-			case authenticate:       	authenticate(args, callbackId); break; 
-			case getAuthCredentials: 	getAuthCredentials(callbackId); break; 
-			case logoutCurrentUser:		logoutCurrentUser(); break;
+    	catch (JSONException e) {
+    		return new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());    		
     	}
-
-		// Done
-		return new PluginResult(PluginResult.Status.OK);
     }
 
 	/**
 	 * Native implementation for "authenticate" action
 	 * @param args
 	 * @param callbackId
+	 * @return NO_RESULT since authentication is asynchronous
+	 * @throws JSONException 
 	 */
-	protected void authenticate(JSONArray args, String callbackId) {
+	protected PluginResult authenticate(JSONArray args, final String callbackId) throws JSONException {
 		// Get login options
-		try {
-			loginOptions = parseLoginOptions(args);
-		}
-		catch (JSONException e) {
-			error(new PluginResult(PluginResult.Status.JSON_EXCEPTION), e.getMessage());	
-		}
+		JSONObject oauthProperties = new JSONObject((String) args.get(0));
+		LoginOptions loginOptions = parseLoginOptions(oauthProperties);
+		autoRefresh = oauthProperties.getBoolean("autoRefreshOnForeground");
 
-		// Get rest client (blocking call)
-		client = getRestClient(loginOptions);
-		
-		if (client == null) {
-			// Failed
-			error(new PluginResult(PluginResult.Status.ERROR), "Authentication failed");			
-		}
-		else {
-			// Update cookies
-			setSidCookies(client);
-			
-			// Succeeded
-			success(buildCredentialsResult(client), callbackId);
-		}
-	}
-
-	/**
-	 * @param loginOptions
-	 * @return
-	 */
-	protected RestClient getRestClient(LoginOptions loginOptions) {
-		// Block until login completes
-		final BlockingQueue<List<RestClient>> q = new ArrayBlockingQueue<List<RestClient>>(1);
+		// Authenticate
 		new ClientManager(ctx, ForceApp.APP.getAccountType(), loginOptions).getRestClient(ctx, new RestClientCallback() {
 			@Override
 			public void authenticatedRestClient(RestClient c) {
-				// Returning a list to handle the null case
-				List<RestClient> l = new ArrayList<RestClient>();
-				if (c != null) {
-					l.add(c);
+				if (c == null) {
+					ForceApp.APP.logout(ctx);
 				}
-				q.offer(l);
+				else {
+					SalesforceOAuthPlugin.client = c;
+					setSidCookies(client);
+					success(new PluginResult(PluginResult.Status.OK, getJSONCredentials(client)), callbackId);
+				}
 			}
 		});
-		
-		try {
-			List<RestClient> l = q.take();
-			if (!l.isEmpty()) {
-				return l.get(0);
-			}
-		}
-		catch (InterruptedException e) {
-			Log.w(TAG, "getRestClient", e);
-		}
-		
-		// Failed
-		return null;
+
+		// Done
+		PluginResult noop = new PluginResult(PluginResult.Status.NO_RESULT);
+		noop.setKeepCallback(true);
+		return noop;
 	}
+	
 
 	/**
 	 * Native implementation for "getAuthCredentials" action
 	 * @param callbackId
+	 * @return plugin result (ok if authenticated, error otherwise)
 	 */
-	protected void getAuthCredentials(String callbackId) {
+	protected PluginResult getAuthCredentials(String callbackId) {
 		if (client == null) {
-			error(new PluginResult(PluginResult.Status.ERROR), "Never authenticated");
+			return new PluginResult(PluginResult.Status.ERROR, "Never authenticated");
 		}
 		else {
-			success(buildCredentialsResult(client), callbackId);				
+			return new PluginResult(PluginResult.Status.OK, getJSONCredentials(client));				
 		}
 	}
 	
 	/**
 	 * Native implementation for "logout" action
+	 * @return ok plugin result
 	 */
-	protected void logoutCurrentUser() {
+	protected PluginResult logoutCurrentUser() {
 		Log.i(TAG, "logoutCurrentUser " + this.ctx);
 		ForceApp.APP.logout(this.ctx);
+		return new PluginResult(PluginResult.Status.OK);
 	}
 
 	/**************************************************************************************************
@@ -188,14 +162,11 @@ public class SalesforceOAuthPlugin extends Plugin {
 	 * 
 	 **************************************************************************************************/
 
-	private LoginOptions parseLoginOptions(JSONArray args) throws JSONException {
-		LoginOptions loginOptions;
-		JSONObject oauthProperties = new JSONObject((String) args.get(0));
-
+	private LoginOptions parseLoginOptions(JSONObject oauthProperties) throws JSONException {
 		JSONArray scopesJson = oauthProperties.getJSONArray("oauthScopes");
 		String[] scopes = jsonArrayToArray(scopesJson);
 		
-		loginOptions = new LoginOptions(
+		LoginOptions loginOptions = new LoginOptions(
 				null, // set by app 
 				ForceApp.APP.getPasscodeHash(),
 				oauthProperties.getString("oauthRedirectURI"),
@@ -247,7 +218,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 	 * 
 	 **************************************************************************************************/
 
-    private PluginResult buildCredentialsResult(RestClient client) {
+    private JSONObject getJSONCredentials(RestClient client) {
     	assert client != null : "Client is null";
     	
 		ClientInfo clientInfo = client.getClientInfo();
@@ -260,8 +231,6 @@ public class SalesforceOAuthPlugin extends Plugin {
 		data.put("loginUrl", clientInfo.loginUrl.toString()); 
 		data.put("instanceUrl", clientInfo.instanceUrl.toString());
 		data.put("userAgent", ForceApp.APP.getUserAgent());
-		JSONObject credentials = new JSONObject(data);
-		
-		return new PluginResult(PluginResult.Status.OK, credentials);
+		return new JSONObject(data);
     }
 }
