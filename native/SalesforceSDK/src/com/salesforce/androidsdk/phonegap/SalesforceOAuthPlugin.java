@@ -36,6 +36,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.os.SystemClock;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -99,20 +100,16 @@ public class SalesforceOAuthPlugin extends Plugin {
 						Log.i("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Auto-refresh succeeded");
 						updateRefreshTime();
 						SalesforceOAuthPlugin.client = c;
-						setSidCookies(webView, SalesforceOAuthPlugin.client, new Runnable() {
-							@Override
-							public void run() {
-								Log.i("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Firing salesforceSessionRefresh event");
-								ctx.sendJavascript("PhoneGap.fireDocumentEvent('salesforceSessionRefresh'," + getJSONCredentials(SalesforceOAuthPlugin.client).toString() + ");");
-							}
-						});
+						setSidCookies(webView, SalesforceOAuthPlugin.client);
+						Log.i("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Firing salesforceSessionRefresh event");
+						ctx.sendJavascript("PhoneGap.fireDocumentEvent('salesforceSessionRefresh'," + getJSONCredentials(SalesforceOAuthPlugin.client).toString() + ");");
 					}
 				}
 			});
     	}
 	}
 	
-	
+
     /**
      * Executes the request and returns PluginResult.
      * 
@@ -182,12 +179,8 @@ public class SalesforceOAuthPlugin extends Plugin {
 
 	private void callAuthenticateSuccess(final String callbackId) {
 		Log.i("SalesforceOAuthPlugin.callAuthenticateSuccess", "Calling authenticate success callback");
-		setSidCookies(webView, SalesforceOAuthPlugin.client, new Runnable() {
-			@Override
-			public void run() {
-				success(new PluginResult(PluginResult.Status.OK, getJSONCredentials(SalesforceOAuthPlugin.client)), callbackId);
-			}
-		});
+		setSidCookies(webView, SalesforceOAuthPlugin.client);
+		success(new PluginResult(PluginResult.Status.OK, getJSONCredentials(SalesforceOAuthPlugin.client)), callbackId);
 	}
 	
 	/**
@@ -316,16 +309,16 @@ public class SalesforceOAuthPlugin extends Plugin {
 
     /**
      * Set cookies on cookie manager
-     * And run runnable (after giving enough time to the cookie manager to sync)
      * @param client
-     * @param runnable
      */
-    private static void setSidCookies(WebView webView, RestClient client, Runnable runnable) {
+    private static void setSidCookies(WebView webView, RestClient client) {
     	Log.i("SalesforceOAuthPlugin.setSidCookies", "setting cookies");
     	CookieSyncManager cookieSyncMgr = CookieSyncManager.getInstance();
     	
     	CookieManager cookieMgr = CookieManager.getInstance();
     	cookieMgr.removeSessionCookie();
+    	
+    	SystemClock.sleep(250); // removeSessionCookies kicks out a thread - let it finish
 
     	String accessToken = client.getAuthToken();
     	String domain = client.getClientInfo().instanceUrl.getHost();
@@ -336,7 +329,6 @@ public class SalesforceOAuthPlugin extends Plugin {
     	addSidCookieForDomain(cookieMgr,".salesforce.com",accessToken);
 
 	    cookieSyncMgr.sync();
-	    webView.postDelayed(runnable, 500);
     }
 
     private static void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
