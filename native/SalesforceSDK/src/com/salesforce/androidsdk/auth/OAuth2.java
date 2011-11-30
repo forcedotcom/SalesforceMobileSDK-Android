@@ -304,6 +304,10 @@ public class OAuth2 {
 		public String orgId;
 		public String userId;
 
+		/**
+		 * Constructor used during login flow
+		 * @param callbackUrlParams
+		 */
 		public TokenEndpointResponse(Map<String, String> callbackUrlParams) {
 			try {
 				authToken = callbackUrlParams.get("access_token");
@@ -316,11 +320,15 @@ public class OAuth2 {
 			}
 		}
 
+		/**
+		 * Constructor used during refresh flow
+		 * @param httpResponse
+		 */
 		public TokenEndpointResponse(HttpResponse httpResponse) {
 			try {
 				JSONObject parsedResponse = parseResponse(httpResponse);
+				Log.i("TokenEndpointResponse", "parsedResponse->" + parsedResponse.toString());
 				authToken = parsedResponse.getString("access_token");
-				refreshToken = parsedResponse.getString("refresh_token");
 				instanceUrl = parsedResponse.getString("instance_url");
 				idUrl  = parsedResponse.getString("id");
 			} catch (Exception e) {
