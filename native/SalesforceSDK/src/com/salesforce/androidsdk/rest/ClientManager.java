@@ -323,7 +323,7 @@ public class ClientManager {
 			restCallback.authenticatedRestClient(client);
 		}
 	}
-
+	
 	/**
 	 * RestClientCallback interface.
 	 * You must provider an implementation of this interface when calling getRestClient.

@@ -35,7 +35,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.Activity;
 import android.util.Log;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
+import android.webkit.WebView;
 
 import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
@@ -60,7 +64,8 @@ public class SalesforceOAuthPlugin extends Plugin {
 	private static final String USER_ID = "userId";
 	private static final String REFRESH_TOKEN = "refreshToken";
 	private static final String ACCESS_TOKEN = "accessToken";
-	
+
+	// Min refresh interval (when auto refresh is on)
 	private static final int MIN_REFRESH_INTERVAL = 120*1000; // 2 minutes
 	
 	/**
@@ -73,10 +78,40 @@ public class SalesforceOAuthPlugin extends Plugin {
 	}
 	
 	/* static because it needs to survive plugin being torn down when a new URL is loaded */
-	public static ClientManager clientManager;
-	public static Map<String, String> lastCredentials;
-	public static boolean autoRefresh;
+	private static ClientManager clientManager;
+	private static RestClient client;
+	private static boolean autoRefresh;
 	private static long lastRefreshTime = -1;
+	
+	public static void autoRefreshIfNeeded(final WebView webView, final SalesforceDroidGapActivity ctx) {
+		Log.i("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Checking if auto refresh needed");
+		if (shouldAutoRefresh()) {
+			Log.i("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Starting auto-refresh");
+			clientManager.invalidateToken(client.getAuthToken());
+			clientManager.getRestClient(ctx, new RestClientCallback() {
+				@Override
+				public void authenticatedRestClient(RestClient c) {
+					if (c == null) {
+						Log.w("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Auto-refresh failed - logging out");
+						logout(ctx);
+					}
+					else {
+						Log.i("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Auto-refresh succeeded");
+						updateRefreshTime();
+						SalesforceOAuthPlugin.client = c;
+						setSidCookies(webView, SalesforceOAuthPlugin.client, new Runnable() {
+							@Override
+							public void run() {
+								Log.i("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Firing salesforceSessionRefresh event");
+								ctx.sendJavascript("PhoneGap.fireDocumentEvent('salesforceSessionRefresh'," + getJSONCredentials(SalesforceOAuthPlugin.client).toString() + ");");
+							}
+						});
+					}
+				}
+			});
+    	}
+	}
+	
 	
     /**
      * Executes the request and returns PluginResult.
@@ -119,21 +154,22 @@ public class SalesforceOAuthPlugin extends Plugin {
 		JSONObject oauthProperties = new JSONObject((String) args.get(0));
 		LoginOptions loginOptions = parseLoginOptions(oauthProperties);
 		clientManager = new ClientManager(ctx, ForceApp.APP.getAccountType(), loginOptions);
-		
 		autoRefresh = oauthProperties.getBoolean("autoRefreshOnForeground");
 		clientManager.getRestClient(ctx, new RestClientCallback() {
 			@Override
-			public void authenticatedRestClient(RestClient client) {
-				if (client == null) {
+			public void authenticatedRestClient(RestClient c) {
+				if (c == null) {
 					Log.w("SalesforceOAuthPlugin.authenticate", "authenticate failed - logging out");
-					ForceApp.APP.logout(ctx);
+					logout(ctx);
 				}
 				else {
 					Log.i("SalesforceOAuthPlugin.authenticate", "authenticate successful");
-					updateRefreshTime();
-					((SalesforceDroidGapActivity) ctx).setSidCookies(client);
-					lastCredentials = getJSONCredentials(client);
-					success(new PluginResult(PluginResult.Status.OK, new JSONObject(lastCredentials)), callbackId);
+					// Only updating time if we went through login
+					if (SalesforceOAuthPlugin.client == null) {
+						updateRefreshTime();
+					}
+					SalesforceOAuthPlugin.client = c;						
+					callAuthenticateSuccess(callbackId);
 				}
 			}
 		});
@@ -143,8 +179,17 @@ public class SalesforceOAuthPlugin extends Plugin {
 		noop.setKeepCallback(true);
 		return noop;
 	}
-	
 
+	private void callAuthenticateSuccess(final String callbackId) {
+		Log.i("SalesforceOAuthPlugin.callAuthenticateSuccess", "Calling authenticate success callback");
+		setSidCookies(webView, SalesforceOAuthPlugin.client, new Runnable() {
+			@Override
+			public void run() {
+				success(new PluginResult(PluginResult.Status.OK, getJSONCredentials(SalesforceOAuthPlugin.client)), callbackId);
+			}
+		});
+	}
+	
 	/**
 	 * Native implementation for "getAuthCredentials" action
 	 * @param callbackId
@@ -153,13 +198,13 @@ public class SalesforceOAuthPlugin extends Plugin {
 	 */
 	protected PluginResult getAuthCredentials(String callbackId) throws JSONException {
 		Log.i("SalesforceOAuthPlugin.getAuthCredentials", "getAuthCredentials called");
-		if (lastCredentials == null) {
+		if (client == null) {
 			Log.w("SalesforceOAuthPlugin.getAuthCredentials", "getAuthCredentials failed - never authenticated");
 			return new PluginResult(PluginResult.Status.ERROR, "Never authenticated");
 		}
 		else {
 			Log.i("SalesforceOAuthPlugin.getAuthCredentials", "getAuthCredentials successful");
-			return new PluginResult(PluginResult.Status.OK, new JSONObject(lastCredentials));
+			return new PluginResult(PluginResult.Status.OK, getJSONCredentials(client));
 		}
 	}
 	
@@ -169,7 +214,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 	 */
 	protected PluginResult logoutCurrentUser() {
 		Log.i("SalesforceOAuthPlugin.logoutCurrentUser", "logoutCurrentUser called");
-		ForceApp.APP.logout(this.ctx);
+		logout(ctx);
 		return new PluginResult(PluginResult.Status.OK);
 	}
 
@@ -182,7 +227,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 	/**
 	 * Return true if one should auto-refresh the oauth token now
 	 */
-	public static boolean shouldAutoRefresh() {
+	private static boolean shouldAutoRefresh() {
 		return autoRefresh // auto-refresh is turned on
 			&& lastRefreshTime > 0 // we have authenticated 
 			&&  (System.currentTimeMillis() - lastRefreshTime > MIN_REFRESH_INTERVAL); // at least 2 minutes went by
@@ -191,28 +236,12 @@ public class SalesforceOAuthPlugin extends Plugin {
 	/**
 	 * Update last refresh time to avoid un-necessary auto-refresh
 	 */
-	public static void updateRefreshTime() {
+	private static void updateRefreshTime() {
 		Log.i("SalesforceOAuthPlugin.updateRefreshTime", "lastRefreshTime before: " + lastRefreshTime);
 		lastRefreshTime = System.currentTimeMillis();
 		Log.i("SalesforceOAuthPlugin.updateRefreshTime", "lastRefreshTime after: " + lastRefreshTime);
 	}
 	
-	/**
-	 * @return auth token (extracted from saved credentials)
-	 */
-	public static String getLastAuthToken() {
-		return lastCredentials.get(ACCESS_TOKEN);
-	}
-	
-	/**
-	 * Update auth token in saved credentials (Also updates last refresh time)
-	 * @param newAuthToken
-	 */
-	public static void updateAuthToken(String newAuthToken) {
-		lastCredentials.put(ACCESS_TOKEN, newAuthToken);
-		updateRefreshTime();
-	}
-
 	
 	/**************************************************************************************************
 	 * 
@@ -221,10 +250,9 @@ public class SalesforceOAuthPlugin extends Plugin {
 	 **************************************************************************************************/
 	
 	/**
-	 * Get map for credentials
-	 * @return
+	 * @return credentials as JSONObject
 	 */
-	public static Map<String, String> getJSONCredentials(RestClient client) {
+	private static JSONObject getJSONCredentials(RestClient client) {
 		ClientInfo clientInfo = client.getClientInfo();
 		Map<String, String> data = new HashMap<String, String>();
 		data.put(ACCESS_TOKEN, client.getAuthToken());
@@ -235,7 +263,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 		data.put(LOGIN_URL, clientInfo.loginUrl.toString()); 
 		data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
 		data.put(USER_AGENT, ForceApp.APP.getUserAgent());
-		return data;
+		return new JSONObject(data);
     }
 	
 	
@@ -266,4 +294,54 @@ public class SalesforceOAuthPlugin extends Plugin {
 		}
 		return list.toArray(new String[0]);
 	}
+    
+
+	/**
+	 * Logout and reset static fields
+	 * @param ctx
+	 */
+	protected static void logout(Activity ctx) {
+		ForceApp.APP.logout(ctx);
+		SalesforceOAuthPlugin.client = null;
+		SalesforceOAuthPlugin.autoRefresh = false;
+		SalesforceOAuthPlugin.lastRefreshTime = -1;
+	}
+
+
+	/**************************************************************************************************
+	 * 
+	 * Helper methods for managing cookies
+	 * 
+	 **************************************************************************************************/
+
+    /**
+     * Set cookies on cookie manager
+     * And run runnable (after giving enough time to the cookie manager to sync)
+     * @param client
+     * @param runnable
+     */
+    private static void setSidCookies(WebView webView, RestClient client, Runnable runnable) {
+    	Log.i("SalesforceOAuthPlugin.setSidCookies", "setting cookies");
+    	CookieSyncManager cookieSyncMgr = CookieSyncManager.getInstance();
+    	
+    	CookieManager cookieMgr = CookieManager.getInstance();
+    	cookieMgr.removeSessionCookie();
+
+    	String accessToken = client.getAuthToken();
+    	String domain = client.getClientInfo().instanceUrl.getHost();
+
+    	//set the cookie on all possible domains we could access
+    	addSidCookieForDomain(cookieMgr,domain,accessToken);
+    	addSidCookieForDomain(cookieMgr,".force.com",accessToken);
+    	addSidCookieForDomain(cookieMgr,".salesforce.com",accessToken);
+
+	    cookieSyncMgr.sync();
+	    webView.postDelayed(runnable, 500);
+    }
+
+    private static void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
+        String cookieStr = "sid=" + sid + "; domain=" + domain;
+    	cookieMgr.setCookie(domain, cookieStr);
+    }
+
 }

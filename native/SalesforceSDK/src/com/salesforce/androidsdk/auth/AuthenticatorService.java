@@ -125,6 +125,9 @@ public class AuthenticatorService extends Service {
 			String loginServer = mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_URL);
 			String clientId = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID);
 			String instServer = mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL);
+			String userId = mgr.getUserData(account, AuthenticatorService.KEY_USER_ID);
+			String orgId = mgr.getUserData(account, AuthenticatorService.KEY_ORG_ID);
+			String username = mgr.getUserData(account, AuthenticatorService.KEY_USERNAME);
             Bundle resBundle = new Bundle();
 
 			try {
@@ -140,6 +143,13 @@ public class AuthenticatorService extends Service {
     			resBundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
                 resBundle.putString(AccountManager.KEY_ACCOUNT_TYPE, account.type);
                 resBundle.putString(AccountManager.KEY_AUTHTOKEN, tr.authToken);
+                resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, loginServer);
+                resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, instServer);
+                resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, clientId);
+                resBundle.putString(AuthenticatorService.KEY_USERNAME, username);
+                resBundle.putString(AuthenticatorService.KEY_USER_ID, userId);
+                resBundle.putString(AuthenticatorService.KEY_ORG_ID, orgId);
+                
                 Log.i("Authenticator:getAuthToken", "Returning auth bundle for " + account.name);
 
 			} catch (ClientProtocolException e) {
