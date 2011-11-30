@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.security;
 
+import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -65,21 +66,17 @@ public class PasscodeManager  {
 	private Handler handler;
 	private long lastActivity;
 	private boolean locked;
-	private Class<? extends Activity> passcodeActivityClass;
 	private int timeoutMs;
 
 	/**
 	 * @param ctx
 	 * @param lockTimeoutMinutes
-	 * @param passcodeActivityClass
 	 * @param verificationHashConfig
 	 * @param encryptionHashConfig
 	 */
 	public PasscodeManager(Context ctx, int lockTimeoutMinutes,
-			Class<? extends Activity> passcodeActivityClass,
 			HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
 		this.timeoutMs = lockTimeoutMinutes * 60 * 1000;
-		this.passcodeActivityClass = passcodeActivityClass;
 		this.lastActivity = now();
 		this.verificationHashConfig = verificationHashConfig;
 		this.encryptionHashConfig = encryptionHashConfig;
@@ -216,7 +213,7 @@ public class PasscodeManager  {
 	
 	public void showLockActivity(Context ctx) {
 		if (ctx == null) return;
-		Intent i = new Intent(ctx, passcodeActivityClass);
+		Intent i = new Intent(ctx, PasscodeActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
 		i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
 		ctx.startActivity(i);

@@ -159,6 +159,13 @@ public class ClientManager {
 	}
 
 	/**
+	 * Invalidate current auth token - next call to getRestClient will do a refresh
+	 */
+	public void invalidateToken(String lastNewAuthToken) {
+		accountManager.invalidateAuthToken(getAccountType(), lastNewAuthToken);
+	}
+	
+	/**
 	 * @return first account found with the application account type
 	 */
 	public Account getAccount() {
@@ -316,7 +323,7 @@ public class ClientManager {
 			restCallback.authenticatedRestClient(client);
 		}
 	}
-
+	
 	/**
 	 * RestClientCallback interface.
 	 * You must provider an implementation of this interface when calling getRestClient.
@@ -379,7 +386,7 @@ public class ClientManager {
 
 			
 			// Invalidate current auth token
-			clientManager.accountManager.invalidateAuthToken(clientManager.getAccountType(), lastNewAuthToken);
+			clientManager.invalidateToken(lastNewAuthToken);
 			
 			String newAuthToken = null;
 			try {

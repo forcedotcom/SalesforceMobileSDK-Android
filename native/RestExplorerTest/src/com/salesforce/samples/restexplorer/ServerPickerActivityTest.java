@@ -26,6 +26,8 @@
  */
 package com.salesforce.samples.restexplorer;
 
+import com.salesforce.androidsdk.ui.ServerPickerActivity;
+
 import android.widget.Button;
 import android.widget.EditText;
 
@@ -114,7 +116,7 @@ public class ServerPickerActivityTest extends
 	
 	private void openCustomEditDialog() throws Throwable {
 		btnCustomEdit = (Button) getActivity().findViewById(
-				R.id.showCustomUrlEdit);
+				R.id.show_custom_url_edit);
 		assertNotNull("Custom URL Edit dialog does not exist", btnCustomEdit);
 
 		runTestOnUiThread(new Runnable() {
@@ -125,13 +127,13 @@ public class ServerPickerActivityTest extends
 				if (btnApply == null || btnCancel == null || txtLabel == null
 						|| txtUrl == null) {
 					btnApply = (Button) getActivity().urlEditDialog
-							.findViewById(R.id.apply_but);
+							.findViewById(R.id.apply_button);
 					btnCancel = (Button) getActivity().urlEditDialog
-							.findViewById(R.id.cancel_but);
+							.findViewById(R.id.cancel_button);
 					txtLabel = (EditText) getActivity().urlEditDialog
-							.findViewById(R.id.custom_label);
+							.findViewById(R.id.picker_custom_label);
 					txtUrl = (EditText) getActivity().urlEditDialog
-							.findViewById(R.id.custom_url);
+							.findViewById(R.id.picker_custom_url);
 				}
 				txtLabel.requestFocus();
 			}

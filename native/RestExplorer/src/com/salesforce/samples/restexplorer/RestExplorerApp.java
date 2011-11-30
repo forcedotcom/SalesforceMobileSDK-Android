@@ -29,9 +29,8 @@ package com.salesforce.samples.restexplorer;
 import android.app.Activity;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.AbstractLoginActivity;
-import com.salesforce.androidsdk.security.AbstractPasscodeActivity;
 import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.ui.SalesforceR;
 
 
 /**
@@ -39,26 +38,13 @@ import com.salesforce.androidsdk.security.Encryptor;
  */
 public class RestExplorerApp extends ForceApp {
 
+	private SalesforceR salesforceR = new SalesforceRImpl();
+	
 	@Override
 	public Class<? extends Activity> getMainActivityClass() {
 		return ExplorerActivity.class;
 	}
 	
-	@Override
-	public Class<? extends AbstractLoginActivity> getLoginActivityClass() {
-		return LoginActivity.class;
-	}
-
-	@Override
-	public Class<? extends AbstractPasscodeActivity> getPasscodeActivityClass() {
-		return PasscodeActivity.class;
-	}
-
-	@Override
-	public String getAccountType() {
-		return getString(R.string.account_type);		
-	}
-
 	@Override
 	public int getLockTimeoutMinutes() {
 		return 10;
@@ -67,5 +53,10 @@ public class RestExplorerApp extends ForceApp {
 	@Override
 	protected String getKey(String name) {
 		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
+	}
+
+	@Override
+	public SalesforceR getSalesforceR() {
+		return salesforceR;
 	}
 }

@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.auth;
+package com.salesforce.androidsdk.ui;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -34,11 +34,16 @@ import java.util.Map;
 
 import android.accounts.Account;
 import android.accounts.AccountAuthenticatorActivity;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.Window;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
@@ -47,42 +52,60 @@ import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 
 /**
- * Abstract super class that takes care of authenticating the user.
+ * Login Activity: takes care of authenticating the user.
  * Authorization happens inside a web view. Once we get our authorization code,
  * we swap it for an access and refresh token a create an account through the
  * account manager to store them.
  */
-public abstract class AbstractLoginActivity extends
-		AccountAuthenticatorActivity {
+public class LoginActivity extends AccountAuthenticatorActivity {
 
+	// Key for login servers properties stored in preferences
+	public static final String SERVER_URL_PREFS_SETTINGS = "server_url_prefs";
+	public static final String SERVER_URL_PREFS_CUSTOM_LABEL = "server_url_custom_label";
+	public static final String SERVER_URL_PREFS_CUSTOM_URL = "server_url_custom_url";
+	public static final String SERVER_URL_PREFS_WHICH_SERVER = "which_server_index";
+	public static final String SERVER_URL_CURRENT_SELECTION = "server_url_current_string";
+	
+	// Request code when calling server picker activity
+    public static final int PICK_SERVER_CODE = 10;	
+	
+    private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
 	private WebView webView;
 	private LoginOptions loginOptions;
 
+    /**************************************************************************************************
+     *
+     * Activity lifecycle
+     * 
+     **************************************************************************************************/
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		// Object which allows reference to resources living outside the SDK
+		salesforceR = ForceApp.APP.getSalesforceR();
+		
 		// Getting login options from intent's extras
 		loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 		
-		// Filling in loginUrl
-		loginOptions.loginUrl = getLoginUrl();
-		
-		// we'll show progress in the window title bar.
+		// We'll show progress in the window title bar
 		getWindow().requestFeature(Window.FEATURE_PROGRESS);
 		getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		
 		// Setup content view
-		setContentView(getLayoutId());
+		setContentView(salesforceR.layoutLogin());
 
 		// Setup the WebView.
-		webView = (WebView) findViewById(getWebViewId());
+		webView = (WebView) findViewById(salesforceR.idLoginWebView());
 		webView.getSettings().setJavaScriptEnabled(true);
 		webView.setWebViewClient(new AuthWebViewClient());
 		webView.setWebChromeClient(new AuthWebChromeClient());
@@ -92,6 +115,10 @@ public abstract class AbstractLoginActivity extends
 		// once the auth process has been kicked off.
 		if (savedInstanceState != null) {
 			webView.restoreState(savedInstanceState);
+		}
+		// Otherwise start clean
+		else {
+			clearCookies();
 		}
 		loadLoginPage();
 	}
@@ -122,12 +149,20 @@ public abstract class AbstractLoginActivity extends
 		return super.onKeyDown(keyCode, event);
 	}
 
+    /**************************************************************************************************
+     *
+     * Authentication flow 
+     * 
+     **************************************************************************************************/
+	
 	/**
 	 * Tells the webview to load the authorization page. 
 	 * We also update the window title, so its easier to 
 	 * see which system you're logging in to
 	 */
 	protected void loadLoginPage() {
+		// Filling in loginUrl
+		loginOptions.loginUrl = getLoginUrl();
 
 		try {
 			URI uri = OAuth2.getAuthorizationUrl(
@@ -166,6 +201,7 @@ public abstract class AbstractLoginActivity extends
 				@Override
 				public void run() {
 					clearCookies();
+					loadLoginPage();
 				}
 			});
 
@@ -188,7 +224,7 @@ public abstract class AbstractLoginActivity extends
 	protected void addAccount(String username, String refreshToken, String authToken, String instanceUrl,
 			String loginUrl, String clientId, String orgId, String userId) {
 
-		ClientManager clientManager = new ClientManager(this, getAccountType(), loginOptions);
+		ClientManager clientManager = new ClientManager(this, ForceApp.APP.getAccountType(), loginOptions);
 		
 		// Old account
 		Account[] oldAccounts = clientManager.getAccounts();
@@ -204,16 +240,85 @@ public abstract class AbstractLoginActivity extends
 		clientManager.removeAccounts(oldAccounts);
 	}
 
+	/**
+	 * Override this method to customize the login url.
+	 * @return login url
+	 */
+	protected String getLoginUrl() {
+		SharedPreferences settings = getSharedPreferences(
+				SERVER_URL_PREFS_SETTINGS, Context.MODE_PRIVATE);
+
+		return settings.getString(SERVER_URL_CURRENT_SELECTION, OAuth2.DEFAULT_LOGIN_URL);
+	}    
+	
+	
+    /**************************************************************************************************
+     *
+     * Misc
+     * 
+     **************************************************************************************************/
+	
+	protected void showError(Exception exception) {
+		Toast.makeText(this,
+				getString(salesforceR.stringGenericError(), exception.toString()),
+				Toast.LENGTH_LONG).show();
+	}
+
+    /**
+     * Return name to be shown for account in Settings -> Accounts & Sync
+     * @param username
+     * @return
+     */
+    protected String buildAccountName(String username) {
+    	return String.format("%s (%s)", username, ForceApp.APP.getApplicationName());
+    }
+
+    
+    /**************************************************************************************************
+     *
+     * Buttons click handlers
+     * 
+     **************************************************************************************************/
+
+	/**
+	 * Called when "Clear cookies" button is clicked.
+	 * Clear cookies and reload login page.
+	 * @param v
+	 */
+	public void onClearCookiesClick(View v) {
+		clearCookies();
+		loadLoginPage();
+	}
+
 	protected void clearCookies() {
 		CookieManager cm = CookieManager.getInstance();
 		cm.removeAllCookie();
-		loadLoginPage();
 	}
 	
-    protected void setLoginUrl(String l) {
-    	loginOptions.loginUrl = l;
+	/**
+	 * Called when "Pick server" button is clicked.
+	 * Start ServerPickerActivity
+	 * @param v
+	 */
+	public void onPickServerClick(View v) {
+		Intent i = new Intent(this, ServerPickerActivity.class);
+	    startActivityForResult(i, PICK_SERVER_CODE);
 	}
-
+	
+	/*
+	 * Called when ServerPickerActivity completes.
+	 * Reload login page.
+	 */
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		if (requestCode == PICK_SERVER_CODE && resultCode == Activity.RESULT_OK) {
+            loadLoginPage();
+		}
+		else {
+	        super.onActivityResult(requestCode, resultCode, data);
+	    }
+	}
+	
 	/**************************************************************************************************
 	 * 
 	 * Helper inner classes
@@ -249,8 +354,8 @@ public abstract class AbstractLoginActivity extends
 		protected void onPostExecute(Exception ex) {
 			if (ex != null) {
 				// Error
-				onAuthFlowError(getGenericAuthErrorTitle(),
-						getGenericAuthErrorBody());
+				onAuthFlowError(getString(salesforceR.stringGenericAuthenticationErrorTitle()),
+						getString(salesforceR.stringGenericAuthenticationErrorBody()));
 			} else {
 				// Done
 				finish();
@@ -348,82 +453,4 @@ public abstract class AbstractLoginActivity extends
 			assert false : "don't construct me!";
 		}
 	}
-
-	/**************************************************************************************************
-	 * 
-	 * Abstract methods: to be implemented by subclass
-	 * 
-	 **************************************************************************************************/
-
-	/**
-	 * @return id of layout to use for login screen
-	 */
-	protected abstract int getLayoutId();
-	
-
-	/**
-	 * @return id of web view in login screen to use to show the server login page
-	 */
-	protected abstract int getWebViewId();
-
-	/**
-	 * @return account type
-	 */
-	protected abstract String getAccountType();
-	
-	
-	/**************************************************************************************************
-	 * 
-	 * Other methods: likely to be overridden by sub class
-	 * 
-	 **************************************************************************************************/
-	
-	
-	/**
-	 * The method is called when an unexpected error takes place.
-	 * Default implementation shows a toast with the exception message.
-	 * Override if you want a different behavior or a user friendly message to be shown instead.
-	 * @param exception
-	 */
-	protected void showError(Exception exception) {
-		Toast.makeText(this,
-				exception.toString(),
-				Toast.LENGTH_LONG).show();
-	}
-	
-	/**
-	 * Override to have a localized error message title.
-	 * @return english generic error message title.
-	 */
-	protected String getGenericAuthErrorTitle() {
-		return "Error";
-	}
-
-	/**
-	 * Override to have a localized error message.
-	 * @return english generic error message.
-	 */
-	protected String getGenericAuthErrorBody() {
-		return "Authentication error. Please try again.";		
-	}
-
-    /**
-     * Override this method to customize the name for the account.
-     * Return name to be shown for account in Settings -> Accounts & Sync
-     * @param username
-     * @return
-     */
-    protected String buildAccountName(String username) {
-    	return String.format("%s (%s)", username, ForceApp.APP.getApplicationName());
-    }
-
-	/**
-	 * Override this method to customize the login url.
-	 * @return login url
-	 */
-	protected String getLoginUrl() {
-		return OAuth2.SANDBOX_LOGIN_URL;
-	}
-	
-    
 }

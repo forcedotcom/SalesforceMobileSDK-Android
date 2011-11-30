@@ -29,9 +29,8 @@ package com.salesforce.samples.vfconnector;
 import android.app.Activity;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.AbstractLoginActivity;
-import com.salesforce.androidsdk.phonegap.SalesforceDroidGapActivity;
-import com.salesforce.androidsdk.security.AbstractPasscodeActivity;
+import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.ui.SalesforceR;
 
 
 /**
@@ -41,26 +40,13 @@ import com.salesforce.androidsdk.security.AbstractPasscodeActivity;
  */
 public class VFConnectorApp extends ForceApp {
 
+	private SalesforceR salesforceR = new SalesforceRImpl();
+	
 	@Override
 	public Class<? extends Activity> getMainActivityClass() {
 		return SalesforceDroidGapActivity.class;
 	}
 	
-	@Override
-	public Class<? extends AbstractLoginActivity> getLoginActivityClass() {
-		return LoginActivity.class;
-	}
-
-	@Override
-	public Class<? extends AbstractPasscodeActivity> getPasscodeActivityClass() {
-		return null;
-	}
-
-	@Override
-	public String getAccountType() {
-		return getString(R.string.account_type);
-	}
-
 	@Override
 	public int getLockTimeoutMinutes() {
 		return 0;
@@ -69,5 +55,10 @@ public class VFConnectorApp extends ForceApp {
 	@Override
 	protected String getKey(String name) {
 		return null; 
+	}
+
+	@Override
+	public SalesforceR getSalesforceR() {
+		return salesforceR;
 	}
 }

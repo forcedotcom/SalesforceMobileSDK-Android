@@ -24,50 +24,58 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.phonegap;
+package com.salesforce.androidsdk.ui;
 
-import android.os.Bundle;
-import android.webkit.CookieSyncManager;
-import android.webkit.WebSettings;
 
-import com.phonegap.DroidGap;
-import com.salesforce.androidsdk.app.ForceApp;
 
-public class SalesforceDroidGapActivity extends DroidGap {
-    /** Called when the activity is first created. */
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    	//ensure we have a CookieSyncManager
-    	CookieSyncManager.createInstance(this);
-        
-        //ensure that we allow urls from all salesforce domains to be loaded
-        this.addWhiteListEntry("force.com", true);
-        this.addWhiteListEntry("salesforce.com", true);
-        
-        // Load bootstrap
-        super.loadUrl("file:///android_asset/www/bootstrap.html");
-    }
-    
-    @Override
-    public void init() {
-    	super.init();
-		final String uaStr = ForceApp.APP.getUserAgent();
-		if (null != this.appView) {
-	        WebSettings webSettings = this.appView.getSettings();
-	        webSettings.setUserAgentString(uaStr);
-		}
-    }
-    
-    @Override
-    public void onResume() {
-    	CookieSyncManager.getInstance().startSync();
-    	super.onResume();
-    }
-    
-    @Override
-    public void onPause() {
-    	CookieSyncManager.getInstance().stopSync();
-    	super.onPause();
-    }
+
+/**
+ * Since the SalesforceSDK is packaged as a jar, it can't have resources.
+ * Class that allows references to resources defined outside the SDK.
+ * Projects making use of the SDK need to provide an implementation. 
+ */
+
+public interface SalesforceR {
+	/* Login */
+	int stringAccountType();
+	int layoutLogin();
+	int idLoginWebView();
+	int stringGenericError();
+	int stringGenericAuthenticationErrorTitle();
+	int stringGenericAuthenticationErrorBody();
+	/* Passcode */
+	int layoutPasscode();
+	int idPasscodeTitle();
+	int idPasscodeError();
+	int idPasscodeInstructions();
+	int idPasscodeText();
+	int stringPasscodeCreateTitle();
+	int stringPasscodeEnterTitle();
+	int stringPasscodeConfirmTitle();
+	int stringPasscodeEnterInstructions();
+	int stringPasscodeCreateInstructions();
+	int stringPasscodeConfirmInstructions();
+	int stringPasscodeMinLength();
+	int stringPasscodeTryAgain();
+	int stringPasscodeFinal();
+	int stringPasscodesDontMatch();
+	/* Server picker */
+	int idPickerCustomLabel();
+	int idPickerCustomUrl();
+	int stringServerUrlDefaultCustomLabel();
+	int stringServerUrlDefaultCustomUrl();
+	int stringServerUrlAddTitle();
+	int stringServerUrlEditTitle();
+	int layoutCustomServerUrl();
+	int idApplyButton();
+	int idCancelButton();
+	int stringInvalidServerUrl();
+	int idServerListGroup();
+	int layoutServerPicker();
+	int stringAuthLoginProduction();
+	int stringAuthLoginSandbox();
+	int menuClearCustomUrl();
+	int idMenuClearCustomUrl();
+	int drawableEditIcon();
+	int idShowCustomUrlEdit();
 }

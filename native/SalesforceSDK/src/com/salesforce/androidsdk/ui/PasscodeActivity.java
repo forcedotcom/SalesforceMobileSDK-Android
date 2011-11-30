@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.security;
+package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -35,11 +35,12 @@ import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 
 import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.security.PasscodeManager;
 
 /**
- * Abstract super class that takes care of creating/verifying a user passcode.
+ * Passcode activity: takes care of creating/verifying a user passcode.
  */
-public abstract class AbstractPasscodeActivity extends Activity implements OnEditorActionListener {
+public class PasscodeActivity extends Activity implements OnEditorActionListener {
 
 	protected static final int MAX_PASSCODE_ATTEMPTS = 3;
 	protected static final int MIN_PASSCODE_LENGTH = 6;
@@ -49,6 +50,7 @@ public abstract class AbstractPasscodeActivity extends Activity implements OnEdi
 	private EditText entry;
 	private PasscodeManager passcodeManager;
 	private String firstPasscode;
+	private SalesforceR salesforceR;
 	
 	public enum PasscodeMode {
 		Create,
@@ -60,6 +62,9 @@ public abstract class AbstractPasscodeActivity extends Activity implements OnEdi
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		// Object which allows reference to resources living outside the SDK
+		salesforceR = ForceApp.APP.getSalesforceR();
+		
 		setContentView(getLayoutId());
 		title = getTitleView();
 		error = getErrorView();
@@ -151,124 +156,64 @@ public abstract class AbstractPasscodeActivity extends Activity implements OnEdi
 		return false;
     }
 
-	/**************************************************************************************************
-	 * 
-	 * Abstract methods: to be implemented by subclass
-	 * 
-	 **************************************************************************************************/
+	protected int getLayoutId() {
+		return salesforceR.layoutPasscode();
+	}
 
-    /**
-	 * @return id of layout to use for passcode screen
-	 */
-	abstract protected int getLayoutId();
-    
-	/**
-	 * @return TextView showing title
-	 */
-	abstract protected TextView getTitleView();
+	protected TextView getTitleView() {
+		return (TextView) findViewById(salesforceR.idPasscodeTitle());
+	}
 
-	/**
-	 * @return TextView showing error
-	 */
-	abstract protected TextView getErrorView();
+	protected TextView getErrorView() {
+		return (TextView) findViewById(salesforceR.idPasscodeError());
+	}
 
-	/**
-	 * @return TextView showing instructions
-	 */
-	abstract protected TextView getInstructionsView();
+	protected TextView getInstructionsView() {
+		return (TextView) findViewById(salesforceR.idPasscodeInstructions());
+	}
+
+	protected EditText getEntryView() {
+		return (EditText) findViewById(salesforceR.idPasscodeText());
+	}
 	
-	/**
-	 * @return EditText to enter passcode
-	 */
-	abstract protected EditText getEntryView();
-
-	
-	/**************************************************************************************************
-	 * 
-	 * Other methods: likely to be overridden by sub class
-	 * 
-	 **************************************************************************************************/
-
-	/**
-	 * Override to have a localized error message.
-	 * @return english create title
-	 */
 	protected String getCreateTitle() {
-		return "Create Salesforce Passcode";
+		return getString(salesforceR.stringPasscodeCreateTitle());
 	}
 	
-	/**
-	 * Override to have a localized error message.
-	 * @return english enter title
-	 */
 	protected String getEnterTitle() {
-		return "Enter Salesforce Passcode";
+		return getString(salesforceR.stringPasscodeEnterTitle());
 	}
 	
-	/**
-	 * Override to have a localized error message.
-	 * @return english confirm title
-	 */
 	protected String getConfirmTitle() {
-		return "Re-enter Salesforce Passcode";
+		return getString(salesforceR.stringPasscodeConfirmTitle());
 	}
 	
-	/**
-	 * Override to have a localized error message.
-	 * @return english enter instructions
-	 */
 	protected String getEnterInstructions() {
-		return "Enter your mobile passcode for Salesforce";
+		return getString(salesforceR.stringPasscodeEnterInstructions());
 	}
 	
-	/**
-	 * Override to have a localized error message.
-	 * @return english create instructions
-	 */
 	protected String getCreateInstructions() {
-		return "For increased security, please create a passcode that you will use to access Salesforce when the session has timed out due to inactivity.";
+		return getString(salesforceR.stringPasscodeCreateInstructions());
 	}
 	
-	/**
-	 * Override to have a localized error message.
-	 * @return english confirm instructions
-	 */
 	protected String getConfirmInstructions() {
-		return "Confirm your mobile passcode for Salesforce";
+		return getString(salesforceR.stringPasscodeConfirmInstructions());
 	}
 	
-	/**
-	 * Override to have a localized error message.
-	 * @param minPasscodeLength
-	 * @return english min length instructions
-	 */
 	protected String getMinLengthInstructions(int minPasscodeLength) {
-		return String.format("The passcode must be at least %d characters long", minPasscodeLength);
+		return getString(salesforceR.stringPasscodeMinLength(), minPasscodeLength);
 	}
 	
-	/**
-	 * Override to have a localized error message.
-	 * @param countAttemptsLeft
-	 * @return english error message for wrong passcode when more than one attempt is left
-	 */
 	protected String getPasscodeTryAgainError(int countAttemptsLeft) {
-		return String.format("The passcode you entered is incorrect. Please try again. You have %d attempts remaining.", countAttemptsLeft);
+		return getString(salesforceR.stringPasscodeTryAgain(), countAttemptsLeft);
 	}
 
-	/**
-	 * Override to have a localized error message.
-	 * @return english error message for wrong passcode when only one attempt is left
-	 */
 	protected String getPasscodeFinalAttemptError() {
-		return "Final passcode attempt";
+		return getString(salesforceR.stringPasscodeFinal());
 	}
 
-	/**
-	 * Override to have a localized error message.
-	 * @return english error message for wrong passcode when only one attempt is left
-	 */
 	protected String getPasscodesDontMatchError() {
-		return "Passcodes don't match!";
+		return getString(salesforceR.stringPasscodesDontMatch());
 	}
 
 	/**
