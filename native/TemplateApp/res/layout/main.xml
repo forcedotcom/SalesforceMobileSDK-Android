@@ -11,7 +11,7 @@
 
 		<TextView android:id="@+id/welcome_text" android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:layout_centerHorizontal="true"
-			android:layout_centerVertical="true" android:textSize="36sp"/>
+			android:layout_centerVertical="true" android:textSize="24sp"/>
 
 	</RelativeLayout>
 </LinearLayout>
