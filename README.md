@@ -1,5 +1,15 @@
 # Salesforce.com Mobile SDK for Android
 
+Installation (do this first - really)
+==
+After cloning the SalesforceMobileSDK-Android project from github, run the install script from the command line:
+
+`./install.sh`
+This pulls submodule dependencies from github.
+
+(Windows users: Run "install.bat" instead.)
+
+
 Introduction
 ==
 __Version 1.0__
