@@ -8,7 +8,8 @@ After cloning the SalesforceMobileSDK-Android project from github, run the insta
 
 This pulls submodule dependencies from github.
 
-(Windows users: Run `install.bat` instead.)
+(Windows users: run `cscript install.vbs` from the command line instead.)
+
 
 
 Introduction
