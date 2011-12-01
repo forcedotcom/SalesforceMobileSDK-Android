@@ -6,3 +6,5 @@ gen/
 instrumentation/
 junit-reports/
 local.properties
+.DS_Store
+
