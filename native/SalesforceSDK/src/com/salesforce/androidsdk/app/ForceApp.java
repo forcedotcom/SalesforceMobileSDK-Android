@@ -57,10 +57,14 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  */
 public abstract class ForceApp extends Application {
 
-	// current SDK version
+	/**
+	 * Current version of this SDK.
+	 */
     public static final String SDK_VERSION = "1.0";
 
-	// instance of the ForceApp for this process
+	/**
+     * Instance of the ForceApp to use for this process.
+     */
     public static ForceApp APP;
     
     // passcode manager
@@ -89,14 +93,14 @@ public abstract class ForceApp extends Application {
     }
     
 	/**
-	 * @return passcodeManager
+	 * @return The passcode manager associated with the app.
 	 */
 	public PasscodeManager getPasscodeManager() {
 		return passcodeManager;
 	}
 
 	/**
-	 * @return passcodeHash or null if none required
+	 * @return The hashed passcode, or null if it's not required.
 	 */
 	public String getPasscodeHash() {
 		return passcodeManager == null ? null : passcodeManager.getPasscodeHash();
@@ -104,14 +108,14 @@ public abstract class ForceApp extends Application {
 	
 	
 	/**
-	 * @return name of application (as defined in AndroidManifest.xml)
+	 * @return The name of the application (as defined in AndroidManifest.xml).
 	 */
 	public String getApplicationName() {
 		return getPackageManager().getApplicationLabel(getApplicationInfo()).toString();
 	}
 	
     /**
-     * @return hash salts + key to use for creating the hash of the passcode used for encryption
+     * @return Hash salts and key to use for creating the hash of the passcode used for encryption.
 	 * Unique for installation.
      */
     protected HashConfig getEncryptionHashConfig() {
@@ -119,7 +123,7 @@ public abstract class ForceApp extends Application {
 	}
 
     /**
-     * @return hash salt + key to use for creating the hash of the passcode used for verification
+     * @return The hash salt and key to use for creating the hash of the passcode used for verification.
      * Unique to the installation.
      */
 	protected HashConfig getVerificationHashConfig() {
@@ -127,7 +131,7 @@ public abstract class ForceApp extends Application {
 	}
 	
 	/**
-     * Wipe out stored auth (remove account) and restart app
+     * Wipe out the stored authentication credentials (remove account) and restart the app.
      */
     public void logout(Activity frontActivity) {
     	// Finish front activity if specified
@@ -154,7 +158,7 @@ public abstract class ForceApp extends Application {
     }
     
     /**
-     * @return user agent string to use for all requests
+     * @return The user agent string to use for all requests.
 	 */
 	public final String getUserAgent() {
         //set a user agent string based on the mobile sdk version
@@ -165,13 +169,13 @@ public abstract class ForceApp extends Application {
 	}
 
     /**
-     * @return account type (should match authenticator.xml)
+     * @return The authentication account type (should match authenticator.xml).
      */
 	public String getAccountType() {
 		return getString(getSalesforceR().stringAccountType());
 	}
 	
-    @Override
+	@Override
     public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(this.getClass()).append(": {\n")
@@ -220,26 +224,26 @@ public abstract class ForceApp extends Application {
 	 **************************************************************************************************/
     
     /**
-	 * If you return 0, the user will not have to enter a passcode
-	 * @return lock timeout in minutes or 0 for never
+	 * Note: If you return 0, the user will not have to enter a passcode.
+	 * @return The lock timeout in minutes, or 0 for never.
 	 *  
 	 */
 	public abstract int getLockTimeoutMinutes();
 	
     /**
-     * @return class for main activity
+     * @return The class for the main activity.
      */
 	public abstract Class<? extends Activity> getMainActivityClass();
 	
-    /*
-     * @return SalesforceR object which allows reference to resources living outside the SDK
+    /**
+     * @return SalesforceR object which allows reference to resources living outside the SDK.
      */
     public abstract SalesforceR getSalesforceR();
 	
 	/**
-	 * This function must return the same value for name even when application is restarted 
-	 * @param name
-	 * @return key for encrypting salts and keys 
+	 * This function must return the same value for name even when the application is restarted.
+	 * @param name The name associated with they key.
+	 * @return The key used for encrypting salts and keys.
 	 */
     protected abstract String getKey(String name);
 

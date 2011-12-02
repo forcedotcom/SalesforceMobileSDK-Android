@@ -53,10 +53,12 @@ import android.net.http.AndroidHttpClient;
 import android.util.Log;
 
 /**
- * Generic HTTP Access layer - used internally by RestClient and OAuth2.
+ * Generic HTTP Access layer - used internally by {@link com.salesforce.androidsdk.rest.RestClient}
+ * and {@link OAuth2}.
  * 
- * Basically a wrapper around a AndroidHttpClient.
- * It watches network changes (e.g. wifi to 3g) and reset the HttpClient when needed.
+ * Basically a wrapper around an
+ * {@link <a href="http://developer.android.com/reference/android/net/http/AndroidHttpClient.html">AndroidHttpClient</a>}.
+ * It watches network changes (e.g. wifi to 3g) and resets the AndroidHttpClient when needed.
  */
 public class HttpAccess extends BroadcastReceiver {
 
@@ -79,8 +81,8 @@ public class HttpAccess extends BroadcastReceiver {
 	public static HttpAccess DEFAULT;
 
 	
-	/*
-	 * Initialize HttpAccess
+	/**
+	 * Initialize HttpAccess.
 	 * Should be called from application
 	 */
 	public static void init(Application app, String userAgent) {
@@ -89,8 +91,9 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 
 	/**
-	 * Constructor
-	 * @param ctx
+	 * Creates a new HttpAccess object.
+	 * @param app Reference to the Application. 
+	 * @param userAgent The user agent to be used with requests.
 	 */
 	public HttpAccess(Application app, String userAgent) {
 		// Using android http client
@@ -118,20 +121,21 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 	
 	/**
-	 * Build http client
-	 * @param app
-	 * @return
+	 * Build the AndroidHttpClient.
+	 * @return A configured instance of AndroidHttpClient.
 	 */
 	private AndroidHttpClient getHttpClient() {
 		return AndroidHttpClient.newInstance(userAgent, app);
 	}
 	
 	/**
-	 * Detects network changes and resetting network when needed 
+	 * Detects network changes and resets the network when needed.
 	 * 
-	 * Note: the intent info is only for this particular change, meaning it will get sent when the phone detects changes in the wireless
-	 * 	state even though the user is actually using wifi.
-     * 	so, don't use it, look for the current real state using the manager service.
+	 * Note: The intent info is only for this particular change, meaning it will get sent when the phone detects changes in the wireless
+	 * state even though the user is actually using wifi.  In other words, don't use it; look for the current real state using the
+	 * manager service.
+	 * @param context The context of the request.
+	 * @param intent Not used.
      */
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -174,8 +178,7 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 	
 	/**
-	 * Shutdown existing connections.
-	 * Create a new http client.
+	 * Shut down existing connections and create a new http client.
 	 */
 	public synchronized void resetNetwork() {
     	(new Thread(new Runnable() {
@@ -188,7 +191,7 @@ public class HttpAccess extends BroadcastReceiver {
     }
 
 	/**
-	 * @return true if network is available
+	 * @return true if the network is available.
 	 */
 	public synchronized boolean hasNetwork() {
 		return hasNetwork;
@@ -215,12 +218,12 @@ public class HttpAccess extends BroadcastReceiver {
     
     /**************************************************************************************************
      *
-     * Http calls methods
+     * HTTP calls methods
      * 
      **************************************************************************************************/
 	
 	/**
-	 * Wrapper around an http call and its response
+	 * Wrapper around an HTTP call and its response.
 	 */
 	public static class Execution {
 
@@ -234,11 +237,11 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 
 	/**
-	 * Executes an http post
-	 * @param headers
-	 * @param uri
-	 * @param requestEntity
-	 * @return
+	 * Executes an HTTP POST.
+	 * @param headers The headers associated with the post.
+	 * @param uri The URI to post to.
+	 * @param requestEntity The entity to post.
+	 * @return The execution response.
 	 * @throws ClientProtocolException
 	 * @throws IOException
 	 */
@@ -249,11 +252,11 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 
 	/**
-	 * Executes an http patch
-	 * @param headers
-	 * @param uri
-	 * @param requestEntity
-	 * @return
+	 * Executes an HTTP PATCH
+	 * @param headers The headers associated with the post.
+	 * @param uri The URI to post to.
+	 * @param requestEntity The entity to post.
+	 * @return The execution response.
 	 * @throws ClientProtocolException
 	 * @throws IOException
 	 */
@@ -264,11 +267,11 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 
 	/**
-	 * Executes an http put
-	 * @param headers
-	 * @param uri
-	 * @param requestEntity
-	 * @return
+	 * Executes an HTTP PUT
+	 * @param headers The headers associated with the post.
+	 * @param uri The URI to post to.
+	 * @param requestEntity The entity to post.
+	 * @return The execution response.
 	 * @throws ClientProtocolException
 	 * @throws IOException
 	 */
@@ -279,10 +282,10 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 	
 	/**
-	 * Executes an http get
-	 * @param headers
-	 * @param uri
-	 * @return
+	 * Executes an HTTP GET
+	 * @param headers The headers associated with the get.
+	 * @param uri The URI to get.
+	 * @return The execution response.
 	 * @throws IOException
 	 */
 	public Execution doGet(Map<String,String> headers, URI uri) throws IOException {
@@ -291,16 +294,10 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 
 	/**
-	 * Executes an http head
-	 * @param uri
-	 * @param headers
-	 * @return
-	 * @throws IOException
-	 */
-	/**
-	 * @param headers
-	 * @param uri
-	 * @return
+	 * Executes an HTTP HEAD
+	 * @param headers The headers associated with the get.
+	 * @param uri The URI to get.
+	 * @return The execution response.
 	 * @throws IOException
 	 */
 	public Execution doHead(Map<String,String> headers, URI uri) throws IOException {
@@ -309,10 +306,10 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 	
 	/**
-	 * Executes an http delete
-	 * @param headers
-	 * @param uri
-	 * @return
+	 * Executes an HTTP DELETE
+	 * @param headers The headers associated with the delete.
+	 * @param uri The URI to delete from.
+	 * @return The execution response.
 	 * @throws IOException
 	 */
 	public Execution doDelete(Map<String, String> headers, URI uri) throws IOException {
@@ -321,10 +318,10 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 	
     /** 
-	 * Updates request with the headers, and then execute it and return the results
-     * @param headers
-     * @param req
-	 * @return
+	 * Updates request with the headers, and then executes it and returns the results.
+     * @param headers The headers associated with the request.
+     * @param req The request.
+	 * @return The execution response.
 	 * @throws ClientProtocolException
 	 * @throws IOException
 	 */
@@ -342,9 +339,9 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 	
 	/** 
-	 * Executes a fully formed request, and returns the results
-	 * @param req
-	 * @return
+	 * Executes a fully formed request, and returns the results.
+	 * @param req The request.
+	 * @return The execution resonse.
 	 * @throws ClientProtocolException
 	 * @throws IOException
 	 */
@@ -365,7 +362,7 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 	/** 
 	 * This wraps an HttpEntity, and when the steam is closed, will call consumeContent to ensure
-	 * that the entire response was read, and the connection can go back to the connection pool
+	 * that the entire response was read, and the connection can go back to the connection pool.
 	 */
 	static class EntityClosingStream extends FilterInputStream {
 		
@@ -387,8 +384,7 @@ public class HttpAccess extends BroadcastReceiver {
 	}
 	
 	/**
-	 * Sub class of HttpRequestBase to do a http PATH
-	 *
+	 * Subclass of HttpRequestBase, used to do an HTTP PATCH.
 	 */
 	static class HttpPatch extends HttpEntityEnclosingRequestBase {
 	

@@ -50,27 +50,31 @@ import android.util.Log;
 import com.salesforce.androidsdk.auth.HttpAccess.Execution;
 
 /**
- * Helper methods for common oAuth2 requests.
+ * Helper methods for common OAuth2 requests.
  * 
- * The typical oAuth2 flow is
+ * The typical OAuth2 flow is;
  * 
- * a) the authorization flow is started by presenting the web based
- * authorization screen to the user, this will prompt them to login and to
+ * <ol>
+ * <li> The authorization flow is started by presenting the web-based
+ * authorization screen to the user.  This will prompt him/her to login and to
  * authorize our application. The result will be a callback with an
- * authorization code, or an error.
+ * authorization code, or an error.</li>
  * 
- * b) use the authorization code from (a) with the token end point, to get
- * access & refresh tokens, as well as other metadata
+ * <li> Use the authorization code from (a) with the token end point, to get
+ * access and refresh tokens, as well as other metadata.</li>
  * 
- * c) use the access token from (b) to call the identity service, this will let
- * us find out the users username
+ * <li> Use the access token from (b) to call the identity service, which will let
+ * us find out the user's username.</li>
  * 
- * d) store the username, refresh & access tokens somewhere safe (like the
- * AccountManager)
+ * <li> Store the username, and refresh and access tokens somewhere safe (like the
+ * AccountManager).</li>
  * 
- * e) if the access token becomes invalid, use the refresh token to get another
- * access token f) if the refresh token becomes invalid, go back to the
- * beginning.
+ * <li> If the access token becomes invalid, use the refresh token to get another
+ * access token.</li>
+ * 
+ * <li> If the refresh token becomes invalid, go back to the beginning.</li>
+ * </ol>
+ * 
  */
 public class OAuth2 {
 
@@ -81,20 +85,22 @@ public class OAuth2 {
 	private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
 
 	/**
-	 * Build the URL to the authorization web page for this loginServer
+	 * Build the URL to the authorization web page for this login server.
+	 * You need not provide refresh_token, as it is provided automatically.
 	 * 
 	 * @param loginServer
 	 *            the base protocol and server to use (e.g.
 	 *            https://login.salesforce.com)
 	 * @param clientId
-	 *            oauth client id
+	 *            OAuth client ID
 	 * @param callbackUrl
-	 *            oauth callback url
-	 * @param scopes A list of oauth scopes to request (eg {"visualforce","api"}), or null. (@see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a> )
-	 * You need not provide refresh_token as that is provided automatically.  If null, the default oauth scope is provided.
+	 *            OAuth callback url
+	 * @param scopes A list of OAuth scopes to request (eg {"visualforce","api"}). If null, the default OAuth scope is provided.
+	 * @return A URL to start the OAuth flow in a web browser/view.
 	 * 
-	 * @return a URL to start the oauth flow in a web browser/view.
-	 **/
+	 * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
+	 * 
+	 */
 	public static URI getAuthorizationUrl(URI loginServer, String clientId,
 			String callbackUrl, String[] scopes) {
 	    
@@ -124,7 +130,7 @@ public class OAuth2 {
 	}
 
 	/**
-	 * Get a new auth token using the refresh token
+	 * Get a new auth token using the refresh token.
 	 * 
 	 * @param httpAccessor
 	 * @param loginServer
@@ -148,7 +154,7 @@ public class OAuth2 {
 
 	/**
 	 * Call the identity service to determine the username of the user, given
-	 * there identity service Id, and an access token
+	 * their identity service ID and an access token.
 	 * 
 	 * @param httpAccessor
 	 * @param identityServiceIdUrl
@@ -211,7 +217,7 @@ public class OAuth2 {
 	}
 
 	/**
-	 * Exception thrown when refresh fail
+	 * Exception thrown when refresh fails.
 	 */
 	public static class OAuthFailedException extends Exception {
 
@@ -253,7 +259,7 @@ public class OAuth2 {
 	}
 
 	/**
-	 * Helper class to parse identity service response
+	 * Helper class to parse an identity service response.
 	 */
 	public static class IdServiceResponse extends AbstractResponse {
 		public String username;
@@ -269,7 +275,7 @@ public class OAuth2 {
 	}
 
 	/**
-	 * Helper class to parse token refresh error response
+	 * Helper class to parse a token refresh error response.
 	 */
 	public static class TokenErrorResponse extends AbstractResponse {
 		public String error;
@@ -293,7 +299,7 @@ public class OAuth2 {
 	}
 
 	/**
-	 * Helper class to parse token refresh response
+	 * Helper class to parse a token refresh response.
 	 */
 	public static class TokenEndpointResponse extends AbstractResponse {
 		public String authToken;

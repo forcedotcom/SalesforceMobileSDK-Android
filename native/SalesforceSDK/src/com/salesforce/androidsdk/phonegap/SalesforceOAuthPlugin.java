@@ -53,7 +53,7 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 
 /**
- * Phonegap plugin for Force
+ * PhoneGap plugin for PhoneGap-based Force applications.
  */
 public class SalesforceOAuthPlugin extends Plugin {
 	// Keys in credentials map
@@ -70,7 +70,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 	private static final int MIN_REFRESH_INTERVAL = 120*1000; // 2 minutes
 	
 	/**
-	 * Supported actions
+	 * Supported plugin actions that the client can take.
 	 */
 	enum Action {
 		authenticate,
@@ -84,6 +84,13 @@ public class SalesforceOAuthPlugin extends Plugin {
 	private static boolean autoRefresh;
 	private static long lastRefreshTime = -1;
 	
+	/**
+	 * If auto-refresh is enabled, this method will be called when the app resumes, and
+	 * automatically refresh the user's OAuth credentials in the app, ensuring a valid
+	 * session.
+	 * @param webView The WebView running the application.
+	 * @param ctx The main activity/context for the app.
+	 */
 	public static void autoRefreshIfNeeded(final WebView webView, final SalesforceDroidGapActivity ctx) {
 		Log.i("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Checking if auto refresh needed");
 		if (shouldAutoRefresh()) {
@@ -111,11 +118,11 @@ public class SalesforceOAuthPlugin extends Plugin {
 	
 
     /**
-     * Executes the request and returns PluginResult.
+     * Executes the plugin request and returns PluginResult.
      * 
      * @param actionStr     The action to execute.
      * @param args          JSONArray of arguments for the plugin.
-     * @param callbackId    The callback id used when calling back into JavaScript.
+     * @param callbackId    The callback ID used when calling back into JavaScript.
      * @return              A PluginResult object with a status and message.
      */
     public PluginResult execute(String actionStr, JSONArray args, String callbackId) {
@@ -141,9 +148,9 @@ public class SalesforceOAuthPlugin extends Plugin {
 
 	/**
 	 * Native implementation for "authenticate" action
-	 * @param args
-	 * @param callbackId
-	 * @return NO_RESULT since authentication is asynchronous
+	 * @param args The arguments used for authentication.
+	 * @param callbackId The callback ID used when calling back into Javascript.
+	 * @return NO_RESULT since authentication is asynchronous.
 	 * @throws JSONException 
 	 */
 	protected PluginResult authenticate(JSONArray args, final String callbackId) throws JSONException {
@@ -184,9 +191,9 @@ public class SalesforceOAuthPlugin extends Plugin {
 	}
 	
 	/**
-	 * Native implementation for "getAuthCredentials" action
-	 * @param callbackId
-	 * @return plugin result (ok if authenticated, error otherwise)
+	 * Native implementation for "getAuthCredentials" action.
+	 * @param callbackId The callback ID used when calling back into Javascript.
+	 * @return The plugin result (ok if authenticated, error otherwise).
 	 * @throws JSONException
 	 */
 	protected PluginResult getAuthCredentials(String callbackId) throws JSONException {
@@ -203,7 +210,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 	
 	/**
 	 * Native implementation for "logout" action
-	 * @return ok plugin result
+	 * @return This should always return the ok plugin result.
 	 */
 	protected PluginResult logoutCurrentUser() {
 		Log.i("SalesforceOAuthPlugin.logoutCurrentUser", "logoutCurrentUser called");
