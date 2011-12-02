@@ -48,8 +48,8 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.security.Encryptor;
 
 /**
- * ClientManager is a factory class for RestClient which stores oauth credentials in the AccountManager.
- * If no account is found, it kicks off the login flow which create a new account if successful.
+ * ClientManager is a factory class for RestClient which stores OAuth credentials in the AccountManager.
+ * If no account is found, it kicks off the login flow which creates a new account if successful.
  * 
  */
 public class ClientManager {
@@ -73,10 +73,10 @@ public class ClientManager {
 	/**
 	 * Method to create a RestClient asynchronously. It is intended to be used by code on the UI thread.
 	 * 
-	 * If no accounts is found, it will kick off the login flow which will create a new account if successful.
+	 * If no accounts are found, it will kick off the login flow which will create a new account if successful.
 	 * After the account is created or if an account already existed, it creates a RestClient and returns it through restClientCallback. 
 	 * 
-	 * Note: The work is actually be done by the service registered to handle authentication for this application account type
+	 * Note: The work is actually being done by the service registered to handle authentication for this application account type.
 	 * @see AuthenticatorService
 	 *
 	 * @param activityContext        current activity
@@ -159,14 +159,14 @@ public class ClientManager {
 	}
 
 	/**
-	 * Invalidate current auth token - next call to getRestClient will do a refresh
+	 * Invalidate current auth token.  The next call to {@link #getRestClient(Activity, RestClientCallback) getRestClient} will do a refresh.
 	 */
 	public void invalidateToken(String lastNewAuthToken) {
 		accountManager.invalidateAuthToken(getAccountType(), lastNewAuthToken);
 	}
 	
 	/**
-	 * @return first account found with the application account type
+	 * @return The first account found with the application account type.
 	 */
 	public Account getAccount() {
 		Account[] accounts = accountManager.getAccountsByType(getAccountType());
@@ -176,8 +176,8 @@ public class ClientManager {
 	}
 
 	/**
-	 * @param name
-	 * @return account with the application account type and the given name
+	 * @param name The name associated with the account
+	 * @return The account with the application account type and the given name.
 	 */
 	public Account getAccountByName(String name) {
 		Account[] accounts = accountManager.getAccountsByType(getAccountType());
@@ -192,15 +192,15 @@ public class ClientManager {
 	}
 	
 	/**
-	 * @return all accounts found for this application account type
+	 * @return All of the accounts found for this application account type.
 	 */
 	public Account[] getAccounts() {
 		return accountManager.getAccountsByType(getAccountType());
 	}	
 	
 	/**
-	 * Remove all the accounts passed in
-	 * @param accounts
+	 * Remove all of the accounts passed in.
+	 * @param accounts The array of accounts to remove.
 	 */
 	public void removeAccounts(Account[] accounts) {
 		List<AccountManagerFuture<Boolean>> removalFutures = new ArrayList<AccountManagerFuture<Boolean>>();
@@ -217,7 +217,7 @@ public class ClientManager {
 	}
 	
 	/**
-	 * Create new account and return bundle that new account details in a bundle
+	 * Create a new account and return the details of the new account in a bundle.
 	 * @param accountName 
 	 * @param username                 
 	 * @param refreshToken
@@ -252,15 +252,15 @@ public class ClientManager {
 	}
 	
 	/**
-	 * Should match the value in authenticator.xml
-	 * @return account type for this application
+	 * Should match the value in authenticator.xml.
+	 * @return The account type for this application.
 	 */
 	public String getAccountType() {
 		return accountType;
 	}
 	
 	/**
-	 * @return accountManager
+	 * @return The AccountManager for the application.
 	 */
 	public AccountManager getAccountManager() {
 		return accountManager;
@@ -268,9 +268,10 @@ public class ClientManager {
 
 
 	/**
-	 * Removes the user account from the account manager, this is an
-	 * asynchronous process, the callback is called on completion if
+	 * Removes the user account from the account manager.  This is an
+	 * asynchronous process: the callback will be called on completion, if
 	 * specified.
+	 * @param callback The callback to call when the account removal completes.
 	 */
 	public void removeAccountAsync(AccountManagerCallback<Boolean> callback) {
 		Account acc = getAccount();
@@ -280,8 +281,8 @@ public class ClientManager {
 	
 	
 	/**
-	 * Callback from either user account creation or a call to getAuthToken used
-	 * by the android account management bits
+	 * Callback from either user account creation, or a call to getAuthToken, used
+	 * by the Android account management components.
 	 */
 	private class AccMgrCallback implements AccountManagerCallback<Bundle> {
 
@@ -289,7 +290,7 @@ public class ClientManager {
 
 		/**
 		 * Constructor
-		 * @param restCallback who to directly call when we get a result for getAuthToken
+		 * @param restCallback Who to directly call when we get a result for getAuthToken.
 		 * 			  
 		 */
 		AccMgrCallback(RestClientCallback restCallback) {
@@ -326,7 +327,8 @@ public class ClientManager {
 	
 	/**
 	 * RestClientCallback interface.
-	 * You must provider an implementation of this interface when calling getRestClient.
+	 * You must provide an implementation of this interface when calling
+	 * {@link ClientManager#getRestClient(Activity, RestClientCallback) getRestClient}.
 	 */
 	public interface RestClientCallback {
 		public void authenticatedRestClient(RestClient client);
@@ -334,7 +336,7 @@ public class ClientManager {
 
 	/**
 	 * AuthTokenProvider implementation that calls out to the AccountManager to get a new access token.
-	 * The AccountManager actually calls ForceAuthenticatorService to do the actual refresh.
+	 * The AccountManager calls ForceAuthenticatorService to do the actual refresh.
 	 * @see AuthenticatorService
 	 */
 	public static class AccMgrAuthTokenProvider implements RestClient.AuthTokenProvider {
@@ -358,9 +360,9 @@ public class ClientManager {
 		}
 
 		/**
-		 * Fetch a new access token from the account manager, if another thread
-		 * is already in the progress of doing this we'll just wait for it to finish and use that access token.
-		 * Return null if we can't get a new access token for any reason.
+		 * Fetch a new access token from the account manager.  If another thread
+		 * is already in the process of doing this, we'll just wait for it to finish and use that access token.
+		 * @return The auth token, or null if we can't get a new access token for any reason.
 		 */
 		@Override
 		public String getNewAuthToken() {
@@ -426,7 +428,8 @@ public class ClientManager {
 	}
 
 	/**
-	 * Exception thrown when no account could be found (during a peekRestClient call) 
+	 * Exception thrown when no account could be found (during a
+	 * {@link ClientManager#peekRestClient() peekRestClient} call) 
 	 */
 	public static class AccountInfoNotFoundException extends Exception {
 		private static final long serialVersionUID = 1L;
@@ -441,8 +444,8 @@ public class ClientManager {
 	}
 	
 	/**
-	 * Class encapsulating login options
-	 * There are passed in a bundle to the auth service, which passes them as "extras" when starting the login activity
+	 * Class encapsulating login options.
+	 * There are passed in a bundle to the auth service, which passes them as "extras" when starting the login activity.
 	 */
 	public static class LoginOptions {
 		private static final String OAUTH_SCOPES = "oauthScopes";

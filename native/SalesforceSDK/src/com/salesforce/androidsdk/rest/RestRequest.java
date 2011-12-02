@@ -39,24 +39,25 @@ import org.json.JSONObject;
 
 
 /**
- * RestRequest: object to represent any REST requests.
+ * RestRequest: Class to represent any REST request.
  * 
  * The class offers factory methods to build RestRequest objects for all REST API actions:
- * - versions
- * - resources
- * - describeGlobal
- * - metadata
- * - describe
- * - create
- * - retrieve
- * - update
- * - upsert
- * - delete
+ * <ul>
+ * <li> versions</li>
+ * <li> resources</li>
+ * <li> describeGlobal</li>
+ * <li> metadata</li>
+ * <li> describe</li>
+ * <li> create</li>
+ * <li> retrieve</li>
+ * <li> update</li>
+ * <li> upsert</li>
+ * <li> delete</li>
+ * </ul>
  * 
  * It also has constructors to build any arbitrary request.
  * 
  */
-
 public class RestRequest {
 	
 	/**
@@ -113,14 +114,14 @@ public class RestRequest {
 	}
 
 	/**
-	 * @return HTTP method of the request
+	 * @return HTTP method of the request.
 	 */
 	public RestMethod getMethod() {
 		return method;
 	}
 
 	/**
-	 * @return path of the request
+	 * @return Path of the request.
 	 */
 	public String getPath() {
 		return path;

@@ -18,7 +18,7 @@ import org.json.JSONObject;
 
 
 /**
- * RestResponse: class to represent any REST responses.
+ * RestResponse: Class to represent any REST response.
  * 
  */
 public class RestResponse {

@@ -51,8 +51,8 @@ import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.ui.LoginActivity;
 
 /**
- * Service taking care of authentication for salesforce application
- * See http://developer.android.com/reference/android/accounts/AbstractAccountAuthenticator.html
+ * The service used for taking care of authentication for a Salesforce-based application.
+ * See {@link <a href="http://developer.android.com/reference/android/accounts/AbstractAccountAuthenticator.html">AbstractAccountAuthenticator</a>}.
  */
 public class AuthenticatorService extends Service {
 
@@ -81,8 +81,8 @@ public class AuthenticatorService extends Service {
 	
 	/**
 	 * The Authenticator for salesforce accounts.
-	 * - addAccount start the login flow (by launching the activity filtering the salesforce.intent.action.LOGIN intent)
-	 * - getAuthToken refresh the token by calling OAuth2.refreshAuthToken 
+	 * - addAccount Start the login flow (by launching the activity filtering the salesforce.intent.action.LOGIN intent).
+	 * - getAuthToken Refresh the token by calling {@link OAuth2#refreshAuthToken(HttpAccess, URI, String, String) OAuth2.refreshAuthToken}.
 	 */
 	private static class Authenticator extends AbstractAccountAuthenticator {
 

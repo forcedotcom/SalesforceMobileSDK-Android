@@ -51,7 +51,7 @@ public class RestClient {
 	private String authToken;
 	
 	/** 
-	 * AuthTokenProvider interface
+	 * AuthTokenProvider interface.
 	 * RestClient will call its authTokenProvider to refresh its authToken once it has expired. 
 	 */
 	public interface AuthTokenProvider {
@@ -61,8 +61,8 @@ public class RestClient {
 	}
 	
 	/**
-	 * AsyncRequestCallback interface
-	 * Interface through which the result of asynchronous request is handled 
+	 * AsyncRequestCallback interface.
+	 * Interface through which the result of an asynchronous request is handled.
 	 */
 	public interface AsyncRequestCallback {
 		void onSuccess(RestResponse response);
@@ -72,8 +72,10 @@ public class RestClient {
     /**
      * Constructs a RestClient with the given clientInfo, authToken, httpAccessor and authTokenProvider.
      * When it gets a 401 (not authorized) response from the server:
-     * - if authTokenProvider is not null, it will ask the authTokenProvider for a new access token and retry the request a second time,
-     * - otherwise it will return the 401 response
+     * <ul>
+     * <li> If authTokenProvider is not null, it will ask the authTokenProvider for a new access token and retry the request a second time.</li>
+     * <li> Otherwise it will return the 401 response.</li>
+     * </ul>
 	 * @param clientInfo
      * @param authToken
      * @param httpAccessor
@@ -100,7 +102,7 @@ public class RestClient {
 	}
 	
 	/**
-	 * @return authToken for this RestClient
+	 * @return The authToken for this RestClient.
 	 */
 	public synchronized String getAuthToken() {
 		return authToken;
@@ -115,21 +117,21 @@ public class RestClient {
 	}
 
 	/**
-	 * @return refresh token if available
+	 * @return The refresh token, if available.
 	 */
 	public String getRefreshToken() {
 		return (authTokenProvider != null ? authTokenProvider.getRefreshToken() : null);
 	}
 	
 	/**
-	 * @return client info
+	 * @return The client info.
 	 */
 	public ClientInfo getClientInfo() {
 		return clientInfo;
 	}
 	
 	/**
-	 * @return elapsed time (ms) since last refresh
+	 * @return Elapsed time (ms) since the last refresh.
 	 */
 	public long getElapsedTimeSinceLastRefresh() {
 		long lastRefreshTime = (authTokenProvider != null ? authTokenProvider.getLastRefreshTime() : -1);
@@ -142,8 +144,8 @@ public class RestClient {
 	}
 
 	/**
-	 * Send the given restRequest and process the result asynchronously with callback
-	 * Note: intented to be used by code on the UI thread.
+	 * Send the given restRequest and process the result asynchronously with the given callback.
+	 * Note: Intended to be used by code on the UI thread.
 	 * @param restRequest
 	 * @param callback
 	 */
@@ -153,7 +155,7 @@ public class RestClient {
 
 	/**
 	 * Send the given restRequest synchronously and return a RestResponse
-	 * Note: cannot be used by code on the UI thread (use sendAsync instead)
+	 * Note: Cannot be used by code on the UI thread (use sendAsync instead).
 	 * @param restRequest
 	 * @return
 	 * @throws IOException 
@@ -163,8 +165,8 @@ public class RestClient {
 	}
 
 	/**
-	 * Send an arbitrary HTTP request synchronously given by its method, path and httpEntity
-	 * Note: cannot be used by code on the UI thread (use sendAsync instead)
+	 * Send an arbitrary HTTP request synchronously, using the given method, path and httpEntity.
+	 * Note: Cannot be used by code on the UI thread (use sendAsync instead).
 	 * @param method
 	 * @param path
 	 * @param httpEntity
@@ -268,7 +270,7 @@ public class RestClient {
 	}
 	
 	/**
-	 * All immutable information for an authenticated client (e.g. username, org id etc)
+	 * All immutable information for an authenticated client (e.g. username, org ID, etc.).
 	 */
 	public static class ClientInfo {
 		public final String clientId;

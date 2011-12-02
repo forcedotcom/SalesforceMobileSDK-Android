@@ -34,6 +34,9 @@ import com.phonegap.DroidGap;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
 
+/**
+ * Class that defines the main activity for a PhoneGap-based application.
+ */
 public class SalesforceDroidGapActivity extends DroidGap {
     /** Called when the activity is first created. */
     @Override
