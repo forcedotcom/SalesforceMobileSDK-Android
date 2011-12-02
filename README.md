@@ -28,6 +28,9 @@ The Salesforce Mobile SDK provides essential libraries for quickly building nati
 __Salesforce Mobile Container__
 HTML5 is quickly emerging as dominant technology for developing cross-platform mobile applications. While developers can create sophisticated apps with HTML5 and JavaScript, some limitations remain, specifically: session management, access to the camera and address book, and the inability to distribute apps inside public App Stores. The Salesforce Mobile Container makes possible to combine the ease of web app development with power of the iOS platform by wrapping a web app inside a thin native container, producing a hybrid application.
 
+__WARNING: OAuth2 token storage on devices without encryption__
+The Salesforce Mobile SDK provides PIN-based OAuth token encryption for Android devices that don't provide full storage encryption functionality.  The SDK implementation is **NOT** designed to provide complete security.  It's simply offered as an option for temporarily protecting your app from eavesdroppers.  Please use caution in your production deployment with sensitive data.  **We strongly recommend deploying production apps on the latest generation of Android devices with build-in device encryption.**
+
 
 
 # Setting up your development environment
