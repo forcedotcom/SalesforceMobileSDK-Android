@@ -329,17 +329,17 @@ public class SalesforceOAuthPlugin extends Plugin {
 
     	String accessToken = client.getAuthToken();
     	String domain = client.getClientInfo().instanceUrl.getHost();
-
+    	
     	//set the cookie on all possible domains we could access
-    	addSidCookieForDomain(cookieMgr,domain,accessToken);
-    	addSidCookieForDomain(cookieMgr,".force.com",accessToken);
-    	addSidCookieForDomain(cookieMgr,".salesforce.com",accessToken);
+    	addSidCookieForDomain(cookieMgr, domain, domain, accessToken);
+    	addSidCookieForDomain(cookieMgr,".force.com", "visual.force.com", accessToken);
+    	addSidCookieForDomain(cookieMgr,".salesforce.com", "salesforce.com", accessToken);
 
 	    cookieSyncMgr.sync();
     }
 
-    private static void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
-        String cookieStr = "sid=" + sid + "; domain=" + domain;
+    private static void addSidCookieForDomain(CookieManager cookieMgr, String domain, String domainInCookie, String sid) {
+        String cookieStr = "sid=" + sid + "; domain=" + domainInCookie;
     	cookieMgr.setCookie(domain, cookieStr);
     }
 
