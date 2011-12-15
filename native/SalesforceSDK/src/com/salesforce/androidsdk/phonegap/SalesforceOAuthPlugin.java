@@ -323,23 +323,23 @@ public class SalesforceOAuthPlugin extends Plugin {
     	CookieSyncManager cookieSyncMgr = CookieSyncManager.getInstance();
     	
     	CookieManager cookieMgr = CookieManager.getInstance();
+    	cookieMgr.setAcceptCookie(true);  // Required to set additional cookies that the auth process will return.
     	cookieMgr.removeSessionCookie();
     	
     	SystemClock.sleep(250); // removeSessionCookies kicks out a thread - let it finish
 
     	String accessToken = client.getAuthToken();
-    	String domain = client.getClientInfo().instanceUrl.getHost();
     	
-    	//set the cookie on all possible domains we could access
-    	addSidCookieForDomain(cookieMgr, domain, domain, accessToken);
-    	addSidCookieForDomain(cookieMgr,".force.com", "visual.force.com", accessToken);
-    	addSidCookieForDomain(cookieMgr,".salesforce.com", "salesforce.com", accessToken);
+    	// Android 3.0+ clients want to use the standard .[domain] format. Earlier clients will only work
+    	// with the [domain] format.  Set them both; each platform will leverage its respective format.
+    	addSidCookieForDomain(cookieMgr,"salesforce.com", accessToken);
+    	addSidCookieForDomain(cookieMgr,".salesforce.com", accessToken);
 
 	    cookieSyncMgr.sync();
     }
 
-    private static void addSidCookieForDomain(CookieManager cookieMgr, String domain, String domainInCookie, String sid) {
-        String cookieStr = "sid=" + sid + "; domain=" + domainInCookie;
+    private static void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
+        String cookieStr = "sid=" + sid;
     	cookieMgr.setCookie(domain, cookieStr);
     }
 
