@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.store;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 
 
@@ -42,19 +43,23 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	
 	public DBOpenHelper(Context context) {
 		super(context, DB_NAME, null, DB_VERSION);
+		Log.i("DBOpenHelper:DBOpenHelper", DB_NAME + "/" + DB_VERSION);
 	}
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
+		Log.i("DBOpenHelper:onCreate", DB_NAME + "/" + DB_VERSION);
 		SmartStore.createMetaTable(db);
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+		Log.i("DBOpenHelper:onUpgrade", DB_NAME + "/" + DB_VERSION);
 		// do the needful if DB_VERSION has changed 
 	}
 
 	public static void deleteDatabase(Context ctx) {
+		Log.i("DBOpenHelper:deleteDatabase", DB_NAME + "/" + DB_VERSION);
 		ctx.deleteDatabase(DB_NAME);
 	}
 }

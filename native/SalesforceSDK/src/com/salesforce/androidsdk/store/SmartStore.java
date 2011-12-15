@@ -47,7 +47,16 @@ import android.database.sqlite.SQLiteDatabase;
  * SmartStore is inspired by the Apple Newton OS Soup/Store model. 
  * The main challenge here is how to effectively store documents with dynamic fields, and still allow indexing and searching.
  * 
- * TODO: will eventually be invoke through a content provider
+ * TODO: - order by for querySoup
+ *       - upsert/update/delete
+ *       - cursor
+ *       - file ref
+ *       - pre-compile SQL statements
+ *       - cache index specs in memory
+ *       - non-string index types
+ *       - cursor
+ *       - content provider layer
+ *       - PG plugin
  */
 public class SmartStore  {
 	// Table to keep track of soup's index specs
@@ -59,13 +68,19 @@ public class SmartStore  {
 	private static final String COLUMN_NAME_COL = "columnName";
 	private static final String COLUMN_TYPE_COL = "columnType";
 	
-	// Column holding actual soup in the soup table
-	private static final String SOUP_COL = "soup";
+	// Columns of a soup table
+	private static final String ID_COL = "_id";
+	private static final String CREATED_COL = "_created";
+	private static final String LAST_MODIFIED_COL = "_lastModified";
+	private static final String RAW_JSON_COL = "rawJson";
+	private static final String FILE_REF_COL = "fileRef";
+	
 	
 	// Key actions - used as tags in log
 	private static final String REGISTER_SOUP = "SmartStore:registerSoup";
 	private static final String DROP_SOUP = "SmartStore:dropSoup";
 	private static final String QUERY_SOUP = "SmartStore:querySoup";
+	private static final String INSERT_SOUP = "SmartStore:insertSoup";
 	private static final String CREATE_META_TABLE = "SmartStore:createMetaTable";
 	
 	/**
@@ -85,7 +100,12 @@ public class SmartStore  {
 		List<String> createIndexStmts = new ArrayList<String>();  // to create indexes on new soup table
 		
 		createTableStmt.append("CREATE TABLE ").append(soupName).append(" (")
-					   .append(SOUP_COL).append(" ").append(Type.TEXT.toString());
+						.append(ID_COL).append(" ").append(Type.INTEGER.toString()).append(" PRIMARY KEY AUTOINCREMENT")
+					    .append(", ").append(RAW_JSON_COL).append(" ").append(Type.TEXT.toString())
+					    .append(", ").append(FILE_REF_COL).append(" ").append(Type.TEXT.toString())
+					    .append(", ").append(CREATED_COL).append(" ").append(Type.INTEGER.toString())
+					    .append(", ").append(LAST_MODIFIED_COL).append(" ").append(Type.INTEGER.toString());
+					    
 		
 		int i = 0;
 		for (IndexSpec indexSpec : indexSpecs) {
@@ -100,10 +120,7 @@ public class SmartStore  {
 			values.put(COLUMN_TYPE_COL, columnType);
 			
 			// create table
-			createTableStmt.append(columnName).append(" ").append(columnType);
-			if (i < indexSpecs.length - 1) {
-				createTableStmt.append(",");
-			}
+			createTableStmt.append(", ").append(columnName).append(" ").append(columnType);
 
 			// create index
 			createIndexStmts.add(String.format("CREATE INDEX %s on %s ( %s )", indexName, soupName, columnName));;
@@ -113,14 +130,20 @@ public class SmartStore  {
 		createTableStmt.append(")");
 		
 		
-		LoggingSQLiteDatabase db = DBOperations.getWritableDatabase(ctx);
-		db.execSQL(REGISTER_SOUP, createTableStmt.toString());
+		LoggingSQLiteDatabase db = DBOperations.getWritableDatabase(REGISTER_SOUP, ctx);
+		db.execSQL(createTableStmt.toString());
 		for (String createIndexStmt : createIndexStmts) {
-			db.execSQL(REGISTER_SOUP, createIndexStmt.toString());
+			db.execSQL(createIndexStmt.toString());
 		}
-		db.beginTransaction(REGISTER_SOUP);
-		db.insert(REGISTER_SOUP, SOUP_INDEX_MAP_TABLE, values);
-		db.endTransaction(REGISTER_SOUP);
+		
+		try {
+			db.beginTransaction();
+			db.insert(SOUP_INDEX_MAP_TABLE, values); 
+		}
+		finally {
+			db.endTransaction();			
+		}
+		
 	}
 	
 	/**
@@ -133,11 +156,15 @@ public class SmartStore  {
 	 * @param soupName
 	 */
 	public void dropSoup(Context ctx, String soupName) {
-		LoggingSQLiteDatabase db = DBOperations.getWritableDatabase(ctx);
-		db.execSQL(DROP_SOUP, "DROP TABLE " + soupName);
-		db.beginTransaction(DROP_SOUP);
-		db.delete(DROP_SOUP, SOUP_INDEX_MAP_TABLE, getSoupNamePredicate(soupName));
-		db.endTransaction(DROP_SOUP);
+		LoggingSQLiteDatabase db = DBOperations.getWritableDatabase(DROP_SOUP, ctx);
+		db.execSQL("DROP TABLE " + soupName);
+		try {
+			db.beginTransaction();
+			db.delete(SOUP_INDEX_MAP_TABLE, getSoupNamePredicate(soupName));
+		}
+		finally {
+			db.endTransaction();
+		}
 	}
 
 	/**
@@ -149,13 +176,13 @@ public class SmartStore  {
 	 * @throws JSONException 
 	 */
 	public JSONArray querySoup(Context ctx, String soupName, QuerySpec querySpec) throws JSONException {
-		LoggingSQLiteDatabase db = DBOperations.getReadableDatabase(ctx);
+		LoggingSQLiteDatabase db = DBOperations.getReadableDatabase(QUERY_SOUP, ctx);
 		String columnName = null;
 		
 		// First get index column for the querySpec path
 		Cursor cursor = null;
 		try {
-			cursor = db.query(QUERY_SOUP, SOUP_INDEX_MAP_TABLE, new String[] {COLUMN_NAME_COL}, getSoupNamePredicate(soupName) + " AND " + getPathPredicate(querySpec.path));
+			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {COLUMN_NAME_COL}, getSoupNamePredicate(soupName) + " AND " + getPathPredicate(querySpec.path));
 			if (cursor.moveToFirst()) {
 				columnName = cursor.getString(0);
 			}
@@ -172,22 +199,20 @@ public class SmartStore  {
 		
 		// Now get the matching soups
 		try {
-			cursor = db.query(QUERY_SOUP, soupName, new String[] {SOUP_COL}, getKeyPredicate(columnName, querySpec.beginKey, querySpec.endKey));
-			// TODO pass in the querySpec.order as well
-			
+			cursor = db.query(soupName, new String[] {ID_COL, RAW_JSON_COL}, getKeyPredicate(columnName, querySpec.beginKey, querySpec.endKey));
 			
 			JSONArray result = new JSONArray();
 			if (cursor.moveToFirst()) {
 				do {
-					JSONObject soup = new JSONObject(cursor.getString(0));
+					JSONObject soup = new JSONObject(cursor.getString(cursor.getColumnIndex(RAW_JSON_COL)));
+					
 					if (querySpec.projections == null) {
 						result.put(soup);
 					}
 					else {
 						JSONObject subSoup = new JSONObject();
 						for (String projection : querySpec.projections) {
-							subSoup.put(projection, soup.get(projection));
-							// TODO can projection be paths or just names?
+							subSoup.put(projection, project(soup, projection));
 						}
 						result.put(subSoup);
 					}
@@ -207,8 +232,44 @@ public class SmartStore  {
 	}
 
 	/**
-	 * TODO: revisit this method once we support other indexed column type
+	 * Insert soup
 	 * 
+	 * @param soupName
+	 * @param soup
+	 * @return id of inserted row
+	 */
+	public long insertSoup(Context ctx, String soupName, JSONObject soup) {
+		LoggingSQLiteDatabase db = DBOperations.getWritableDatabase(INSERT_SOUP, ctx);
+
+		// Get index specs from database
+		Cursor cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {PATH_COL, COLUMN_NAME_COL}, getSoupNamePredicate(soupName));
+		
+		// Prepare values to insert
+		ContentValues contentValues = new ContentValues();
+		contentValues.put(RAW_JSON_COL, soup.toString());
+		long now = System.currentTimeMillis();
+		contentValues.put(CREATED_COL, now);
+		contentValues.put(LAST_MODIFIED_COL, now);
+		if (cursor.moveToFirst()) {
+			do {
+				String path = cursor.getString(cursor.getColumnIndex(PATH_COL));
+				String columnName = cursor.getString(cursor.getColumnIndex(COLUMN_NAME_COL));
+				String value = (String) project(soup, path);
+				contentValues.put(columnName, value);
+			}
+			while (cursor.moveToNext());
+		}
+		
+		try {
+			db.beginTransaction();
+			return db.insert(soupName, contentValues);
+		}
+		finally {
+			db.endTransaction();
+		}
+	}
+	
+	/**
 	 * @param columnName
 	 * @param beginKey
 	 * @param endKey
@@ -238,6 +299,20 @@ public class SmartStore  {
 	private String getPathPredicate(String path) {
 		return PATH_COL + " = '" + path  + "'";
 	}
+	
+	/**
+	 * @param soup
+	 * @param path
+	 * @return object at path in soup
+	 */
+	private Object project(JSONObject soup, String path) {
+		String[] pathElements = path.split("/");
+		Object o = soup;
+		for (String pathElement : pathElements) {
+			o = ((JSONObject) o).opt(pathElement);
+		}
+		return o;
+	}
 
 	/**
 	 * Create soup index map table to keep track of soups' index specs
@@ -252,7 +327,7 @@ public class SmartStore  {
 				  			"columnName TEXT," +
 				  			"columnType TEXT" +
 				  			")";
-		new LoggingSQLiteDatabase(db).execSQL(CREATE_META_TABLE, createStmt);
+		new LoggingSQLiteDatabase(CREATE_META_TABLE, db).execSQL(createStmt);
 	}
 	
 	
@@ -260,13 +335,11 @@ public class SmartStore  {
 	 * Enum for column type
 	 */
 	public enum Type {
-		TEXT;
+		TEXT, INTEGER;
 	}
 	
 	/**
 	 * Simple class to represent index spec
-	 * 
-	 * TODO: add constructor that takes JSON
 	 */
 	public static class IndexSpec {
 		public final String path;
@@ -280,8 +353,6 @@ public class SmartStore  {
 
 	/**
 	 * Simple class to represent a query spec
-	 * 
-	 * TODO: add constructor that takes JSON
 	 */
 	public static class QuerySpec {
 		public final String path;

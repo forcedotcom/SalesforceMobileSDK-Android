@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.store;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -41,17 +42,18 @@ import android.util.Log;
 public class LoggingSQLiteDatabase {
 
 	private SQLiteDatabase db;
+	private String tag;
 
-	public LoggingSQLiteDatabase(SQLiteDatabase db) {
+	public LoggingSQLiteDatabase(String tag, SQLiteDatabase db) {
+		this.tag = tag;
 		this.db = db;
 	}
 	
 	/**
 	 * Execute arbitrary SQL (after first logging it)
-	 * @param tag
 	 * @param sql
 	 */
-	public void execSQL(String tag, String sql) {
+	public void execSQL(String sql) {
 		Log.i(tag, sql);
 		db.execSQL(sql);
 	}
@@ -60,61 +62,57 @@ public class LoggingSQLiteDatabase {
 	 * Runs a query (after first logging the select statement)
 	 * 
 	 * TODO: we should compile the statements and use bindings
-	 * 
-	 * @param tag
 	 * @param table
 	 * @param columns
 	 * @param selection
+	 * 
 	 * @return
 	 */
-	public Cursor query(String tag, String table, String[] columns, String selection) {
-		Log.i(tag, String.format("SELECT %s FROM %s WHERE %s", join(columns, ","), selection));
+	public Cursor query(String table, String[] columns, String selection) {
+		Log.i(tag, String.format("SELECT %s FROM %s WHERE %s", table, join(columns, ","), selection));
 		return db.query(table, columns, selection, null, null, null, null);
 	}
 
 	/**
 	 * Start transaction (after first logging it)
-	 * @param tag
 	 */
-	public void beginTransaction(String tag) {
+	public void beginTransaction() {
 		Log.i(tag, "BEGIN TRANSACTION");
 		db.beginTransaction();
 	}
 
 	/**
 	 * End transaction (after first logging it)
-	 * @param tag
 	 */
-	public void endTransaction(String tag) {
+	public void endTransaction() {
 		Log.i(tag, "END TRANSACTION");
 		db.endTransaction();
 	}
 
 	/**
 	 * Does a insert (after first logging the insert statement)
-	 * @param tag
 	 * @param table
 	 * @param contentValues
+	 * @return row id of inserted row
 	 */
-	public void insert(String tag, String table, ContentValues contentValues) {
+	public long insert(String table, ContentValues contentValues) {
 		List<String> columnNames = new ArrayList<String>();
 		List<String> values = new ArrayList<String>();
-		for (String key : contentValues.keySet()) {
-			columnNames.add(key);
-			Object value = contentValues.get(key);
+		for (Entry<String, Object> entry : contentValues.valueSet()) {
+			columnNames.add(entry.getKey());
+			Object value = entry.getValue();
 			values.add(value instanceof String ? "'" + value + "'" : value.toString());
 		}
 		Log.i(tag, String.format("INSERT INTO %s (%s) VALUES (%s)", table, join(columnNames, ","), join(values, ",")));
-		db.insert(table, null, contentValues);
+		return db.insert(table, null, contentValues);
 	}
 	
 	/**
 	 * Does a delete (after first logging the delete statement)
-	 * @param tag
 	 * @param table
 	 * @param whereClause
 	 */
-	public void delete(String tag, String table, String whereClause) {
+	public void delete(String table, String whereClause) {
 		Log.i(tag, String.format("DELETE FROM %s WHERE %s", table, whereClause));
 		db.delete(table, whereClause, null);
 	}
@@ -127,6 +125,8 @@ public class LoggingSQLiteDatabase {
 	 * @return
 	 */
 	private String join(List<String> list, String delim) {
+		if (list == null)
+			return "";
 		return join(list.toArray(new String[0]), delim);
 	}
 	
@@ -137,6 +137,9 @@ public class LoggingSQLiteDatabase {
 	 * @return
 	 */
 	private String join(String[] arr, String delim) {
+		if (arr == null)
+			return "";
+		
 		StringBuilder sb = new StringBuilder();
 		int i = 0;
 		for (String elt : arr) {

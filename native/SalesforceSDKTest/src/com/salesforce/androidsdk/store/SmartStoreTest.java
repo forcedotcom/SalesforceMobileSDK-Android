@@ -26,40 +26,58 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.content.Context;
+import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
+import com.salesforce.androidsdk.store.SmartStore.Type;
 
+import android.content.Context;
+import android.database.Cursor;
+import android.test.InstrumentationTestCase;
 
 /**
- * Helper class to access local database 
+ * Tests for SmartStore
+ *
  */
-public class DBOperations  {
-	private static DBOpenHelper openHelper;
+public class SmartStoreTest extends InstrumentationTestCase {
 
-	public static LoggingSQLiteDatabase getReadableDatabase(String tag, Context ctx) {
-		return new LoggingSQLiteDatabase(tag, getOpenHelper(ctx).getReadableDatabase());
-	}
-
-	public static LoggingSQLiteDatabase getWritableDatabase(String tag, Context ctx) {
-		return new LoggingSQLiteDatabase(tag, getOpenHelper(ctx).getWritableDatabase());
+	private static final String TEST_SOUP = "test_soup";
+	
+	private Context targetContext;
+	private LoggingSQLiteDatabase rdb;
+	private SmartStore store;
+	
+	@Override
+	public void setUp() throws Exception {
+		super.setUp();
+		targetContext = getInstrumentation().getTargetContext();
+		rdb = DBOperations.getReadableDatabase("SmartStoreTest", targetContext);
+		store = new SmartStore();
 	}
 	
-	public static synchronized void shutDown() {
-		if (openHelper != null) {
-			openHelper.close();
-			openHelper = null;
+	/**
+	 * Check that the meta data table (soup index map) has been created
+	 */
+	public void testMetaDataTableCreated() {
+		assertTrue("Table soup_index_map not found", hasTable("soup_index_map"));
+	}
+	
+	/**
+	 * Call register soup and check that a table is created for the soup
+	 * Then call drop soup and make sure that the table created for the soup is dropped
+	 */
+	public void testRegisterSoupDropSoup() {
+		try {
+			assertFalse("Table test_soup should not exist", hasTable(TEST_SOUP));
+			store.registerSoup(targetContext, TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.TEXT)});
+			assertTrue("Table test_soup not found", hasTable(TEST_SOUP));
 		}
-	}	
-	
-	public static synchronized void resetDatabase(Context ctx) {
-		shutDown();
-	    DBOpenHelper.deleteDatabase(ctx);
-	}
-	
-	private static synchronized DBOpenHelper getOpenHelper(Context ctx) {
-		if (openHelper == null) {
-			openHelper = new DBOpenHelper(ctx);
+		finally {
+			store.dropSoup(targetContext, TEST_SOUP);
+			assertFalse("Table test_soup should not exist anymore", hasTable(TEST_SOUP));
 		}
-		return openHelper;
 	}
 	
+	private boolean hasTable(String tableName) {
+		Cursor c = rdb.query("sqlite_master", null, "type = 'table' and name = '" + tableName + "'");
+		return c.getCount() == 1;
+	}
 }
