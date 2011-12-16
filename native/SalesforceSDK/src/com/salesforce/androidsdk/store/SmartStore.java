@@ -389,6 +389,8 @@ public class SmartStore  {
 	}
 	
 	/**
+	 * FIXME range predicate will be different for non-string keys (won't have the '')
+	 * 
 	 * @param columnName
 	 * @param beginKey
 	 * @param endKey
@@ -399,7 +401,7 @@ public class SmartStore  {
 			return columnName + " = '" + beginKey + "'";
 		}
 		else {
-			return columnName + " >= '" + beginKey + "' AND " + columnName + " < '" + endKey; 
+			return columnName + " >= '" + beginKey + "' AND " + columnName + " <= '" + endKey + "'"; 
 		}
 	}
 
@@ -490,15 +492,66 @@ public class SmartStore  {
 		public final Order order;
 		public final String[] projections;
 
+		/**
+		 * Exact match (return whole soup element)
+		 * @param path
+		 * @param matchKey
+		 */
 		public QuerySpec(String path, String matchKey) {
-			this(path, matchKey, null);
+			this(path, matchKey, matchKey, null, Order.ASC);
 		}
 		
+		
+		/**
+		 * Exact match (return selected projections)
+		 * @param path
+		 * @param matchKey
+		 * @param projections
+		 */
 		public QuerySpec(String path, String matchKey, String[] projections) {
-			this(path, matchKey, matchKey, null, projections);
+			this(path, matchKey, matchKey, projections, Order.ASC);
 		}
 		
-		public QuerySpec(String path, String beginKey, String endKey, Order order, String[] projections) {
+		/**
+		 * Range query (return whole soup elements in ascending order for the values at path)
+		 * @param path
+		 * @param beginKey
+		 * @param endKey
+		 */
+		public QuerySpec(String path, String beginKey, String endKey) {
+			this(path, beginKey, endKey, null, Order.ASC);
+		}
+
+		/**
+		 * Range query (return selected projections in ascending order for the values at path)
+		 * @param path
+		 * @param beginKey
+		 * @param endKey
+		 */
+		public QuerySpec(String path, String beginKey, String endKey, String[] projections) {
+			this(path, beginKey, endKey, projections, Order.ASC);
+		}
+		
+		/**
+		 * Range query (return whole soup elements in specified order)
+		 * @param path
+		 * @param beginKey
+		 * @param endKey
+		 * @param order
+		 */
+		public QuerySpec(String path, String beginKey, String endKey, Order order) {
+			this(path, beginKey, endKey, null, order);
+		}
+
+		/**
+		 * Range query (return selected projections in specified order for the values at path)
+		 * @param path
+		 * @param beginKey
+		 * @param endKey
+		 * @param projections
+		 * @param order
+		 */
+		public QuerySpec(String path, String beginKey, String endKey, String[] projections, Order order) {
 			this.path = path;
 			this.beginKey = beginKey;
 			this.endKey = endKey;

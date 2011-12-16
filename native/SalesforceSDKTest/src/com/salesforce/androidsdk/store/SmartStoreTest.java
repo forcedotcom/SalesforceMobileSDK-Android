@@ -30,13 +30,15 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
-import com.salesforce.androidsdk.store.SmartStore.Type;
-
 import android.content.Context;
 import android.database.Cursor;
 import android.os.SystemClock;
 import android.test.InstrumentationTestCase;
+
+import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
+import com.salesforce.androidsdk.store.SmartStore.Order;
+import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
+import com.salesforce.androidsdk.store.SmartStore.Type;
 
 /**
  * Tests for SmartStore
@@ -317,6 +319,70 @@ public class SmartStoreTest extends InstrumentationTestCase {
 			safeClose(c);
 		}
 	}
+
+	/**
+	 * Test query when looking for a specific element (with and without projections)
+	 * @throws JSONException 
+	 */
+	public void testMatchQuery() throws JSONException {
+		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1', 'otherValue':'ova1'}");
+		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2', 'otherValue':'ova2'}");
+		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3', 'otherValue':'ova3'}");
+		
+		store.create(targetContext, TEST_SOUP, soupElt1);
+		store.create(targetContext, TEST_SOUP, soupElt2);
+		store.create(targetContext, TEST_SOUP, soupElt3);
+
+		// Exact match - whole soup element
+		JSONArray result = store.querySoup(targetContext, TEST_SOUP, new QuerySpec("key", "ka2"));
+		assertEquals("One result expected", 1, result.length());
+		assertEquals("Wrong result for query", soupElt2.toString(), result.getJSONObject(0).toString());
+
+		// Exact match - specified projections
+		result = store.querySoup(targetContext, TEST_SOUP, new QuerySpec("key", "ka2", new String[] {"otherValue", "value"}));
+		assertEquals("One result expected", 1, result.length());
+		assertEquals("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}").toString(), result.getJSONObject(0).toString());
+		
+	}
+
+	/**
+	 * Query test looking for a range of elements (with and without projections / with ascending or descending ordering)
+	 * @throws JSONException 
+	 */
+	public void testRangeQuery() throws JSONException {
+		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1', 'otherValue':'ova1'}");
+		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2', 'otherValue':'ova2'}");
+		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3', 'otherValue':'ova3'}");
+		
+		store.create(targetContext, TEST_SOUP, soupElt1);
+		store.create(targetContext, TEST_SOUP, soupElt2);
+		store.create(targetContext, TEST_SOUP, soupElt3);
+
+		// Range query - whole soup elements
+		JSONArray result = store.querySoup(targetContext, TEST_SOUP, new QuerySpec("key", "ka2", "ka3"));
+		assertEquals("Two results expected", 2, result.length());
+		assertEquals("Wrong result for query", soupElt2.toString(), result.getJSONObject(0).toString());
+		assertEquals("Wrong result for query", soupElt3.toString(), result.getJSONObject(1).toString());
+
+		// Range query - whole soup elements - descending order
+		result = store.querySoup(targetContext, TEST_SOUP, new QuerySpec("key", "ka2", "ka3", Order.DESC));
+		assertEquals("Two results expected", 2, result.length());
+		assertEquals("Wrong result for query", soupElt3.toString(), result.getJSONObject(0).toString());
+		assertEquals("Wrong result for query", soupElt2.toString(), result.getJSONObject(1).toString());
+		
+		// Range query - specified projections
+		result = store.querySoup(targetContext, TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}));
+		assertEquals("Two results expected", 2, result.length());
+		assertEquals("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}").toString(), result.getJSONObject(0).toString());
+		assertEquals("Wrong result for query", new JSONObject("{'otherValue':'ova3', 'value':'va3'}").toString(), result.getJSONObject(1).toString());
+		
+		// Range query - specified projections - descending order
+		result = store.querySoup(targetContext, TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}, Order.DESC));
+		assertEquals("Two results expected", 2, result.length());
+		assertEquals("Wrong result for query", new JSONObject("{'otherValue':'ova3', 'value':'va3'}").toString(), result.getJSONObject(0).toString());
+		assertEquals("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}").toString(), result.getJSONObject(1).toString());
+	}
+	
 	
 	/**
 	 * Helper method to check that a table exists in the database

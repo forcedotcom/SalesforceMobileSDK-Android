@@ -99,8 +99,9 @@ public class LoggingSQLiteDatabase {
 	public Cursor query(String table, String[] columns, String selection, String orderBy) {
 		String columnsStr = LogUtil.join(columns, ",");
 		columnsStr = (columnsStr.equals("") ? "*" : columnsStr);
-		String orderByStr = (orderBy == null ? "" : " ORDER BY " + orderBy); 
-		Log.i(tag, String.format("SELECT %s FROM %s WHERE %s%s", columnsStr, table, selection, orderByStr));
+		String orderByStr = (orderBy == null ? "" : " ORDER BY " + orderBy);
+		String selectionStr = (selection == null ? "" : " WHERE " + selection);
+		Log.i(tag, String.format("SELECT %s FROM %s %s%s", columnsStr, table, selectionStr, orderByStr));
 		return db.query(table, columns, selection, null, null, null, orderBy);
 	}
 
