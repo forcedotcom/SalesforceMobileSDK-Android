@@ -38,7 +38,7 @@ import android.util.Log;
  *  
  */
 public class DBOpenHelper extends SQLiteOpenHelper {
-	public static final String DB_NAME = "SalesforceSdkSmartStore";
+	public static final String DB_NAME = "smartstore.db";
 	public static final int DB_VERSION = 1;
 	
 	public DBOpenHelper(Context context) {

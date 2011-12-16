@@ -26,14 +26,13 @@
  */
 package com.salesforce.androidsdk.store;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map.Entry;
-
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
+import android.util.Pair;
+
+import com.salesforce.androidsdk.util.LogUtil;
 
 
 /**
@@ -50,27 +49,19 @@ public class LoggingSQLiteDatabase {
 	}
 	
 	/**
+	 * Close underlying database
+	 */
+	public void close() {
+		db.close();
+	}
+
+	/**
 	 * Execute arbitrary SQL (after first logging it)
 	 * @param sql
 	 */
 	public void execSQL(String sql) {
 		Log.i(tag, sql);
 		db.execSQL(sql);
-	}
-	
-	/**
-	 * Runs a query (after first logging the select statement)
-	 * 
-	 * TODO: we should compile the statements and use bindings
-	 * @param table
-	 * @param columns
-	 * @param selection
-	 * 
-	 * @return
-	 */
-	public Cursor query(String table, String[] columns, String selection) {
-		Log.i(tag, String.format("SELECT %s FROM %s WHERE %s", table, join(columns, ","), selection));
-		return db.query(table, columns, selection, null, null, null, null);
 	}
 
 	/**
@@ -82,29 +73,60 @@ public class LoggingSQLiteDatabase {
 	}
 
 	/**
+	 * Mark transaction as successful - so that endTransaction will do a commit
+	 */
+	public void setTransactionSuccessful() {
+		Log.i(tag, "Calling setTransactionSuccessful");
+		db.setTransactionSuccessful();
+	}
+	
+	/**
 	 * End transaction (after first logging it)
 	 */
 	public void endTransaction() {
 		Log.i(tag, "END TRANSACTION");
 		db.endTransaction();
 	}
+	
+	/**
+	 * Runs a query (after first logging the select statement)
+	 * @param table
+	 * @param columns
+	 * @param selection
+	 * @param orderBy
+	 * @return
+	 */
+	public Cursor query(String table, String[] columns, String selection, String orderBy) {
+		String columnsStr = LogUtil.join(columns, ",");
+		columnsStr = (columnsStr.equals("") ? "*" : columnsStr);
+		String orderByStr = (orderBy == null ? "" : " ORDER BY " + orderBy); 
+		Log.i(tag, String.format("SELECT %s FROM %s WHERE %s%s", columnsStr, table, selection, orderByStr));
+		return db.query(table, columns, selection, null, null, null, orderBy);
+	}
 
 	/**
-	 * Does a insert (after first logging the insert statement)
+	 * Does an insert (after first logging the insert statement)
 	 * @param table
 	 * @param contentValues
 	 * @return row id of inserted row
 	 */
 	public long insert(String table, ContentValues contentValues) {
-		List<String> columnNames = new ArrayList<String>();
-		List<String> values = new ArrayList<String>();
-		for (Entry<String, Object> entry : contentValues.valueSet()) {
-			columnNames.add(entry.getKey());
-			Object value = entry.getValue();
-			values.add(value instanceof String ? "'" + value + "'" : value.toString());
-		}
-		Log.i(tag, String.format("INSERT INTO %s (%s) VALUES (%s)", table, join(columnNames, ","), join(values, ",")));
+		Pair<String, String> columnsValues = LogUtil.getAsStrings(contentValues.valueSet(), ", ");
+		Log.i(tag, String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsValues.first, columnsValues.second));
 		return db.insert(table, null, contentValues);
+	}
+
+	/**
+	 * Does an update (after first logging the insert statement)
+	 * @param table
+	 * @param contentValues
+	 * @param whereClause
+	 * @param number of rows affected
+	 */
+	public int update(String table, ContentValues contentValues, String whereClause) {
+		String setStr = LogUtil.zipJoin(contentValues.valueSet(), " = ", ", ");
+		Log.i(tag, String.format("UPDATE %s SET %s where %s", table, setStr, whereClause));
+		return db.update(table, contentValues, whereClause, null);
 	}
 	
 	/**
@@ -116,38 +138,4 @@ public class LoggingSQLiteDatabase {
 		Log.i(tag, String.format("DELETE FROM %s WHERE %s", table, whereClause));
 		db.delete(table, whereClause, null);
 	}
-	
-	
-	/**
-	 * Take a list and a delimiter and return a delimiter-delimited string representation 
-	 * @param list
-	 * @param delim
-	 * @return
-	 */
-	private String join(List<String> list, String delim) {
-		if (list == null)
-			return "";
-		return join(list.toArray(new String[0]), delim);
-	}
-	
-	/**
-	 * Take an array and a delimiter and return a delimiter-delimited string representation 
-	 * @param arr
-	 * @param delim
-	 * @return
-	 */
-	private String join(String[] arr, String delim) {
-		if (arr == null)
-			return "";
-		
-		StringBuilder sb = new StringBuilder();
-		int i = 0;
-		for (String elt : arr) {
-			sb.append(elt);
-			if (i < arr.length - 1) sb.append(delim);
-			i++;
-		}
-		return sb.toString();
-	}
-
 }
