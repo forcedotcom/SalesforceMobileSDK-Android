@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.util;
 
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -37,42 +36,6 @@ import android.util.Pair;
  * Helper methods for logging 
  */
 public class LogUtil {
-	/**
-	 * Take a list and a delimiter and return a delimiter-delimited string representation 
-	 * @param list
-	 * @param delim
-	 * @return
-	 */
-	public static String join(List<String> list, String delim) {
-		if (list == null)
-			return "";
-		return join(list.toArray(new String[0]), delim);
-	}
-	
-	/**
-	 * Take an array and a delimiter and return a delimiter-delimited string representation 
-	 * @param arr
-	 * @param delim
-	 * @return
-	 */
-	public static String join(String[] arr, String delim) {
-		if (arr == null)
-			return "";
-		
-		StringBuilder sb = new StringBuilder();
-		boolean first = true;
-		for (String elt : arr) {
-			if (first) {
-				first = false;
-			}
-			else {
-				sb.append(delim);
-			}
-			sb.append(elt);
-		}
-		return sb.toString();
-	}
-
 	/**
 	 * @param entries
 	 * @param delim

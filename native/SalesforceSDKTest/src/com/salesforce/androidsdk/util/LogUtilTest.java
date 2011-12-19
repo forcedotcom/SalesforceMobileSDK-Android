@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.util;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -54,11 +52,6 @@ public class LogUtilTest extends TestCase {
 	private static final String[] TWO_ELTS_ARRAY = new String[]{"a", "b"};
 	private static final String[] THREE_ELTS_ARRAY = new String[]{"a", "b", "cccc"};
 
-	private static final List<String> EMPTY_LIST = Arrays.asList(EMPTY_ARRAY);
-	private static final List<String> ONE_ELT_LIST = Arrays.asList(ONE_ELT_ARRAY);
-	private static final List<String> TWO_ELTS_LIST = Arrays.asList(TWO_ELTS_ARRAY);
-	private static final List<String> THREE_ELTS_LIST = Arrays.asList(THREE_ELTS_ARRAY);
-
 	private static Set<Entry<String, Object>> buildMapValues(String[] arr) {
 		Map<String, Object> map = new TreeMap<String, Object>();
 		for (String s : arr) {
@@ -83,30 +76,6 @@ public class LogUtilTest extends TestCase {
 	private static final Set<Entry<String, Object>> TWO_ELTS_SET = buildMapValues(TWO_ELTS_ARRAY);
 	private static final Set<Entry<String, Object>> THREE_ELTS_SET = buildMapValues(THREE_ELTS_ARRAY);
 	private static final Set<Entry<String, Object>> INTEGER_VALUES_SET = buildMapIntegerValues(THREE_ELTS_ARRAY);
-	
-	/**
-	 * Test join(String[], String)
-	 */
-	public void testJoinArr() {
-		assertEquals("Wrong return value for null", "", LogUtil.join((String[]) null, DELIM));
-		assertEquals("Wrong return value for empty array", "", LogUtil.join(EMPTY_ARRAY, DELIM));
-		assertEquals("Wrong return value for one element array", "a", LogUtil.join(ONE_ELT_ARRAY, DELIM));
-		assertEquals("Wrong return value for two elements array", "a,b", LogUtil.join(TWO_ELTS_ARRAY, DELIM));
-		assertEquals("Wrong return value for three elements array", "a,b,cccc", LogUtil.join(THREE_ELTS_ARRAY, DELIM));
-		assertEquals("Wrong return value for other delimiter", "a AND b AND cccc", LogUtil.join(THREE_ELTS_ARRAY, OTHER_DELIM));
-	}
-	
-	/**
-	 * Test join(List<String>, String)
-	 */
-	public void testJoinList() {
-		assertEquals("Wrong return value for null", "", LogUtil.join((List<String>) null, DELIM));
-		assertEquals("Wrong return value for empty list", "", LogUtil.join(EMPTY_LIST, DELIM));
-		assertEquals("Wrong return value for one element list", "a", LogUtil.join(ONE_ELT_LIST, DELIM));
-		assertEquals("Wrong return value for two elements list", "a,b", LogUtil.join(TWO_ELTS_LIST, DELIM));
-		assertEquals("Wrong return value for three elements list", "a,b,cccc", LogUtil.join(THREE_ELTS_LIST, DELIM));
-		assertEquals("Wrong return value for other delimiter", "a AND b AND cccc", LogUtil.join(THREE_ELTS_LIST, OTHER_DELIM));
-	}
 	
 	/**
 	 * Test getAsSTring(...)

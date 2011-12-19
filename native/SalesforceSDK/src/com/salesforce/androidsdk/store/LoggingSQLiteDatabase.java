@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.store;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 
@@ -97,7 +98,7 @@ public class LoggingSQLiteDatabase {
 	 * @return
 	 */
 	public Cursor query(String table, String[] columns, String selection, String orderBy) {
-		String columnsStr = LogUtil.join(columns, ",");
+		String columnsStr = (columns == null ? "" : TextUtils.join(",", columns));
 		columnsStr = (columnsStr.equals("") ? "*" : columnsStr);
 		String orderByStr = (orderBy == null ? "" : " ORDER BY " + orderBy);
 		String selectionStr = (selection == null ? "" : " WHERE " + selection);
