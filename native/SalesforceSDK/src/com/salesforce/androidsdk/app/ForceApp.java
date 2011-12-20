@@ -38,7 +38,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Build;
+import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
@@ -60,7 +63,7 @@ public abstract class ForceApp extends Application {
 	/**
 	 * Current version of this SDK.
 	 */
-    public static final String SDK_VERSION = "1.0.2";
+    public static final String SDK_VERSION = "1.0.3";
 
 	/**
      * Instance of the ForceApp to use for this process.
@@ -157,15 +160,26 @@ public abstract class ForceApp extends Application {
 		});
     }
     
-    /**
-     * @return The user agent string to use for all requests.
+	/**
+	 * Set a user agent string based on the mobile SDK version. We are building
+	 * a user agent of the form: SalesforceMobileSDK/<salesforceSDK version>
+	 * android/<android OS version> appName/appVersion
+	 * 
+	 * @return The user agent string to use for all requests.
 	 */
 	public final String getUserAgent() {
-        //set a user agent string based on the mobile sdk version
-        // We are building a user agent of the form:
-		// SalesforceMobileSDK/1.0 android/3.2.0 
+		String appName = "";
+		String appVersion = "";
+		try {
+			PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+			appName = getString(packageInfo.applicationInfo.labelRes);
+	    	appVersion = packageInfo.versionName;
+		} 
+		catch (NameNotFoundException e) {
+			Log.w("ForceApp:getUserAgent", e);
+		}
 
-	    return "SalesforceMobileSDK/" + SDK_VERSION + " android/"+ Build.VERSION.RELEASE;
+		return String.format("SalesforceMobileSDK/%s android/%s %s/%s", SDK_VERSION, Build.VERSION.RELEASE, appName, appVersion);
 	}
 
     /**
