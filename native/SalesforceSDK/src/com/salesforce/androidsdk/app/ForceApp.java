@@ -172,7 +172,7 @@ public abstract class ForceApp extends Application {
 		String appVersion = "";
 		try {
 			PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-			appName = packageInfo.applicationInfo.name;
+			appName = getString(packageInfo.applicationInfo.labelRes);
 	    	appVersion = packageInfo.versionName;
 		} 
 		catch (NameNotFoundException e) {
