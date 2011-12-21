@@ -96,12 +96,12 @@ public class HttpAccess extends BroadcastReceiver {
 	 * @param userAgent The user agent to be used with requests.
 	 */
 	public HttpAccess(Application app, String userAgent) {
+		// Set user agent
+        this.userAgent = userAgent;
+        
 		// Using android http client
         http = getHttpClient();
         ((AndroidHttpClient) http).enableCurlLogging("HttpAccess", Log.DEBUG);
-
-        // Set user agent
-        this.userAgent = userAgent;
         
         // Only null in tests
         if (app == null) {

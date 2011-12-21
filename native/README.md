@@ -15,7 +15,7 @@ Please follow the instructions for setting up your development environment from 
 
 To pull down the SDK from github, create a new directory and git clone the salesforce SDK repo.
 <pre>
-git clone git@github.com:forcedotcom/SalesforceMobileSDK-Android-dev.git
+git clone git@github.com:forcedotcom/SalesforceMobileSDK-Android.git
 </pre>
 
 For the rest of this document, we assume that you have setup two shell variables:
