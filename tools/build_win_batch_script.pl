@@ -21,7 +21,7 @@ my $out_file = File::Spec->catfile($sdk_root_dir, "tools", "symlink_files.txt");
 open(my $out_fh, ">:encoding(UTF-8)", $out_file) || die "Can't open $out_file for writing: $!\n";
 my $src_file;
 foreach $src_file (sort keys %src_to_dest_map) {
-    for my $dest_file (@{ $src_to_dest_map{$src_file} }) {
+    for my $dest_file (sort @{ $src_to_dest_map{$src_file} }) {
         print $out_fh "\"$src_file\" \"$dest_file\"\r\n";
     }
 }
