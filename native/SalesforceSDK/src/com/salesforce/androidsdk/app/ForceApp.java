@@ -179,7 +179,7 @@ public abstract class ForceApp extends Application {
 			Log.w("ForceApp:getUserAgent", e);
 		}
 
-		return String.format("SalesforceMobileSDK/%s android/%s %s/%s", SDK_VERSION, Build.VERSION.RELEASE, appName, appVersion);
+		return String.format("SalesforceMobileSDK/%s android mobile/%s %s/%s", SDK_VERSION, Build.VERSION.RELEASE, appName, appVersion);
 	}
 
     /**
