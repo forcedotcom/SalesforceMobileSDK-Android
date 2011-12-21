@@ -63,7 +63,7 @@ public abstract class ForceApp extends Application {
 	/**
 	 * Current version of this SDK.
 	 */
-    public static final String SDK_VERSION = "1.0.2";
+    public static final String SDK_VERSION = "1.0.3";
 
 	/**
      * Instance of the ForceApp to use for this process.
@@ -179,7 +179,7 @@ public abstract class ForceApp extends Application {
 			Log.w("ForceApp:getUserAgent", e);
 		}
 
-		return String.format("SalesforceMobileSDK/%s android/%s %s/%s", SDK_VERSION, Build.VERSION.RELEASE, appName, appVersion);
+		return String.format("SalesforceMobileSDK/%s android mobile/%s %s/%s", SDK_VERSION, Build.VERSION.RELEASE, appName, appVersion);
 	}
 
     /**
