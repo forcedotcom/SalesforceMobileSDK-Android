@@ -82,10 +82,8 @@
     <!-- version-tag: custom -->
     <import file="${sdk.dir}/tools/ant/build.xml" />
 
-
-    <target name="ftest">
-      <antcall target="test" />
-    </target>
+    <!-- Otherwise ant installt fails -->
+    <property name="dont.do.deps" value="false" />
 
     <!-- Overridding androidsdk's test target
          to extract manifest.package and test.runner from AndroidManifest.xml -->
