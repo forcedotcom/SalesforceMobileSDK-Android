@@ -333,7 +333,6 @@ public class OAuth2 {
 		public TokenEndpointResponse(HttpResponse httpResponse) {
 			try {
 				JSONObject parsedResponse = parseResponse(httpResponse);
-				Log.i("TokenEndpointResponse", "parsedResponse->" + parsedResponse.toString());
 				authToken = parsedResponse.getString("access_token");
 				instanceUrl = parsedResponse.getString("instance_url");
 				idUrl  = parsedResponse.getString("id");

@@ -39,7 +39,7 @@ import android.test.InstrumentationTestCase;
 public class PasscodeManagerTest extends InstrumentationTestCase {
 
 	private static final String TEST_PASSCODE = "123456";
-	private static final HashConfig TEST_HASH_CONFIG = new HashConfig("", "", null);
+	private static final HashConfig TEST_HASH_CONFIG = new HashConfig("", "", "dummy-key");
 	private static final int TEST_TIMEOUT_MS = 1000;
 	
 

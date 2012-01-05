@@ -63,7 +63,7 @@ public abstract class ForceApp extends Application {
 	/**
 	 * Current version of this SDK.
 	 */
-    public static final String SDK_VERSION = "1.0.4";
+    public static final String SDK_VERSION = "1.0.5";
 
 	/**
      * Instance of the ForceApp to use for this process.
@@ -83,22 +83,21 @@ public abstract class ForceApp extends Application {
         // Initialize the http client        
         HttpAccess.init(this, getUserAgent());
         
-        // Initialize the passcode manager if required
-        if (getLockTimeoutMinutes() > 0) {
-			passcodeManager = new PasscodeManager(this, getLockTimeoutMinutes(),
-					getVerificationHashConfig(),
-					getEncryptionHashConfig());
-        }
-		
 		// Done
-		EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
         APP = this;
+        EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
     
 	/**
 	 * @return The passcode manager associated with the app.
 	 */
-	public PasscodeManager getPasscodeManager() {
+	public synchronized PasscodeManager getPasscodeManager() {
+		// Only creating passcode manager if used
+		if (passcodeManager == null) {
+			passcodeManager = new PasscodeManager(this, getLockTimeoutMinutes(),
+					getVerificationHashConfig(),
+					getEncryptionHashConfig());
+		}
 		return passcodeManager;
 	}
 
