@@ -51,6 +51,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 	private PasscodeManager passcodeManager;
 	private String firstPasscode;
 	private SalesforceR salesforceR;
+	private boolean logoutEnabled;
 	
 	public enum PasscodeMode {
 		Create,
@@ -74,6 +75,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 		
 		passcodeManager = ForceApp.APP.getPasscodeManager();
 		setMode(passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create);
+		logoutEnabled = true;
 	}
 	
 	public PasscodeMode getMode() {
@@ -102,6 +104,14 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 		error.setText("");
 		currentMode = newMode;
 		entry.requestFocus();
+	}
+	
+	/**
+	 * Used from tests to allow/disallow automatic logout when wrong passcode has been entered too many times
+	 * @param b
+	 */
+	public void enableLogout(boolean b) {
+		logoutEnabled = b;
 	}
 	
 	@Override
@@ -148,7 +158,9 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 					error.setText(getPasscodeFinalAttemptError());
 				} else {
 					passcodeManager.reset(this);
-					ForceApp.APP.logout(this);
+					if (logoutEnabled) {
+						ForceApp.APP.logout(this);
+					}
 				}
 			}
 			return true;

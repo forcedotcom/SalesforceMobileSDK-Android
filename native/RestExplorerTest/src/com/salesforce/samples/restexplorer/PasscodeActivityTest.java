@@ -62,6 +62,7 @@ public class PasscodeActivityTest extends
 		assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
 		passcodeActivity = getActivity();
 		assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
+		passcodeActivity.enableLogout(false); // logout is async, it creates havoc when running other tests
 	}
 	
 	/**
