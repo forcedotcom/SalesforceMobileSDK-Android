@@ -36,7 +36,6 @@ import org.json.JSONObject;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 
 
 /**
@@ -65,7 +64,7 @@ public class SmartStore  {
 	
 	
 	// Key actions - used as tags in log
-	protected static final String CREATE_META_TABLE = "SmartStore:createMetaTable";
+	public static final String CREATE_META_TABLE = "SmartStore:createMetaTable";
 	protected static final String REGISTER_SOUP = "SmartStore:registerSoup";
 	protected static final String DROP_SOUP = "SmartStore:dropSoup";
 	protected static final String QUERY = "SmartStore:query";
@@ -81,7 +80,7 @@ public class SmartStore  {
 	 * 
 	 * @param db
 	 */
-	public static void createMetaTable(SQLiteDatabase db) {
+	public static void createMetaTable(Database db) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("CREATE TABLE ").append(SOUP_INDEX_MAP_TABLE).append(" (") 
 				  	.append(SOUP_NAME_COL).append(" ").append(Type.TEXT.toString())
@@ -89,7 +88,7 @@ public class SmartStore  {
 				  	.append(",").append(COLUMN_NAME_COL).append(" ").append(Type.TEXT.toString())
 				  	.append(",").append(COLUMN_TYPE_COL).append(" ").append(Type.TEXT.toString())
 				  	.append(")");
-		new LoggingSQLiteDatabase(CREATE_META_TABLE, db).execSQL(sb.toString());
+		db.execSQL(sb.toString());
 	}
 	
 	
@@ -139,7 +138,7 @@ public class SmartStore  {
 		createTableStmt.append(")");
 		
 		
-		LoggingSQLiteDatabase db = DBOperations.getWritableDatabase(REGISTER_SOUP, ctx);
+		Database db = DBOperations.getWritableDatabase(REGISTER_SOUP, ctx);
 		db.execSQL(createTableStmt.toString());
 		for (String createIndexStmt : createIndexStmts) {
 			db.execSQL(createIndexStmt.toString());
@@ -168,7 +167,7 @@ public class SmartStore  {
 	 * @param soupName
 	 */
 	public void dropSoup(Context ctx, String soupName) {
-		LoggingSQLiteDatabase db = DBOperations.getWritableDatabase(DROP_SOUP, ctx);
+		Database db = DBOperations.getWritableDatabase(DROP_SOUP, ctx);
 		db.execSQL("DROP TABLE IF EXISTS " + soupName);
 		try {
 			db.beginTransaction();
@@ -189,7 +188,7 @@ public class SmartStore  {
 	 * @throws JSONException 
 	 */
 	public JSONArray querySoup(Context ctx, String soupName, QuerySpec querySpec) throws JSONException {
-		LoggingSQLiteDatabase db = DBOperations.getReadableDatabase(QUERY, ctx);
+		Database db = DBOperations.getReadableDatabase(QUERY, ctx);
 		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
 		
 		// Get the matching soups
@@ -234,7 +233,7 @@ public class SmartStore  {
 	 * @return rowId of inserted row
 	 */
 	public long create(Context ctx, String soupName, JSONObject soupElt) {
-		LoggingSQLiteDatabase db = DBOperations.getWritableDatabase(CREATE, ctx);
+		Database db = DBOperations.getWritableDatabase(CREATE, ctx);
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
@@ -266,7 +265,7 @@ public class SmartStore  {
 	 * @throws JSONException 
 	 */
 	public JSONObject retrieve(Context ctx, String soupName, long rowId) throws JSONException {
-		LoggingSQLiteDatabase db = DBOperations.getReadableDatabase(RETRIEVE, ctx);
+		Database db = DBOperations.getReadableDatabase(RETRIEVE, ctx);
 		Cursor cursor = null;
 		try {
 			cursor = db.query(soupName, new String[] {SOUP_COL}, getRowIdPredicate(rowId), null);
@@ -293,7 +292,7 @@ public class SmartStore  {
 	 * @return true if successful
 	 */
 	public boolean update(Context ctx, String soupName, JSONObject soupElt, long rowId) {
-		LoggingSQLiteDatabase db = DBOperations.getWritableDatabase(CREATE, ctx);
+		Database db = DBOperations.getWritableDatabase(CREATE, ctx);
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
@@ -323,7 +322,7 @@ public class SmartStore  {
 	 * @param rowId
 	 */
 	public void delete(Context ctx, String soupName, long rowId) {
-		LoggingSQLiteDatabase db = DBOperations.getWritableDatabase(DELETE, ctx);
+		Database db = DBOperations.getWritableDatabase(DELETE, ctx);
 		db.beginTransaction();
 		db.delete(soupName, getRowIdPredicate(rowId));
 		db.setTransactionSuccessful();
@@ -337,7 +336,7 @@ public class SmartStore  {
 	 * @param path
 	 * @return
 	 */
-	protected String getColumnNameForPath(LoggingSQLiteDatabase db, String soupName, String path) {
+	protected String getColumnNameForPath(Database db, String soupName, String path) {
 		Cursor cursor = null;
 		try {
 			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {COLUMN_NAME_COL}, getSoupNamePredicate(soupName) + " AND " + getPathPredicate(path), null);
@@ -361,7 +360,7 @@ public class SmartStore  {
 	 * @param soupName
 	 * @return
 	 */
-	protected IndexSpec[] getIndexSpecs(LoggingSQLiteDatabase db, String soupName) {
+	protected IndexSpec[] getIndexSpecs(Database db, String soupName) {
 		Cursor cursor = null;
 		try {
 			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {PATH_COL, COLUMN_NAME_COL, COLUMN_TYPE_COL}, getSoupNamePredicate(soupName), null);

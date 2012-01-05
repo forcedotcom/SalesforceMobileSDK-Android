@@ -50,7 +50,7 @@ public class SmartStoreTest extends InstrumentationTestCase {
 	private static final String OTHER_TEST_SOUP = "other_test_soup";
 	
 	private Context targetContext;
-	private LoggingSQLiteDatabase db;
+	private Database db;
 	private SmartStore store;
 	
 	@Override
