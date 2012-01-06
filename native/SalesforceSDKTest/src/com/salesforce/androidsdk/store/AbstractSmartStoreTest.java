@@ -41,15 +41,15 @@ import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
 import com.salesforce.androidsdk.store.SmartStore.Type;
 
 /**
- * Tests for SmartStore
+ * Abstract super class for plain and encrypted smart store tests
  *
  */
-public class SmartStoreTest extends InstrumentationTestCase {
+public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 
 	private static final String TEST_SOUP = "test_soup";
 	private static final String OTHER_TEST_SOUP = "other_test_soup";
 	
-	private Context targetContext;
+	protected Context targetContext;
 	private Database db;
 	private SmartStore store;
 	
@@ -57,7 +57,7 @@ public class SmartStoreTest extends InstrumentationTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		db = DBOperations.getWritableDatabase("SmartStoreTest", targetContext);
+		db = getWritableDatabase();
 		store = new SmartStore();
 		
 		assertFalse("Table test_soup should not exist", hasTable(TEST_SOUP));
@@ -65,6 +65,8 @@ public class SmartStoreTest extends InstrumentationTestCase {
 		assertTrue("Register soup call failed", hasTable(TEST_SOUP));
 	}
 	
+	protected abstract Database getWritableDatabase();
+
 	@Override
 	protected void tearDown() throws Exception {
 		store.dropSoup(targetContext, TEST_SOUP);

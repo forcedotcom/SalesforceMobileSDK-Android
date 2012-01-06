@@ -104,7 +104,7 @@ public class DBOperations  {
 	}
 	
 	private static synchronized EncryptedDBOpenHelper getEncryptedOpenHelper(Context ctx) {
-		assert encOpenHelper == null : "You can't use an encrypted store, you already started using a plain one";
+		assert openHelper == null : "You can't use an encrypted store, you already started using a plain one";
 		if (encOpenHelper == null) {
 			encOpenHelper = new EncryptedDBOpenHelper(ctx);
 		}
