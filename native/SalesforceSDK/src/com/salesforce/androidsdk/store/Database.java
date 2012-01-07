@@ -44,16 +44,13 @@ public class Database {
 	private SQLiteDatabase db;
 	private info.guardianproject.database.sqlcipher.SQLiteDatabase encdb;
 	private boolean encrypted;
-	private String tag;
 
-	public Database(String tag, SQLiteDatabase db) {
-		this.tag = tag;
+	public Database(SQLiteDatabase db) {
 		this.db = db;
 		this.encrypted = false;
 	}
 	
-	public Database(String tag, info.guardianproject.database.sqlcipher.SQLiteDatabase encdb) {
-		this.tag = tag + " [encrypted]";
+	public Database(info.guardianproject.database.sqlcipher.SQLiteDatabase encdb) {
 		this.encdb = encdb;
 		this.encrypted = true;
 	}
@@ -73,18 +70,18 @@ public class Database {
 	 * @param sql
 	 */
 	public void execSQL(String sql) {
-		Log.i(tag, sql);
+		Log.i("Database:execSQL[enc=" + encrypted + "]", sql);
 		if (!encrypted)
 			db.execSQL(sql);
 		else
-			encdb.close();
+			encdb.execSQL(sql);
 	}
 
 	/**
 	 * Start transaction (after first logging it)
 	 */
 	public void beginTransaction() {
-		Log.i(tag, "BEGIN TRANSACTION");
+		Log.i("Database:beginTransaction[enc=" + encrypted + "]", "");
 		if (!encrypted)
 			db.beginTransaction();
 		else
@@ -95,7 +92,7 @@ public class Database {
 	 * Mark transaction as successful - so that endTransaction will do a commit
 	 */
 	public void setTransactionSuccessful() {
-		Log.i(tag, "Calling setTransactionSuccessful");
+		Log.i("Database:setTransactionSuccessful[enc=" + encrypted + "]", "");
 		if (!encrypted)
 			db.setTransactionSuccessful();
 		else
@@ -106,7 +103,7 @@ public class Database {
 	 * End transaction (after first logging it)
 	 */
 	public void endTransaction() {
-		Log.i(tag, "END TRANSACTION");
+		Log.i("Database:endTransaction[enc=" + encrypted + "]", "");
 		if (!encrypted)
 			db.endTransaction();
 		else 
@@ -126,7 +123,8 @@ public class Database {
 		columnsStr = (columnsStr.equals("") ? "*" : columnsStr);
 		String orderByStr = (orderBy == null ? "" : " ORDER BY " + orderBy);
 		String selectionStr = (selection == null ? "" : " WHERE " + selection);
-		Log.i(tag, String.format("SELECT %s FROM %s %s%s", columnsStr, table, selectionStr, orderByStr));
+		String sql = String.format("SELECT %s FROM %s %s%s", columnsStr, table, selectionStr, orderByStr);
+		Log.i("Database:query[enc=" + encrypted + "]", sql);
 		if (!encrypted)
 			return db.query(table, columns, selection, null, null, null, orderBy);
 		else
@@ -141,7 +139,8 @@ public class Database {
 	 */
 	public long insert(String table, ContentValues contentValues) {
 		Pair<String, String> columnsValues = LogUtil.getAsStrings(contentValues.valueSet(), ", ");
-		Log.i(tag, String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsValues.first, columnsValues.second));
+		String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsValues.first, columnsValues.second);
+		Log.i("Database:insert[enc=" + encrypted + "]", sql);
 		if (!encrypted)
 			return db.insert(table, null, contentValues);
 		else
@@ -157,7 +156,8 @@ public class Database {
 	 */
 	public int update(String table, ContentValues contentValues, String whereClause) {
 		String setStr = LogUtil.zipJoin(contentValues.valueSet(), " = ", ", ");
-		Log.i(tag, String.format("UPDATE %s SET %s where %s", table, setStr, whereClause));
+		String sql = String.format("UPDATE %s SET %s where %s", table, setStr, whereClause);
+		Log.i("Database:update[enc=" + encrypted + "]", sql);
 		if (!encrypted)
 			return db.update(table, contentValues, whereClause, null);
 		else
@@ -170,7 +170,8 @@ public class Database {
 	 * @param whereClause
 	 */
 	public void delete(String table, String whereClause) {
-		Log.i(tag, String.format("DELETE FROM %s WHERE %s", table, whereClause));
+		String sql = String.format("DELETE FROM %s WHERE %s", table, whereClause);
+		Log.i("Database:delete[enc=" + encrypted + "]", sql);
 		if (!encrypted)
 			db.delete(table, whereClause, null);
 		else

@@ -4,6 +4,6 @@
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="lib" path="libs/phonegap-1.2.0.jar"/>
-	<classpathentry kind="lib" path="libs/sqlcipher.jar"/>
+	<classpathentry kind="lib" path="libs/sqlcipher.jar" sourcepath="/home/wmathurin/Development/sfdc/forcedotcom/SalesforceMobileSDK-Android-dev/external/sqlcipher/src"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

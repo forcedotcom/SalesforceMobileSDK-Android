@@ -43,13 +43,14 @@ public class EncryptedDBOpenHelper extends SQLiteOpenHelper {
 	
 	public EncryptedDBOpenHelper(Context context) {
 		super(context, DB_NAME, null, DB_VERSION);
+		SQLiteDatabase.loadLibs(context);
 		Log.i("EncryptedDBOpenHelper:EncryptedDBOpenHelper", DB_NAME + "/" + DB_VERSION);
 	}
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 		Log.i("EncryptedDBOpenHelper:onCreate", DB_NAME + "/" + DB_VERSION);
-		SmartStore.createMetaTable(new Database(SmartStore.CREATE_META_TABLE, db));
+		SmartStore.createMetaTable(new Database(db));
 	}
 
 	@Override

@@ -43,7 +43,7 @@ public class DBOperations  {
 	 * @return
 	 */
 	public static Database getReadableDatabase(String tag, Context ctx) {
-		return new Database(tag, getOpenHelper(ctx).getReadableDatabase());
+		return new Database(getOpenHelper(ctx).getReadableDatabase());
 	}
 
 	/**
@@ -53,7 +53,7 @@ public class DBOperations  {
 	 * @return
 	 */
 	public static Database getWritableDatabase(String tag, Context ctx) {
-		return new Database(tag, getOpenHelper(ctx).getWritableDatabase());
+		return new Database(getOpenHelper(ctx).getWritableDatabase());
 	}
 
 	/**
@@ -64,7 +64,7 @@ public class DBOperations  {
 	 * @return
 	 */
 	public static Database getReadableDatabase(String tag, Context ctx, String passcodeHash) {
-		return new Database(tag, getEncryptedOpenHelper(ctx).getReadableDatabase(passcodeHash));
+		return new Database(getEncryptedOpenHelper(ctx).getReadableDatabase(passcodeHash));
 	}
 
 	/**
@@ -75,7 +75,7 @@ public class DBOperations  {
 	 * @return
 	 */
 	public static Database getWritableDatabase(String tag, Context ctx, String passcodeHash) {
-		return new Database(tag, getEncryptedOpenHelper(ctx).getWritableDatabase(passcodeHash));
+		return new Database(getEncryptedOpenHelper(ctx).getWritableDatabase(passcodeHash));
 	}
 	
 	public static synchronized void shutDown() {

@@ -34,7 +34,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.ContentValues;
-import android.content.Context;
 import android.database.Cursor;
 
 
@@ -63,17 +62,6 @@ public class SmartStore  {
 	protected static final String SOUP_COL = "soup";
 	
 	
-	// Key actions - used as tags in log
-	public static final String CREATE_META_TABLE = "SmartStore:createMetaTable";
-	protected static final String REGISTER_SOUP = "SmartStore:registerSoup";
-	protected static final String DROP_SOUP = "SmartStore:dropSoup";
-	protected static final String QUERY = "SmartStore:query";
-	protected static final String CREATE = "SmartStore:create";
-	protected static final String RETRIEVE = "SmartStore:retrieve";
-	protected static final String UPDATE = "SmartStore:update";
-	protected static final String UPSERT = "SmartStore:upsert";
-	protected static final String DELETE = "SmartStore:delete";
-
 	/**
 	 * Create soup index map table to keep track of soups' index specs
 	 * Called when the database is first created
@@ -98,12 +86,11 @@ public class SmartStore  {
 	 * Create table for soupName with a column for the soup itself and columns for paths specified in indexSpecs
 	 * Create indexes on the new table to make lookup faster
 	 * Create rows in soup index map table for indexSpecs
-	 * 
-	 * @param ctx
+	 * @param db≈ß
 	 * @param soupName
 	 * @param indexSpecs
 	 */
-	public void registerSoup(Context ctx, String soupName, IndexSpec[] indexSpecs) {
+	public void registerSoup(Database db, String soupName, IndexSpec[] indexSpecs) {
 		StringBuilder createTableStmt = new StringBuilder();          // to create new soup table
 		List<String> createIndexStmts = new ArrayList<String>();      // to create indices on new soup table
 		List<ContentValues> soupIndexMapInserts = new ArrayList<ContentValues>();  // to be inserted in soup index map table
@@ -138,7 +125,6 @@ public class SmartStore  {
 		createTableStmt.append(")");
 		
 		
-		Database db = DBOperations.getWritableDatabase(REGISTER_SOUP, ctx);
 		db.execSQL(createTableStmt.toString());
 		for (String createIndexStmt : createIndexStmts) {
 			db.execSQL(createIndexStmt.toString());
@@ -162,12 +148,10 @@ public class SmartStore  {
 	 * 
 	 * Drop table for soupName 
 	 * Cleanup entries in soup index map table  
-	 * 
-	 * @param ctx
+	 * @param db
 	 * @param soupName
 	 */
-	public void dropSoup(Context ctx, String soupName) {
-		Database db = DBOperations.getWritableDatabase(DROP_SOUP, ctx);
+	public void dropSoup(Database db, String soupName) {
 		db.execSQL("DROP TABLE IF EXISTS " + soupName);
 		try {
 			db.beginTransaction();
@@ -181,14 +165,13 @@ public class SmartStore  {
 
 	/**
 	 * Run a query
-	 * @param ctx
+	 * @param db
 	 * @param soupName
 	 * @param querySpec
 	 * @return
 	 * @throws JSONException 
 	 */
-	public JSONArray querySoup(Context ctx, String soupName, QuerySpec querySpec) throws JSONException {
-		Database db = DBOperations.getReadableDatabase(QUERY, ctx);
+	public JSONArray querySoup(Database db, String soupName, QuerySpec querySpec) throws JSONException {
 		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
 		
 		// Get the matching soups
@@ -227,13 +210,13 @@ public class SmartStore  {
 
 	/**
 	 * Create 
-	 * 
+	 * @param db
 	 * @param soupName
 	 * @param soupElt
+	 * 
 	 * @return rowId of inserted row
 	 */
-	public long create(Context ctx, String soupName, JSONObject soupElt) {
-		Database db = DBOperations.getWritableDatabase(CREATE, ctx);
+	public long create(Database db, String soupName, JSONObject soupElt) {
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
@@ -258,14 +241,14 @@ public class SmartStore  {
 
 	/**
 	 * Retrieve 
-	 * 
+	 * @param db
 	 * @param soupName
 	 * @param rowId
+	 * 
 	 * @return retrieve JSONObject with the given rowId or null if not found
 	 * @throws JSONException 
 	 */
-	public JSONObject retrieve(Context ctx, String soupName, long rowId) throws JSONException {
-		Database db = DBOperations.getReadableDatabase(RETRIEVE, ctx);
+	public JSONObject retrieve(Database db, String soupName, long rowId) throws JSONException {
 		Cursor cursor = null;
 		try {
 			cursor = db.query(soupName, new String[] {SOUP_COL}, getRowIdPredicate(rowId), null);
@@ -285,14 +268,14 @@ public class SmartStore  {
 
 	/**
 	 * Update 
-	 * 
+	 * @param db
 	 * @param soupName
 	 * @param soupElt
 	 * @param rowId
+	 * 
 	 * @return true if successful
 	 */
-	public boolean update(Context ctx, String soupName, JSONObject soupElt, long rowId) {
-		Database db = DBOperations.getWritableDatabase(CREATE, ctx);
+	public boolean update(Database db, String soupName, JSONObject soupElt, long rowId) {
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
@@ -316,13 +299,11 @@ public class SmartStore  {
 	
 	/**
 	 * Delete
-	 * 
-	 * @param ctx
+	 * @param db
 	 * @param soupName
 	 * @param rowId
 	 */
-	public void delete(Context ctx, String soupName, long rowId) {
-		Database db = DBOperations.getWritableDatabase(DELETE, ctx);
+	public void delete(Database db, String soupName, long rowId) {
 		db.beginTransaction();
 		db.delete(soupName, getRowIdPredicate(rowId));
 		db.setTransactionSuccessful();
