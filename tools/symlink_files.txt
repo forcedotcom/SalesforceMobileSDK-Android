@@ -1,4 +1,4 @@
-"dist\SalesforceSDK-1.0.5.jar" "dist\SalesforceSDK.jar"
+"dist\SalesforceSDK-2.0.jar" "dist\SalesforceSDK.jar"
 "dist\SalesforceSDK.jar" "hybrid\SampleApps\ContactExplorer\libs\SalesforceSDK.jar"
 "dist\SalesforceSDK.jar" "hybrid\SampleApps\VFConnector\libs\SalesforceSDK.jar"
 "dist\SalesforceSDK.jar" "native\SampleApps\CloudTunes\libs\SalesforceSDK.jar"
@@ -21,6 +21,7 @@
 "external\shared\forcetk.js" "hybrid\SampleApps\ContactExplorer\assets\www\forcetk.js"
 "external\shared\jquery" "hybrid\SampleApps\ContactExplorer\assets\www\jquery"
 "external\shared\jquery" "hybrid\SampleApps\VFConnector\assets\www\jquery"
+"external\sqlcipher\dist\SQLCipherForAndroid-SDK\assets\icudt44l.zip" "native\SalesforceSDKTest\assets\icudt44l.zip"
 "external\sqlcipher\dist\SQLCipherForAndroid-SDK\libs\armeabi\libdatabase_sqlcipher.so" "native\SalesforceSDKTest\libs\armeabi\libdatabase_sqlcipher.so"
 "external\sqlcipher\dist\SQLCipherForAndroid-SDK\libs\armeabi\libsqlcipher_android.so" "native\SalesforceSDKTest\libs\armeabi\libsqlcipher_android.so"
 "external\sqlcipher\dist\SQLCipherForAndroid-SDK\libs\armeabi\libstlport_shared.so" "native\SalesforceSDKTest\libs\armeabi\libstlport_shared.so"
