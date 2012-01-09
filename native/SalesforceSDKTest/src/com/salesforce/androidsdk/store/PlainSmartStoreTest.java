@@ -35,6 +35,6 @@ public class PlainSmartStoreTest extends AbstractSmartStoreTest {
 
 	@Override
 	protected Database getWritableDatabase() {
-		return DBOperations.getWritableDatabase("PlainSmartStoreTest", targetContext);
+		return DBOperations.getWritableDatabase(targetContext);
 	}
 }

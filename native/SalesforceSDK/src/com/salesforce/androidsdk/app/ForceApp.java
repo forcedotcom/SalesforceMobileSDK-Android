@@ -50,6 +50,9 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
+import com.salesforce.androidsdk.store.DBOperations;
+import com.salesforce.androidsdk.store.Database;
+import com.salesforce.androidsdk.store.SmartStore;
 import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -99,6 +102,17 @@ public abstract class ForceApp extends Application {
 					getEncryptionHashConfig());
 		}
 		return passcodeManager;
+	}
+	
+	/**
+	 * @return the database used that contains the smart store
+	 */
+	public SmartStore getSmartStore() {
+		String passcodeHash = getPasscodeHash();
+		Database db = passcodeHash == null 
+				? DBOperations.getWritableDatabase(this) // not encrypted
+				: DBOperations.getWritableDatabase(this, passcodeHash); // encrypted
+		return new SmartStore(db);
 	}
 
 	/**

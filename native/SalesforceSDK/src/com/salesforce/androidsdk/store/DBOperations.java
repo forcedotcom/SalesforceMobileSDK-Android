@@ -38,43 +38,39 @@ public class DBOperations  {
 
 	/**
 	 * Return handle to read from plain database
-	 * @param tag
 	 * @param ctx
 	 * @return
 	 */
-	public static Database getReadableDatabase(String tag, Context ctx) {
+	public static Database getReadableDatabase(Context ctx) {
 		return new Database(getOpenHelper(ctx).getReadableDatabase());
 	}
 
 	/**
 	 * Return handle to write to plain database
-	 * @param tag
 	 * @param ctx
 	 * @return
 	 */
-	public static Database getWritableDatabase(String tag, Context ctx) {
+	public static Database getWritableDatabase(Context ctx) {
 		return new Database(getOpenHelper(ctx).getWritableDatabase());
 	}
 
 	/**
 	 * Return handle to read from encrypted database
-	 * @param tag
 	 * @param ctx
 	 * @param passcodeHash
 	 * @return
 	 */
-	public static Database getReadableDatabase(String tag, Context ctx, String passcodeHash) {
+	public static Database getReadableDatabase(Context ctx, String passcodeHash) {
 		return new Database(getEncryptedOpenHelper(ctx).getReadableDatabase(passcodeHash));
 	}
 
 	/**
 	 * Return handle to write to encrypted database
-	 * @param tag
 	 * @param ctx
 	 * @param passcodeHash
 	 * @return
 	 */
-	public static Database getWritableDatabase(String tag, Context ctx, String passcodeHash) {
+	public static Database getWritableDatabase(Context ctx, String passcodeHash) {
 		return new Database(getEncryptedOpenHelper(ctx).getWritableDatabase(passcodeHash));
 	}
 	

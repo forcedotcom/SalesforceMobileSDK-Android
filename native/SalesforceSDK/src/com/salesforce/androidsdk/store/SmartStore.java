@@ -61,6 +61,8 @@ public class SmartStore  {
 	protected static final String LAST_MODIFIED_COL = "lastModified";
 	protected static final String SOUP_COL = "soup";
 	
+	// Backing database
+	protected Database db;
 	
 	/**
 	 * Create soup index map table to keep track of soups' index specs
@@ -78,7 +80,13 @@ public class SmartStore  {
 				  	.append(")");
 		db.execSQL(sb.toString());
 	}
-	
+
+	/**
+	 * @param db
+	 */
+	public SmartStore(Database db) {
+		this.db = db;
+	}
 	
 	/**
 	 * Register a soup 
@@ -86,11 +94,10 @@ public class SmartStore  {
 	 * Create table for soupName with a column for the soup itself and columns for paths specified in indexSpecs
 	 * Create indexes on the new table to make lookup faster
 	 * Create rows in soup index map table for indexSpecs
-	 * @param db≈ß
 	 * @param soupName
 	 * @param indexSpecs
 	 */
-	public void registerSoup(Database db, String soupName, IndexSpec[] indexSpecs) {
+	public void registerSoup(String soupName, IndexSpec[] indexSpecs) {
 		StringBuilder createTableStmt = new StringBuilder();          // to create new soup table
 		List<String> createIndexStmts = new ArrayList<String>();      // to create indices on new soup table
 		List<ContentValues> soupIndexMapInserts = new ArrayList<ContentValues>();  // to be inserted in soup index map table
@@ -148,10 +155,9 @@ public class SmartStore  {
 	 * 
 	 * Drop table for soupName 
 	 * Cleanup entries in soup index map table  
-	 * @param db
 	 * @param soupName
 	 */
-	public void dropSoup(Database db, String soupName) {
+	public void dropSoup(String soupName) {
 		db.execSQL("DROP TABLE IF EXISTS " + soupName);
 		try {
 			db.beginTransaction();
@@ -165,13 +171,12 @@ public class SmartStore  {
 
 	/**
 	 * Run a query
-	 * @param db
 	 * @param soupName
 	 * @param querySpec
 	 * @return
 	 * @throws JSONException 
 	 */
-	public JSONArray querySoup(Database db, String soupName, QuerySpec querySpec) throws JSONException {
+	public JSONArray querySoup(String soupName, QuerySpec querySpec) throws JSONException {
 		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
 		
 		// Get the matching soups
@@ -210,13 +215,11 @@ public class SmartStore  {
 
 	/**
 	 * Create 
-	 * @param db
 	 * @param soupName
 	 * @param soupElt
-	 * 
 	 * @return rowId of inserted row
 	 */
-	public long create(Database db, String soupName, JSONObject soupElt) {
+	public long create(String soupName, JSONObject soupElt) {
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
@@ -241,14 +244,12 @@ public class SmartStore  {
 
 	/**
 	 * Retrieve 
-	 * @param db
 	 * @param soupName
 	 * @param rowId
-	 * 
 	 * @return retrieve JSONObject with the given rowId or null if not found
 	 * @throws JSONException 
 	 */
-	public JSONObject retrieve(Database db, String soupName, long rowId) throws JSONException {
+	public JSONObject retrieve(String soupName, long rowId) throws JSONException {
 		Cursor cursor = null;
 		try {
 			cursor = db.query(soupName, new String[] {SOUP_COL}, getRowIdPredicate(rowId), null);
@@ -268,14 +269,12 @@ public class SmartStore  {
 
 	/**
 	 * Update 
-	 * @param db
 	 * @param soupName
 	 * @param soupElt
 	 * @param rowId
-	 * 
 	 * @return true if successful
 	 */
-	public boolean update(Database db, String soupName, JSONObject soupElt, long rowId) {
+	public boolean update(String soupName, JSONObject soupElt, long rowId) {
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
@@ -299,11 +298,10 @@ public class SmartStore  {
 	
 	/**
 	 * Delete
-	 * @param db
 	 * @param soupName
 	 * @param rowId
 	 */
-	public void delete(Database db, String soupName, long rowId) {
+	public void delete(String soupName, long rowId) {
 		db.beginTransaction();
 		db.delete(soupName, getRowIdPredicate(rowId));
 		db.setTransactionSuccessful();
