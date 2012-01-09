@@ -26,40 +26,15 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
-
-
 
 /**
- * A helper class to manage database creation and version management.
- *  
+ * Tests for encrypted smart store
+ *
  */
-public class DBOpenHelper extends SQLiteOpenHelper {
-	public static final String DB_NAME = "smartstore.db";
-	public static final int DB_VERSION = 1;
-	
-	public DBOpenHelper(Context context) {
-		super(context, DB_NAME, null, DB_VERSION);
-		Log.i("DBOpenHelper:DBOpenHelper", DB_NAME + "/" + DB_VERSION);
-	}
+public class EncryptedSmartStoreTest extends AbstractSmartStoreTest {
 
 	@Override
-	public void onCreate(SQLiteDatabase db) {
-		Log.i("DBOpenHelper:onCreate", DB_NAME + "/" + DB_VERSION);
-		SmartStore.createMetaTable(new Database(db));
-	}
-
-	@Override
-	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		Log.i("DBOpenHelper:onUpgrade", DB_NAME + "/" + DB_VERSION);
-		// do the needful if DB_VERSION has changed 
-	}
-
-	public static void deleteDatabase(Context ctx) {
-		Log.i("DBOpenHelper:deleteDatabase", DB_NAME + "/" + DB_VERSION);
-		ctx.deleteDatabase(DB_NAME);
+	protected Database getWritableDatabase() {
+		return DBOperations.getWritableDatabase("PlainSmartStoreTest", targetContext, "test123");
 	}
 }

@@ -37,23 +37,32 @@ import com.salesforce.androidsdk.util.LogUtil;
 
 
 /**
- * SQLiteDatabase that does a bunch of logging 
+ * Abstracts out encrypted or non-encrypted sqlite database
  */
-public class LoggingSQLiteDatabase {
+public class Database {
 
 	private SQLiteDatabase db;
-	private String tag;
+	private info.guardianproject.database.sqlcipher.SQLiteDatabase encdb;
+	private boolean encrypted;
 
-	public LoggingSQLiteDatabase(String tag, SQLiteDatabase db) {
-		this.tag = tag;
+	public Database(SQLiteDatabase db) {
 		this.db = db;
+		this.encrypted = false;
+	}
+	
+	public Database(info.guardianproject.database.sqlcipher.SQLiteDatabase encdb) {
+		this.encdb = encdb;
+		this.encrypted = true;
 	}
 	
 	/**
 	 * Close underlying database
 	 */
 	public void close() {
-		db.close();
+		if (!encrypted)
+			db.close();
+		else 
+			encdb.close();
 	}
 
 	/**
@@ -61,32 +70,44 @@ public class LoggingSQLiteDatabase {
 	 * @param sql
 	 */
 	public void execSQL(String sql) {
-		Log.i(tag, sql);
-		db.execSQL(sql);
+		Log.i("Database:execSQL[enc=" + encrypted + "]", sql);
+		if (!encrypted)
+			db.execSQL(sql);
+		else
+			encdb.execSQL(sql);
 	}
 
 	/**
 	 * Start transaction (after first logging it)
 	 */
 	public void beginTransaction() {
-		Log.i(tag, "BEGIN TRANSACTION");
-		db.beginTransaction();
+		Log.i("Database:beginTransaction[enc=" + encrypted + "]", "");
+		if (!encrypted)
+			db.beginTransaction();
+		else
+			encdb.beginTransaction();
 	}
 
 	/**
 	 * Mark transaction as successful - so that endTransaction will do a commit
 	 */
 	public void setTransactionSuccessful() {
-		Log.i(tag, "Calling setTransactionSuccessful");
-		db.setTransactionSuccessful();
+		Log.i("Database:setTransactionSuccessful[enc=" + encrypted + "]", "");
+		if (!encrypted)
+			db.setTransactionSuccessful();
+		else
+			encdb.setTransactionSuccessful();
 	}
 	
 	/**
 	 * End transaction (after first logging it)
 	 */
 	public void endTransaction() {
-		Log.i(tag, "END TRANSACTION");
-		db.endTransaction();
+		Log.i("Database:endTransaction[enc=" + encrypted + "]", "");
+		if (!encrypted)
+			db.endTransaction();
+		else 
+			encdb.endTransaction();
 	}
 	
 	/**
@@ -102,8 +123,12 @@ public class LoggingSQLiteDatabase {
 		columnsStr = (columnsStr.equals("") ? "*" : columnsStr);
 		String orderByStr = (orderBy == null ? "" : " ORDER BY " + orderBy);
 		String selectionStr = (selection == null ? "" : " WHERE " + selection);
-		Log.i(tag, String.format("SELECT %s FROM %s %s%s", columnsStr, table, selectionStr, orderByStr));
-		return db.query(table, columns, selection, null, null, null, orderBy);
+		String sql = String.format("SELECT %s FROM %s %s%s", columnsStr, table, selectionStr, orderByStr);
+		Log.i("Database:query[enc=" + encrypted + "]", sql);
+		if (!encrypted)
+			return db.query(table, columns, selection, null, null, null, orderBy);
+		else
+			return encdb.query(table, columns, selection, null, null, null, orderBy);
 	}
 
 	/**
@@ -114,8 +139,12 @@ public class LoggingSQLiteDatabase {
 	 */
 	public long insert(String table, ContentValues contentValues) {
 		Pair<String, String> columnsValues = LogUtil.getAsStrings(contentValues.valueSet(), ", ");
-		Log.i(tag, String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsValues.first, columnsValues.second));
-		return db.insert(table, null, contentValues);
+		String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsValues.first, columnsValues.second);
+		Log.i("Database:insert[enc=" + encrypted + "]", sql);
+		if (!encrypted)
+			return db.insert(table, null, contentValues);
+		else
+			return encdb.insert(table, null, contentValues);
 	}
 
 	/**
@@ -127,8 +156,12 @@ public class LoggingSQLiteDatabase {
 	 */
 	public int update(String table, ContentValues contentValues, String whereClause) {
 		String setStr = LogUtil.zipJoin(contentValues.valueSet(), " = ", ", ");
-		Log.i(tag, String.format("UPDATE %s SET %s where %s", table, setStr, whereClause));
-		return db.update(table, contentValues, whereClause, null);
+		String sql = String.format("UPDATE %s SET %s where %s", table, setStr, whereClause);
+		Log.i("Database:update[enc=" + encrypted + "]", sql);
+		if (!encrypted)
+			return db.update(table, contentValues, whereClause, null);
+		else
+			return encdb.update(table, contentValues, whereClause, null);
 	}
 	
 	/**
@@ -137,7 +170,11 @@ public class LoggingSQLiteDatabase {
 	 * @param whereClause
 	 */
 	public void delete(String table, String whereClause) {
-		Log.i(tag, String.format("DELETE FROM %s WHERE %s", table, whereClause));
-		db.delete(table, whereClause, null);
+		String sql = String.format("DELETE FROM %s WHERE %s", table, whereClause);
+		Log.i("Database:delete[enc=" + encrypted + "]", sql);
+		if (!encrypted)
+			db.delete(table, whereClause, null);
+		else
+			encdb.delete(table, whereClause, null);
 	}
 }

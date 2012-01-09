@@ -41,37 +41,37 @@ import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
 import com.salesforce.androidsdk.store.SmartStore.Type;
 
 /**
- * Tests for SmartStore
+ * Abstract super class for plain and encrypted smart store tests
  *
  */
-public class SmartStoreTest extends InstrumentationTestCase {
+public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 
 	private static final String TEST_SOUP = "test_soup";
 	private static final String OTHER_TEST_SOUP = "other_test_soup";
 	
-	private Context targetContext;
-	private LoggingSQLiteDatabase db;
+	protected Context targetContext;
+	private Database db;
 	private SmartStore store;
 	
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		db = DBOperations.getWritableDatabase("SmartStoreTest", targetContext);
+		DBOperations.resetDatabase(targetContext); // start clean
+		db = getWritableDatabase();
 		store = new SmartStore();
 		
 		assertFalse("Table test_soup should not exist", hasTable(TEST_SOUP));
-		store.registerSoup(targetContext, TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.TEXT)});
+		store.registerSoup(db, TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.TEXT)});
 		assertTrue("Register soup call failed", hasTable(TEST_SOUP));
 	}
 	
+	protected abstract Database getWritableDatabase();
+
 	@Override
 	protected void tearDown() throws Exception {
-		store.dropSoup(targetContext, TEST_SOUP);
-		assertFalse("Drop soup call failed", hasTable(TEST_SOUP));
-		
 		db.close();
-		DBOperations.resetDatabase(targetContext);
+		// Not cleaning up after the test to make diagnosing issues easier
 		super.tearDown();
 	}
 
@@ -139,7 +139,7 @@ public class SmartStoreTest extends InstrumentationTestCase {
 	 */
 	public void testCreateOne() throws JSONException {
 		JSONObject soupElt = new JSONObject("{'key':'ka', 'value':'va'}");
-		long rowId = store.create(targetContext, TEST_SOUP, soupElt);
+		long rowId = store.create(db, TEST_SOUP, soupElt);
 		
 		// Check DB
 		Cursor c = null;
@@ -164,16 +164,16 @@ public class SmartStoreTest extends InstrumentationTestCase {
 	public void testCreateMultiple() throws JSONException {
 		try {
 			assertFalse("Table test_soup should not exist", hasTable(OTHER_TEST_SOUP));
-			store.registerSoup(targetContext, OTHER_TEST_SOUP, new IndexSpec[] {new IndexSpec("lastName", Type.TEXT), new IndexSpec("address/city", Type.TEXT)});
+			store.registerSoup(db, OTHER_TEST_SOUP, new IndexSpec[] {new IndexSpec("lastName", Type.TEXT), new IndexSpec("address/city", Type.TEXT)});
 			assertTrue("Register soup call failed", hasTable(OTHER_TEST_SOUP));
 			
 			JSONObject soupElt1 = new JSONObject("{'lastName':'Doe', 'address':{'street':'1 market', 'city':'San Francisco'}}");
 			JSONObject soupElt2 = new JSONObject("{'lastName':'Jackson', 'address':{'street':'100 mission', 'city':'Los Angeles'}}");
 			JSONObject soupElt3 = new JSONObject("{'lastName':'Watson', 'address':{'street':'50 market', 'city':'London'}}");
 			
-			long rowId1 = store.create(targetContext, OTHER_TEST_SOUP, soupElt1);
-			long rowId2 = store.create(targetContext, OTHER_TEST_SOUP, soupElt2);
-			long rowId3 = store.create(targetContext, OTHER_TEST_SOUP, soupElt3);
+			long rowId1 = store.create(db, OTHER_TEST_SOUP, soupElt1);
+			long rowId2 = store.create(db, OTHER_TEST_SOUP, soupElt2);
+			long rowId3 = store.create(db, OTHER_TEST_SOUP, soupElt3);
 	
 			// Check DB
 			Cursor c = null;
@@ -205,7 +205,7 @@ public class SmartStoreTest extends InstrumentationTestCase {
 			}
 		}
 		finally {
-			store.dropSoup(targetContext, OTHER_TEST_SOUP);
+			store.dropSoup(db, OTHER_TEST_SOUP);
 			assertFalse("Drop soup call failed", hasTable(OTHER_TEST_SOUP));
 		}
 	}
@@ -219,17 +219,17 @@ public class SmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2'}");
 		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3'}");
 		
-		long rowId1 = store.create(targetContext, TEST_SOUP, soupElt1);
-		long rowId2 = store.create(targetContext, TEST_SOUP, soupElt2);
-		long rowId3 = store.create(targetContext, TEST_SOUP, soupElt3);
+		long rowId1 = store.create(db, TEST_SOUP, soupElt1);
+		long rowId2 = store.create(db, TEST_SOUP, soupElt2);
+		long rowId3 = store.create(db, TEST_SOUP, soupElt3);
 
 		SystemClock.sleep(10); // to get a different last modified date
 		JSONObject soupElt2updated = new JSONObject("{'key':'ka2u', 'value':'va2u'}");
-		store.update(targetContext, TEST_SOUP, soupElt2updated, rowId2);
+		store.update(db, TEST_SOUP, soupElt2updated, rowId2);
 		
-		JSONObject soupEltRetrieved1 = store.retrieve(targetContext, TEST_SOUP, rowId1);
-		JSONObject soupEltRetrieved2 = store.retrieve(targetContext, TEST_SOUP, rowId2);
-		JSONObject soupEltRetrieved3 = store.retrieve(targetContext, TEST_SOUP, rowId3);
+		JSONObject soupEltRetrieved1 = store.retrieve(db, TEST_SOUP, rowId1);
+		JSONObject soupEltRetrieved2 = store.retrieve(db, TEST_SOUP, rowId2);
+		JSONObject soupEltRetrieved3 = store.retrieve(db, TEST_SOUP, rowId3);
 
 		assertEquals("Retrieve mismatch", soupEltRetrieved1.toString(), soupElt1.toString());
 		assertEquals("Retrieve mismatch", soupEltRetrieved2.toString(), soupElt2updated.toString());
@@ -267,13 +267,13 @@ public class SmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2'}");
 		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3'}");
 		
-		long rowId1 = store.create(targetContext, TEST_SOUP, soupElt1);
-		long rowId2 = store.create(targetContext, TEST_SOUP, soupElt2);
-		long rowId3 = store.create(targetContext, TEST_SOUP, soupElt3);
+		long rowId1 = store.create(db, TEST_SOUP, soupElt1);
+		long rowId2 = store.create(db, TEST_SOUP, soupElt2);
+		long rowId3 = store.create(db, TEST_SOUP, soupElt3);
 		
-		JSONObject soupEltRetrieved1 = store.retrieve(targetContext, TEST_SOUP, rowId1);
-		JSONObject soupEltRetrieved2 = store.retrieve(targetContext, TEST_SOUP, rowId2);
-		JSONObject soupEltRetrieved3 = store.retrieve(targetContext, TEST_SOUP, rowId3);
+		JSONObject soupEltRetrieved1 = store.retrieve(db, TEST_SOUP, rowId1);
+		JSONObject soupEltRetrieved2 = store.retrieve(db, TEST_SOUP, rowId2);
+		JSONObject soupEltRetrieved3 = store.retrieve(db, TEST_SOUP, rowId3);
 		
 		assertEquals("Retrieve mismatch", soupEltRetrieved1.toString(), soupElt1.toString());
 		assertEquals("Retrieve mismatch", soupEltRetrieved2.toString(), soupElt2.toString());
@@ -289,15 +289,15 @@ public class SmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2'}");
 		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3'}");
 		
-		long rowId1 = store.create(targetContext, TEST_SOUP, soupElt1);
-		long rowId2 = store.create(targetContext, TEST_SOUP, soupElt2);
-		long rowId3 = store.create(targetContext, TEST_SOUP, soupElt3);
+		long rowId1 = store.create(db, TEST_SOUP, soupElt1);
+		long rowId2 = store.create(db, TEST_SOUP, soupElt2);
+		long rowId3 = store.create(db, TEST_SOUP, soupElt3);
 		
-		store.delete(targetContext, TEST_SOUP, rowId2);
+		store.delete(db, TEST_SOUP, rowId2);
 
-		JSONObject soupEltRetrieved1 = store.retrieve(targetContext, TEST_SOUP, rowId1);
-		JSONObject soupEltRetrieved2 = store.retrieve(targetContext, TEST_SOUP, rowId2);
-		JSONObject soupEltRetrieved3 = store.retrieve(targetContext, TEST_SOUP, rowId3);
+		JSONObject soupEltRetrieved1 = store.retrieve(db, TEST_SOUP, rowId1);
+		JSONObject soupEltRetrieved2 = store.retrieve(db, TEST_SOUP, rowId2);
+		JSONObject soupEltRetrieved3 = store.retrieve(db, TEST_SOUP, rowId3);
 		
 		assertEquals("Retrieve mismatch", soupEltRetrieved1.toString(), soupElt1.toString());
 		assertNull("Should be null", soupEltRetrieved2);
@@ -329,17 +329,17 @@ public class SmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2', 'otherValue':'ova2'}");
 		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3', 'otherValue':'ova3'}");
 		
-		store.create(targetContext, TEST_SOUP, soupElt1);
-		store.create(targetContext, TEST_SOUP, soupElt2);
-		store.create(targetContext, TEST_SOUP, soupElt3);
+		store.create(db, TEST_SOUP, soupElt1);
+		store.create(db, TEST_SOUP, soupElt2);
+		store.create(db, TEST_SOUP, soupElt3);
 
 		// Exact match - whole soup element
-		JSONArray result = store.querySoup(targetContext, TEST_SOUP, new QuerySpec("key", "ka2"));
+		JSONArray result = store.querySoup(db, TEST_SOUP, new QuerySpec("key", "ka2"));
 		assertEquals("One result expected", 1, result.length());
 		assertEquals("Wrong result for query", soupElt2.toString(), result.getJSONObject(0).toString());
 
 		// Exact match - specified projections
-		result = store.querySoup(targetContext, TEST_SOUP, new QuerySpec("key", "ka2", new String[] {"otherValue", "value"}));
+		result = store.querySoup(db, TEST_SOUP, new QuerySpec("key", "ka2", new String[] {"otherValue", "value"}));
 		assertEquals("One result expected", 1, result.length());
 		assertEquals("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}").toString(), result.getJSONObject(0).toString());
 		
@@ -354,30 +354,30 @@ public class SmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2', 'otherValue':'ova2'}");
 		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3', 'otherValue':'ova3'}");
 		
-		store.create(targetContext, TEST_SOUP, soupElt1);
-		store.create(targetContext, TEST_SOUP, soupElt2);
-		store.create(targetContext, TEST_SOUP, soupElt3);
+		store.create(db, TEST_SOUP, soupElt1);
+		store.create(db, TEST_SOUP, soupElt2);
+		store.create(db, TEST_SOUP, soupElt3);
 
 		// Range query - whole soup elements
-		JSONArray result = store.querySoup(targetContext, TEST_SOUP, new QuerySpec("key", "ka2", "ka3"));
+		JSONArray result = store.querySoup(db, TEST_SOUP, new QuerySpec("key", "ka2", "ka3"));
 		assertEquals("Two results expected", 2, result.length());
 		assertEquals("Wrong result for query", soupElt2.toString(), result.getJSONObject(0).toString());
 		assertEquals("Wrong result for query", soupElt3.toString(), result.getJSONObject(1).toString());
 
 		// Range query - whole soup elements - descending order
-		result = store.querySoup(targetContext, TEST_SOUP, new QuerySpec("key", "ka2", "ka3", Order.DESC));
+		result = store.querySoup(db, TEST_SOUP, new QuerySpec("key", "ka2", "ka3", Order.DESC));
 		assertEquals("Two results expected", 2, result.length());
 		assertEquals("Wrong result for query", soupElt3.toString(), result.getJSONObject(0).toString());
 		assertEquals("Wrong result for query", soupElt2.toString(), result.getJSONObject(1).toString());
 		
 		// Range query - specified projections
-		result = store.querySoup(targetContext, TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}));
+		result = store.querySoup(db, TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}));
 		assertEquals("Two results expected", 2, result.length());
 		assertEquals("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}").toString(), result.getJSONObject(0).toString());
 		assertEquals("Wrong result for query", new JSONObject("{'otherValue':'ova3', 'value':'va3'}").toString(), result.getJSONObject(1).toString());
 		
 		// Range query - specified projections - descending order
-		result = store.querySoup(targetContext, TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}, Order.DESC));
+		result = store.querySoup(db, TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}, Order.DESC));
 		assertEquals("Two results expected", 2, result.length());
 		assertEquals("Wrong result for query", new JSONObject("{'otherValue':'ova3', 'value':'va3'}").toString(), result.getJSONObject(0).toString());
 		assertEquals("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}").toString(), result.getJSONObject(1).toString());

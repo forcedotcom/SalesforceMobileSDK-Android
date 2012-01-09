@@ -26,40 +26,41 @@
  */
 package com.salesforce.androidsdk.store;
 
+import info.guardianproject.database.sqlcipher.SQLiteDatabase;
+import info.guardianproject.database.sqlcipher.SQLiteOpenHelper;
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 
 
 /**
- * A helper class to manage database creation and version management.
+ * A helper class to manage encrypted database creation and version management.
  *  
  */
-public class DBOpenHelper extends SQLiteOpenHelper {
-	public static final String DB_NAME = "smartstore.db";
+public class EncryptedDBOpenHelper extends SQLiteOpenHelper {
+	public static final String DB_NAME = "smartstore_enc.db";
 	public static final int DB_VERSION = 1;
 	
-	public DBOpenHelper(Context context) {
+	public EncryptedDBOpenHelper(Context context) {
 		super(context, DB_NAME, null, DB_VERSION);
-		Log.i("DBOpenHelper:DBOpenHelper", DB_NAME + "/" + DB_VERSION);
+		SQLiteDatabase.loadLibs(context);
+		Log.i("EncryptedDBOpenHelper:EncryptedDBOpenHelper", DB_NAME + "/" + DB_VERSION);
 	}
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		Log.i("DBOpenHelper:onCreate", DB_NAME + "/" + DB_VERSION);
+		Log.i("EncryptedDBOpenHelper:onCreate", DB_NAME + "/" + DB_VERSION);
 		SmartStore.createMetaTable(new Database(db));
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		Log.i("DBOpenHelper:onUpgrade", DB_NAME + "/" + DB_VERSION);
+		Log.i("EncryptedDBOpenHelper:onUpgrade", DB_NAME + "/" + DB_VERSION);
 		// do the needful if DB_VERSION has changed 
 	}
 
 	public static void deleteDatabase(Context ctx) {
-		Log.i("DBOpenHelper:deleteDatabase", DB_NAME + "/" + DB_VERSION);
+		Log.i("EncryptedDBOpenHelper:deleteDatabase", DB_NAME + "/" + DB_VERSION);
 		ctx.deleteDatabase(DB_NAME);
 	}
 }

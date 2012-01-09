@@ -33,14 +33,49 @@ import android.content.Context;
  * Helper class to access local database 
  */
 public class DBOperations  {
+	private static EncryptedDBOpenHelper encOpenHelper;
 	private static DBOpenHelper openHelper;
 
-	public static LoggingSQLiteDatabase getReadableDatabase(String tag, Context ctx) {
-		return new LoggingSQLiteDatabase(tag, getOpenHelper(ctx).getReadableDatabase());
+	/**
+	 * Return handle to read from plain database
+	 * @param tag
+	 * @param ctx
+	 * @return
+	 */
+	public static Database getReadableDatabase(String tag, Context ctx) {
+		return new Database(getOpenHelper(ctx).getReadableDatabase());
 	}
 
-	public static LoggingSQLiteDatabase getWritableDatabase(String tag, Context ctx) {
-		return new LoggingSQLiteDatabase(tag, getOpenHelper(ctx).getWritableDatabase());
+	/**
+	 * Return handle to write to plain database
+	 * @param tag
+	 * @param ctx
+	 * @return
+	 */
+	public static Database getWritableDatabase(String tag, Context ctx) {
+		return new Database(getOpenHelper(ctx).getWritableDatabase());
+	}
+
+	/**
+	 * Return handle to read from encrypted database
+	 * @param tag
+	 * @param ctx
+	 * @param passcodeHash
+	 * @return
+	 */
+	public static Database getReadableDatabase(String tag, Context ctx, String passcodeHash) {
+		return new Database(getEncryptedOpenHelper(ctx).getReadableDatabase(passcodeHash));
+	}
+
+	/**
+	 * Return handle to write to encrypted database
+	 * @param tag
+	 * @param ctx
+	 * @param passcodeHash
+	 * @return
+	 */
+	public static Database getWritableDatabase(String tag, Context ctx, String passcodeHash) {
+		return new Database(getEncryptedOpenHelper(ctx).getWritableDatabase(passcodeHash));
 	}
 	
 	public static synchronized void shutDown() {
@@ -48,18 +83,32 @@ public class DBOperations  {
 			openHelper.close();
 			openHelper = null;
 		}
+		if (encOpenHelper != null) {
+			encOpenHelper.close();
+			encOpenHelper = null;
+		}
 	}	
 	
 	public static synchronized void resetDatabase(Context ctx) {
 		shutDown();
-	    DBOpenHelper.deleteDatabase(ctx);
+		EncryptedDBOpenHelper.deleteDatabase(ctx);
+		DBOpenHelper.deleteDatabase(ctx);
 	}
 	
 	private static synchronized DBOpenHelper getOpenHelper(Context ctx) {
+		assert encOpenHelper == null : "You can't use a plain store, you already started using an encrypted one";
 		if (openHelper == null) {
 			openHelper = new DBOpenHelper(ctx);
 		}
 		return openHelper;
+	}
+	
+	private static synchronized EncryptedDBOpenHelper getEncryptedOpenHelper(Context ctx) {
+		assert openHelper == null : "You can't use an encrypted store, you already started using a plain one";
+		if (encOpenHelper == null) {
+			encOpenHelper = new EncryptedDBOpenHelper(ctx);
+		}
+		return encOpenHelper;
 	}
 	
 }

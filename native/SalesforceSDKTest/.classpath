@@ -5,5 +5,8 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="lib" path="libs/android-junit-report-1.2.6.jar"/>
+	<classpathentry kind="lib" path="libs/commons-codec.jar"/>
+	<classpathentry kind="lib" path="libs/guava-r09.jar"/>
+	<classpathentry kind="lib" path="libs/sqlcipher.jar" sourcepath="/home/wmathurin/Development/sfdc/forcedotcom/SalesforceMobileSDK-Android-dev/external/sqlcipher/src"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
