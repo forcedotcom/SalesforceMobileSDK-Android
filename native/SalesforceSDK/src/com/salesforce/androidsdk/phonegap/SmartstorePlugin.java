@@ -46,6 +46,17 @@ import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
  * PhoneGap plugin for smart store.
  */
 public class SmartstorePlugin extends Plugin {
+	private static final String ENTRIES = "entries";
+	// Keys in json coming from javascript
+	private static final String END_KEY = "endKey";
+	private static final String ORDER = "order";
+	private static final String BEGIN_KEY = "beginKey";
+	private static final String QUERY_SPEC = "querySpec";
+	private static final String PATH = "path";
+	private static final String TYPE = "type";
+	private static final String INDEXES = "indexes";
+	private static final String SOUP_NAME = "soupName";
+
 	/**
 	 * Supported plugin actions that the client can take.
 	 */
@@ -95,19 +106,34 @@ public class SmartstorePlugin extends Plugin {
 	 * @return
 	 */
 	private PluginResult moveCursorToPageIndex(JSONArray args, String callbackId) {
-		// SmartStore smartStore = ForceApp.APP.getSmartStore();
-		return new PluginResult(PluginResult.Status.OK); // FIXME
+		return new PluginResult(PluginResult.Status.ERROR, "Cursor not supported"); // TODO implement once cursor support is added to smart store 
 	}
 
 	/**
-	 * Native implementation of pgUpsertSoupEntrie
+	 * Native implementation of pgUpsertSoupEntries
 	 * @param args
 	 * @param callbackId
 	 * @return
+	 * @throws JSONException 
 	 */
-	private PluginResult upsertSoupEntries(JSONArray args, String callbackId) {
-		// SmartStore smartStore = ForceApp.APP.getSmartStore();
-		return new PluginResult(PluginResult.Status.OK); // FIXME
+	private PluginResult upsertSoupEntries(JSONArray args, String callbackId) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		String soupName = arg0.getString(SOUP_NAME);
+		JSONArray entriesJson = arg0.getJSONArray(ENTRIES);
+		List<JSONObject> entries = new ArrayList<JSONObject>();
+		for (int i=0; i<entriesJson.length(); i++) {
+			entries.add(entriesJson.getJSONObject(i));
+		}
+		
+		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		JSONArray results = new JSONArray();
+		
+		// TODO do it in one transaction
+		for (JSONObject entry : entries) {
+			results.put(smartStore.upsert(soupName, entry));
+		}
+		return new PluginResult(PluginResult.Status.OK, results);
 	}
 
 	/**
@@ -120,12 +146,12 @@ public class SmartstorePlugin extends Plugin {
 	private PluginResult registerSoup(JSONArray args, String callbackId) throws JSONException {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
-		String soupName = arg0.getString("soupName");
+		String soupName = arg0.getString(SOUP_NAME);
 		List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
-		JSONArray indexesJson = arg0.getJSONArray("indexes");
+		JSONArray indexesJson = arg0.getJSONArray(INDEXES);
 		for (int i=0; i<indexesJson.length(); i++) {
 			JSONObject indexJson = indexesJson.getJSONObject(i);
-			indexSpecs.add(new IndexSpec(indexJson.getString("path"), SmartStore.Type.valueOf(indexJson.getString("type"))));
+			indexSpecs.add(new IndexSpec(indexJson.getString(PATH), SmartStore.Type.valueOf(indexJson.getString(TYPE))));
 		}
 
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
@@ -143,9 +169,9 @@ public class SmartstorePlugin extends Plugin {
 	private PluginResult querySoup(JSONArray args, String callbackId) throws JSONException {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
-		String soupName = arg0.getString("soupName");
-		JSONObject querySpecJson = arg0.getJSONObject("querySpec");
-		QuerySpec querySpec = new QuerySpec(querySpecJson.getString("path"), querySpecJson.getString("beginKey"), querySpecJson.getString("endKey"), SmartStore.Order.valueOf(querySpecJson.getString("order")));
+		String soupName = arg0.getString(SOUP_NAME);
+		JSONObject querySpecJson = arg0.getJSONObject(QUERY_SPEC);
+		QuerySpec querySpec = new QuerySpec(querySpecJson.getString(PATH), querySpecJson.getString(BEGIN_KEY), querySpecJson.getString(END_KEY), SmartStore.Order.valueOf(querySpecJson.getString(ORDER)));
 		
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
 		JSONArray result = smartStore.querySoup(soupName, querySpec);
@@ -162,7 +188,7 @@ public class SmartstorePlugin extends Plugin {
 	private PluginResult removeSoup(JSONArray args, String callbackId) throws JSONException {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
-		String soupName = arg0.getString("soupName");
+		String soupName = arg0.getString(SOUP_NAME);
 		
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
 		smartStore.dropSoup(soupName);

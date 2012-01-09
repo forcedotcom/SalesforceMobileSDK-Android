@@ -60,6 +60,9 @@ public class SmartStore  {
 	protected static final String CREATED_COL = "created";
 	protected static final String LAST_MODIFIED_COL = "lastModified";
 	protected static final String SOUP_COL = "soup";
+
+	// JSON field holding internal id
+	public static final String SOUP_ENTRY_ID = "_soupEntryId";
 	
 	// Backing database
 	protected Database db;
@@ -171,6 +174,7 @@ public class SmartStore  {
 
 	/**
 	 * Run a query
+	 * Note: returned soup elements have an extra field for the internal soup entry id (useful for delete/upsert) 
 	 * @param soupName
 	 * @param querySpec
 	 * @return
@@ -187,9 +191,11 @@ public class SmartStore  {
 			JSONArray results = new JSONArray();
 			if (cursor.moveToFirst()) {
 				do {
+					long entryId = cursor.getLong(cursor.getColumnIndex(ID_COL));
 					JSONObject soupElt = new JSONObject(cursor.getString(cursor.getColumnIndex(SOUP_COL)));
 					
 					if (querySpec.projections == null) {
+						soupElt.put(SOUP_ENTRY_ID, entryId);
 						results.put(soupElt);
 					}
 					else {
@@ -197,6 +203,7 @@ public class SmartStore  {
 						for (String projection : querySpec.projections) {
 							subSoup.put(projection, project(soupElt, projection));
 						}
+						subSoup.put(SOUP_ENTRY_ID, entryId);
 						results.put(subSoup);
 					}
 				}
@@ -243,7 +250,8 @@ public class SmartStore  {
 	}
 
 	/**
-	 * Retrieve 
+	 * Retrieve
+	 * Note: returned soup element has an extra field for the internal soup entry id (useful for delete/upsert) 
 	 * @param soupName
 	 * @param rowId
 	 * @return retrieve JSONObject with the given rowId or null if not found
@@ -252,12 +260,15 @@ public class SmartStore  {
 	public JSONObject retrieve(String soupName, long rowId) throws JSONException {
 		Cursor cursor = null;
 		try {
-			cursor = db.query(soupName, new String[] {SOUP_COL}, getRowIdPredicate(rowId), null);
+			cursor = db.query(soupName, new String[] {ID_COL, SOUP_COL}, getRowIdPredicate(rowId), null);
 			if (!cursor.moveToFirst()) {
 				return null;
 			}
+			long entryId = cursor.getLong(cursor.getColumnIndex(ID_COL));
 			String raw = cursor.getString(cursor.getColumnIndex(SOUP_COL));
-			return new JSONObject(raw);
+			JSONObject result = new JSONObject(raw);
+			result.put(SOUP_ENTRY_ID, entryId);
+			return result;
 		}
 		finally {
 			if (cursor != null) {
@@ -279,6 +290,7 @@ public class SmartStore  {
 		
 		long now = System.currentTimeMillis();
 		ContentValues contentValues = new ContentValues();
+		soupElt.remove(SOUP_ENTRY_ID); // don't store in soup
 		contentValues.put(SOUP_COL, soupElt.toString());
 		contentValues.put(LAST_MODIFIED_COL, now);
 		for (IndexSpec indexSpec : indexSpecs) {
@@ -295,6 +307,25 @@ public class SmartStore  {
 			db.endTransaction();
 		}
 	}
+
+	/**
+	 * Upsert 
+	 * @param soupName
+	 * @param soupElt
+	 * @return rowId of upserted row
+	 * @throws JSONException 
+	 */
+	public long upsert(String soupName, JSONObject soupElt) throws JSONException {
+		if (soupElt.has(SOUP_ENTRY_ID)) {
+			long entryId = soupElt.getLong(SOUP_ENTRY_ID);
+			update(soupName, soupElt, entryId);
+			return entryId;
+		}
+		else {
+			return create(soupName, soupElt);
+		}
+	}
+	
 	
 	/**
 	 * Delete
