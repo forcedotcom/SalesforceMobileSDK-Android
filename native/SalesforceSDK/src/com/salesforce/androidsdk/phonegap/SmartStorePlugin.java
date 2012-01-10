@@ -45,7 +45,7 @@ import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
 /**
  * PhoneGap plugin for smart store.
  */
-public class SmartstorePlugin extends Plugin {
+public class SmartStorePlugin extends Plugin {
 	private static final String ENTRIES = "entries";
 	// Keys in json coming from javascript
 	private static final String END_KEY = "endKey";
