@@ -25,7 +25,7 @@
  */
 
 
-
+console.log("Start of SFSmartstorePlugin.js");
 if (!PhoneGap.hasResource("smartstore")) {
 
 PhoneGap.addResource("smartstore");
@@ -201,7 +201,7 @@ SmartStore.prototype.moveCursorToPreviousPage = function (cursor,successCB,error
 //======Plugin creation / installation ======
     
 
-    
+console.log("Before addConstructor SFSmartstorePlugin.js");    
 PhoneGap.addConstructor(function () {
         logToConsole("SmartStore pre-install");
          if (typeof navigator.smartstore === 'undefined') {
