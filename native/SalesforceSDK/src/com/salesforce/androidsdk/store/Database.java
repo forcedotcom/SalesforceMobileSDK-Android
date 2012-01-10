@@ -38,6 +38,8 @@ import com.salesforce.androidsdk.util.LogUtil;
 
 /**
  * Abstracts out encrypted or non-encrypted sqlite database
+ * 
+ * TODO use binding 
  */
 public class Database {
 

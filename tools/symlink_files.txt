@@ -89,3 +89,5 @@
 "native\SalesforceSDK\res\xml\authenticator.xml" "native\RestExplorer\res\xml\authenticator.xml"
 "native\SalesforceSDK\res\xml\authenticator.xml" "native\SampleApps\CloudTunes\res\xml\authenticator.xml"
 "native\SalesforceSDK\res\xml\authenticator.xml" "native\TemplateApp\res\xml\authenticator.xml"
+"native\SalesforceSDK\res\xml\plugins.xml" "hybrid\SampleApps\ContactExplorer\res\xml\plugins.xml"
+"native\SalesforceSDK\res\xml\plugins.xml" "hybrid\SampleApps\VFConnector\res\xml\plugins.xml"

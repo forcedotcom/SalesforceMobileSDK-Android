@@ -53,7 +53,7 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 
 /**
- * PhoneGap plugin for PhoneGap-based Force applications.
+ * PhoneGap plugin for Salesforce OAuth.
  */
 public class SalesforceOAuthPlugin extends Plugin {
 	// Keys in credentials map

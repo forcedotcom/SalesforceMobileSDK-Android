@@ -60,7 +60,12 @@ public class SmartStore  {
 	protected static final String CREATED_COL = "created";
 	protected static final String LAST_MODIFIED_COL = "lastModified";
 	protected static final String SOUP_COL = "soup";
+
+	// JSON field holding internal id
+	public static final String SOUP_ENTRY_ID = "_soupEntryId";
 	
+	// Backing database
+	protected Database db;
 	
 	/**
 	 * Create soup index map table to keep track of soups' index specs
@@ -78,7 +83,13 @@ public class SmartStore  {
 				  	.append(")");
 		db.execSQL(sb.toString());
 	}
-	
+
+	/**
+	 * @param db
+	 */
+	public SmartStore(Database db) {
+		this.db = db;
+	}
 	
 	/**
 	 * Register a soup 
@@ -86,11 +97,10 @@ public class SmartStore  {
 	 * Create table for soupName with a column for the soup itself and columns for paths specified in indexSpecs
 	 * Create indexes on the new table to make lookup faster
 	 * Create rows in soup index map table for indexSpecs
-	 * @param db≈ß
 	 * @param soupName
 	 * @param indexSpecs
 	 */
-	public void registerSoup(Database db, String soupName, IndexSpec[] indexSpecs) {
+	public void registerSoup(String soupName, IndexSpec[] indexSpecs) {
 		StringBuilder createTableStmt = new StringBuilder();          // to create new soup table
 		List<String> createIndexStmts = new ArrayList<String>();      // to create indices on new soup table
 		List<ContentValues> soupIndexMapInserts = new ArrayList<ContentValues>();  // to be inserted in soup index map table
@@ -148,10 +158,9 @@ public class SmartStore  {
 	 * 
 	 * Drop table for soupName 
 	 * Cleanup entries in soup index map table  
-	 * @param db
 	 * @param soupName
 	 */
-	public void dropSoup(Database db, String soupName) {
+	public void dropSoup(String soupName) {
 		db.execSQL("DROP TABLE IF EXISTS " + soupName);
 		try {
 			db.beginTransaction();
@@ -165,13 +174,13 @@ public class SmartStore  {
 
 	/**
 	 * Run a query
-	 * @param db
+	 * Note: returned soup elements have an extra field for the internal soup entry id (useful for delete/upsert) 
 	 * @param soupName
 	 * @param querySpec
 	 * @return
 	 * @throws JSONException 
 	 */
-	public JSONArray querySoup(Database db, String soupName, QuerySpec querySpec) throws JSONException {
+	public JSONArray querySoup(String soupName, QuerySpec querySpec) throws JSONException {
 		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
 		
 		// Get the matching soups
@@ -182,9 +191,11 @@ public class SmartStore  {
 			JSONArray results = new JSONArray();
 			if (cursor.moveToFirst()) {
 				do {
+					long entryId = cursor.getLong(cursor.getColumnIndex(ID_COL));
 					JSONObject soupElt = new JSONObject(cursor.getString(cursor.getColumnIndex(SOUP_COL)));
 					
 					if (querySpec.projections == null) {
+						soupElt.put(SOUP_ENTRY_ID, entryId);
 						results.put(soupElt);
 					}
 					else {
@@ -192,6 +203,7 @@ public class SmartStore  {
 						for (String projection : querySpec.projections) {
 							subSoup.put(projection, project(soupElt, projection));
 						}
+						subSoup.put(SOUP_ENTRY_ID, entryId);
 						results.put(subSoup);
 					}
 				}
@@ -210,13 +222,11 @@ public class SmartStore  {
 
 	/**
 	 * Create 
-	 * @param db
 	 * @param soupName
 	 * @param soupElt
-	 * 
 	 * @return rowId of inserted row
 	 */
-	public long create(Database db, String soupName, JSONObject soupElt) {
+	public long create(String soupName, JSONObject soupElt) {
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
@@ -240,23 +250,25 @@ public class SmartStore  {
 	}
 
 	/**
-	 * Retrieve 
-	 * @param db
+	 * Retrieve
+	 * Note: returned soup element has an extra field for the internal soup entry id (useful for delete/upsert) 
 	 * @param soupName
 	 * @param rowId
-	 * 
 	 * @return retrieve JSONObject with the given rowId or null if not found
 	 * @throws JSONException 
 	 */
-	public JSONObject retrieve(Database db, String soupName, long rowId) throws JSONException {
+	public JSONObject retrieve(String soupName, long rowId) throws JSONException {
 		Cursor cursor = null;
 		try {
-			cursor = db.query(soupName, new String[] {SOUP_COL}, getRowIdPredicate(rowId), null);
+			cursor = db.query(soupName, new String[] {ID_COL, SOUP_COL}, getRowIdPredicate(rowId), null);
 			if (!cursor.moveToFirst()) {
 				return null;
 			}
+			long entryId = cursor.getLong(cursor.getColumnIndex(ID_COL));
 			String raw = cursor.getString(cursor.getColumnIndex(SOUP_COL));
-			return new JSONObject(raw);
+			JSONObject result = new JSONObject(raw);
+			result.put(SOUP_ENTRY_ID, entryId);
+			return result;
 		}
 		finally {
 			if (cursor != null) {
@@ -268,18 +280,17 @@ public class SmartStore  {
 
 	/**
 	 * Update 
-	 * @param db
 	 * @param soupName
 	 * @param soupElt
 	 * @param rowId
-	 * 
 	 * @return true if successful
 	 */
-	public boolean update(Database db, String soupName, JSONObject soupElt, long rowId) {
+	public boolean update(String soupName, JSONObject soupElt, long rowId) {
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
 		ContentValues contentValues = new ContentValues();
+		soupElt.remove(SOUP_ENTRY_ID); // don't store in soup
 		contentValues.put(SOUP_COL, soupElt.toString());
 		contentValues.put(LAST_MODIFIED_COL, now);
 		for (IndexSpec indexSpec : indexSpecs) {
@@ -296,14 +307,32 @@ public class SmartStore  {
 			db.endTransaction();
 		}
 	}
+
+	/**
+	 * Upsert 
+	 * @param soupName
+	 * @param soupElt
+	 * @return rowId of upserted row
+	 * @throws JSONException 
+	 */
+	public long upsert(String soupName, JSONObject soupElt) throws JSONException {
+		if (soupElt.has(SOUP_ENTRY_ID)) {
+			long entryId = soupElt.getLong(SOUP_ENTRY_ID);
+			update(soupName, soupElt, entryId);
+			return entryId;
+		}
+		else {
+			return create(soupName, soupElt);
+		}
+	}
+	
 	
 	/**
 	 * Delete
-	 * @param db
 	 * @param soupName
 	 * @param rowId
 	 */
-	public void delete(Database db, String soupName, long rowId) {
+	public void delete(String soupName, long rowId) {
 		db.beginTransaction();
 		db.delete(soupName, getRowIdPredicate(rowId));
 		db.setTransactionSuccessful();
