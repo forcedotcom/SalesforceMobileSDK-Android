@@ -62,7 +62,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		store = new SmartStore(db);
 		
 		assertFalse("Table test_soup should not exist", hasTable(TEST_SOUP));
-		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.TEXT)});
+		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
 		assertTrue("Register soup call failed", hasTable(TEST_SOUP));
 	}
 	
@@ -164,7 +164,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	public void testCreateMultiple() throws JSONException {
 		try {
 			assertFalse("Table test_soup should not exist", hasTable(OTHER_TEST_SOUP));
-			store.registerSoup(OTHER_TEST_SOUP, new IndexSpec[] {new IndexSpec("lastName", Type.TEXT), new IndexSpec("address/city", Type.TEXT)});
+			store.registerSoup(OTHER_TEST_SOUP, new IndexSpec[] {new IndexSpec("lastName", Type.string), new IndexSpec("address/city", Type.string)});
 			assertTrue("Register soup call failed", hasTable(OTHER_TEST_SOUP));
 			
 			JSONObject soupElt1 = new JSONObject("{'lastName':'Doe', 'address':{'street':'1 market', 'city':'San Francisco'}}");

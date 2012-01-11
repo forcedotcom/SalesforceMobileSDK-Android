@@ -46,7 +46,6 @@ import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
  * PhoneGap plugin for smart store.
  */
 public class SmartStorePlugin extends Plugin {
-	private static final String ENTRIES = "entries";
 	// Keys in json coming from javascript
 	private static final String END_KEY = "endKey";
 	private static final String ORDER = "order";
@@ -56,6 +55,8 @@ public class SmartStorePlugin extends Plugin {
 	private static final String TYPE = "type";
 	private static final String INDEXES = "indexes";
 	private static final String SOUP_NAME = "soupName";
+	private static final String SOUP_ENTRY_ID = "soupEntryId";
+	private static final String ENTRIES = "entries";
 
 	/**
 	 * Supported plugin actions that the client can take.
@@ -65,7 +66,9 @@ public class SmartStorePlugin extends Plugin {
 		pgRemoveSoup,
 		pgQuerySoup,
 		pgUpsertSoupEntries,
-		pgMoveCursorToPageIndex
+		pgMoveCursorToPageIndex,
+		pgRetrieveSoupEntry,
+		pgRemoveFromSoup
 	}
 	
     /**
@@ -88,6 +91,8 @@ public class SmartStorePlugin extends Plugin {
 				case pgRegisterSoup:          return registerSoup(args, callbackId);
 				case pgRemoveSoup:            return removeSoup(args, callbackId);
 				case pgUpsertSoupEntries:     return upsertSoupEntries(args, callbackId);
+				case pgRetrieveSoupEntry:     return retrieveSoupEntry(args, callbackId);
+				case pgRemoveFromSoup:        return removeFromSoup(args, callbackId);
 				default: return new PluginResult(PluginResult.Status.INVALID_ACTION, actionStr); // should never happen
 	    	}
     	}
@@ -98,6 +103,42 @@ public class SmartStorePlugin extends Plugin {
     		return new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());    		
     	}
     }
+
+	/**
+	 * Native implementation of pgRemoveFromSoup
+	 * @param args
+	 * @param callbackId
+	 * @return
+	 * @throws JSONException 
+	 */
+	private PluginResult removeFromSoup(JSONArray args, String callbackId) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		String soupName = arg0.getString(SOUP_NAME);
+		Long soupEntryId = arg0.getLong(SOUP_ENTRY_ID);
+		
+		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		smartStore.delete(soupName, soupEntryId);
+		return new PluginResult(PluginResult.Status.OK);
+	}
+
+	/**
+	 * Native implementation of pgRetrieveSoupEntry
+	 * @param args
+	 * @param callbackId
+	 * @return
+	 * @throws JSONException 
+	 */
+	private PluginResult retrieveSoupEntry(JSONArray args, String callbackId) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		String soupName = arg0.getString(SOUP_NAME);
+		Long soupEntryId = arg0.getLong(SOUP_ENTRY_ID);
+		
+		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		JSONObject result = smartStore.retrieve(soupName, soupEntryId);
+		return new PluginResult(PluginResult.Status.OK, result);
+	}
 
 	/**
 	 * Native implementation of pgMoveCursorToPageIndex

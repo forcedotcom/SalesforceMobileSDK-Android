@@ -76,10 +76,10 @@ public class SmartStore  {
 	public static void createMetaTable(Database db) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("CREATE TABLE ").append(SOUP_INDEX_MAP_TABLE).append(" (") 
-				  	.append(SOUP_NAME_COL).append(" ").append(Type.TEXT.toString())
-				  	.append(",").append(PATH_COL).append(" ").append(Type.TEXT.toString())
-				  	.append(",").append(COLUMN_NAME_COL).append(" ").append(Type.TEXT.toString())
-				  	.append(",").append(COLUMN_TYPE_COL).append(" ").append(Type.TEXT.toString())
+				  	.append(SOUP_NAME_COL).append(" TEXT")
+				  	.append(",").append(PATH_COL).append(" TEXT")
+				  	.append(",").append(COLUMN_NAME_COL).append(" TEXT")
+				  	.append(",").append(COLUMN_TYPE_COL).append(" TEXT")
 				  	.append(")");
 		db.execSQL(sb.toString());
 	}
@@ -106,16 +106,16 @@ public class SmartStore  {
 		List<ContentValues> soupIndexMapInserts = new ArrayList<ContentValues>();  // to be inserted in soup index map table
 		
 		createTableStmt.append("CREATE TABLE ").append(soupName).append(" (")
-						.append(ID_COL).append(" ").append(Type.INTEGER.toString()).append(" PRIMARY KEY AUTOINCREMENT")
-					    .append(", ").append(SOUP_COL).append(" ").append(Type.TEXT.toString())
-					    .append(", ").append(CREATED_COL).append(" ").append(Type.INTEGER.toString())
-					    .append(", ").append(LAST_MODIFIED_COL).append(" ").append(Type.INTEGER.toString());
+						.append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
+					    .append(", ").append(SOUP_COL).append(" TEXT")
+					    .append(", ").append(CREATED_COL).append(" INTEGER")
+					    .append(", ").append(LAST_MODIFIED_COL).append(" INTEGER");
 		
 		int i = 0;
 		for (IndexSpec indexSpec : indexSpecs) {
 			// for create table
 			String columnName = soupName + "_" + i;
-			String columnType = indexSpec.type.toString();
+			String columnType = indexSpec.type.getColumnType();
 			createTableStmt.append(", ").append(columnName).append(" ").append(columnType);
 			
 			// for insert
@@ -123,7 +123,7 @@ public class SmartStore  {
 			values.put(SOUP_NAME_COL, soupName);
 			values.put(PATH_COL, indexSpec.path);
 			values.put(COLUMN_NAME_COL, columnName);
-			values.put(COLUMN_TYPE_COL, columnType);
+			values.put(COLUMN_TYPE_COL, indexSpec.type.toString());
 			soupIndexMapInserts.add(values);
 			
 			// for create index
@@ -466,7 +466,17 @@ public class SmartStore  {
 	 * Enum for column type
 	 */
 	public enum Type {
-		TEXT, INTEGER;
+		string("TEXT"), integer("INTEGER");
+		
+		private String columnType;
+
+		private Type(String columnType) {
+			this.columnType = columnType;
+		}
+		
+		public String getColumnType() {
+			return columnType;
+		}
 	}
 	
 	/**
