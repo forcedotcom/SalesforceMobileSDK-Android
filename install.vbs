@@ -34,6 +34,11 @@ If intReturnVal <> 0 Then
     WScript.Echo "Error initializing the submodules!"
     WScript.Quit 2
 End If
+intReturnVal = objShell.Run("git submodule sync", 1, True)
+If intReturnVal <> 0 Then
+    WScript.Echo "Error syncing the submodules!"
+    WScript.Quit 6
+End If
 intReturnVal = objShell.Run("git submodule update", 1, True)
 If intReturnVal <> 0 Then
     WScript.Echo "Error updating the submodules!"

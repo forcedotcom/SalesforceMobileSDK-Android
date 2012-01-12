@@ -3,4 +3,5 @@
 
 # ensure that we have the correct version of all submodules
 git submodule init
+git submodule sync
 git submodule update
