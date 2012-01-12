@@ -202,6 +202,7 @@ SmartStoreTestSuite.prototype.testRemoveSoup = function() {
 /* 
 TEST upsertSoupEntries
 */
+/*
 SmartStoreTestSuite.prototype.testUpsertSoupEntries = function()  {
 	var self = this;
 	navigator.smartstore.removeSoup(this.defaultSoupName);
@@ -227,10 +228,11 @@ SmartStoreTestSuite.prototype.continueUpsertSoupEntries2 = function(cursor)  {
 	
 	this.setTestSuccessByName("testUpsertSoupEntries");
 }; 
-
+*/
 /*
 TEST retrieveSoupEntry
 */
+/*
 SmartStoreTestSuite.prototype.testRetrieveSoupEntry = function()  {
 	var self = this; 
     
@@ -257,13 +259,14 @@ SmartStoreTestSuite.prototype.continueRetrieveSoupEntry = function(cursor)  {
 		}
 	);
 };
-
+*/
 
 
 
 /*
 TEST removeFromSoup
 */
+/*
 SmartStoreTestSuite.prototype.testRemoveFromSoup = function()  {
 	var self = this; 
     
@@ -312,11 +315,12 @@ SmartStoreTestSuite.prototype.continueRemoveFromSoup2 = function(status) {
 		}
 	);
 };
-
+*/
 
 /* 
 TEST querySoup
 */
+/*
 SmartStoreTestSuite.prototype.testQuerySoup = function()  {
 	var self = this;
 	this.stuffTestSoup(function(cursor) {
@@ -344,13 +348,14 @@ SmartStoreTestSuite.prototype.continueQuerySoup = function(cursor) {
 	);
 
 };
-
+*/
 
 
 
 /*
 TEST moveCursorToNextPage
 */
+/*
 SmartStoreTestSuite.prototype.testManipulateCursor = function()  {
 	var self = this;
 	navigator.smartstore.removeSoup(this.defaultSoupName);
@@ -384,11 +389,13 @@ SmartStoreTestSuite.prototype.continueManipulateCursor = function(cursor) {
 	);
 
 };
+*/
 
 /*
 Page through the cursor til we reach the end.
 Used by testManipulateCursor
 */
+/*
 SmartStoreTestSuite.prototype.forwardCursorToEnd = function(cursor) {
 	var self = this;
 	
@@ -422,11 +429,6 @@ SmartStoreTestSuite.prototype.forwardCursorToEnd = function(cursor) {
 		}
 	);
 };
-
-
-
-
-
-
+*/
 }
 

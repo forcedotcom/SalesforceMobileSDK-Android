@@ -70,7 +70,7 @@ public class SmartStorePlugin extends Plugin {
 		pgRetrieveSoupEntry,
 		pgRemoveFromSoup
 	}
-	
+
     /**
      * Executes the plugin request and returns PluginResult.
      * 
@@ -80,27 +80,30 @@ public class SmartStorePlugin extends Plugin {
      * @return              A PluginResult object with a status and message.
      */
     public PluginResult execute(String actionStr, JSONArray args, String callbackId) {
-    	Log.i("SalesforceOAuthPlugin.execute", "actionStr: " + actionStr);
-    	// Figure out action
-    	Action action = null;
-    	try {
-    		action = Action.valueOf(actionStr);
-			switch(action) {
-				case pgMoveCursorToPageIndex: return moveCursorToPageIndex(args, callbackId);
-				case pgQuerySoup:             return querySoup(args, callbackId);
-				case pgRegisterSoup:          return registerSoup(args, callbackId);
-				case pgRemoveSoup:            return removeSoup(args, callbackId);
-				case pgUpsertSoupEntries:     return upsertSoupEntries(args, callbackId);
-				case pgRetrieveSoupEntry:     return retrieveSoupEntry(args, callbackId);
-				case pgRemoveFromSoup:        return removeFromSoup(args, callbackId);
-				default: return new PluginResult(PluginResult.Status.INVALID_ACTION, actionStr); // should never happen
+    	// All smart store action need to be serialized
+    	synchronized(SmartStorePlugin.class) {
+	    	Log.i("SmartStorePlugin.execute", "actionStr: " + actionStr);
+	    	// Figure out action
+	    	Action action = null;
+	    	try {
+	    		action = Action.valueOf(actionStr);
+				switch(action) {
+					case pgMoveCursorToPageIndex: return moveCursorToPageIndex(args, callbackId);
+					case pgQuerySoup:             return querySoup(args, callbackId);
+					case pgRegisterSoup:          return registerSoup(args, callbackId);
+					case pgRemoveSoup:            return removeSoup(args, callbackId);
+					case pgUpsertSoupEntries:     return upsertSoupEntries(args, callbackId);
+					case pgRetrieveSoupEntry:     return retrieveSoupEntry(args, callbackId);
+					case pgRemoveFromSoup:        return removeFromSoup(args, callbackId);
+					default: return new PluginResult(PluginResult.Status.INVALID_ACTION, actionStr); // should never happen
+		    	}
 	    	}
-    	}
-    	catch (IllegalArgumentException e) {
-    		return new PluginResult(PluginResult.Status.INVALID_ACTION, e.getMessage());
-    	}
-    	catch (JSONException e) {
-    		return new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());    		
+	    	catch (IllegalArgumentException e) {
+	    		return new PluginResult(PluginResult.Status.INVALID_ACTION, e.getMessage());
+	    	}
+	    	catch (JSONException e) {
+	    		return new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());    		
+	    	}
     	}
     }
 
