@@ -32,50 +32,50 @@ package com.salesforce.androidsdk.ui;
 /**
  * Since the SalesforceSDK is packaged as a jar, it can't have resources.
  * Class that allows references to resources defined outside the SDK.
- * Projects making use of the SDK need to provide an implementation. 
+ * Projects making use of the SDK need to provide a subclass that returns the actual resource id. 
  */
 
-public interface SalesforceR {
+public class SalesforceR {
 	/* Login */
-	int stringAccountType();
-	int layoutLogin();
-	int idLoginWebView();
-	int stringGenericError();
-	int stringGenericAuthenticationErrorTitle();
-	int stringGenericAuthenticationErrorBody();
+	public int stringAccountType() { return -1; }
+	public int layoutLogin() { return -1; }
+	public int idLoginWebView() { return -1; }
+	public int stringGenericError() { return -1; }
+	public int stringGenericAuthenticationErrorTitle() { return -1; }
+	public int stringGenericAuthenticationErrorBody() { return -1; }
 	/* Passcode */
-	int layoutPasscode();
-	int idPasscodeTitle();
-	int idPasscodeError();
-	int idPasscodeInstructions();
-	int idPasscodeText();
-	int stringPasscodeCreateTitle();
-	int stringPasscodeEnterTitle();
-	int stringPasscodeConfirmTitle();
-	int stringPasscodeEnterInstructions();
-	int stringPasscodeCreateInstructions();
-	int stringPasscodeConfirmInstructions();
-	int stringPasscodeMinLength();
-	int stringPasscodeTryAgain();
-	int stringPasscodeFinal();
-	int stringPasscodesDontMatch();
+	public int layoutPasscode() { return -1; }
+	public int idPasscodeTitle() { return -1; }
+	public int idPasscodeError() { return -1; }
+	public int idPasscodeInstructions() { return -1; }
+	public int idPasscodeText() { return -1; }
+	public int stringPasscodeCreateTitle() { return -1; }
+	public int stringPasscodeEnterTitle() { return -1; }
+	public int stringPasscodeConfirmTitle() { return -1; }
+	public int stringPasscodeEnterInstructions() { return -1; }
+	public int stringPasscodeCreateInstructions() { return -1; }
+	public int stringPasscodeConfirmInstructions() { return -1; }
+	public int stringPasscodeMinLength() { return -1; }
+	public int stringPasscodeTryAgain() { return -1; }
+	public int stringPasscodeFinal() { return -1; }
+	public int stringPasscodesDontMatch() { return -1; }
 	/* Server picker */
-	int idPickerCustomLabel();
-	int idPickerCustomUrl();
-	int stringServerUrlDefaultCustomLabel();
-	int stringServerUrlDefaultCustomUrl();
-	int stringServerUrlAddTitle();
-	int stringServerUrlEditTitle();
-	int layoutCustomServerUrl();
-	int idApplyButton();
-	int idCancelButton();
-	int stringInvalidServerUrl();
-	int idServerListGroup();
-	int layoutServerPicker();
-	int stringAuthLoginProduction();
-	int stringAuthLoginSandbox();
-	int menuClearCustomUrl();
-	int idMenuClearCustomUrl();
-	int drawableEditIcon();
-	int idShowCustomUrlEdit();
+	public int idPickerCustomLabel() { return -1; }
+	public int idPickerCustomUrl() { return -1; }
+	public int stringServerUrlDefaultCustomLabel() { return -1; }
+	public int stringServerUrlDefaultCustomUrl() { return -1; }
+	public int stringServerUrlAddTitle() { return -1; }
+	public int stringServerUrlEditTitle() { return -1; }
+	public int layoutCustomServerUrl() { return -1; }
+	public int idApplyButton() { return -1; }
+	public int idCancelButton() { return -1; }
+	public int stringInvalidServerUrl() { return -1; }
+	public int idServerListGroup() { return -1; }
+	public int layoutServerPicker() { return -1; }
+	public int stringAuthLoginProduction() { return -1; }
+	public int stringAuthLoginSandbox() { return -1; }
+	public int menuClearCustomUrl() { return -1; }
+	public int idMenuClearCustomUrl() { return -1; }
+	public int drawableEditIcon() { return -1; }
+	public int idShowCustomUrlEdit() { return -1; }
 }

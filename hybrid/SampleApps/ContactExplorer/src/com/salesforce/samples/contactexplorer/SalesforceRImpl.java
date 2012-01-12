@@ -33,7 +33,7 @@ import com.salesforce.androidsdk.ui.SalesforceR;
  * Since the SalesforceSDK is packaged as a jar, it can't have resources.
  * Class that allows references to resources defined outside the SDK.
  */
-public class SalesforceRImpl implements SalesforceR {
+public class SalesforceRImpl extends SalesforceR {
 	/* Login */
 	public int stringAccountType() { return R.string.account_type; }
 	public int layoutLogin() {return R.layout.login; }

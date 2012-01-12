@@ -46,7 +46,6 @@ import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
  * PhoneGap plugin for smart store.
  */
 public class SmartStorePlugin extends Plugin {
-	private static final String ENTRIES = "entries";
 	// Keys in json coming from javascript
 	private static final String END_KEY = "endKey";
 	private static final String ORDER = "order";
@@ -56,6 +55,8 @@ public class SmartStorePlugin extends Plugin {
 	private static final String TYPE = "type";
 	private static final String INDEXES = "indexes";
 	private static final String SOUP_NAME = "soupName";
+	private static final String SOUP_ENTRY_ID = "soupEntryId";
+	private static final String ENTRIES = "entries";
 
 	/**
 	 * Supported plugin actions that the client can take.
@@ -65,9 +66,11 @@ public class SmartStorePlugin extends Plugin {
 		pgRemoveSoup,
 		pgQuerySoup,
 		pgUpsertSoupEntries,
-		pgMoveCursorToPageIndex
+		pgMoveCursorToPageIndex,
+		pgRetrieveSoupEntry,
+		pgRemoveFromSoup
 	}
-	
+
     /**
      * Executes the plugin request and returns PluginResult.
      * 
@@ -77,27 +80,68 @@ public class SmartStorePlugin extends Plugin {
      * @return              A PluginResult object with a status and message.
      */
     public PluginResult execute(String actionStr, JSONArray args, String callbackId) {
-    	Log.i("SalesforceOAuthPlugin.execute", "actionStr: " + actionStr);
-    	// Figure out action
-    	Action action = null;
-    	try {
-    		action = Action.valueOf(actionStr);
-			switch(action) {
-				case pgMoveCursorToPageIndex: return moveCursorToPageIndex(args, callbackId);
-				case pgQuerySoup:             return querySoup(args, callbackId);
-				case pgRegisterSoup:          return registerSoup(args, callbackId);
-				case pgRemoveSoup:            return removeSoup(args, callbackId);
-				case pgUpsertSoupEntries:     return upsertSoupEntries(args, callbackId);
-				default: return new PluginResult(PluginResult.Status.INVALID_ACTION, actionStr); // should never happen
+    	// All smart store action need to be serialized
+    	synchronized(SmartStorePlugin.class) {
+	    	Log.i("SmartStorePlugin.execute", "actionStr: " + actionStr);
+	    	// Figure out action
+	    	Action action = null;
+	    	try {
+	    		action = Action.valueOf(actionStr);
+				switch(action) {
+					case pgMoveCursorToPageIndex: return moveCursorToPageIndex(args, callbackId);
+					case pgQuerySoup:             return querySoup(args, callbackId);
+					case pgRegisterSoup:          return registerSoup(args, callbackId);
+					case pgRemoveSoup:            return removeSoup(args, callbackId);
+					case pgUpsertSoupEntries:     return upsertSoupEntries(args, callbackId);
+					case pgRetrieveSoupEntry:     return retrieveSoupEntry(args, callbackId);
+					case pgRemoveFromSoup:        return removeFromSoup(args, callbackId);
+					default: return new PluginResult(PluginResult.Status.INVALID_ACTION, actionStr); // should never happen
+		    	}
+	    	}
+	    	catch (IllegalArgumentException e) {
+	    		return new PluginResult(PluginResult.Status.INVALID_ACTION, e.getMessage());
+	    	}
+	    	catch (JSONException e) {
+	    		return new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());    		
 	    	}
     	}
-    	catch (IllegalArgumentException e) {
-    		return new PluginResult(PluginResult.Status.INVALID_ACTION, e.getMessage());
-    	}
-    	catch (JSONException e) {
-    		return new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());    		
-    	}
     }
+
+	/**
+	 * Native implementation of pgRemoveFromSoup
+	 * @param args
+	 * @param callbackId
+	 * @return
+	 * @throws JSONException 
+	 */
+	private PluginResult removeFromSoup(JSONArray args, String callbackId) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		String soupName = arg0.getString(SOUP_NAME);
+		Long soupEntryId = arg0.getLong(SOUP_ENTRY_ID);
+		
+		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		smartStore.delete(soupName, soupEntryId);
+		return new PluginResult(PluginResult.Status.OK);
+	}
+
+	/**
+	 * Native implementation of pgRetrieveSoupEntry
+	 * @param args
+	 * @param callbackId
+	 * @return
+	 * @throws JSONException 
+	 */
+	private PluginResult retrieveSoupEntry(JSONArray args, String callbackId) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		String soupName = arg0.getString(SOUP_NAME);
+		Long soupEntryId = arg0.getLong(SOUP_ENTRY_ID);
+		
+		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		JSONObject result = smartStore.retrieve(soupName, soupEntryId);
+		return new PluginResult(PluginResult.Status.OK, result);
+	}
 
 	/**
 	 * Native implementation of pgMoveCursorToPageIndex
