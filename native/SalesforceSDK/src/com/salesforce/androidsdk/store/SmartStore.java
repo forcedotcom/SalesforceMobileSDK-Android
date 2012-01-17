@@ -61,8 +61,9 @@ public class SmartStore  {
 	protected static final String LAST_MODIFIED_COL = "lastModified";
 	protected static final String SOUP_COL = "soup";
 
-	// JSON field holding internal id
+	// JSON fields added to soup element on insert/update 
 	public static final String SOUP_ENTRY_ID = "_soupEntryId";
+	public static final String SOUP_LAST_MODIFIED_DATE = "_soupLastModifiedDate";
 	
 	// Backing database
 	protected Database db;
@@ -174,7 +175,6 @@ public class SmartStore  {
 
 	/**
 	 * Run a query
-	 * Note: returned soup elements have an extra field for the internal soup entry id (useful for delete/upsert) 
 	 * @param soupName
 	 * @param querySpec
 	 * @return
@@ -186,16 +186,14 @@ public class SmartStore  {
 		// Get the matching soups
 		Cursor cursor = null;
 		try {
-			cursor = db.query(soupName, new String[] {ID_COL, SOUP_COL}, getKeyRangePredicate(columnName, querySpec.beginKey, querySpec.endKey), columnName + " " + querySpec.order);
+			cursor = db.query(soupName, new String[] {SOUP_COL}, getKeyRangePredicate(columnName, querySpec.beginKey, querySpec.endKey), columnName + " " + querySpec.order);
 			
 			JSONArray results = new JSONArray();
 			if (cursor.moveToFirst()) {
 				do {
-					long entryId = cursor.getLong(cursor.getColumnIndex(ID_COL));
 					JSONObject soupElt = new JSONObject(cursor.getString(cursor.getColumnIndex(SOUP_COL)));
 					
 					if (querySpec.projections == null) {
-						soupElt.put(SOUP_ENTRY_ID, entryId);
 						results.put(soupElt);
 					}
 					else {
@@ -203,7 +201,6 @@ public class SmartStore  {
 						for (String projection : querySpec.projections) {
 							subSoup.put(projection, project(soupElt, projection));
 						}
-						subSoup.put(SOUP_ENTRY_ID, entryId);
 						results.put(subSoup);
 					}
 				}
@@ -224,25 +221,46 @@ public class SmartStore  {
 	 * Create 
 	 * @param soupName
 	 * @param soupElt
-	 * @return rowId of inserted row
+	 * @return soupElt created or null if creation failed
+	 * @throws JSONException 
 	 */
-	public long create(String soupName, JSONObject soupElt) {
+	public JSONObject create(String soupName, JSONObject soupElt) throws JSONException {
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
-		
-		long now = System.currentTimeMillis();
-		ContentValues contentValues = new ContentValues();
-		contentValues.put(SOUP_COL, soupElt.toString());
-		contentValues.put(CREATED_COL, now);
-		contentValues.put(LAST_MODIFIED_COL, now);
-		for (IndexSpec indexSpec : indexSpecs) {
-			contentValues.put(indexSpec.columnName, (String) project(soupElt, indexSpec.path));
-		}
 		
 		try {
 			db.beginTransaction();
-			long rowId = db.insert(soupName, contentValues);
-			db.setTransactionSuccessful();
-			return rowId;
+
+			long now = System.currentTimeMillis();
+			ContentValues contentValues = new ContentValues();
+			contentValues.put(SOUP_COL, ""); 
+			contentValues.put(CREATED_COL, now);
+			contentValues.put(LAST_MODIFIED_COL, now);
+			for (IndexSpec indexSpec : indexSpecs) {
+				contentValues.put(indexSpec.columnName, (String) project(soupElt, indexSpec.path));
+			}
+			long rowId = db.insert(soupName, contentValues); // insert without the soup to get the id
+			
+			// Adding fields to soup element
+			// Cloning to not modify the one passed in (inefficient?)
+			JSONObject soupEltCreated = new JSONObject(soupElt.toString());
+			soupEltCreated.put(SOUP_ENTRY_ID, rowId);
+			soupEltCreated.put(SOUP_LAST_MODIFIED_DATE, now);
+			
+			// Updating soup column
+			contentValues = new ContentValues();
+			contentValues.put(SOUP_COL, soupEltCreated.toString());
+			
+			// Updating database
+			boolean success = db.update(soupName, contentValues, getRowIdPredicate(rowId)) == 1;
+			
+			// Commit if successful
+			if (success) {
+				db.setTransactionSuccessful();
+				return soupEltCreated;
+			}
+			else {
+				return null;
+			}
 		}
 		finally {
 			db.endTransaction();
@@ -251,7 +269,6 @@ public class SmartStore  {
 
 	/**
 	 * Retrieve
-	 * Note: returned soup element has an extra field for the internal soup entry id (useful for delete/upsert) 
 	 * @param soupName
 	 * @param rowId
 	 * @return retrieve JSONObject with the given rowId or null if not found
@@ -260,14 +277,12 @@ public class SmartStore  {
 	public JSONObject retrieve(String soupName, long rowId) throws JSONException {
 		Cursor cursor = null;
 		try {
-			cursor = db.query(soupName, new String[] {ID_COL, SOUP_COL}, getRowIdPredicate(rowId), null);
+			cursor = db.query(soupName, new String[] {SOUP_COL}, getRowIdPredicate(rowId), null);
 			if (!cursor.moveToFirst()) {
 				return null;
 			}
-			long entryId = cursor.getLong(cursor.getColumnIndex(ID_COL));
 			String raw = cursor.getString(cursor.getColumnIndex(SOUP_COL));
 			JSONObject result = new JSONObject(raw);
-			result.put(SOUP_ENTRY_ID, entryId);
 			return result;
 		}
 		finally {
@@ -283,15 +298,22 @@ public class SmartStore  {
 	 * @param soupName
 	 * @param soupElt
 	 * @param rowId
-	 * @return true if successful
+	 * @return soupElt updated or null if update failed
+	 * @throws JSONException 
 	 */
-	public boolean update(String soupName, JSONObject soupElt, long rowId) {
+	public JSONObject update(String soupName, JSONObject soupElt, long rowId) throws JSONException {
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
+		
+		// Updating last modified field in soup element
+		// Cloning to not modify the one passed in (inefficient?)
+		JSONObject soupEltUpdated = new JSONObject(soupElt.toString());
+		soupEltUpdated.put(SOUP_LAST_MODIFIED_DATE, now);
+
+		// Preparing data for row
 		ContentValues contentValues = new ContentValues();
-		soupElt.remove(SOUP_ENTRY_ID); // don't store in soup
-		contentValues.put(SOUP_COL, soupElt.toString());
+		contentValues.put(SOUP_COL, soupEltUpdated.toString());
 		contentValues.put(LAST_MODIFIED_COL, now);
 		for (IndexSpec indexSpec : indexSpecs) {
 			contentValues.put(indexSpec.columnName, (String) project(soupElt, indexSpec.path));
@@ -300,8 +322,13 @@ public class SmartStore  {
 		try {
 			db.beginTransaction();
 			boolean success = db.update(soupName, contentValues, getRowIdPredicate(rowId)) == 1;
-			db.setTransactionSuccessful();
-			return success;
+			if (success) {
+				db.setTransactionSuccessful();
+				return soupEltUpdated;
+			}
+			else {
+				return null;
+			}
 		}
 		finally {
 			db.endTransaction();
@@ -312,14 +339,13 @@ public class SmartStore  {
 	 * Upsert 
 	 * @param soupName
 	 * @param soupElt
-	 * @return rowId of upserted row
+	 * @return soupElt upserted or null if upsert failed
 	 * @throws JSONException 
 	 */
-	public long upsert(String soupName, JSONObject soupElt) throws JSONException {
+	public JSONObject upsert(String soupName, JSONObject soupElt) throws JSONException {
 		if (soupElt.has(SOUP_ENTRY_ID)) {
 			long entryId = soupElt.getLong(SOUP_ENTRY_ID);
-			update(soupName, soupElt, entryId);
-			return entryId;
+			return update(soupName, soupElt, entryId);
 		}
 		else {
 			return create(soupName, soupElt);
