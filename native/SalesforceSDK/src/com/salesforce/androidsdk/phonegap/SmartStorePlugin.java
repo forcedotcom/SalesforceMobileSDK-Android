@@ -118,10 +118,14 @@ public class SmartStorePlugin extends Plugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		Long soupEntryId = arg0.getLong(SOUP_ENTRY_ID);
+		JSONArray soupEntryIds = arg0.getJSONArray(ENTRIES);
 		
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
-		smartStore.delete(soupName, soupEntryId);
+		// TODO do it in one transaction
+		for (int i=0; i<soupEntryIds.length(); i++) {
+			long soupEntryId = soupEntryIds.getLong(i);
+			smartStore.delete(soupName, soupEntryId);
+		}
 		return new PluginResult(PluginResult.Status.OK);
 	}
 
