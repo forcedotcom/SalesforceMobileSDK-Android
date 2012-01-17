@@ -103,13 +103,13 @@ var PagedSoupCursor = function () {
  * Represents a group of Contacts.
  */
 var SmartStore = function () {
-    logToConsole("new SmartStore");
+	SFHybridApp.logToConsole("new SmartStore");
 };
  
 // ====== Soup manipulation ======
 
 SmartStore.prototype.registerSoup = function (soupName,indexSpecs,successCB,errorCB) {
-    logToConsole("SmartStore.registerSoup: '" + soupName + "' indexSpecs: " + indexSpecs);
+	SFHybridApp.logToConsole("SmartStore.registerSoup: '" + soupName + "' indexSpecs: " + indexSpecs);
     
     PhoneGap.exec(successCB, errorCB, 
                   "com.salesforce.smartstore",
@@ -119,7 +119,7 @@ SmartStore.prototype.registerSoup = function (soupName,indexSpecs,successCB,erro
 };
 
 SmartStore.prototype.removeSoup = function (soupName,successCB,errorCB) {
-    logToConsole("SmartStore.removeSoup: " + soupName );
+	SFHybridApp.logToConsole("SmartStore.removeSoup: " + soupName );
     
     PhoneGap.exec(successCB, errorCB, 
                   "com.salesforce.smartstore",
@@ -129,7 +129,7 @@ SmartStore.prototype.removeSoup = function (soupName,successCB,errorCB) {
 };
 
 SmartStore.prototype.querySoup = function (soupName,querySpec,successCB,errorCB) {
-    logToConsole("SmartStore.querySoup: '" + soupName + "' indexPath: " + querySpec.indexPath);
+	SFHybridApp.logToConsole("SmartStore.querySoup: '" + soupName + "' indexPath: " + querySpec.indexPath);
     
     PhoneGap.exec(successCB, errorCB, 
                   "com.salesforce.smartstore",
@@ -139,7 +139,7 @@ SmartStore.prototype.querySoup = function (soupName,querySpec,successCB,errorCB)
 };
 
 SmartStore.prototype.retrieveSoupEntry = function (soupName,soupEntryId,successCB,errorCB) {
-    logToConsole("SmartStore.retrieveSoupEntry: '" + soupName + "' soupEntryId: " + soupEntryId);
+	SFHybridApp.logToConsole("SmartStore.retrieveSoupEntry: '" + soupName + "' soupEntryId: " + soupEntryId);
     
     PhoneGap.exec(successCB, errorCB, 
                   "com.salesforce.smartstore",
@@ -149,7 +149,7 @@ SmartStore.prototype.retrieveSoupEntry = function (soupName,soupEntryId,successC
 };
 
 SmartStore.prototype.upsertSoupEntries = function (soupName,entries,successCB,errorCB) {
-    logToConsole("SmartStore.upsertSoupEntries: '" + soupName + "' entries: " + entries.length);
+	SFHybridApp.logToConsole("SmartStore.upsertSoupEntries: '" + soupName + "' entries: " + entries.length);
 
     PhoneGap.exec(successCB, errorCB, 
                   "com.salesforce.smartstore",
@@ -159,7 +159,7 @@ SmartStore.prototype.upsertSoupEntries = function (soupName,entries,successCB,er
 };
 
 SmartStore.prototype.removeFromSoup = function (soupName,entryIds,successCB,errorCB) {
-    logToConsole("SmartStore.removeFromSoup: '" + soupName + "' entryIds: " + entryIds.length);
+	SFHybridApp.logToConsole("SmartStore.removeFromSoup: '" + soupName + "' entryIds: " + entryIds.length);
 
     PhoneGap.exec(successCB, errorCB, 
                   "com.salesforce.smartstore",
@@ -171,7 +171,7 @@ SmartStore.prototype.removeFromSoup = function (soupName,entryIds,successCB,erro
 //====== Cursor manipulation ======
     
 SmartStore.prototype.moveCursorToPageIndex = function (cursor,newPageIndex,successCB,errorCB) {
-    logToConsole("moveCursorToPageIndex " + newPageIndex);
+	SFHybridApp.logToConsole("moveCursorToPageIndex " + newPageIndex);
 
     PhoneGap.exec(successCB, errorCB, 
     "com.salesforce.smartstore",
@@ -203,9 +203,9 @@ SmartStore.prototype.moveCursorToPreviousPage = function (cursor,successCB,error
 
 console.log("Before addConstructor SFSmartstorePlugin.js");    
 PhoneGap.addConstructor(function () {
-        logToConsole("SmartStore pre-install");
+	     SFHybridApp.logToConsole("SmartStore pre-install");
          if (typeof navigator.smartstore === 'undefined') {
-             logToConsole("SmartStore.install");
+        	 SFHybridApp.logToConsole("SmartStore.install");
              navigator.smartstore = new SmartStore();
          }
 });
