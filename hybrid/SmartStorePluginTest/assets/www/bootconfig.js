@@ -1,3 +1,5 @@
+     
+     
 //-----------------------------------------------------------------
 // Replace the values below with your own app configuration values.
 //-----------------------------------------------------------------
@@ -6,10 +8,28 @@
 // "debug console" section of the page.
 var debugMode = true;
 
-// The start page of the application.  This is the [pagePath] portion of
-// http://[host]/[pagePath].  Leave blank to use the local index.html page.
-var startPage = "";  // Used for local REST-based"index.html" PhoneGap app.
+// The client ID value specified for your remote access object that defines
+// your application in Salesforce.
+var remoteAccessConsumerKey = "___NOT_USED___";
 
+// The redirect URI value specified for your remote access object that defines
+// your application in Salesforce.
+var oauthRedirectURI = "___NOT_USED___";
+
+// The authorization/access scope(s) you wish to define for your application.
+//var oauthScopes = ["visualforce","api"];
+var oauthScopes = ["___NOT_USED___"];
+
+// The start data associated with the application.  Use SFHybridApp.LocalAppStartData for a "local"
+// PhoneGap-based application, and SFHybridApp.RemoteAppStartData for a Visualforce-based
+// application.  The default representations are below, or you can look at the data
+// classes in SFHybridApp.js to see how you can further customize your options.
+var startData = new SFHybridApp.LocalAppStartData("index.html", false);  // Used for local REST-based "index.html" PhoneGap apps.
+//var startData = new SFHybridApp.RemoteAppStartData("/apex/BasicVFPage"); // Used for Visualforce-based apps.
+
+// Whether the container app should automatically refresh our oauth session on app foreground:
+// generally a good idea.
+var autoRefreshOnForeground = true;
 
 //-----------------------------------------------------------------
 // End configuration block
