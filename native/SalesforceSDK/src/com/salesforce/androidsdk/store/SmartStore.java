@@ -165,7 +165,7 @@ public class SmartStore  {
 		db.execSQL("DROP TABLE IF EXISTS " + soupName);
 		try {
 			db.beginTransaction();
-			db.delete(SOUP_INDEX_MAP_TABLE, getSoupNamePredicate(soupName));
+			db.delete(SOUP_INDEX_MAP_TABLE, getSoupNamePredicate(), soupName);
 			db.setTransactionSuccessful();
 		}
 		finally {
@@ -186,7 +186,8 @@ public class SmartStore  {
 		// Get the matching soups
 		Cursor cursor = null;
 		try {
-			cursor = db.query(soupName, new String[] {SOUP_COL}, getKeyRangePredicate(columnName, querySpec.beginKey, querySpec.endKey), columnName + " " + querySpec.order);
+			cursor = db.query(soupName, new String[] {SOUP_COL}, columnName + " " + querySpec.order,
+					getKeyRangePredicate(columnName), querySpec.beginKey, querySpec.endKey);
 			
 			JSONArray results = new JSONArray();
 			if (cursor.moveToFirst()) {
@@ -238,12 +239,12 @@ public class SmartStore  {
 			for (IndexSpec indexSpec : indexSpecs) {
 				contentValues.put(indexSpec.columnName, (String) project(soupElt, indexSpec.path));
 			}
-			long rowId = db.insert(soupName, contentValues); // insert without the soup to get the id
+			long soupEntryId = db.insert(soupName, contentValues); // insert without the soup to get the id
 			
 			// Adding fields to soup element
 			// Cloning to not modify the one passed in (inefficient?)
 			JSONObject soupEltCreated = new JSONObject(soupElt.toString());
-			soupEltCreated.put(SOUP_ENTRY_ID, rowId);
+			soupEltCreated.put(SOUP_ENTRY_ID, soupEntryId);
 			soupEltCreated.put(SOUP_LAST_MODIFIED_DATE, now);
 			
 			// Updating soup column
@@ -251,7 +252,7 @@ public class SmartStore  {
 			contentValues.put(SOUP_COL, soupEltCreated.toString());
 			
 			// Updating database
-			boolean success = db.update(soupName, contentValues, getRowIdPredicate(rowId)) == 1;
+			boolean success = db.update(soupName, contentValues, getSoupEntryIdPredicate(), soupEntryId + "") == 1;
 			
 			// Commit if successful
 			if (success) {
@@ -270,14 +271,14 @@ public class SmartStore  {
 	/**
 	 * Retrieve
 	 * @param soupName
-	 * @param rowId
-	 * @return retrieve JSONObject with the given rowId or null if not found
+	 * @param soupEntryId
+	 * @return retrieve JSONObject with the given soupEntryId or null if not found
 	 * @throws JSONException 
 	 */
-	public JSONObject retrieve(String soupName, long rowId) throws JSONException {
+	public JSONObject retrieve(String soupName, long soupEntryId) throws JSONException {
 		Cursor cursor = null;
 		try {
-			cursor = db.query(soupName, new String[] {SOUP_COL}, getRowIdPredicate(rowId), null);
+			cursor = db.query(soupName, new String[] {SOUP_COL}, null, getSoupEntryIdPredicate(), soupEntryId + "");
 			if (!cursor.moveToFirst()) {
 				return null;
 			}
@@ -297,11 +298,11 @@ public class SmartStore  {
 	 * Update 
 	 * @param soupName
 	 * @param soupElt
-	 * @param rowId
+	 * @param soupEntryId
 	 * @return soupElt updated or null if update failed
 	 * @throws JSONException 
 	 */
-	public JSONObject update(String soupName, JSONObject soupElt, long rowId) throws JSONException {
+	public JSONObject update(String soupName, JSONObject soupElt, long soupEntryId) throws JSONException {
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
@@ -321,7 +322,7 @@ public class SmartStore  {
 		
 		try {
 			db.beginTransaction();
-			boolean success = db.update(soupName, contentValues, getRowIdPredicate(rowId)) == 1;
+			boolean success = db.update(soupName, contentValues, getSoupEntryIdPredicate(), soupEntryId + "") == 1;
 			if (success) {
 				db.setTransactionSuccessful();
 				return soupEltUpdated;
@@ -356,11 +357,11 @@ public class SmartStore  {
 	/**
 	 * Delete
 	 * @param soupName
-	 * @param rowId
+	 * @param soupEntryId
 	 */
-	public void delete(String soupName, long rowId) {
+	public void delete(String soupName, long soupEntryId) {
 		db.beginTransaction();
-		db.delete(soupName, getRowIdPredicate(rowId));
+		db.delete(soupName, getSoupEntryIdPredicate(), soupEntryId + "");
 		db.setTransactionSuccessful();
 		db.endTransaction();
 	}
@@ -375,7 +376,9 @@ public class SmartStore  {
 	protected String getColumnNameForPath(Database db, String soupName, String path) {
 		Cursor cursor = null;
 		try {
-			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {COLUMN_NAME_COL}, getSoupNamePredicate(soupName) + " AND " + getPathPredicate(path), null);
+			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {COLUMN_NAME_COL}, null, 
+					getSoupNamePredicate() + " AND " + getPathPredicate(), soupName, path);
+			
 			if (cursor.moveToFirst()) {
 				return cursor.getString(0);
 			}
@@ -399,7 +402,8 @@ public class SmartStore  {
 	protected IndexSpec[] getIndexSpecs(Database db, String soupName) {
 		Cursor cursor = null;
 		try {
-			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {PATH_COL, COLUMN_NAME_COL, COLUMN_TYPE_COL}, getSoupNamePredicate(soupName), null);
+			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {PATH_COL, COLUMN_NAME_COL, COLUMN_TYPE_COL}, null,
+					getSoupNamePredicate(), soupName);
 		
 			if (!cursor.moveToFirst()) {
 				throw new RuntimeException(String.format("%s does not have any indices", soupName));				
@@ -424,46 +428,34 @@ public class SmartStore  {
 	}
 	
 	/**
-	 * FIXME range predicate will be different for non-string keys (won't have the '')
-	 * 
 	 * @param columnName
-	 * @param beginKey
-	 * @param endKey
-	 * @return range predicate
+	 * @return
 	 */
-	protected String getKeyRangePredicate(String columnName, String beginKey, String endKey) {
-		if (endKey == null || endKey.equals(beginKey)) {
-			return columnName + " = '" + beginKey + "'";
-		}
-		else {
-			return columnName + " >= '" + beginKey + "' AND " + columnName + " <= '" + endKey + "'"; 
-		}
+	protected String getKeyRangePredicate(String columnName) {
+		return columnName + " >= ? AND " + columnName + " <= ?";
 	}
 
 	/**
-	 * @param soupName
 	 * @return
 	 */
-	protected String getSoupNamePredicate(String soupName) {
-		return SOUP_NAME_COL + " = '" + soupName + "'";
+	protected String getSoupNamePredicate() {
+		return SOUP_NAME_COL + " = ?";
+	}
+
+	/**
+	 * @return
+	 */
+	protected String getSoupEntryIdPredicate() {
+		return ID_COL + " = ?";
 	}
 	
 	/**
-	 * @param rowId
 	 * @return
 	 */
-	protected String getRowIdPredicate(long rowId) {
-		return ID_COL + " = " + rowId;
+	protected String getPathPredicate() {
+		return PATH_COL + " = ?";		
 	}
-	
-	/**
-	 * @param path
-	 * @return
-	 */
-	protected String getPathPredicate(String path) {
-		return PATH_COL + " = '" + path  + "'";
-	}
-	
+
 	/**
 	 * @param soup
 	 * @param path

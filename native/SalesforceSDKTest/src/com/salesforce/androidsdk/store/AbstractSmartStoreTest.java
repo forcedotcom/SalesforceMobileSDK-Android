@@ -196,7 +196,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(OTHER_TEST_SOUP, null, null, "id ASC");
+			c = db.query(OTHER_TEST_SOUP, null, "id ASC", null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -254,7 +254,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(TEST_SOUP, null, null, "id ASC");
+			c = db.query(TEST_SOUP, null, "id ASC", null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -305,7 +305,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(TEST_SOUP, null, null, "id ASC");
+			c = db.query(TEST_SOUP, null, "id ASC", null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -376,7 +376,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(TEST_SOUP, null, null, "id ASC");
+			c = db.query(TEST_SOUP, null, "id ASC", null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 2, c.getCount());
 			
@@ -462,7 +462,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	private boolean hasTable(String tableName) {
 		Cursor c = null;
 		try {
-			c = db.query("sqlite_master", null, "type = 'table' and name = '" + tableName + "'", null);
+			c = db.query("sqlite_master", null, null, "type = ? and name = ?", "table", tableName);
 			return c.getCount() == 1;
 		}
 		finally {
