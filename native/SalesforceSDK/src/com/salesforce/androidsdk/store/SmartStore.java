@@ -46,6 +46,9 @@ import android.database.Cursor;
  * The main challenge here is how to effectively store documents with dynamic fields, and still allow indexing and searching.
  */
 public class SmartStore  {
+	// Default
+	public static final int DEFAULT_PAGE_SIZE = 25;
+	
 	// Table to keep track of soup's index specs
 	protected static final String SOUP_INDEX_MAP_TABLE = "soup_index_map";
 	
@@ -91,6 +94,28 @@ public class SmartStore  {
 	public SmartStore(Database db) {
 		this.db = db;
 	}
+
+	/**
+	 * Start transaction
+	 */
+	public void beginTransaction() {
+		db.beginTransaction();
+	}
+
+	/**
+	 * End transaction (commit or rollback)
+	 */
+	public void endTransaction() {
+		db.endTransaction();
+	}
+	
+	/**
+	 * Mark transaction as successful (next call to endTransaction will be a commit)
+	 */
+	public void setTransactionSuccessful() {
+		db.setTransactionSuccessful();
+	}
+
 	
 	/**
 	 * Register a soup 
@@ -177,17 +202,23 @@ public class SmartStore  {
 	 * Run a query
 	 * @param soupName
 	 * @param querySpec
+	 * @param pageIndex
 	 * @return
 	 * @throws JSONException 
 	 */
-	public JSONArray querySoup(String soupName, QuerySpec querySpec) throws JSONException {
+	public JSONArray querySoup(String soupName, QuerySpec querySpec, int pageIndex) throws JSONException {
 		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
+		
+		// Page
+		int offsetRows = querySpec.pageSize * pageIndex;
+		int numberRows = querySpec.pageSize;
+		String limit = offsetRows + "," + numberRows;
 		
 		// Get the matching soups
 		Cursor cursor = null;
 		try {
 			cursor = db.query(soupName, new String[] {SOUP_COL}, columnName + " " + querySpec.order,
-					getKeyRangePredicate(columnName), querySpec.beginKey, querySpec.endKey);
+					limit, getKeyRangePredicate(columnName), querySpec.beginKey, querySpec.endKey);
 			
 			JSONArray results = new JSONArray();
 			if (cursor.moveToFirst()) {
@@ -215,21 +246,58 @@ public class SmartStore  {
 				cursor.close();
 			}
 		}
+	}
+	
+	/**
+	 * @param soupName
+	 * @param querySpec
+	 * @param limit
+	 * @return count for the given querySpec
+	 * @throws JSONException
+	 */
+	public int countQuerySoup(String soupName, QuerySpec querySpec) throws JSONException {
+		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
+		Cursor cursor = null;
+		try {
+			cursor = db.query(soupName, new String[] {SOUP_COL}, columnName + " " + querySpec.order,
+					null, getKeyRangePredicate(columnName), querySpec.beginKey, querySpec.endKey);
+			
+			return cursor.getCount();			
+		}
+		finally {
+			if (cursor != null) {
+				cursor.close();
+			}
+		}
 		
 	}
+	
 
 	/**
-	 * Create 
+	 * Create (and commits) 
 	 * @param soupName
 	 * @param soupElt
 	 * @return soupElt created or null if creation failed
 	 * @throws JSONException 
 	 */
 	public JSONObject create(String soupName, JSONObject soupElt) throws JSONException {
+		return create(soupName, soupElt, true);
+	}
+	
+	/**
+	 * Create
+	 * @param soupName
+	 * @param soupElt
+	 * @return
+	 * @throws JSONException
+	 */
+	public JSONObject create(String soupName, JSONObject soupElt, boolean handleTx) throws JSONException {
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		try {
-			db.beginTransaction();
+			if (handleTx) {
+				db.beginTransaction();
+			}
 
 			long now = System.currentTimeMillis();
 			ContentValues contentValues = new ContentValues();
@@ -256,7 +324,9 @@ public class SmartStore  {
 			
 			// Commit if successful
 			if (success) {
-				db.setTransactionSuccessful();
+				if (handleTx) {
+					db.setTransactionSuccessful();
+				}
 				return soupEltCreated;
 			}
 			else {
@@ -264,7 +334,9 @@ public class SmartStore  {
 			}
 		}
 		finally {
-			db.endTransaction();
+			if (handleTx) {
+				db.endTransaction();
+			}
 		}
 	}
 
@@ -278,7 +350,7 @@ public class SmartStore  {
 	public JSONObject retrieve(String soupName, long soupEntryId) throws JSONException {
 		Cursor cursor = null;
 		try {
-			cursor = db.query(soupName, new String[] {SOUP_COL}, null, getSoupEntryIdPredicate(), soupEntryId + "");
+			cursor = db.query(soupName, new String[] {SOUP_COL}, null, null, getSoupEntryIdPredicate(), soupEntryId + "");
 			if (!cursor.moveToFirst()) {
 				return null;
 			}
@@ -295,7 +367,7 @@ public class SmartStore  {
 	
 
 	/**
-	 * Update 
+	 * Update (and commits) 
 	 * @param soupName
 	 * @param soupElt
 	 * @param soupEntryId
@@ -303,6 +375,18 @@ public class SmartStore  {
 	 * @throws JSONException 
 	 */
 	public JSONObject update(String soupName, JSONObject soupElt, long soupEntryId) throws JSONException {
+		return update(soupName, soupElt, soupEntryId, true);
+	}
+	
+	/**
+	 * Update
+	 * @param soupName
+	 * @param soupElt
+	 * @param soupEntryId
+	 * @return
+	 * @throws JSONException
+	 */
+	public JSONObject update(String soupName, JSONObject soupElt, long soupEntryId, boolean handleTx) throws JSONException {
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
@@ -321,10 +405,14 @@ public class SmartStore  {
 		}
 		
 		try {
-			db.beginTransaction();
+			if (handleTx) {
+				db.beginTransaction();
+			}
 			boolean success = db.update(soupName, contentValues, getSoupEntryIdPredicate(), soupEntryId + "") == 1;
 			if (success) {
-				db.setTransactionSuccessful();
+				if (handleTx) {
+					db.setTransactionSuccessful();
+				}
 				return soupEltUpdated;
 			}
 			else {
@@ -332,38 +420,73 @@ public class SmartStore  {
 			}
 		}
 		finally {
-			db.endTransaction();
+			if (handleTx) {
+				db.endTransaction();
+			}
 		}
 	}
 
 	/**
-	 * Upsert 
+	 * Upsert (and commits)
 	 * @param soupName
 	 * @param soupElt
 	 * @return soupElt upserted or null if upsert failed
 	 * @throws JSONException 
 	 */
 	public JSONObject upsert(String soupName, JSONObject soupElt) throws JSONException {
+		return upsert(soupName, soupElt, true);
+	}
+	
+	/**
+	 * Upsert
+	 * @param soupName
+	 * @param soupElt
+	 * @param handleTx
+	 * @return
+	 * @throws JSONException
+	 */
+	public JSONObject upsert(String soupName, JSONObject soupElt, boolean handleTx) throws JSONException {
 		if (soupElt.has(SOUP_ENTRY_ID)) {
 			long entryId = soupElt.getLong(SOUP_ENTRY_ID);
-			return update(soupName, soupElt, entryId);
+			return update(soupName, soupElt, entryId, handleTx);
 		}
 		else {
-			return create(soupName, soupElt);
+			return create(soupName, soupElt, handleTx);
 		}
 	}
 	
 	
 	/**
-	 * Delete
+	 * Delete (and commits)
 	 * @param soupName
 	 * @param soupEntryId
 	 */
 	public void delete(String soupName, long soupEntryId) {
-		db.beginTransaction();
-		db.delete(soupName, getSoupEntryIdPredicate(), soupEntryId + "");
-		db.setTransactionSuccessful();
-		db.endTransaction();
+		delete(soupName, soupEntryId, true);
+	}
+	
+	/**
+	 * Delete
+	 * @param soupName
+	 * @param soupEntryId
+	 * @param handleTx
+	 */
+	public void delete(String soupName, long soupEntryId, boolean handleTx) {
+		if (handleTx) {
+			db.beginTransaction();
+		}
+		
+		try {
+			db.delete(soupName, getSoupEntryIdPredicate(), soupEntryId + "");
+			if (handleTx) {
+				db.setTransactionSuccessful();
+			}
+		}
+		finally {
+			if (handleTx) {
+				db.endTransaction();
+			}
+		}
 	}
 
 	/**
@@ -377,7 +500,7 @@ public class SmartStore  {
 		Cursor cursor = null;
 		try {
 			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {COLUMN_NAME_COL}, null, 
-					getSoupNamePredicate() + " AND " + getPathPredicate(), soupName, path);
+					null, getSoupNamePredicate() + " AND " + getPathPredicate(), soupName, path);
 			
 			if (cursor.moveToFirst()) {
 				return cursor.getString(0);
@@ -403,7 +526,7 @@ public class SmartStore  {
 		Cursor cursor = null;
 		try {
 			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {PATH_COL, COLUMN_NAME_COL, COLUMN_TYPE_COL}, null,
-					getSoupNamePredicate(), soupName);
+					null, getSoupNamePredicate(), soupName);
 		
 			if (!cursor.moveToFirst()) {
 				throw new RuntimeException(String.format("%s does not have any indices", soupName));				
@@ -528,6 +651,7 @@ public class SmartStore  {
 		public final String endKey;
 		public final Order order;
 		public final String[] projections;
+		public final int pageSize;
 
 		/**
 		 * Exact match (return whole soup element)
@@ -535,7 +659,7 @@ public class SmartStore  {
 		 * @param matchKey
 		 */
 		public QuerySpec(String path, String matchKey) {
-			this(path, matchKey, matchKey, null, Order.ASC);
+			this(path, matchKey, matchKey, null, Order.ASC, DEFAULT_PAGE_SIZE);
 		}
 		
 		
@@ -546,7 +670,7 @@ public class SmartStore  {
 		 * @param projections
 		 */
 		public QuerySpec(String path, String matchKey, String[] projections) {
-			this(path, matchKey, matchKey, projections, Order.ASC);
+			this(path, matchKey, matchKey, projections, Order.ASC, DEFAULT_PAGE_SIZE);
 		}
 		
 		/**
@@ -556,7 +680,7 @@ public class SmartStore  {
 		 * @param endKey
 		 */
 		public QuerySpec(String path, String beginKey, String endKey) {
-			this(path, beginKey, endKey, null, Order.ASC);
+			this(path, beginKey, endKey, null, Order.ASC, DEFAULT_PAGE_SIZE);
 		}
 
 		/**
@@ -566,9 +690,9 @@ public class SmartStore  {
 		 * @param endKey
 		 */
 		public QuerySpec(String path, String beginKey, String endKey, String[] projections) {
-			this(path, beginKey, endKey, projections, Order.ASC);
+			this(path, beginKey, endKey, projections, Order.ASC, DEFAULT_PAGE_SIZE);
 		}
-		
+
 		/**
 		 * Range query (return whole soup elements in specified order)
 		 * @param path
@@ -577,8 +701,33 @@ public class SmartStore  {
 		 * @param order
 		 */
 		public QuerySpec(String path, String beginKey, String endKey, Order order) {
-			this(path, beginKey, endKey, null, order);
+			this(path, beginKey, endKey, null, order, DEFAULT_PAGE_SIZE);
 		}
+		
+		/**
+		 * Range query (return whole soup elements in specified order)
+		 * @param path
+		 * @param beginKey
+		 * @param endKey
+		 * @param order
+		 * @param pageSize
+		 */
+		public QuerySpec(String path, String beginKey, String endKey, Order order, int pageSize) {
+			this(path, beginKey, endKey, null, order, pageSize);
+		}
+		
+		/**
+		 * Range query (return selected projections in specified order for the values at path)
+		 * @param path
+		 * @param beginKey
+		 * @param endKey
+		 * @param projections
+		 * @param order
+		 * @param pageSize
+		 */
+		public QuerySpec(String path, String beginKey, String endKey, String[] projections, Order order) {
+			this(path, beginKey, endKey, projections, order, DEFAULT_PAGE_SIZE);
+		}		
 
 		/**
 		 * Range query (return selected projections in specified order for the values at path)
@@ -587,13 +736,15 @@ public class SmartStore  {
 		 * @param endKey
 		 * @param projections
 		 * @param order
+		 * @param pageSize
 		 */
-		public QuerySpec(String path, String beginKey, String endKey, String[] projections, Order order) {
+		public QuerySpec(String path, String beginKey, String endKey, String[] projections, Order order, int pageSize) {
 			this.path = path;
 			this.beginKey = beginKey;
 			this.endKey = endKey;
 			this.order = order;
 			this.projections = projections;
+			this.pageSize = pageSize;
 		}
 	}
 

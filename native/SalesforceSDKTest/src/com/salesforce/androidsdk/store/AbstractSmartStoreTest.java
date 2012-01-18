@@ -158,7 +158,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(TEST_SOUP, null, null, null);
+			c = db.query(TEST_SOUP, null, null, null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected one soup element only", 1, c.getCount());
 			assertEquals("Wrong id", idOf(soupEltCreated), c.getLong(c.getColumnIndex("id")));
@@ -196,7 +196,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(OTHER_TEST_SOUP, null, "id ASC", null);
+			c = db.query(OTHER_TEST_SOUP, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -254,7 +254,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(TEST_SOUP, null, "id ASC", null);
+			c = db.query(TEST_SOUP, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -305,7 +305,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(TEST_SOUP, null, "id ASC", null);
+			c = db.query(TEST_SOUP, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -376,7 +376,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(TEST_SOUP, null, "id ASC", null);
+			c = db.query(TEST_SOUP, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 2, c.getCount());
 			
@@ -404,12 +404,12 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		store.create(TEST_SOUP, soupElt3);
 
 		// Exact match - whole soup element
-		JSONArray result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2"));
+		JSONArray result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2"), 0);
 		assertEquals("One result expected", 1, result.length());
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
 
 		// Exact match - specified projections
-		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", new String[] {"otherValue", "value"}));
+		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", new String[] {"otherValue", "value"}), 0);
 		assertEquals("One result expected", 1, result.length());
 		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}"), result.getJSONObject(0));
 		
@@ -429,25 +429,25 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
 
 		// Range query - whole soup elements
-		JSONArray result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3"));
+		JSONArray result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3"), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(1));
 
 		// Range query - whole soup elements - descending order
-		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", Order.DESC));
+		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", Order.DESC), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
 		
 		// Range query - specified projections
-		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}));
+		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}"), result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova3', 'value':'va3'}"), result.getJSONObject(1));
 		
 		// Range query - specified projections - descending order
-		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}, Order.DESC));
+		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}, Order.DESC), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova3', 'value':'va3'}"), result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}"), result.getJSONObject(1));
@@ -462,7 +462,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	private boolean hasTable(String tableName) {
 		Cursor c = null;
 		try {
-			c = db.query("sqlite_master", null, null, "type = ? and name = ?", "table", tableName);
+			c = db.query("sqlite_master", null, null, null, "type = ? and name = ?", "table", tableName);
 			return c.getCount() == 1;
 		}
 		finally {
