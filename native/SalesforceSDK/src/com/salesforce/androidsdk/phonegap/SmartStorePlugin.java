@@ -54,6 +54,7 @@ public class SmartStorePlugin extends Plugin {
 	private static final String BEGIN_KEY = "beginKey";
 	private static final String QUERY_SPEC = "querySpec";
 	private static final String PATH = "path";
+	private static final String INDEX_PATH = "indexPath";
 	private static final String TYPE = "type";
 	private static final String PAGE_SIZE = "pageSize";
 	private static final String INDEXES = "indexes";
@@ -65,6 +66,7 @@ public class SmartStorePlugin extends Plugin {
 	private static final String CURRENT_PAGE_ORDERED_ENTRIES = "currentPageOrderedEntries";
 	private static final String TOTAL_PAGES = "totalPages";
 	private static final String INDEX = "index";
+	private static final String ENTRY_IDS = "entryIds";
 	
 	// Map of cursor id to StoreCursor
 	private static Map<Integer, StoreCursor> storeCursors = new HashMap<Integer, StoreCursor>();
@@ -129,7 +131,7 @@ public class SmartStorePlugin extends Plugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		JSONArray soupEntryIds = arg0.getJSONArray(ENTRIES);
+		JSONArray soupEntryIds = arg0.getJSONArray(ENTRY_IDS);
 		
 		// Run remove
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
@@ -267,7 +269,7 @@ public class SmartStorePlugin extends Plugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
 		JSONObject querySpecJson = arg0.getJSONObject(QUERY_SPEC);
-		QuerySpec querySpec = new QuerySpec(querySpecJson.getString(PATH),
+		QuerySpec querySpec = new QuerySpec(querySpecJson.getString(INDEX_PATH),
 				querySpecJson.getString(BEGIN_KEY),
 				querySpecJson.getString(END_KEY),
 				SmartStore.Order.valueOf(querySpecJson.getString(ORDER)),

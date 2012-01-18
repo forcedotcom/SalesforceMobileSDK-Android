@@ -435,7 +435,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(1));
 
 		// Range query - whole soup elements - descending order
-		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", Order.DESC), 0);
+		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", Order.descending), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
@@ -447,7 +447,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova3', 'value':'va3'}"), result.getJSONObject(1));
 		
 		// Range query - specified projections - descending order
-		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}, Order.DESC), 0);
+		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}, Order.descending), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova3', 'value':'va3'}"), result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}"), result.getJSONObject(1));

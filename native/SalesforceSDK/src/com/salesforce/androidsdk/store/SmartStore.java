@@ -47,7 +47,7 @@ import android.database.Cursor;
  */
 public class SmartStore  {
 	// Default
-	public static final int DEFAULT_PAGE_SIZE = 25;
+	public static final int DEFAULT_PAGE_SIZE = 10;
 	
 	// Table to keep track of soup's index specs
 	protected static final String SOUP_INDEX_MAP_TABLE = "soup_index_map";
@@ -217,8 +217,15 @@ public class SmartStore  {
 		// Get the matching soups
 		Cursor cursor = null;
 		try {
-			cursor = db.query(soupName, new String[] {SOUP_COL}, columnName + " " + querySpec.order,
-					limit, getKeyRangePredicate(columnName), querySpec.beginKey, querySpec.endKey);
+			if (querySpec.beginKey == null) {
+				// Get all the rows
+				cursor = db.query(soupName, new String[] {SOUP_COL}, columnName + " " + querySpec.order.sql, limit, null);
+			}
+			else {
+				// Get a range of rows
+				cursor = db.query(soupName, new String[] {SOUP_COL}, columnName + " " + querySpec.order.sql, 				
+						limit, getKeyRangePredicate(columnName), querySpec.beginKey, querySpec.endKey);
+			}
 			
 			JSONArray results = new JSONArray();
 			if (cursor.moveToFirst()) {
@@ -259,7 +266,7 @@ public class SmartStore  {
 		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
 		Cursor cursor = null;
 		try {
-			cursor = db.query(soupName, new String[] {SOUP_COL}, columnName + " " + querySpec.order,
+			cursor = db.query(soupName, new String[] {SOUP_COL}, columnName + " " + querySpec.order.sql,
 					null, getKeyRangePredicate(columnName), querySpec.beginKey, querySpec.endKey);
 			
 			return cursor.getCount();			
@@ -659,7 +666,7 @@ public class SmartStore  {
 		 * @param matchKey
 		 */
 		public QuerySpec(String path, String matchKey) {
-			this(path, matchKey, matchKey, null, Order.ASC, DEFAULT_PAGE_SIZE);
+			this(path, matchKey, matchKey, null, Order.ascending, DEFAULT_PAGE_SIZE);
 		}
 		
 		
@@ -670,7 +677,7 @@ public class SmartStore  {
 		 * @param projections
 		 */
 		public QuerySpec(String path, String matchKey, String[] projections) {
-			this(path, matchKey, matchKey, projections, Order.ASC, DEFAULT_PAGE_SIZE);
+			this(path, matchKey, matchKey, projections, Order.ascending, DEFAULT_PAGE_SIZE);
 		}
 		
 		/**
@@ -680,7 +687,7 @@ public class SmartStore  {
 		 * @param endKey
 		 */
 		public QuerySpec(String path, String beginKey, String endKey) {
-			this(path, beginKey, endKey, null, Order.ASC, DEFAULT_PAGE_SIZE);
+			this(path, beginKey, endKey, null, Order.ascending, DEFAULT_PAGE_SIZE);
 		}
 
 		/**
@@ -690,7 +697,7 @@ public class SmartStore  {
 		 * @param endKey
 		 */
 		public QuerySpec(String path, String beginKey, String endKey, String[] projections) {
-			this(path, beginKey, endKey, projections, Order.ASC, DEFAULT_PAGE_SIZE);
+			this(path, beginKey, endKey, projections, Order.ascending, DEFAULT_PAGE_SIZE);
 		}
 
 		/**
@@ -752,7 +759,12 @@ public class SmartStore  {
 	 * Simple class to represent query order (used by QuerySpec)
 	 */
 	public enum Order {
-		ASC,
-		DESC;
+		ascending("ASC"), descending("DESC");
+		
+		public final String sql;
+		
+		Order(String sqlOrder) {
+			this.sql = sqlOrder;
+		}
 	}
 }
