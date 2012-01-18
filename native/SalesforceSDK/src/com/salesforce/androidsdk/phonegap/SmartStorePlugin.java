@@ -67,6 +67,7 @@ public class SmartStorePlugin extends Plugin {
 	private static final String TOTAL_PAGES = "totalPages";
 	private static final String INDEX = "index";
 	private static final String ENTRY_IDS = "entryIds";
+	private static final String MATCH_KEY = "matchKey";
 	
 	// Map of cursor id to StoreCursor
 	private static Map<Integer, StoreCursor> storeCursors = new HashMap<Integer, StoreCursor>();
@@ -269,10 +270,12 @@ public class SmartStorePlugin extends Plugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
 		JSONObject querySpecJson = arg0.getJSONObject(QUERY_SPEC);
+		String matchKey = querySpecJson.isNull(MATCH_KEY) ? null : querySpecJson.getString(MATCH_KEY);
+		String beginKey = querySpecJson.isNull(BEGIN_KEY) ? matchKey : querySpecJson.getString(BEGIN_KEY);
+		String endKey = querySpecJson.isNull(END_KEY) ? matchKey : querySpecJson.getString(END_KEY);
 		QuerySpec querySpec = new QuerySpec(querySpecJson.getString(INDEX_PATH),
-				querySpecJson.getString(BEGIN_KEY),
-				querySpecJson.getString(END_KEY),
-				SmartStore.Order.valueOf(querySpecJson.getString(ORDER)),
+				beginKey, endKey,
+				SmartStore.Order.valueOf(querySpecJson.optString(ORDER, "ascending")),
 				querySpecJson.getInt(PAGE_SIZE));
 		
 		// Run query
