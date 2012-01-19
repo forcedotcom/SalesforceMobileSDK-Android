@@ -59,7 +59,6 @@ public class SmartStorePlugin extends Plugin {
 	private static final String PAGE_SIZE = "pageSize";
 	private static final String INDEXES = "indexes";
 	private static final String SOUP_NAME = "soupName";
-	private static final String SOUP_ENTRY_ID = "soupEntryId";
 	private static final String ENTRIES = "entries";
 	private static final String CURSOR_ID = "cursorId";
 	private static final String CURRENT_PAGE_INDEX = "currentPageIndex";
@@ -76,13 +75,14 @@ public class SmartStorePlugin extends Plugin {
 	 * Supported plugin actions that the client can take.
 	 */
 	enum Action {
-		pgRegisterSoup,
-		pgRemoveSoup,
-		pgQuerySoup,
-		pgUpsertSoupEntries,
+		pgCloseCursor,
 		pgMoveCursorToPageIndex,
-		pgRetrieveSoupEntry,
-		pgRemoveFromSoup
+		pgQuerySoup,
+		pgRegisterSoup,
+		pgRemoveFromSoup,
+		pgRemoveSoup,
+		pgRetrieveSoupEntries,
+		pgUpsertSoupEntries
 	}
 
     /**
@@ -102,13 +102,14 @@ public class SmartStorePlugin extends Plugin {
 	    	try {
 	    		action = Action.valueOf(actionStr);
 				switch(action) {
+					case pgCloseCursor:           return closeCursor(args, callbackId);
 					case pgMoveCursorToPageIndex: return moveCursorToPageIndex(args, callbackId);
 					case pgQuerySoup:             return querySoup(args, callbackId);
 					case pgRegisterSoup:          return registerSoup(args, callbackId);
-					case pgRemoveSoup:            return removeSoup(args, callbackId);
-					case pgUpsertSoupEntries:     return upsertSoupEntries(args, callbackId);
-					case pgRetrieveSoupEntry:     return retrieveSoupEntry(args, callbackId);
 					case pgRemoveFromSoup:        return removeFromSoup(args, callbackId);
+					case pgRemoveSoup:            return removeSoup(args, callbackId);
+					case pgRetrieveSoupEntries:   return retrieveSoupEntries(args, callbackId);
+					case pgUpsertSoupEntries:     return upsertSoupEntries(args, callbackId);
 					default: return new PluginResult(PluginResult.Status.INVALID_ACTION, actionStr); // should never happen
 		    	}
 	    	}
@@ -152,24 +153,46 @@ public class SmartStorePlugin extends Plugin {
 	}
 
 	/**
-	 * Native implementation of pgRetrieveSoupEntry
+	 * Native implementation of pgRetrieveSoupEntries
 	 * @param args
 	 * @param callbackId
 	 * @return
 	 * @throws JSONException 
 	 */
-	private PluginResult retrieveSoupEntry(JSONArray args, String callbackId) throws JSONException {
+	private PluginResult retrieveSoupEntries(JSONArray args, String callbackId) throws JSONException {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		Long soupEntryId = arg0.getLong(SOUP_ENTRY_ID);
+		JSONArray soupEntryIds = arg0.getJSONArray(ENTRY_IDS);
 		
 		// Run retrieve
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
-		JSONObject result = smartStore.retrieve(soupName, soupEntryId);
+		JSONArray result = new JSONArray();
+		for (int i=0; i<soupEntryIds.length(); i++) {
+			long soupEntryId = soupEntryIds.getLong(i);
+			result.put(smartStore.retrieve(soupName, soupEntryId));
+		}
 		return new PluginResult(PluginResult.Status.OK, result);
 	}
 
+	/**
+	 * Native implementation of pgCloseCursor
+	 * @param args
+	 * @param callbackId
+	 * @return
+	 * @throws JSONException 
+	 */
+	private PluginResult closeCursor(JSONArray args, String callbackId) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		Integer cursorId = arg0.getInt(CURSOR_ID);
+		
+		// Drop cursor from storeCursors map
+		storeCursors.remove(cursorId);
+		
+		return new PluginResult(PluginResult.Status.OK);		
+	}	
+	
 	/**
 	 * Native implementation of pgMoveCursorToPageIndex
 	 * @param args
