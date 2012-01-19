@@ -38,8 +38,6 @@ import com.salesforce.androidsdk.util.LogUtil;
 
 /**
  * Abstracts out encrypted or non-encrypted sqlite database
- * 
- * TODO use binding 
  */
 public class Database {
 
@@ -116,21 +114,24 @@ public class Database {
 	 * Runs a query (after first logging the select statement)
 	 * @param table
 	 * @param columns
-	 * @param selection
 	 * @param orderBy
+	 * @param limit
+	 * @param whereClause
+	 * @param whereArgs
 	 * @return
 	 */
-	public Cursor query(String table, String[] columns, String selection, String orderBy) {
+	public Cursor query(String table, String[] columns, String orderBy, String limit, String whereClause, String... whereArgs) {
 		String columnsStr = (columns == null ? "" : TextUtils.join(",", columns));
 		columnsStr = (columnsStr.equals("") ? "*" : columnsStr);
-		String orderByStr = (orderBy == null ? "" : " ORDER BY " + orderBy);
-		String selectionStr = (selection == null ? "" : " WHERE " + selection);
-		String sql = String.format("SELECT %s FROM %s %s%s", columnsStr, table, selectionStr, orderByStr);
+		String orderByStr = (orderBy == null ? "" : "ORDER BY " + orderBy);
+		String selectionStr = (whereClause == null ? "" : " WHERE " + whereClause + (whereArgs == null ? "" : "[Args=" + TextUtils.join(",", whereArgs) + "]"));
+		String limitStr = (limit == null ? "" : "LIMIT " + limit);
+		String sql = String.format("SELECT %s FROM %s %s %s %s", columnsStr, table, selectionStr, orderByStr, limitStr);
 		Log.i("Database:query[enc=" + encrypted + "]", sql);
 		if (!encrypted)
-			return db.query(table, columns, selection, null, null, null, orderBy);
+			return db.query(table, columns, whereClause, whereArgs, null, null, orderBy, limit);
 		else
-			return encdb.query(table, columns, selection, null, null, null, orderBy);
+			return encdb.query(table, columns, whereClause, whereArgs, null, null, orderBy, limit);
 	}
 
 	/**
@@ -154,29 +155,31 @@ public class Database {
 	 * @param table
 	 * @param contentValues
 	 * @param whereClause
-	 * @param number of rows affected
+	 * @param whereArgs
+	 * @return number of rows affected
 	 */
-	public int update(String table, ContentValues contentValues, String whereClause) {
+	public int update(String table, ContentValues contentValues, String whereClause, String... whereArgs) {
 		String setStr = LogUtil.zipJoin(contentValues.valueSet(), " = ", ", ");
-		String sql = String.format("UPDATE %s SET %s where %s", table, setStr, whereClause);
+		String sql = String.format("UPDATE %s SET %s WHERE %s [Args=%s]", table, setStr, whereClause, TextUtils.join(",", whereArgs));
 		Log.i("Database:update[enc=" + encrypted + "]", sql);
 		if (!encrypted)
-			return db.update(table, contentValues, whereClause, null);
+			return db.update(table, contentValues, whereClause, whereArgs);
 		else
-			return encdb.update(table, contentValues, whereClause, null);
+			return encdb.update(table, contentValues, whereClause, whereArgs);
 	}
 	
 	/**
 	 * Does a delete (after first logging the delete statement)
 	 * @param table
 	 * @param whereClause
+	 * @param whereArgs
 	 */
-	public void delete(String table, String whereClause) {
-		String sql = String.format("DELETE FROM %s WHERE %s", table, whereClause);
+	public void delete(String table, String whereClause, String... whereArgs) {
+		String sql = String.format("DELETE FROM %s WHERE %s [Args=%s]", table, whereClause, TextUtils.join(",", whereArgs));
 		Log.i("Database:delete[enc=" + encrypted + "]", sql);
 		if (!encrypted)
-			db.delete(table, whereClause, null);
+			db.delete(table, whereClause, whereArgs);
 		else
-			encdb.delete(table, whereClause, null);
+			encdb.delete(table, whereClause, whereArgs);
 	}
 }
