@@ -27,7 +27,9 @@
 package com.salesforce.androidsdk.phonegap;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -46,17 +48,29 @@ import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
  * PhoneGap plugin for smart store.
  */
 public class SmartStorePlugin extends Plugin {
-	// Keys in json coming from javascript
+	// Keys in json from/to javascript
 	private static final String END_KEY = "endKey";
 	private static final String ORDER = "order";
 	private static final String BEGIN_KEY = "beginKey";
 	private static final String QUERY_SPEC = "querySpec";
 	private static final String PATH = "path";
+	private static final String INDEX_PATH = "indexPath";
 	private static final String TYPE = "type";
+	private static final String PAGE_SIZE = "pageSize";
 	private static final String INDEXES = "indexes";
 	private static final String SOUP_NAME = "soupName";
 	private static final String SOUP_ENTRY_ID = "soupEntryId";
 	private static final String ENTRIES = "entries";
+	private static final String CURSOR_ID = "cursorId";
+	private static final String CURRENT_PAGE_INDEX = "currentPageIndex";
+	private static final String CURRENT_PAGE_ORDERED_ENTRIES = "currentPageOrderedEntries";
+	private static final String TOTAL_PAGES = "totalPages";
+	private static final String INDEX = "index";
+	private static final String ENTRY_IDS = "entryIds";
+	private static final String MATCH_KEY = "matchKey";
+	
+	// Map of cursor id to StoreCursor
+	private static Map<Integer, StoreCursor> storeCursors = new HashMap<Integer, StoreCursor>();
 
 	/**
 	 * Supported plugin actions that the client can take.
@@ -118,14 +132,22 @@ public class SmartStorePlugin extends Plugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		JSONArray soupEntryIds = arg0.getJSONArray(ENTRIES);
+		JSONArray soupEntryIds = arg0.getJSONArray(ENTRY_IDS);
 		
+		// Run remove
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
-		// TODO do it in one transaction
-		for (int i=0; i<soupEntryIds.length(); i++) {
-			long soupEntryId = soupEntryIds.getLong(i);
-			smartStore.delete(soupName, soupEntryId);
+		smartStore.beginTransaction();
+		try {
+			for (int i=0; i<soupEntryIds.length(); i++) {
+				long soupEntryId = soupEntryIds.getLong(i);
+				smartStore.delete(soupName, soupEntryId);
+			}
+			smartStore.setTransactionSuccessful();
+	    }
+		finally {
+			smartStore.endTransaction();
 		}
+		
 		return new PluginResult(PluginResult.Status.OK);
 	}
 
@@ -142,6 +164,7 @@ public class SmartStorePlugin extends Plugin {
 		String soupName = arg0.getString(SOUP_NAME);
 		Long soupEntryId = arg0.getLong(SOUP_ENTRY_ID);
 		
+		// Run retrieve
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
 		JSONObject result = smartStore.retrieve(soupName, soupEntryId);
 		return new PluginResult(PluginResult.Status.OK, result);
@@ -152,9 +175,29 @@ public class SmartStorePlugin extends Plugin {
 	 * @param args
 	 * @param callbackId
 	 * @return
+	 * @throws JSONException 
 	 */
-	private PluginResult moveCursorToPageIndex(JSONArray args, String callbackId) {
-		return new PluginResult(PluginResult.Status.ERROR, "Cursor not supported"); // TODO implement once cursor support is added to smart store 
+	private PluginResult moveCursorToPageIndex(JSONArray args, String callbackId) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		Integer cursorId = arg0.getInt(CURSOR_ID);
+		Integer index = arg0.getInt(INDEX);
+
+		// Get cursor
+		StoreCursor storeCursor = storeCursors.get(cursorId);
+		if (storeCursor == null) {
+			return new PluginResult(PluginResult.Status.ERROR, "Invalid cursor id");
+		}
+		
+		// Change page
+		storeCursor.moveToPageIndex(index);
+		
+		// Build json result
+		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		JSONObject result = storeCursor.toJSON(smartStore);
+		
+		// Done
+		return new PluginResult(PluginResult.Status.OK, result);
 	}
 
 	/**
@@ -174,14 +217,21 @@ public class SmartStorePlugin extends Plugin {
 			entries.add(entriesJson.getJSONObject(i));
 		}
 		
+		// Run upsert
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
-		JSONArray results = new JSONArray();
-		
-		// TODO do it in one transaction
-		for (JSONObject entry : entries) {
-			results.put(smartStore.upsert(soupName, entry));
+		smartStore.beginTransaction();
+		try {
+			JSONArray results = new JSONArray();			
+			for (JSONObject entry : entries) {
+				results.put(smartStore.upsert(soupName, entry));
+			}
+			smartStore.setTransactionSuccessful();
+			return new PluginResult(PluginResult.Status.OK, results);
+	    }
+		finally {
+			smartStore.endTransaction();
 		}
-		return new PluginResult(PluginResult.Status.OK, results);
+		
 	}
 
 	/**
@@ -202,6 +252,7 @@ public class SmartStorePlugin extends Plugin {
 			indexSpecs.add(new IndexSpec(indexJson.getString(PATH), SmartStore.Type.valueOf(indexJson.getString(TYPE))));
 		}
 
+		// Run register
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
 		smartStore.registerSoup(soupName, indexSpecs.toArray(new IndexSpec[0]));
 		return new PluginResult(PluginResult.Status.OK);
@@ -219,10 +270,27 @@ public class SmartStorePlugin extends Plugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
 		JSONObject querySpecJson = arg0.getJSONObject(QUERY_SPEC);
-		QuerySpec querySpec = new QuerySpec(querySpecJson.getString(PATH), querySpecJson.getString(BEGIN_KEY), querySpecJson.getString(END_KEY), SmartStore.Order.valueOf(querySpecJson.getString(ORDER)));
+		String matchKey = querySpecJson.isNull(MATCH_KEY) ? null : querySpecJson.getString(MATCH_KEY);
+		String beginKey = querySpecJson.isNull(BEGIN_KEY) ? matchKey : querySpecJson.getString(BEGIN_KEY);
+		String endKey = querySpecJson.isNull(END_KEY) ? matchKey : querySpecJson.getString(END_KEY);
+		QuerySpec querySpec = new QuerySpec(querySpecJson.getString(INDEX_PATH),
+				beginKey, endKey,
+				SmartStore.Order.valueOf(querySpecJson.optString(ORDER, "ascending")),
+				querySpecJson.getInt(PAGE_SIZE));
 		
+		// Run query
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
-		JSONArray result = smartStore.querySoup(soupName, querySpec);
+		int countRows = smartStore.countQuerySoup(soupName, querySpec);
+		int totalPages = countRows / querySpec.pageSize + 1;
+		
+		// Build store cursor
+		StoreCursor storeCursor = new StoreCursor(soupName, querySpec, totalPages, 0);
+		storeCursors.put(storeCursor.cursorId, storeCursor);
+		
+		// Build json result
+		JSONObject result = storeCursor.toJSON(smartStore);
+		
+		// Done
 		return new PluginResult(PluginResult.Status.OK, result);
 	}
 
@@ -238,9 +306,66 @@ public class SmartStorePlugin extends Plugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
 		
+		// Run remove
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
 		smartStore.dropSoup(soupName);
 		return new PluginResult(PluginResult.Status.OK);
 	}
+
 	
+	/**
+	 * Store Cursor
+	 * We don't actually keep a cursor opened, instead, we wrap the query spec and page index
+	 */
+	public static class StoreCursor {
+		
+		private static int LAST_ID = 0;
+		
+		// Id / soup / query / totalPages immutable
+		public  final int cursorId;
+		private final String soupName;
+		private final QuerySpec querySpec;
+		private final int totalPages;
+		
+		// Current page can change - by calling moveToPageIndex
+		private int currentPageIndex;
+		
+		/**
+		 * @param soupName
+		 * @param querySpec
+		 * @param totalPages
+		 * @param currentPageIndex
+		 */
+		public StoreCursor(String soupName, QuerySpec querySpec, int totalPages, int currentPageIndex) {
+			this.cursorId = LAST_ID++;
+			this.soupName = soupName;
+			this.querySpec = querySpec;
+			this.totalPages = totalPages;
+			this.currentPageIndex = currentPageIndex;
+		}
+		
+		/**
+		 * @param newPageIndex
+		 */
+		public void moveToPageIndex(int newPageIndex) {
+			// Always between 0 and totalPages-1
+			this.currentPageIndex = (newPageIndex < 0 ? 0 : newPageIndex >= totalPages ? totalPages - 1 : newPageIndex);
+		}
+		
+		/**
+		 * @param smartStore
+		 * @return json containing cursor meta data (page index, size etc) and data (entries in page)
+		 * Note: query is run to build json
+		 * @throws JSONException 
+		 */
+		public JSONObject toJSON(SmartStore smartStore) throws JSONException {
+			JSONObject json = new JSONObject();
+			json.put(CURSOR_ID, cursorId);
+			json.put(CURRENT_PAGE_INDEX, currentPageIndex);
+			json.put(PAGE_SIZE, querySpec.pageSize);
+			json.put(TOTAL_PAGES, totalPages);
+			json.put(CURRENT_PAGE_ORDERED_ENTRIES, smartStore.querySoup(soupName, querySpec, currentPageIndex));
+			return json;
+		}
+	}
 }

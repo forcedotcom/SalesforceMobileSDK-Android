@@ -115,21 +115,23 @@ public class Database {
 	 * @param table
 	 * @param columns
 	 * @param orderBy
+	 * @param limit
 	 * @param whereClause
 	 * @param whereArgs
 	 * @return
 	 */
-	public Cursor query(String table, String[] columns, String orderBy, String whereClause, String... whereArgs) {
+	public Cursor query(String table, String[] columns, String orderBy, String limit, String whereClause, String... whereArgs) {
 		String columnsStr = (columns == null ? "" : TextUtils.join(",", columns));
 		columnsStr = (columnsStr.equals("") ? "*" : columnsStr);
-		String orderByStr = (orderBy == null ? "" : " ORDER BY " + orderBy);
+		String orderByStr = (orderBy == null ? "" : "ORDER BY " + orderBy);
 		String selectionStr = (whereClause == null ? "" : " WHERE " + whereClause + (whereArgs == null ? "" : "[Args=" + TextUtils.join(",", whereArgs) + "]"));
-		String sql = String.format("SELECT %s FROM %s %s%s", columnsStr, table, selectionStr, orderByStr);
+		String limitStr = (limit == null ? "" : "LIMIT " + limit);
+		String sql = String.format("SELECT %s FROM %s %s %s %s", columnsStr, table, selectionStr, orderByStr, limitStr);
 		Log.i("Database:query[enc=" + encrypted + "]", sql);
 		if (!encrypted)
-			return db.query(table, columns, whereClause, whereArgs, null, null, orderBy);
+			return db.query(table, columns, whereClause, whereArgs, null, null, orderBy, limit);
 		else
-			return encdb.query(table, columns, whereClause, whereArgs, null, null, orderBy);
+			return encdb.query(table, columns, whereClause, whereArgs, null, null, orderBy, limit);
 	}
 
 	/**
