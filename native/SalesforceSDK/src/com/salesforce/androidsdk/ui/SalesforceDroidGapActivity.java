@@ -56,11 +56,14 @@ public class SalesforceDroidGapActivity extends DroidGap {
     @Override
     public void init() {
     	super.init();
-		final String uaStr = ForceApp.APP.getUserAgent();
-		if (null != this.appView) {
-	        WebSettings webSettings = this.appView.getSettings();
-	        webSettings.setUserAgentString(uaStr);
-		}
+    	// Only null when running plugin tests
+    	if (ForceApp.APP != null) { 
+			final String uaStr = ForceApp.APP.getUserAgent();
+			if (null != this.appView) {
+		        WebSettings webSettings = this.appView.getSettings();
+		        webSettings.setUserAgentString(uaStr);
+			}
+    	}
     }
     
     @Override

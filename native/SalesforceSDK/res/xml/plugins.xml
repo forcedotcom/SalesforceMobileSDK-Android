@@ -18,4 +18,5 @@
     <plugin name="Capture" value="com.phonegap.Capture"/>
     <plugin name="com.salesforce.oauth" value="com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin"/>
     <plugin name="com.salesforce.smartstore" value="com.salesforce.androidsdk.phonegap.SmartStorePlugin"/>
+    <plugin name="com.salesforce.testrunner" value="com.salesforce.androidsdk.phonegap.TestRunnerPlugin"/>
 </plugins>
