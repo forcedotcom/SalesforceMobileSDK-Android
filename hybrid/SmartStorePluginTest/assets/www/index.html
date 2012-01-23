@@ -19,6 +19,9 @@
     <!-- required for smartstore plugin support -->    
     <script type="text/javascript" src="SFSmartStorePlugin.js"></script>
 
+    <!-- required for testrunner plugin support -->    
+    <script type="text/javascript" src="SFTestRunnerPlugin.js"></script>
+
 	<!-- load qunit -->
     <link rel="stylesheet" type="text/css" href="qunit.css" />
     <script type="text/javascript" src="qunit.js"></script>
@@ -28,6 +31,7 @@
 
     <script type="text/javascript" charset="utf-8">
     var debugMode = true;
+    var testSuite;
 
     $(function() {
         //Add event listeners and so forth here
@@ -38,10 +42,8 @@
     // When this function is called, PhoneGap has been initialized and is ready to roll 
     function onDeviceReady() {
     	SFHybridApp.logToConsole("onDeviceReady: PhoneGap ready");
-
-        //run tests
-        (new SmartStoreTestSuite()).startTests();
-        var gTestSuiteSmartStore = null;
+        testSuite = new SmartStoreTestSuite();
+        navigator.testrunner.onReadyForTests();
     }
         
     </script>
