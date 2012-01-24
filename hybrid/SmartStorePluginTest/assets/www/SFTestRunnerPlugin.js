@@ -36,7 +36,7 @@ var TestRunner = function () {
  
 // ====== Soup manipulation ======
 
-TestRunner.prototype.onReadyForTests = function (successCB,errorCB) {
+TestRunner.prototype.onReadyForTests = function (successCB, errorCB) {
     SFHybridApp.logToConsole("TestRunner.onReadyForTests");
     
     PhoneGap.exec(successCB, errorCB, 
@@ -46,14 +46,14 @@ TestRunner.prototype.onReadyForTests = function (successCB,errorCB) {
                   );                  
 };
 
-TestRunner.prototype.onTestComplete = function (testName, success, message, successCB,errorCB) {
+TestRunner.prototype.onTestComplete = function (testName, success, message, successCB, errorCB) {
     SFHybridApp.logToConsole("TestRunner.onTestComplete");
-    
+
     PhoneGap.exec(successCB, errorCB, 
                   "com.salesforce.testrunner",
                   "onTestComplete",
                   [{"testName": testName, "success": success, "message": message}]
-                  );                  
+                  );
 };
 
 
