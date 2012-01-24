@@ -278,7 +278,7 @@ public class SmartStorePlugin extends Plugin {
 		// Run register
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
 		smartStore.registerSoup(soupName, indexSpecs.toArray(new IndexSpec[0]));
-		return new PluginResult(PluginResult.Status.OK);
+		return new PluginResult(PluginResult.Status.OK, soupName);
 	}
 
 	/**

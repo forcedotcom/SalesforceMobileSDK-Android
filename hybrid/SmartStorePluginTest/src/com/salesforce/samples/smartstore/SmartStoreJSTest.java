@@ -51,15 +51,11 @@ public class SmartStoreJSTest extends
 		// Block until the javascript has notified the container that it's ready
 		TestRunnerPlugin.readyForTests.take(); 
 	}
+
+	public void testRemoveFromSoup() throws InterruptedException {
+		runTest("testRemoveFromSoup");
+	}
 	
-	public void testRegisterSoup() throws InterruptedException {
-		runTest("testRegisterSoup");
-	}
-
-	public void testRemoveSoup() throws InterruptedException {
-		runTest("testRemoveSoup");
-	}
-
 	public void testUpsertSoupEntries() throws InterruptedException {
 		runTest("testUpsertSoupEntries");
 	}
@@ -83,7 +79,7 @@ public class SmartStoreJSTest extends
 	 * @throws InterruptedException
 	 */
 	private void runTest(String testName) throws InterruptedException {
-		activity.sendJavascript("QUnit.test(\"" + testName + "\", function() { testSuite." + testName + "();}); QUnit.start();");
+		activity.sendJavascript("testSuite.startTest('" + testName + "');");
 		// Block until test completes
 		TestResult result = TestRunnerPlugin.testResults.take();
 		assertEquals("Wrong test completed", testName, result.testName);
