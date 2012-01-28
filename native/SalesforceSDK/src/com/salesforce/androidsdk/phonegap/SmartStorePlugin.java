@@ -46,6 +46,12 @@ import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
 
 /**
  * PhoneGap plugin for smart store.
+ * 
+ * 
+ * TODO (optimizations):
+ * - querySoup should do select count instead of count (select)
+ * - retrieve(ids) should do select where id in (ids) instead of for (id in ids) {select}
+ * - delete(ids) should do delete where id in (ids) instead of for (id in ids) {select}
  */
 public class SmartStorePlugin extends Plugin {
 	// Keys in json from/to javascript
