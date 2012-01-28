@@ -180,6 +180,25 @@ public class SmartStore  {
 	}
 	
 	/**
+	 * Check if soup exists
+	 * 
+	 * @param soupName
+	 * @return true if soup exists, false otherwise
+	 */
+	public boolean hasSoup(String soupName) {
+		Cursor cursor = null;
+		try {
+			cursor = db.query("sqlite_master", null, null, null, "type = ? and name = ?", "table", soupName);
+			return cursor.getCount() == 1;
+		}
+		finally {
+			if (cursor != null) {
+				cursor.close();
+			}
+		}
+	}
+	
+	/**
 	 * Destroy a soup
 	 * 
 	 * Drop table for soupName 
