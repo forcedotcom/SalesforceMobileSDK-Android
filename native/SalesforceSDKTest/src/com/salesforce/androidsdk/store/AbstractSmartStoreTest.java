@@ -63,8 +63,10 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		store = new SmartStore(db);
 		
 		assertFalse("Table test_soup should not exist", hasTable(TEST_SOUP));
+		assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
 		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
-		assertTrue("Register soup call failed", hasTable(TEST_SOUP));
+		assertTrue("Table test_soup should now exist", hasTable(TEST_SOUP));
+		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
 	}
 	
 	protected abstract Database getWritableDatabase();
