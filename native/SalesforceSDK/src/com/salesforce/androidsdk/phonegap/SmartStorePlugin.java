@@ -46,6 +46,12 @@ import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
 
 /**
  * PhoneGap plugin for smart store.
+ * 
+ * 
+ * TODO (optimizations):
+ * - querySoup should do select count instead of count (select)
+ * - retrieve(ids) should do select where id in (ids) instead of for (id in ids) {select}
+ * - delete(ids) should do delete where id in (ids) instead of for (id in ids) {select}
  */
 public class SmartStorePlugin extends Plugin {
 	// Keys in json from/to javascript
@@ -82,6 +88,7 @@ public class SmartStorePlugin extends Plugin {
 		pgRemoveFromSoup,
 		pgRemoveSoup,
 		pgRetrieveSoupEntries,
+		pgSoupExists,
 		pgUpsertSoupEntries
 	}
 
@@ -109,6 +116,7 @@ public class SmartStorePlugin extends Plugin {
 					case pgRemoveFromSoup:        return removeFromSoup(args, callbackId);
 					case pgRemoveSoup:            return removeSoup(args, callbackId);
 					case pgRetrieveSoupEntries:   return retrieveSoupEntries(args, callbackId);
+					case pgSoupExists:            return soupExists(args, callbackId);
 					case pgUpsertSoupEntries:     return upsertSoupEntries(args, callbackId);
 					default: return new PluginResult(PluginResult.Status.INVALID_ACTION, actionStr); // should never happen
 		    	}
@@ -223,6 +231,25 @@ public class SmartStorePlugin extends Plugin {
 		return new PluginResult(PluginResult.Status.OK, result);
 	}
 
+	/**
+	 * Native implementation of pgSoupExists
+	 * @param args
+	 * @param callbackId
+	 * @return
+	 * @throws JSONException 
+	 */
+	private PluginResult soupExists(JSONArray args, String callbackId) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		String soupName = arg0.getString(SOUP_NAME);
+
+		// Run upsert
+		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		boolean exists = smartStore.hasSoup(soupName);
+		
+		return new PluginResult(PluginResult.Status.OK, exists);
+	}	
+	
 	/**
 	 * Native implementation of pgUpsertSoupEntries
 	 * @param args

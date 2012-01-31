@@ -52,6 +52,10 @@ public class SmartStoreJSTest extends
 		TestRunnerPlugin.readyForTests.take(); 
 	}
 
+	public void testRegisterRemoveSoup() throws InterruptedException {
+		runTest("testRegisterRemoveSoup");
+	}
+	
 	public void testRemoveFromSoup() throws InterruptedException {
 		runTest("testRemoveFromSoup");
 	}
