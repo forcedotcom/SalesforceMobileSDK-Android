@@ -277,37 +277,30 @@ public class SmartStore  {
 	/**
 	 * @param soupName
 	 * @param querySpec
-	 * @param limit
 	 * @return count for the given querySpec
 	 * @throws JSONException
-	 * 
-	 * TODO: do an actual [select count] instead of [count(select ...)]
-	 *       maybe we should remember the ids that match and do retrieve after that
-	 * 
 	 */
 	public int countQuerySoup(String soupName, QuerySpec querySpec) throws JSONException {
 		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
 		Cursor cursor = null;
 		try {
-			if (querySpec.beginKey == null) {
-				// Get all the rows
-				cursor = db.query(soupName, new String[] {ID_COL}, columnName + " " + querySpec.order.sql, null, null);				
-			}
-
-			else {
-				// Get a range of rows
-				cursor = db.query(soupName, new String[] {ID_COL}, columnName + " " + querySpec.order.sql, 				
-						null, getKeyRangePredicate(columnName), querySpec.beginKey, querySpec.endKey);
-			}
+			if (querySpec.beginKey == null)
+				cursor = db.countQuery(soupName, null); // all the rows				
+			else 
+				cursor = db.countQuery(soupName, getKeyRangePredicate(columnName)); // range of rows
 			
-			return cursor.getCount();			
+			if (cursor.moveToFirst()) {
+				return cursor.getInt(0);
+			}
+			else {
+				return -1; 
+			}
 		}
 		finally {
 			if (cursor != null) {
 				cursor.close();
 			}
 		}
-		
 	}
 	
 
