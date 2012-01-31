@@ -245,9 +245,9 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt2ForUpdate = new JSONObject("{'key':'ka2u', 'value':'va2u'}");
 		JSONObject soupElt2Updated = store.update(TEST_SOUP, soupElt2ForUpdate, idOf(soupElt2Created));
 		
-		JSONObject soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Created));
-		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created));
-		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created));
+		JSONObject soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Created)).getJSONObject(0);
+		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created)).getJSONObject(0);
+		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created)).getJSONObject(0);
 
 		assertSameJSON("Retrieve mismatch", soupElt1Created, soupElt1Retrieved);
 		assertSameJSON("Retrieve mismatch", soupElt2Updated, soupElt2Retrieved);
@@ -296,9 +296,9 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt2ForUpdate = new JSONObject("{'key':'ka2u', 'value':'va2u', '_soupEntryId': " + idOf(soupElt2Upserted) + "}");
 		JSONObject soupElt2Updated = store.upsert(TEST_SOUP, soupElt2ForUpdate);
 		
-		JSONObject soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Upserted));
-		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Upserted));
-		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Upserted));
+		JSONObject soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Upserted)).getJSONObject(0);
+		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Upserted)).getJSONObject(0);
+		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Upserted)).getJSONObject(0);
 
 		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
 		assertSameJSON("Retrieve mismatch", soupElt2Updated, soupElt2Retrieved);
@@ -343,9 +343,9 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
 		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
 		
-		JSONObject soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Created));
-		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created));
-		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created));
+		JSONObject soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Created)).getJSONObject(0);
+		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created)).getJSONObject(0);
+		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created)).getJSONObject(0);
 
 		assertSameJSON("Retrieve mismatch", soupElt1Created, soupElt1Retrieved);
 		assertSameJSON("Retrieve mismatch", soupElt2Created, soupElt2Retrieved);
@@ -367,12 +367,12 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		
 		store.delete(TEST_SOUP, idOf(soupElt2Created));
 
-		JSONObject soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Created));
-		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created));
-		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created));
+		JSONObject soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Created)).getJSONObject(0);
+		JSONArray soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created));
+		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created)).getJSONObject(0);
 
 		assertSameJSON("Retrieve mismatch", soupElt1Created, soupElt1Retrieved);
-		assertNull("Should be null", soupElt2Retrieved);
+		assertEquals("Should be empty", 0, soupElt2Retrieved.length());
 		assertSameJSON("Retrieve mismatch", soupElt3Created, soupElt3Retrieved);
 		
 		// Check DB

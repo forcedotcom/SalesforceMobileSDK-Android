@@ -109,7 +109,26 @@ public class Database {
 		else 
 			encdb.endTransaction();
 	}
-	
+
+	/**
+	 * Runs a count query (after first logging the select statement)
+	 * @param table
+	 * @param orderBy
+	 * @param limit
+	 * @param whereClause
+	 * @param whereArgs
+	 * @return
+	 */
+	public Cursor countQuery(String table, String whereClause, String... whereArgs) {
+		String selectionStr = (whereClause == null ? "" : " WHERE " + whereClause);
+		String sql = String.format("SELECT count(*) FROM %s %s", table, selectionStr);
+		Log.i("Database:query[enc=" + encrypted + "]", sql + getStringForArgs(whereArgs));
+		if (!encrypted)
+			return db.rawQuery(sql, whereArgs);
+		else
+			return encdb.rawQuery(sql, whereArgs);
+	}
+
 	/**
 	 * Runs a query (after first logging the select statement)
 	 * @param table
@@ -124,10 +143,10 @@ public class Database {
 		String columnsStr = (columns == null ? "" : TextUtils.join(",", columns));
 		columnsStr = (columnsStr.equals("") ? "*" : columnsStr);
 		String orderByStr = (orderBy == null ? "" : "ORDER BY " + orderBy);
-		String selectionStr = (whereClause == null ? "" : " WHERE " + whereClause + (whereArgs == null ? "" : "[Args=" + TextUtils.join(",", whereArgs) + "]"));
+		String selectionStr = (whereClause == null ? "" : " WHERE " + whereClause);
 		String limitStr = (limit == null ? "" : "LIMIT " + limit);
 		String sql = String.format("SELECT %s FROM %s %s %s %s", columnsStr, table, selectionStr, orderByStr, limitStr);
-		Log.i("Database:query[enc=" + encrypted + "]", sql);
+		Log.i("Database:query[enc=" + encrypted + "]", sql + getStringForArgs(whereArgs));
 		if (!encrypted)
 			return db.query(table, columns, whereClause, whereArgs, null, null, orderBy, limit);
 		else
@@ -160,8 +179,8 @@ public class Database {
 	 */
 	public int update(String table, ContentValues contentValues, String whereClause, String... whereArgs) {
 		String setStr = LogUtil.zipJoin(contentValues.valueSet(), " = ", ", ");
-		String sql = String.format("UPDATE %s SET %s WHERE %s [Args=%s]", table, setStr, whereClause, TextUtils.join(",", whereArgs));
-		Log.i("Database:update[enc=" + encrypted + "]", sql);
+		String sql = String.format("UPDATE %s SET %s WHERE %s", table, setStr, whereClause);
+		Log.i("Database:update[enc=" + encrypted + "]", sql + getStringForArgs(whereArgs));
 		if (!encrypted)
 			return db.update(table, contentValues, whereClause, whereArgs);
 		else
@@ -175,11 +194,22 @@ public class Database {
 	 * @param whereArgs
 	 */
 	public void delete(String table, String whereClause, String... whereArgs) {
-		String sql = String.format("DELETE FROM %s WHERE %s [Args=%s]", table, whereClause, TextUtils.join(",", whereArgs));
-		Log.i("Database:delete[enc=" + encrypted + "]", sql);
+		String sql = String.format("DELETE FROM %s WHERE %s", table, whereClause);
+		Log.i("Database:delete[enc=" + encrypted + "]", sql + getStringForArgs(whereArgs));
 		if (!encrypted)
 			db.delete(table, whereClause, whereArgs);
 		else
 			encdb.delete(table, whereClause, whereArgs);
 	}
+	
+	/**
+	 * Helper method used for logging binding args
+	 * @param whereArgs
+	 * @return
+	 */
+	protected String getStringForArgs(String... whereArgs) {
+		return whereArgs == null ? "" : " [Args=" + TextUtils.join(",", whereArgs) + "]";
+	}
+	
+	
 }
