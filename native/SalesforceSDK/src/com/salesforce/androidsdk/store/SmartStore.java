@@ -35,6 +35,7 @@ import org.json.JSONObject;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.text.TextUtils;
 
 
 /**
@@ -374,19 +375,24 @@ public class SmartStore  {
 	/**
 	 * Retrieve
 	 * @param soupName
-	 * @param soupEntryId
-	 * @return retrieve JSONObject with the given soupEntryId or null if not found
+	 * @param soupEntryIds
+	 * @return JSONArray of JSONObject's with the given soupEntryIds
 	 * @throws JSONException 
 	 */
-	public JSONObject retrieve(String soupName, long soupEntryId) throws JSONException {
+	public JSONArray retrieve(String soupName, Long... soupEntryIds) throws JSONException {
 		Cursor cursor = null;
 		try {
-			cursor = db.query(soupName, new String[] {SOUP_COL}, null, null, getSoupEntryIdPredicate(), soupEntryId + "");
+			JSONArray result = new JSONArray();
+			cursor = db.query(soupName, new String[] {SOUP_COL}, null, null, getSoupEntryIdsPredicate(soupEntryIds), (String[]) null);
 			if (!cursor.moveToFirst()) {
-				return null;
+				return result;
 			}
-			String raw = cursor.getString(cursor.getColumnIndex(SOUP_COL));
-			JSONObject result = new JSONObject(raw);
+			do {
+				String raw = cursor.getString(cursor.getColumnIndex(SOUP_COL));
+				result.put(new JSONObject(raw));
+			} 
+			while (cursor.moveToNext());
+			
 			return result;
 		}
 		finally {
@@ -490,10 +496,10 @@ public class SmartStore  {
 	/**
 	 * Delete (and commits)
 	 * @param soupName
-	 * @param soupEntryId
+	 * @param soupEntryIds
 	 */
-	public void delete(String soupName, long soupEntryId) {
-		delete(soupName, soupEntryId, true);
+	public void delete(String soupName, Long... soupEntryIds) {
+		delete(soupName, soupEntryIds, true);
 	}
 	
 	/**
@@ -502,13 +508,13 @@ public class SmartStore  {
 	 * @param soupEntryId
 	 * @param handleTx
 	 */
-	public void delete(String soupName, long soupEntryId, boolean handleTx) {
+	public void delete(String soupName, Long[] soupEntryIds, boolean handleTx) {
 		if (handleTx) {
 			db.beginTransaction();
 		}
 		
 		try {
-			db.delete(soupName, getSoupEntryIdPredicate(), soupEntryId + "");
+			db.delete(soupName, getSoupEntryIdsPredicate(soupEntryIds), (String []) null);
 			if (handleTx) {
 				db.setTransactionSuccessful();
 			}
@@ -590,18 +596,26 @@ public class SmartStore  {
 	}
 
 	/**
-	 * @return
+	 * @return predicate to match a soup entry by name
 	 */
 	protected String getSoupNamePredicate() {
 		return SOUP_NAME_COL + " = ?";
 	}
 
 	/**
-	 * @return
+	 * @return predicate to match a soup entry by id
 	 */
 	protected String getSoupEntryIdPredicate() {
 		return ID_COL + " = ?";
 	}
+	
+	/**
+	 * @return predicate to match soup entries by id
+	 */
+	protected String getSoupEntryIdsPredicate(Long[] soupEntryIds) {
+		return ID_COL + " IN (" + TextUtils.join(",", soupEntryIds)+ ")";
+	}
+	
 	
 	/**
 	 * @return

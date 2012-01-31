@@ -46,12 +46,6 @@ import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
 
 /**
  * PhoneGap plugin for smart store.
- * 
- * 
- * TODO (optimizations):
- * - querySoup should do select count instead of count (select)
- * - retrieve(ids) should do select where id in (ids) instead of for (id in ids) {select}
- * - delete(ids) should do delete where id in (ids) instead of for (id in ids) {select}
  */
 public class SmartStorePlugin extends Plugin {
 	// Keys in json from/to javascript
@@ -141,21 +135,14 @@ public class SmartStorePlugin extends Plugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		JSONArray soupEntryIds = arg0.getJSONArray(ENTRY_IDS);
+		JSONArray jsonSoupEntryIds = arg0.getJSONArray(ENTRY_IDS);
+		Long[] soupEntryIds = new Long[jsonSoupEntryIds.length()];
+		for (int i=0; i<jsonSoupEntryIds.length(); i++)
+			soupEntryIds[i] = jsonSoupEntryIds.getLong(i); 
 		
 		// Run remove
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
-		smartStore.beginTransaction();
-		try {
-			for (int i=0; i<soupEntryIds.length(); i++) {
-				long soupEntryId = soupEntryIds.getLong(i);
-				smartStore.delete(soupName, soupEntryId);
-			}
-			smartStore.setTransactionSuccessful();
-	    }
-		finally {
-			smartStore.endTransaction();
-		}
+		smartStore.delete(soupName, soupEntryIds);
 		
 		return new PluginResult(PluginResult.Status.OK);
 	}
@@ -171,15 +158,15 @@ public class SmartStorePlugin extends Plugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		JSONArray soupEntryIds = arg0.getJSONArray(ENTRY_IDS);
+		JSONArray jsonSoupEntryIds = arg0.getJSONArray(ENTRY_IDS);
+		Long[] soupEntryIds = new Long[jsonSoupEntryIds.length()];
+		for (int i=0; i<jsonSoupEntryIds.length(); i++)
+			soupEntryIds[i] = jsonSoupEntryIds.getLong(i); 
 		
 		// Run retrieve
 		SmartStore smartStore = ForceApp.APP.getSmartStore();
-		JSONArray result = new JSONArray();
-		for (int i=0; i<soupEntryIds.length(); i++) {
-			long soupEntryId = soupEntryIds.getLong(i);
-			result.put(smartStore.retrieve(soupName, soupEntryId));
-		}
+		JSONArray result = smartStore.retrieve(soupName, soupEntryIds);
+
 		return new PluginResult(PluginResult.Status.OK, result);
 	}
 
