@@ -98,13 +98,6 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		assertEquals("Wrong value for key b", 2, SmartStore.project(json, "b"));
 		assertSameJSON("Wrong value for key c", new JSONArray("[0,1,2]"), SmartStore.project(json, "c"));
 		assertSameJSON("Wrong value for key d", new JSONObject("{'d1':'vd1','d2':'vd2','d3':[1,2],'d4':{'e':5}}"), (JSONObject) SmartStore.project(json, "d"));
-
-		// With leading /
-		assertSameJSON("Should have returned whole object", json, SmartStore.project(json, "/"));
-		assertEquals("Wrong value for key /a", "va", SmartStore.project(json, "/a"));
-		assertEquals("Wrong value for key /b", 2, SmartStore.project(json, "/b"));
-		assertSameJSON("Wrong value for key /c", new JSONArray("[0,1,2]"), SmartStore.project(json, "/c"));
-		assertSameJSON("Wrong value for key /d", new JSONObject("{'d1':'vd1','d2':'vd2','d3':[1,2],'d4':{'e':5}}"), SmartStore.project(json, "/d"));
 	}
 
 	/**
@@ -115,18 +108,11 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject json = new JSONObject("{'a':'va', 'b':2, 'c':[0,1,2], 'd': {'d1':'vd1', 'd2':'vd2', 'd3':[1,2], 'd4':{'e':5}}}");
 		
 		// Nested elements
-		assertEquals("Wrong value for key d/d1", "vd1", SmartStore.project(json, "d/d1"));
-		assertEquals("Wrong value for key d/d2", "vd2", SmartStore.project(json, "d/d2"));
-		assertSameJSON("Wrong value for key d/d3", new JSONArray("[1,2]"), SmartStore.project(json, "d/d3"));
-		assertSameJSON("Wrong value for key d/d4", new JSONObject("{'e':5}"), SmartStore.project(json, "d/d4"));
-		assertEquals("Wrong value for key d/d4/e", 5, SmartStore.project(json, "d/d4/e"));
-		
-		// With leading /
-		assertEquals("Wrong value for key /d/d1", "vd1", SmartStore.project(json, "/d/d1"));
-		assertEquals("Wrong value for key /d/d2", "vd2", SmartStore.project(json, "/d/d2"));
-		assertSameJSON("Wrong value for key /d/d3", new JSONArray("[1,2]"), SmartStore.project(json, "/d/d3"));
-		assertSameJSON("Wrong value for key /d/d4", new JSONObject("{'e':5}"), SmartStore.project(json, "/d/d4"));
-		assertEquals("Wrong value for key /d/d4/e", 5, SmartStore.project(json, "/d/d4/e"));
+		assertEquals("Wrong value for key d.d1", "vd1", SmartStore.project(json, "d.d1"));
+		assertEquals("Wrong value for key d.d2", "vd2", SmartStore.project(json, "d.d2"));
+		assertSameJSON("Wrong value for key d.d3", new JSONArray("[1,2]"), SmartStore.project(json, "d.d3"));
+		assertSameJSON("Wrong value for key d.d4", new JSONObject("{'e':5}"), SmartStore.project(json, "d.d4"));
+		assertEquals("Wrong value for key d.d4.e", 5, SmartStore.project(json, "d.d4.e"));
 	}
 
 	/**
@@ -180,7 +166,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	 */
 	public void testCreateMultiple() throws JSONException {
 		assertFalse("Table test_soup should not exist", hasTable(OTHER_TEST_SOUP));
-		store.registerSoup(OTHER_TEST_SOUP, new IndexSpec[] {new IndexSpec("lastName", Type.string), new IndexSpec("address/city", Type.string)});
+		store.registerSoup(OTHER_TEST_SOUP, new IndexSpec[] {new IndexSpec("lastName", Type.string), new IndexSpec("address.city", Type.string)});
 		assertTrue("Register soup call failed", hasTable(OTHER_TEST_SOUP));
 		
 		JSONObject soupElt1 = new JSONObject("{'lastName':'Doe', 'address':{'city':'San Francisco','street':'1 market'}}");
