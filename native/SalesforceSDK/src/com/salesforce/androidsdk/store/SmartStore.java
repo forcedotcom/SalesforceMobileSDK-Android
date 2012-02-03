@@ -633,14 +633,11 @@ public class SmartStore  {
 		if (soup == null) {
 			return null;
 		}
-		if (path == null || path.equals("") || path.equals("/")) {
+		if (path == null || path.equals("")) {
 			return soup;
 		}
 		
-		if (path.startsWith("/"))
-			path = path.substring(1);
-		
-		String[] pathElements = path.split("/");
+		String[] pathElements = path.split("[.]");
 		Object o = soup;
 		for (String pathElement : pathElements) {
 			o = ((JSONObject) o).opt(pathElement);
