@@ -49,6 +49,9 @@ import android.text.TextUtils;
 public class SmartStore  {
 	// Default
 	public static final int DEFAULT_PAGE_SIZE = 10;
+
+	// Table to keep track of soup names
+	protected static final String SOUP_NAMES_TABLE = "soup_names";
 	
 	// Table to keep track of soup's index specs
 	protected static final String SOUP_INDEX_MAP_TABLE = "soup_index_map";
@@ -74,11 +77,13 @@ public class SmartStore  {
 	
 	/**
 	 * Create soup index map table to keep track of soups' index specs
+	 * Create soup name map table to keep track of soup name to table name mappings
 	 * Called when the database is first created
 	 * 
 	 * @param db
 	 */
-	public static void createMetaTable(Database db) {
+	public static void createMetaTables(Database db) {
+		// Create soup_index_map table
 		StringBuilder sb = new StringBuilder();
 		sb.append("CREATE TABLE ").append(SOUP_INDEX_MAP_TABLE).append(" (") 
 				  	.append(SOUP_NAME_COL).append(" TEXT")
@@ -87,6 +92,19 @@ public class SmartStore  {
 				  	.append(",").append(COLUMN_TYPE_COL).append(" TEXT")
 				  	.append(")");
 		db.execSQL(sb.toString());
+		// Add index on soup_name column
+		db.execSQL(String.format("CREATE INDEX %s on %s ( %s )", SOUP_INDEX_MAP_TABLE + "_0", SOUP_INDEX_MAP_TABLE, SOUP_NAME_COL));
+		
+		// Create soup_names table
+		// The table name for the soup will simply be table_<soupId>
+		sb = new StringBuilder();
+		sb.append("CREATE TABLE ").append(SOUP_NAMES_TABLE).append(" (") 
+					.append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT") 
+					.append(",").append(SOUP_NAME_COL).append(" TEXT")
+				  	.append(")");
+		db.execSQL(sb.toString());		
+		// Add index on soup_name column
+		db.execSQL(String.format("CREATE INDEX %s on %s ( %s )", SOUP_NAMES_TABLE + "_0", SOUP_NAMES_TABLE, SOUP_NAME_COL));
 	}
 
 	/**
@@ -128,11 +146,28 @@ public class SmartStore  {
 	 * @param indexSpecs
 	 */
 	public void registerSoup(String soupName, IndexSpec[] indexSpecs) {
+		assert !hasSoup(soupName) : "soup " + soupName  +  " already exists"; 
+
+		// First get a table name
+		String soupTableName = null;
+		ContentValues soupMapValues = new ContentValues();
+		soupMapValues.put(SOUP_NAME_COL, soupName);
+		try {
+			db.beginTransaction();
+			long soupId = db.insert(SOUP_NAMES_TABLE, soupMapValues);
+			soupTableName = getSoupTableName(soupId);
+			db.setTransactionSuccessful();
+		}
+		finally {
+			db.endTransaction();
+		}
+		
+		// Prepare SQL for creating soup table and its indices
 		StringBuilder createTableStmt = new StringBuilder();          // to create new soup table
 		List<String> createIndexStmts = new ArrayList<String>();      // to create indices on new soup table
 		List<ContentValues> soupIndexMapInserts = new ArrayList<ContentValues>();  // to be inserted in soup index map table
 		
-		createTableStmt.append("CREATE TABLE ").append(soupName).append(" (")
+		createTableStmt.append("CREATE TABLE ").append(soupTableName).append(" (")
 						.append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
 					    .append(", ").append(SOUP_COL).append(" TEXT")
 					    .append(", ").append(CREATED_COL).append(" INTEGER")
@@ -141,7 +176,7 @@ public class SmartStore  {
 		int i = 0;
 		for (IndexSpec indexSpec : indexSpecs) {
 			// for create table
-			String columnName = soupName + "_" + i;
+			String columnName = soupTableName + "_" + i;
 			String columnType = indexSpec.type.getColumnType();
 			createTableStmt.append(", ").append(columnName).append(" ").append(columnType);
 			
@@ -154,14 +189,14 @@ public class SmartStore  {
 			soupIndexMapInserts.add(values);
 			
 			// for create index
-			String indexName = soupName + "_" + i + "_idx";
-			createIndexStmts.add(String.format("CREATE INDEX %s on %s ( %s )", indexName, soupName, columnName));;
+			String indexName = soupTableName + "_" + i + "_idx";
+			createIndexStmts.add(String.format("CREATE INDEX %s on %s ( %s )", indexName, soupTableName, columnName));;
 			
 			i++;
 		}
 		createTableStmt.append(")");
 		
-		
+		// Run SQL for creating soup table and its indices
 		db.execSQL(createTableStmt.toString());
 		for (String createIndexStmt : createIndexStmts) {
 			db.execSQL(createIndexStmt.toString());
@@ -187,10 +222,22 @@ public class SmartStore  {
 	 * @return true if soup exists, false otherwise
 	 */
 	public boolean hasSoup(String soupName) {
+		return getSoupTableName(soupName) != null;
+	}
+	
+	/**
+	 * 
+	 * @param soupName
+	 * @return table name for a given soup or null if the soup doesn't exist
+	 */
+	public String getSoupTableName(String soupName) {
 		Cursor cursor = null;
 		try {
-			cursor = db.query("sqlite_master", null, null, null, "type = ? and name = ?", "table", soupName);
-			return cursor.getCount() == 1;
+			cursor = db.query(SOUP_NAMES_TABLE, new String[] {ID_COL}, null, null, getSoupNamePredicate(), soupName);
+			if (!cursor.moveToFirst()) {
+				return null;
+			}
+			return getSoupTableName(cursor.getLong(cursor.getColumnIndex(ID_COL)));
 		}
 		finally {
 			if (cursor != null) {
@@ -207,14 +254,18 @@ public class SmartStore  {
 	 * @param soupName
 	 */
 	public void dropSoup(String soupName) {
-		db.execSQL("DROP TABLE IF EXISTS " + soupName);
-		try {
-			db.beginTransaction();
-			db.delete(SOUP_INDEX_MAP_TABLE, getSoupNamePredicate(), soupName);
-			db.setTransactionSuccessful();
-		}
-		finally {
-			db.endTransaction();
+		String soupTableName = getSoupTableName(soupName);
+		if (soupTableName != null) {
+			db.execSQL("DROP TABLE IF EXISTS " + soupTableName);
+			try {
+				db.beginTransaction();
+				db.delete(SOUP_NAMES_TABLE, getSoupNamePredicate(), soupName);
+				db.delete(SOUP_INDEX_MAP_TABLE, getSoupNamePredicate(), soupName);
+				db.setTransactionSuccessful();
+			}
+			finally {
+				db.endTransaction();
+			}
 		}
 	}
 
@@ -227,6 +278,8 @@ public class SmartStore  {
 	 * @throws JSONException 
 	 */
 	public JSONArray querySoup(String soupName, QuerySpec querySpec, int pageIndex) throws JSONException {
+		String soupTableName = getSoupTableName(soupName);
+		assert soupTableName != null : "Soup " + soupName + " does not exist";
 		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
 		
 		// Page
@@ -239,11 +292,11 @@ public class SmartStore  {
 		try {
 			if (querySpec.beginKey == null) {
 				// Get all the rows
-				cursor = db.query(soupName, new String[] {SOUP_COL}, columnName + " " + querySpec.order.sql, limit, null);
+				cursor = db.query(soupTableName, new String[] {SOUP_COL}, columnName + " " + querySpec.order.sql, limit, null);
 			}
 			else {
 				// Get a range of rows
-				cursor = db.query(soupName, new String[] {SOUP_COL}, columnName + " " + querySpec.order.sql, 				
+				cursor = db.query(soupTableName, new String[] {SOUP_COL}, columnName + " " + querySpec.order.sql, 				
 						limit, getKeyRangePredicate(columnName), querySpec.beginKey, querySpec.endKey);
 			}
 			
@@ -282,13 +335,16 @@ public class SmartStore  {
 	 * @throws JSONException
 	 */
 	public int countQuerySoup(String soupName, QuerySpec querySpec) throws JSONException {
+		String soupTableName = getSoupTableName(soupName);
+		assert soupTableName != null : "Soup " + soupName + " does not exist";
 		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
+		
 		Cursor cursor = null;
 		try {
 			if (querySpec.beginKey == null)
-				cursor = db.countQuery(soupName, null); // all the rows				
+				cursor = db.countQuery(soupTableName, null); // all the rows				
 			else 
-				cursor = db.countQuery(soupName, getKeyRangePredicate(columnName)); // range of rows
+				cursor = db.countQuery(soupTableName, getKeyRangePredicate(columnName)); // range of rows
 			
 			if (cursor.moveToFirst()) {
 				return cursor.getInt(0);
@@ -324,6 +380,8 @@ public class SmartStore  {
 	 * @throws JSONException
 	 */
 	public JSONObject create(String soupName, JSONObject soupElt, boolean handleTx) throws JSONException {
+		String soupTableName = getSoupTableName(soupName);
+		assert soupTableName != null : "Soup " + soupName + " does not exist";
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		try {
@@ -339,7 +397,7 @@ public class SmartStore  {
 			for (IndexSpec indexSpec : indexSpecs) {
 				contentValues.put(indexSpec.columnName, (String) project(soupElt, indexSpec.path));
 			}
-			long soupEntryId = db.insert(soupName, contentValues); // insert without the soup to get the id
+			long soupEntryId = db.insert(soupTableName, contentValues); // insert without the soup to get the id
 			
 			// Adding fields to soup element
 			// Cloning to not modify the one passed in (inefficient?)
@@ -352,7 +410,7 @@ public class SmartStore  {
 			contentValues.put(SOUP_COL, soupEltCreated.toString());
 			
 			// Updating database
-			boolean success = db.update(soupName, contentValues, getSoupEntryIdPredicate(), soupEntryId + "") == 1;
+			boolean success = db.update(soupTableName, contentValues, getSoupEntryIdPredicate(), soupEntryId + "") == 1;
 			
 			// Commit if successful
 			if (success) {
@@ -380,10 +438,12 @@ public class SmartStore  {
 	 * @throws JSONException 
 	 */
 	public JSONArray retrieve(String soupName, Long... soupEntryIds) throws JSONException {
+		String soupTableName = getSoupTableName(soupName);
+		assert soupTableName != null : "Soup " + soupName + " does not exist";
 		Cursor cursor = null;
 		try {
 			JSONArray result = new JSONArray();
-			cursor = db.query(soupName, new String[] {SOUP_COL}, null, null, getSoupEntryIdsPredicate(soupEntryIds), (String[]) null);
+			cursor = db.query(soupTableName, new String[] {SOUP_COL}, null, null, getSoupEntryIdsPredicate(soupEntryIds), (String[]) null);
 			if (!cursor.moveToFirst()) {
 				return result;
 			}
@@ -424,6 +484,8 @@ public class SmartStore  {
 	 * @throws JSONException
 	 */
 	public JSONObject update(String soupName, JSONObject soupElt, long soupEntryId, boolean handleTx) throws JSONException {
+		String soupTableName = getSoupTableName(soupName);
+		assert soupTableName != null : "Soup " + soupName + " does not exist";
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
@@ -445,7 +507,7 @@ public class SmartStore  {
 			if (handleTx) {
 				db.beginTransaction();
 			}
-			boolean success = db.update(soupName, contentValues, getSoupEntryIdPredicate(), soupEntryId + "") == 1;
+			boolean success = db.update(soupTableName, contentValues, getSoupEntryIdPredicate(), soupEntryId + "") == 1;
 			if (success) {
 				if (handleTx) {
 					db.setTransactionSuccessful();
@@ -509,12 +571,15 @@ public class SmartStore  {
 	 * @param handleTx
 	 */
 	public void delete(String soupName, Long[] soupEntryIds, boolean handleTx) {
+		String soupTableName = getSoupTableName(soupName);
+		assert soupTableName != null : "Soup " + soupName + " does not exist";
+		
 		if (handleTx) {
 			db.beginTransaction();
 		}
-		
+
 		try {
-			db.delete(soupName, getSoupEntryIdsPredicate(soupEntryIds), (String []) null);
+			db.delete(soupTableName, getSoupEntryIdsPredicate(soupEntryIds), (String []) null);
 			if (handleTx) {
 				db.setTransactionSuccessful();
 			}
@@ -623,6 +688,15 @@ public class SmartStore  {
 	protected String getPathPredicate() {
 		return PATH_COL + " = ?";		
 	}
+	
+	/**
+	 * @param soupId
+	 * @return
+	 */
+	protected String getSoupTableName(long soupId) {
+		return "TABLE_" + soupId;
+	}
+
 
 	/**
 	 * @param soup

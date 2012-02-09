@@ -62,10 +62,11 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		db = getWritableDatabase();
 		store = new SmartStore(db);
 		
-		assertFalse("Table test_soup should not exist", hasTable(TEST_SOUP));
+		assertFalse("Table for test_soup should not exist", hasTable("TABLE_1"));
 		assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
 		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
-		assertTrue("Table test_soup should now exist", hasTable(TEST_SOUP));
+		assertEquals("Table for test_soup was expected to be called TABLE_1", "TABLE_1", store.getSoupTableName(TEST_SOUP));
+		assertTrue("Table for test_soup should now exist", hasTable("TABLE_1"));
 		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
 	}
 	
@@ -126,11 +127,24 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	 * Test register/drop soup
 	 */
 	public void testRegisterDropSoup() {
-		assertFalse("Table third_test_soup should not exist", hasTable(THIRD_TEST_SOUP));
-		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)}); 
-		assertTrue("Register soup call failed", hasTable(THIRD_TEST_SOUP));
+		// Before
+		assertNull("getSoupTableName should have returned null", store.getSoupTableName(THIRD_TEST_SOUP));
+		assertFalse("Soup third_test_soup should not exist", store.hasSoup(THIRD_TEST_SOUP));
+		
+		// Register
+		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
+		String soupTableName = store.getSoupTableName(THIRD_TEST_SOUP);
+		assertEquals("getSoupTableName should have returned TABLE_2", "TABLE_2", soupTableName);
+		assertTrue("Table for soup third_test_soup does exist", hasTable(soupTableName));
+		assertTrue("Register soup call failed", store.hasSoup(THIRD_TEST_SOUP));
+		
+		// Drop
 		store.dropSoup(THIRD_TEST_SOUP);
-		assertFalse("Table third_test_soup should no longer exist", hasTable(THIRD_TEST_SOUP));		
+		
+		// After
+		assertFalse("Soup third_test_soup should no longer exist", store.hasSoup(THIRD_TEST_SOUP));
+		assertNull("getSoupTableName should have returned null", store.getSoupTableName(THIRD_TEST_SOUP));
+		assertFalse("Table for soup third_test_soup does exist", hasTable(soupTableName));
 	}
 	
 	/**
@@ -146,12 +160,13 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(TEST_SOUP, null, null, null, null);
+			String soupTableName = store.getSoupTableName(TEST_SOUP);
+			c = db.query(soupTableName, null, null, null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected one soup element only", 1, c.getCount());
 			assertEquals("Wrong id", idOf(soupEltCreated), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupEltCreated.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
-			assertEquals("Wrong value in index column", "ka", c.getString(c.getColumnIndex(TEST_SOUP + "_0")));
+			assertEquals("Wrong value in index column", "ka", c.getString(c.getColumnIndex(soupTableName + "_0")));
 			assertSameJSON("Wrong value in soup column", soupEltCreated, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 			assertEquals("Created date and last modified date should be equal", c.getLong(c.getColumnIndex("created")),  c.getLong(c.getColumnIndex("lastModified")));
 		}
@@ -165,9 +180,11 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	 * @throws JSONException 
 	 */
 	public void testCreateMultiple() throws JSONException {
-		assertFalse("Table test_soup should not exist", hasTable(OTHER_TEST_SOUP));
+		assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
 		store.registerSoup(OTHER_TEST_SOUP, new IndexSpec[] {new IndexSpec("lastName", Type.string), new IndexSpec("address.city", Type.string)});
-		assertTrue("Register soup call failed", hasTable(OTHER_TEST_SOUP));
+		assertTrue("Register soup call failed", store.hasSoup(OTHER_TEST_SOUP));
+		
+		
 		
 		JSONObject soupElt1 = new JSONObject("{'lastName':'Doe', 'address':{'city':'San Francisco','street':'1 market'}}");
 		JSONObject soupElt2 = new JSONObject("{'lastName':'Jackson', 'address':{'city':'Los Angeles','street':'100 mission'}}");
@@ -184,28 +201,32 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(OTHER_TEST_SOUP, null, "id ASC", null, null);
+			String soupTableName = store.getSoupTableName(OTHER_TEST_SOUP);
+			assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
+			assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
+			
+			c = db.query(soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
 			assertEquals("Wrong id", idOf(soupElt1Created), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupElt1Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
-			assertEquals("Wrong value in index column", "Doe", c.getString(c.getColumnIndex(OTHER_TEST_SOUP + "_0")));
-			assertEquals("Wrong value in index column", "San Francisco", c.getString(c.getColumnIndex(OTHER_TEST_SOUP + "_1")));
+			assertEquals("Wrong value in index column", "Doe", c.getString(c.getColumnIndex(soupTableName + "_0")));
+			assertEquals("Wrong value in index column", "San Francisco", c.getString(c.getColumnIndex(soupTableName + "_1")));
 			assertSameJSON("Wrong value in soup column", soupElt1Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 			
 			c.moveToNext();
 			assertEquals("Wrong id", idOf(soupElt2Created), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupElt2Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
-			assertEquals("Wrong value in index column", "Jackson", c.getString(c.getColumnIndex(OTHER_TEST_SOUP + "_0")));
-			assertEquals("Wrong value in index column", "Los Angeles", c.getString(c.getColumnIndex(OTHER_TEST_SOUP + "_1")));
+			assertEquals("Wrong value in index column", "Jackson", c.getString(c.getColumnIndex(soupTableName + "_0")));
+			assertEquals("Wrong value in index column", "Los Angeles", c.getString(c.getColumnIndex(soupTableName + "_1")));
 			assertSameJSON("Wrong value in soup column", soupElt2Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 
 			c.moveToNext();
 			assertEquals("Wrong id", idOf(soupElt3Created), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupElt3Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
-			assertEquals("Wrong value in index column", "Watson", c.getString(c.getColumnIndex(OTHER_TEST_SOUP + "_0")));
-			assertEquals("Wrong value in index column", "London", c.getString(c.getColumnIndex(OTHER_TEST_SOUP + "_1")));
+			assertEquals("Wrong value in index column", "Watson", c.getString(c.getColumnIndex(soupTableName + "_0")));
+			assertEquals("Wrong value in index column", "London", c.getString(c.getColumnIndex(soupTableName + "_1")));
 			assertSameJSON("Wrong value in soup column", soupElt3Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 			
 		}
@@ -242,7 +263,8 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(TEST_SOUP, null, "id ASC", null, null);
+			String soupTableName = store.getSoupTableName(TEST_SOUP);			
+			c = db.query(soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -293,7 +315,8 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(TEST_SOUP, null, "id ASC", null, null);
+			String soupTableName = store.getSoupTableName(TEST_SOUP);			
+			c = db.query(soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -364,7 +387,8 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			c = db.query(TEST_SOUP, null, "id ASC", null, null);
+			String soupTableName = store.getSoupTableName(TEST_SOUP);
+			c = db.query(soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 2, c.getCount());
 			
