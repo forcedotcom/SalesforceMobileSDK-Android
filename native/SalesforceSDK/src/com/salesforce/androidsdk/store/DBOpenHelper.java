@@ -49,7 +49,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 		Log.i("DBOpenHelper:onCreate", DB_NAME + "/" + DB_VERSION);
-		SmartStore.createMetaTable(new Database(db));
+		SmartStore.createMetaTables(new Database(db));
 	}
 
 	@Override
