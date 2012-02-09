@@ -1,6 +1,3 @@
 [submodule "external/shared"]
 	path = external/shared
 	url = https://github.com/forcedotcom/SalesforceMobileSDK-Shared-dev.git
-[submodule "external/sqlcipher"]
-	path = external/sqlcipher
-	url = https://github.com/developernotes/android-database-sqlcipher.git
