@@ -46,9 +46,9 @@ import com.salesforce.androidsdk.store.SmartStore.Type;
  */
 public class SmartStoreLoadTest extends InstrumentationTestCase {
 
-	private static final int LOG2_MAX_NUMBER_ENTRIES = 12 /* stopping at 4096 entries */;	
+	private static final int LOG2_MAX_NUMBER_ENTRIES = 10 /* stopping at 1024 entries */;	
 	private static final int LOG2_MAX_LENGTH_FIELD = 16 /* stopping at 65536 characters */;
-	private static final int LOG2_MAX_NUMBER_FIELDS = 12 /* stopping at 4096 fields */;
+	private static final int LOG2_MAX_NUMBER_FIELDS = 10 /* stopping at 1024 fields */;
 
 	private static final String TEST_SOUP = "test_soup";
 	
@@ -86,7 +86,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	 */
 	public void testLoadManyEntries() throws JSONException {
 		int n = 1;
-		for (int k=0; k < LOG2_MAX_NUMBER_ENTRIES; k++) {
+		for (int k=0; k <= LOG2_MAX_NUMBER_ENTRIES; k++) {
 			// Upsert more entries
 			List<Long> times = new ArrayList<Long>();
 			for (int i=n/2; i<n; i++) {
@@ -132,7 +132,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	public void testLoadEntriesWithManyFields() throws JSONException {
 		// Loading entries with 1,2,4,... fields
 		int n = 1;
-		for (int k=0; k<LOG2_MAX_NUMBER_FIELDS; k++) {
+		for (int k=0; k < LOG2_MAX_NUMBER_FIELDS; k++) {
 			n *= 2;
 			
 			JSONObject entry = new JSONObject();
@@ -148,7 +148,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 		}
 		// Validation
 		n = 1;
-		for (int k=0; k<LOG2_MAX_NUMBER_FIELDS; k++) {
+		for (int k=0; k < LOG2_MAX_NUMBER_FIELDS; k++) {
 			n *= 2;
 			QuerySpec query = new QuerySpec("key", "k" + n);
 			long start = System.currentTimeMillis();
@@ -174,7 +174,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	public void testLoadEntriesWithLargeField() throws JSONException {
 		// Loading entries with 1,2,4,... characters field
 		int n = 1;
-		for (int k=0; k<LOG2_MAX_LENGTH_FIELD ; k++) {
+		for (int k=0; k <= LOG2_MAX_LENGTH_FIELD ; k++) {
 			JSONObject entry = new JSONObject();
 			entry.put("key", "k" + n);
 			StringBuilder sb = new StringBuilder(n);
@@ -194,7 +194,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 
 		// Validation
 		n = 1;
-		for (int k=0; k<LOG2_MAX_LENGTH_FIELD; k++) {
+		for (int k=0; k <= LOG2_MAX_LENGTH_FIELD; k++) {
 			QuerySpec query = new QuerySpec("key", "k" + n);
 			long start = System.currentTimeMillis();
 			JSONArray resultSet = store.querySoup(TEST_SOUP, query, 0);
