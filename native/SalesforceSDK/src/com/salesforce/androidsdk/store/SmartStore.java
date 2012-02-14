@@ -295,13 +295,8 @@ public class SmartStore  {
 		// Get the matching soups
 		Cursor cursor = null;
 		try {
-			if (querySpec.path == null) { /* all query */
-				cursor = db.query(soupTableName, new String[] {SOUP_COL}, null, limit, null);
-			}
-			else {
-				String columnName = getColumnNameForPath(db, soupName, querySpec.path);
-				cursor = db.query(soupTableName, new String[] {SOUP_COL}, querySpec.getOrderBy(columnName), limit, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
-			}
+			String columnName = getColumnNameForPath(db, soupName, querySpec.path);
+			cursor = db.query(soupTableName, new String[] {SOUP_COL}, querySpec.getOrderBy(columnName), limit, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
 			
 			JSONArray results = new JSONArray();
 			if (cursor.moveToFirst()) {

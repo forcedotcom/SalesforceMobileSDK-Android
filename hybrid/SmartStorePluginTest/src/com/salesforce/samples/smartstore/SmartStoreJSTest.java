@@ -109,20 +109,24 @@ public class SmartStoreJSTest extends
         runTest("testQuerySpecFactories");
     }
 
-    public void testLikeQuerySpecStartsWith () throws InterruptedException {
+    public void testLikeQuerySpecStartsWith() throws InterruptedException {
         runTest("testLikeQuerySpecStartsWith");
     }
 
-    public void testLikeQuerySpecEndsWith () throws InterruptedException {
+    public void testLikeQuerySpecEndsWith() throws InterruptedException {
         runTest("testLikeQuerySpecEndsWith");
     }
 
-    public void testLikeQueryInnerText () throws InterruptedException {
+    public void testLikeQueryInnerText() throws InterruptedException {
         runTest("testLikeQueryInnerText");
     }
 
-    public void testCompoundQueryPath () throws InterruptedException {
+    public void testCompoundQueryPath() throws InterruptedException {
         runTest("testCompoundQueryPath");
+    }
+
+    public void testEmptyQuerySpec() throws InterruptedException {
+        runTest("testEmptyQuerySpec");
     }
     
     
