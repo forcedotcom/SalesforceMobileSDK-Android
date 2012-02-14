@@ -36,6 +36,7 @@
 "external\shared\jquery" "hybrid\SampleApps\ContactExplorer\assets\www\jquery"
 "external\shared\jquery" "hybrid\SampleApps\VFConnector\assets\www\jquery"
 "external\shared\jquery" "hybrid\SmartStorePluginTest\assets\www\jquery"
+"external\sqlcipher\assets\icudt46l.zip" "native\SalesforceSDKTest\assets\icudt46l.zip"
 "external\sqlcipher\libs\armeabi" "hybrid\SmartStorePluginTest\libs\armeabi"
 "external\sqlcipher\libs\armeabi" "native\SalesforceSDKTest\libs\armeabi"
 "external\sqlcipher\libs\commons-codec.jar" "hybrid\SmartStorePluginTest\libs\commons-codec.jar"
