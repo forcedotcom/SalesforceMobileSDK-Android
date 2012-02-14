@@ -85,6 +85,10 @@ public class SmartStoreJSTest extends
         runTest("testQuerySoup");
     }
 
+    public void testQuerySoupDescending() throws InterruptedException {
+        runTest("testQuerySoupDescending");
+    }
+    
     public void testQuerySoupBadQuerySpec() throws InterruptedException {
         runTest("testQuerySoupBadQuerySpec");
     }
@@ -128,7 +132,10 @@ public class SmartStoreJSTest extends
     public void testEmptyQuerySpec() throws InterruptedException {
         runTest("testEmptyQuerySpec");
     }
-    
+
+    public void testIntegerQuerySpec() throws InterruptedException {
+        runTest("testIntegerQuerySpec");
+    }
     
 	/**
 	 * Helper method: runs javascript test and wait for it to complete

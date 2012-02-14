@@ -333,7 +333,7 @@ public class SmartStore  {
 		Cursor cursor = null;
 		try {
 			if (querySpec.path == null) {
-				cursor = db.countQuery(soupTableName, null, null);
+				cursor = db.countQuery(soupTableName, null, (String[]) null);
 			}
 			else {
 				String columnName = getColumnNameForPath(db, soupName, querySpec.path);
@@ -389,7 +389,12 @@ public class SmartStore  {
 			contentValues.put(CREATED_COL, now);
 			contentValues.put(LAST_MODIFIED_COL, now);
 			for (IndexSpec indexSpec : indexSpecs) {
-				contentValues.put(indexSpec.columnName, (String) project(soupElt, indexSpec.path));
+				switch (indexSpec.type) {
+				case integer:
+					contentValues.put(indexSpec.columnName, (Integer) project(soupElt, indexSpec.path)); break;
+				case string:
+					contentValues.put(indexSpec.columnName, (String) project(soupElt, indexSpec.path)); break;
+				}
 			}
 			long soupEntryId = db.insert(soupTableName, contentValues); // insert without the soup to get the id
 			
@@ -494,7 +499,12 @@ public class SmartStore  {
 		contentValues.put(SOUP_COL, soupEltUpdated.toString());
 		contentValues.put(LAST_MODIFIED_COL, now);
 		for (IndexSpec indexSpec : indexSpecs) {
-			contentValues.put(indexSpec.columnName, (String) project(soupElt, indexSpec.path));
+			switch (indexSpec.type) {
+			case integer:
+				contentValues.put(indexSpec.columnName, (Integer) project(soupElt, indexSpec.path)); break;
+			case string:
+				contentValues.put(indexSpec.columnName, (String) project(soupElt, indexSpec.path)); break;
+			}
 		}
 		
 		try {
@@ -748,7 +758,6 @@ public class SmartStore  {
 	 * Query type enum
 	 */
 	public enum QueryType {
-		all,
 		exact,
 		range,
 		like;
@@ -796,7 +805,7 @@ public class SmartStore  {
 		 * @return
 		 */
 		public static QuerySpec buildAllQuerySpec(Order order, int pageSize) {
-			return new QuerySpec(null, QueryType.all, null, null, null, null, order, pageSize);
+			return new QuerySpec(null, QueryType.range, null, null, null, null, order, pageSize);
 		}
 		
 		
@@ -842,14 +851,14 @@ public class SmartStore  {
 		 */
 		public String getKeyPredicate(String columnName) {
 			switch(queryType) {
-			case all:
-				return null;
 			case exact:
 				return columnName + " = ?";
 			case like:
 				return columnName + " LIKE ?";
 			case range:
-				if (endKey == null)
+				if (beginKey == null && endKey == null)
+					return null;
+				else if (endKey == null)
 					return columnName + " >= ? ";
 				else if (beginKey == null)
 					return columnName + " <= ? ";
@@ -865,14 +874,14 @@ public class SmartStore  {
 		 */
 		public String[] getKeyPredicateArgs() {
 			switch(queryType) {
-			case all:
-				return null;
 			case exact:
 				return new String[] {matchKey};
 			case like:
 				return new String[] {likeKey};
 			case range:
-				if (endKey == null)
+				if (beginKey == null && endKey == null)
+					return null;
+				else if (endKey == null)
 					return new String[] {beginKey};
 				else if (beginKey == null)
 					return new String[] {endKey};

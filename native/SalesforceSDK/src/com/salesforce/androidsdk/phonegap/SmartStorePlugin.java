@@ -323,7 +323,6 @@ public class SmartStorePlugin extends Plugin {
 		// Building query spec
 		QuerySpec querySpec = null;
 		switch (queryType) {
-			case all:     querySpec = QuerySpec.buildAllQuerySpec(order, pageSize); break;
 			case exact:   querySpec = QuerySpec.buildExactQuerySpec(path, matchKey, pageSize); break;
 			case range:   querySpec = QuerySpec.buildRangeQuerySpec(path, beginKey, endKey, order, pageSize); break;
 			case like:    querySpec = QuerySpec.buildLikeQuerySpec(path, likeKey, order, pageSize); break;
