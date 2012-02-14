@@ -113,7 +113,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 			
 			
 			// Query one of them
-			QuerySpec query = new QuerySpec("key", "k" + ((n/2 + n) / 2));
+			QuerySpec query = QuerySpec.buildExactQuerySpec("key", "k" + ((n/2 + n) / 2), 1);
 			long start = System.currentTimeMillis();
 			JSONArray resultSet = store.querySoup(TEST_SOUP, query, 0);
 			long end = System.currentTimeMillis();
@@ -150,7 +150,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 		n = 1;
 		for (int k=0; k < LOG2_MAX_NUMBER_FIELDS; k++) {
 			n *= 2;
-			QuerySpec query = new QuerySpec("key", "k" + n);
+			QuerySpec query = QuerySpec.buildExactQuerySpec("key", "k" + n, 1);
 			long start = System.currentTimeMillis();
 			JSONArray resultSet = store.querySoup(TEST_SOUP, query, 0);
 			long end = System.currentTimeMillis();
@@ -195,7 +195,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 		// Validation
 		n = 1;
 		for (int k=0; k <= LOG2_MAX_LENGTH_FIELD; k++) {
-			QuerySpec query = new QuerySpec("key", "k" + n);
+			QuerySpec query = QuerySpec.buildExactQuerySpec("key", "k" + n, 1);
 			long start = System.currentTimeMillis();
 			JSONArray resultSet = store.querySoup(TEST_SOUP, query, 0);
 			long end = System.currentTimeMillis();

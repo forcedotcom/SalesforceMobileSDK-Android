@@ -403,7 +403,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	}
 
 	/**
-	 * Test query when looking for a specific element (with and without projections)
+	 * Test query when looking for a specific element
 	 * @throws JSONException 
 	 */
 	public void testMatchQuery() throws JSONException {
@@ -415,20 +415,15 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt2Created= store.create(TEST_SOUP, soupElt2);
 		store.create(TEST_SOUP, soupElt3);
 
-		// Exact match - whole soup element
-		JSONArray result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2"), 0);
+		// Exact match
+		JSONArray result = store.querySoup(TEST_SOUP, QuerySpec.buildExactQuerySpec("key", "ka2", 10), 0);
 		assertEquals("One result expected", 1, result.length());
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
 
-		// Exact match - specified projections
-		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", new String[] {"otherValue", "value"}), 0);
-		assertEquals("One result expected", 1, result.length());
-		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}"), result.getJSONObject(0));
-		
 	}
 
 	/**
-	 * Query test looking for a range of elements (with and without projections / with ascending or descending ordering)
+	 * Query test looking for a range of elements (with ascending or descending ordering)
 	 * @throws JSONException 
 	 */
 	public void testRangeQuery() throws JSONException {
@@ -440,30 +435,73 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
 		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
 
-		// Range query - whole soup elements
-		JSONArray result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3"), 0);
+		// Range query
+		JSONArray result = store.querySoup(TEST_SOUP, QuerySpec.buildRangeQuerySpec("key", "ka2", "ka3", Order.ascending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(1));
 
-		// Range query - whole soup elements - descending order
-		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", Order.descending), 0);
+		// Range query - descending order
+		result = store.querySoup(TEST_SOUP, QuerySpec.buildRangeQuerySpec("key", "ka2", "ka3", Order.descending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
-		
-		// Range query - specified projections
-		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}), 0);
-		assertEquals("Two results expected", 2, result.length());
-		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}"), result.getJSONObject(0));
-		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova3', 'value':'va3'}"), result.getJSONObject(1));
-		
-		// Range query - specified projections - descending order
-		result = store.querySoup(TEST_SOUP, new QuerySpec("key", "ka2", "ka3", new String[] {"otherValue", "value"}, Order.descending), 0);
-		assertEquals("Two results expected", 2, result.length());
-		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova3', 'value':'va3'}"), result.getJSONObject(0));
-		assertSameJSON("Wrong result for query", new JSONObject("{'otherValue':'ova2', 'value':'va2'}"), result.getJSONObject(1));
 	}
+
+	/**
+	 * Query test looking using like (with ascending or descending ordering)
+	 * @throws JSONException 
+	 */
+	public void testLikeQuery() throws JSONException {
+		JSONObject soupElt1 = new JSONObject("{'key':'abcd', 'value':'va1', 'otherValue':'ova1'}");
+		JSONObject soupElt2 = new JSONObject("{'key':'bbcd', 'value':'va2', 'otherValue':'ova2'}");
+		JSONObject soupElt3 = new JSONObject("{'key':'abcc', 'value':'va3', 'otherValue':'ova3'}");
+		JSONObject soupElt4 = new JSONObject("{'key':'defg', 'value':'va4', 'otherValue':'ova3'}");
+		
+		JSONObject soupElt1Created = store.create(TEST_SOUP, soupElt1);
+		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
+		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
+		/*JSONObject soupElt4Created = */ store.create(TEST_SOUP, soupElt4);
+
+		// Like query (starts with)
+		JSONArray result = store.querySoup(TEST_SOUP, QuerySpec.buildLikeQuerySpec("key", "abc%", Order.ascending, 10), 0);
+		assertEquals("Two results expected", 2, result.length());
+		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
+		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
+
+		// Like query (ends with)
+		result = store.querySoup(TEST_SOUP, QuerySpec.buildLikeQuerySpec("key", "%bcd", Order.ascending, 10), 0);
+		assertEquals("Two results expected", 2, result.length());
+		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
+		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
+
+		// Like query (starts with) - descending order
+		result = store.querySoup(TEST_SOUP, QuerySpec.buildLikeQuerySpec("key", "abc%", Order.descending, 10), 0);
+		assertEquals("Two results expected", 2, result.length());
+		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
+		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(1));
+
+		// Like query (ends with) - descending order
+		result = store.querySoup(TEST_SOUP, QuerySpec.buildLikeQuerySpec("key", "%bcd", Order.descending, 10), 0);
+		assertEquals("Two results expected", 2, result.length());
+		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
+		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
+
+		// Like query (contains)
+		result = store.querySoup(TEST_SOUP, QuerySpec.buildLikeQuerySpec("key", "%bc%", Order.ascending, 10), 0);
+		assertEquals("Three results expected", 3, result.length());
+		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
+		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
+		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(2));
+
+		// Like query (contains) - descending order
+		result = store.querySoup(TEST_SOUP, QuerySpec.buildLikeQuerySpec("key", "%bc%", Order.descending, 10), 0);
+		assertEquals("Three results expected", 3, result.length());
+		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
+		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
+		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(2));
+	}
+	
 	
 	
 	/**
