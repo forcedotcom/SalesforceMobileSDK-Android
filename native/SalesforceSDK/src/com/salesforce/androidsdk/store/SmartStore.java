@@ -46,6 +46,10 @@ import android.text.TextUtils;
  * SmartStore is inspired by the Apple Newton OS Soup/Store model. 
  * The main challenge here is how to effectively store documents with dynamic fields, and still allow indexing and searching.
  */
+/**
+ * @author wmathurin
+ *
+ */
 public class SmartStore  {
 	// Default
 	public static final int DEFAULT_PAGE_SIZE = 10;
@@ -146,7 +150,9 @@ public class SmartStore  {
 	 * @param indexSpecs
 	 */
 	public void registerSoup(String soupName, IndexSpec[] indexSpecs) {
-		assert !hasSoup(soupName) : "soup " + soupName  +  " already exists"; 
+		if (soupName == null) throw new SmartStoreException("Bogus soup name:" + soupName);
+		if (indexSpecs.length == 0) throw new SmartStoreException("No indexSpecs specified for soup: " + soupName);
+		if (hasSoup(soupName)) return; // soup already exist - do nothing
 
 		// First get a table name
 		String soupTableName = null;
@@ -279,8 +285,7 @@ public class SmartStore  {
 	 */
 	public JSONArray querySoup(String soupName, QuerySpec querySpec, int pageIndex) throws JSONException {
 		String soupTableName = getSoupTableName(soupName);
-		assert soupTableName != null : "Soup " + soupName + " does not exist";
-		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
+		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 		
 		// Page
 		int offsetRows = querySpec.pageSize * pageIndex;
@@ -290,31 +295,18 @@ public class SmartStore  {
 		// Get the matching soups
 		Cursor cursor = null;
 		try {
-			if (querySpec.beginKey == null) {
-				// Get all the rows
-				cursor = db.query(soupTableName, new String[] {SOUP_COL}, columnName + " " + querySpec.order.sql, limit, null);
+			if (querySpec.path == null) { /* all query */
+				cursor = db.query(soupTableName, new String[] {SOUP_COL}, null, limit, null);
 			}
 			else {
-				// Get a range of rows
-				cursor = db.query(soupTableName, new String[] {SOUP_COL}, columnName + " " + querySpec.order.sql, 				
-						limit, getKeyRangePredicate(columnName), querySpec.beginKey, querySpec.endKey);
+				String columnName = getColumnNameForPath(db, soupName, querySpec.path);
+				cursor = db.query(soupTableName, new String[] {SOUP_COL}, querySpec.getOrderBy(columnName), limit, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
 			}
 			
 			JSONArray results = new JSONArray();
 			if (cursor.moveToFirst()) {
 				do {
-					JSONObject soupElt = new JSONObject(cursor.getString(cursor.getColumnIndex(SOUP_COL)));
-					
-					if (querySpec.projections == null) {
-						results.put(soupElt);
-					}
-					else {
-						JSONObject subSoup = new JSONObject();
-						for (String projection : querySpec.projections) {
-							subSoup.put(projection, project(soupElt, projection));
-						}
-						results.put(subSoup);
-					}
+					results.put(new JSONObject(cursor.getString(cursor.getColumnIndex(SOUP_COL))));
 				}
 				while (cursor.moveToNext());
 			}
@@ -336,15 +328,12 @@ public class SmartStore  {
 	 */
 	public int countQuerySoup(String soupName, QuerySpec querySpec) throws JSONException {
 		String soupTableName = getSoupTableName(soupName);
-		assert soupTableName != null : "Soup " + soupName + " does not exist";
+		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
 		
 		Cursor cursor = null;
 		try {
-			if (querySpec.beginKey == null)
-				cursor = db.countQuery(soupTableName, null); // all the rows				
-			else 
-				cursor = db.countQuery(soupTableName, getKeyRangePredicate(columnName)); // range of rows
+			cursor = db.countQuery(soupTableName, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());			
 			
 			if (cursor.moveToFirst()) {
 				return cursor.getInt(0);
@@ -381,7 +370,7 @@ public class SmartStore  {
 	 */
 	public JSONObject create(String soupName, JSONObject soupElt, boolean handleTx) throws JSONException {
 		String soupTableName = getSoupTableName(soupName);
-		assert soupTableName != null : "Soup " + soupName + " does not exist";
+		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		try {
@@ -439,7 +428,7 @@ public class SmartStore  {
 	 */
 	public JSONArray retrieve(String soupName, Long... soupEntryIds) throws JSONException {
 		String soupTableName = getSoupTableName(soupName);
-		assert soupTableName != null : "Soup " + soupName + " does not exist";
+		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 		Cursor cursor = null;
 		try {
 			JSONArray result = new JSONArray();
@@ -485,7 +474,7 @@ public class SmartStore  {
 	 */
 	public JSONObject update(String soupName, JSONObject soupElt, long soupEntryId, boolean handleTx) throws JSONException {
 		String soupTableName = getSoupTableName(soupName);
-		assert soupTableName != null : "Soup " + soupName + " does not exist";
+		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
 		
 		long now = System.currentTimeMillis();
@@ -572,7 +561,7 @@ public class SmartStore  {
 	 */
 	public void delete(String soupName, Long[] soupEntryIds, boolean handleTx) {
 		String soupTableName = getSoupTableName(soupName);
-		assert soupTableName != null : "Soup " + soupName + " does not exist";
+		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 		
 		if (handleTx) {
 			db.beginTransaction();
@@ -652,14 +641,6 @@ public class SmartStore  {
 		}
 	}
 	
-	/**
-	 * @param columnName
-	 * @return
-	 */
-	protected String getKeyRangePredicate(String columnName) {
-		return columnName + " >= ? AND " + columnName + " <= ?";
-	}
-
 	/**
 	 * @return predicate to match a soup entry by name
 	 */
@@ -759,108 +740,150 @@ public class SmartStore  {
 	}
 
 	/**
+	 * Query type enum
+	 */
+	public enum QueryType {
+		all,
+		exact,
+		range,
+		like;
+	}
+	
+	
+	/**
 	 * Simple class to represent a query spec
 	 */
 	public static class QuerySpec {
 		public final String path;
+		public final QueryType queryType;
+		
+		// Exact 
+		public final String matchKey;
+		// Range 
 		public final String beginKey;
 		public final String endKey;
+		// Like
+		public final String likeKey;
+
+		// Order
 		public final Order order;
-		public final String[] projections;
+		
+		// Page size
 		public final int pageSize;
-
-		/**
-		 * Exact match (return whole soup element)
-		 * @param path
-		 * @param matchKey
-		 */
-		public QuerySpec(String path, String matchKey) {
-			this(path, matchKey, matchKey, null, Order.ascending, DEFAULT_PAGE_SIZE);
-		}
 		
-		
-		/**
-		 * Exact match (return selected projections)
-		 * @param path
-		 * @param matchKey
-		 * @param projections
-		 */
-		public QuerySpec(String path, String matchKey, String[] projections) {
-			this(path, matchKey, matchKey, projections, Order.ascending, DEFAULT_PAGE_SIZE);
-		}
-		
-		/**
-		 * Range query (return whole soup elements in ascending order for the values at path)
-		 * @param path
-		 * @param beginKey
-		 * @param endKey
-		 */
-		public QuerySpec(String path, String beginKey, String endKey) {
-			this(path, beginKey, endKey, null, Order.ascending, DEFAULT_PAGE_SIZE);
-		}
-
-		/**
-		 * Range query (return selected projections in ascending order for the values at path)
-		 * @param path
-		 * @param beginKey
-		 * @param endKey
-		 */
-		public QuerySpec(String path, String beginKey, String endKey, String[] projections) {
-			this(path, beginKey, endKey, projections, Order.ascending, DEFAULT_PAGE_SIZE);
-		}
-
-		/**
-		 * Range query (return whole soup elements in specified order)
-		 * @param path
-		 * @param beginKey
-		 * @param endKey
-		 * @param order
-		 */
-		public QuerySpec(String path, String beginKey, String endKey, Order order) {
-			this(path, beginKey, endKey, null, order, DEFAULT_PAGE_SIZE);
-		}
-		
-		/**
-		 * Range query (return whole soup elements in specified order)
-		 * @param path
-		 * @param beginKey
-		 * @param endKey
-		 * @param order
-		 * @param pageSize
-		 */
-		public QuerySpec(String path, String beginKey, String endKey, Order order, int pageSize) {
-			this(path, beginKey, endKey, null, order, pageSize);
-		}
-		
-		/**
-		 * Range query (return selected projections in specified order for the values at path)
-		 * @param path
-		 * @param beginKey
-		 * @param endKey
-		 * @param projections
-		 * @param order
-		 * @param pageSize
-		 */
-		public QuerySpec(String path, String beginKey, String endKey, String[] projections, Order order) {
-			this(path, beginKey, endKey, projections, order, DEFAULT_PAGE_SIZE);
-		}		
-
-		/**
-		 * Range query (return selected projections in specified order for the values at path)
-		 * @param path
-		 * @param beginKey
-		 * @param endKey
-		 * @param projections
-		 * @param order
-		 * @param pageSize
-		 */
-		public QuerySpec(String path, String beginKey, String endKey, String[] projections, Order order, int pageSize) {
+		// Private constructor
+		private QuerySpec(String path, QueryType queryType, String matchKey, String beginKey, String endKey, String likeKey, Order order, int pageSize) {
 			this.path = path;
+			this.queryType = queryType;
+			this.matchKey = matchKey;
 			this.beginKey = beginKey;
 			this.endKey = endKey;
+			this.likeKey = likeKey;
 			this.order = order;
-			this.projections = projections;
 			this.pageSize = pageSize;
+		}
+		
+
+		/**
+		 * Return a query spec for returning all entries
+		 * @param order
+		 * @param pageSize
+		 * @return
+		 */
+		public static QuerySpec buildAllQuerySpec(Order order, int pageSize) {
+			return new QuerySpec(null, QueryType.all, null, null, null, null, order, pageSize);
+		}
+		
+		
+		/**
+		 * Return a query spec for an exact match query
+		 * @param path
+		 * @param exactMatchKey
+		 * @param pageSize
+		 * @return
+		 */
+		public static QuerySpec buildExactQuerySpec(String path, String exactMatchKey, int pageSize) {
+			return new QuerySpec(path, QueryType.exact, exactMatchKey, null, null, null, Order.ascending /* meaningless - all rows will have the same value in the indexed column*/, pageSize);
+		}
+
+		/**
+		 * Return a query spec for a range query
+		 * @param path
+		 * @param beginKey
+		 * @param endKey
+		 * @param order
+		 * @param pageSize
+		 * @return
+		 */
+		public static QuerySpec buildRangeQuerySpec(String path, String beginKey, String endKey, Order order, int pageSize) {
+			return new QuerySpec(path, QueryType.range, null, beginKey, endKey, null, order, pageSize);
+		}
+
+		/**
+		 * Return a query spec for a like query
+		 * @param path
+		 * @param matchKey
+		 * @param order
+		 * @param pageSize
+		 * @return
+		 */
+		public static QuerySpec buildLikeQuerySpec(String path, String likeKey, Order order, int pageSize) {
+			return new QuerySpec(path, QueryType.like, null, null, null, likeKey, order, pageSize);
+		}
+		
+		/**
+		 * @param columnName
+		 * @return string representing sql predicate
+		 */
+		public String getKeyPredicate(String columnName) {
+			switch(queryType) {
+			case all:
+				return null;
+			case exact:
+				return columnName + " = ?";
+			case like:
+				return columnName + " LIKE ?";
+			case range:
+				if (endKey == null)
+					return columnName + " >= ? ";
+				else if (beginKey == null)
+					return columnName + " <= ? ";
+				else
+					return columnName + " >= ? AND " + columnName + " <= ?";
+			default:
+				throw new SmartStoreException("Fell through switch: " + queryType);
+			}
+		}
+		
+		/**
+		 * @return args going with the sql predicate returned by getKeyPredicate
+		 */
+		public String[] getKeyPredicateArgs() {
+			switch(queryType) {
+			case all:
+				return null;
+			case exact:
+				return new String[] {matchKey};
+			case like:
+				return new String[] {likeKey};
+			case range:
+				if (endKey == null)
+					return new String[] {beginKey};
+				else if (beginKey == null)
+					return new String[] {endKey};
+				else
+					return new String[] {beginKey, endKey};
+			default:
+				throw new SmartStoreException("Fell through switch: " + queryType); 
+			}
+		}
+		
+		/**
+		 * @param columnName
+		 * @return sql for order by
+		 */
+		public String getOrderBy(String columnName) {
+			return columnName + " " + order.sql;
 		}
 	}
 
@@ -875,5 +898,19 @@ public class SmartStore  {
 		Order(String sqlOrder) {
 			this.sql = sqlOrder;
 		}
+	}
+	
+	/**
+	 * Exception thrown by smart store
+	 *
+	 */
+	public static class SmartStoreException extends RuntimeException {
+
+		public SmartStoreException(String message) {
+			super(message);
+		}
+
+		private static final long serialVersionUID = -6369452803270075464L;
+		
 	}
 }

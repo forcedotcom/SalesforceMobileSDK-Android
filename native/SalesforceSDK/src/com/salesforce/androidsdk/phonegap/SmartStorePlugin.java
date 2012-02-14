@@ -42,32 +42,36 @@ import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.store.SmartStore;
 import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
+import com.salesforce.androidsdk.store.SmartStore.Order;
 import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
+import com.salesforce.androidsdk.store.SmartStore.QueryType;
 
 /**
  * PhoneGap plugin for smart store.
  */
 public class SmartStorePlugin extends Plugin {
 	// Keys in json from/to javascript
-	private static final String END_KEY = "endKey";
-	private static final String ORDER = "order";
 	private static final String BEGIN_KEY = "beginKey";
-	private static final String QUERY_SPEC = "querySpec";
-	private static final String PATH = "path";
-	private static final String INDEX_PATH = "indexPath";
-	private static final String TYPE = "type";
-	private static final String PAGE_SIZE = "pageSize";
-	private static final String INDEXES = "indexes";
-	private static final String SOUP_NAME = "soupName";
-	private static final String ENTRIES = "entries";
-	private static final String CURSOR_ID = "cursorId";
 	private static final String CURRENT_PAGE_INDEX = "currentPageIndex";
 	private static final String CURRENT_PAGE_ORDERED_ENTRIES = "currentPageOrderedEntries";
-	private static final String TOTAL_PAGES = "totalPages";
-	private static final String INDEX = "index";
+	private static final String CURSOR_ID = "cursorId";
+	private static final String END_KEY = "endKey";
+	private static final String ENTRIES = "entries";
 	private static final String ENTRY_IDS = "entryIds";
+	private static final String INDEX = "index";
+	private static final String INDEXES = "indexes";
+	private static final String INDEX_PATH = "indexPath";
+	private static final String LIKE_KEY = "likeKey";
 	private static final String MATCH_KEY = "matchKey";
-	
+	private static final String ORDER = "order";
+	private static final String PAGE_SIZE = "pageSize";
+	private static final String PATH = "path";
+	private static final String QUERY_SPEC = "querySpec";
+	private static final String QUERY_TYPE = "queryType";
+	private static final String SOUP_NAME = "soupName";
+	private static final String TOTAL_PAGES = "totalPages";
+	private static final String TYPE = "type";
+
 	// Map of cursor id to StoreCursor
 	private static Map<Integer, StoreCursor> storeCursors = new HashMap<Integer, StoreCursor>();
 
@@ -281,7 +285,7 @@ public class SmartStorePlugin extends Plugin {
 	private PluginResult registerSoup(JSONArray args, String callbackId) throws JSONException {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
-		String soupName = arg0.getString(SOUP_NAME);
+		String soupName = arg0.isNull(SOUP_NAME) ? null : arg0.getString(SOUP_NAME);
 		List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
 		JSONArray indexesJson = arg0.getJSONArray(INDEXES);
 		for (int i=0; i<indexesJson.length(); i++) {
@@ -307,13 +311,24 @@ public class SmartStorePlugin extends Plugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
 		JSONObject querySpecJson = arg0.getJSONObject(QUERY_SPEC);
+		QueryType queryType = QueryType.valueOf(querySpecJson.getString(QUERY_TYPE));
+		String path = querySpecJson.getString(INDEX_PATH);
 		String matchKey = querySpecJson.isNull(MATCH_KEY) ? null : querySpecJson.getString(MATCH_KEY);
-		String beginKey = querySpecJson.isNull(BEGIN_KEY) ? matchKey : querySpecJson.getString(BEGIN_KEY);
-		String endKey = querySpecJson.isNull(END_KEY) ? matchKey : querySpecJson.getString(END_KEY);
-		QuerySpec querySpec = new QuerySpec(querySpecJson.getString(INDEX_PATH),
-				beginKey, endKey,
-				SmartStore.Order.valueOf(querySpecJson.optString(ORDER, "ascending")),
-				querySpecJson.getInt(PAGE_SIZE));
+		String beginKey = querySpecJson.isNull(BEGIN_KEY) ? null : querySpecJson.getString(BEGIN_KEY);
+		String endKey = querySpecJson.isNull(END_KEY) ? null : querySpecJson.getString(END_KEY);
+		String likeKey = querySpecJson.isNull(LIKE_KEY) ? null : querySpecJson.getString(LIKE_KEY);
+		Order order = Order.valueOf(querySpecJson.optString(ORDER, "ascending"));
+		int pageSize = querySpecJson.getInt(PAGE_SIZE); 
+
+		// Building query spec
+		QuerySpec querySpec = null;
+		switch (queryType) {
+			case all:     querySpec = QuerySpec.buildAllQuerySpec(order, pageSize); break;
+			case exact:   querySpec = QuerySpec.buildExactQuerySpec(path, matchKey, pageSize); break;
+			case range:   querySpec = QuerySpec.buildRangeQuerySpec(path, beginKey, endKey, order, pageSize); break;
+			case like:    querySpec = QuerySpec.buildLikeQuerySpec(path, likeKey, order, pageSize); break;
+			default: throw new RuntimeException("Fell through switch: " + queryType);
+		}
 		
 		// Run query
 		SmartStore smartStore = ForceApp.APP.getSmartStore();

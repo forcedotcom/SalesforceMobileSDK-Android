@@ -52,31 +52,80 @@ public class SmartStoreJSTest extends
 		TestRunnerPlugin.readyForTests.take(); 
 	}
 
-	public void testRegisterRemoveSoup() throws InterruptedException {
-		runTest("testRegisterRemoveSoup");
-	}
-	
-	public void testRemoveFromSoup() throws InterruptedException {
-		runTest("testRemoveFromSoup");
-	}
-	
-	public void testUpsertSoupEntries() throws InterruptedException {
-		runTest("testUpsertSoupEntries");
-	}
 
-	public void testRetrieveSoupEntries() throws InterruptedException {
-		runTest("testRetrieveSoupEntries");
-	}
+    public void testRegisterRemoveSoup() throws InterruptedException {
+        runTest("testRegisterRemoveSoup");
+    }
 
-	public void testQuerySoup() throws InterruptedException {
-		runTest("testQuerySoup");
-	}
+    public void testRegisterBogusSoup() throws InterruptedException {
+        runTest("testRegisterBogusSoup");
+    }
 
-	public void testManipulateCursor() throws InterruptedException {
-		runTest("testManipulateCursor");
-	}
-	
-	
+    public void testRegisterSoupNoIndices() throws InterruptedException {
+        runTest("testRegisterSoupNoIndices");
+    }
+
+    public void testUpsertSoupEntries() throws InterruptedException {
+        runTest("testUpsertSoupEntries");
+    }
+
+    public void testUpsertToNonexistentSoup() throws InterruptedException {
+        runTest("testUpsertToNonexistentSoup");
+    }
+
+    public void testRetrieveSoupEntries() throws InterruptedException {
+        runTest("testRetrieveSoupEntries");
+    }
+
+    public void testRemoveFromSoup() throws InterruptedException {
+        runTest("testRemoveFromSoup");
+    }
+
+    public void testQuerySoup() throws InterruptedException {
+        runTest("testQuerySoup");
+    }
+
+    public void testQuerySoupBadQuerySpec() throws InterruptedException {
+        runTest("testQuerySoupBadQuerySpec");
+    }
+
+    public void testQuerySoupEndKeyNoBeginKey() throws InterruptedException {
+        runTest("testQuerySoupEndKeyNoBeginKey");
+    }
+
+    public void testQuerySoupBeginKeyNoEndKey() throws InterruptedException {
+        runTest("testQuerySoupBeginKeyNoEndKey");
+    }
+
+    public void testManipulateCursor() throws InterruptedException {
+        runTest("testManipulateCursor");
+    }
+
+    public void testArbitrarySoupNames() throws InterruptedException {
+        runTest("testArbitrarySoupNames");
+    }
+
+    public void testQuerySpecFactories() throws InterruptedException {
+        runTest("testQuerySpecFactories");
+    }
+
+    public void testLikeQuerySpecStartsWith () throws InterruptedException {
+        runTest("testLikeQuerySpecStartsWith");
+    }
+
+    public void testLikeQuerySpecEndsWith () throws InterruptedException {
+        runTest("testLikeQuerySpecEndsWith");
+    }
+
+    public void testLikeQueryInnerText () throws InterruptedException {
+        runTest("testLikeQueryInnerText");
+    }
+
+    public void testCompoundQueryPath () throws InterruptedException {
+        runTest("testCompoundQueryPath");
+    }
+    
+    
 	/**
 	 * Helper method: runs javascript test and wait for it to complete
 	 * @param testName
