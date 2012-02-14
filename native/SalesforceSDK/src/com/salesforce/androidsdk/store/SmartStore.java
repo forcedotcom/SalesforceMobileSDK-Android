@@ -295,8 +295,13 @@ public class SmartStore  {
 		// Get the matching soups
 		Cursor cursor = null;
 		try {
-			String columnName = getColumnNameForPath(db, soupName, querySpec.path);
-			cursor = db.query(soupTableName, new String[] {SOUP_COL}, querySpec.getOrderBy(columnName), limit, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
+			if (querySpec.path == null) {
+				cursor = db.query(soupTableName, new String[] {SOUP_COL}, null, limit, null);				
+			}
+			else { 
+				String columnName = getColumnNameForPath(db, soupName, querySpec.path);
+				cursor = db.query(soupTableName, new String[] {SOUP_COL}, querySpec.getOrderBy(columnName), limit, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
+			}
 			
 			JSONArray results = new JSONArray();
 			if (cursor.moveToFirst()) {
@@ -324,11 +329,16 @@ public class SmartStore  {
 	public int countQuerySoup(String soupName, QuerySpec querySpec) throws JSONException {
 		String soupTableName = getSoupTableName(soupName);
 		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
-		String columnName = getColumnNameForPath(db, soupName, querySpec.path);
 		
 		Cursor cursor = null;
 		try {
-			cursor = db.countQuery(soupTableName, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());			
+			if (querySpec.path == null) {
+				cursor = db.countQuery(soupTableName, null, null);
+			}
+			else {
+				String columnName = getColumnNameForPath(db, soupName, querySpec.path);
+				cursor = db.countQuery(soupTableName, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
+			}
 			
 			if (cursor.moveToFirst()) {
 				return cursor.getInt(0);

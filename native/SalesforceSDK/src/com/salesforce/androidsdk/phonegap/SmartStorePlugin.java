@@ -312,7 +312,7 @@ public class SmartStorePlugin extends Plugin {
 		String soupName = arg0.getString(SOUP_NAME);
 		JSONObject querySpecJson = arg0.getJSONObject(QUERY_SPEC);
 		QueryType queryType = QueryType.valueOf(querySpecJson.getString(QUERY_TYPE));
-		String path = querySpecJson.getString(INDEX_PATH);
+		String path = querySpecJson.isNull(INDEX_PATH) ? null : querySpecJson.getString(INDEX_PATH);
 		String matchKey = querySpecJson.isNull(MATCH_KEY) ? null : querySpecJson.getString(MATCH_KEY);
 		String beginKey = querySpecJson.isNull(BEGIN_KEY) ? null : querySpecJson.getString(BEGIN_KEY);
 		String endKey = querySpecJson.isNull(END_KEY) ? null : querySpecJson.getString(END_KEY);
