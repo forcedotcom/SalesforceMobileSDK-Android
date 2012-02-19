@@ -60,6 +60,14 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		if (null != this.appView) {
 	        WebSettings webSettings = this.appView.getSettings();
 	        webSettings.setUserAgentString(uaStr);
+	        
+	        // Configure HTML5 cache support.
+	        webSettings.setDomStorageEnabled(true);
+	        webSettings.setAppCachePath("");
+	        webSettings.setAppCacheEnabled(true);
+	        webSettings.setAppCacheMaxSize(1024 * 1024 * 8);
+	        webSettings.setAllowFileAccess(true);
+	        webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
 		}
     }
     
