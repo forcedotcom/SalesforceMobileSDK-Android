@@ -17,6 +17,7 @@
 "external\shared\PhoneGap\SFHybridApp.js" "hybrid\SampleApps\ContactExplorer\assets\www\SFHybridApp.js"
 "external\shared\PhoneGap\SFHybridApp.js" "hybrid\SampleApps\VFConnector\assets\www\SFHybridApp.js"
 "external\shared\PhoneGap\SFHybridApp.js" "hybrid\SmartStorePluginTest\assets\www\SFHybridApp.js"
+"external\shared\PhoneGap\SFSmartStoreLoadTestSuite.js" "hybrid\SmartStorePluginTest\assets\www\SFSmartStoreLoadTestSuite.js"
 "external\shared\PhoneGap\SFSmartStorePlugin.js" "hybrid\SmartStorePluginTest\assets\www\SFSmartStorePlugin.js"
 "external\shared\PhoneGap\SFSmartStoreTestSuite.js" "hybrid\SmartStorePluginTest\assets\www\SFSmartStoreTestSuite.js"
 "external\shared\PhoneGap\SFTestRunnerPlugin.js" "hybrid\SmartStorePluginTest\assets\www\SFTestRunnerPlugin.js"
