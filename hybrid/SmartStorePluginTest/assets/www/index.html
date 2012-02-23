@@ -26,13 +26,14 @@
     <link rel="stylesheet" type="text/css" href="qunit.css" />
     <script type="text/javascript" src="qunit.js"></script>
 
-	<!-- load tests -->
+	<!-- we load all the test suite definitions here but don't run them until 
+	the native test runner tells us to -->
 	<script type="text/javascript" src="SFTestSuite.js"></script>
     <script type="text/javascript" src="SFSmartStoreTestSuite.js"></script>
+    <script type="text/javascript" src="SFSmartStoreLoadTestSuite.js"></script>
 
     <script type="text/javascript" charset="utf-8">
     var debugMode = true;
-    var testSuite;
 
     $(function() {
         //Add event listeners and so forth here
@@ -43,7 +44,7 @@
     // When this function is called, PhoneGap has been initialized and is ready to roll 
     function onDeviceReady() {
     	SFHybridApp.logToConsole("onDeviceReady: PhoneGap ready");
-        testSuite = new SmartStoreTestSuite();
+		//we no longer setup the testSuite here but rather via calls to navigator.testrunner
         navigator.testrunner.onReadyForTests();
     }
         

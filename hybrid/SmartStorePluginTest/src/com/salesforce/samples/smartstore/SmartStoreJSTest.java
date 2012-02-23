@@ -26,7 +26,12 @@
  */
 package com.salesforce.samples.smartstore;
 
+import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
+
 import android.test.ActivityInstrumentationTestCase2;
+import android.util.Log;
 
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin;
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin.TestResult;
@@ -39,9 +44,16 @@ public class SmartStoreJSTest extends
 		ActivityInstrumentationTestCase2<SalesforceDroidGapActivity> {
 
 	private SalesforceDroidGapActivity activity;
+	
+	private Set<String> suitesToRun;
 
 	public SmartStoreJSTest() {
 		super("com.salesforce.samples.smartstore", SalesforceDroidGapActivity.class);
+
+		//TODO add test suites as desired for individual runs
+//		String[] suiteNames = {"SmartStoreTestSuite", "SmartStoreLoadTestSuite" };
+		String[] suiteNames = {"SmartStoreTestSuite"}; 
+		suitesToRun = new TreeSet<String>(Arrays.asList(suiteNames));
 	}
 	
 	@Override
@@ -53,102 +65,133 @@ public class SmartStoreJSTest extends
 	}
 
 
-    public void testRegisterRemoveSoup() throws InterruptedException {
-        runTest("testRegisterRemoveSoup");
+    public void testRegisterRemoveSoup()  {
+        runTest("SmartStoreTestSuite","testRegisterRemoveSoup");
     }
 
-    public void testRegisterBogusSoup() throws InterruptedException {
-        runTest("testRegisterBogusSoup");
+    public void testRegisterBogusSoup()  {
+        runTest("SmartStoreTestSuite","testRegisterBogusSoup");
     }
 
-    public void testRegisterSoupNoIndices() throws InterruptedException {
-        runTest("testRegisterSoupNoIndices");
+    public void testRegisterSoupNoIndices()  {
+        runTest("SmartStoreTestSuite","testRegisterSoupNoIndices");
     }
 
-    public void testUpsertSoupEntries() throws InterruptedException {
-        runTest("testUpsertSoupEntries");
+    public void testUpsertSoupEntries()  {
+        runTest("SmartStoreTestSuite","testUpsertSoupEntries");
     }
 
-    public void testUpsertToNonexistentSoup() throws InterruptedException {
-        runTest("testUpsertToNonexistentSoup");
+    public void testUpsertToNonexistentSoup()  {
+        runTest("SmartStoreTestSuite","testUpsertToNonexistentSoup");
     }
 
-    public void testRetrieveSoupEntries() throws InterruptedException {
-        runTest("testRetrieveSoupEntries");
+    public void testRetrieveSoupEntries()  {
+        runTest("SmartStoreTestSuite","testRetrieveSoupEntries");
     }
 
-    public void testRemoveFromSoup() throws InterruptedException {
-        runTest("testRemoveFromSoup");
+    public void testRemoveFromSoup()  {
+        runTest("SmartStoreTestSuite","testRemoveFromSoup");
     }
 
-    public void testQuerySoup() throws InterruptedException {
-        runTest("testQuerySoup");
+    public void testQuerySoup()  {
+        runTest("SmartStoreTestSuite","testQuerySoup");
     }
 
-    public void testQuerySoupDescending() throws InterruptedException {
-        runTest("testQuerySoupDescending");
+    public void testQuerySoupDescending()  {
+        runTest("SmartStoreTestSuite","testQuerySoupDescending");
     }
     
-    public void testQuerySoupBadQuerySpec() throws InterruptedException {
-        runTest("testQuerySoupBadQuerySpec");
+    public void testQuerySoupBadQuerySpec()  {
+        runTest("SmartStoreTestSuite","testQuerySoupBadQuerySpec");
     }
 
-    public void testQuerySoupEndKeyNoBeginKey() throws InterruptedException {
-        runTest("testQuerySoupEndKeyNoBeginKey");
+    public void testQuerySoupEndKeyNoBeginKey()  {
+        runTest("SmartStoreTestSuite","testQuerySoupEndKeyNoBeginKey");
     }
 
-    public void testQuerySoupBeginKeyNoEndKey() throws InterruptedException {
-        runTest("testQuerySoupBeginKeyNoEndKey");
+    public void testQuerySoupBeginKeyNoEndKey()  {
+        runTest("SmartStoreTestSuite","testQuerySoupBeginKeyNoEndKey");
     }
 
-    public void testManipulateCursor() throws InterruptedException {
-        runTest("testManipulateCursor");
+    public void testManipulateCursor()  {
+        runTest("SmartStoreTestSuite","testManipulateCursor");
     }
 
-    public void testArbitrarySoupNames() throws InterruptedException {
-        runTest("testArbitrarySoupNames");
+    public void testArbitrarySoupNames()  {
+        runTest("SmartStoreTestSuite","testArbitrarySoupNames");
     }
 
-    public void testQuerySpecFactories() throws InterruptedException {
-        runTest("testQuerySpecFactories");
+    public void testQuerySpecFactories()  {
+        runTest("SmartStoreTestSuite","testQuerySpecFactories");
     }
 
-    public void testLikeQuerySpecStartsWith() throws InterruptedException {
-        runTest("testLikeQuerySpecStartsWith");
+    public void testLikeQuerySpecStartsWith()  {
+        runTest("SmartStoreTestSuite","testLikeQuerySpecStartsWith");
     }
 
-    public void testLikeQuerySpecEndsWith() throws InterruptedException {
-        runTest("testLikeQuerySpecEndsWith");
+    public void testLikeQuerySpecEndsWith()  {
+        runTest("SmartStoreTestSuite","testLikeQuerySpecEndsWith");
     }
 
-    public void testLikeQueryInnerText() throws InterruptedException {
-        runTest("testLikeQueryInnerText");
+    public void testLikeQueryInnerText()  {
+        runTest("SmartStoreTestSuite","testLikeQueryInnerText");
     }
 
-    public void testCompoundQueryPath() throws InterruptedException {
-        runTest("testCompoundQueryPath");
+    public void testCompoundQueryPath()  {
+        runTest("SmartStoreTestSuite","testCompoundQueryPath");
     }
 
-    public void testEmptyQuerySpec() throws InterruptedException {
-        runTest("testEmptyQuerySpec");
+    public void testEmptyQuerySpec()  {
+        runTest("SmartStoreTestSuite","testEmptyQuerySpec");
     }
 
-    public void testIntegerQuerySpec() throws InterruptedException {
-        runTest("testIntegerQuerySpec");
+    public void testIntegerQuerySpec()  {
+        runTest("SmartStoreTestSuite","testIntegerQuerySpec");
     }
     
+    //============= Load Tests ================
+    
+    public void testNumerousFields()  {
+    	runTest("SmartStoreLoadTestSuite","testNumerousFields");
+    }
+    
+    public void testIncreasingFieldLength() {
+    	runTest("SmartStoreLoadTestSuite","testIncreasingFieldLength");
+    }
+
+    public void testAddAndRetrieveManyEntries()  {
+    	runTest("SmartStoreLoadTestSuite","testAddAndRetrieveManyEntries");
+    }
+
 	/**
 	 * Helper method: runs javascript test and wait for it to complete
-	 * @param testName
-	 * @throws InterruptedException
+	 * @param suiteClassName  the name of the javascript test suite class
+	 * @param testName the name of the test method in the test suite
+	 * @
 	 */
-	private void runTest(String testName) throws InterruptedException {
-		activity.sendJavascript("testSuite.startTest('" + testName + "');");
-		// Block until test completes
-		TestResult result = TestRunnerPlugin.testResults.take();
-		assertEquals("Wrong test completed", testName, result.testName);
-		assertTrue(result.testName + " " + result.message, result.success);
-	}
+    private void runTest(String suiteClassName, String testName)  {
+    	if (suitesToRun.contains(suiteClassName)) {
+	    	String jsCmd = "navigator.testrunner.setTestSuite('" + suiteClassName + "');" +
+	    			"navigator.testrunner.testSuite.startTest('" + testName + "');";
+	    	activity.sendJavascript(jsCmd);
+	
+			// Block until test completes
+			TestResult result = null;
+			try {
+				result = TestRunnerPlugin.testResults.take();
+			}
+			catch (InterruptedException intEx) {
+				
+			}
+			assertNotNull("No test result",result);
+			assertEquals("Wrong test completed", testName, result.testName);
+			assertTrue(result.testName + " " + result.message, result.success);
+    	} else {
+	    	Log.w("SmartStoreJSTest.runTest", "Skipping suite: " + suiteClassName);
+    	}
+    }
+    
+
 	
 	
 }
