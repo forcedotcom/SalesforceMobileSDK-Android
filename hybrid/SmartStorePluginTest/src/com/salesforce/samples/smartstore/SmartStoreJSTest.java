@@ -26,7 +26,12 @@
  */
 package com.salesforce.samples.smartstore;
 
+import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
+
 import android.test.ActivityInstrumentationTestCase2;
+import android.util.Log;
 
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin;
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin.TestResult;
@@ -38,15 +43,17 @@ import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 public class SmartStoreJSTest extends
 		ActivityInstrumentationTestCase2<SalesforceDroidGapActivity> {
 
-	private boolean stressTestsActive = true; //TODO setup property instead
 	private SalesforceDroidGapActivity activity;
+	
+	private Set<String> suitesToRun;
 
 	public SmartStoreJSTest() {
 		super("com.salesforce.samples.smartstore", SalesforceDroidGapActivity.class);
-		String stressTestProp = System.getProperty("com.salesforce.SmartStoreJSTest.stress_test_active");
-		if ((null != stressTestProp) && stressTestProp.equalsIgnoreCase("true")) {
-			stressTestsActive = true;
-		}
+
+		//TODO add test suites as desired for individual runs
+//		String[] suiteNames = {"SmartStoreTestSuite", "SmartStoreLoadTestSuite" };
+		String[] suiteNames = {"SmartStoreTestSuite"}; 
+		suitesToRun = new TreeSet<String>(Arrays.asList(suiteNames));
 	}
 	
 	@Override
@@ -59,131 +66,132 @@ public class SmartStoreJSTest extends
 
 
     public void testRegisterRemoveSoup()  {
-        runTest("testRegisterRemoveSoup");
+        runTest("SmartStoreTestSuite","testRegisterRemoveSoup");
     }
 
     public void testRegisterBogusSoup()  {
-        runTest("testRegisterBogusSoup");
+        runTest("SmartStoreTestSuite","testRegisterBogusSoup");
     }
 
     public void testRegisterSoupNoIndices()  {
-        runTest("testRegisterSoupNoIndices");
+        runTest("SmartStoreTestSuite","testRegisterSoupNoIndices");
     }
 
     public void testUpsertSoupEntries()  {
-        runTest("testUpsertSoupEntries");
+        runTest("SmartStoreTestSuite","testUpsertSoupEntries");
     }
 
     public void testUpsertToNonexistentSoup()  {
-        runTest("testUpsertToNonexistentSoup");
+        runTest("SmartStoreTestSuite","testUpsertToNonexistentSoup");
     }
 
     public void testRetrieveSoupEntries()  {
-        runTest("testRetrieveSoupEntries");
+        runTest("SmartStoreTestSuite","testRetrieveSoupEntries");
     }
 
     public void testRemoveFromSoup()  {
-        runTest("testRemoveFromSoup");
+        runTest("SmartStoreTestSuite","testRemoveFromSoup");
     }
 
     public void testQuerySoup()  {
-        runTest("testQuerySoup");
+        runTest("SmartStoreTestSuite","testQuerySoup");
     }
 
     public void testQuerySoupDescending()  {
-        runTest("testQuerySoupDescending");
+        runTest("SmartStoreTestSuite","testQuerySoupDescending");
     }
     
     public void testQuerySoupBadQuerySpec()  {
-        runTest("testQuerySoupBadQuerySpec");
+        runTest("SmartStoreTestSuite","testQuerySoupBadQuerySpec");
     }
 
     public void testQuerySoupEndKeyNoBeginKey()  {
-        runTest("testQuerySoupEndKeyNoBeginKey");
+        runTest("SmartStoreTestSuite","testQuerySoupEndKeyNoBeginKey");
     }
 
     public void testQuerySoupBeginKeyNoEndKey()  {
-        runTest("testQuerySoupBeginKeyNoEndKey");
+        runTest("SmartStoreTestSuite","testQuerySoupBeginKeyNoEndKey");
     }
 
     public void testManipulateCursor()  {
-        runTest("testManipulateCursor");
+        runTest("SmartStoreTestSuite","testManipulateCursor");
     }
 
     public void testArbitrarySoupNames()  {
-        runTest("testArbitrarySoupNames");
+        runTest("SmartStoreTestSuite","testArbitrarySoupNames");
     }
 
     public void testQuerySpecFactories()  {
-        runTest("testQuerySpecFactories");
+        runTest("SmartStoreTestSuite","testQuerySpecFactories");
     }
 
     public void testLikeQuerySpecStartsWith()  {
-        runTest("testLikeQuerySpecStartsWith");
+        runTest("SmartStoreTestSuite","testLikeQuerySpecStartsWith");
     }
 
     public void testLikeQuerySpecEndsWith()  {
-        runTest("testLikeQuerySpecEndsWith");
+        runTest("SmartStoreTestSuite","testLikeQuerySpecEndsWith");
     }
 
     public void testLikeQueryInnerText()  {
-        runTest("testLikeQueryInnerText");
+        runTest("SmartStoreTestSuite","testLikeQueryInnerText");
     }
 
     public void testCompoundQueryPath()  {
-        runTest("testCompoundQueryPath");
+        runTest("SmartStoreTestSuite","testCompoundQueryPath");
     }
 
     public void testEmptyQuerySpec()  {
-        runTest("testEmptyQuerySpec");
+        runTest("SmartStoreTestSuite","testEmptyQuerySpec");
     }
 
     public void testIntegerQuerySpec()  {
-        runTest("testIntegerQuerySpec");
+        runTest("SmartStoreTestSuite","testIntegerQuerySpec");
     }
     
+    //============= Load Tests ================
+    
     public void testNumerousFields()  {
-    	if (stressTestsActive)
-    		runTest("SmartStoreLoadTestSuite","testNumerousFields");
+    	runTest("SmartStoreLoadTestSuite","testNumerousFields");
     }
     
     public void testIncreasingFieldLength() {
-    	if (stressTestsActive)
-    		runTest("SmartStoreLoadTestSuite","testIncreasingFieldLength");
+    	runTest("SmartStoreLoadTestSuite","testIncreasingFieldLength");
     }
 
     public void testAddAndRetrieveManyEntries()  {
-    	if (stressTestsActive)
-    		runTest("SmartStoreLoadTestSuite","testAddAndRetrieveManyEntries");
+    	runTest("SmartStoreLoadTestSuite","testAddAndRetrieveManyEntries");
     }
 
-    
-    private void runTest(String suiteClassName, String testName)  {
-    	String jsCmd = "navigator.testrunner.setTestSuite('" + suiteClassName + "');" +
-    			"navigator.testrunner.testSuite.startTest('" + testName + "');";
-    	activity.sendJavascript(jsCmd);
-
-		// Block until test completes
-		TestResult result = null;
-		try {
-			result = TestRunnerPlugin.testResults.take();
-		}
-		catch (InterruptedException intEx) {
-			
-		}
-		assertNotNull("No test result",result);
-		assertEquals("Wrong test completed", testName, result.testName);
-		assertTrue(result.testName + " " + result.message, result.success);
-    }
-    
 	/**
 	 * Helper method: runs javascript test and wait for it to complete
-	 * @param testName
+	 * @param suiteClassName  the name of the javascript test suite class
+	 * @param testName the name of the test method in the test suite
 	 * @
 	 */
-	private void runTest(String testName)  {
-		this.runTest("SmartStoreTestSuite",testName);
-	}
+    private void runTest(String suiteClassName, String testName)  {
+    	if (suitesToRun.contains(suiteClassName)) {
+	    	String jsCmd = "navigator.testrunner.setTestSuite('" + suiteClassName + "');" +
+	    			"navigator.testrunner.testSuite.startTest('" + testName + "');";
+	    	activity.sendJavascript(jsCmd);
+	
+			// Block until test completes
+			TestResult result = null;
+			try {
+				result = TestRunnerPlugin.testResults.take();
+			}
+			catch (InterruptedException intEx) {
+				
+			}
+			assertNotNull("No test result",result);
+			assertEquals("Wrong test completed", testName, result.testName);
+			assertTrue(result.testName + " " + result.message, result.success);
+    	} else {
+	    	Log.w("SmartStoreJSTest.runTest", "Skipping suite: " + suiteClassName);
+    	}
+    }
+    
+
 	
 	
 }
