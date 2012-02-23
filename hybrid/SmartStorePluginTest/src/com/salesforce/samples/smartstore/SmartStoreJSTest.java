@@ -38,10 +38,15 @@ import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 public class SmartStoreJSTest extends
 		ActivityInstrumentationTestCase2<SalesforceDroidGapActivity> {
 
+	private boolean stressTestsActive = true; //TODO setup property instead
 	private SalesforceDroidGapActivity activity;
 
 	public SmartStoreJSTest() {
 		super("com.salesforce.samples.smartstore", SalesforceDroidGapActivity.class);
+		String stressTestProp = System.getProperty("com.salesforce.SmartStoreJSTest.stress_test_active");
+		if ((null != stressTestProp) && stressTestProp.equalsIgnoreCase("true")) {
+			stressTestsActive = true;
+		}
 	}
 	
 	@Override
@@ -53,101 +58,131 @@ public class SmartStoreJSTest extends
 	}
 
 
-    public void testRegisterRemoveSoup() throws InterruptedException {
+    public void testRegisterRemoveSoup()  {
         runTest("testRegisterRemoveSoup");
     }
 
-    public void testRegisterBogusSoup() throws InterruptedException {
+    public void testRegisterBogusSoup()  {
         runTest("testRegisterBogusSoup");
     }
 
-    public void testRegisterSoupNoIndices() throws InterruptedException {
+    public void testRegisterSoupNoIndices()  {
         runTest("testRegisterSoupNoIndices");
     }
 
-    public void testUpsertSoupEntries() throws InterruptedException {
+    public void testUpsertSoupEntries()  {
         runTest("testUpsertSoupEntries");
     }
 
-    public void testUpsertToNonexistentSoup() throws InterruptedException {
+    public void testUpsertToNonexistentSoup()  {
         runTest("testUpsertToNonexistentSoup");
     }
 
-    public void testRetrieveSoupEntries() throws InterruptedException {
+    public void testRetrieveSoupEntries()  {
         runTest("testRetrieveSoupEntries");
     }
 
-    public void testRemoveFromSoup() throws InterruptedException {
+    public void testRemoveFromSoup()  {
         runTest("testRemoveFromSoup");
     }
 
-    public void testQuerySoup() throws InterruptedException {
+    public void testQuerySoup()  {
         runTest("testQuerySoup");
     }
 
-    public void testQuerySoupDescending() throws InterruptedException {
+    public void testQuerySoupDescending()  {
         runTest("testQuerySoupDescending");
     }
     
-    public void testQuerySoupBadQuerySpec() throws InterruptedException {
+    public void testQuerySoupBadQuerySpec()  {
         runTest("testQuerySoupBadQuerySpec");
     }
 
-    public void testQuerySoupEndKeyNoBeginKey() throws InterruptedException {
+    public void testQuerySoupEndKeyNoBeginKey()  {
         runTest("testQuerySoupEndKeyNoBeginKey");
     }
 
-    public void testQuerySoupBeginKeyNoEndKey() throws InterruptedException {
+    public void testQuerySoupBeginKeyNoEndKey()  {
         runTest("testQuerySoupBeginKeyNoEndKey");
     }
 
-    public void testManipulateCursor() throws InterruptedException {
+    public void testManipulateCursor()  {
         runTest("testManipulateCursor");
     }
 
-    public void testArbitrarySoupNames() throws InterruptedException {
+    public void testArbitrarySoupNames()  {
         runTest("testArbitrarySoupNames");
     }
 
-    public void testQuerySpecFactories() throws InterruptedException {
+    public void testQuerySpecFactories()  {
         runTest("testQuerySpecFactories");
     }
 
-    public void testLikeQuerySpecStartsWith() throws InterruptedException {
+    public void testLikeQuerySpecStartsWith()  {
         runTest("testLikeQuerySpecStartsWith");
     }
 
-    public void testLikeQuerySpecEndsWith() throws InterruptedException {
+    public void testLikeQuerySpecEndsWith()  {
         runTest("testLikeQuerySpecEndsWith");
     }
 
-    public void testLikeQueryInnerText() throws InterruptedException {
+    public void testLikeQueryInnerText()  {
         runTest("testLikeQueryInnerText");
     }
 
-    public void testCompoundQueryPath() throws InterruptedException {
+    public void testCompoundQueryPath()  {
         runTest("testCompoundQueryPath");
     }
 
-    public void testEmptyQuerySpec() throws InterruptedException {
+    public void testEmptyQuerySpec()  {
         runTest("testEmptyQuerySpec");
     }
 
-    public void testIntegerQuerySpec() throws InterruptedException {
+    public void testIntegerQuerySpec()  {
         runTest("testIntegerQuerySpec");
+    }
+    
+    public void testNumerousFields()  {
+    	if (stressTestsActive)
+    		runTest("SmartStoreLoadTestSuite","testNumerousFields");
+    }
+    
+    public void testIncreasingFieldLength() {
+    	if (stressTestsActive)
+    		runTest("SmartStoreLoadTestSuite","testIncreasingFieldLength");
+    }
+
+    public void testAddAndRetrieveManyEntries()  {
+    	if (stressTestsActive)
+    		runTest("SmartStoreLoadTestSuite","testAddAndRetrieveManyEntries");
+    }
+
+    
+    private void runTest(String suiteClassName, String testName)  {
+    	String jsCmd = "navigator.testrunner.setTestSuite('" + suiteClassName + "');" +
+    			"navigator.testrunner.testSuite.startTest('" + testName + "');";
+    	activity.sendJavascript(jsCmd);
+
+		// Block until test completes
+		TestResult result = null;
+		try {
+			result = TestRunnerPlugin.testResults.take();
+		}
+		catch (InterruptedException intEx) {
+			
+		}
+		assertNotNull("No test result",result);
+		assertEquals("Wrong test completed", testName, result.testName);
+		assertTrue(result.testName + " " + result.message, result.success);
     }
     
 	/**
 	 * Helper method: runs javascript test and wait for it to complete
 	 * @param testName
-	 * @throws InterruptedException
+	 * @
 	 */
-	private void runTest(String testName) throws InterruptedException {
-		activity.sendJavascript("testSuite.startTest('" + testName + "');");
-		// Block until test completes
-		TestResult result = TestRunnerPlugin.testResults.take();
-		assertEquals("Wrong test completed", testName, result.testName);
-		assertTrue(result.testName + " " + result.message, result.success);
+	private void runTest(String testName)  {
+		this.runTest("SmartStoreTestSuite",testName);
 	}
 	
 	
