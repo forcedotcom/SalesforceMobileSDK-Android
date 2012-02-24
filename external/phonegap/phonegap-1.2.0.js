@@ -1,20 +1,9 @@
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 // Version 1.2.0
@@ -285,6 +274,18 @@ PhoneGap.onPhoneGapInfoReady = new PhoneGap.Channel('onPhoneGapInfoReady');
 PhoneGap.onPhoneGapConnectionReady = new PhoneGap.Channel('onPhoneGapConnectionReady');
 
 /**
+ * onResume channel is fired when the PhoneGap native code
+ * resumes.
+ */
+PhoneGap.onResume = new PhoneGap.Channel('onResume');
+
+/**
+ * onPause channel is fired when the PhoneGap native code
+ * pauses.
+ */
+PhoneGap.onPause = new PhoneGap.Channel('onPause');
+
+/**
  * onDestroy channel is fired when the PhoneGap native code
  * is destroyed.  It is used internally.
  * Window.onunload should be used by the user.
@@ -423,6 +424,13 @@ document.addEventListener = function(evt, handler, capture) {
     var e = evt.toLowerCase();
     if (e === 'deviceready') {
         PhoneGap.onDeviceReady.subscribeOnce(handler);
+    } else if (e === 'resume') {
+        PhoneGap.onResume.subscribe(handler);
+        if (PhoneGap.onDeviceReady.fired) {
+            PhoneGap.onResume.fire();
+        }
+    } else if (e === 'pause') {
+        PhoneGap.onPause.subscribe(handler);
     }
     else {
         // If subscribing to Android backbutton
@@ -548,6 +556,65 @@ PhoneGap.fireWindowEvent = function(type, data) {
 };
 
 /**
+ * If JSON not included, use our own stringify. (Android 1.6)
+ * The restriction on ours is that it must be an array of simple types.
+ *
+ * @param args
+ * @return {String}
+ */
+PhoneGap.stringify = function(args) {
+    if (typeof JSON === "undefined") {
+        var s = "[";
+        var i, type, start, name, nameType, a;
+        for (i = 0; i < args.length; i++) {
+            if (args[i] !== null) {
+                if (i > 0) {
+                    s = s + ",";
+                }
+                type = typeof args[i];
+                if ((type === "number") || (type === "boolean")) {
+                    s = s + args[i];
+                } else if (args[i] instanceof Array) {
+                    s = s + "[" + args[i] + "]";
+                } else if (args[i] instanceof Object) {
+                    start = true;
+                    s = s + '{';
+                    for (name in args[i]) {
+                        if (args[i][name] !== null) {
+                            if (!start) {
+                                s = s + ',';
+                            }
+                            s = s + '"' + name + '":';
+                            nameType = typeof args[i][name];
+                            if ((nameType === "number") || (nameType === "boolean")) {
+                                s = s + args[i][name];
+                            } else if ((typeof args[i][name]) === 'function') {
+                                // don't copy the functions
+                                s = s + '""';
+                            } else if (args[i][name] instanceof Object) {
+                                s = s + PhoneGap.stringify(args[i][name]);
+                            } else {
+                                s = s + '"' + args[i][name] + '"';
+                            }
+                            start = false;
+                        }
+                    }
+                    s = s + '}';
+                } else {
+                    a = args[i].replace(/\\/g, '\\\\');
+                    a = a.replace(/"/g, '\\"');
+                    s = s + '"' + a + '"';
+                }
+            }
+        }
+        s = s + "]";
+        return s;
+    } else {
+        return JSON.stringify(args);
+    }
+};
+
+/**
  * Does a deep clone of the object.
  *
  * @param obj
@@ -625,7 +692,7 @@ PhoneGap.exec = function(success, fail, service, action, args) {
             PhoneGap.callbacks[callbackId] = {success:success, fail:fail};
         }
 
-        var r = prompt(JSON.stringify(args), "gap:"+JSON.stringify([service, action, callbackId, true]));
+        var r = prompt(PhoneGap.stringify(args), "gap:"+PhoneGap.stringify([service, action, callbackId, true]));
 
         // If a result was returned
         if (r.length > 0) {
@@ -987,22 +1054,11 @@ PhoneGap.includeJavascript = function(jsfile, successCallback) {
 
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("accelerometer")) {
@@ -1124,22 +1180,11 @@ PhoneGap.addConstructor(function() {
 });
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("app")) {
@@ -1236,22 +1281,11 @@ PhoneGap.addConstructor(function() {
 }());
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("battery")) {
@@ -1371,22 +1405,11 @@ PhoneGap.addConstructor(function() {
 });
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("camera")) {
@@ -1539,22 +1562,11 @@ PhoneGap.addConstructor(function() {
 });
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("capture")) {
@@ -1739,24 +1751,12 @@ PhoneGap.addConstructor(function(){
 		navigator.device.capture = window.device.capture = new Capture();
 	}
 });
-}
-/*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+}/*
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("compass")) {
@@ -1894,22 +1894,11 @@ PhoneGap.addConstructor(function() {
 });
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("contact")) {
@@ -2215,22 +2204,11 @@ PhoneGap.addConstructor(function() {
 });
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 // TODO: Needs to be commented
@@ -2269,22 +2247,11 @@ PhoneGap.addConstructor(function() {
 });
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("device")) {
@@ -2385,22 +2352,11 @@ PhoneGap.addConstructor(function() {
 });
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("file")) {
@@ -3383,24 +3339,12 @@ PhoneGap.addConstructor(function() {
     if(typeof window.requestFileSystem == "undefined") window.requestFileSystem  = pgLocalFileSystem.requestFileSystem;
     if(typeof window.resolveLocalFileSystemURI == "undefined") window.resolveLocalFileSystemURI = pgLocalFileSystem.resolveLocalFileSystemURI;
 });
-}
-/*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+}/*
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("filetransfer")) {
@@ -3485,22 +3429,11 @@ var FileUploadOptions = function(fileKey, fileName, mimeType, params) {
 };
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("geolocation")) {
@@ -3694,22 +3627,11 @@ PhoneGap.addConstructor(function() {
 });
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("media")) {
@@ -3927,24 +3849,12 @@ PhoneGap.Media.onStatus = function(id, msg, value) {
 };
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
-
 
 if (!PhoneGap.hasResource("network")) {
 PhoneGap.addResource("network");
@@ -4027,22 +3937,11 @@ PhoneGap.addConstructor(function() {
 });
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("notification")) {
@@ -4160,22 +4059,11 @@ PhoneGap.addConstructor(function() {
 });
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 if (!PhoneGap.hasResource("position")) {
@@ -4260,22 +4148,11 @@ PositionError.POSITION_UNAVAILABLE = 2;
 PositionError.TIMEOUT = 3;
 }
 /*
- *     Licensed to the Apache Software Foundation (ASF) under one
- *     or more contributor license agreements.  See the NOTICE file
- *     distributed with this work for additional information
- *     regarding copyright ownership.  The ASF licenses this file
- *     to you under the Apache License, Version 2.0 (the
- *     "License"); you may not use this file except in compliance
- *     with the License.  You may obtain a copy of the License at
+ * PhoneGap is available under *either* the terms of the modified BSD license *or* the
+ * MIT License (2008). See http://opensource.org/licenses/alphabetical for full text.
  *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- *     Unless required by applicable law or agreed to in writing,
- *     software distributed under the License is distributed on an
- *     "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *     KIND, either express or implied.  See the License for the
- *     specific language governing permissions and limitations
- *     under the License.
+ * Copyright (c) 2005-2010, Nitobi Software Inc.
+ * Copyright (c) 2010-2011, IBM Corporation
  */
 
 /*
@@ -4583,83 +4460,83 @@ var DroidDB_openDatabase = function(name, version, display_name, size) {
  * @constructor
  */
 var CupcakeLocalStorage = function() {
-    try {
+		try {
 
-      this.db = openDatabase('localStorage', '1.0', 'localStorage', 2621440);
-      var storage = {};
-      this.length = 0;
-      function setLength (length) {
-        this.length = length;
-        localStorage.length = length;
-      }
-      this.db.transaction(
-        function (transaction) {
-            var i;
-          transaction.executeSql('CREATE TABLE IF NOT EXISTS storage (id NVARCHAR(40) PRIMARY KEY, body NVARCHAR(255))');
-          transaction.executeSql('SELECT * FROM storage', [], function(tx, result) {
-            for(var i = 0; i < result.rows.length; i++) {
-              storage[result.rows.item(i)['id']] =  result.rows.item(i)['body'];
-            }
-            setLength(result.rows.length);
-            PhoneGap.initializationComplete("cupcakeStorage");
-          });
+			this.db = openDatabase('localStorage', '1.0', 'localStorage', 2621440);
+			var storage = {};
+			this.length = 0;
+			function setLength (length) {
+				this.length = length;
+				localStorage.length = length;
+			}
+			this.db.transaction(
+				function (transaction) {
+				    var i;
+					transaction.executeSql('CREATE TABLE IF NOT EXISTS storage (id NVARCHAR(40) PRIMARY KEY, body NVARCHAR(255))');
+					transaction.executeSql('SELECT * FROM storage', [], function(tx, result) {
+						for(var i = 0; i < result.rows.length; i++) {
+							storage[result.rows.item(i)['id']] =  result.rows.item(i)['body'];
+						}
+						setLength(result.rows.length);
+						PhoneGap.initializationComplete("cupcakeStorage");
+					});
 
-        },
-        function (err) {
-          alert(err.message);
-        }
-      );
-      this.setItem = function(key, val) {
-        if (typeof(storage[key])=='undefined') {
-          this.length++;
-        }
-        storage[key] = val;
-        this.db.transaction(
-          function (transaction) {
-            transaction.executeSql('CREATE TABLE IF NOT EXISTS storage (id NVARCHAR(40) PRIMARY KEY, body NVARCHAR(255))');
-            transaction.executeSql('REPLACE INTO storage (id, body) values(?,?)', [key,val]);
-          }
-        );
-      };
-      this.getItem = function(key) {
-        return storage[key];
-      };
-      this.removeItem = function(key) {
-        delete storage[key];
-        this.length--;
-        this.db.transaction(
-          function (transaction) {
-            transaction.executeSql('CREATE TABLE IF NOT EXISTS storage (id NVARCHAR(40) PRIMARY KEY, body NVARCHAR(255))');
-            transaction.executeSql('DELETE FROM storage where id=?', [key]);
-          }
-        );
-      };
-      this.clear = function() {
-        storage = {};
-        this.length = 0;
-        this.db.transaction(
-          function (transaction) {
-            transaction.executeSql('CREATE TABLE IF NOT EXISTS storage (id NVARCHAR(40) PRIMARY KEY, body NVARCHAR(255))');
-            transaction.executeSql('DELETE FROM storage', []);
-          }
-        );
-      };
-      this.key = function(index) {
-        var i = 0;
-        for (var j in storage) {
-          if (i==index) {
-            return j;
-          } else {
-            i++;
-          }
-        }
-        return null;
-      };
+				},
+				function (err) {
+					alert(err.message);
+				}
+			);
+			this.setItem = function(key, val) {
+				if (typeof(storage[key])=='undefined') {
+					this.length++;
+				}
+				storage[key] = val;
+				this.db.transaction(
+					function (transaction) {
+						transaction.executeSql('CREATE TABLE IF NOT EXISTS storage (id NVARCHAR(40) PRIMARY KEY, body NVARCHAR(255))');
+						transaction.executeSql('REPLACE INTO storage (id, body) values(?,?)', [key,val]);
+					}
+				);
+			};
+			this.getItem = function(key) {
+				return storage[key];
+			};
+			this.removeItem = function(key) {
+				delete storage[key];
+				this.length--;
+				this.db.transaction(
+					function (transaction) {
+						transaction.executeSql('CREATE TABLE IF NOT EXISTS storage (id NVARCHAR(40) PRIMARY KEY, body NVARCHAR(255))');
+						transaction.executeSql('DELETE FROM storage where id=?', [key]);
+					}
+				);
+			};
+			this.clear = function() {
+				storage = {};
+				this.length = 0;
+				this.db.transaction(
+					function (transaction) {
+						transaction.executeSql('CREATE TABLE IF NOT EXISTS storage (id NVARCHAR(40) PRIMARY KEY, body NVARCHAR(255))');
+						transaction.executeSql('DELETE FROM storage', []);
+					}
+				);
+			};
+			this.key = function(index) {
+				var i = 0;
+				for (var j in storage) {
+					if (i==index) {
+						return j;
+					} else {
+						i++;
+					}
+				}
+				return null;
+			};
 
-    } catch(e) {
-      alert("Database error "+e+".");
-        return;
-    }
+		} catch(e) {
+			alert("Database error "+e+".");
+		    return;
+		}
 };
 
 PhoneGap.addConstructor(function() {
