@@ -38,7 +38,7 @@ public class SalesforceGapViewClient extends GapViewClient {
         // The URL that's loaded after the bootstrap start page will be considered the "app home URL", which can
         // be loaded directly in the event that the app is offline.
         if (this.nextUrlIsHomeUrl) {
-        	Log.i(TAG,"Setting " + url + " as the home page URL for this app");
+        	Log.i(TAG,"Setting '" + url + "' as the home page URL for this app");
         	
     		SharedPreferences sp = myCtx.getSharedPreferences(SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
 			Editor e = sp.edit();
