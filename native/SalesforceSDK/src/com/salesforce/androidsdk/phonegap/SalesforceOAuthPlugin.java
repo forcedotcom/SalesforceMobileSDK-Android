@@ -36,6 +36,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.util.Log;
 import android.webkit.CookieManager;
@@ -51,6 +53,7 @@ import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.ui.SalesforceGapViewClient;
 
 /**
  * PhoneGap plugin for Salesforce OAuth.
@@ -75,7 +78,8 @@ public class SalesforceOAuthPlugin extends Plugin {
 	enum Action {
 		authenticate,
 		getAuthCredentials,
-		logoutCurrentUser
+		logoutCurrentUser,
+		getAppHomeUrl
 	}
 	
 	/* static because it needs to survive plugin being torn down when a new URL is loaded */
@@ -135,6 +139,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 				case authenticate:       	return authenticate(args, callbackId);  
 				case getAuthCredentials: 	return getAuthCredentials(callbackId);  
 				case logoutCurrentUser:		return logoutCurrentUser(); 
+				case getAppHomeUrl:			return this.getAppHomeUrl(callbackId);
 				default: return new PluginResult(PluginResult.Status.INVALID_ACTION, actionStr); // should never happen
 	    	}
     	}
@@ -207,6 +212,18 @@ public class SalesforceOAuthPlugin extends Plugin {
 			return new PluginResult(PluginResult.Status.OK, getJSONCredentials(client));
 		}
 	}
+	
+	protected PluginResult getAppHomeUrl(String callbackId)  {
+		Log.i("SalesforceOAuthPlugin.getAppHomeUrl", "getAppHomeUrl called");
+		
+		SharedPreferences sp = this.ctx.getSharedPreferences(SalesforceGapViewClient.SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
+		String url = sp.getString(SalesforceGapViewClient.APP_HOME_URL_PROP_KEY, null);
+
+		PluginResult result = new PluginResult(PluginResult.Status.OK,url);
+		return result;
+	}
+
+	
 	
 	/**
 	 * Native implementation for "logout" action

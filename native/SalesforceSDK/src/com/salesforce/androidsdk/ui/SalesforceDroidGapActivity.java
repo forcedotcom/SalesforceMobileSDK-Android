@@ -38,6 +38,8 @@ import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
  * Class that defines the main activity for a PhoneGap-based application.
  */
 public class SalesforceDroidGapActivity extends DroidGap {
+	
+	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -63,7 +65,8 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	        
 	        // Configure HTML5 cache support.
 	        webSettings.setDomStorageEnabled(true);
-	        webSettings.setAppCachePath("");
+	        String cachePath = getApplicationContext().getCacheDir().getAbsolutePath();
+			webSettings.setAppCachePath(cachePath);
 	        webSettings.setAppCacheEnabled(true);
 	        webSettings.setAppCacheMaxSize(1024 * 1024 * 8);
 	        webSettings.setAllowFileAccess(true);
@@ -82,6 +85,19 @@ public class SalesforceDroidGapActivity extends DroidGap {
     public void onPause() {
     	CookieSyncManager.getInstance().stopSync();
     	super.onPause();
+    }
+    
+    @Override
+    protected GapViewClient createWebViewClient() {
+    	SalesforceGapViewClient result = new SalesforceGapViewClient(this,this);
+    	return result;
+    }
+    
+    public String startPageUrlString()
+    {
+    	//TODO is this always static?
+    	String result = "file:///android_asset/www/bootstrap.html";
+    	return result;
     }
     
 }
