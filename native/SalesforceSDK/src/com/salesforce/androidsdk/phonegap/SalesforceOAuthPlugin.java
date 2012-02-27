@@ -38,7 +38,6 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
 import android.os.SystemClock;
 import android.util.Log;
 import android.webkit.CookieManager;
