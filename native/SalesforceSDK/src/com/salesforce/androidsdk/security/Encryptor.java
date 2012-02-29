@@ -49,7 +49,7 @@ import android.util.Log;
  */
 public class Encryptor {
 	private static final String UTF8 = "UTF-8";
-    private static final String CIPHER_TRANSFORMATION = "AES/ECB/NoPadding";
+    private static final String CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding"; //was: "AES/ECB/NoPadding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
 
 	private static boolean isFileSystemEncrypted;
