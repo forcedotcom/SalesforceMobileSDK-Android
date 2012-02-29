@@ -29,12 +29,15 @@ package com.salesforce.androidsdk.security;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.AlgorithmParameterSpec;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import android.app.Service;
@@ -58,7 +61,7 @@ public class Encryptor {
 
 	private static boolean isFileSystemEncrypted;
 	private static String bestCipherAvailable;
-	
+
 	/**
 	 * @param ctx
 	 * @return true if the cryptographic module was successfully initialized
@@ -77,25 +80,17 @@ public class Encryptor {
 		
 		// Make sure the cryptographic transformations we want to use are available
 		bestCipherAvailable = null;
+
 		try {
-			Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION);
-			bestCipherAvailable = PREFER_CIPHER_TRANSFORMATION;
+			getBestCipher();
 		}
-		catch (GeneralSecurityException gex1) {
-			//preferered combo not available: try next
-			try {
-				Cipher.getInstance(BACKUP_CIPHER_TRANSFORMATION);
-				bestCipherAvailable = BACKUP_CIPHER_TRANSFORMATION;
-			}
-			catch (GeneralSecurityException gex2) {
-				Log.e(TAG,"No cipher available");
-			}
+		catch (GeneralSecurityException gex) {
 		}
 		
-		Log.i(TAG,"bestCipherAvailable: " + bestCipherAvailable);
 		if (null == bestCipherAvailable)
 			return false;
-		
+
+				
 		try {
 			Mac.getInstance(MAC_TRANSFORMATION);
 		}
@@ -105,6 +100,41 @@ public class Encryptor {
 		}
 		
 		return true;
+	}
+	
+	public static Cipher getBestCipher() throws GeneralSecurityException {
+		Cipher cipher = null;
+		
+		if (null != bestCipherAvailable) {
+			return Cipher.getInstance(bestCipherAvailable);
+		}
+		
+		try {
+			cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION);
+			if (null != cipher)
+				bestCipherAvailable = PREFER_CIPHER_TRANSFORMATION;
+		}
+		catch (GeneralSecurityException gex1) {
+			//preferered combo not available
+		}
+		
+		if (null == bestCipherAvailable) {
+			//preferered combo not available: try next
+			try {
+				cipher = Cipher.getInstance(BACKUP_CIPHER_TRANSFORMATION);
+				if (null != cipher)
+					bestCipherAvailable = BACKUP_CIPHER_TRANSFORMATION;
+			}
+			catch (GeneralSecurityException gex2) {
+				//backup combo also not available
+			}
+		}
+		
+		if (null == bestCipherAvailable) {
+			Log.e(TAG, "No cipher transformation available");
+		}
+		
+		return cipher;
 	}
 	
 	/**
@@ -202,6 +232,36 @@ public class Encryptor {
         }
     }
     
+    
+    private static byte[] generateInitVector() throws NoSuchAlgorithmException {
+        SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+        byte[] iv = new byte[16];
+        random.nextBytes(iv);
+        return iv;
+    }
+    
+    private static Cipher getDecryptCipher(byte[] key) throws GeneralSecurityException {
+        Cipher cipher = getBestCipher();
+    	SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
+        //cipher.init(Cipher.DECRYPT_MODE, skeySpec);
+        byte[] iv = generateInitVector();
+        AlgorithmParameterSpec ivSpec = new IvParameterSpec(iv);
+        cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec); 
+        
+        return cipher;
+    }
+    
+    private static Cipher getEncryptCipher(byte[] key) throws GeneralSecurityException {        
+        Cipher cipher = getBestCipher();
+        SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
+        //cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
+        byte[] iv = generateInitVector();
+        AlgorithmParameterSpec ivSpec = new IvParameterSpec(iv);
+        cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
+
+        return cipher;
+    }
+    
     /**
      * Encrypt data bytes using key
      * @param data
@@ -214,7 +274,7 @@ public class Encryptor {
      * @throws IllegalBlockSizeException
      * @throws BadPaddingException
      */
-    private static byte[] encrypt(byte[] data, byte[] key, byte paddingValue) throws NoSuchAlgorithmException, NoSuchPaddingException,
+    private static byte[] encrypt(byte[] data, byte[] key, byte paddingValue) throws GeneralSecurityException,
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 
     	// must be a multiple of a block length (16 bytes)
@@ -231,9 +291,7 @@ public class Encryptor {
         length = len;
 
         // encrypt
-        Cipher cipher = Cipher.getInstance(bestCipherAvailable);
-        SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-        cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
+        Cipher cipher = getEncryptCipher(key);
         return cipher.doFinal(padded);
     }
 
@@ -250,11 +308,10 @@ public class Encryptor {
      * @throws IllegalBlockSizeException
      * @throws BadPaddingException
      */
-    private static byte[] decrypt(byte[] data, int offset, int length, byte[] key) throws NoSuchAlgorithmException,
-            NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        Cipher cipher = Cipher.getInstance(bestCipherAvailable);
-    	SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-        cipher.init(Cipher.DECRYPT_MODE, skeySpec);
+    private static byte[] decrypt(byte[] data, int offset, int length, byte[] key) throws GeneralSecurityException,
+            InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    	
+    	Cipher cipher = getDecryptCipher(key);
         return cipher.doFinal(data, offset, length);
     }
 }
