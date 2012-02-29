@@ -55,7 +55,6 @@ public class Encryptor {
 
 	private static final String UTF8 = "UTF-8";
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
-    private static final String BACKUP_CIPHER_TRANSFORMATION = "AES/ECB/NoPadding";
 
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
 
@@ -118,17 +117,6 @@ public class Encryptor {
 			//preferered combo not available
 		}
 		
-		if (null == bestCipherAvailable) {
-			//preferered combo not available: try next
-			try {
-				cipher = Cipher.getInstance(BACKUP_CIPHER_TRANSFORMATION);
-				if (null != cipher)
-					bestCipherAvailable = BACKUP_CIPHER_TRANSFORMATION;
-			}
-			catch (GeneralSecurityException gex2) {
-				//backup combo also not available
-			}
-		}
 		
 		if (null == bestCipherAvailable) {
 			Log.e(TAG, "No cipher transformation available");
