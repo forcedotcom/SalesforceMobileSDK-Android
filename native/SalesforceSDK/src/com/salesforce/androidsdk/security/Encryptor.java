@@ -48,12 +48,17 @@ import android.util.Log;
  * Helper class for encryption/decryption/hash computations
  */
 public class Encryptor {
+	private static final String TAG = "Encryptor";
+
 	private static final String UTF8 = "UTF-8";
-    private static final String CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding"; //was: "AES/ECB/NoPadding";
+    private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
+    private static final String BACKUP_CIPHER_TRANSFORMATION = "AES/ECB/NoPadding";
+
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
 
 	private static boolean isFileSystemEncrypted;
-    
+	private static String bestCipherAvailable;
+	
 	/**
 	 * @param ctx
 	 * @return true if the cryptographic module was successfully initialized
@@ -71,12 +76,31 @@ public class Encryptor {
 		}
 		
 		// Make sure the cryptographic transformations we want to use are available
+		bestCipherAvailable = null;
 		try {
-			Cipher.getInstance(CIPHER_TRANSFORMATION);
+			Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION);
+			bestCipherAvailable = PREFER_CIPHER_TRANSFORMATION;
+		}
+		catch (GeneralSecurityException gex1) {
+			//preferered combo not available: try next
+			try {
+				Cipher.getInstance(BACKUP_CIPHER_TRANSFORMATION);
+				bestCipherAvailable = BACKUP_CIPHER_TRANSFORMATION;
+			}
+			catch (GeneralSecurityException gex2) {
+				Log.e(TAG,"No cipher available");
+			}
+		}
+		
+		Log.i(TAG,"bestCipherAvailable: " + bestCipherAvailable);
+		if (null == bestCipherAvailable)
+			return false;
+		
+		try {
 			Mac.getInstance(MAC_TRANSFORMATION);
 		}
 		catch (GeneralSecurityException e) {
-			Log.w("Encryptor:init", e);
+			Log.e(TAG, "No mac transformation available");
 			return false;
 		}
 		
@@ -207,7 +231,7 @@ public class Encryptor {
         length = len;
 
         // encrypt
-        Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
+        Cipher cipher = Cipher.getInstance(bestCipherAvailable);
         SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
         cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
         return cipher.doFinal(padded);
@@ -228,7 +252,7 @@ public class Encryptor {
      */
     private static byte[] decrypt(byte[] data, int offset, int length, byte[] key) throws NoSuchAlgorithmException,
             NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
+        Cipher cipher = Cipher.getInstance(bestCipherAvailable);
     	SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
         cipher.init(Cipher.DECRYPT_MODE, skeySpec);
         return cipher.doFinal(data, offset, length);
