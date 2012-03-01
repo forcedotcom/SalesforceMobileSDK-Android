@@ -170,7 +170,7 @@ public class Encryptor {
     		return data;
     	
         try {
-        	// Encrypt with aes256, use 0 as the padding value, not the default of 0xFF
+        	// Encrypt with our preferred Cipher 
         	byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = data.getBytes(UTF8);
             byte[] encryptedData = encrypt(dataBytes, keyBytes);
