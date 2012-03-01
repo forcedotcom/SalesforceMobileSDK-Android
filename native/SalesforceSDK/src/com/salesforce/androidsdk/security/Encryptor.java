@@ -150,21 +150,13 @@ public class Encryptor {
             // Decrypt with aes256
         	byte[] decryptedData = decrypt(dataBytes, 0, dataBytes.length, keyBytes);
         	
-            // ignore the padding in decrypted text, if any:
-            int decryptedLength = decryptedData.length;
-            int end = decryptedLength;
-            for (int i = 0; i < decryptedLength; ++i) {
-                if (decryptedData[i] == 0) {
-                    end = i;
-                    break;
-                }
-            }
-            return new String(decryptedData, 0, end, UTF8);
+            return new String(decryptedData, 0, decryptedData.length, UTF8);
 
         } catch (Exception ex) {
         	Log.w("Encryptor:decrypt", "error during decryption", ex);
-            return null;
         }
+    	
+        return null;
     }
 
     /**
@@ -181,7 +173,7 @@ public class Encryptor {
         	// Encrypt with aes256, use 0 as the padding value, not the default of 0xFF
         	byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = data.getBytes(UTF8);
-            byte[] encryptedData = encrypt(dataBytes, keyBytes, (byte)0);
+            byte[] encryptedData = encrypt(dataBytes, keyBytes);
             
             // Encode with base64
             return Base64.encodeToString(encryptedData, Base64.DEFAULT);
@@ -231,7 +223,6 @@ public class Encryptor {
      * Encrypt data bytes using key
      * @param data
      * @param key
-     * @param paddingValue
      * @return
      * @throws NoSuchAlgorithmException
      * @throws NoSuchPaddingException
@@ -239,16 +230,17 @@ public class Encryptor {
      * @throws IllegalBlockSizeException
      * @throws BadPaddingException
      */
-    private static byte[] encrypt(byte[] data, byte[] key, byte paddingValue) throws GeneralSecurityException,
+    private static byte[] encrypt(byte[] data, byte[] key) throws GeneralSecurityException,
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 
     	// must be a multiple of a block length (16 bytes)
     	int length = data == null ? 0 : data.length;
         int len = (length + 15) & ~15;
+        //pad with the number of pad bytes
+        byte paddingValue = (byte) (len - length);
         byte[] padded = new byte[len];
         System.arraycopy(data, 0, padded, 0, length);
 
-        // must pad with known data (typically 0xFF, but not always)
         for (int i = length; i < len; i++)
             padded[i] = paddingValue;
 
@@ -266,7 +258,6 @@ public class Encryptor {
         
         //prepend the IV to the encoded data (first 16 bytes / 128 bits )
         byte[] result = new byte[initVector.length + meat.length];
-//        System.arraycopy(src, srcPos, dst, dstPos, length);
         System.arraycopy(initVector, 0, result, 0, initVector.length);
         System.arraycopy(meat, 0, result, initVector.length, meat.length);
         
@@ -305,7 +296,17 @@ public class Encryptor {
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec); 
         
         
-        byte[] result = cipher.doFinal(meat, 0, meatLen);
+        byte[] padded = cipher.doFinal(meat, 0, meatLen);
+        byte[] result = padded;
+        byte paddingValue = padded[padded.length - 1];
+        if (0 != paddingValue) {
+	        byte compare = padded[padded.length - paddingValue];
+	        if (compare == paddingValue) {
+	        	result = new byte[padded.length - paddingValue];
+	        	System.arraycopy(padded, 0, result, 0, result.length);
+	        }
+        }
+        
         return result;
     }
 }
