@@ -55,6 +55,8 @@ public class Encryptor {
 
 	private static final String UTF8 = "UTF-8";
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
+    private static final byte[] INIT_VECTOR =
+        { 16, 74, 71, -80, 32, 101, -47, 72, 117, -14, 0, -29, 70, 65, -12, 74 };
 
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
 
@@ -221,19 +223,18 @@ public class Encryptor {
     }
     
     
-    private static byte[] generateInitVector() throws NoSuchAlgorithmException {
-        SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
-        byte[] iv = new byte[16];
-        random.nextBytes(iv);
-        return iv;
-    }
+//    private static byte[] generateInitVector() throws NoSuchAlgorithmException {
+//        SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+//        byte[] iv = new byte[16];
+//        random.nextBytes(iv);
+//        return iv;
+//    }
     
     private static Cipher getDecryptCipher(byte[] key) throws GeneralSecurityException {
         Cipher cipher = getBestCipher();
     	SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-        //cipher.init(Cipher.DECRYPT_MODE, skeySpec);
-        byte[] iv = generateInitVector();
-        AlgorithmParameterSpec ivSpec = new IvParameterSpec(iv);
+//        cipher.init(Cipher.DECRYPT_MODE, skeySpec);
+        IvParameterSpec ivSpec = new IvParameterSpec(INIT_VECTOR);
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec); 
         
         return cipher;
@@ -242,9 +243,8 @@ public class Encryptor {
     private static Cipher getEncryptCipher(byte[] key) throws GeneralSecurityException {        
         Cipher cipher = getBestCipher();
         SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-        //cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
-        byte[] iv = generateInitVector();
-        AlgorithmParameterSpec ivSpec = new IvParameterSpec(iv);
+//        cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
+        IvParameterSpec ivSpec = new IvParameterSpec(INIT_VECTOR);
         cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
 
         return cipher;
