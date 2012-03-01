@@ -30,7 +30,6 @@ import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.security.spec.AlgorithmParameterSpec;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -55,8 +54,6 @@ public class Encryptor {
 
 	private static final String UTF8 = "UTF-8";
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
-    private static final byte[] INIT_VECTOR =
-        { 16, 74, 71, -80, 32, 101, -47, 72, 117, -14, 0, -29, 70, 65, -12, 74 };
 
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
 
@@ -203,7 +200,6 @@ public class Encryptor {
      */
     public static String hash(String data, String key) {
     	try {
-			
 			// Sign with sha256
 			byte [] keyBytes = key.getBytes(UTF8);
 			byte [] dataBytes = data.getBytes(UTF8);
@@ -223,32 +219,13 @@ public class Encryptor {
     }
     
     
-//    private static byte[] generateInitVector() throws NoSuchAlgorithmException {
-//        SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
-//        byte[] iv = new byte[16];
-//        random.nextBytes(iv);
-//        return iv;
-//    }
-    
-    private static Cipher getDecryptCipher(byte[] key) throws GeneralSecurityException {
-        Cipher cipher = getBestCipher();
-    	SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-//        cipher.init(Cipher.DECRYPT_MODE, skeySpec);
-        IvParameterSpec ivSpec = new IvParameterSpec(INIT_VECTOR);
-        cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec); 
-        
-        return cipher;
+    private static byte[] generateInitVector() throws NoSuchAlgorithmException {
+        SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+        byte[] iv = new byte[16];
+        random.nextBytes(iv);
+        return iv;
     }
-    
-    private static Cipher getEncryptCipher(byte[] key) throws GeneralSecurityException {        
-        Cipher cipher = getBestCipher();
-        SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-//        cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
-        IvParameterSpec ivSpec = new IvParameterSpec(INIT_VECTOR);
-        cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
 
-        return cipher;
-    }
     
     /**
      * Encrypt data bytes using key
@@ -278,9 +255,22 @@ public class Encryptor {
         // update length to be what we will actually send
         length = len;
 
-        // encrypt
-        Cipher cipher = getEncryptCipher(key);
-        return cipher.doFinal(padded);
+        // encrypt        
+        Cipher cipher = getBestCipher();
+        SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
+        //generate a unique IV per encrypt
+        byte[] initVector = generateInitVector();
+        IvParameterSpec ivSpec = new IvParameterSpec(initVector);
+        cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
+        byte[] meat = cipher.doFinal(padded);
+        
+        //prepend the IV to the encoded data (first 16 bytes / 128 bits )
+        byte[] result = new byte[initVector.length + meat.length];
+//        System.arraycopy(src, srcPos, dst, dstPos, length);
+        System.arraycopy(initVector, 0, result, 0, initVector.length);
+        System.arraycopy(meat, 0, result, initVector.length, meat.length);
+        
+        return result;
     }
 
     /**
@@ -299,7 +289,23 @@ public class Encryptor {
     private static byte[] decrypt(byte[] data, int offset, int length, byte[] key) throws GeneralSecurityException,
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
     	
-    	Cipher cipher = getDecryptCipher(key);
-        return cipher.doFinal(data, offset, length);
+    	//grab the init vector prefix (first 16 bytes / 128 bits)
+    	byte[] initVector = new byte[16];
+    	System.arraycopy(data, offset, initVector, 0, initVector.length);
+    	
+        //grab the encrypted body after the init vector prefix
+    	int meatLen = length - initVector.length;
+    	int meatOffset = offset + initVector.length;
+        byte[] meat = new byte[meatLen];
+        System.arraycopy(data, meatOffset, meat, 0, meatLen);
+        
+        Cipher cipher = getBestCipher();
+    	SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
+        IvParameterSpec ivSpec = new IvParameterSpec(initVector);
+        cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec); 
+        
+        
+        byte[] result = cipher.doFinal(meat, 0, meatLen);
+        return result;
     }
 }

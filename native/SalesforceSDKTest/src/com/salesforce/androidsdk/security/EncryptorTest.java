@@ -67,6 +67,15 @@ public class EncryptorTest extends InstrumentationTestCase {
 		}
 	}
 
+	public void testEncryptDecrypt() {
+		for (String key : TEST_KEYS) {
+			for (String data : TEST_DATA) {
+				String encryptedData = Encryptor.encrypt(data, key);
+				String decryptedData = Encryptor.decrypt(encryptedData, key);
+				assertEquals("Decrypt should restore original", data, decryptedData);
+			}
+		}
+	}
 	
 	/**
 	 * Make sure encrypt returns a string different from the original and that decrypt restores the original.
@@ -78,9 +87,18 @@ public class EncryptorTest extends InstrumentationTestCase {
 			assertFalse("Encrypted string should be different from original", data.equals(Encryptor.encrypt(data, key)));
 			assertEquals("Decrypt should restore original", data, Encryptor.decrypt(Encryptor.encrypt(data, key), key));
 			for (String otherData : TEST_DATA) {
-				boolean sameEncrypted = Encryptor.encrypt(data, key).equals(Encryptor.encrypt(otherData, key));
+				String encryptedA = Encryptor.encrypt(data, key);
+				String decryptedA = Encryptor.decrypt(encryptedA, key);
+				String encryptedB = Encryptor.encrypt(otherData, key);
+				String decryptedB = Encryptor.decrypt(encryptedB, key);
+				
+				boolean sameDecrypted = decryptedA.equals(decryptedB); 
 				boolean sameData = data.equals(otherData);
-				assertEquals("Encrypted strings should be different for different strings", sameEncrypted, sameData);
+				assertEquals("Decrypted strings '" 
+						+ decryptedA + "','" + decryptedB 
+						+ "'  should be different for different strings '"
+						+ data +"','" + otherData + "'", 
+						sameDecrypted, sameData);
 			}
 		}
 	}
@@ -93,9 +111,23 @@ public class EncryptorTest extends InstrumentationTestCase {
 		for (String key : TEST_KEYS) {
 			assertEquals("Decrypt should restore original", data, Encryptor.decrypt(Encryptor.encrypt(data, key), key));
 			for (String otherKey : TEST_KEYS) {
-				boolean sameEncrypted = Encryptor.encrypt(data, key).equals(Encryptor.encrypt(data, otherKey));
 				boolean sameKey = (key == null && otherKey == null) || (key != null && key.equals(otherKey));
-				assertEquals("Encrypted strings should be different for different keys", sameEncrypted, sameKey);
+				
+				if (!sameKey) {
+					String encryptedA = Encryptor.encrypt(data, key);
+					String decryptedA = Encryptor.decrypt(encryptedA, key);
+	
+					String encryptedB = Encryptor.encrypt(data, otherKey);
+					String decryptedB = Encryptor.decrypt(encryptedB, otherKey);
+	
+					assertEquals("Decrypted values should be the same",decryptedA,decryptedB);
+					boolean sameEncrypted = encryptedA.equals(encryptedB); 
+					assertEquals("Encrypted strings '" 
+							+ encryptedA + "','" + encryptedB 
+							+ "'  should be different for different keys '"
+							+ key +"','" + otherKey + "'", 
+							sameEncrypted, sameKey);
+				}
 			}
 		}
 	}
