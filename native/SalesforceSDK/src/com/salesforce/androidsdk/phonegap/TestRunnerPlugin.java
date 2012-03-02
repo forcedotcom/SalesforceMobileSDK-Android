@@ -48,7 +48,8 @@ public class TestRunnerPlugin extends Plugin {
 	// Keys in json from/to javascript
 	private static final String TEST_NAME = "testName";
 	private static final String SUCCESS = "success";
-	private static final String MESSAGE = "message"; 
+	private static final String MESSAGE = "message";
+	private static final String DURATION = "testDuration";
 	
 	// To synchronize with the tests
 	public final static BlockingQueue<Boolean> readyForTests = new ArrayBlockingQueue<Boolean>(1);
@@ -107,7 +108,7 @@ public class TestRunnerPlugin extends Plugin {
 		String testName = arg0.getString(TEST_NAME);
 		boolean success = arg0.getBoolean(SUCCESS);
 		String message = arg0.getString(MESSAGE);
-        int durationMsec =  arg0.getInt("testDuration");
+        int durationMsec =  arg0.getInt(DURATION);
         double duration = durationMsec / 1000.0;
         
 		TestResult testResult = new TestResult(testName, success, message, duration);
