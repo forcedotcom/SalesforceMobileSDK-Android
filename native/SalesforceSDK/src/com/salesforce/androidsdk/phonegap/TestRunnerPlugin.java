@@ -43,6 +43,8 @@ import com.phonegap.api.PluginResult;
  */
 public class TestRunnerPlugin extends Plugin {
 
+	private static final String TAG = "TestRunnerPlugin";
+	
 	// Keys in json from/to javascript
 	private static final String TEST_NAME = "testName";
 	private static final String SUCCESS = "success";
@@ -105,8 +107,15 @@ public class TestRunnerPlugin extends Plugin {
 		String testName = arg0.getString(TEST_NAME);
 		boolean success = arg0.getBoolean(SUCCESS);
 		String message = arg0.getString(MESSAGE);
-		testResults.put(new TestResult(testName, success, message));
-		
+        int durationMsec =  arg0.getInt("testDuration");
+        double duration = durationMsec / 1000.0;
+        
+		TestResult testResult = new TestResult(testName, success, message, duration);
+		testResults.put(testResult);
+
+		Log.w(TAG,testResult.testName + " completed in " + testResult.duration);
+	
+        
 		return new PluginResult(PluginResult.Status.OK);
 	}
 
@@ -125,11 +134,13 @@ public class TestRunnerPlugin extends Plugin {
 		public final String testName;
 		public final boolean success;
 		public final String message;
+		public final double duration; //time in seconds
 		
-		public TestResult(String testName, boolean success, String message) {
+		public TestResult(String testName, boolean success, String message, double duration) {
 			this.testName = testName;
 			this.success = success;
 			this.message = message;
+			this.duration = duration;
 		}
 		
 	}
