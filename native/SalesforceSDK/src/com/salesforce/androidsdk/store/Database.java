@@ -146,7 +146,7 @@ public class Database {
 		String selectionStr = (whereClause == null ? "" : " WHERE " + whereClause);
 		String limitStr = (limit == null ? "" : "LIMIT " + limit);
 		String sql = String.format("SELECT %s FROM %s %s %s %s", columnsStr, table, selectionStr, orderByStr, limitStr);
-		Log.i("Database:query[enc=" + encrypted + "]", sql + getStringForArgs(whereArgs));
+//		Log.i("Database:query[enc=" + encrypted + "]", sql + getStringForArgs(whereArgs));
 		if (!encrypted)
 			return db.query(table, columns, whereClause, whereArgs, null, null, orderBy, limit);
 		else
@@ -162,7 +162,7 @@ public class Database {
 	public long insert(String table, ContentValues contentValues) {
 		Pair<String, String> columnsValues = LogUtil.getAsStrings(contentValues.valueSet(), ", ");
 		String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsValues.first, columnsValues.second);
-		Log.i("Database:insert[enc=" + encrypted + "]", sql);
+//		Log.i("Database:insert[enc=" + encrypted + "]", sql);
 		if (!encrypted)
 			return db.insert(table, null, contentValues);
 		else
@@ -180,7 +180,7 @@ public class Database {
 	public int update(String table, ContentValues contentValues, String whereClause, String... whereArgs) {
 		String setStr = LogUtil.zipJoin(contentValues.valueSet(), " = ", ", ");
 		String sql = String.format("UPDATE %s SET %s WHERE %s", table, setStr, whereClause);
-		Log.i("Database:update[enc=" + encrypted + "]", sql + getStringForArgs(whereArgs));
+//		Log.i("Database:update[enc=" + encrypted + "]", sql + getStringForArgs(whereArgs));
 		if (!encrypted)
 			return db.update(table, contentValues, whereClause, whereArgs);
 		else
