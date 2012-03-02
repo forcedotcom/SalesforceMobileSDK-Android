@@ -162,6 +162,10 @@ public class SmartStoreJSTest extends
     public void testAddAndRetrieveManyEntries()  {
     	runTest("SmartStoreLoadTestSuite","testAddAndRetrieveManyEntries");
     }
+    
+    public void testUpsertManyEntries()  {
+    	runTest("SmartStoreLoadTestSuite","testUpsertManyEntries");
+    }
 
 	/**
 	 * Helper method: runs javascript test and wait for it to complete
@@ -183,6 +187,7 @@ public class SmartStoreJSTest extends
 			catch (InterruptedException intEx) {
 				
 			}
+			
 			assertNotNull("No test result",result);
 			assertEquals("Wrong test completed", testName, result.testName);
 			assertTrue(result.testName + " " + result.message, result.success);
