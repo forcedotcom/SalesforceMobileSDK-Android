@@ -3,7 +3,7 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry kind="lib" path="libs/phonegap-1.2.0.jar"/>
+	<classpathentry kind="lib" path="libs/phonegap-1.2.0.jar" sourcepath="libs/callback-android-framework/src"/>
 	<classpathentry kind="lib" path="libs/sqlcipher.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
