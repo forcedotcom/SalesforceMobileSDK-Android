@@ -31,9 +31,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.text.TextUtils;
 import android.util.Log;
-import android.util.Pair;
-
-import com.salesforce.androidsdk.util.LogUtil;
 
 
 /**
@@ -140,12 +137,13 @@ public class Database {
 	 * @return
 	 */
 	public Cursor query(String table, String[] columns, String orderBy, String limit, String whereClause, String... whereArgs) {
-		String columnsStr = (columns == null ? "" : TextUtils.join(",", columns));
-		columnsStr = (columnsStr.equals("") ? "*" : columnsStr);
-		String orderByStr = (orderBy == null ? "" : "ORDER BY " + orderBy);
-		String selectionStr = (whereClause == null ? "" : " WHERE " + whereClause);
-		String limitStr = (limit == null ? "" : "LIMIT " + limit);
-		String sql = String.format("SELECT %s FROM %s %s %s %s", columnsStr, table, selectionStr, orderByStr, limitStr);
+//		-- Debug Logging
+//		String columnsStr = (columns == null ? "" : TextUtils.join(",", columns));
+//		columnsStr = (columnsStr.equals("") ? "*" : columnsStr);
+//		String orderByStr = (orderBy == null ? "" : "ORDER BY " + orderBy);
+//		String selectionStr = (whereClause == null ? "" : " WHERE " + whereClause);
+//		String limitStr = (limit == null ? "" : "LIMIT " + limit);
+//		String sql = String.format("SELECT %s FROM %s %s %s %s", columnsStr, table, selectionStr, orderByStr, limitStr);
 //		Log.i("Database:query[enc=" + encrypted + "]", sql + getStringForArgs(whereArgs));
 		if (!encrypted)
 			return db.query(table, columns, whereClause, whereArgs, null, null, orderBy, limit);
@@ -160,8 +158,9 @@ public class Database {
 	 * @return row id of inserted row
 	 */
 	public long insert(String table, ContentValues contentValues) {
-		Pair<String, String> columnsValues = LogUtil.getAsStrings(contentValues.valueSet(), ", ");
-		String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsValues.first, columnsValues.second);
+//		-- Debug Logging
+//		Pair<String, String> columnsValues = LogUtil.getAsStrings(contentValues.valueSet(), ", ");
+//		String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsValues.first, columnsValues.second);
 //		Log.i("Database:insert[enc=" + encrypted + "]", sql);
 		if (!encrypted)
 			return db.insert(table, null, contentValues);
@@ -178,8 +177,9 @@ public class Database {
 	 * @return number of rows affected
 	 */
 	public int update(String table, ContentValues contentValues, String whereClause, String... whereArgs) {
-		String setStr = LogUtil.zipJoin(contentValues.valueSet(), " = ", ", ");
-		String sql = String.format("UPDATE %s SET %s WHERE %s", table, setStr, whereClause);
+//		-- Debug Logging 
+//		String setStr = LogUtil.zipJoin(contentValues.valueSet(), " = ", ", ");
+//		String sql = String.format("UPDATE %s SET %s WHERE %s", table, setStr, whereClause);
 //		Log.i("Database:update[enc=" + encrypted + "]", sql + getStringForArgs(whereArgs));
 		if (!encrypted)
 			return db.update(table, contentValues, whereClause, whereArgs);
