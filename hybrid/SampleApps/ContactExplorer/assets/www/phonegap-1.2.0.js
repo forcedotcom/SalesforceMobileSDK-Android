@@ -1,1 +1,1 @@
-../../../../../external/phonegap-1.2.0.js
+../../../../../external/phonegap/phonegap-1.2.0.js
