@@ -80,7 +80,6 @@ public class AlbumListActivity extends ListActivity{
 	}	
 
 	
-	//Uncomment this block
 
 	private void getAlbums(){
 

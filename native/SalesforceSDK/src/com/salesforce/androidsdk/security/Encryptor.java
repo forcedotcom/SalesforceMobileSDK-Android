@@ -29,12 +29,14 @@ package com.salesforce.androidsdk.security;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Mac;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import android.app.Service;
@@ -48,12 +50,16 @@ import android.util.Log;
  * Helper class for encryption/decryption/hash computations
  */
 public class Encryptor {
+	private static final String TAG = "Encryptor";
+
 	private static final String UTF8 = "UTF-8";
-    private static final String CIPHER_TRANSFORMATION = "AES/ECB/NoPadding";
+    private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
+
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
 
 	private static boolean isFileSystemEncrypted;
-    
+	private static String bestCipherAvailable;
+
 	/**
 	 * @param ctx
 	 * @return true if the cryptographic module was successfully initialized
@@ -71,16 +77,51 @@ public class Encryptor {
 		}
 		
 		// Make sure the cryptographic transformations we want to use are available
+		bestCipherAvailable = null;
+
 		try {
-			Cipher.getInstance(CIPHER_TRANSFORMATION);
+			getBestCipher();
+		}
+		catch (GeneralSecurityException gex) {
+		}
+		
+		if (null == bestCipherAvailable)
+			return false;
+
+				
+		try {
 			Mac.getInstance(MAC_TRANSFORMATION);
 		}
 		catch (GeneralSecurityException e) {
-			Log.w("Encryptor:init", e);
+			Log.e(TAG, "No mac transformation available");
 			return false;
 		}
 		
 		return true;
+	}
+	
+	public static Cipher getBestCipher() throws GeneralSecurityException {
+		Cipher cipher = null;
+		
+		if (null != bestCipherAvailable) {
+			return Cipher.getInstance(bestCipherAvailable);
+		}
+		
+		try {
+			cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION);
+			if (null != cipher)
+				bestCipherAvailable = PREFER_CIPHER_TRANSFORMATION;
+		}
+		catch (GeneralSecurityException gex1) {
+			//preferered combo not available
+		}
+		
+		
+		if (null == bestCipherAvailable) {
+			Log.e(TAG, "No cipher transformation available");
+		}
+		
+		return cipher;
 	}
 	
 	/**
@@ -109,21 +150,13 @@ public class Encryptor {
             // Decrypt with aes256
         	byte[] decryptedData = decrypt(dataBytes, 0, dataBytes.length, keyBytes);
         	
-            // ignore the padding in decrypted text, if any:
-            int decryptedLength = decryptedData.length;
-            int end = decryptedLength;
-            for (int i = 0; i < decryptedLength; ++i) {
-                if (decryptedData[i] == 0) {
-                    end = i;
-                    break;
-                }
-            }
-            return new String(decryptedData, 0, end, UTF8);
+            return new String(decryptedData, 0, decryptedData.length, UTF8);
 
         } catch (Exception ex) {
         	Log.w("Encryptor:decrypt", "error during decryption", ex);
-            return null;
         }
+    	
+        return null;
     }
 
     /**
@@ -137,10 +170,10 @@ public class Encryptor {
     		return data;
     	
         try {
-        	// Encrypt with aes256, use 0 as the padding value, not the default of 0xFF
+        	// Encrypt with our preferred Cipher 
         	byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = data.getBytes(UTF8);
-            byte[] encryptedData = encrypt(dataBytes, keyBytes, (byte)0);
+            byte[] encryptedData = encrypt(dataBytes, keyBytes);
             
             // Encode with base64
             return Base64.encodeToString(encryptedData, Base64.DEFAULT);
@@ -159,7 +192,6 @@ public class Encryptor {
      */
     public static String hash(String data, String key) {
     	try {
-			
 			// Sign with sha256
 			byte [] keyBytes = key.getBytes(UTF8);
 			byte [] dataBytes = data.getBytes(UTF8);
@@ -178,11 +210,19 @@ public class Encryptor {
         }
     }
     
+    
+    private static byte[] generateInitVector() throws NoSuchAlgorithmException {
+        SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+        byte[] iv = new byte[16];
+        random.nextBytes(iv);
+        return iv;
+    }
+
+    
     /**
      * Encrypt data bytes using key
      * @param data
      * @param key
-     * @param paddingValue
      * @return
      * @throws NoSuchAlgorithmException
      * @throws NoSuchPaddingException
@@ -190,27 +230,38 @@ public class Encryptor {
      * @throws IllegalBlockSizeException
      * @throws BadPaddingException
      */
-    private static byte[] encrypt(byte[] data, byte[] key, byte paddingValue) throws NoSuchAlgorithmException, NoSuchPaddingException,
+    private static byte[] encrypt(byte[] data, byte[] key) throws GeneralSecurityException,
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 
     	// must be a multiple of a block length (16 bytes)
     	int length = data == null ? 0 : data.length;
         int len = (length + 15) & ~15;
+        //pad with the number of pad bytes
+        byte paddingValue = (byte) (len - length);
         byte[] padded = new byte[len];
         System.arraycopy(data, 0, padded, 0, length);
 
-        // must pad with known data (typically 0xFF, but not always)
         for (int i = length; i < len; i++)
             padded[i] = paddingValue;
 
         // update length to be what we will actually send
         length = len;
 
-        // encrypt
-        Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
+        // encrypt        
+        Cipher cipher = getBestCipher();
         SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-        cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
-        return cipher.doFinal(padded);
+        //generate a unique IV per encrypt
+        byte[] initVector = generateInitVector();
+        IvParameterSpec ivSpec = new IvParameterSpec(initVector);
+        cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
+        byte[] meat = cipher.doFinal(padded);
+        
+        //prepend the IV to the encoded data (first 16 bytes / 128 bits )
+        byte[] result = new byte[initVector.length + meat.length];
+        System.arraycopy(initVector, 0, result, 0, initVector.length);
+        System.arraycopy(meat, 0, result, initVector.length, meat.length);
+        
+        return result;
     }
 
     /**
@@ -226,11 +277,36 @@ public class Encryptor {
      * @throws IllegalBlockSizeException
      * @throws BadPaddingException
      */
-    private static byte[] decrypt(byte[] data, int offset, int length, byte[] key) throws NoSuchAlgorithmException,
-            NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
-        Cipher cipher = Cipher.getInstance(CIPHER_TRANSFORMATION);
+    private static byte[] decrypt(byte[] data, int offset, int length, byte[] key) throws GeneralSecurityException,
+            InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    	
+    	//grab the init vector prefix (first 16 bytes / 128 bits)
+    	byte[] initVector = new byte[16];
+    	System.arraycopy(data, offset, initVector, 0, initVector.length);
+    	
+        //grab the encrypted body after the init vector prefix
+    	int meatLen = length - initVector.length;
+    	int meatOffset = offset + initVector.length;
+        byte[] meat = new byte[meatLen];
+        System.arraycopy(data, meatOffset, meat, 0, meatLen);
+        
+        Cipher cipher = getBestCipher();
     	SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-        cipher.init(Cipher.DECRYPT_MODE, skeySpec);
-        return cipher.doFinal(data, offset, length);
+        IvParameterSpec ivSpec = new IvParameterSpec(initVector);
+        cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec); 
+        
+        
+        byte[] padded = cipher.doFinal(meat, 0, meatLen);
+        byte[] result = padded;
+        byte paddingValue = padded[padded.length - 1];
+        if (0 != paddingValue) {
+	        byte compare = padded[padded.length - paddingValue];
+	        if (compare == paddingValue) {
+	        	result = new byte[padded.length - paddingValue];
+	        	System.arraycopy(padded, 0, result, 0, result.length);
+	        }
+        }
+        
+        return result;
     }
 }
