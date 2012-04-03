@@ -77,7 +77,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 	private static final String ACCESS_TOKEN = "accessToken";
 
 	// Min refresh interval (when auto refresh on foreground is on)
-	private static final int MIN_REFRESH_INTERVAL_MILLISECONDS = 14*1000; // 14 minutes
+	private static final int MIN_REFRESH_INTERVAL_MILLISECONDS = 14*60*1000; // 14 minutes
 	
 	/**
 	 * Supported plugin actions that the client can take.
