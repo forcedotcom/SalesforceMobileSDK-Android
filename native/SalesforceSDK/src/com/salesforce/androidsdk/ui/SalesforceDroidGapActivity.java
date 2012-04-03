@@ -27,6 +27,8 @@
 package com.salesforce.androidsdk.ui;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebSettings;
 
@@ -39,8 +41,11 @@ import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
  */
 public class SalesforceDroidGapActivity extends DroidGap {
 	
+	// For periodic auto-refresh
+    private static final long AUTO_REFRESH_PERIOD_MILLISECONDS = 14*1000; // 14 minutes
+	private Handler periodicAutoRefreshHandler;
 	
-    /** Called when the activity is first created. */
+	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -53,6 +58,10 @@ public class SalesforceDroidGapActivity extends DroidGap {
         
         // Load bootstrap
         super.loadUrl("file:///android_asset/www/bootstrap.html");
+        
+        // start thread for auto-refresh
+        // XXX wasteful, starting the thread even if auto-refresh periodically ends up not being turned on
+		startPeriodicAutoRefreshThread();
     }
     
     @Override
@@ -99,5 +108,23 @@ public class SalesforceDroidGapActivity extends DroidGap {
     	String result = "file:///android_asset/www/bootstrap.html";
     	return result;
     }
-    
+
+	public void startPeriodicAutoRefreshThread() {
+		Log.i("SalesforceDroidGapActivity.startPeriodicAutoRefresh", "startPeriodicAutoRefresh called");
+		periodicAutoRefreshHandler = new Handler();
+		periodicAutoRefreshHandler.postDelayed(new PeriodicAutoRefresher(), AUTO_REFRESH_PERIOD_MILLISECONDS);
+	}
+	/** 
+	 * Thread that automatically refresh session
+ 	 */
+	private class PeriodicAutoRefresher implements Runnable {
+		public void run() {
+			try {
+				Log.i("SalesforceOAuthPlugin.PeriodicAutoRefresher.run", "run called");
+				SalesforceOAuthPlugin.autoRefreshIfNeeded(appView, SalesforceDroidGapActivity.this);
+			} finally {
+				periodicAutoRefreshHandler.postDelayed(this, AUTO_REFRESH_PERIOD_MILLISECONDS);
+			}
+		}
+	}
 }
