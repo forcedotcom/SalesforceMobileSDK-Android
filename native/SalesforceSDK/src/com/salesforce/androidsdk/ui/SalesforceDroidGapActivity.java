@@ -49,19 +49,18 @@ public class SalesforceDroidGapActivity extends DroidGap {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-    	//ensure we have a CookieSyncManager
+    	// Ensure we have a CookieSyncManager
     	CookieSyncManager.createInstance(this);
         
-        //ensure that we allow urls from all salesforce domains to be loaded
+        // Ensure that we allow urls from all salesforce domains to be loaded
         this.addWhiteListEntry("force.com", true);
         this.addWhiteListEntry("salesforce.com", true);
         
         // Load bootstrap
         super.loadUrl("file:///android_asset/www/bootstrap.html");
         
-        // start thread for auto-refresh
-        // XXX wasteful, starting the thread even if auto-refresh periodically ends up not being turned on
-		startPeriodicAutoRefreshThread();
+        // Start periodic auto-refresh
+		startPeriodicAutoRefresh();
     }
     
     @Override
@@ -109,8 +108,9 @@ public class SalesforceDroidGapActivity extends DroidGap {
     	return result;
     }
 
-	public void startPeriodicAutoRefreshThread() {
+	public void startPeriodicAutoRefresh() {
 		Log.i("SalesforceDroidGapActivity.startPeriodicAutoRefresh", "startPeriodicAutoRefresh called");
+		// It's better to use Handler than Timer - see http://developer.android.com/resources/articles/timed-ui-updates.html
 		periodicAutoRefreshHandler = new Handler();
 		periodicAutoRefreshHandler.postDelayed(new PeriodicAutoRefresher(), AUTO_REFRESH_PERIOD_MILLISECONDS);
 	}
