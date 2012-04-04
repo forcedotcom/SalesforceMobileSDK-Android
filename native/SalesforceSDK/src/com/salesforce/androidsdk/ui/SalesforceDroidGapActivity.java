@@ -41,8 +41,8 @@ import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
  */
 public class SalesforceDroidGapActivity extends DroidGap {
 	
-	// For periodic auto-refresh
-    private static final long AUTO_REFRESH_PERIOD_MILLISECONDS = 14*60*1000; // 14 minutes
+	// For periodic auto-refresh (slightly longer than SalesforceOAuthPlugin.MIN_REFRESH_INTERVAL_MILLISECONDS)
+    private static final long AUTO_REFRESH_PERIOD_MILLISECONDS = SalesforceOAuthPlugin.MIN_REFRESH_INTERVAL_MILLISECONDS + (5*1000);
 	private Handler periodicAutoRefreshHandler;
 	
 	/** Called when the activity is first created. */

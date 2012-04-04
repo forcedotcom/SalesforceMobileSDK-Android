@@ -76,8 +76,8 @@ public class SalesforceOAuthPlugin extends Plugin {
 	private static final String REFRESH_TOKEN = "refreshToken";
 	private static final String ACCESS_TOKEN = "accessToken";
 
-	// Min refresh interval (when auto refresh on foreground is on)
-	private static final int MIN_REFRESH_INTERVAL_MILLISECONDS = 14*60*1000; // 14 minutes
+	// Min refresh interval
+	public static final int MIN_REFRESH_INTERVAL_MILLISECONDS = 10*60*1000; // 10 minutes
 	
 	/**
 	 * Supported plugin actions that the client can take.
@@ -253,6 +253,12 @@ public class SalesforceOAuthPlugin extends Plugin {
 	 * Return true if one should auto-refresh the oauth token now
 	 */
 	private static boolean shouldAutoRefresh() {
+		Log.i("SalesforceOAuthPlugin.shouldAutoRefresh", "autoRefreshOnForeground=" + autoRefreshOnForeground 
+								+ ",autoRefreshPeriodically=" + autoRefreshPeriodically
+								+ ",lastRefreshTime=" + lastRefreshTime
+								+ ",System.currentTimeMillis() - lastRefreshTime=" + (System.currentTimeMillis() - lastRefreshTime)
+								+ ",MIN_REFRESH_INTERVAL_MILLISECONDS=" + MIN_REFRESH_INTERVAL_MILLISECONDS);
+		
 		return (autoRefreshOnForeground || autoRefreshPeriodically) // auto-refresh is turned on
 			&& lastRefreshTime > 0 // we have authenticated 
 			&&  (System.currentTimeMillis() - lastRefreshTime > MIN_REFRESH_INTERVAL_MILLISECONDS);
