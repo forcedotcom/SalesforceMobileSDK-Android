@@ -66,7 +66,7 @@ public abstract class ForceApp extends Application {
 	/**
 	 * Current version of this SDK.
 	 */
-    public static final String SDK_VERSION = "1.1.1";
+    public static final String SDK_VERSION = "1.2";
 
 	/**
      * Instance of the ForceApp to use for this process.
