@@ -41,8 +41,8 @@ import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
  */
 public class SalesforceDroidGapActivity extends DroidGap {
 	
-	// For periodic auto-refresh - checking every 5'
-    private static final long AUTO_REFRESH_PERIOD_MILLISECONDS = 5*60*1000;
+	// For periodic auto-refresh - every 10 minutes
+    private static final long AUTO_REFRESH_PERIOD_MILLISECONDS = 10*60*1000;
 	private Handler periodicAutoRefreshHandler;
 	
 	/** Called when the activity is first created. */
@@ -84,8 +84,11 @@ public class SalesforceDroidGapActivity extends DroidGap {
     
     @Override
     public void onResume() {
-    	CookieSyncManager.getInstance().startSync();
-    	SalesforceOAuthPlugin.autoRefreshIfNeeded(appView, this);
+    	if (SalesforceOAuthPlugin.shouldAutoRefreshOnForeground()) {
+    		SalesforceOAuthPlugin.autoRefresh(appView, this);
+    	}
+    	
+    	CookieSyncManager.getInstance().startSync();    	
     	super.onResume();
     }
     
@@ -111,17 +114,20 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	public void startPeriodicAutoRefresh() {
 		Log.i("SalesforceDroidGapActivity.startPeriodicAutoRefresh", "startPeriodicAutoRefresh called");
 		// It's better to use Handler than Timer - see http://developer.android.com/resources/articles/timed-ui-updates.html
+		// Runnable is run on main thread
 		periodicAutoRefreshHandler = new Handler();
 		periodicAutoRefreshHandler.postDelayed(new PeriodicAutoRefresher(), AUTO_REFRESH_PERIOD_MILLISECONDS);
 	}
 	/** 
-	 * Thread that automatically refresh session
+	 * Runnable that automatically refresh session
  	 */
 	private class PeriodicAutoRefresher implements Runnable {
 		public void run() {
 			try {
 				Log.i("SalesforceOAuthPlugin.PeriodicAutoRefresher.run", "run called");
-				SalesforceOAuthPlugin.autoRefreshIfNeeded(appView, SalesforceDroidGapActivity.this);
+				if (SalesforceOAuthPlugin.shouldAutoRefreshPeriodically()) {
+					SalesforceOAuthPlugin.autoRefresh(appView, SalesforceDroidGapActivity.this);
+				}
 			} finally {
 				periodicAutoRefreshHandler.postDelayed(this, AUTO_REFRESH_PERIOD_MILLISECONDS);
 			}
