@@ -128,6 +128,10 @@ public class SalesforceOAuthPlugin extends Plugin {
 			@Override
 			public void onError(Exception exception) {
 				Log.w("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Auto-refresh failed - logging out");
+				
+				// TODO We probably don't want to logout in all cases
+				//      However, if we don't and the session has expired, then the user on his next action will 
+				//      end up in the web login screen, which is what we want to avoid
 				logout(ctx);
 			}
 		});
@@ -374,7 +378,7 @@ public class SalesforceOAuthPlugin extends Plugin {
     	// with the [domain] format.  Set them both; each platform will leverage its respective format.
     	addSidCookieForDomain(cookieMgr,"salesforce.com", accessToken);
     	addSidCookieForDomain(cookieMgr,".salesforce.com", accessToken);
-    	Log.i("sedSidCookies", "accessToken=" + accessToken);
+    	// Log.i("SalesforceOAuthPlugin.setSidCookies", "accessToken=" + accessToken);
 
 	    cookieSyncMgr.sync();
     }
