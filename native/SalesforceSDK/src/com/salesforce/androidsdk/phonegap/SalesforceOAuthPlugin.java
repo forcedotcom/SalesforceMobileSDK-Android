@@ -47,6 +47,7 @@ import android.webkit.WebView;
 import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -127,12 +128,12 @@ public class SalesforceOAuthPlugin extends Plugin {
 			
 			@Override
 			public void onError(Exception exception) {
-				Log.w("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Auto-refresh failed - logging out");
-				
-				// TODO We probably don't want to logout in all cases
-				//      However, if we don't and the session has expired, then the user on his next action will 
-				//      end up in the web login screen, which is what we want to avoid
-				logout(ctx);
+				Log.w("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Auto-refresh failed - " + exception);
+
+				// Only logout if we are NOT offline
+				if (!(exception instanceof NoNetworkException)) {
+					logout(ctx);
+				}
 			}
 		});
 	}

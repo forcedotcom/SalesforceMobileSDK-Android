@@ -211,7 +211,7 @@ public class HttpAccess extends BroadcastReceiver {
      */
     private void checkNetwork() throws IOException {
         if (!hasNetwork()) {
-            throw new IOException(networkFailReason == null ? "Network not available" : networkFailReason);
+            throw new NoNetworkException(networkFailReason == null ? "Network not available" : networkFailReason);
         }
     }
 	
@@ -412,5 +412,17 @@ public class HttpAccess extends BroadcastReceiver {
 	        return METHOD_NAME;
 	    }
 	    
+	}
+	
+	/**
+	 * Thrown when offline during an attempted http call
+	 */
+	public static class NoNetworkException extends IOException {
+		private static final long serialVersionUID = 1L;
+
+		public NoNetworkException(String msg) {
+			super(msg);
+		}
+		
 	}
 }
