@@ -44,6 +44,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	// For periodic auto-refresh - every 10 minutes
     private static final long AUTO_REFRESH_PERIOD_MILLISECONDS = 10*60*1000;
 	private Handler periodicAutoRefreshHandler;
+	private PeriodicAutoRefresher periodicAutoRefresher;
 	
 	/** Called when the activity is first created. */
     @Override
@@ -59,8 +60,9 @@ public class SalesforceDroidGapActivity extends DroidGap {
         // Load bootstrap
         super.loadUrl("file:///android_asset/www/bootstrap.html");
         
-        // Start periodic auto-refresh
-		startPeriodicAutoRefresh();
+        // Periodic auto-refresh - scheduled in onResume
+		periodicAutoRefreshHandler = new Handler();
+		periodicAutoRefresher = new PeriodicAutoRefresher();
     }
     
     @Override
@@ -87,17 +89,18 @@ public class SalesforceDroidGapActivity extends DroidGap {
     	if (SalesforceOAuthPlugin.shouldAutoRefreshOnForeground()) {
     		SalesforceOAuthPlugin.autoRefresh(appView, this);
     	}
-    	
+    	schedulePeriodicAutoRefresh();
     	CookieSyncManager.getInstance().startSync();    	
     	super.onResume();
     }
     
     @Override
     public void onPause() {
+    	unschedulePeriodicAutoRefresh();
     	CookieSyncManager.getInstance().stopSync();
     	super.onPause();
     }
-    
+
     @Override
     protected GapViewClient createWebViewClient() {
     	SalesforceGapViewClient result = new SalesforceGapViewClient(this,this);
@@ -110,14 +113,23 @@ public class SalesforceDroidGapActivity extends DroidGap {
     	String result = "file:///android_asset/www/bootstrap.html";
     	return result;
     }
-
-	public void startPeriodicAutoRefresh() {
-		Log.i("SalesforceDroidGapActivity.startPeriodicAutoRefresh", "startPeriodicAutoRefresh called");
-		// It's better to use Handler than Timer - see http://developer.android.com/resources/articles/timed-ui-updates.html
-		// Runnable is run on main thread
-		periodicAutoRefreshHandler = new Handler();
-		periodicAutoRefreshHandler.postDelayed(new PeriodicAutoRefresher(), AUTO_REFRESH_PERIOD_MILLISECONDS);
+    
+	/**
+	 * Schedule auto-refresh runnable 
+	 */
+	protected void schedulePeriodicAutoRefresh() {
+		Log.i("SalesforceDroidGapActivity.schedulePeriodicAutoRefresh", "schedulePeriodicAutoRefresh called");
+		periodicAutoRefreshHandler.postDelayed(periodicAutoRefresher, AUTO_REFRESH_PERIOD_MILLISECONDS);
 	}
+	
+	/**
+	 * Unschedule auto-refresh runnable 
+	 */
+	protected void unschedulePeriodicAutoRefresh() {
+		Log.i("SalesforceDroidGapActivity.unschedulePeriodicAutoRefresh", "unschedulePeriodicAutoRefresh called");		
+		periodicAutoRefreshHandler.removeCallbacks(periodicAutoRefresher);
+	}
+	
 	/** 
 	 * Runnable that automatically refresh session
  	 */
@@ -129,7 +141,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 					SalesforceOAuthPlugin.autoRefresh(appView, SalesforceDroidGapActivity.this);
 				}
 			} finally {
-				periodicAutoRefreshHandler.postDelayed(this, AUTO_REFRESH_PERIOD_MILLISECONDS);
+				schedulePeriodicAutoRefresh();
 			}
 		}
 	}
