@@ -44,6 +44,7 @@ import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebView;
 
+import com.phonegap.api.PhonegapActivity;
 import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
@@ -56,7 +57,6 @@ import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.ui.SalesforceGapViewClient;
 
 /**
@@ -110,10 +110,10 @@ public class SalesforceOAuthPlugin extends Plugin {
 	 * Does a cheap rest call:
 	 * - if session has already expired, the access token will be refreshed
 	 * - otherwise it will get extended
-	 * @param webView The WebView running the application.
-	 * @param ctx The main activity/context for the app.
+	 * @param webView the WebView running the application.
+	 * @param ctx the Phonegap activity for the app.
 	 */
-	public static void autoRefresh(final WebView webView, final SalesforceDroidGapActivity ctx) {
+	public static void autoRefresh(final WebView webView, final PhonegapActivity ctx) {
 		Log.i("SalesforceOAuthPlugin.autoRefresh", "autoRefresh called");
 		// Do a cheap rest call - access token will be refreshed if needed
 		client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
@@ -191,12 +191,27 @@ public class SalesforceOAuthPlugin extends Plugin {
 				}
 				else {
 					Log.i("SalesforceOAuthPlugin.authenticate", "authenticate successful");
-					// Only updating time if we went through login
-					if (SalesforceOAuthPlugin.client == null) {
-						updateRefreshTime();
-					}
-					SalesforceOAuthPlugin.client = c;						
-					callAuthenticateSuccess(callbackId);
+					SalesforceOAuthPlugin.client = c;
+					
+					// Do a cheap rest call - access token will be refreshed if needed
+					// If the login took place a while back (e.g. the already logged in application was restarted)
+					// Then the returned session id (access token) might be stale
+					// It's not an issue if one uses exclusively RestClient for calling the server
+					// because it takes care of refreshing the access token when needed
+					// But a stale session id will cause the webview to redirect to the web login
+					SalesforceOAuthPlugin.client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
+						@Override
+						public void onSuccess(RestResponse response) {
+							updateRefreshTime();
+							setSidCookies(webView, SalesforceOAuthPlugin.client);
+							success(new PluginResult(PluginResult.Status.OK, getJSONCredentials(SalesforceOAuthPlugin.client)), callbackId);							
+						}
+						
+						@Override
+						public void onError(Exception exception) {
+							error(exception.getMessage(), callbackId);  
+						}
+					});
 				}
 			}
 		});
@@ -207,12 +222,6 @@ public class SalesforceOAuthPlugin extends Plugin {
 		return noop;
 	}
 
-	private void callAuthenticateSuccess(final String callbackId) {
-		Log.i("SalesforceOAuthPlugin.callAuthenticateSuccess", "Calling authenticate success callback");
-		setSidCookies(webView, SalesforceOAuthPlugin.client);
-		success(new PluginResult(PluginResult.Status.OK, getJSONCredentials(SalesforceOAuthPlugin.client)), callbackId);
-	}
-	
 	/**
 	 * Native implementation for "getAuthCredentials" action.
 	 * @param callbackId The callback ID used when calling back into Javascript.
