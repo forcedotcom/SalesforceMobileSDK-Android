@@ -89,7 +89,6 @@ public class OAuth2 {
 	private static final String INSTANCE_URL = "instance_url";
 	private static final String JSON = "json";
 	private static final String MOBILE_POLICY = "mobile_policy";
-	private static final String OAUTH_TOKEN = "oauth_token";
 	private static final String PIN_LENGTH = "pin_length";
 	private static final String REFRESH_TOKEN = "refresh_token";
 	private static final String RESPONSE_TYPE = "response_type";
@@ -188,15 +187,7 @@ public class OAuth2 {
 
 		Map<String, String> idHeaders = new HashMap<String, String>();
 		idHeaders.put("Authorization", "OAuth " + authToken);
-		
-		// With connected apps (pilot in Summer '12), you don't need the oauth header, but you need the oauth_token as an URL param
-		// Leaving both so it works everywhere.
-		StringBuilder args = new StringBuilder();
-		args.append("?").append(OAUTH_TOKEN).append("=").append(Uri.encode(authToken))
-			.append("&").append(FORMAT).append("=").append(JSON);
-		
-		Execution exec = httpAccessor.doGet(idHeaders,
-				new URI(identityServiceIdUrl + args));
+		Execution exec = httpAccessor.doGet(idHeaders, new URI(identityServiceIdUrl));
 		IdServiceResponse id = new IdServiceResponse(exec.response);
 		return id.username;
 	}
