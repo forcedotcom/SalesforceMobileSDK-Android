@@ -54,6 +54,7 @@ import android.widget.Toast;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -338,9 +339,9 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 				publishProgress(true);
 
 				TokenEndpointResponse tr= params[0];
-				String username = OAuth2.getUsernameFromIdentityService(
+				IdServiceResponse id = OAuth2.callIdentityService(
 					HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
-				addAccount(username, tr.refreshToken, tr.authToken, tr.instanceUrl,
+				addAccount(id.username, tr.refreshToken, tr.authToken, tr.instanceUrl,
 						loginOptions.loginUrl, loginOptions.oauthClientId, tr.orgId, tr.userId);
 				
 			} catch (Exception ex) {

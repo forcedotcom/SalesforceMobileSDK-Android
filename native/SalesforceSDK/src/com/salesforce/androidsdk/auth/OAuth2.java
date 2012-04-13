@@ -171,7 +171,7 @@ public class OAuth2 {
 	}
 
 	/**
-	 * Call the identity service to determine the username of the user, given
+	 * Call the identity service to determine the username of the user and the mobile policy, given
 	 * their identity service ID and an access token.
 	 * 
 	 * @param httpAccessor
@@ -181,15 +181,14 @@ public class OAuth2 {
 	 * @throws IOException
 	 * @throws URISyntaxException
 	 */
-	public static final String getUsernameFromIdentityService(
+	public static final IdServiceResponse callIdentityService(
 			HttpAccess httpAccessor, String identityServiceIdUrl,
 			String authToken) throws IOException, URISyntaxException {
 
 		Map<String, String> idHeaders = new HashMap<String, String>();
 		idHeaders.put("Authorization", "OAuth " + authToken);
 		Execution exec = httpAccessor.doGet(idHeaders, new URI(identityServiceIdUrl));
-		IdServiceResponse id = new IdServiceResponse(exec.response);
-		return id.username;
+		return new IdServiceResponse(exec.response);
 	}
 
 	/**
