@@ -42,6 +42,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
@@ -183,8 +184,26 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 	 * The last step is to call the identity service to get the username.
 	 */
 	protected void onAuthFlowComplete(TokenEndpointResponse tr) {
-		FinishAuthTask t = new FinishAuthTask();
-		t.execute(tr);
+		IdentityTask identityTask = new IdentityTask();
+		try {
+			Pair<IdServiceResponse, Exception> idExec = identityTask.execute(tr).get();
+			IdServiceResponse id = idExec.first;
+			if (id != null) {
+				addAccount(id.username, tr.refreshToken, tr.authToken, tr.instanceUrl,
+						loginOptions.loginUrl, loginOptions.oauthClientId, tr.orgId, tr.userId);
+			}
+			else {
+				// Throws exception that took place in the background if any
+				throw idExec.second;
+			}				
+		} catch (Exception e) {
+			Log.w("LoginActiviy.onAuthFlowComplete", e);
+			onAuthFlowError(getString(salesforceR.stringGenericAuthenticationErrorTitle()),
+					getString(salesforceR.stringGenericAuthenticationErrorBody()));
+		}
+		
+		// Done
+		finish();
 	}
 
 	/**
@@ -325,15 +344,15 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 	 * Helper inner classes
 	 * 
 	 **************************************************************************************************/
-	
+
 	/**
-	 * Background task that takes care of finishing the authentication flow
+	 * Background task that takes care of calling the identity service to get the user's username
+	 * and the mobile policy (if available)
 	 */
-	protected class FinishAuthTask extends
-			AsyncTask<TokenEndpointResponse, Boolean, Exception> {
+	protected class IdentityTask extends AsyncTask<TokenEndpointResponse, Boolean, Pair<IdServiceResponse, Exception>> {
 
 		@Override
-		protected final Exception doInBackground(
+		protected final Pair<IdServiceResponse, Exception> doInBackground(
 				TokenEndpointResponse... params) {
 			try {
 				publishProgress(true);
@@ -341,25 +360,10 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 				TokenEndpointResponse tr= params[0];
 				IdServiceResponse id = OAuth2.callIdentityService(
 					HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
-				addAccount(id.username, tr.refreshToken, tr.authToken, tr.instanceUrl,
-						loginOptions.loginUrl, loginOptions.oauthClientId, tr.orgId, tr.userId);
-				
-			} catch (Exception ex) {
-				return ex;
-			}
-			
-			return null;
-		}
-
-		@Override
-		protected void onPostExecute(Exception ex) {
-			if (ex != null) {
-				// Error
-				onAuthFlowError(getString(salesforceR.stringGenericAuthenticationErrorTitle()),
-						getString(salesforceR.stringGenericAuthenticationErrorBody()));
-			} else {
-				// Done
-				finish();
+				return new Pair<IdServiceResponse, Exception>(id, null);
+			} catch (Exception e) {
+				Log.w("IdentityTask.doInBackground", e);
+				return new Pair<IdServiceResponse, Exception>(null, e);
 			}
 		}
 
@@ -369,7 +373,6 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 			setProgressBarIndeterminate(values[0]);
 		}
 	}
-
 	/**
 	 * WebChromeClient used to report back progress.
 	 *

@@ -196,7 +196,7 @@ public class OAuth2Test extends InstrumentationTestCase {
 		assertNotNull("Auth token should not be null", refreshResponse.authToken);
 
 		// Now let's call the identity service
-		String username = OAuth2.getUsernameFromIdentityService(httpAccess, TestCredentials.INSTANCE_URL + "/id/" + TestCredentials.ORG_ID + "/" + TestCredentials.USER_ID, refreshResponse.authToken);
+		String username = OAuth2.callIdentityService(httpAccess, TestCredentials.INSTANCE_URL + "/id/" + TestCredentials.ORG_ID + "/" + TestCredentials.USER_ID, refreshResponse.authToken).username;
 		assertEquals("Wrong username returned", TestCredentials.USERNAME, username);
 	}
 	
