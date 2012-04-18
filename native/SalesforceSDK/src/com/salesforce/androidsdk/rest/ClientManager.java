@@ -42,6 +42,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
@@ -126,8 +127,10 @@ public class ClientManager {
 		}
 
 		// OAuth tokens are stored encrypted
-		String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), loginOptions.passcodeHash);
-		String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), loginOptions.passcodeHash);
+		String passcodeHash = ForceApp.APP.getPasscodeHash(); // passcode might be created during login flow so loginOptions.passcodeHash could be outdated
+		Log.i("ClientManager.peekRestClient", "Decrypting with " + passcodeHash);
+		String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
+		String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), passcodeHash);
 		
 		// We also store the username, instance url, org id, user id and username in the account manager
 		String loginServer = accountManager.getUserData(acc, AuthenticatorService.KEY_LOGIN_URL);
@@ -244,6 +247,7 @@ public class ClientManager {
 		extras.putString(AuthenticatorService.KEY_USER_ID, userId);
 		extras.putString(AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, passcodeHash));
 
+		Log.i("ClientManager.peekRestClient", "Encrypting with " + passcodeHash);
 		Account acc = new Account(accountName, getAccountType());
 		accountManager.addAccountExplicitly(acc, Encryptor.encrypt(refreshToken, passcodeHash), extras);
 		accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
@@ -252,7 +256,7 @@ public class ClientManager {
 	}
 	
 	/**
-	 * Should match the value in authenticator.xml.
+	 * Should match the value in authenticator.xml.12
 	 * @return The account type for this application.
 	 */
 	public String getAccountType() {
