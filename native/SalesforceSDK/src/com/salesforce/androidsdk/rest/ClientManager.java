@@ -227,13 +227,13 @@ public class ClientManager {
 	 * @param clientId
 	 * @param orgId
 	 * @param userId
+	 * @param passcodeHash
 	 * @return
 	 */
 	public Bundle createNewAccount(String accountName, String username, String refreshToken, String authToken,
-			String instanceUrl, String loginUrl, String clientId, String orgId, String userId) {
+			String instanceUrl, String loginUrl, String clientId, String orgId, String userId, String passcodeHash) {
 		
 		Bundle extras = new Bundle();
-		String passcodeHash = loginOptions == null ? null : loginOptions.passcodeHash;
 		extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
 		extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
 		extras.putString(AuthenticatorService.KEY_USERNAME, username);
@@ -455,7 +455,7 @@ public class ClientManager {
 		private static final String LOGIN_URL = "loginUrl";
 
 		public String loginUrl;
-		public final String passcodeHash;
+		public String passcodeHash;
 		public final String oauthCallbackUrl;
 		public final String oauthClientId;
 		public final String[] oauthScopes;

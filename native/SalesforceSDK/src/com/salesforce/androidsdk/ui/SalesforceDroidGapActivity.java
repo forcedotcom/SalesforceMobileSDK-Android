@@ -86,6 +86,14 @@ public class SalesforceDroidGapActivity extends DroidGap {
     
     @Override
     public void onResume() {
+		// Bring up passcode screen if needed
+		ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
+		
+		// Do nothing - when the app gets unlocked we will be back here
+		if (ForceApp.APP.getPasscodeManager().isLocked()) {
+			return;
+		}
+    	
     	if (SalesforceOAuthPlugin.shouldAutoRefreshOnForeground()) {
     		SalesforceOAuthPlugin.autoRefresh(appView, this);
     	}
@@ -100,6 +108,11 @@ public class SalesforceDroidGapActivity extends DroidGap {
     	CookieSyncManager.getInstance().stopSync();
     	super.onPause();
     }
+    
+	@Override
+	public void onUserInteraction() {
+		ForceApp.APP.getPasscodeManager().recordUserInteraction();
+	}
 
     @Override
     protected GapViewClient createWebViewClient() {

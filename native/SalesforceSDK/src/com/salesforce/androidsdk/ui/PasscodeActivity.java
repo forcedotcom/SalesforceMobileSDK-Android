@@ -43,7 +43,6 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 public class PasscodeActivity extends Activity implements OnEditorActionListener {
 
 	protected static final int MAX_PASSCODE_ATTEMPTS = 3;
-	protected static final int MIN_PASSCODE_LENGTH = 6;
 
 	private PasscodeMode currentMode;
 	private TextView title, instr, error;
@@ -232,7 +231,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 	 * @return minimum length of passcode
 	 */
 	protected int getMinPasscodeLength() {
-		return MIN_PASSCODE_LENGTH;
+		return passcodeManager.getMinPasscodeLength();
 	}
 	
 	/**

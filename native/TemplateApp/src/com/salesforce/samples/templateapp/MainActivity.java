@@ -101,7 +101,7 @@ public class MainActivity extends Activity {
 	@Override
 	public void onUserInteraction() {
 		/*
-		 * Un-comment this block if you usethe passcode screen
+		 * Un-comment this block if you use the passcode screen
 
 		ForceApp.APP.getPasscodeManager().recordUserInteraction();
 		

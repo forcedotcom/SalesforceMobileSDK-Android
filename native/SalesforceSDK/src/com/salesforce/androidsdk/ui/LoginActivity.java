@@ -59,6 +59,7 @@ import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.security.PasscodeManager;
 
 /**
  * Login Activity: takes care of authenticating the user.
@@ -80,8 +81,10 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 	
     private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
+	private boolean completedAuthFlow;
 	private WebView webView;
 	private LoginOptions loginOptions;
+	private AccountOptions accountOptions;
 
     /**************************************************************************************************
      *
@@ -132,6 +135,12 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 			webView.clearView();
 			loadLoginPage();
 			wasBackgrounded = false;
+		}
+		else if (completedAuthFlow) {
+			loginOptions.passcodeHash = ForceApp.APP.getPasscodeHash();
+			addAccount();
+			finish(); // truly done now
+			completedAuthFlow = false;
 		}
 	}
 
@@ -184,26 +193,50 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 	 * The last step is to call the identity service to get the username.
 	 */
 	protected void onAuthFlowComplete(TokenEndpointResponse tr) {
-		IdentityTask identityTask = new IdentityTask();
+		
+		IdServiceResponse id = null;
+		Exception exception = null;
+		
+		// Running identityTask to call identity service
 		try {
+			IdentityTask identityTask = new IdentityTask();
 			Pair<IdServiceResponse, Exception> idExec = identityTask.execute(tr).get();
-			IdServiceResponse id = idExec.first;
-			if (id != null) {
-				addAccount(id.username, tr.refreshToken, tr.authToken, tr.instanceUrl,
-						loginOptions.loginUrl, loginOptions.oauthClientId, tr.orgId, tr.userId);
-			}
-			else {
-				// Throws exception that took place in the background if any
-				throw idExec.second;
-			}				
-		} catch (Exception e) {
-			Log.w("LoginActiviy.onAuthFlowComplete", e);
+			id = idExec.first;
+			exception = idExec.second;
+		} catch(Exception e) {
+			exception = e;
+		}
+
+		// Identity service call failed
+		if (exception != null) {
+			Log.w("LoginActiviy.onAuthFlowComplete", exception);
 			onAuthFlowError(getString(salesforceR.stringGenericAuthenticationErrorTitle()),
 					getString(salesforceR.stringGenericAuthenticationErrorBody()));
+			finish();
+
+		}
+		// Identity service succeeded
+		else {
+			// Putting together all the information needed to create the new account
+			accountOptions = new AccountOptions(id.username, tr.refreshToken, tr.authToken, tr.instanceUrl, tr.orgId, tr.userId);
+			
+			// Screen lock required by mobile policy
+			if (id.screenLockTimeout > 0) {
+				PasscodeManager passcodeManager = ForceApp.APP.getPasscodeManager();
+				passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60 /* converting minutes to milliseconds*/);
+				passcodeManager.setMinPasscodeLength(id.pinLength);
+				
+				completedAuthFlow = true;
+				// This will bring up the create passcode screen - we will create the account in onResume
+				ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
+			}
+			// No screen lock required or no mobile policy specified
+			else {
+				addAccount();
+				finish();
+			}
 		}
 		
-		// Done
-		finish();
 	}
 
 	/**
@@ -241,8 +274,7 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 		}
 	}
 	
-	protected void addAccount(String username, String refreshToken, String authToken, String instanceUrl,
-			String loginUrl, String clientId, String orgId, String userId) {
+	protected void addAccount() {
 
 		ClientManager clientManager = new ClientManager(this, ForceApp.APP.getAccountType(), loginOptions);
 		
@@ -250,11 +282,21 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 		Account[] oldAccounts = clientManager.getAccounts();
 		
 		// Create account name (shown in Settings -> Accounts & sync)
-		String accountName = buildAccountName(username);
+		String accountName = buildAccountName(accountOptions.username);
 
 		// New account
-		Bundle extras = clientManager.createNewAccount(accountName, username, refreshToken, authToken, instanceUrl, loginUrl, clientId, orgId, userId);
-		setAccountAuthenticatorResult(extras);
+		Bundle extras = clientManager.createNewAccount(accountName,
+				accountOptions.username, 
+				accountOptions.refreshToken,
+				accountOptions.authToken, 
+				accountOptions.instanceUrl,
+				loginOptions.loginUrl, 
+				loginOptions.oauthClientId,
+				accountOptions.orgId, 
+				accountOptions.userId,
+				loginOptions.passcodeHash);
+		
+	setAccountAuthenticatorResult(extras);
 
 		// Remove old accounts
 		clientManager.removeAccounts(oldAccounts);
@@ -455,6 +497,31 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 
 		private UriFragmentParser() {
 			assert false : "don't construct me!";
+		}
+	}
+	
+	/**
+	 * Class encapsulating the parameters required to create a new account
+	 *
+	 */
+	public static class AccountOptions {
+		public final String username;
+		public final String refreshToken;
+		public final String authToken;
+		public final String instanceUrl;
+		public final String orgId;
+		public final String userId;
+		
+		public AccountOptions(String username, String refreshToken,
+				String authToken, String instanceUrl, String orgId,
+				String userId) {
+			super();
+			this.username = username;
+			this.refreshToken = refreshToken;
+			this.authToken = authToken;
+			this.instanceUrl = instanceUrl;
+			this.orgId = orgId;
+			this.userId = userId;
 		}
 	}
 }

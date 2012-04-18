@@ -26,10 +26,6 @@
  */
 package com.salesforce.androidsdk.security;
 
-import com.salesforce.androidsdk.ui.PasscodeActivity;
-import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -37,6 +33,10 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Handler;
 import android.util.Log;
+
+import com.salesforce.androidsdk.ui.PasscodeActivity;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 
 /**
@@ -47,6 +47,9 @@ import android.util.Log;
  *
  */
 public class PasscodeManager  {
+
+	// Default min passcode length
+	protected static final int MIN_PASSCODE_LENGTH = 6;
 
 	// Key in preference for the passcode
 	private static final String KEY_PASSCODE ="passcode";
@@ -67,6 +70,7 @@ public class PasscodeManager  {
 	private long lastActivity;
 	private boolean locked;
 	private int timeoutMs;
+	private int minPasscodeLength;
 
 	/**
 	 * @param ctx
@@ -76,6 +80,7 @@ public class PasscodeManager  {
 	 */
 	public PasscodeManager(Context ctx, int lockTimeoutMinutes,
 			HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
+		this.minPasscodeLength = MIN_PASSCODE_LENGTH;
 		this.timeoutMs = lockTimeoutMinutes * 60 * 1000;
 		this.lastActivity = now();
 		this.verificationHashConfig = verificationHashConfig;
@@ -207,6 +212,14 @@ public class PasscodeManager  {
 		return timeoutMs;
 	}
 	
+	public int getMinPasscodeLength() {
+		return minPasscodeLength;
+	}
+
+	public void setMinPasscodeLength(int minPasscodeLength) {
+		this.minPasscodeLength = minPasscodeLength;
+	}
+
 	public boolean shouldLock() {
 		return timeoutMs > 0 && now() >= (lastActivity + timeoutMs);
 	}
