@@ -127,7 +127,8 @@ public class ClientManager {
 		}
 
 		// OAuth tokens are stored encrypted
-		String passcodeHash = ForceApp.APP.getPasscodeHash(); // passcode might be created during login flow so loginOptions.passcodeHash could be outdated
+		// Passcode might be created during login flow so loginOptions.passcodeHash could be outdated
+		String passcodeHash = (ForceApp.APP == null /* only in tests */ ? loginOptions.passcodeHash : ForceApp.APP.getPasscodeHash());
 		Log.i("ClientManager.peekRestClient", "Decrypting with " + passcodeHash);
 		String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
 		String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), passcodeHash);

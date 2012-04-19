@@ -136,6 +136,7 @@ public class ExplorerActivity extends TabActivity {
 		findViewById(R.id.root).setVisibility(View.INVISIBLE);
 		
 		// Bring up passcode screen if needed
+		ForceApp.APP.getPasscodeManager().setEnabled(true);		
 		ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
 		
 		// Do nothing - when the app gets unlocked we will be back here
@@ -167,6 +168,14 @@ public class ExplorerActivity extends TabActivity {
 			}
 		});
 	}
+	
+	
+    @Override
+    public void onPause() {
+    	// Disable passcode manager when app is backgrounded    	
+    	ForceApp.APP.getPasscodeManager().setEnabled(false);
+    	super.onPause();
+    }
 	
 	@Override
 	public void onUserInteraction() {

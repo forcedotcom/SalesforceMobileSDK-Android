@@ -228,6 +228,7 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 				
 				completedAuthFlow = true;
 				// This will bring up the create passcode screen - we will create the account in onResume
+				ForceApp.APP.getPasscodeManager().setEnabled(true);
 				ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
 			}
 			// No screen lock required or no mobile policy specified

@@ -71,6 +71,7 @@ public class PasscodeManager  {
 	private boolean locked;
 	private int timeoutMs;
 	private int minPasscodeLength;
+	private boolean enabled;
 
 	/**
 	 * @param ctx
@@ -85,6 +86,7 @@ public class PasscodeManager  {
 		this.lastActivity = now();
 		this.verificationHashConfig = verificationHashConfig;
 		this.encryptionHashConfig = encryptionHashConfig;
+		this.enabled = true;
 
 		// Locked at app startup if you're authenticated
 		this.locked = true;
@@ -104,6 +106,20 @@ public class PasscodeManager  {
 		Editor e = sp.edit();
 		e.remove(KEY_PASSCODE);
 		e.commit();
+	}
+	
+	/**
+	 * Enable/disable passcode screen
+	 */
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+	
+	/**
+	 * @return true if passcode manager is enabled
+	 */
+	public boolean isEnabled() {
+		return enabled;
 	}
 	
 	/** 
@@ -183,7 +199,7 @@ public class PasscodeManager  {
 	public boolean lockIfNeeded(Activity newFrontActivity, boolean registerActivity) {
 		if (newFrontActivity != null)
 			frontActivity = newFrontActivity;
-		if (isLocked() || shouldLock()) {
+		if (isEnabled() && (isLocked() || shouldLock())) {
 			lock(frontActivity);
 			return true;
 		} else {
