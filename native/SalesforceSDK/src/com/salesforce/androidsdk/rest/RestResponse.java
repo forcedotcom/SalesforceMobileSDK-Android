@@ -24,7 +24,7 @@ import org.json.JSONObject;
 public class RestResponse {
 	
 	private final int statusCode;
-	private HttpResponse response;
+	private final HttpResponse response;
 	
 	// Lazily computed
 	private String responseAsString;
@@ -41,10 +41,17 @@ public class RestResponse {
 	}
 	
 	/**
-	 * @return HTTP status code of response
+	 * @return HTTP status code of the response
 	 */
 	public int getStatusCode() {
 		return statusCode; 
+	}
+	
+	/**
+	 * @return the base HTTP response of the response. The can be useful for response that are not JSON, such as binary payloads.
+	 */
+	public HttpResponse getHttpResponse() {
+		return response;
 	}
 	
 	/**
