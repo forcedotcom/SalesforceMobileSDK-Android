@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import android.accounts.AccountAuthenticatorActivity;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
@@ -111,7 +110,7 @@ public abstract class ForceApp extends Application {
      * @return the class of the activity used to perform the login process and create the account.
      * You can override this if you want to customize the LoginAcitivty 
      */
-    public Class<? extends AccountAuthenticatorActivity> getLoginActivityClass() {
+    public Class<? extends Activity> getLoginActivityClass() {
     	return LoginActivity.class;
     }
     
