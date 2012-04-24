@@ -28,8 +28,6 @@ package com.salesforce.androidsdk.ui;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLDecoder;
-import java.util.HashMap;
 import java.util.Map;
 
 import android.accounts.Account;
@@ -57,6 +55,7 @@ import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.util.UriFragmentParser;
 
 /**
  * Login Activity: takes care of authenticating the user.
@@ -409,48 +408,6 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 			}
 
 			return isDone;
-		}
-	}
-
-	/**
-	 * This parses a Uri fragment that uses a queryString style foo=bar&bar=foo
-	 * parameter passing (e.g. OAuth2)
-	 */
-	static class UriFragmentParser {
-
-		/**
-		 * look for # error fragments and standard url param errors, like the
-		 * user clicked deny on the auth page
-		 * 
-		 * @param uri
-		 * @return
-		 */
-		public static Map<String, String> parse(Uri uri) {
-			Map<String, String> retval = parse(uri.getEncodedFragment());
-			if (retval.size() == 0) {
-				retval = parse(uri.getEncodedQuery());
-			}
-			return retval;
-		}
-
-		public static Map<String, String> parse(String fragmentString) {
-			Map<String, String> res = new HashMap<String, String>();
-			if (fragmentString == null)
-				return res;
-			fragmentString = fragmentString.trim();
-			if (fragmentString.length() == 0)
-				return res;
-			String[] params = fragmentString.split("&");
-			for (String param : params) {
-				String[] parts = param.split("=");
-				res.put(URLDecoder.decode(parts[0]),
-						parts.length > 1 ? URLDecoder.decode(parts[1]) : "");
-			}
-			return res;
-		}
-
-		private UriFragmentParser() {
-			assert false : "don't construct me!";
 		}
 	}
 }
