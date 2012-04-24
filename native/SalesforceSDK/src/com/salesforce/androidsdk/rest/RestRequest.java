@@ -99,20 +99,26 @@ public class RestRequest {
 	private final RestMethod method;
 	private final String path;
 	private final HttpEntity requestEntity;
+	private final Map<String, String> additionalHttpHeaders;
 	
 	/**
 	 * Generic constructor for arbitrary requests.
 	 * 
-	 * @param method
-	 * @param path
-	 * @param requestEntity
+	 * @param method				the HTTP method for the request (GET/POST/DELETE etc)
+	 * @param path					the URI path, this will automatically be resolved against the users current instance host.
+	 * @param httpEntity			the request body if there is one, can be null.
 	 */
 	public RestRequest(RestMethod method, String path, HttpEntity requestEntity) {
+		this(method, path, requestEntity, null);
+	}
+
+	public RestRequest(RestMethod method, String path, HttpEntity requestEntity, Map<String, String> additionalHttpHeaders) {
 		this.method = method;
 		this.path = path;
 		this.requestEntity = requestEntity;
+		this.additionalHttpHeaders = additionalHttpHeaders;
 	}
-
+	
 	/**
 	 * @return HTTP method of the request.
 	 */
@@ -132,6 +138,10 @@ public class RestRequest {
 	 */
 	public HttpEntity getRequestEntity() {
 		return requestEntity;
+	}
+	
+	public Map<String, String> getAdditionalHttpHeaders() {
+		return additionalHttpHeaders;
 	}
 	
 	@Override
