@@ -161,28 +161,47 @@ public class RestClient {
 	 * @throws IOException 
 	 */
 	public RestResponse sendSync(RestRequest restRequest) throws IOException {
-		return sendSync(restRequest.getMethod(), restRequest.getPath(), restRequest.getRequestEntity());
+		return sendSync(restRequest.getMethod(), restRequest.getPath(), restRequest.getRequestEntity(), restRequest.getAdditionalHttpHeaders());
 	}
 
 	/**
 	 * Send an arbitrary HTTP request synchronously, using the given method, path and httpEntity.
 	 * Note: Cannot be used by code on the UI thread (use sendAsync instead).
-	 * @param method
-	 * @param path
-	 * @param httpEntity
-	 * @return
-	 * @throws IOException
+	 * 
+	 * @param method				the HTTP method for the request (GET/POST/DELETE etc)
+	 * @param path					the URI path, this will automatically be resolved against the users current instance host.
+	 * @param httpEntity			the request body if there is one, can be null.
+	 * @param additionalHttpHeaders additional HTTP headers to add the generated HTTP request, can be null.
+	 * @return 						a RestResponse instance that has information about the HTTP response returned by the server. 
 	 */
 	public RestResponse sendSync(RestMethod method, String path, HttpEntity httpEntity) throws IOException {
-		return sendSync(method, path, httpEntity, true);
+		return sendSync(method, path, httpEntity, null, true);
 	}
-	
-	private RestResponse sendSync(RestMethod method, String path, HttpEntity httpEntity, boolean retryInvalidToken) throws IOException {
+
+	/**
+	 * Send an arbitrary HTTP request synchronously, using the given method, path, httpEntity and additionalHttpHeaders.
+	 * Note: Cannot be used by code on the UI thread (use sendAsync instead).
+	 * 
+	 * @param method				the HTTP method for the request (GET/POST/DELETE etc)
+	 * @param path					the URI path, this will automatically be resolved against the users current instance host.
+	 * @param httpEntity			the request body if there is one, can be null.
+	 * @param additionalHttpHeaders additional HTTP headers to add the generated HTTP request, can be null.
+	 * @return 						a RestResponse instance that has information about the HTTP response returned by the server. 
+	 * 
+	 * @throws IOException
+	 */
+	public RestResponse sendSync(RestMethod method, String path, HttpEntity httpEntity, Map<String, String> additionalHttpHeaders) throws IOException {
+		return sendSync(method, path, httpEntity, additionalHttpHeaders, true);
+	}
+
+	private RestResponse sendSync(RestMethod method, String path, HttpEntity httpEntity, Map<String, String> additionalHttpHeaders, boolean retryInvalidToken) throws IOException {
 		Execution exec = null;
 
 		// Prepare headers
 		Map<String, String> headers = new HashMap<String, String>();
-		headers.put("Content-Type", "application/json");
+		if (additionalHttpHeaders != null) {
+			headers.putAll(additionalHttpHeaders);
+		}
 		if (getAuthToken() != null) {
 			headers.put("Authorization", "OAuth " + authToken);
 		}
@@ -217,7 +236,7 @@ public class RestClient {
 				if (newAuthToken != null) {
 					setAuthToken(newAuthToken);
 					// Retry with the new authToken
-					return sendSync(method, path, httpEntity, false);
+					return sendSync(method, path, httpEntity, additionalHttpHeaders, false);
 				}
 			}
 		}
