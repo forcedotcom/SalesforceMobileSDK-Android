@@ -189,7 +189,7 @@ public class OAuthWebviewHelper {
 	 * We also update the window title, so its easier to 
 	 * see which system you're logging in to
 	 */
-	protected void loadLoginPage() {
+	public void loadLoginPage() {
 		// Filling in loginUrl
 		loginOptions.loginUrl = getLoginUrl();
 

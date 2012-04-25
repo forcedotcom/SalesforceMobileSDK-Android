@@ -62,7 +62,6 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
     private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
 	private OAuthWebviewHelper webviewHelper;
-	private LoginOptions loginOptions;
 
     /**************************************************************************************************
      *
@@ -78,7 +77,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 		salesforceR = ForceApp.APP.getSalesforceR();
 		
 		// Getting login options from intent's extras
-		loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
+		LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 		
 		// We'll show progress in the window title bar
 		getWindow().requestFeature(Window.FEATURE_PROGRESS);
