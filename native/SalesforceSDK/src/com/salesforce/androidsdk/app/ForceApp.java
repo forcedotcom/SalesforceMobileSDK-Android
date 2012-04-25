@@ -53,6 +53,7 @@ import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
 import com.salesforce.androidsdk.store.DBOperations;
 import com.salesforce.androidsdk.store.Database;
 import com.salesforce.androidsdk.store.SmartStore;
+import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -72,6 +73,46 @@ public abstract class ForceApp extends Application {
      * Instance of the ForceApp to use for this process.
      */
     public static ForceApp APP;
+    
+
+	/**************************************************************************************************
+	 * 
+	 * Abstract methods: to be implemented by subclass
+	 * 
+	 **************************************************************************************************/
+    
+    /**
+	 * Note: If you return 0, the user will not have to enter a passcode.
+	 * @return The lock timeout in minutes, or 0 for never.
+	 */
+	public abstract int getLockTimeoutMinutes();
+	
+    /**
+     * @return The class for the main activity.
+     */
+	public abstract Class<? extends Activity> getMainActivityClass();
+	
+    /**
+     * @return SalesforceR object which allows reference to resources living outside the SDK.
+     */
+    public abstract SalesforceR getSalesforceR();
+	
+	/**
+	 * This function must return the same value for name even when the application is restarted.
+	 * @param name The name associated with they key.
+	 * @return The key used for encrypting salts and keys.
+	 */
+    protected abstract String getKey(String name);
+
+	/**************************************************************************************************/
+
+    /**
+     * @return the class of the activity used to perform the login process and create the account.
+     * You can override this if you want to customize the LoginAcitivty 
+     */
+    public Class<? extends Activity> getLoginActivityClass() {
+    	return LoginActivity.class;
+    }
     
     // passcode manager
     private PasscodeManager passcodeManager;
@@ -241,37 +282,4 @@ public abstract class ForceApp extends Application {
 		}
 		return Encryptor.decrypt(sp.getString(name, null), getKey(name));
 	}
-
-	
-	
-	/**************************************************************************************************
-	 * 
-	 * Abstract methods: to be implemented by subclass
-	 * 
-	 **************************************************************************************************/
-    
-    /**
-	 * Note: If you return 0, the user will not have to enter a passcode.
-	 * @return The lock timeout in minutes, or 0 for never.
-	 *  
-	 */
-	public abstract int getLockTimeoutMinutes();
-	
-    /**
-     * @return The class for the main activity.
-     */
-	public abstract Class<? extends Activity> getMainActivityClass();
-	
-    /**
-     * @return SalesforceR object which allows reference to resources living outside the SDK.
-     */
-    public abstract SalesforceR getSalesforceR();
-	
-	/**
-	 * This function must return the same value for name even when the application is restarted.
-	 * @param name The name associated with they key.
-	 * @return The key used for encrypting salts and keys.
-	 */
-    protected abstract String getKey(String name);
-
 }
