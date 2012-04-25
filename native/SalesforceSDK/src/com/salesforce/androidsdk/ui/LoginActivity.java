@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,45 +26,28 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URLDecoder;
-import java.util.HashMap;
-import java.util.Map;
-
-import android.accounts.Account;
 import android.accounts.AccountAuthenticatorActivity;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
-import android.webkit.CookieManager;
-import android.webkit.WebChromeClient;
 import android.webkit.WebView;
-import android.webkit.WebViewClient;
-import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
-import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
 
 /**
  * Login Activity: takes care of authenticating the user.
  * Authorization happens inside a web view. Once we get our authorization code,
  * we swap it for an access and refresh token a create an account through the
  * account manager to store them.
+ * 
+ * The bulk of the work for this is actually managed by OAuthWebviewHelper class.
  */
-public class LoginActivity extends AccountAuthenticatorActivity {
+public class LoginActivity extends AccountAuthenticatorActivity implements OAuthWebviewHelperEvents {
 
 	// Key for login servers properties stored in preferences
 	public static final String SERVER_URL_PREFS_SETTINGS = "server_url_prefs";
@@ -78,8 +61,7 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 	
     private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
-	private WebView webView;
-	private LoginOptions loginOptions;
+	private OAuthWebviewHelper webviewHelper;
 
     /**************************************************************************************************
      *
@@ -95,7 +77,7 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 		salesforceR = ForceApp.APP.getSalesforceR();
 		
 		// Getting login options from intent's extras
-		loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
+		LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 		
 		// We'll show progress in the window title bar
 		getWindow().requestFeature(Window.FEATURE_PROGRESS);
@@ -105,30 +87,17 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 		setContentView(salesforceR.layoutLogin());
 
 		// Setup the WebView.
-		webView = (WebView) findViewById(salesforceR.idLoginWebView());
-		webView.getSettings().setJavaScriptEnabled(true);
-		webView.setWebViewClient(new AuthWebViewClient());
-		webView.setWebChromeClient(new AuthWebChromeClient());
-
-		// Restore webview's state if available.
-		// This ensures the user is not forced to type in credentials again
-		// once the auth process has been kicked off.
-		if (savedInstanceState != null) {
-			webView.restoreState(savedInstanceState);
-		}
-		// Otherwise start clean
-		else {
-			clearCookies();
-		}
-		loadLoginPage();
+		WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
+		webviewHelper = new OAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
+		webviewHelper.loadLoginPage();
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
 		if (wasBackgrounded) {
-			webView.clearView();
-			loadLoginPage();
+			webviewHelper.clearView();
+			webviewHelper.loadLoginPage();
 			wasBackgrounded = false;
 		}
 	}
@@ -136,7 +105,7 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 	@Override
 	public void onSaveInstanceState(Bundle bundle) {
 		super.onSaveInstanceState(bundle);
-		webView.saveState(bundle);
+		webviewHelper.saveState(bundle);
 	}
 
 	@Override
@@ -151,128 +120,32 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 
     /**************************************************************************************************
      *
-     * Authentication flow 
+     * Callbacks from the OAuthWebviewHelper 
      * 
      **************************************************************************************************/
 	
-	/**
-	 * Tells the webview to load the authorization page. 
-	 * We also update the window title, so its easier to 
-	 * see which system you're logging in to
-	 */
-	protected void loadLoginPage() {
-		// Filling in loginUrl
-		loginOptions.loginUrl = getLoginUrl();
-
-		try {
-			URI uri = OAuth2.getAuthorizationUrl(
-			        new URI(loginOptions.loginUrl), 
-			        loginOptions.oauthClientId, 
-			        loginOptions.oauthCallbackUrl,
-			        loginOptions.oauthScopes);
-			setTitle(loginOptions.loginUrl);
-			webView.loadUrl(uri.toString());
-		} catch (URISyntaxException ex) {
-			showError(ex);
-		}
+	@Override
+	public void loadingLoginPage(String loginUrl) {
+		setTitle(loginUrl);
 	}
 
-	/**
-	 * Called when the user facing part of the auth flow completed successfully.
-	 * The last step is to call the identity service to get the username.
-	 */
-	protected void onAuthFlowComplete(TokenEndpointResponse tr) {
-		FinishAuthTask t = new FinishAuthTask();
-		t.execute(tr);
+	@Override
+	public void onLoadingProgress(int totalProgress) {
+		onIndeterminateProgress(false);
+		setProgress(totalProgress);
 	}
 
-	/**
-	 * Called when the user facing part of the auth flow completed with an error.
-	 * We show the user an error and end the activity.
-	 */
-	protected void onAuthFlowError(String error, String errorDesc) {
-		Log.w("AbstractLoginActivity:onAuthFlowError", error + ":" + errorDesc);
-
-		// look for deny. kick them back to login, so clear cookies and repoint browser
-		if ("access_denied".equals(error)
-				&& "end-user denied authorization".equals(errorDesc)) {
-
-			webView.post(new Runnable() {
-				@Override
-				public void run() {
-					clearCookies();
-					loadLoginPage();
-				}
-			});
-
-		} else {
-
-			Toast t = Toast.makeText(this, error + " : " + errorDesc,
-					Toast.LENGTH_LONG);
-
-			webView.postDelayed(new Runnable() {
-				@Override
-				public void run() {
-					finish();
-				}
-			}, t.getDuration());
-			t.show();
-
-		}
-	}
-	
-	protected void addAccount(String username, String refreshToken, String authToken, String instanceUrl,
-			String loginUrl, String clientId, String orgId, String userId) {
-
-		ClientManager clientManager = new ClientManager(this, ForceApp.APP.getAccountType(), loginOptions);
-		
-		// Old account
-		Account[] oldAccounts = clientManager.getAccounts();
-		
-		// Create account name (shown in Settings -> Accounts & sync)
-		String accountName = buildAccountName(username);
-
-		// New account
-		Bundle extras = clientManager.createNewAccount(accountName, username, refreshToken, authToken, instanceUrl, loginUrl, clientId, orgId, userId);
-		setAccountAuthenticatorResult(extras);
-
-		// Remove old accounts
-		clientManager.removeAccounts(oldAccounts);
+	@Override
+	public void onIndeterminateProgress(boolean show) {
+		setProgressBarIndeterminateVisibility(show);
+		setProgressBarIndeterminate(show);
 	}
 
-	/**
-	 * Override this method to customize the login url.
-	 * @return login url
-	 */
-	protected String getLoginUrl() {
-		SharedPreferences settings = getSharedPreferences(
-				SERVER_URL_PREFS_SETTINGS, Context.MODE_PRIVATE);
-
-		return settings.getString(SERVER_URL_CURRENT_SELECTION, OAuth2.DEFAULT_LOGIN_URL);
-	}    
-	
-	
-    /**************************************************************************************************
-     *
-     * Misc
-     * 
-     **************************************************************************************************/
-	
-	protected void showError(Exception exception) {
-		Toast.makeText(this,
-				getString(salesforceR.stringGenericError(), exception.toString()),
-				Toast.LENGTH_LONG).show();
+	@Override
+	public void onAccountAuthenticatorResult(Bundle authResult) {
+		setAccountAuthenticatorResult(authResult);
 	}
-
-    /**
-     * Return name to be shown for account in Settings -> Accounts & Sync
-     * @param username
-     * @return
-     */
-    protected String buildAccountName(String username) {
-    	return String.format("%s (%s)", username, ForceApp.APP.getApplicationName());
-    }
-
+ 
     
     /**************************************************************************************************
      *
@@ -286,15 +159,10 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 	 * @param v
 	 */
 	public void onClearCookiesClick(View v) {
-		clearCookies();
-		loadLoginPage();
+		webviewHelper.clearCookies();
+		webviewHelper.loadLoginPage();
 	}
 
-	protected void clearCookies() {
-		CookieManager cm = CookieManager.getInstance();
-		cm.removeAllCookie();
-	}
-	
 	/**
 	 * Called when "Pick server" button is clicked.
 	 * Start ServerPickerActivity
@@ -305,152 +173,17 @@ public class LoginActivity extends AccountAuthenticatorActivity {
 	    startActivityForResult(i, PICK_SERVER_CODE);
 	}
 	
-	/*
+	/**
 	 * Called when ServerPickerActivity completes.
 	 * Reload login page.
 	 */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (requestCode == PICK_SERVER_CODE && resultCode == Activity.RESULT_OK) {
-            loadLoginPage();
+			webviewHelper.loadLoginPage();
 		}
 		else {
 	        super.onActivityResult(requestCode, resultCode, data);
 	    }
-	}
-	
-	/**************************************************************************************************
-	 * 
-	 * Helper inner classes
-	 * 
-	 **************************************************************************************************/
-	
-	/**
-	 * Background task that takes care of finishing the authentication flow
-	 */
-	protected class FinishAuthTask extends
-			AsyncTask<TokenEndpointResponse, Boolean, Exception> {
-
-		@Override
-		protected final Exception doInBackground(
-				TokenEndpointResponse... params) {
-			try {
-				publishProgress(true);
-
-				TokenEndpointResponse tr= params[0];
-				String username = OAuth2.getUsernameFromIdentityService(
-					HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
-				addAccount(username, tr.refreshToken, tr.authToken, tr.instanceUrl,
-						loginOptions.loginUrl, loginOptions.oauthClientId, tr.orgId, tr.userId);
-				
-			} catch (Exception ex) {
-				return ex;
-			}
-			
-			return null;
-		}
-
-		@Override
-		protected void onPostExecute(Exception ex) {
-			if (ex != null) {
-				// Error
-				onAuthFlowError(getString(salesforceR.stringGenericAuthenticationErrorTitle()),
-						getString(salesforceR.stringGenericAuthenticationErrorBody()));
-			} else {
-				// Done
-				finish();
-			}
-		}
-
-		@Override
-		protected void onProgressUpdate(Boolean... values) {
-			setProgressBarIndeterminateVisibility(values[0]);
-			setProgressBarIndeterminate(values[0]);
-		}
-	}
-
-	/**
-	 * WebChromeClient used to report back progress.
-	 *
-	 */
-	class AuthWebChromeClient extends WebChromeClient {
-
-		@Override
-		public void onProgressChanged(WebView view, int newProgress) {
-			setProgress(newProgress * 100);
-		}
-	}
-
-	/**
-	 * WebViewClient which intercepts the redirect to the oauth callback url.
-	 * That redirect marks the end of the user facing portion of the authentication flow.
-	 *
-	 */
-	class AuthWebViewClient extends WebViewClient {
-		@Override
-		public boolean shouldOverrideUrlLoading(WebView view, String url) {
-			boolean isDone = url.startsWith(loginOptions.oauthCallbackUrl);
-			
-			if (isDone) {
-				Uri callbackUri = Uri.parse(url);
-				Map<String, String> params = UriFragmentParser.parse(callbackUri);
-				
-				String error = params.get("error");
-				// Did we fail?
-				if (error != null) {
-					String errorDesc = params.get("error_description");
-					onAuthFlowError(error, errorDesc);
-				}
-				// Or succeed?
-				else {
-					TokenEndpointResponse tr = new TokenEndpointResponse(params);
-					onAuthFlowComplete(tr);
-				}
-			}
-
-			return isDone;
-		}
-	}
-
-	/**
-	 * This parses a Uri fragment that uses a queryString style foo=bar&bar=foo
-	 * parameter passing (e.g. OAuth2)
-	 */
-	static class UriFragmentParser {
-
-		/**
-		 * look for # error fragments and standard url param errors, like the
-		 * user clicked deny on the auth page
-		 * 
-		 * @param uri
-		 * @return
-		 */
-		public static Map<String, String> parse(Uri uri) {
-			Map<String, String> retval = parse(uri.getEncodedFragment());
-			if (retval.size() == 0) {
-				retval = parse(uri.getEncodedQuery());
-			}
-			return retval;
-		}
-
-		public static Map<String, String> parse(String fragmentString) {
-			Map<String, String> res = new HashMap<String, String>();
-			if (fragmentString == null)
-				return res;
-			fragmentString = fragmentString.trim();
-			if (fragmentString.length() == 0)
-				return res;
-			String[] params = fragmentString.split("&");
-			for (String param : params) {
-				String[] parts = param.split("=");
-				res.put(URLDecoder.decode(parts[0]),
-						parts.length > 1 ? URLDecoder.decode(parts[1]) : "");
-			}
-			return res;
-		}
-
-		private UriFragmentParser() {
-			assert false : "don't construct me!";
-		}
 	}
 }
