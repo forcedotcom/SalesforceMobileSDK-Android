@@ -59,7 +59,7 @@ import org.json.JSONObject;
  * 
  */
 public class RestRequest {
-	
+
 	/**
 	 * Enumeration for all HTTP methods.
 	 *
@@ -357,8 +357,13 @@ public class RestRequest {
 	 */
 	private static StringEntity prepareFieldsData(Map<String, Object> fields)
 			throws UnsupportedEncodingException {
-		return (fields == null ? null : new StringEntity(new JSONObject(fields).toString(), HTTP.UTF_8));
+		if (fields == null) {
+			return null;
+		}
+		else {
+			StringEntity entity = new StringEntity(new JSONObject(fields).toString(), HTTP.UTF_8);
+			entity.setContentType("application/json"); 
+			return entity;
+		}
 	}
-
-	
 }
