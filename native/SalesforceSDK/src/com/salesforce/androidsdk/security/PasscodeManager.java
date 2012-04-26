@@ -57,6 +57,9 @@ public class PasscodeManager  {
 	// Private preference where we stored the passcode (hashed)
 	private static final String PREF_NAME = "user";
 
+	// Request code used to start passcode activity
+	public static final int PASSCODE_REQUEST_CODE = 777;
+
 	// this is a hash of the passcode to be used as part of the key to encrypt/decrypt oauth tokens 
 	// It's using a different salt/key than the one used to verify the entry
 	private String passcodeHash;
@@ -245,7 +248,12 @@ public class PasscodeManager  {
 		Intent i = new Intent(ctx, PasscodeActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
 		i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-		ctx.startActivity(i);
+		if (ctx instanceof Activity) {
+			((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
+		}
+		else {
+			ctx.startActivity(i);
+		}
 	}
 
 	public void unlock(String passcode) {

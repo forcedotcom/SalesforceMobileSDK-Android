@@ -135,7 +135,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 			if (enteredPasscode.equals(firstPasscode)) {
 				passcodeManager.store(this, enteredPasscode);
 				passcodeManager.unlock(enteredPasscode);
-				finish();
+				done();
 			}
 			else {
 				error.setText(getPasscodesDontMatchError());
@@ -145,7 +145,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 		case Check:
 			if (passcodeManager.check(this, enteredPasscode)) {
 				passcodeManager.unlock(enteredPasscode);
-				finish();
+				done();
 			} else {
 				int attempts = passcodeManager.addFailedPasscodeAttempt();
 				
@@ -166,6 +166,11 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 		}
 		return false;
     }
+
+	protected void done() {
+		setResult(RESULT_OK);
+		finish();
+	}
 
 	protected int getLayoutId() {
 		return salesforceR.layoutPasscode();
