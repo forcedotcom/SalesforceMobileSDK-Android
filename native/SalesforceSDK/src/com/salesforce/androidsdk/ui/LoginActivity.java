@@ -37,6 +37,7 @@ import android.webkit.WebView;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
 
 /**
@@ -57,7 +58,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	public static final String SERVER_URL_CURRENT_SELECTION = "server_url_current_string";
 	
 	// Request code when calling server picker activity
-    public static final int PICK_SERVER_CODE = 10;	
+    public static final int PICK_SERVER_REQUEST_CODE = 10;	
 	
     private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
@@ -92,6 +93,8 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 		webviewHelper.loadLoginPage();
 	}
 
+	
+	
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -145,8 +148,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	public void onAccountAuthenticatorResult(Bundle authResult) {
 		setAccountAuthenticatorResult(authResult);
 	}
- 
-    
+	
     /**************************************************************************************************
      *
      * Buttons click handlers
@@ -170,7 +172,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	 */
 	public void onPickServerClick(View v) {
 		Intent i = new Intent(this, ServerPickerActivity.class);
-	    startActivityForResult(i, PICK_SERVER_CODE);
+	    startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
 	}
 	
 	/**
@@ -179,8 +181,11 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	 */
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		if (requestCode == PICK_SERVER_CODE && resultCode == Activity.RESULT_OK) {
+		if (requestCode == PICK_SERVER_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
 			webviewHelper.loadLoginPage();
+		}
+		else if (requestCode == PasscodeManager.PASSCODE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+			webviewHelper.onNewPasscode();
 		}
 		else {
 	        super.onActivityResult(requestCode, resultCode, data);

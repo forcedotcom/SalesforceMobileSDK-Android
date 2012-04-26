@@ -35,6 +35,7 @@ import android.webkit.WebSettings;
 import com.phonegap.DroidGap;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
+import com.salesforce.androidsdk.security.PasscodeManager;
 
 /**
  * Class that defines the main activity for a PhoneGap-based application.
@@ -43,13 +44,19 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	
 	// For periodic auto-refresh - every 10 minutes
     private static final long AUTO_REFRESH_PERIOD_MILLISECONDS = 10*60*1000;
-	private Handler periodicAutoRefreshHandler;
+
+    private Handler periodicAutoRefreshHandler;
 	private PeriodicAutoRefresher periodicAutoRefresher;
+	private PasscodeManager passcodeManager;
 	
 	/** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+		// Passcode manager
+		passcodeManager = ForceApp.APP.getPasscodeManager();		
+		
     	// Ensure we have a CookieSyncManager
     	CookieSyncManager.createInstance(this);
         
@@ -86,20 +93,31 @@ public class SalesforceDroidGapActivity extends DroidGap {
     
     @Override
     public void onResume() {
-    	if (SalesforceOAuthPlugin.shouldAutoRefreshOnForeground()) {
-    		SalesforceOAuthPlugin.autoRefresh(appView, this);
+    	if (passcodeManager.onResume(this)) {
+	    	if (SalesforceOAuthPlugin.shouldAutoRefreshOnForeground()) {
+	    		SalesforceOAuthPlugin.autoRefresh(appView, this);
+	    	}
+	    	schedulePeriodicAutoRefresh();
+	    	CookieSyncManager.getInstance().startSync();
     	}
-    	schedulePeriodicAutoRefresh();
-    	CookieSyncManager.getInstance().startSync();    	
-    	super.onResume();
+    	
+		super.onResume();
     }
     
     @Override
     public void onPause() {
+    	passcodeManager.onPause(this);
+
+    	// Disable session refresh when app is backgrounded
     	unschedulePeriodicAutoRefresh();
     	CookieSyncManager.getInstance().stopSync();
     	super.onPause();
     }
+    
+	@Override
+	public void onUserInteraction() {
+		passcodeManager.recordUserInteraction();
+	}
 
     @Override
     protected GapViewClient createWebViewClient() {

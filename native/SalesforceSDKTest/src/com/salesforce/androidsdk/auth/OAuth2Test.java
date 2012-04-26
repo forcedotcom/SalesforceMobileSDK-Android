@@ -42,6 +42,7 @@ import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.HttpAccess.Execution;
+import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 
@@ -182,7 +183,7 @@ public class OAuth2Test extends InstrumentationTestCase {
 	}
 	
 	/**
-	 * Testing getUsernameFromIdentityService
+	 * Testing callIdentityService
 	 * 
 	 * Call refresh token then call out to identity service and check that username returned match the one in TestCredentials
 	 * 
@@ -190,14 +191,16 @@ public class OAuth2Test extends InstrumentationTestCase {
 	 * @throws OAuthFailedException
 	 * @throws URISyntaxException
 	 */
-	public void testGetUsernameFromIdentiyService() throws IOException, OAuthFailedException, URISyntaxException {
+	public void testCallIdentiyService() throws IOException, OAuthFailedException, URISyntaxException {
 		// Get an auth token using the refresh token
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
 		assertNotNull("Auth token should not be null", refreshResponse.authToken);
 
 		// Now let's call the identity service
-		String username = OAuth2.getUsernameFromIdentityService(httpAccess, TestCredentials.INSTANCE_URL + "/id/" + TestCredentials.ORG_ID + "/" + TestCredentials.USER_ID, refreshResponse.authToken);
-		assertEquals("Wrong username returned", TestCredentials.USERNAME, username);
+		IdServiceResponse id = OAuth2.callIdentityService(httpAccess, TestCredentials.INSTANCE_URL + "/id/" + TestCredentials.ORG_ID + "/" + TestCredentials.USER_ID, refreshResponse.authToken);
+		assertEquals("Wrong username returned", TestCredentials.USERNAME, id.username);
+		assertEquals("Wrong pinLength returned", -1, id.pinLength);
+		assertEquals("Wrong screenLockTimeout returned", -1, id.screenLockTimeout);
 	}
 	
 }

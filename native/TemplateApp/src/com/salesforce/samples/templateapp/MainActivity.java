@@ -61,6 +61,7 @@ public class MainActivity extends Activity {
 		 * Un-comment this block to have the passcode screen
 		
 		// Bring up passcode screen if needed
+		ForceApp.APP.getPasscodeManager().setEnabled(true); 
 		ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
 		
 		// Do nothing - when the app gets unlocked we will be back here
@@ -97,16 +98,25 @@ public class MainActivity extends Activity {
 			}
 		});
 	}
+
+	/*
+	 * Un-comment this block if you use the passcode screen
 	
 	@Override
 	public void onUserInteraction() {
-		/*
-		 * Un-comment this block if you usethe passcode screen
 
 		ForceApp.APP.getPasscodeManager().recordUserInteraction();
-		
-		*/
 	}
+	
+    @Override
+    public void onPause() {
+    	// Disable passcode manager when app is backgrounded    	
+    	ForceApp.APP.getPasscodeManager().setEnabled(false);
+    	super.onPause();
+    }
+		
+	*/
+	
 
 	/**
 	 * Called when "Logout" button is clicked. 
