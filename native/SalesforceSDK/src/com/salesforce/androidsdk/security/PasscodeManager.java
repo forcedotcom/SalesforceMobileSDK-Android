@@ -219,6 +219,36 @@ public class PasscodeManager  {
 			frontActivity = null;
 	}
 	
+	
+	/**
+	 * To be called by passcode protected activity when being paused
+	 */
+	public void onPause(Activity ctx) {
+    	// Disable passcode manager
+		setEnabled(false);
+	}
+
+	/**
+	 * To be called by passcode protected activity when being resumed
+	 * When passcode screen is about to be shown, false is returned, the activity will be resumed once 
+	 * the user has successfully enter her passcode
+	 *
+	 * @return true if the resume should be allowed to continue and false otherwise
+	 */
+	public boolean onResume(Activity ctx) {
+    	// Enable passcode manager
+    	setEnabled(true);
+    	
+		// Bring up passcode screen if needed
+		lockIfNeeded(ctx, true);
+		
+		// If locked, do nothing - when the app gets unlocked we will be back here
+		return isLocked();
+	}
+	
+	/**
+	 * To be called by passcode protected activity whenever there is a user interaction
+	 */
 	public void recordUserInteraction() {
 		updateLast();
 	}

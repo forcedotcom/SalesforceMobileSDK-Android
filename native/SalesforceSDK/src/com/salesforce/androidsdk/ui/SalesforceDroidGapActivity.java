@@ -86,29 +86,21 @@ public class SalesforceDroidGapActivity extends DroidGap {
     
     @Override
     public void onResume() {
-    	// Enable passcode manager
-    	ForceApp.APP.getPasscodeManager().setEnabled(true);
-    	
-		// Bring up passcode screen if needed
-		ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
-		
-		// Do nothing - when the app gets unlocked we will be back here
-		if (ForceApp.APP.getPasscodeManager().isLocked()) {
-			return;
-		}
-    	
-    	if (SalesforceOAuthPlugin.shouldAutoRefreshOnForeground()) {
-    		SalesforceOAuthPlugin.autoRefresh(appView, this);
+    	if (ForceApp.APP.getPasscodeManager().onResume(this)) {
+	    	if (SalesforceOAuthPlugin.shouldAutoRefreshOnForeground()) {
+	    		SalesforceOAuthPlugin.autoRefresh(appView, this);
+	    	}
+	    	schedulePeriodicAutoRefresh();
+	    	CookieSyncManager.getInstance().startSync();
     	}
-    	schedulePeriodicAutoRefresh();
-    	CookieSyncManager.getInstance().startSync();    	
-    	super.onResume();
+    	
+		super.onResume();
     }
     
     @Override
     public void onPause() {
-    	// Disable passcode manager when app is backgrounded    	
-    	ForceApp.APP.getPasscodeManager().setEnabled(false);
+    	ForceApp.APP.getPasscodeManager().onPause(this);
+
     	// Disable session refresh when app is backgrounded
     	unschedulePeriodicAutoRefresh();
     	CookieSyncManager.getInstance().stopSync();
