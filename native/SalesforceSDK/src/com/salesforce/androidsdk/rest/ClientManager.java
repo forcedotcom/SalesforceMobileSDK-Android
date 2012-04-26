@@ -129,7 +129,6 @@ public class ClientManager {
 		// OAuth tokens are stored encrypted
 		// Passcode might be created during login flow so loginOptions.passcodeHash could be outdated
 		String passcodeHash = (ForceApp.APP == null /* only in tests */ ? loginOptions.passcodeHash : ForceApp.APP.getPasscodeHash());
-		Log.i("ClientManager.peekRestClient", "Decrypting with " + passcodeHash);
 		String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
 		String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), passcodeHash);
 		
@@ -248,7 +247,6 @@ public class ClientManager {
 		extras.putString(AuthenticatorService.KEY_USER_ID, userId);
 		extras.putString(AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, passcodeHash));
 
-		Log.i("ClientManager.peekRestClient", "Encrypting with " + passcodeHash);
 		Account acc = new Account(accountName, getAccountType());
 		accountManager.addAccountExplicitly(acc, Encryptor.encrypt(refreshToken, passcodeHash), extras);
 		accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
