@@ -243,7 +243,7 @@ public class PasscodeManager  {
 		lockIfNeeded(ctx, true);
 		
 		// If locked, do nothing - when the app gets unlocked we will be back here
-		return isLocked();
+		return !isLocked();
 	}
 	
 	/**
