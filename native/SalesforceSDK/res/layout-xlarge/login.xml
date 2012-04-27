@@ -1,17 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
- Copyright 2011 Salesforce.com.
- All Rights Reserved.
- Company Confidential.
--->
-
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/oauth_background"
     android:orientation="vertical" >
 
-    <include layout="@layout/auth_header" />
+    <include layout="@layout/login_header" />
 
     <ScrollView
         android:layout_width="match_parent"
@@ -35,9 +29,9 @@
                 <TextView
                     android:layout_width="408dp"
                     android:layout_height="51dp"
-                    android:background="@drawable/auth_content_header"
+                    android:background="@drawable/login_content_header"
                     android:gravity="center_horizontal|center_vertical"
-                    android:text="@string/sign_in"
+                    android:text="@string/login_title"
                     android:textColor="#ffffff"
                     android:textSize="20sp"
                     android:textStyle="bold" />

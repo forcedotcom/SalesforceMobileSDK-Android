@@ -43,6 +43,10 @@ public class SalesforceR {
 	public int stringGenericError() { return -1; }
 	public int stringGenericAuthenticationErrorTitle() { return -1; }
 	public int stringGenericAuthenticationErrorBody() { return -1; }
+	public int menuLogin() { return -1; }
+	public int idItemClearCookies() { return -1; }
+	public int idItemPickServer() { return -1; }
+	public int idItemReload() { return -1; }
 	/* Passcode */
 	public int layoutPasscode() { return -1; }
 	public int idPasscodeTitle() { return -1; }

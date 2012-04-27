@@ -1,0 +1,5 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<item android:id="@+id/menu_server" android:title="@string/login_server" />
+<item android:id="@+id/menu_cookies" android:title="@string/login_cookies" />
+<item android:id="@+id/menu_reload" android:title="@string/reload" />
+</menu>

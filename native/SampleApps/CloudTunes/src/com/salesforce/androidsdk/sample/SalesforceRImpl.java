@@ -41,6 +41,10 @@ public class SalesforceRImpl extends SalesforceR {
 	public int stringGenericError() {return R.string.generic_error; }
 	public int stringGenericAuthenticationErrorTitle() {return R.string.generic_authentication_error_title; } 
 	public int stringGenericAuthenticationErrorBody() {return R.string.generic_authentication_error; }
+	public int menuLogin() { return R.menu.login; }
+	public int idItemClearCookies() { return R.id.menu_clear_cookies; }
+	public int idItemPickServer() { return R.id.menu_pick_server; }
+	public int idItemReload() { return R.id.menu_reload; }
 	/* Passcode */
 	public int layoutPasscode() {return R.layout.passcode; }
 	public int idPasscodeTitle() {return R.id.passcode_title; }

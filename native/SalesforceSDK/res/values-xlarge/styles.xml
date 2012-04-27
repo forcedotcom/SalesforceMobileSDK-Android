@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Text">
+    </style>
+
+     <style name="Text.HeaderOptions">
+        <item name="android:textColor">#656B71</item>
+    	<item name="android:textSize">18sp</item>
+    </style>
+
+</resources>

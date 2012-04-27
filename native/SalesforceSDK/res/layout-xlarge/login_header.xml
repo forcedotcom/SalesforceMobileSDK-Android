@@ -1,11 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<!-- 
- Copyright 2011 Salesforce.com.
- All Rights Reserved.
- Company Confidential.
- -->
-
 <LinearLayout
 		xmlns:android="http://schemas.android.com/apk/res/android"
 		android:orientation="vertical"
@@ -36,7 +29,7 @@
 				<ImageView android:id="@+id/reload_page" android:src="@drawable/header_refresh_states"
 					android:layout_width="60dp" android:layout_height="fill_parent"
 					android:scaleType="fitCenter" android:layout_alignParentRight="true"
-					android:clickable="true" android:onClick="onReload" />
+					android:clickable="true" android:onClick="onReloadClick" />
 					
 				<LinearLayout 
 					android:id="@+id/seperator"
@@ -60,7 +53,7 @@
 				
 				<TextView 
 					android:id="@+id/clear_cookies"
-					android:text="@string/login_cookies"
+					android:text="@string/clear_cookies"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					style="@style/Text.HeaderOptions" 
@@ -68,7 +61,7 @@
 					android:layout_centerVertical="true"
 					android:layout_toLeftOf="@id/seperator"
 					android:clickable="true"
-					android:onClick="onClearCookies"/>
+					android:onClick="onClearCookiesClick"/>
 					
 				<LinearLayout 
 					xmlns:android="http://schemas.android.com/apk/res/android"
@@ -92,7 +85,7 @@
 				
 				<TextView 
 					android:id="@+id/change_server"
-					android:text="@string/login_server"
+					android:text="@string/pick_server"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					style="@style/Text.HeaderOptions" 
@@ -100,7 +93,7 @@
 					android:layout_centerVertical="true"
 					android:layout_toLeftOf="@id/seperator2"
 					android:clickable="true"
-					android:onClick="onChooseServer"/>
+					android:onClick="onPickServerClick"/>
 					
 				<LinearLayout 
 					android:id="@+id/seperator3"
