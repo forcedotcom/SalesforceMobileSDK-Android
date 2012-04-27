@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- 
+ Copyright 2011 Salesforce.com.
+ All Rights Reserved.
+ Company Confidential.
+ -->
+
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true"  android:drawable="@drawable/header_refresh_press"/>
+    <item android:state_selected="false" android:drawable="@drawable/header_refresh" />
+</selector>
