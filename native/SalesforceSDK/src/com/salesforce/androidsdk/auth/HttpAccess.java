@@ -98,6 +98,7 @@ public class HttpAccess extends BroadcastReceiver {
 	public HttpAccess(Application app, String userAgent) {
 		// Set user agent
         this.userAgent = userAgent;
+        Log.d("HttpAccess:constructor", "User-Agent string: " + userAgent);
         
 		// Using android http client
         http = getHttpClient();
