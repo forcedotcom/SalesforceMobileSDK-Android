@@ -44,6 +44,7 @@ public class SalesforceR {
 	public int stringGenericAuthenticationErrorTitle() { return -1; }
 	public int stringGenericAuthenticationErrorBody() { return -1; }
 	public int menuLogin() { return -1; }
+	public int idAuthContainer() { return -1; }
 	public int idItemClearCookies() { return -1; }
 	public int idItemPickServer() { return -1; }
 	public int idItemReload() { return -1; }

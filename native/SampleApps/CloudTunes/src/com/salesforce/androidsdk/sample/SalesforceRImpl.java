@@ -42,6 +42,7 @@ public class SalesforceRImpl extends SalesforceR {
 	public int stringGenericAuthenticationErrorTitle() {return R.string.generic_authentication_error_title; } 
 	public int stringGenericAuthenticationErrorBody() {return R.string.generic_authentication_error; }
 	public int menuLogin() { return R.menu.login; }
+	public int idAuthContainer() { return R.id.auth_container; }
 	public int idItemClearCookies() { return R.id.menu_clear_cookies; }
 	public int idItemPickServer() { return R.id.menu_pick_server; }
 	public int idItemReload() { return R.id.menu_reload; }

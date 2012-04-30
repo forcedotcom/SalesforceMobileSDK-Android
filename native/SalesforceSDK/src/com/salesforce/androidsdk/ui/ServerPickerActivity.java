@@ -170,7 +170,16 @@ public class ServerPickerActivity extends Activity implements
 			radioGroup.clearCheck();
 		}
 	}
-
+	
+    /**
+	 * Called when "Reset" button is clicked.
+	 * Clear custom urls.
+	 * @param v
+     */
+    public void onResetClick(View v) {
+        clearCustomUrlSetting();
+    }
+    
 	protected int getServerListGroupId() {
 		return salesforceR.idServerListGroup();
 	}
@@ -211,7 +220,13 @@ public class ServerPickerActivity extends Activity implements
 	protected Dialog onCreateDialog(int id) {
 
 		if (id == SERVER_DIALOG_ID) {
-			urlEditDialog = new CustomServerUrlEditor(this);
+			if (ForceApp.isTablet()) {
+				urlEditDialog = new CustomServerUrlEditor(this, findViewById(
+						salesforceR.idAuthContainer()).getLayoutParams().width);
+			} else {
+				urlEditDialog = new CustomServerUrlEditor(this, 0);
+			}
+
 			urlEditDialog.setOnDismissListener(this);
 			urlEditDialog.setOnCancelListener(this);
 			return urlEditDialog;
