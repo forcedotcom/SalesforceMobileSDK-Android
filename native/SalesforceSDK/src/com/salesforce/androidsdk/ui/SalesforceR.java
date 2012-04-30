@@ -47,6 +47,8 @@ public class SalesforceR {
 	public int idItemClearCookies() { return -1; }
 	public int idItemPickServer() { return -1; }
 	public int idItemReload() { return -1; }
+	public int styleTextHostName() { return -1; }
+	public int styleTextHostUrl() { return -1; }
 	/* Passcode */
 	public int layoutPasscode() { return -1; }
 	public int idPasscodeTitle() { return -1; }

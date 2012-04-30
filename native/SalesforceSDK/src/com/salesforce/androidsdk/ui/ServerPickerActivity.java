@@ -379,12 +379,12 @@ public class ServerPickerActivity extends Activity implements
 
 		SpannableString titleSpan = new SpannableString(titleText);
 		titleSpan.setSpan(new TextAppearanceSpan(this,
-				android.R.style.TextAppearance_Medium), 0, titleText.length(),
+				ForceApp.isTablet() ? salesforceR.styleTextHostName() : android.R.style.TextAppearance_Medium), 0, titleText.length(),
 				Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
 		SpannableString urlSpan = new SpannableString(urlText);
 		urlSpan.setSpan(new TextAppearanceSpan(this,
-				android.R.style.TextAppearance_Small), 0, urlText.length(),
+				ForceApp.isTablet() ? salesforceR.styleTextHostUrl() : android.R.style.TextAppearance_Small), 0, urlText.length(),
 				Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
 		result.append(titleSpan);
