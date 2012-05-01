@@ -38,6 +38,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.webkit.WebView;
+import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -67,6 +68,8 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
     private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
 	private OAuthWebviewHelper webviewHelper;
+	private View loadSpinner;
+	private View loadSeparator;
 
     /**************************************************************************************************
      *
@@ -90,6 +93,8 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 		
 		// Setup content view
 		setContentView(salesforceR.layoutLogin());
+        loadSpinner = findViewById(salesforceR.idLoadSpinner());
+        loadSeparator = findViewById(salesforceR.idLoadSeparator());
 
 		// Setup the WebView.
 		WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
@@ -189,13 +194,22 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	
 	@Override
 	public void loadingLoginPage(String loginUrl) {
-		setTitle(loginUrl);
+        TextView serverName = (TextView) findViewById(salesforceR.idServerName());
+        if (serverName != null) {
+                serverName.setText(loginUrl);
+        }
 	}
 
 	@Override
 	public void onLoadingProgress(int totalProgress) {
 		onIndeterminateProgress(false);
 		setProgress(totalProgress);
+		if (loadSpinner != null) {
+			loadSpinner.setVisibility(totalProgress < 100 ? View.VISIBLE : View.GONE);
+		}
+		if (loadSeparator != null) {
+			loadSeparator.setVisibility(totalProgress < 100 ? View.VISIBLE : View.GONE);			
+		}
 	}
 
 	@Override
