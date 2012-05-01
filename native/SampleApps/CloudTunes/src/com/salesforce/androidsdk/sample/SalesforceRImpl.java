@@ -46,6 +46,9 @@ public class SalesforceRImpl extends SalesforceR {
 	public int idItemClearCookies() { return R.id.menu_clear_cookies; }
 	public int idItemPickServer() { return R.id.menu_pick_server; }
 	public int idItemReload() { return R.id.menu_reload; }
+	public int idLoadSeparator() { return R.id.load_separator; }
+	public int idLoadSpinner() { return R.id.load_spinner; }
+	public int idServerName() { return R.id.server_name; }
 	public int styleTextHostName() { return R.style.Text_HostName; }
 	public int styleTextHostUrl() { return R.style.Text_HostUrl; }
 	/* Passcode */
