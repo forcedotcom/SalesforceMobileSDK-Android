@@ -7,9 +7,10 @@
 	<string name="invalid_server_url">Please type in a valid URL starting with https://</string>
 
 	<!-- Login -->
-	<string name="login_title"><b>RestExplorer - Login</b></string>
-	<string name="pick_server_button">Change Server</string>
-	<string name="clear_cookies_button">Clear Cookies</string>
+	<string name="login_title">Login</string>
+	<string name="pick_server">Change Server</string>
+	<string name="clear_cookies">Clear Cookies</string>
+	<string name="reload">Reload</string>
 
 	<!-- Server picker -->
 	<string name="server_picker_title">Pick Login Server</string>

@@ -4,7 +4,7 @@
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
  * are met:
- * - Redistributions of source code must retain the above copyright notice, this
+ * - Redistributions of source code must retai12345n the above copyright notice, this
  * list of conditions and the following disclaimer.
  * - Redistributions in binary form must reproduce the above copyright notice,
  * this list of conditions and the following disclaimer in the documentation
@@ -41,6 +41,13 @@ public class SalesforceRImpl extends SalesforceR {
 	public int stringGenericError() {return R.string.generic_error; }
 	public int stringGenericAuthenticationErrorTitle() {return R.string.generic_authentication_error_title; } 
 	public int stringGenericAuthenticationErrorBody() {return R.string.generic_authentication_error; }
+	public int menuLogin() { return R.menu.login; }
+	public int idAuthContainer() { return R.id.auth_container; }
+	public int idItemClearCookies() { return R.id.menu_clear_cookies; }
+	public int idItemPickServer() { return R.id.menu_pick_server; }
+	public int idItemReload() { return R.id.menu_reload; }
+	public int styleTextHostName() { return R.style.Text_HostName; }
+	public int styleTextHostUrl() { return R.style.Text_HostUrl; }
 	/* Passcode */
 	public int layoutPasscode() {return R.layout.passcode; }
 	public int idPasscodeTitle() {return R.id.passcode_title; }
