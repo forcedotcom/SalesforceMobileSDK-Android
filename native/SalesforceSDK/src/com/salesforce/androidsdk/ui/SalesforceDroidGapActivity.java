@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.ui;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebSettings;
 
@@ -65,7 +66,10 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		final String uaStr = ForceApp.APP.getUserAgent();
 		if (null != this.appView) {
 	        WebSettings webSettings = this.appView.getSettings();
-	        webSettings.setUserAgentString(uaStr);
+	        String origUserAgent = webSettings.getUserAgentString();
+	        final String extendedUserAgentString = uaStr + " Hybrid " + (origUserAgent == null ? "" : origUserAgent);
+	        Log.d("SalesforceDroidGapActivity:init", "User-Agent string: " + extendedUserAgentString);
+	        webSettings.setUserAgentString(extendedUserAgentString);
 	        
 	        // Configure HTML5 cache support.
 	        webSettings.setDomStorageEnabled(true);
