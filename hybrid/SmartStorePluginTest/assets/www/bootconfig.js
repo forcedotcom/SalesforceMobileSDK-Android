@@ -17,7 +17,7 @@ var remoteAccessConsumerKey = "___NOT_USED___";
 var oauthRedirectURI = "___NOT_USED___";
 
 // The authorization/access scope(s) you wish to define for your application.
-//var oauthScopes = ["visualforce","api"];
+//var oauthScopes = ["web","api"];
 var oauthScopes = ["___NOT_USED___"];
 
 // The start data associated with the application.  Use SFHybridApp.LocalAppStartData for a "local"

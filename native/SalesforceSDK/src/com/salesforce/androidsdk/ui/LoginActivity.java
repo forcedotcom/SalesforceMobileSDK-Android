@@ -26,14 +26,19 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import java.util.Locale;
+
 import android.accounts.AccountAuthenticatorActivity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.webkit.WebView;
+import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -63,6 +68,8 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
     private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
 	private OAuthWebviewHelper webviewHelper;
+	private View loadSpinner;
+	private View loadSeparator;
 
     /**************************************************************************************************
      *
@@ -86,6 +93,8 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 		
 		// Setup content view
 		setContentView(salesforceR.layoutLogin());
+        loadSpinner = findViewById(salesforceR.idLoadSpinner());
+        loadSeparator = findViewById(salesforceR.idLoadSeparator());
 
 		// Setup the WebView.
 		WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
@@ -123,19 +132,84 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
     /**************************************************************************************************
      *
+     * Actions (Changer server / Clear cookies etc) are available through a menu 
+     * 
+     **************************************************************************************************/
+	
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        getMenuInflater().inflate(salesforceR.menuLogin(), menu);
+        return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        /*
+         * The only way to customize the title of a menu item is to do
+         * it through code. While this is a dirty hack, there appears to
+         * be no other way to ellipsize the title of a menu item.
+         * The overflow occurs only when the locale is German, and hence,
+         * the text is ellipsized just for the German locale.
+         */
+        final Locale locale = getResources().getConfiguration().locale;
+        if (locale.equals(Locale.GERMANY) || locale.equals(Locale.GERMAN)) {
+                for (int i = 0; i < menu.size(); i++) {
+                final MenuItem item = menu.getItem(i);
+                final String fullTitle = item.getTitle().toString();
+                item.setTitle(fullTitle.substring(0, 8) + "...");
+            }
+        }
+        return true;
+    }
+
+    /**
+     * handle main menu clicks
+     */
+    @Override
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        int itemId = item.getItemId();
+		if (itemId == salesforceR.idItemClearCookies()) {
+        	onClearCookiesClick(null); 
+        	return true;
+        }
+        else if (itemId == salesforceR.idItemPickServer()) {
+        	onPickServerClick(null); 
+        	return true;
+        }
+        else if (itemId == salesforceR.idItemReload()) {
+        	onReloadClick(null); 
+        	return true;
+        }
+        else {
+            return super.onMenuItemSelected(featureId, item);
+        }
+    }
+
+    /**************************************************************************************************
+     *
      * Callbacks from the OAuthWebviewHelper 
      * 
      **************************************************************************************************/
 	
 	@Override
 	public void loadingLoginPage(String loginUrl) {
-		setTitle(loginUrl);
+        TextView serverName = (TextView) findViewById(salesforceR.idServerName());
+        if (serverName != null) {
+                serverName.setText(loginUrl);
+        }
 	}
 
 	@Override
 	public void onLoadingProgress(int totalProgress) {
 		onIndeterminateProgress(false);
 		setProgress(totalProgress);
+		if (loadSpinner != null) {
+			loadSpinner.setVisibility(totalProgress < 100 ? View.VISIBLE : View.GONE);
+		}
+		if (loadSeparator != null) {
+			loadSeparator.setVisibility(totalProgress < 100 ? View.VISIBLE : View.GONE);			
+		}
 	}
 
 	@Override
@@ -166,6 +240,15 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	}
 
 	/**
+	 * Called when "Reload" button is clicked.
+	 * Reloads login page.
+	 * @param v
+	 */
+	public void onReloadClick(View v) {
+		webviewHelper.loadLoginPage();
+	}
+	
+	/**
 	 * Called when "Pick server" button is clicked.
 	 * Start ServerPickerActivity
 	 * @param v
@@ -174,7 +257,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 		Intent i = new Intent(this, ServerPickerActivity.class);
 	    startActivityForResult(i, PICK_SERVER_REQUEST_CODE);
 	}
-	
+
 	/**
 	 * Called when ServerPickerActivity completes.
 	 * Reload login page.

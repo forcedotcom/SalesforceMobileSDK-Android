@@ -54,12 +54,16 @@ public class CustomServerUrlEditor extends Dialog {
 
 	boolean isDefault;
 	private SalesforceR salesforceR;
+	private int width;
 
-	public CustomServerUrlEditor(Context context) {
+	public CustomServerUrlEditor(Context context, int width) {
 		super(context);
 		
 		// Object which allows reference to resources living outside the SDK
 		salesforceR = ForceApp.APP.getSalesforceR();
+		
+		// Width
+		this.width = width;
 	}
 
 	private String getEditDefaultValue(int editId) {
@@ -194,7 +198,7 @@ public class CustomServerUrlEditor extends Dialog {
 		// can only get a dialog to resize after the layout has been set
 		// we want to take up the full screen...
 		LayoutParams params = getWindow().getAttributes();
-		params.width = LayoutParams.FILL_PARENT;
+		params.width = (width != 0 ? width : LayoutParams.FILL_PARENT);
 		getWindow().setAttributes(params);
 	}
 

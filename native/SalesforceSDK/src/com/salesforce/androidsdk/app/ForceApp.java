@@ -40,6 +40,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.util.Log;
 import android.webkit.CookieManager;
@@ -68,6 +69,11 @@ public abstract class ForceApp extends Application {
 	 * Current version of this SDK.
 	 */
     public static final String SDK_VERSION = "1.2";
+
+    /*
+     * Last phone version
+     */
+	private static final int GINGERBREAD_MR1 = 10;
 
 	/**
      * Instance of the ForceApp to use for this process.
@@ -124,8 +130,9 @@ public abstract class ForceApp extends Application {
         // Initialize encryption module
         Encryptor.init(this);
         
-        // Initialize the http client        
-        HttpAccess.init(this, getUserAgent());
+        // Initialize the http client
+        String extendedUserAgent = getUserAgent() + " Native";
+        HttpAccess.init(this, extendedUserAgent);
         
 		// Done
         APP = this;
@@ -242,6 +249,19 @@ public abstract class ForceApp extends Application {
 	public String getAccountType() {
 		return getString(getSalesforceR().stringAccountType());
 	}
+	
+    /**
+     * Helper function
+     * @return true if application is running on a tablet
+     */
+    public static boolean isTablet() {
+        if (Build.VERSION.SDK_INT <= GINGERBREAD_MR1) {
+            return false;
+        } else if ((APP.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
+            return true;
+        }
+        return false;
+    }
 	
 	@Override
     public String toString() {
