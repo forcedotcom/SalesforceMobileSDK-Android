@@ -39,6 +39,10 @@ import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
  */
 public class SalesforceDroidGapActivity extends DroidGap {
 	
+	/**
+	 * The URL to the bootstrap page for hybrid apps.
+	 */
+	public static final String BOOTSTRAP_START_PAGE = "file:///android_asset/www/bootstrap.html";
 	
     /** Called when the activity is first created. */
     @Override
@@ -52,7 +56,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         this.addWhiteListEntry("salesforce.com", true);
         
         // Load bootstrap
-        super.loadUrl("file:///android_asset/www/bootstrap.html");
+        super.loadUrl(BOOTSTRAP_START_PAGE);
     }
     
     @Override
@@ -92,12 +96,4 @@ public class SalesforceDroidGapActivity extends DroidGap {
     	SalesforceGapViewClient result = new SalesforceGapViewClient(this,this);
     	return result;
     }
-    
-    public String startPageUrlString()
-    {
-    	//TODO is this always static?
-    	String result = "file:///android_asset/www/bootstrap.html";
-    	return result;
-    }
-    
 }
