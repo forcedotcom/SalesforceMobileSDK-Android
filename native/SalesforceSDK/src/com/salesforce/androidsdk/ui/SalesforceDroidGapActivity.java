@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.ui;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebSettings;
 
@@ -39,6 +40,10 @@ import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
  */
 public class SalesforceDroidGapActivity extends DroidGap {
 	
+	/**
+	 * The URL to the bootstrap page for hybrid apps.
+	 */
+	public static final String BOOTSTRAP_START_PAGE = "file:///android_asset/www/bootstrap.html";
 	
     /** Called when the activity is first created. */
     @Override
@@ -52,7 +57,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         this.addWhiteListEntry("salesforce.com", true);
         
         // Load bootstrap
-        super.loadUrl("file:///android_asset/www/bootstrap.html");
+        super.loadUrl(BOOTSTRAP_START_PAGE);
     }
     
     @Override
@@ -61,7 +66,10 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		final String uaStr = ForceApp.APP.getUserAgent();
 		if (null != this.appView) {
 	        WebSettings webSettings = this.appView.getSettings();
-	        webSettings.setUserAgentString(uaStr);
+	        String origUserAgent = webSettings.getUserAgentString();
+	        final String extendedUserAgentString = uaStr + " Hybrid " + (origUserAgent == null ? "" : origUserAgent);
+	        Log.d("SalesforceDroidGapActivity:init", "User-Agent string: " + extendedUserAgentString);
+	        webSettings.setUserAgentString(extendedUserAgentString);
 	        
 	        // Configure HTML5 cache support.
 	        webSettings.setDomStorageEnabled(true);
@@ -92,12 +100,4 @@ public class SalesforceDroidGapActivity extends DroidGap {
     	SalesforceGapViewClient result = new SalesforceGapViewClient(this,this);
     	return result;
     }
-    
-    public String startPageUrlString()
-    {
-    	//TODO is this always static?
-    	String result = "file:///android_asset/www/bootstrap.html";
-    	return result;
-    }
-    
 }

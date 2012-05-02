@@ -67,7 +67,7 @@ public abstract class ForceApp extends Application {
 	/**
 	 * Current version of this SDK.
 	 */
-    public static final String SDK_VERSION = "1.1.1";
+    public static final String SDK_VERSION = "1.1.2";
 
 	/**
      * Instance of the ForceApp to use for this process.
@@ -124,8 +124,9 @@ public abstract class ForceApp extends Application {
         // Initialize encryption module
         Encryptor.init(this);
         
-        // Initialize the http client        
-        HttpAccess.init(this, getUserAgent());
+        // Initialize the http client
+        String extendedUserAgent = getUserAgent() + " Native";
+        HttpAccess.init(this, extendedUserAgent);
         
 		// Done
         APP = this;
