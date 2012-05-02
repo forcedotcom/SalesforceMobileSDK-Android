@@ -130,8 +130,9 @@ public abstract class ForceApp extends Application {
         // Initialize encryption module
         Encryptor.init(this);
         
-        // Initialize the http client        
-        HttpAccess.init(this, getUserAgent());
+        // Initialize the http client
+        String extendedUserAgent = getUserAgent() + " Native";
+        HttpAccess.init(this, extendedUserAgent);
         
 		// Done
         APP = this;
