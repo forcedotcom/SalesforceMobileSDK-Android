@@ -19,7 +19,7 @@ public class SalesforceGapViewClient extends GapViewClient {
     public static final String APP_HOME_URL_PROP_KEY =  "app_home_url";
     
     // Full and partial URLs to exclude from consideration when determining the home page URL.
-    private static List<String> RESERVED_URL_PATTERNS =
+    private static final List<String> RESERVED_URL_PATTERNS =
     		Arrays.asList(SalesforceDroidGapActivity.BOOTSTRAP_START_PAGE, "/secur/frontdoor.jsp", "/secur/contentDoor");
 
     
