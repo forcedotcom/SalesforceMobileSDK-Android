@@ -42,6 +42,11 @@ import com.salesforce.androidsdk.security.PasscodeManager;
  */
 public class SalesforceDroidGapActivity extends DroidGap {
 	
+	/**
+	 * The URL to the bootstrap page for hybrid apps.
+	 */
+	public static final String BOOTSTRAP_START_PAGE = "file:///android_asset/www/bootstrap.html";
+
 	// For periodic auto-refresh - every 10 minutes
     private static final long AUTO_REFRESH_PERIOD_MILLISECONDS = 10*60*1000;
 
@@ -65,7 +70,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         this.addWhiteListEntry("salesforce.com", true);
         
         // Load bootstrap
-        super.loadUrl("file:///android_asset/www/bootstrap.html");
+        super.loadUrl(BOOTSTRAP_START_PAGE);
         
         // Periodic auto-refresh - scheduled in onResume
 		periodicAutoRefreshHandler = new Handler();
@@ -78,7 +83,10 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		final String uaStr = ForceApp.APP.getUserAgent();
 		if (null != this.appView) {
 	        WebSettings webSettings = this.appView.getSettings();
-	        webSettings.setUserAgentString(uaStr);
+	        String origUserAgent = webSettings.getUserAgentString();
+	        final String extendedUserAgentString = uaStr + " Hybrid " + (origUserAgent == null ? "" : origUserAgent);
+	        Log.d("SalesforceDroidGapActivity:init", "User-Agent string: " + extendedUserAgentString);
+	        webSettings.setUserAgentString(extendedUserAgentString);
 	        
 	        // Configure HTML5 cache support.
 	        webSettings.setDomStorageEnabled(true);
@@ -124,14 +132,6 @@ public class SalesforceDroidGapActivity extends DroidGap {
     	SalesforceGapViewClient result = new SalesforceGapViewClient(this,this);
     	return result;
     }
-    
-    public String startPageUrlString()
-    {
-    	//TODO is this always static?
-    	String result = "file:///android_asset/www/bootstrap.html";
-    	return result;
-    }
-    
 	/**
 	 * Schedule auto-refresh runnable 
 	 */
