@@ -1,0 +1,45 @@
+* Chapter 4: Native Android Development
+
+** Android Architecture
+
+*** A look at the SalesforceSDK source
+
+The SalesforceSDK source code lives in the native/SalesforceSDK project.
+
+**** Java packages
+
+Java sources are under /src.
+
+| Package Name                       | Description                                                   |
+|------------------------------------+---------------------------------------------------------------|
+| com.salesforce.androidsdk.app      | SDK application classes (ForceApp)                            |
+| com.salesforce.androidsdk.auth     | OAuth support classes                                         |
+| com.salesforce.androidsdk.phonegap | Salesforce Mobile SDK phonegap plugins native implementations |
+| com.salesforce.androidsdk.rest     | Classes for REST requests/responses                           |
+| com.salesforce.androidsdk.security | Security related helper classes (e.g. passcode manager)       |
+| com.salesforce.androidsdk.store    | SmartStore and supporting classes                             |
+| com.salesforce.androidsdk.ui       | Activities (e.g. login)                                       |
+| com.salesforce.androidsdk.util     | Miscellaneous utility classes                                 |
+
+**** Libraries
+
+Libraries are under /libs.
+
+| Library Name       | Description                                                                                                             |
+|--------------------+-------------------------------------------------------------------------------------------------------------------------|
+| phonegap-1.2.0.jar | Open source mobile development framework; used in hybrid applications                                                   |
+| sqlcipher.jar      | Open source extension to SQLite that provides transparent 256-bit AES encryptiong of database files; used by SmartStore |
+
+** Native Android Requirements
+
+** The Android Smart Store
+
+** Creating a New Android Project
+
+** Deploying to a Device
+
+** Android Sample Application
+
+** Android Best Practices
+
+** Android Troubleshooting
