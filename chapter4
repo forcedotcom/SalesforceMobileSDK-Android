@@ -1,63 +1,157 @@
 * Chapter 4: Native Android Development
 
-** Android Architecture
+  1. Android Architecture
 
-The SalesforceSDK is provided as a JAR file.
-The JAR file only contains the java classes. 
-To build an application that makes use of the SDK, you not only need the JAR file, but also a number of other libaries/resource files.
-These files are in the native/SalesforceSDK directory.
-Sample applications have links to the subset of those files they require (or just copies on the Windows platform).
-The easiest way to get started is to clone one of a sample application.
-In this section, we take a look at the code and various resource and asset files that are in the native/SalesforceSDK directory.
+    The SalesforceSDK is provided as a JAR file.
+    The JAR file only contains the java classes. 
+    To build an application that makes use of the SDK, you not only need the JAR file, but also a number of other libaries/resource files.
+    These files are in the native/SalesforceSDK directory.
+    Sample applications have links to the subset of those files they require (or just copies on the Windows platform).
+    The easiest way to get started is to clone one of a sample application.
+    In this section, we take a look at the code and various resource and asset files that are in the native/SalesforceSDK directory.
 
-*** A look at the SalesforceSDK source tree
+     1. A look at the SalesforceSDK source tree
 
-The SalesforceSDK source code lives in the native/SalesforceSDK project.
+       The SalesforceSDK source code lives in the native/SalesforceSDK project.
 
-**** Java packages
+     2. Java code
+        
+       Java sources are under /src.
 
-Java sources are under /src.
+        1. Packages
 
-| Package Name                       | Description                                                   |
-|------------------------------------+---------------------------------------------------------------|
-| com.salesforce.androidsdk.app      | SDK application classes (ForceApp)                            |
-| com.salesforce.androidsdk.auth     | OAuth support classes                                         |
-| com.salesforce.androidsdk.phonegap | Salesforce Mobile SDK phonegap plugins native implementations |
-| com.salesforce.androidsdk.rest     | Classes for REST requests/responses                           |
-| com.salesforce.androidsdk.security | Security related helper classes (e.g. passcode manager)       |
-| com.salesforce.androidsdk.store    | SmartStore and supporting classes                             |
-| com.salesforce.androidsdk.ui       | Activities (e.g. login)                                       |
-| com.salesforce.androidsdk.util     | Miscellaneous utility classes                                 |
+          |------------------------------------+---------------------------------------------------------------|
+          | Package Name                       | Description                                                   |
+          |------------------------------------+---------------------------------------------------------------|
+          | com.salesforce.androidsdk.app      | SDK application classes (ForceApp)                            |
+          | com.salesforce.androidsdk.auth     | OAuth support classes                                         |
+          | com.salesforce.androidsdk.phonegap | Salesforce Mobile SDK phonegap plugins native implementations |
+          | com.salesforce.androidsdk.rest     | Classes for REST requests/responses                           |
+          | com.salesforce.androidsdk.security | Security related helper classes (e.g. passcode manager)       |
+          | com.salesforce.androidsdk.store    | SmartStore and supporting classes                             |
+          | com.salesforce.androidsdk.ui       | Activities (e.g. login)                                       |
+          | com.salesforce.androidsdk.util     | Miscellaneous utility classes                                 |
+          |------------------------------------+---------------------------------------------------------------|
 
-**** Libraries
+        2. Classes overview
 
-Libraries are under /libs.
+          |----------+----------------------------+-------------|
+          | Package  | Class                      | Description |
+          |----------+----------------------------+-------------|
+          | app      | ForceApp                   |             |
+          |----------+----------------------------+-------------|
+          | auth     | AuthenticatorService       |             |
+          |          | HttpAccess                 |             |
+          |          | OAuth2                     |             |
+          |----------+----------------------------+-------------|
+          | phonegap | SalesforceOAuthPlugin      |             |
+          |          | SmartStorePlugin           |             |
+          |          | TestRunnerPlugin           |             |
+          |----------+----------------------------+-------------|
+          | rest     | ClientManager              |             |
+          |          | RestClient                 |             |
+          |          | RestRequest                |             |
+          |          | RestResponse               |             |
+          |----------+----------------------------+-------------|
+          | security | Encryptor                  |             |
+          |          | PasscodeManager            |             |
+          |----------+----------------------------+-------------|
+          | store    | Database                   |             |
+          |          | DBOpenHelper               |             |
+          |          | DBOperations               |             |
+          |          | EncryptedDBOpenHelper      |             |
+          |          | SmartStore                 |             |
+          |----------+----------------------------+-------------|
+          | ui       | CustomServerUrlEditor      |             |
+          |          | LoginActivity              |             |
+          |          | OAuthWebviewHelper         |             |
+          |          | PasscodeActivity           |             |
+          |          | SalesforceDroidGapActivity |             |
+          |          | SalesforceGapViewClient    |             |
+          |          | SalesforceR                |             |
+          |          | ServerPickerActivity       |             |
+          |----------+----------------------------+-------------|
+          | util     | EventsObservable           |             |
+          |          | EventsObserver             |             |
+          |          | LogUtil                    |             |
+          |          | UriFragmentParser          |             |
+          |----------+----------------------------+-------------|
 
-| Library Name                    | Description                                                                                              |
-|---------------------------------+----------------------------------------------------------------------------------------------------------|
-| phonegap-1.2.0.jar              | Open source mobile development framework; used in hybrid applications (*)                                |
-| sqlcipher.jar                   | Open source extension to SQLite that provides transparent 256-bit AES encryptiong of database files (**) |
-| armeabi/*.so                    | Native libaries required by sqlcipher (**)                                                               |
-| commons-code.jar, guava-r09.jar | Java libarries required by sqlcipher                                                                     |
+     3. Libraries
 
-(*) required for hybrid application
-(**) required for SmartStore
+       Libraries are under /libs.
 
+       |---------------------------------+----------------------------------------------------------------------------------------------------------|
+       | Library Name                    | Description                                                                                              |
+       |---------------------------------+----------------------------------------------------------------------------------------------------------|
+       | phonegap-1.2.0.jar              | Open source mobile development framework; used in hybrid applications (*)                                |
+       | sqlcipher.jar                   | Open source extension to SQLite that provides transparent 256-bit AES encryptiong of database files (**) |
+       | armeabi/*.so                    | Native libaries required by sqlcipher (**)                                                               |
+       | commons-code.jar, guava-r09.jar | Java libarries required by sqlcipher (**)                                                                |
+       |---------------------------------+----------------------------------------------------------------------------------------------------------|
 
-**** Resources
+       (*) required for hybrid application
+       (**) required for SmartStore
 
-Resources are under /res.
+     4. Resources
 
-** Native Android Requirements
+       Resources are under /res.
 
-** The Android Smart Store
+       |----------------------+----------------------------------+------------------------------------------------------------|
+       | Folder               | File                             | Use                                                        |
+       |----------------------+----------------------------------+------------------------------------------------------------|
+       | drawable-hdpi,       | edit_icon.png                    | Server picker screen                                       |
+       | drawable-ldpi        | highlight_glare.png              | Login screen                                               |
+       |                      | icon.png                         | Application icon                                           |
+       |----------------------+----------------------------------+------------------------------------------------------------|
+       | drawable             | header_bg.png                    | Login screen                                               |
+       |                      | progress_spinner.xml             | Login screen                                               |
+       |                      | toolbar_background.xml           | Login screen                                               |
+       |----------------------+----------------------------------+------------------------------------------------------------|
+       | drawable-xlarge,     | header_bg.png                    | Login screen (tablet)                                      |
+       | drawable-xlarge-port | header_drop_shadow.xml           | Login screen (tablet)                                      |
+       |                      | header_left_border.xml           | Login screen (tablet)                                      |
+       |                      | header_refresh.png               | Login screen (tablet)                                      |
+       |                      | header_refresh_press.png         | Login screen (tablet)                                      |
+       |                      | header_refresh_states.xml        | Login screen (tablet)                                      |
+       |                      | header_right_border.xml          | Login screen (tablet)                                      |
+       |                      | login_content_header.xml         | Login screen (tablet)                                      |
+       |                      | nav_shadow.png                   | Login screen (tablet)                                      |
+       |                      | oauth_background.png             | Login screen (tablet)                                      |
+       |                      | oauth_container_dropshadow.9.png | Login screen (tablet)                                      |
+       |                      | oauth_background.png             | Login screen (tablet)                                      |
+       |                      | progress_spinner.xml             | Login screen (tablet)                                      |
+       |                      | refresh_loader.png               | Login screen (tablet)                                      |
+       |                      | toolbar_background.xml           | Login screen (tablet)                                      |
+       |----------------------+----------------------------------+------------------------------------------------------------|
+       | layout               | custom_server_url.xml            | Server picker screen                                       |
+       |                      | login.xml                        | Login screen                                               |
+       |                      | passcode.xml                     | Pin screen                                                 |
+       |                      | server_picker.xml                | Server picker screen                                       |
+       |----------------------+----------------------------------+------------------------------------------------------------|
+       | layout-xlarge        | login_header.xml                 | Login screen (tablet)                                      |
+       |                      | login.xml                        | Login screen (tablet)                                      |
+       |                      | server_picker_header.xml         | Server picker screen (tablet)                              |
+       |                      | server_picker.xml                | Server picker screen (tablet)                              |
+       |----------------------+----------------------------------+------------------------------------------------------------|
+       | menu                 | clear_custom_url.xml             | Add connection dialog                                      |
+       |                      | login.xml                        | Login menu (phone)                                         |
+       |----------------------+----------------------------------+------------------------------------------------------------|
+       | values               | sdk.xml                          | Localized strings for login, server picker and pin screens |
+       |                      | strings.xml                      | Other strings (app name)                                   |
+       |----------------------+----------------------------------+------------------------------------------------------------|
+       | values-xlarge        | styles.xml                       | Styles (tablet)                                            |
+       |----------------------+----------------------------------+------------------------------------------------------------|
+       | xml                  | authenticator.xml                | Preferences for account used by application                |
+       |                      | plugins.xml                      | Plugins configuration file for Phonegap (*)                |
+       |----------------------+----------------------------------+------------------------------------------------------------|
 
-** Creating a New Android Project
+       (*) required for hybrid application
 
-** Deploying to a Device
-
-** Android Sample Application
-
-** Android Best Practices
-
-** Android Troubleshooting
+  2. Native Android Requirements
+  3. The Android Smart Store
+  4. Creating a New Android Project
+  5. Deploying to a Device
+  6. Android Sample Application
+  7. Android Best Practices
+  8. Android Troubleshooting
