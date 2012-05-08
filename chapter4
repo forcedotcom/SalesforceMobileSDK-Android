@@ -2,7 +2,15 @@
 
 ** Android Architecture
 
-*** A look at the SalesforceSDK source
+The SalesforceSDK is provided as a JAR file.
+The JAR file only contains the java classes. 
+To build an application that makes use of the SDK, you not only need the JAR file, but also a number of other libaries/resource files.
+These files are in the native/SalesforceSDK directory.
+Sample applications have links to the subset of those files they require (or just copies on the Windows platform).
+The easiest way to get started is to clone one of a sample application.
+In this section, we take a look at the code and various resource and asset files that are in the native/SalesforceSDK directory.
+
+*** A look at the SalesforceSDK source tree
 
 The SalesforceSDK source code lives in the native/SalesforceSDK project.
 
@@ -25,10 +33,20 @@ Java sources are under /src.
 
 Libraries are under /libs.
 
-| Library Name       | Description                                                                                                             |
-|--------------------+-------------------------------------------------------------------------------------------------------------------------|
-| phonegap-1.2.0.jar | Open source mobile development framework; used in hybrid applications                                                   |
-| sqlcipher.jar      | Open source extension to SQLite that provides transparent 256-bit AES encryptiong of database files; used by SmartStore |
+| Library Name                    | Description                                                                                              |
+|---------------------------------+----------------------------------------------------------------------------------------------------------|
+| phonegap-1.2.0.jar              | Open source mobile development framework; used in hybrid applications (*)                                |
+| sqlcipher.jar                   | Open source extension to SQLite that provides transparent 256-bit AES encryptiong of database files (**) |
+| armeabi/*.so                    | Native libaries required by sqlcipher (**)                                                               |
+| commons-code.jar, guava-r09.jar | Java libarries required by sqlcipher                                                                     |
+
+(*) required for hybrid application
+(**) required for SmartStore
+
+
+**** Resources
+
+Resources are under /res.
 
 ** Native Android Requirements
 
