@@ -29,6 +29,7 @@ package com.salesforce.samples.templateapp;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
+import android.webkit.CookieSyncManager;
 import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.ForceApp;
@@ -49,6 +50,9 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+    	// Ensure we have a CookieSyncManager
+    	CookieSyncManager.createInstance(this);
+		
 		// Passcode manager
 		passcodeManager = ForceApp.APP.getPasscodeManager();		
 		
