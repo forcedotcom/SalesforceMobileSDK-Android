@@ -20,12 +20,13 @@ For the rest of this document, we assume that you have setup three shell variabl
 **If you haven't, just make sure to replace $ANDROID_SDK_DIR, $SALESFORCE_SDK_DIR and $NATIVE_DIR in the snippets below with the actual paths.**
 
 Inside the $NATIVE_DIR, you will find several projects:
+
 1. **SalesforceSDK**: The Salesforce SDK which provides support for OAuth2 and REST API calls
 2. **SalesforceSDKTest**: Tests for the SalesforceSDK project
 3. **TemplateApp**: Template used when creating new native application using SalesforceSDK
 4. **RestExplorer**: A app using SalesforceSDK to explore the REST API calls
 5. **RestExplorerTest**: Tests for the RestExplorer project
-6.  **SampleApps/CloudTunes**: A sample native application using SalesforceSDK
+6. **SampleApps/CloudTunes**: A sample native application using SalesforceSDK
 
 # Creating a new native application using SalesforceSDK
 
@@ -39,7 +40,7 @@ It will print out information about available targets.
 
 To create a new native application simply do:
 <pre>
-      ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} 
+ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} 
 </pre>
 
 Where:
@@ -49,7 +50,7 @@ Where:
 
 To build the new application, do the following:
 <pre>
-cd ${target.dir}
+cd $TARGET_DIR
 $ANDROID_SDK_DIR/android update project -p .
 ant clean debug
 </pre>
@@ -62,7 +63,7 @@ ant installd
 
 Before you ship, make sure to plug in your oauth client id and callback url in:
 <pre>
-${target.dir}/res/values/rest.xml
+$TARGET_DIR/res/values/rest.xml
 </pre>
 
 # Setting up projects and building from Eclipse
@@ -77,8 +78,6 @@ ${target.dir}/res/values/rest.xml
 **Cleaning and rebuilding in Eclipse**: With the latest version of the Android SDK Tools (v14), there are issues around cleaning your workspace (Project -> Clean...) and rebuilding it.  Specifically, projects that are dependent on Android Library projects do not properly follow the build dependency ordering, so when every project is cleaned, dependent projects do not pick up the existence of the Library project.  The result is that all of the non-Library projects will have build errors after a clean.
 
 If you would like to rebuild everything, we recommend cleaning/rebuilding the Library (SalesforceSDK) project *by itself* first, followed by the cleaning and rebuilding of the dependent projects, to avoid these build errors.
-
-## Running the RestExplorer application and tests from Eclipse
 
 The RestExplorer is a sample app that demonstrates how to use the OAuth and REST API functions of the Salesforce SDK. It is also useful to investigate the various REST API actions from a Honeycomb tablet.
 

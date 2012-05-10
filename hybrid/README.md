@@ -31,7 +31,7 @@ It will print out information about available targets.
 
 To create a new hybrid application with local html/js simply do:
 <pre>
-      ant create_hybrid_local -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName}
+ant create_hybrid_local -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName}
 </pre>
 
 Where:
@@ -54,7 +54,7 @@ Where:
 
 To build the new application, do the following:
 <pre>
-cd ${target.dir}
+cd $TARGET_DIR
 $ANDROID_SDK_DIR/android update project -p .
 ant clean debug
 </pre>
@@ -66,5 +66,5 @@ ant installd
 
 Before you ship, make sure to plug in your oauth client id and callback url in:
 <pre>
-${target.dir}//assets/www/bootconfig.js
+$TARGET_DIR//assets/www/bootconfig.js
 </pre>
