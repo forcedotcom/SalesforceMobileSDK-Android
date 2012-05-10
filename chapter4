@@ -7,7 +7,6 @@
     To build an application that makes use of the SDK, you not only need the JAR file, but also a number of other libaries/resource files.
     These files are in the native/SalesforceSDK directory.
     Sample applications have links to the subset of those files they require (or just copies on the Windows platform).
-    The easiest way to get started is to clone one of a sample application.
     In this section, we take a look at the code and various resource and asset files that are in the native/SalesforceSDK directory.
 
      1. A look at the SalesforceSDK source tree
@@ -154,91 +153,15 @@
 
      1) Create a new native application
 
-       Clone the native/TemplateApp folder.
+     [Copy instructions from https://github.com/forcedotcom/SalesforceMobileSDK-Android-dev/blob/master/native/README.md]
 
      2) Create a new hybrid application
 
-       Duplicate the VFConnector project.
-       cp -R VFConnector MyFirstHybrid
-
-       Rename vfconnector java package tp firsthybrid, rename VFConnectorApp.java to FirsthybridApp.java.
-       cd MyFirstHybrid/src/com/salesforce/samples
-       mv vfconnector firsthybrid
-       mv firsthybrid/VFConnectorApp.java FirsthybridApp.java
-
-       Fix package references in FirsthybridApp.java and SalesforceRImpl.java
-       diff -w VFConnector/src/com/salesforce/samples/vfconnector/VFConnectorApp.java  MyFirstHybrid/src/com/salesforce/samples/firsthybrid/FirsthybridApp.java 
-       27c27
-       < package com.salesforce.samples.vfconnector;
-       ---
-       > package com.salesforce.samples.firsthybrid;
-       41c41
-       < public class VFConnectorApp extends ForceApp {
-       ---
-       > public class FirsthybridApp extends ForceApp {
-
-       diff -w VFConnector/src/com/salesforce/samples/vfconnector/SalesforceRImpl.java   MyFirstHybrid/src/com/salesforce/samples/firsthybrid/SalesforceRImpl.java 
-       27c27
-       < package com.salesforce.samples.vfconnector;
-       ---
-       > package com.salesforce.samples.firsthybrid;
-
-       Fix .project file.
-       diff -r -w VFConnector/.project MyFirstHybrid/.project
-       3c3
-       <  <name>VFConnector</name>
-       ---
-       >  <name>MyFirstHybrid</name>
-
-       Fix references in AndroidManifest.xml
-       diff -r -w VFConnector/AndroidManifest.xml MyFirstHybrid/AndroidManifest.xml
-       3c3
-       <     package="com.salesforce.samples.vfconnector"
-       ---
-       >     package="com.salesforce.samples.firsthybrid"
-       40c40
-       <         android:name=".VFConnectorApp">
-       ---
-       >         android:name=".FirsthybridApp">
-
-       Change bootconfig.js to use the new application client id and switch startData to be local.
-       diff -r -w VFConnector/assets/www/bootconfig.js MyFirstHybrid/assets/www/bootconfig.js
-       13c13
-       < var remoteAccessConsumerKey = "3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa";
-       ---
-       > var remoteAccessConsumerKey = "3MVG92.uWdyphVj4bnolD7yuIpJdBEHScXQHBCnkwOyeuHkKBg4LQHwCYkx40Kc6RsviyffhvsDyI9om9fDZ5";
-       20c20
-       < var oauthScopes = ["visualforce", "api"];
-       ---
-       > var oauthScopes = ["web", "api"];
-       26,28c26,27
-       < //var startData = new SFHybridApp.LocalAppStartData();  // Used for local REST-based "index.html" PhoneGap apps.
-       < var startData = new SFHybridApp.RemoteAppStartData("/apex/BasicVFPage"); // Used for Visualforce-based apps.
-       < 
-       ---
-       > var startData = new SFHybridApp.LocalAppStartData();  // Used for local REST-based "index.html" PhoneGap apps.
-       > //var startData = new SFHybridApp.RemoteAppStartData("/apex/BasicVFPage"); // Used for Visualforce-based apps.
-
-       Change account type in rest.xml.
-       diff -r -w VFConnector/res/values/rest.xml MyFirstHybrid/res/values/rest.xml
-       3c3
-       <  <string name="account_type">com.salesforce.samples.vfconnector.login</string>
-       ---
-       >  <string name="account_type">com.salesforce.samples.firsthybrid.login</string>
-
-       Change app_name in strings.xml.
-       diff -r -w VFConnector/res/values/strings.xml MyFirstHybrid/res/values/strings.xml
-       5c5
-       <     <string name="app_name">VFConnector</string>
-       ---
-       >     <string name="app_name">MyFirstHybrid</string>
-
-       Add a simple index.html
-       cat MyFirstHybrid/assets/www/index.html 
-       <h1>Hello</h1>
+     [Copy instructions from https://github.com/forcedotcom/SalesforceMobileSDK-Android-dev/blob/master/hybrid/README.md]
 
   5) Deploying to a Device
 
+    The README.md above, also have steps to build and deploy the new application.
     See http://developer.android.com/guide/developing/device.html
 
   6) Android Sample Application
