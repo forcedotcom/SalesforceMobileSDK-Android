@@ -1,0 +1,62 @@
+<project name="SalesforceMobileSDK" default="create_hybrid" basedir=".">
+
+  <property name="sdk.dir" value="."/>
+
+  <!-- Usage
+
+ant create_native -Dsdk.dir= -Dtarget.dir= -Dapp.name= -Dpackage.name= -Doauth.client_id= -Doauth.callback_url= -Daccount_type=
+
+e.g.
+ant create_native -Dtarget.dir=./abc -Dapp.name=MyFirstApp -Dpackage.name="com.test.first" 
+
+  -->
+
+  <fileset id="native.target.files" dir="${target.dir}">
+    <include name="AndroidManifest.xml" />
+    <include name=".project" />
+    <include name="build.xml" />
+    <include name="res/values/strings.xml" />
+    <include name="res/values/rest.xml" />
+    <include name="src/com/salesforce/samples/templateapp/*.java" />
+  </fileset>
+
+  <pathconvert property="package.dir">
+    <path>
+      <pathelement location="${package.name}" />
+    </path>
+    <mapper type="unpackage" from="*" to="*" />
+  </pathconvert>
+
+  <target name="create_native">
+    <property name="native.template.dir" value="${sdk.dir}/native/TemplateApp" />
+    <echo message="Creating ${target.dir}" />
+    <mkdir dir="${target.dir}" />
+
+    <echo message="Copying native template into ${target.dir}" />
+    <copy todir="${target.dir}">
+      <fileset dir="${native.template.dir}" />
+    </copy>
+
+    <echo message="Renaming application to ${app.name}" />
+    <replaceregexp match="TemplateApp" flags="g" replace="${app.name}">
+      <fileset refid="native.target.files" />
+    </replaceregexp>
+
+    <echo message="Changing java package reference to ${package.name}" />
+    <replaceregexp match="com.salesforce.samples.templateapp" flags="g" replace="${package.name}">
+      <fileset refid="native.target.files" />
+    </replaceregexp>
+
+    <echo message="Creating java dir ${package.dir}" />
+    <mkdir dir="${package.dir}"/>
+
+    <echo message="Moving classes to ${package.dir}" />
+    <move todir="${target.dir}/src">
+      <fileset file="${target.dir}/src/com/salesforce/samples/templateapp/*.java" />
+    </move>
+    <delete dir="${target.dir}/src/com" />
+    <move todir="${package.dir}">
+      <fileset file="${target.dir}/src/*.java" />
+    </move>
+  </target>
+</project>
