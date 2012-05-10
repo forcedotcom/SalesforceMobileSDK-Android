@@ -28,8 +28,6 @@ This is the first generally available release of Salesforce Mobile SDK for Andro
 Check http://developer.force.com/mobilesdk for additional articles and tutorials
 
 
-
-
 __Native Mobile Libraries__
 The Salesforce Mobile SDK provides essential libraries for quickly building native mobile apps that seamlessly integrate with the Salesforce cloud architecture.  Out of the box, we provide an implementation of OAuth2, abstracting away the complexity of securely storing refresh tokens or fetching a new session ID when a session expires. The SDK also provides Java wrappers for the Salesforce REST API, making it easy to retrieve, store, and manipulate data.
 
@@ -52,6 +50,13 @@ The following steps will help you get started with your development environment,
 5. Get setup on github: http://help.github.com/
 
 **A word about the Android 4.0 (API 14) SDK:** Starting with the SDK that's deployed with API 14, Google has introduced some fundamental changes in Eclipse project configurations, build configuratons, library project configurations, and other areas.  Because of this, **you will not be able to build any of the projects in this repository without upgrading to API 14**.  Note that updating to r14 will not impact your ability to build for earlier Android platforms.  It's just the toolset changes of the SDK that require the upgrade.
+
+# Downloading the Salesforce SDK
+
+To pull down the SDK from github, create a new directory and git clone the salesforce SDK repo.
+<pre>
+git clone git@github.com:forcedotcom/SalesforceMobileSDK-Android.git
+</pre>
 
 # Documentation
 
