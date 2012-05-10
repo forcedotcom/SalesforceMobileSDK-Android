@@ -1,16 +1,20 @@
-<project name="SalesforceMobileSDK" default="create_hybrid" basedir=".">
+<project name="SalesforceMobileSDK" default="usage" basedir=".">
 
+  <!-- Default target: describes useful targets -->
+  <target name="usage">
+    <echo>
+ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} 
+Creates a new native application that uses the SalesforceMobileSDK
+* appName: the name for the new application 
+* targetDir: the directory where the code should reside 
+* packageName: the java package for the new application e.g. com.acme.mobileapp
+    </echo>
+  </target>
+
+  <!-- Location of SalesforceMobileSDK -->
   <property name="sdk.dir" value="."/>
 
-  <!-- Usage
-
-ant create_native -Dsdk.dir= -Dtarget.dir= -Dapp.name= -Dpackage.name= -Doauth.client_id= -Doauth.callback_url= -Daccount_type=
-
-e.g.
-ant create_native -Dtarget.dir=./abc -Dapp.name=MyFirstApp -Dpackage.name="com.test.first" 
-
-  -->
-
+  <!-- Key files in the native template that needs to be modified -->
   <fileset id="native.target.files" dir="${target.dir}">
     <include name="AndroidManifest.xml" />
     <include name=".project" />
@@ -20,6 +24,7 @@ ant create_native -Dtarget.dir=./abc -Dapp.name=MyFirstApp -Dpackage.name="com.t
     <include name="src/com/salesforce/samples/templateapp/*.java" />
   </fileset>
 
+  <!-- Computing the package directory from the package name e.g. builds com/acme/mobileapp from com.acme.mobileapp -->
   <pathconvert property="package.dir">
     <path>
       <pathelement location="${package.name}" />
@@ -27,12 +32,11 @@ ant create_native -Dtarget.dir=./abc -Dapp.name=MyFirstApp -Dpackage.name="com.t
     <mapper type="unpackage" from="*" to="*" />
   </pathconvert>
 
+  <!-- Target to create a native application -->
   <target name="create_native">
     <property name="native.template.dir" value="${sdk.dir}/native/TemplateApp" />
-    <echo message="Creating ${target.dir}" />
     <mkdir dir="${target.dir}" />
 
-    <echo message="Copying native template into ${target.dir}" />
     <copy todir="${target.dir}">
       <fileset dir="${native.template.dir}" />
     </copy>
@@ -47,16 +51,18 @@ ant create_native -Dtarget.dir=./abc -Dapp.name=MyFirstApp -Dpackage.name="com.t
       <fileset refid="native.target.files" />
     </replaceregexp>
 
-    <echo message="Creating java dir ${package.dir}" />
-    <mkdir dir="${package.dir}"/>
+    <mkdir dir="${target.dir}/src/{package.dir}"/>
 
-    <echo message="Moving classes to ${package.dir}" />
     <move todir="${target.dir}/src">
       <fileset file="${target.dir}/src/com/salesforce/samples/templateapp/*.java" />
     </move>
-    <delete dir="${target.dir}/src/com" />
-    <move todir="${package.dir}">
+
+    <move todir="${target.dir}/src/${package.dir}">
       <fileset file="${target.dir}/src/*.java" />
     </move>
+
+    <move file="${target.dir}/src/${package.dir}/TemplateApp.java" 
+          tofile="${target.dir}/src/${package.dir}/${app.name}.java" />
+
   </target>
 </project>
