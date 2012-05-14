@@ -88,12 +88,6 @@ public abstract class ForceApp extends Application {
 	 **************************************************************************************************/
     
     /**
-	 * Note: If you return 0, the user will not have to enter a passcode.
-	 * @return The lock timeout in minutes, or 0 for never.
-	 */
-	public abstract int getLockTimeoutMinutes();
-	
-    /**
      * @return The class for the main activity.
      */
 	public abstract Class<? extends Activity> getMainActivityClass();
@@ -145,7 +139,7 @@ public abstract class ForceApp extends Application {
 	public synchronized PasscodeManager getPasscodeManager() {
 		// Only creating passcode manager if used
 		if (passcodeManager == null) {
-			passcodeManager = new PasscodeManager(this, getLockTimeoutMinutes(),
+			passcodeManager = new PasscodeManager(this,
 					getVerificationHashConfig(),
 					getEncryptionHashConfig());
 		}
@@ -202,6 +196,9 @@ public abstract class ForceApp extends Application {
     	if (frontActivity != null) {
     		frontActivity.finish();
     	}
+    	
+    	// Reset passcode if any
+    	getPasscodeManager().reset(this);
     	
     	// Remove account if any
     	ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
@@ -270,12 +267,11 @@ public abstract class ForceApp extends Application {
 		  .append("   accountType: ").append(getAccountType()).append("\n")
 		  .append("   userAgent: ").append(getUserAgent()).append("\n")
 		  .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
-		  .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n")
-		  .append("   lockTimeoutMinutes: ").append(getLockTimeoutMinutes()).append("\n");
+		  .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n");
 
 		if (null != passcodeManager) {
 			//passcodeManager may be null at startup if the app is running in debug mode
-		  sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n");
+			sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n");
 		}
 		
 		sb.append("}\n");

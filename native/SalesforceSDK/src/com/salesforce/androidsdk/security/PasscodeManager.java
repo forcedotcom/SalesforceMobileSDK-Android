@@ -82,10 +82,9 @@ public class PasscodeManager  {
 	 * @param verificationHashConfig
 	 * @param encryptionHashConfig
 	 */
-	public PasscodeManager(Context ctx, int lockTimeoutMinutes,
+	public PasscodeManager(Context ctx, 
 			HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
 		this.minPasscodeLength = MIN_PASSCODE_LENGTH;
-		this.timeoutMs = lockTimeoutMinutes * 60 * 1000;
 		this.lastActivity = now();
 		this.verificationHashConfig = verificationHashConfig;
 		this.encryptionHashConfig = encryptionHashConfig;
