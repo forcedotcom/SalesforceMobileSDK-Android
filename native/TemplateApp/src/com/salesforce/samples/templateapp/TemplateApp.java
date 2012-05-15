@@ -46,11 +46,6 @@ public class TemplateApp extends ForceApp {
 	}
 	
 	@Override
-	public int getLockTimeoutMinutes() {
-		return 0; // return a non-zero value to use passcode
-	}
-
-	@Override
 	protected String getKey(String name) {
 		return Encryptor.hash(name + "x;lksalk1jsadihh23lia;lsdhasd2", name + "112;kaslkxs0-12;skcxn1203ph");
 	}

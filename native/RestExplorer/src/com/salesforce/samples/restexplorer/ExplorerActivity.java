@@ -562,7 +562,7 @@ public class ExplorerActivity extends TabActivity {
 			private long start = System.nanoTime();
 
 			@Override
-			public void onSuccess(RestResponse result) {
+			public void onSuccess(RestRequest request, RestResponse result) {
 				try {
 					long duration = System.nanoTime() - start;
 					println(result);
