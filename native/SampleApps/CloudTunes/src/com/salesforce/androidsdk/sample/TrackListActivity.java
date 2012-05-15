@@ -79,7 +79,7 @@ public class TrackListActivity  extends Activity{
 			client.sendAsync(request, new AsyncRequestCallback() {
 
 				@Override
-				public void onSuccess(RestResponse response) {
+				public void onSuccess(RestRequest request, RestResponse response) {
 					try {
 						if (response == null || response.asJSONObject() == null)
 							return;
