@@ -67,7 +67,7 @@ public abstract class ForceApp extends Application {
 	/**
 	 * Current version of this SDK.
 	 */
-    public static final String SDK_VERSION = "1.1.2";
+    public static final String SDK_VERSION = "1.1.3";
 
 	/**
      * Instance of the ForceApp to use for this process.
@@ -127,6 +127,9 @@ public abstract class ForceApp extends Application {
         // Initialize the http client
         String extendedUserAgent = getUserAgent() + " Native";
         HttpAccess.init(this, extendedUserAgent);
+        
+    	// Ensure we have a CookieSyncManager
+    	CookieSyncManager.createInstance(this);
         
 		// Done
         APP = this;
