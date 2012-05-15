@@ -263,7 +263,9 @@ public class RestClient {
 		protected RestResponse doInBackground(RestRequest... requests) {
 			try {
 				request = requests[0];
-				return sendSync(request);
+				RestResponse response = sendSync(request);
+				response.consume(); // we need to be done with the connection before returning control to the UI thread
+				return response;
 			} catch (Exception e) {
 				exceptionThrown = e;
 				return null;

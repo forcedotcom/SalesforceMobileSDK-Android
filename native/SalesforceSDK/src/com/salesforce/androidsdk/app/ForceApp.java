@@ -128,6 +128,9 @@ public abstract class ForceApp extends Application {
         String extendedUserAgent = getUserAgent() + " Native";
         HttpAccess.init(this, extendedUserAgent);
         
+    	// Ensure we have a CookieSyncManager
+    	CookieSyncManager.createInstance(this);
+        
 		// Done
         APP = this;
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);

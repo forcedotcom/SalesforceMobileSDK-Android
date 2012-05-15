@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.rest;
 
 import java.io.IOException;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.ParseException;
@@ -46,6 +47,10 @@ public class RestResponse {
 	
 	private final int statusCode;
 	private final HttpResponse response;
+
+	// Populated when "consume" is called
+	private byte[] responseAsBytes;
+	private String responseCharSet;
 	
 	// Lazily computed
 	private String responseAsString;
@@ -84,8 +89,34 @@ public class RestResponse {
 	}
 	
 	/**
+	 * Fully consume response entity content and closes content stream
+	 * Must be called before returning control to the UI thread
+	 * @throws IOException 
+	 */
+	public void consume() throws IOException {
+		HttpEntity entity = response.getEntity();
+		if (entity != null) {
+			responseCharSet = EntityUtils.getContentCharSet(entity);		
+			responseAsBytes = EntityUtils.toByteArray(entity);
+		}
+		else {
+			responseAsBytes = new byte[0];
+		}
+	}
+
+	/**
+	 * @return byte[] for entire response
+	 * @throws IOException
+	 */
+	public byte[] asBytes() throws IOException {
+		if (responseAsBytes == null) {
+			consume();
+		}
+		return responseAsBytes;
+	}	
+	
+	/**
 	 * String is built the first time the method is called.
-	 * Don't call this method for large response or binary responses.
 	 * 
 	 * @return string for entire response
 	 * @throws ParseException
@@ -93,7 +124,7 @@ public class RestResponse {
 	 */
 	public String asString() throws ParseException, IOException {
 		if (responseAsString == null) {
-			responseAsString = (response.getEntity() == null ? "" : EntityUtils.toString(response.getEntity(), HTTP.UTF_8));
+			responseAsString = new String(asBytes(), (responseCharSet == null ? HTTP.UTF_8 : responseCharSet));
 		}
 		return responseAsString;
 	}
