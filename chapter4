@@ -9,6 +9,8 @@
     Sample applications have links to the subset of those files they require (or just copies on the Windows platform).
     In this section, we take a look at the code and various resource and asset files that are in the native/SalesforceSDK directory.
 
+    [Following sections probably belong in an appendix]
+
      1. A look at the SalesforceSDK source tree
 
        The SalesforceSDK source code lives in the native/SalesforceSDK project.
@@ -34,47 +36,47 @@
 
            2. Classes overview
 
-             |----------+----------------------------+-------------|
-             | Package  | Class                      | Description |
-             |----------+----------------------------+-------------|
-             | app      | ForceApp                   |             |
-             |----------+----------------------------+-------------|
-             | auth     | AuthenticatorService       |             |
-             |          | HttpAccess                 |             |
-             |          | OAuth2                     |             |
-             |----------+----------------------------+-------------|
-             | phonegap | SalesforceOAuthPlugin      |             |
-             |          | SmartStorePlugin           |             |
-             |          | TestRunnerPlugin           |             |
-             |----------+----------------------------+-------------|
-             | rest     | ClientManager              |             |
-             |          | RestClient                 |             |
-             |          | RestRequest                |             |
-             |          | RestResponse               |             |
-             |----------+----------------------------+-------------|
-             | security | Encryptor                  |             |
-             |          | PasscodeManager            |             |
-             |----------+----------------------------+-------------|
-             | store    | Database                   |             |
-             |          | DBOpenHelper               |             |
-             |          | DBOperations               |             |
-             |          | EncryptedDBOpenHelper      |             |
-             |          | SmartStore                 |             |
-             |----------+----------------------------+-------------|
-             | ui       | CustomServerUrlEditor      |             |
-             |          | LoginActivity              |             |
-             |          | OAuthWebviewHelper         |             |
-             |          | PasscodeActivity           |             |
-             |          | SalesforceDroidGapActivity |             |
-             |          | SalesforceGapViewClient    |             |
-             |          | SalesforceR                |             |
-             |          | ServerPickerActivity       |             |
-             |----------+----------------------------+-------------|
-             | util     | EventsObservable           |             |
-             |          | EventsObserver             |             |
-             |          | LogUtil                    |             |
-             |          | UriFragmentParser          |             |
-             |----------+----------------------------+-------------|
+             |----------+----------------------------+-----------------------------------------------------------------------------------------|
+             | Package  | Class                      | Description                                                                             |
+             |----------+----------------------------+-----------------------------------------------------------------------------------------|
+             | app      | ForceApp                   | Abstract subclass of Application                                                        |
+             |          |                            | You must supply a concrete subclass in your project                                     |
+             |----------+----------------------------+-----------------------------------------------------------------------------------------|
+             | auth     | AuthenticatorService       | Service taking care of Authentication                                                   |
+             |          | HttpAccess                 | Generic HTTP access layer                                                               |
+             |          | OAuth2                     | Helper class for common OAuth2 requests                                                 |
+             |----------+----------------------------+-----------------------------------------------------------------------------------------|
+             | phonegap | SalesforceOAuthPlugin      | PhoneGap plugin for Salesforce OAuth                                                    |
+             |          | SmartStorePlugin           | PhoneGap plugin for SmartSTore                                                          |
+             |          | TestRunnerPlugin           | PhoneGap plugin to run javascript tests in container                                    |
+             |----------+----------------------------+-----------------------------------------------------------------------------------------|
+             | rest     | ClientManager              | Factory of RestClient's - kicks off login flow if needed                                |
+             |          | RestClient                 | Authenticated client to talk to a force.com server                                      |
+             |          | RestRequest                | Force.com REST request wrapper                                                          |
+             |          | RestResponse               | REST response wrapper                                                                   |
+             |----------+----------------------------+-----------------------------------------------------------------------------------------|
+             | security | Encryptor                  | Helper class for encryption/decryption/hash computations                                |
+             |          | PasscodeManager            | Inactivity timeout manager - kicks off passcode screen if needed                        |
+             |----------+----------------------------+-----------------------------------------------------------------------------------------|
+             | store    | Database                   | Encrypted/regular sqlite database wrapper                                               |
+             |          | DBOpenHelper               | Helper class to manage regular database creation and version management                 |
+             |          | DBOperations               | DBOpenHelper/EncryptedDBOpenHelper wrapper                                              |
+             |          | EncryptedDBOpenHelper      | Helper class to manage encrypted database creation and version management               |
+             |          | SmartStore                 | Searchable/secure store for JSON documents                                              |
+             |----------+----------------------------+-----------------------------------------------------------------------------------------|
+             | ui       | CustomServerUrlEditor      | Custom dialog to allow user to pick a different login host                              |
+             |          | LoginActivity              | Login screen                                                                            |
+             |          | OAuthWebviewHelper         | Helper class to manage a WebView instance that is going through the OAuth login process |
+             |          | PasscodeActivity           | Passcode (pin) screen                                                                   |
+             |          | SalesforceDroidGapActivity | Main activity for hybrid applications                                                   |
+             |          | SalesforceGapViewClient    | WebView client used in hybrid applications                                              |
+             |          | SalesforceR                | Class that allows references to resources defined outside the SDK                       |
+             |          | ServerPickerActivity       | Choose login host screen                                                                |
+             |----------+----------------------------+-----------------------------------------------------------------------------------------|
+             | util     | EventsObservable           | Used to register and receive events generated by the SDK (used primarily in tests)      |
+             |          | EventsObserver             | Observer of SDK events                                                                  |
+             |          | UriFragmentParser          | Helper class for parsing URI's query strings                                            |
+             |----------+----------------------------+-----------------------------------------------------------------------------------------|
 
         2. Libraries
 
@@ -148,7 +150,14 @@
           (*) required for hybrid application
 
   2) Native Android Requirements
+
+     [Current section is fine]
+
   3) The Android SmartStore
+
+     [For an overview of SmartStore not iOS or Android specific, you should copy 
+      https://sites.google.com/a/salesforce.com/mobilecontainers/home/architecture/offline-data-storage/smartstore ]
+
   4) Creating a New Android Project
 
      1) Create a new native application
@@ -165,7 +174,22 @@
     See http://developer.android.com/guide/developing/device.html
 
   6) Android Sample Application
+
+     |-----------------------------------+--------------------------------------------------------------------------------------------------------------|
+     | Application                       | Description                                                                                                  |
+     |-----------------------------------+--------------------------------------------------------------------------------------------------------------|
+     | native/TemplateApp                | Template application used when creating a new native application                                             |
+     | native/RestExplorer               | Sample native application to explore REST API calls                                                          |
+     | native/SampleApps/CloudTunes      | Sample native application                                                                                    |
+     |-----------------------------------+--------------------------------------------------------------------------------------------------------------|
+     | hybrid/SampleApps/ContactExplorer | Sample hybrid local application - also template used for creating a new hybrid local application             |
+     | hybrid/SampleApps/VFConnector     | Sample hybrid visualforce applicaiton - also template used for creating a new hybrid visualforce application |
+     |-----------------------------------+--------------------------------------------------------------------------------------------------------------|
+
   7) Android Best Practices
+
+    See http://developer.android.com/guide/index.html     
+
   8) Android Troubleshooting
 
     See http://developer.android.com/guide/developing/debugging/index.html
