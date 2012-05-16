@@ -65,7 +65,7 @@ public class RestClient {
 	 * Interface through which the result of an asynchronous request is handled.
 	 */
 	public interface AsyncRequestCallback {
-		void onSuccess(RestResponse response);
+		void onSuccess(RestRequest request, RestResponse response);
 		void onError(Exception exception);
 	}
 	
@@ -251,6 +251,7 @@ public class RestClient {
 	private class RestCallTask extends
 			AsyncTask<RestRequest, Void, RestResponse> {
 
+		private RestRequest request;
 		private Exception exceptionThrown = null;
 		private AsyncRequestCallback callback;
 
@@ -261,7 +262,10 @@ public class RestClient {
 		@Override
 		protected RestResponse doInBackground(RestRequest... requests) {
 			try {
-				return sendSync(requests[0]);
+				request = requests[0];
+				RestResponse response = sendSync(request);
+				response.consume(); // we need to be done with the connection before returning control to the UI thread
+				return response;
 			} catch (Exception e) {
 				exceptionThrown = e;
 				return null;
@@ -274,7 +278,7 @@ public class RestClient {
 				callback.onError(exceptionThrown);
 			}
 			else {
-				callback.onSuccess(result);
+				callback.onSuccess(request, result);
 			}
 		}
 	}

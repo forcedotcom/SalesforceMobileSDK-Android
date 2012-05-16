@@ -118,7 +118,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 		// Do a cheap rest call - access token will be refreshed if needed
 		client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
 			@Override
-			public void onSuccess(RestResponse response) {
+			public void onSuccess(RestRequest request, RestResponse response) {
 				Log.i("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Auto-refresh succeeded");
 				updateRefreshTime();
 				setSidCookies(webView, SalesforceOAuthPlugin.client);
@@ -201,7 +201,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 					// But a stale session id will cause the webview to redirect to the web login
 					SalesforceOAuthPlugin.client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
 						@Override
-						public void onSuccess(RestResponse response) {
+						public void onSuccess(RestRequest request, RestResponse response) {
 							updateRefreshTime();
 							setSidCookies(webView, SalesforceOAuthPlugin.client);
 							success(new PluginResult(PluginResult.Status.OK, getJSONCredentials(SalesforceOAuthPlugin.client)), callbackId);							

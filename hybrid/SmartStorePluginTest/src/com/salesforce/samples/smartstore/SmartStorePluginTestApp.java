@@ -48,11 +48,6 @@ public class SmartStorePluginTestApp extends ForceApp {
 	}
 	
 	@Override
-	public int getLockTimeoutMinutes() {
-		return 0;
-	}
-
-	@Override
 	protected String getKey(String name) {
 		return null;
 	}
