@@ -26,23 +26,32 @@
 
   <!-- Location of SalesforceMobileSDK -->
   <property name="sdk.dir" value="."/>
-  
-  <!-- Computing the package directory from the package name e.g. builds com/acme/mobileapp from com.acme.mobileapp -->
-  <pathconvert property="package.dir">
-    <path>
-      <pathelement location="${package.name}" />
-    </path>
-    <mapper type="unpackage" from="*" to="*" />
-  </pathconvert>
 
-  <!-- Application ForceApp's subclass will be called ${app.name}App" -->
-  <property name="app.classname" value="${app.name}App" />
+  <!-- Target to compute package directory path and other properties -->
+  <target name="-pre">
+    <!-- Computing the package directory from the package name e.g. builds com/acme/mobileapp from com.acme.mobileapp -->
+    <pathconvert property="temp.package.dir">
+      <path>
+        <pathelement location="${package.name}" />
+      </path>
+      <mapper type="unpackage" from="*" to="*" />
+    </pathconvert>
+    <pathconvert property="package.dir">
+      <path>
+        <pathelement location="${temp.package.dir}" />
+      </path>
+      <globmapper from="${basedir}/*" to="*" />
+    </pathconvert>
+
+    <!-- Application ForceApp's subclass will be called ${app.name}App" -->
+    <property name="app.classname" value="${app.name}App" />
+  </target>
 
   <!-- Target to create a native application -->
   <target name="create_native" description="Create native application" 
           depends="-pre_native,-create,-next_steps_info,-oauth_info_native" />
 
-  <target name="-pre_native">
+  <target name="-pre_native" depends="-pre">
     <property name="template.dir" value="${sdk.dir}/native/TemplateApp" />
     <property name="template.app.name" value="Template" />
     <property name="template.app.classname" value="TemplateApp" />
@@ -55,7 +64,7 @@
           depends="-pre_hybrid_vf,-create,-post_hybrid_vf,-next_steps_info,-oauth_info_hybrid">
   </target>
 
-  <target name="-pre_hybrid_vf">
+  <target name="-pre_hybrid_vf" depends="-pre">
     <property name="template.dir" value="${sdk.dir}/hybrid/SampleApps/VFConnector" />
     <property name="template.app.name" value="VFConnector" />
     <property name="template.app.classname" value="VFConnectorApp" />
@@ -73,7 +82,7 @@
   <target name="create_hybrid_local" description="Create local hybrid application" 
           depends="-pre_hybrid_local,-create,-next_steps_info,-oauth_info_hybrid" />
 
-  <target name="-pre_hybrid_local">
+  <target name="-pre_hybrid_local" depends="-pre">
     <property name="template.dir" value="${sdk.dir}/hybrid/SampleApps/ContactExplorer" />
     <property name="template.app.name" value="ContactExplorer" />
     <property name="template.app.classname" value="ContactExplorerApp" />
