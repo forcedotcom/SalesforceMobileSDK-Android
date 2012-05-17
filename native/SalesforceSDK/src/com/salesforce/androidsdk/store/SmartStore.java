@@ -27,15 +27,19 @@
 package com.salesforce.androidsdk.store;
 
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.text.TextUtils;
+import android.util.Log;
 
 
 /**
@@ -79,6 +83,12 @@ public class SmartStore  {
 	// Backing database
 	protected Database db;
 	
+	// Map to speed up soup name lookup (synchronized because it's static)
+	protected static Map<String, String> soupNameToTableNamesMap = new Hashtable<String, String>();
+	
+	// Map to speed up index specs lookup (synchronized because it's static)
+	protected static Map<String, IndexSpec[]> soupNameToIndexSpecsMap = new Hashtable<String, SmartStore.IndexSpec[]>(); 
+	
 	/**
 	 * Create soup index map table to keep track of soups' index specs
 	 * Create soup name map table to keep track of soup name to table name mappings
@@ -87,6 +97,8 @@ public class SmartStore  {
 	 * @param db
 	 */
 	public static void createMetaTables(Database db) {
+		long startTime = System.nanoTime();
+		
 		// Create soup_index_map table
 		StringBuilder sb = new StringBuilder();
 		sb.append("CREATE TABLE ").append(SOUP_INDEX_MAP_TABLE).append(" (") 
@@ -109,6 +121,8 @@ public class SmartStore  {
 		db.execSQL(sb.toString());		
 		// Add index on soup_name column
 		db.execSQL(String.format("CREATE INDEX %s on %s ( %s )", SOUP_NAMES_TABLE + "_0", SOUP_NAMES_TABLE, SOUP_NAME_COL));
+		
+		logTiming("createMetaTables", startTime);
 	}
 
 	/**
@@ -150,6 +164,8 @@ public class SmartStore  {
 	 * @param indexSpecs
 	 */
 	public void registerSoup(String soupName, IndexSpec[] indexSpecs) {
+		long startTime = System.nanoTime();
+
 		if (soupName == null) throw new SmartStoreException("Bogus soup name:" + soupName);
 		if (indexSpecs.length == 0) throw new SmartStoreException("No indexSpecs specified for soup: " + soupName);
 		if (hasSoup(soupName)) return; // soup already exist - do nothing
@@ -180,6 +196,7 @@ public class SmartStore  {
 					    .append(", ").append(LAST_MODIFIED_COL).append(" INTEGER");
 		
 		int i = 0;
+		IndexSpec[] indexSpecsToCache = new IndexSpec[indexSpecs.length];
 		for (IndexSpec indexSpec : indexSpecs) {
 			// for create table
 			String columnName = soupTableName + "_" + i;
@@ -198,6 +215,9 @@ public class SmartStore  {
 			String indexName = soupTableName + "_" + i + "_idx";
 			createIndexStmts.add(String.format("CREATE INDEX %s on %s ( %s )", indexName, soupTableName, columnName));;
 			
+			// for the cache
+			indexSpecsToCache[i] = new IndexSpec(indexSpec.path, indexSpec.type, columnName);
+			
 			i++;
 		}
 		createTableStmt.append(")");
@@ -207,18 +227,24 @@ public class SmartStore  {
 		for (String createIndexStmt : createIndexStmts) {
 			db.execSQL(createIndexStmt.toString());
 		}
-		
+
 		try {
 			db.beginTransaction();
 			for (ContentValues values : soupIndexMapInserts) {
 				db.insert(SOUP_INDEX_MAP_TABLE, values);
 			}
 			db.setTransactionSuccessful();
+			
+			// Add to soupNameToTableNamesMap
+			soupNameToTableNamesMap.put(soupName, soupTableName);
+			
+			// Add to soupNameToIndexSpecsMap 
+			soupNameToIndexSpecsMap.put(soupName, indexSpecsToCache); 
 		}
 		finally {
 			db.endTransaction();
+			logTiming("registerSoup", startTime);			
 		}
-		
 	}
 	
 	/**
@@ -237,6 +263,22 @@ public class SmartStore  {
 	 * @return table name for a given soup or null if the soup doesn't exist
 	 */
 	public String getSoupTableName(String soupName) {
+		String soupTableName = soupNameToTableNamesMap.get(soupName);
+		if (soupTableName == null) {
+			soupTableName = getSoupTableNameFromDb(soupName);
+			if (soupTableName != null) {
+				soupNameToTableNamesMap.put(soupName, soupTableName);
+			}
+			// Note: if you ask twice about a non-existing soup, we go to the database both times
+			//       we could optimize for that scenario but it doesn't seem very important
+		}
+		
+		return soupTableName;
+	}
+		
+	private String getSoupTableNameFromDb(String soupName) {
+		long startTime = System.nanoTime();
+
 		Cursor cursor = null;
 		try {
 			cursor = db.query(SOUP_NAMES_TABLE, new String[] {ID_COL}, null, null, getSoupNamePredicate(), soupName);
@@ -249,6 +291,7 @@ public class SmartStore  {
 			if (cursor != null) {
 				cursor.close();
 			}
+			logTiming("getSoupTableNameFromDb", startTime);			
 		}
 	}
 	
@@ -260,6 +303,8 @@ public class SmartStore  {
 	 * @param soupName
 	 */
 	public void dropSoup(String soupName) {
+		long startTime = System.nanoTime();
+		
 		String soupTableName = getSoupTableName(soupName);
 		if (soupTableName != null) {
 			db.execSQL("DROP TABLE IF EXISTS " + soupTableName);
@@ -268,9 +313,17 @@ public class SmartStore  {
 				db.delete(SOUP_NAMES_TABLE, getSoupNamePredicate(), soupName);
 				db.delete(SOUP_INDEX_MAP_TABLE, getSoupNamePredicate(), soupName);
 				db.setTransactionSuccessful();
+				
+				// Remove from soupNameToTableNamesMap
+				soupNameToTableNamesMap.remove(soupName);
+				
+				// Remove from soupNameToIndexSpecsMap
+				soupNameToIndexSpecsMap.remove(soupName);
+				
 			}
 			finally {
 				db.endTransaction();
+				logTiming("dropSoup", startTime);				
 			}
 		}
 	}
@@ -284,6 +337,8 @@ public class SmartStore  {
 	 * @throws JSONException 
 	 */
 	public JSONArray querySoup(String soupName, QuerySpec querySpec, int pageIndex) throws JSONException {
+		long startTime = System.nanoTime();
+		
 		String soupTableName = getSoupTableName(soupName);
 		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 		
@@ -310,13 +365,14 @@ public class SmartStore  {
 				}
 				while (cursor.moveToNext());
 			}
-			
+		
 			return results;			
 		}
 		finally {
 			if (cursor != null) {
 				cursor.close();
 			}
+			logTiming("querySoup", startTime);			
 		}
 	}
 	
@@ -327,6 +383,8 @@ public class SmartStore  {
 	 * @throws JSONException
 	 */
 	public int countQuerySoup(String soupName, QuerySpec querySpec) throws JSONException {
+		long startTime = System.nanoTime();
+		
 		String soupTableName = getSoupTableName(soupName);
 		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 		
@@ -351,6 +409,7 @@ public class SmartStore  {
 			if (cursor != null) {
 				cursor.close();
 			}
+			logTiming("countQuerySoup", startTime);			
 		}
 	}
 	
@@ -374,6 +433,8 @@ public class SmartStore  {
 	 * @throws JSONException
 	 */
 	public JSONObject create(String soupName, JSONObject soupElt, boolean handleTx) throws JSONException {
+		long startTime = System.nanoTime();		
+		
 		String soupTableName = getSoupTableName(soupName);
 		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
@@ -426,6 +487,8 @@ public class SmartStore  {
 			if (handleTx) {
 				db.endTransaction();
 			}
+			
+			logTiming("create", startTime);			
 		}
 	}
 
@@ -437,6 +500,8 @@ public class SmartStore  {
 	 * @throws JSONException 
 	 */
 	public JSONArray retrieve(String soupName, Long... soupEntryIds) throws JSONException {
+		long startTime = System.nanoTime();
+		
 		String soupTableName = getSoupTableName(soupName);
 		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 		Cursor cursor = null;
@@ -458,6 +523,8 @@ public class SmartStore  {
 			if (cursor != null) {
 				cursor.close();
 			}
+			
+			logTiming("retrieve", startTime);			
 		}
 	}
 	
@@ -483,6 +550,8 @@ public class SmartStore  {
 	 * @throws JSONException
 	 */
 	public JSONObject update(String soupName, JSONObject soupElt, long soupEntryId, boolean handleTx) throws JSONException {
+		long startTime = System.nanoTime();
+
 		String soupTableName = getSoupTableName(soupName);
 		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 		IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
@@ -526,6 +595,8 @@ public class SmartStore  {
 			if (handleTx) {
 				db.endTransaction();
 			}
+
+			logTiming("update", startTime);			
 		}
 	}
 
@@ -575,6 +646,8 @@ public class SmartStore  {
 	 * @param handleTx
 	 */
 	public void delete(String soupName, Long[] soupEntryIds, boolean handleTx) {
+		long startTime = System.nanoTime();		
+		
 		String soupTableName = getSoupTableName(soupName);
 		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 		
@@ -592,6 +665,8 @@ public class SmartStore  {
 			if (handleTx) {
 				db.endTransaction();
 			}
+			
+			logTiming("delete", startTime);			
 		}
 	}
 
@@ -603,6 +678,8 @@ public class SmartStore  {
 	 * @return
 	 */
 	protected String getColumnNameForPath(Database db, String soupName, String path) {
+		long startTime = System.nanoTime();
+		
 		Cursor cursor = null;
 		try {
 			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {COLUMN_NAME_COL}, null, 
@@ -619,6 +696,8 @@ public class SmartStore  {
 			if (cursor != null) {
 				cursor.close();
 			}
+			
+			logTiming("getColumnNameForPath", startTime);			
 		}
 	}
 	
@@ -629,6 +708,18 @@ public class SmartStore  {
 	 * @return
 	 */
 	protected IndexSpec[] getIndexSpecs(Database db, String soupName) {
+		IndexSpec[] indexSpecs = soupNameToIndexSpecsMap.get(soupName).clone();
+		if (indexSpecs == null) {
+			indexSpecs = getIndexSpecsFromDb(db, soupName);
+			soupNameToIndexSpecsMap.put(soupName, indexSpecs); 
+		}
+		
+		return indexSpecs;
+	}
+	
+	protected IndexSpec[] getIndexSpecsFromDb(Database db, String soupName) {
+		long startTime = System.nanoTime();
+
 		Cursor cursor = null;
 		try {
 			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {PATH_COL, COLUMN_NAME_COL, COLUMN_TYPE_COL}, null,
@@ -653,6 +744,8 @@ public class SmartStore  {
 			if (cursor != null) {
 				cursor.close();
 			}
+			
+			logTiming("getIndexSpecsFromDb", startTime);			
 		}
 	}
 	
@@ -713,6 +806,12 @@ public class SmartStore  {
 			o = ((JSONObject) o).opt(pathElement);
 		}
 		return o;
+	}
+	
+	public static void resetDatabase(Context ctx) {
+		DBOperations.resetDatabase(ctx);
+		soupNameToTableNamesMap.clear();
+		soupNameToIndexSpecsMap.clear();
 	}
 
 	/**
@@ -926,5 +1025,14 @@ public class SmartStore  {
 
 		private static final long serialVersionUID = -6369452803270075464L;
 		
+	}
+	
+	/**
+	 * Helper method to log timing information
+	 * @param methodName
+	 * @param startTime
+	 */
+	private static void logTiming(String methodName, long startTime) {
+		Log.d("Timing (ms)", "SmartStore:" + methodName + " " + (System.nanoTime() - startTime) / 1000000);
 	}
 }

@@ -60,7 +60,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		DBOperations.resetDatabase(targetContext); // start clean
+		SmartStore.resetDatabase(targetContext); // start clean
 		db = getWritableDatabase();
 		store = new SmartStore(db);
 		
