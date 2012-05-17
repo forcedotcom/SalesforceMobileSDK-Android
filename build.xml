@@ -130,6 +130,8 @@
       <fileset file="${target.dir}/src/${template.package.dir}/*.java" />
     </move>
 
+    <delete dir="${target.dir}/src/com" />
+
     <move todir="${target.dir}/src/${package.dir}">
       <fileset file="${target.dir}/src/*.java" />
     </move>
