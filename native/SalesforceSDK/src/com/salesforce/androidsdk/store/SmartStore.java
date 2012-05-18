@@ -27,9 +27,7 @@
 package com.salesforce.androidsdk.store;
 
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
-import java.util.Map;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -49,10 +47,6 @@ import android.util.Log;
  * and searchable manner. Similar in some ways to CouchDB, SmartStore stores documents as JSON values.  
  * SmartStore is inspired by the Apple Newton OS Soup/Store model. 
  * The main challenge here is how to effectively store documents with dynamic fields, and still allow indexing and searching.
- */
-/**
- * @author wmathurin
- *
  */
 public class SmartStore  {
 	// Default
@@ -82,12 +76,6 @@ public class SmartStore  {
 	
 	// Backing database
 	protected Database db;
-	
-	// Map to speed up soup name lookup (synchronized because it's static)
-	protected static Map<String, String> soupNameToTableNamesMap = new Hashtable<String, String>();
-	
-	// Map to speed up index specs lookup (synchronized because it's static)
-	protected static Map<String, IndexSpec[]> soupNameToIndexSpecsMap = new Hashtable<String, SmartStore.IndexSpec[]>(); 
 	
 	/**
 	 * Create soup index map table to keep track of soups' index specs
@@ -236,10 +224,10 @@ public class SmartStore  {
 			db.setTransactionSuccessful();
 			
 			// Add to soupNameToTableNamesMap
-			soupNameToTableNamesMap.put(soupName, soupTableName);
+			SmartStoreAccelerator.INSTANCE.cacheTableName(soupName, soupTableName);
 			
 			// Add to soupNameToIndexSpecsMap 
-			soupNameToIndexSpecsMap.put(soupName, indexSpecsToCache); 
+			SmartStoreAccelerator.INSTANCE.cacheIndexSpecs(soupName, indexSpecsToCache); 
 		}
 		finally {
 			db.endTransaction();
@@ -263,11 +251,11 @@ public class SmartStore  {
 	 * @return table name for a given soup or null if the soup doesn't exist
 	 */
 	public String getSoupTableName(String soupName) {
-		String soupTableName = soupNameToTableNamesMap.get(soupName);
+		String soupTableName = SmartStoreAccelerator.INSTANCE.getCachedTableName(soupName);
 		if (soupTableName == null) {
 			soupTableName = getSoupTableNameFromDb(soupName);
 			if (soupTableName != null) {
-				soupNameToTableNamesMap.put(soupName, soupTableName);
+				SmartStoreAccelerator.INSTANCE.cacheTableName(soupName, soupTableName);
 			}
 			// Note: if you ask twice about a non-existing soup, we go to the database both times
 			//       we could optimize for that scenario but it doesn't seem very important
@@ -314,12 +302,8 @@ public class SmartStore  {
 				db.delete(SOUP_INDEX_MAP_TABLE, getSoupNamePredicate(), soupName);
 				db.setTransactionSuccessful();
 				
-				// Remove from soupNameToTableNamesMap
-				soupNameToTableNamesMap.remove(soupName);
-				
-				// Remove from soupNameToIndexSpecsMap
-				soupNameToIndexSpecsMap.remove(soupName);
-				
+				// Remove from cache
+				SmartStoreAccelerator.INSTANCE.dropSoup(soupName);
 			}
 			finally {
 				db.endTransaction();
@@ -708,10 +692,10 @@ public class SmartStore  {
 	 * @return
 	 */
 	protected IndexSpec[] getIndexSpecs(Database db, String soupName) {
-		IndexSpec[] indexSpecs = soupNameToIndexSpecsMap.get(soupName).clone();
+		IndexSpec[] indexSpecs = SmartStoreAccelerator.INSTANCE.getCachedIndexSpecs(soupName);
 		if (indexSpecs == null) {
 			indexSpecs = getIndexSpecsFromDb(db, soupName);
-			soupNameToIndexSpecsMap.put(soupName, indexSpecs); 
+			SmartStoreAccelerator.INSTANCE.cacheIndexSpecs(soupName, indexSpecs);
 		}
 		
 		return indexSpecs;
@@ -810,8 +794,7 @@ public class SmartStore  {
 	
 	public static void resetDatabase(Context ctx) {
 		DBOperations.resetDatabase(ctx);
-		soupNameToTableNamesMap.clear();
-		soupNameToIndexSpecsMap.clear();
+		SmartStoreAccelerator.INSTANCE.reset();
 	}
 
 	/**

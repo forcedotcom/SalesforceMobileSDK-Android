@@ -41,7 +41,7 @@ public class Database {
 	private SQLiteDatabase db;
 	private info.guardianproject.database.sqlcipher.SQLiteDatabase encdb;
 	private boolean encrypted;
-
+	
 	public Database(SQLiteDatabase db) {
 		this.db = db;
 		this.encrypted = false;
@@ -201,7 +201,7 @@ public class Database {
 		else
 			encdb.delete(table, whereClause, whereArgs);
 	}
-	
+
 	/**
 	 * Helper method used for logging binding args
 	 * @param whereArgs
