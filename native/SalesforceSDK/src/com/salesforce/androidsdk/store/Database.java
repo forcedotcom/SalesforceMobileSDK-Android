@@ -127,7 +127,7 @@ public class Database {
 	}
 
 	/**
-	 * Runs a query (after first logging the select statement)
+	 * Runs a query
 	 * @param table
 	 * @param columns
 	 * @param orderBy
@@ -152,24 +152,18 @@ public class Database {
 	}
 
 	/**
-	 * Does an insert (after first logging the insert statement)
+	 * Does an insert
 	 * @param table
 	 * @param contentValues
 	 * @return row id of inserted row
 	 */
 	public long insert(String table, ContentValues contentValues) {
-//		-- Debug Logging
-//		Pair<String, String> columnsValues = LogUtil.getAsStrings(contentValues.valueSet(), ", ");
-//		String sql = String.format("INSERT INTO %s (%s) VALUES (%s)", table, columnsValues.first, columnsValues.second);
-//		Log.i("Database:insert[enc=" + encrypted + "]", sql);
-		if (!encrypted)
-			return db.insert(table, null, contentValues);
-		else
-			return encdb.insert(table, null, contentValues);
+		InsertHelper ih = (!encrypted ? InsertHelper.getInsertHelper(db, table) : InsertHelper.getInsertHelper(encdb, table));
+		return ih.insert(contentValues);
 	}
 
 	/**
-	 * Does an update (after first logging the insert statement)
+	 * Does an update
 	 * @param table
 	 * @param contentValues
 	 * @param whereClause
@@ -210,6 +204,4 @@ public class Database {
 	protected String getStringForArgs(String... whereArgs) {
 		return whereArgs == null ? "" : " [Args=" + TextUtils.join(",", whereArgs) + "]";
 	}
-	
-	
 }

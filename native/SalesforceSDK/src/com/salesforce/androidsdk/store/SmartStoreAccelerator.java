@@ -32,7 +32,6 @@ import java.util.Map;
 import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
 
 
-
 /**
  * Smart store Accelerator 
  * 
@@ -58,28 +57,20 @@ public enum SmartStoreAccelerator  {
 
 	/**
 	 * @param soupName
+	 * @return
+	 */
+	public IndexSpec[] getCachedIndexSpecs(String soupName) {
+		return soupNameToIndexSpecsMap.get(soupName);
+	}
+	
+	/**
+	 * @param soupName
 	 * @param tableName
 	 */
 	public void cacheTableName(String soupName, String tableName) {
 		soupNameToTableNamesMap.put(soupName, tableName);
 	}
 	
-	/**
-	 * @param soupName
-	 */
-	public void dropSoup(String soupName) {
-		soupNameToTableNamesMap.remove(soupName);
-		soupNameToIndexSpecsMap.remove(soupName);
-	}
-
-	/**
-	 * @param soupName
-	 * @return
-	 */
-	public IndexSpec[] getCachedIndexSpecs(String soupName) {
-		return soupNameToIndexSpecsMap.get(soupName);
-	}
-
 	/**
 	 * @param soupName
 	 * @param tableName
@@ -89,11 +80,19 @@ public enum SmartStoreAccelerator  {
 	}
 
 	/**
+	 * @param soupName
+	 */
+	public void dropSoup(String soupName) {
+		soupNameToTableNamesMap.remove(soupName);
+		soupNameToIndexSpecsMap.remove(soupName);
+	}
+
+	/**
 	 * Reset cache
 	 */
 	public void reset() {
 		soupNameToTableNamesMap.clear();
 		soupNameToIndexSpecsMap.clear();
 	}
-	
+
 }

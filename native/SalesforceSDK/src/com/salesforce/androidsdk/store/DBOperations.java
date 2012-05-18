@@ -85,10 +85,15 @@ public class DBOperations  {
 		}
 	}	
 	
+	/**
+	 * Delete database
+	 * @param ctx
+	 */
 	public static synchronized void resetDatabase(Context ctx) {
 		shutDown();
 		EncryptedDBOpenHelper.deleteDatabase(ctx);
 		DBOpenHelper.deleteDatabase(ctx);
+		InsertHelper.reset();
 	}
 	
 	private static synchronized DBOpenHelper getOpenHelper(Context ctx) {
