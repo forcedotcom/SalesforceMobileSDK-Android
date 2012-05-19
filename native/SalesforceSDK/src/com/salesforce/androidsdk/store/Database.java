@@ -30,6 +30,7 @@ import java.util.Hashtable;
 import java.util.Map;
 
 import android.content.ContentValues;
+import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDoneException;
@@ -209,9 +210,20 @@ public class Database {
 	protected String getStringForArgs(String... whereArgs) {
 		return whereArgs == null ? "" : " [Args=" + TextUtils.join(",", whereArgs) + "]";
 	}
+
+	public static void reset(Context ctx) {
+		EncryptedDBOpenHelper.deleteDatabase(ctx);
+		DBOpenHelper.deleteDatabase(ctx);
+		InsertHelper.reset();
+		cachedEncSelectSeq.clear();
+		cachedSelectSeq.clear();
+	}
 	
 	/**
 	 * Get next id for a table
+	 * 
+	 * TODO refactor the following to its own class?
+	 * 
 	 * @param table
 	 * @return long
 	 */
@@ -249,4 +261,5 @@ public class Database {
 			}
 		}
 	}
+
  }

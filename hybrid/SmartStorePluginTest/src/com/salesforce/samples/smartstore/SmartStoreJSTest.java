@@ -26,12 +26,10 @@
  */
 package com.salesforce.samples.smartstore;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 
-import android.os.Debug;
 import android.test.ActivityInstrumentationTestCase2;
 import android.util.Log;
 
@@ -53,8 +51,8 @@ public class SmartStoreJSTest extends
 		super("com.salesforce.samples.smartstore", SalesforceDroidGapActivity.class);
 
 		//TODO add test suites as desired for individual runs
-		String[] suiteNames = {"SmartStoreTestSuite", "SmartStoreLoadTestSuite" };
-//		String[] suiteNames = {"SmartStoreTestSuite"}; 
+//		String[] suiteNames = {"SmartStoreTestSuite", "SmartStoreLoadTestSuite" };
+		String[] suiteNames = {"SmartStoreTestSuite"}; 
 		suitesToRun = new TreeSet<String>(Arrays.asList(suiteNames));
 	}
 	
@@ -177,7 +175,7 @@ public class SmartStoreJSTest extends
 	 */
     private void runTest(String suiteClassName, String testName)  {
     	if (suitesToRun.contains(suiteClassName)) {
-    		Debug.startMethodTracing(new File(getActivity().getFilesDir(), "SmartStoreJSTest_" + testName + ".trace").getAbsolutePath());
+    		// Debug.startMethodTracing(new File(getActivity().getFilesDir(), "SmartStoreJSTest_" + testName + ".trace").getAbsolutePath());
     		
 	    	String jsCmd = "navigator.testrunner.setTestSuite('" + suiteClassName + "');" +
 	    			"navigator.testrunner.testSuite.startTest('" + testName + "');";
@@ -196,7 +194,7 @@ public class SmartStoreJSTest extends
 			assertEquals("Wrong test completed", testName, result.testName);
 			assertTrue(result.testName + " " + result.message, result.success);
 			
-			Debug.stopMethodTracing();
+			// Debug.stopMethodTracing();
     	} else {
 	    	Log.w("SmartStoreJSTest.runTest", "Skipping suite: " + suiteClassName);
     	}

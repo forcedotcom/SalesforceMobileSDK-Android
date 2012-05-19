@@ -91,9 +91,7 @@ public class DBOperations  {
 	 */
 	public static synchronized void resetDatabase(Context ctx) {
 		shutDown();
-		EncryptedDBOpenHelper.deleteDatabase(ctx);
-		DBOpenHelper.deleteDatabase(ctx);
-		InsertHelper.reset();
+		Database.reset(ctx);
 	}
 	
 	private static synchronized DBOpenHelper getOpenHelper(Context ctx) {
