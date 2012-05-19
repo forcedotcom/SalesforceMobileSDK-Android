@@ -26,9 +26,14 @@
  */
 package com.salesforce.androidsdk.store;
 
+import java.util.Hashtable;
+import java.util.Map;
+
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteDoneException;
+import android.database.sqlite.SQLiteStatement;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -210,20 +215,37 @@ public class Database {
 	 * @param table
 	 * @return long
 	 */
+	private static final String SEQ_SELECT = "SELECT seq FROM SQLITE_SEQUENCE WHERE name = ?";
+	private static Map<String, SQLiteStatement> cachedSelectSeq = new Hashtable<String, SQLiteStatement>();
+	private static Map<String, info.guardianproject.database.sqlcipher.SQLiteStatement> cachedEncSelectSeq = new Hashtable<String, info.guardianproject.database.sqlcipher.SQLiteStatement>();
+
 	public long getNextId(String table) {
-		Cursor cursor = null;
-		try {
-			cursor = query("SQLITE_SEQUENCE", new String[]{"seq"}, null, null, "name = ?", table);
-			if (!cursor.moveToFirst()) {
+		if (!encrypted) {
+			SQLiteStatement prog = cachedSelectSeq.get(table);
+			if (prog == null) {
+				prog = db.compileStatement(SEQ_SELECT);
+				prog.bindString(1, table);
+				cachedSelectSeq.put(table, prog);
+			}
+			try {
+				return prog.simpleQueryForLong() + 1;
+			} catch (SQLiteDoneException e) {
+				// first time, we don't find any row for the table in the sequence table
 				return 1L;
 			}
-			else {
-				return cursor.getLong(0) + 1;
-			}
 		}
-		finally {
-			if (cursor != null) {
-				cursor.close();
+		else {
+			info.guardianproject.database.sqlcipher.SQLiteStatement prog = cachedEncSelectSeq.get(table);
+			if (prog == null) {
+				prog = encdb.compileStatement(SEQ_SELECT);
+				prog.bindString(1, table);
+				cachedEncSelectSeq.put(table, prog);
+			}
+			try {
+				return prog.simpleQueryForLong() + 1;
+			} catch (info.guardianproject.database.sqlcipher.SQLiteDoneException e) {
+				// first time, we don't find any row for the table in the sequence table
+				return 1L;
 			}
 		}
 	}
