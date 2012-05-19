@@ -204,4 +204,27 @@ public class Database {
 	protected String getStringForArgs(String... whereArgs) {
 		return whereArgs == null ? "" : " [Args=" + TextUtils.join(",", whereArgs) + "]";
 	}
-}
+	
+	/**
+	 * Get next id for a table
+	 * @param table
+	 * @return long
+	 */
+	public long getNextId(String table) {
+		Cursor cursor = null;
+		try {
+			cursor = query("SQLITE_SEQUENCE", new String[]{"seq"}, null, null, "name = ?", table);
+			if (!cursor.moveToFirst()) {
+				return 1L;
+			}
+			else {
+				return cursor.getLong(0) + 1;
+			}
+		}
+		finally {
+			if (cursor != null) {
+				cursor.close();
+			}
+		}
+	}
+ }

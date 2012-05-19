@@ -407,10 +407,20 @@ public class SmartStore  {
 			}
 
 			long now = System.currentTimeMillis();
+			long soupEntryId = db.getNextId(soupTableName);
+
+			// Adding fields to soup element
+			// Cloning to not modify the one passed in (inefficient?)
+			JSONObject soupEltCreated = new JSONObject(soupElt.toString());
+			soupEltCreated.put(SOUP_ENTRY_ID, soupEntryId);
+			soupEltCreated.put(SOUP_LAST_MODIFIED_DATE, now);
+			
 			ContentValues contentValues = new ContentValues();
+			contentValues.put(ID_COL, soupEntryId);
 			contentValues.put(SOUP_COL, ""); 
 			contentValues.put(CREATED_COL, now);
 			contentValues.put(LAST_MODIFIED_COL, now);
+			contentValues.put(SOUP_COL, soupEltCreated.toString());
 			for (IndexSpec indexSpec : indexSpecs) {
 				switch (indexSpec.type) {
 				case integer:
@@ -419,20 +429,9 @@ public class SmartStore  {
 					contentValues.put(indexSpec.columnName, (String) project(soupElt, indexSpec.path)); break;
 				}
 			}
-			long soupEntryId = db.insert(soupTableName, contentValues); // insert without the soup to get the id
 			
-			// Adding fields to soup element
-			// Cloning to not modify the one passed in (inefficient?)
-			JSONObject soupEltCreated = new JSONObject(soupElt.toString());
-			soupEltCreated.put(SOUP_ENTRY_ID, soupEntryId);
-			soupEltCreated.put(SOUP_LAST_MODIFIED_DATE, now);
-			
-			// Updating soup column
-			contentValues = new ContentValues();
-			contentValues.put(SOUP_COL, soupEltCreated.toString());
-			
-			// Updating database
-			boolean success = db.update(soupTableName, contentValues, getSoupEntryIdPredicate(), soupEntryId + "") == 1;
+			// Inserting into database
+			boolean success = db.insert(soupTableName, contentValues) == soupEntryId;
 			
 			// Commit if successful
 			if (success) {
@@ -725,7 +724,6 @@ public class SmartStore  {
 	protected String getSoupTableName(long soupId) {
 		return "TABLE_" + soupId;
 	}
-
 
 	/**
 	 * @param soup
