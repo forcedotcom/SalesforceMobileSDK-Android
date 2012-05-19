@@ -155,8 +155,6 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt = new JSONObject("{'key':'ka', 'value':'va'}");
 		JSONObject soupEltCreated = store.create(TEST_SOUP, soupElt);
 		
-		assertSameJSON("Wrong created soup element returned", soupElt, removeExtraFields(soupEltCreated));		
-		
 		// Check DB
 		Cursor c = null;
 		try {
@@ -193,10 +191,6 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt1Created = store.create(OTHER_TEST_SOUP, soupElt1);
 		JSONObject soupElt2Created = store.create(OTHER_TEST_SOUP, soupElt2);
 		JSONObject soupElt3Created = store.create(OTHER_TEST_SOUP, soupElt3);
-		
-		assertSameJSON("Wrong created soup element returned", soupElt1, removeExtraFields(soupElt1Created));
-		assertSameJSON("Wrong created soup element returned", soupElt2, removeExtraFields(soupElt2Created));
-		assertSameJSON("Wrong created soup element returned", soupElt3, removeExtraFields(soupElt3Created));
 		
 		// Check DB
 		Cursor c = null;
@@ -528,21 +522,6 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		if (c != null) {
 			c.close();
 		}
-	}
-
-	/**
-	 * Remove soup entry id, last modified date 
-	 * @param retrievedSoupElt
-	 * @return
-	 * @throws JSONException
-	 */
-	private JSONObject removeExtraFields(JSONObject retrievedSoupElt) throws JSONException {
-		
-		JSONObject cleansedElt = new JSONObject(retrievedSoupElt.toString());
-		cleansedElt.remove(SmartStore.SOUP_ENTRY_ID);
-		cleansedElt.remove(SmartStore.SOUP_LAST_MODIFIED_DATE);
-
-		return cleansedElt;
 	}
 
 	/**

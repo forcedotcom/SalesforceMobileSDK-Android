@@ -379,7 +379,8 @@ public class SmartStore  {
 	
 
 	/**
-	 * Create (and commits) 
+	 * Create (and commits)
+	 * Note: Passed soupElt is modified (last modified date and soup entry id fields) 
 	 * @param soupName
 	 * @param soupElt
 	 * @return soupElt created or null if creation failed
@@ -391,6 +392,7 @@ public class SmartStore  {
 	
 	/**
 	 * Create
+	 * Note: Passed soupElt is modified (last modified date and soup entry id fields)
 	 * @param soupName
 	 * @param soupElt
 	 * @return
@@ -410,17 +412,15 @@ public class SmartStore  {
 			long soupEntryId = db.getNextId(soupTableName);
 
 			// Adding fields to soup element
-			// Cloning to not modify the one passed in (inefficient?)
-			JSONObject soupEltCreated = new JSONObject(soupElt.toString());
-			soupEltCreated.put(SOUP_ENTRY_ID, soupEntryId);
-			soupEltCreated.put(SOUP_LAST_MODIFIED_DATE, now);
+			soupElt.put(SOUP_ENTRY_ID, soupEntryId);
+			soupElt.put(SOUP_LAST_MODIFIED_DATE, now);
 			
 			ContentValues contentValues = new ContentValues();
 			contentValues.put(ID_COL, soupEntryId);
 			contentValues.put(SOUP_COL, ""); 
 			contentValues.put(CREATED_COL, now);
 			contentValues.put(LAST_MODIFIED_COL, now);
-			contentValues.put(SOUP_COL, soupEltCreated.toString());
+			contentValues.put(SOUP_COL, soupElt.toString());
 			for (IndexSpec indexSpec : indexSpecs) {
 				switch (indexSpec.type) {
 				case integer:
@@ -438,7 +438,7 @@ public class SmartStore  {
 				if (handleTx) {
 					db.setTransactionSuccessful();
 				}
-				return soupEltCreated;
+				return soupElt;
 			}
 			else {
 				return null;
@@ -485,7 +485,8 @@ public class SmartStore  {
 	
 
 	/**
-	 * Update (and commits) 
+	 * Update (and commits)
+	 * Note: Passed soupElt is modified (last modified date and soup entry id fields) 
 	 * @param soupName
 	 * @param soupElt
 	 * @param soupEntryId
@@ -498,6 +499,7 @@ public class SmartStore  {
 	
 	/**
 	 * Update
+	 * Note: Passed soupElt is modified (last modified date and soup entry id fields)
 	 * @param soupName
 	 * @param soupElt
 	 * @param soupEntryId
@@ -512,13 +514,11 @@ public class SmartStore  {
 		long now = System.currentTimeMillis();
 		
 		// Updating last modified field in soup element
-		// Cloning to not modify the one passed in (inefficient?)
-		JSONObject soupEltUpdated = new JSONObject(soupElt.toString());
-		soupEltUpdated.put(SOUP_LAST_MODIFIED_DATE, now);
+		soupElt.put(SOUP_LAST_MODIFIED_DATE, now);
 
 		// Preparing data for row
 		ContentValues contentValues = new ContentValues();
-		contentValues.put(SOUP_COL, soupEltUpdated.toString());
+		contentValues.put(SOUP_COL, soupElt.toString());
 		contentValues.put(LAST_MODIFIED_COL, now);
 		for (IndexSpec indexSpec : indexSpecs) {
 			switch (indexSpec.type) {
@@ -538,7 +538,7 @@ public class SmartStore  {
 				if (handleTx) {
 					db.setTransactionSuccessful();
 				}
-				return soupEltUpdated;
+				return soupElt;
 			}
 			else {
 				return null;
