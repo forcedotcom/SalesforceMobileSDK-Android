@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.store;
 
+import info.guardianproject.database.sqlcipher.SQLiteDatabase;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +36,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.ContentValues;
-import android.content.Context;
 import android.database.Cursor;
 import android.text.TextUtils;
 
@@ -74,7 +75,7 @@ public class SmartStore  {
 	public static final String SOUP_LAST_MODIFIED_DATE = "_soupLastModifiedDate";
 	
 	// Backing database
-	protected Database db;
+	protected SQLiteDatabase db;
 	
 	/**
 	 * Create soup index map table to keep track of soups' index specs
@@ -83,7 +84,7 @@ public class SmartStore  {
 	 * 
 	 * @param db
 	 */
-	public static void createMetaTables(Database db) {
+	public static void createMetaTables(SQLiteDatabase db) {
 		// Create soup_index_map table
 		StringBuilder sb = new StringBuilder();
 		sb.append("CREATE TABLE ").append(SOUP_INDEX_MAP_TABLE).append(" (") 
@@ -111,7 +112,7 @@ public class SmartStore  {
 	/**
 	 * @param db
 	 */
-	public SmartStore(Database db) {
+	public SmartStore(SQLiteDatabase db) {
 		this.db = db;
 	}
 
@@ -157,7 +158,7 @@ public class SmartStore  {
 		soupMapValues.put(SOUP_NAME_COL, soupName);
 		try {
 			db.beginTransaction();
-			long soupId = db.insert(SOUP_NAMES_TABLE, soupMapValues);
+			long soupId = DBHelper.INSTANCE.insert(db, SOUP_NAMES_TABLE, soupMapValues);
 			soupTableName = getSoupTableName(soupId);
 			db.setTransactionSuccessful();
 		}
@@ -212,15 +213,15 @@ public class SmartStore  {
 		try {
 			db.beginTransaction();
 			for (ContentValues values : soupIndexMapInserts) {
-				db.insert(SOUP_INDEX_MAP_TABLE, values);
+				DBHelper.INSTANCE.insert(db, SOUP_INDEX_MAP_TABLE, values);
 			}
 			db.setTransactionSuccessful();
 			
 			// Add to soupNameToTableNamesMap
-			SmartStoreAccelerator.INSTANCE.cacheTableName(soupName, soupTableName);
+			DBHelper.INSTANCE.cacheTableName(soupName, soupTableName);
 			
 			// Add to soupNameToIndexSpecsMap 
-			SmartStoreAccelerator.INSTANCE.cacheIndexSpecs(soupName, indexSpecsToCache); 
+			DBHelper.INSTANCE.cacheIndexSpecs(soupName, indexSpecsToCache); 
 		}
 		finally {
 			db.endTransaction();
@@ -243,11 +244,11 @@ public class SmartStore  {
 	 * @return table name for a given soup or null if the soup doesn't exist
 	 */
 	public String getSoupTableName(String soupName) {
-		String soupTableName = SmartStoreAccelerator.INSTANCE.getCachedTableName(soupName);
+		String soupTableName = DBHelper.INSTANCE.getCachedTableName(soupName);
 		if (soupTableName == null) {
 			soupTableName = getSoupTableNameFromDb(soupName);
 			if (soupTableName != null) {
-				SmartStoreAccelerator.INSTANCE.cacheTableName(soupName, soupTableName);
+				DBHelper.INSTANCE.cacheTableName(soupName, soupTableName);
 			}
 			// Note: if you ask twice about a non-existing soup, we go to the database both times
 			//       we could optimize for that scenario but it doesn't seem very important
@@ -259,7 +260,7 @@ public class SmartStore  {
 	private String getSoupTableNameFromDb(String soupName) {
 		Cursor cursor = null;
 		try {
-			cursor = db.query(SOUP_NAMES_TABLE, new String[] {ID_COL}, null, null, getSoupNamePredicate(), soupName);
+			cursor = DBHelper.INSTANCE.query(db, SOUP_NAMES_TABLE, new String[] {ID_COL}, null, null, getSoupNamePredicate(), soupName);
 			if (!cursor.moveToFirst()) {
 				return null;
 			}
@@ -285,12 +286,12 @@ public class SmartStore  {
 			db.execSQL("DROP TABLE IF EXISTS " + soupTableName);
 			try {
 				db.beginTransaction();
-				db.delete(SOUP_NAMES_TABLE, getSoupNamePredicate(), soupName);
-				db.delete(SOUP_INDEX_MAP_TABLE, getSoupNamePredicate(), soupName);
+				DBHelper.INSTANCE.delete(db, SOUP_NAMES_TABLE, getSoupNamePredicate(), soupName);
+				DBHelper.INSTANCE.delete(db, SOUP_INDEX_MAP_TABLE, getSoupNamePredicate(), soupName);
 				db.setTransactionSuccessful();
 				
 				// Remove from cache
-				SmartStoreAccelerator.INSTANCE.dropSoup(soupName);
+				DBHelper.INSTANCE.removeFromCache(soupName);
 			}
 			finally {
 				db.endTransaction();
@@ -319,11 +320,11 @@ public class SmartStore  {
 		Cursor cursor = null;
 		try {
 			if (querySpec.path == null) {
-				cursor = db.query(soupTableName, new String[] {SOUP_COL}, null, limit, null);				
+				cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {SOUP_COL}, null, limit, null);				
 			}
 			else { 
 				String columnName = getColumnNameForPath(db, soupName, querySpec.path);
-				cursor = db.query(soupTableName, new String[] {SOUP_COL}, querySpec.getOrderBy(columnName), limit, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
+				cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {SOUP_COL}, querySpec.getOrderBy(columnName), limit, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
 			}
 			
 			JSONArray results = new JSONArray();
@@ -356,11 +357,11 @@ public class SmartStore  {
 		Cursor cursor = null;
 		try {
 			if (querySpec.path == null) {
-				cursor = db.countQuery(soupTableName, null, (String[]) null);
+				cursor = DBHelper.INSTANCE.countQuery(db, soupTableName, null, (String[]) null);
 			}
 			else {
 				String columnName = getColumnNameForPath(db, soupName, querySpec.path);
-				cursor = db.countQuery(soupTableName, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
+				cursor = DBHelper.INSTANCE.countQuery(db, soupTableName, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
 			}
 			
 			if (cursor.moveToFirst()) {
@@ -409,7 +410,7 @@ public class SmartStore  {
 			}
 
 			long now = System.currentTimeMillis();
-			long soupEntryId = db.getNextId(soupTableName);
+			long soupEntryId = DBHelper.INSTANCE.getNextId(db, soupTableName);
 
 			// Adding fields to soup element
 			soupElt.put(SOUP_ENTRY_ID, soupEntryId);
@@ -431,7 +432,7 @@ public class SmartStore  {
 			}
 			
 			// Inserting into database
-			boolean success = db.insert(soupTableName, contentValues) == soupEntryId;
+			boolean success = DBHelper.INSTANCE.insert(db, soupTableName, contentValues) == soupEntryId;
 			
 			// Commit if successful
 			if (success) {
@@ -464,7 +465,7 @@ public class SmartStore  {
 		Cursor cursor = null;
 		try {
 			JSONArray result = new JSONArray();
-			cursor = db.query(soupTableName, new String[] {SOUP_COL}, null, null, getSoupEntryIdsPredicate(soupEntryIds), (String[]) null);
+			cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {SOUP_COL}, null, null, getSoupEntryIdsPredicate(soupEntryIds), (String[]) null);
 			if (!cursor.moveToFirst()) {
 				return result;
 			}
@@ -533,7 +534,7 @@ public class SmartStore  {
 			if (handleTx) {
 				db.beginTransaction();
 			}
-			boolean success = db.update(soupTableName, contentValues, getSoupEntryIdPredicate(), soupEntryId + "") == 1;
+			boolean success = DBHelper.INSTANCE.update(db, soupTableName, contentValues, getSoupEntryIdPredicate(), soupEntryId + "") == 1;
 			if (success) {
 				if (handleTx) {
 					db.setTransactionSuccessful();
@@ -624,10 +625,10 @@ public class SmartStore  {
 	 * @param path
 	 * @return
 	 */
-	protected String getColumnNameForPath(Database db, String soupName, String path) {
+	protected String getColumnNameForPath(SQLiteDatabase db, String soupName, String path) {
 		Cursor cursor = null;
 		try {
-			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {COLUMN_NAME_COL}, null, 
+			cursor = DBHelper.INSTANCE.query(db, SOUP_INDEX_MAP_TABLE, new String[] {COLUMN_NAME_COL}, null, 
 					null, getSoupNamePredicate() + " AND " + getPathPredicate(), soupName, path);
 			
 			if (cursor.moveToFirst()) {
@@ -650,20 +651,20 @@ public class SmartStore  {
 	 * @param soupName
 	 * @return
 	 */
-	protected IndexSpec[] getIndexSpecs(Database db, String soupName) {
-		IndexSpec[] indexSpecs = SmartStoreAccelerator.INSTANCE.getCachedIndexSpecs(soupName);
+	protected IndexSpec[] getIndexSpecs(SQLiteDatabase db, String soupName) {
+		IndexSpec[] indexSpecs = DBHelper.INSTANCE.getCachedIndexSpecs(soupName);
 		if (indexSpecs == null) {
 			indexSpecs = getIndexSpecsFromDb(db, soupName);
-			SmartStoreAccelerator.INSTANCE.cacheIndexSpecs(soupName, indexSpecs);
+			DBHelper.INSTANCE.cacheIndexSpecs(soupName, indexSpecs);
 		}
 		
 		return indexSpecs;
 	}
 	
-	protected IndexSpec[] getIndexSpecsFromDb(Database db, String soupName) {
+	protected IndexSpec[] getIndexSpecsFromDb(SQLiteDatabase db, String soupName) {
 		Cursor cursor = null;
 		try {
-			cursor = db.query(SOUP_INDEX_MAP_TABLE, new String[] {PATH_COL, COLUMN_NAME_COL, COLUMN_TYPE_COL}, null,
+			cursor = DBHelper.INSTANCE.query(db, SOUP_INDEX_MAP_TABLE, new String[] {PATH_COL, COLUMN_NAME_COL, COLUMN_TYPE_COL}, null,
 					null, getSoupNamePredicate(), soupName);
 		
 			if (!cursor.moveToFirst()) {
@@ -746,11 +747,6 @@ public class SmartStore  {
 		return o;
 	}
 	
-	public static void resetDatabase(Context ctx) {
-		DBOperations.resetDatabase(ctx);
-		SmartStoreAccelerator.INSTANCE.reset();
-	}
-
 	/**
 	 * Enum for column type
 	 */

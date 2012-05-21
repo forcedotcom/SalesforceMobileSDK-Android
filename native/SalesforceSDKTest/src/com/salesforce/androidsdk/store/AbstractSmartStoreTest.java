@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.store;
 
+import info.guardianproject.database.sqlcipher.SQLiteDatabase;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -51,14 +53,14 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	private static final String THIRD_TEST_SOUP = "third_test_soup";
 	
 	protected Context targetContext;
-	private Database db;
+	private SQLiteDatabase db;
 	private SmartStore store;
 	
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		SmartStore.resetDatabase(targetContext); // start clean
+		DBHelper.INSTANCE.reset(targetContext); // start clean
 		db = getWritableDatabase();
 		store = new SmartStore(db);
 		
@@ -70,7 +72,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
 	}
 	
-	protected abstract Database getWritableDatabase();
+	protected abstract SQLiteDatabase getWritableDatabase();
 
 	@Override
 	protected void tearDown() throws Exception {
@@ -159,7 +161,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = store.getSoupTableName(TEST_SOUP);
-			c = db.query(soupTableName, null, null, null, null);
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, null, null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected one soup element only", 1, c.getCount());
 			assertEquals("Wrong id", idOf(soupEltCreated), c.getLong(c.getColumnIndex("id")));
@@ -199,7 +201,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 			assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
 			assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
 			
-			c = db.query(soupTableName, null, "id ASC", null, null);
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -258,7 +260,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = store.getSoupTableName(TEST_SOUP);			
-			c = db.query(soupTableName, null, "id ASC", null, null);
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -310,7 +312,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = store.getSoupTableName(TEST_SOUP);			
-			c = db.query(soupTableName, null, "id ASC", null, null);
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -382,7 +384,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = store.getSoupTableName(TEST_SOUP);
-			c = db.query(soupTableName, null, "id ASC", null, null);
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 2, c.getCount());
 			
@@ -506,7 +508,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	private boolean hasTable(String tableName) {
 		Cursor c = null;
 		try {
-			c = db.query("sqlite_master", null, null, null, "type = ? and name = ?", "table", tableName);
+			c = DBHelper.INSTANCE.query(db, "sqlite_master", null, null, null, "type = ? and name = ?", "table", tableName);
 			return c.getCount() == 1;
 		}
 		finally {
