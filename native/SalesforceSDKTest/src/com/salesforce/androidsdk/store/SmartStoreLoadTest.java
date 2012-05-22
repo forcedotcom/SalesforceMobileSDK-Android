@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.store;
 
+import info.guardianproject.database.sqlcipher.SQLiteDatabase;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,14 +55,14 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	private static final String TEST_SOUP = "test_soup";
 	
 	protected Context targetContext;
-	private Database db;
+	private SQLiteDatabase db;
 	private SmartStore store;
 	
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		DBOperations.resetDatabase(targetContext); // start clean
+		DBHelper.INSTANCE.reset(targetContext); // start clean
 		db = getWritableDatabase();
 		store = new SmartStore(db);
 		
@@ -69,8 +71,8 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
 	}
 	
-	protected Database getWritableDatabase() {
-		return DBOperations.getWritableDatabase(targetContext);		
+	protected SQLiteDatabase getWritableDatabase() {
+		return DBOpenHelper.getOpenHelper(targetContext).getWritableDatabase("");
 	}
 
 	@Override
