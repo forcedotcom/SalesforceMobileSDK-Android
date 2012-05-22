@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.store;
 
+import info.guardianproject.database.sqlcipher.SQLiteDatabase;
+
 
 /**
  * Tests for plain smart store
@@ -34,7 +36,7 @@ package com.salesforce.androidsdk.store;
 public class PlainSmartStoreTest extends AbstractSmartStoreTest {
 
 	@Override
-	protected Database getWritableDatabase() {
-		return DBOperations.getWritableDatabase(targetContext);
+	protected SQLiteDatabase getWritableDatabase() {
+		return DBOpenHelper.getOpenHelper(targetContext).getWritableDatabase("");
 	}
 }

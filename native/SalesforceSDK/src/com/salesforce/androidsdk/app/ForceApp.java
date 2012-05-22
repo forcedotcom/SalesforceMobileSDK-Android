@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.app;
 
+import info.guardianproject.database.sqlcipher.SQLiteDatabase;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -51,8 +53,7 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
-import com.salesforce.androidsdk.store.DBOperations;
-import com.salesforce.androidsdk.store.Database;
+import com.salesforce.androidsdk.store.DBOpenHelper;
 import com.salesforce.androidsdk.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
@@ -154,9 +155,7 @@ public abstract class ForceApp extends Application {
 	 */
 	public SmartStore getSmartStore() {
 		String passcodeHash = getPasscodeHash();
-		Database db = passcodeHash == null 
-				? DBOperations.getWritableDatabase(this) // not encrypted
-				: DBOperations.getWritableDatabase(this, passcodeHash); // encrypted
+		SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(passcodeHash == null ? "" : passcodeHash);
 		return new SmartStore(db);
 	}
 

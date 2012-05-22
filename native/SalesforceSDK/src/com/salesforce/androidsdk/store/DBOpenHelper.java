@@ -26,30 +26,38 @@
  */
 package com.salesforce.androidsdk.store;
 
+import info.guardianproject.database.sqlcipher.SQLiteDatabase;
+import info.guardianproject.database.sqlcipher.SQLiteOpenHelper;
 import android.content.Context;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 
-
 /**
- * A helper class to manage database creation and version management.
- *  
+ * Helper class to manage SmartStore's database creation and version management.
  */
 public class DBOpenHelper extends SQLiteOpenHelper {
 	public static final String DB_NAME = "smartstore.db";
 	public static final int DB_VERSION = 1;
+
+	private static DBOpenHelper openHelper;
 	
-	public DBOpenHelper(Context context) {
+	public static synchronized DBOpenHelper getOpenHelper(Context ctx) {
+		if (openHelper == null) {
+			openHelper = new DBOpenHelper(ctx);
+		}
+		return openHelper;
+	}
+	
+	private DBOpenHelper(Context context) {
 		super(context, DB_NAME, null, DB_VERSION);
+		SQLiteDatabase.loadLibs(context);
 		Log.i("DBOpenHelper:DBOpenHelper", DB_NAME + "/" + DB_VERSION);
 	}
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 		Log.i("DBOpenHelper:onCreate", DB_NAME + "/" + DB_VERSION);
-		SmartStore.createMetaTables(new Database(db));
+		SmartStore.createMetaTables(db);
 	}
 
 	@Override
@@ -60,6 +68,10 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	public static void deleteDatabase(Context ctx) {
 		Log.i("DBOpenHelper:deleteDatabase", DB_NAME + "/" + DB_VERSION);
+		if (openHelper != null) {
+			openHelper.close();
+			openHelper =  null;
+		}
 		ctx.deleteDatabase(DB_NAME);
 	}
 }
