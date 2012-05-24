@@ -616,7 +616,7 @@ public class SmartStore  {
 		try {
 			cursor = db.query(soupTableName, new String[] {ID_COL}, columnName + " = ?", new String[] { fieldValue }, null, null, null);
 			if (cursor.getCount() > 1) {
-				throw new RuntimeException(String.format("There is more than one soup element where %s is %s", fieldPath, fieldValue));
+				throw new RuntimeException(String.format("There are more than one soup elements where %s is %s", fieldPath, fieldValue));
 			}
 			if (cursor.moveToFirst()) {
 				return cursor.getLong(0);

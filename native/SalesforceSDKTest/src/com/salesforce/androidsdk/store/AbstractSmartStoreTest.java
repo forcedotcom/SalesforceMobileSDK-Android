@@ -344,9 +344,9 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2'}");
 		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3'}");
 		
-		JSONObject soupElt1Upserted = store.upsert(TEST_SOUP, soupElt1);
-		JSONObject soupElt2Upserted = store.upsert(TEST_SOUP, soupElt2);
-		JSONObject soupElt3Upserted = store.upsert(TEST_SOUP, soupElt3);
+		JSONObject soupElt1Upserted = store.upsert(TEST_SOUP, soupElt1, "key");
+		JSONObject soupElt2Upserted = store.upsert(TEST_SOUP, soupElt2, "key");
+		JSONObject soupElt3Upserted = store.upsert(TEST_SOUP, soupElt3, "key");
 
 		SystemClock.sleep(10); // to get a different last modified date
 		JSONObject soupElt2ForUpdate = new JSONObject("{'key':'ka2', 'value':'va2u'}");
@@ -359,7 +359,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
 		assertSameJSON("Retrieve mismatch", soupElt2Updated, soupElt2Retrieved);
 		assertSameJSON("Retrieve mismatch", soupElt3Upserted, soupElt3Retrieved);
-		
+
 		// Check DB
 		Cursor c = null;
 		try {
@@ -387,6 +387,49 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		}
 	}
 	
+	
+	/**
+	 * Testing upsert passing a non-indexed path for the external id (should fail)
+	 * @throws JSONException
+	 */
+	public void testUpsertWithNonIndexedExternalId() throws JSONException {
+		JSONObject soupElt = new JSONObject("{'key':'ka1', 'value':'va1'}");
+		
+		try {
+			store.upsert(TEST_SOUP, soupElt, "value");
+			fail("Exception was expected: value is not an indexed field");
+		}
+		catch (RuntimeException e) {
+			assertTrue("Wrong exception", e.getMessage().contains("does not have an index"));
+		}
+	}
+
+	/**
+	 * Testing upsert with an external id that is not unique in the soup
+	 * @throws JSONException
+	 */
+	public void testUpsertWithNonUniqueExternalId() throws JSONException {
+		JSONObject soupElt1 = new JSONObject("{'key':'ka', 'value':'va1'}");
+		JSONObject soupElt2 = new JSONObject("{'key':'ka', 'value':'va2'}");
+		JSONObject soupElt3 = new JSONObject("{'key':'ka', 'value':'va3'}");
+		
+		JSONObject soupElt1Upserted = store.upsert(TEST_SOUP, soupElt1);
+		JSONObject soupElt2Upserted = store.upsert(TEST_SOUP, soupElt2);
+
+		JSONObject soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Upserted)).getJSONObject(0);
+		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Upserted)).getJSONObject(0);
+
+		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
+		assertSameJSON("Retrieve mismatch", soupElt2Upserted, soupElt2Retrieved);
+		
+		try {
+			store.upsert(TEST_SOUP, soupElt3, "key");
+			fail("Exception was expected: key is not unique in the soup");
+		}
+		catch (RuntimeException e) {
+			assertTrue("Wrong exception", e.getMessage().contains("are more than one soup elements"));
+		}
+	}
 	
 	/**
 	 * Testing retrieve: create multiple soup elements and retrieves them back
