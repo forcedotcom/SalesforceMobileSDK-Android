@@ -619,7 +619,7 @@ public class SmartStore  {
 				throw new RuntimeException(String.format("There is more than one soup element where %s is %s", fieldPath, fieldValue));
 			}
 			if (cursor.moveToFirst()) {
-				return cursor.getLong(1);
+				return cursor.getLong(0);
 			}
 			else {
 				return -1; // not found
