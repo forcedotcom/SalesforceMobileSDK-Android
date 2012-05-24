@@ -267,9 +267,7 @@ public class SmartStore  {
 			return getSoupTableName(cursor.getLong(cursor.getColumnIndex(ID_COL)));
 		}
 		finally {
-			if (cursor != null) {
-				cursor.close();
-			}
+			safeClose(cursor);
 		}
 	}
 	
@@ -338,9 +336,7 @@ public class SmartStore  {
 			return results;			
 		}
 		finally {
-			if (cursor != null) {
-				cursor.close();
-			}
+			safeClose(cursor);
 		}
 	}
 	
@@ -372,9 +368,7 @@ public class SmartStore  {
 			}
 		}
 		finally {
-			if (cursor != null) {
-				cursor.close();
-			}
+			safeClose(cursor);
 		}
 	}
 	
@@ -478,9 +472,7 @@ public class SmartStore  {
 			return result;
 		}
 		finally {
-			if (cursor != null) {
-				cursor.close();
-			}
+			safeClose(cursor);
 		}
 	}
 	
@@ -556,24 +548,47 @@ public class SmartStore  {
 	 * Upsert (and commits)
 	 * @param soupName
 	 * @param soupElt
+	 * @param externalIdPath 
 	 * @return soupElt upserted or null if upsert failed
 	 * @throws JSONException 
 	 */
+	public JSONObject upsert(String soupName, JSONObject soupElt, String externalIdPath) throws JSONException {
+		return upsert(soupName, soupElt, externalIdPath, true);
+	}
+	
+	/**
+	 * Upsert (and commits) expecting _soupEntryId in soupElt for updates
+	 * @param soupName
+	 * @param soupElt
+	 * @return
+	 * @throws JSONException
+	 */
 	public JSONObject upsert(String soupName, JSONObject soupElt) throws JSONException {
-		return upsert(soupName, soupElt, true);
+		return upsert(soupName, soupElt, SOUP_ENTRY_ID);
 	}
 	
 	/**
 	 * Upsert
 	 * @param soupName
 	 * @param soupElt
+	 * @param externalIdPath
 	 * @param handleTx
 	 * @return
 	 * @throws JSONException
 	 */
-	public JSONObject upsert(String soupName, JSONObject soupElt, boolean handleTx) throws JSONException {
-		if (soupElt.has(SOUP_ENTRY_ID)) {
-			long entryId = soupElt.getLong(SOUP_ENTRY_ID);
+	public JSONObject upsert(String soupName, JSONObject soupElt, String externalIdPath, boolean handleTx) throws JSONException {
+		long entryId = -1;
+		if (soupElt.has(externalIdPath)) {
+			if (externalIdPath.equals(SOUP_ENTRY_ID)) {
+				entryId = soupElt.getLong(SOUP_ENTRY_ID);
+			}
+			else {
+				entryId = lookupSoupEntryId(soupName, externalIdPath, soupElt.getString(externalIdPath));
+			}
+		}
+		
+		// If we have an entryId, let's do an update, otherwise let's do a create
+		if (entryId != -1) {
 			return update(soupName, soupElt, entryId, handleTx);
 		}
 		else {
@@ -581,7 +596,40 @@ public class SmartStore  {
 		}
 	}
 	
-	
+	/**
+	 * Look for a soup element where fieldPath's value is fieldValue
+	 * Return its soupEntryId
+	 * Return -1 if not found
+	 * Throw an exception if fieldName is not indexed
+	 * Throw an exception if more than one soup element are found
+	 * 
+	 * @param soupName
+	 * @param fieldPath
+	 * @param fieldValue
+	 */
+	public long lookupSoupEntryId(String soupName, String fieldPath, String fieldValue) {
+		String soupTableName = getSoupTableName(soupName);
+		if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
+		String columnName = getColumnNameForPath(db, soupName, fieldPath);
+		
+		Cursor cursor = null;
+		try {
+			cursor = db.query(soupTableName, new String[] {ID_COL}, columnName + " = ?", new String[] { fieldValue }, null, null, null);
+			if (cursor.getCount() > 1) {
+				throw new RuntimeException(String.format("There is more than one soup element where %s is %s", fieldPath, fieldValue));
+			}
+			if (cursor.moveToFirst()) {
+				return cursor.getLong(1);
+			}
+			else {
+				return -1; // not found
+			}
+		}
+		finally {
+			safeClose(cursor);
+		}
+	}
+
 	/**
 	 * Delete (and commits)
 	 * @param soupName
@@ -639,9 +687,7 @@ public class SmartStore  {
 			}
 		}
 		finally {
-			if (cursor != null) {
-				cursor.close();
-			}
+			safeClose(cursor);
 		}
 	}
 	
@@ -683,9 +729,7 @@ public class SmartStore  {
 			return indexSpecs.toArray(new IndexSpec[0]);
 		}
 		finally {
-			if (cursor != null) {
-				cursor.close();
-			}
+			safeClose(cursor);
 		}
 	}
 	
@@ -726,6 +770,15 @@ public class SmartStore  {
 		return "TABLE_" + soupId;
 	}
 
+	/**
+	 * @param cursor
+	 */
+	protected void safeClose(Cursor cursor) {
+		if (cursor != null) {
+			cursor.close();
+		}
+	}
+	
 	/**
 	 * @param soup
 	 * @param path
