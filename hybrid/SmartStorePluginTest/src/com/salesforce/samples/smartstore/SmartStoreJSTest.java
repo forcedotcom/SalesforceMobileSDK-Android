@@ -81,6 +81,11 @@ public class SmartStoreJSTest extends
         runTest("SmartStoreTestSuite","testUpsertSoupEntries");
     }
 
+    public void testUpsertSoupEntriesWithExternalId()  {
+        runTest("SmartStoreTestSuite","testUpsertSoupEntriesWithExternalId");
+    }
+
+    
     public void testUpsertToNonexistentSoup()  {
         runTest("SmartStoreTestSuite","testUpsertToNonexistentSoup");
     }
