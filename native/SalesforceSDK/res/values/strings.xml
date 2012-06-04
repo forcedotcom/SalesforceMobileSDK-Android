@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- this one is explictly not prefixed as you are exceeding likely to want to override it -->
 	<string name="app_name">SalesforceSDK</string>
-   	<string name="account_type">com.salesforce.androisdk</string>
+   	<string name="sf__account_type">com.salesforce.androisdk</string>
 </resources>
