@@ -31,7 +31,7 @@
                     android:layout_height="51dp"
                     android:background="@drawable/login_content_header"
                     android:gravity="center_horizontal|center_vertical"
-                    android:text="@string/login_title"
+                    android:text="@string/sf__login_title"
                     android:textColor="#ffffff"
                     android:textSize="20sp"
                     android:textStyle="bold" />
@@ -45,7 +45,6 @@
                     android:id="@+id/oauth_webview"
                     android:layout_width="408dp"
                     android:layout_height="match_parent"
-                    android:layout_centerInParent="true"
                     android:scrollbars="none" />
             </LinearLayout>
         </RelativeLayout>

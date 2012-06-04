@@ -22,7 +22,7 @@
 		android:layout_centerInParent="true">
      
 	    <TextView
-	    	android:text="@string/login_title" 
+	    	android:text="@string/sf__login_title" 
 			android:layout_width="408dp"
 			android:layout_height="51dp"
 			android:textSize="20sp"
@@ -44,7 +44,7 @@
 			
 	<Button 
 		android:id="@+id/show_custom_url_edit"		
-		android:text="@string/custom_url_button"
+		android:text="@string/sf__custom_url_button"
 		android:layout_marginTop="7dp"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
@@ -60,23 +60,21 @@
 
 			<Button 
 				android:id="@+id/apply_button"
-				android:text="@string/server_url_default_apply"
+				android:text="@string/sf__server_url_default_apply"
 				android:layout_weight="1"			
 				android:layout_margin="2dp"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
-				android:layout_alignParentLeft="true"
 				android:onClick="setPositiveReturnValue"
 			/>
 				
 			<Button 
 				android:id="@+id/cancel_button"
-				android:text="@string/server_url_default_cancel"
+				android:text="@string/sf__server_url_default_cancel"
 				android:layout_weight="1"			
 				android:layout_margin="2dp"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
-				android:layout_alignParentRight="true"
 				android:onClick="setCancelReturnValue"
 			/>
 			
