@@ -53,7 +53,7 @@
 				
 				<TextView 
 					android:id="@+id/clear_cookies"
-					android:text="@string/clear_cookies"
+					android:text="@string/sf__clear_cookies"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					style="@style/Text.HeaderOptions" 
@@ -85,7 +85,7 @@
 				
 				<TextView 
 					android:id="@+id/change_server"
-					android:text="@string/pick_server"
+					android:text="@string/sf__pick_server"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					style="@style/Text.HeaderOptions" 
