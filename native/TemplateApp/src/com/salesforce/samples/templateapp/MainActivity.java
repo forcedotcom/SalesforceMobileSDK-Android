@@ -75,8 +75,8 @@ public class MainActivity extends Activity {
     	LoginOptions loginOptions = new LoginOptions(
     			null, // login host is chosen by user through the server picker 
     			ForceApp.APP.getPasscodeHash(),
-    			getString(R.string.oauth_callback_url),
-    			getString(R.string.oauth_client_id),
+    			getString(R.string.sf__oauth_callback_url),
+    			getString(R.string.sf__oauth_client_id),
     			new String[] {"api"});
 		
 		// Get a rest client

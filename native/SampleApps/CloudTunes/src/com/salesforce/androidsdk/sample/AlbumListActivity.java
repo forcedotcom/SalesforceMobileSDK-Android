@@ -36,7 +36,7 @@ public class AlbumListActivity extends ListActivity{
         super.onCreate(savedInstanceState);
         
         ListView lv = getListView();
-        apiVersion = getString(R.string.api_version);
+        apiVersion = getString(R.string.sf__api_version);
         
 		lv.setTextFilterEnabled(true);
 	
@@ -58,12 +58,12 @@ public class AlbumListActivity extends ListActivity{
 		super.onResume();
 		
 		// Login options
-		String accountType = getString(R.string.account_type);
+		String accountType = getString(R.string.sf__account_type);
 		LoginOptions loginOptions = new LoginOptions(
 				null, // gets overridden by LoginActivity based on server picked by uuser 
 				ForceApp.APP.getPasscodeHash(),
-				getString(R.string.oauth_callback_url),
-				getString(R.string.oauth_client_id),
+				getString(R.string.sf__oauth_callback_url),
+				getString(R.string.sf__oauth_client_id),
 				new String[] {"api"});
 		
 		new ClientManager(this, accountType, loginOptions).getRestClient(this, new RestClientCallback() {

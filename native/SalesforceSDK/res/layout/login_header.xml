@@ -12,12 +12,12 @@
 		android:layout_width="wrap_content" android:layout_height="wrap_content"
 		android:layout_alignParentRight="true" android:layout_centerVertical="true"
 		android:layout_marginRight="3dp" android:onClick="onPickServerClick"
-		android:text="@string/pick_server_button" />
+		android:text="@string/sf__pick_server_button" />
 
 	<Button android:id="@+id/clear_cookies_button"
 		android:layout_width="wrap_content" android:layout_height="wrap_content"
 		android:layout_toLeftOf="@id/pick_server_button"
 		android:layout_centerVertical="true" android:layout_marginRight="3dp"
-		android:onClick="onClearCookiesClick" android:text="@string/clear_cookies_button" />
+		android:onClick="onClearCookiesClick" android:text="@string/sf__clear_cookies_button" />
 
 </RelativeLayout>
