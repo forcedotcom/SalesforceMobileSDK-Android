@@ -1,1 +1,1 @@
-../../../../external/shared/PhoneGap/SFSmartStoreTestSuite.js
+../../../../external/shared/PhoneGap/test/SFSmartStoreTestSuite.js

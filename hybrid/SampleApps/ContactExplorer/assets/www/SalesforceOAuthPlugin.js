@@ -1,1 +1,1 @@
-../../../../../external/shared/PhoneGap/SalesforceOAuthPlugin.js
+../../../../../external/shared/PhoneGap/plugins/SalesforceOAuthPlugin.js
