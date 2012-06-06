@@ -1,1 +1,1 @@
-../../../../external/shared/PhoneGap/SFHybridApp.js
+../../../../external/shared/PhoneGap/util/SFHybridApp.js
