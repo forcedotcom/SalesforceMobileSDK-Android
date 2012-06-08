@@ -583,7 +583,7 @@ public class SmartStore  {
 				entryId = soupElt.getLong(SOUP_ENTRY_ID);
 			}
 			else {
-				entryId = lookupSoupEntryId(soupName, externalIdPath, soupElt.getString(externalIdPath));
+				entryId = lookupSoupEntryId(soupName, externalIdPath, project(soupElt, externalIdPath) + "");
 			}
 		}
 		
