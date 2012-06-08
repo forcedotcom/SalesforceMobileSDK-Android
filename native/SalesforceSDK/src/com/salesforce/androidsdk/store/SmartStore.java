@@ -578,12 +578,15 @@ public class SmartStore  {
 	 */
 	public JSONObject upsert(String soupName, JSONObject soupElt, String externalIdPath, boolean handleTx) throws JSONException {
 		long entryId = -1;
-		if (soupElt.has(externalIdPath)) {
-			if (externalIdPath.equals(SOUP_ENTRY_ID)) {
+		if (externalIdPath.equals(SOUP_ENTRY_ID)) {
+			if (soupElt.has(SOUP_ENTRY_ID)) {
 				entryId = soupElt.getLong(SOUP_ENTRY_ID);
 			}
-			else {
-				entryId = lookupSoupEntryId(soupName, externalIdPath, project(soupElt, externalIdPath) + "");
+		}
+		else {
+			Object externalIdObj = project(soupElt, externalIdPath);
+			if (externalIdObj != null) {
+				entryId = lookupSoupEntryId(soupName, externalIdPath, externalIdObj + "");
 			}
 		}
 		
