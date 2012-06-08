@@ -417,12 +417,7 @@ public class SmartStore  {
 			contentValues.put(LAST_MODIFIED_COL, now);
 			contentValues.put(SOUP_COL, soupElt.toString());
 			for (IndexSpec indexSpec : indexSpecs) {
-				switch (indexSpec.type) {
-				case integer:
-					contentValues.put(indexSpec.columnName, (Integer) project(soupElt, indexSpec.path)); break;
-				case string:
-					contentValues.put(indexSpec.columnName, (String) project(soupElt, indexSpec.path)); break;
-				}
+				projectIndexedPaths(soupElt, contentValues, indexSpec);
 			}
 			
 			// Inserting into database
@@ -443,6 +438,21 @@ public class SmartStore  {
 			if (handleTx) {
 				db.endTransaction();
 			}
+		}
+	}
+
+	/**
+	 * @param soupElt
+	 * @param contentValues
+	 * @param indexSpec
+	 */
+	private void projectIndexedPaths(JSONObject soupElt, ContentValues contentValues, IndexSpec indexSpec) {
+		Object value = project(soupElt, indexSpec.path);
+		switch (indexSpec.type) {
+		case integer:
+			contentValues.put(indexSpec.columnName, (Integer) value); break;
+		case string:
+			contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
 		}
 	}
 
@@ -514,12 +524,7 @@ public class SmartStore  {
 		contentValues.put(SOUP_COL, soupElt.toString());
 		contentValues.put(LAST_MODIFIED_COL, now);
 		for (IndexSpec indexSpec : indexSpecs) {
-			switch (indexSpec.type) {
-			case integer:
-				contentValues.put(indexSpec.columnName, (Integer) project(soupElt, indexSpec.path)); break;
-			case string:
-				contentValues.put(indexSpec.columnName, (String) project(soupElt, indexSpec.path)); break;
-			}
+			projectIndexedPaths(soupElt, contentValues, indexSpec);
 		}
 		
 		try {
