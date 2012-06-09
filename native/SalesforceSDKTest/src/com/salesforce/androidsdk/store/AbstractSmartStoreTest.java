@@ -594,6 +594,26 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(2));
 	}
 	
+	/**
+	 * Test upsert soup element with null value in indexed field
+	 * @throws JSONException 
+	 */
+	public void testUpsertWithNullInIndexedField() throws JSONException {
+		// Before
+		assertFalse("Soup third_test_soup should not exist", store.hasSoup(THIRD_TEST_SOUP));
+		
+		// Register
+		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
+		assertTrue("Register soup call failed", store.hasSoup(THIRD_TEST_SOUP));
+
+		// Upsert
+		JSONObject soupElt1 = new JSONObject("{'key':'ka', 'value':null}");
+		JSONObject soupElt1Upserted = store.upsert(THIRD_TEST_SOUP, soupElt1);
+		
+		// Check
+		JSONObject soupElt1Retrieved = store.retrieve(THIRD_TEST_SOUP, idOf(soupElt1Upserted)).getJSONObject(0);		
+		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
+	}
 	
 	
 	/**
