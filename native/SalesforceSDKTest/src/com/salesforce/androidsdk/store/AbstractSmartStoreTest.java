@@ -495,6 +495,39 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	}
 
 	/**
+	 * Test query when looking for all elements
+	 * @throws JSONException 
+	 */
+	public void testAllQuery() throws JSONException {
+		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1', 'otherValue':'ova1'}");
+		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2', 'otherValue':'ova2'}");
+		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3', 'otherValue':'ova3'}");
+		
+		JSONObject soupElt1Created = store.create(TEST_SOUP, soupElt1);
+		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
+		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
+
+		// Query all - small page
+		JSONArray result = store.querySoup(TEST_SOUP, QuerySpec.buildAllQuerySpec(Order.ascending, 2), 0);
+		assertEquals("Two elements expected", 2, result.length());
+		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
+		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
+
+		// Query all - next small page
+		result = store.querySoup(TEST_SOUP, QuerySpec.buildAllQuerySpec(Order.ascending, 2), 1);
+		assertEquals("One element expected", 1, result.length());
+		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
+
+		// Query all - large page
+		result = store.querySoup(TEST_SOUP, QuerySpec.buildAllQuerySpec(Order.ascending, 10), 0);
+		assertEquals("Three elements expected", 3, result.length());
+		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
+		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
+		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(2));
+	
+	}
+	
+	/**
 	 * Test query when looking for a specific element
 	 * @throws JSONException 
 	 */
