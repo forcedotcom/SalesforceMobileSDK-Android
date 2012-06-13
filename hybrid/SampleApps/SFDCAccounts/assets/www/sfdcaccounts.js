@@ -46,6 +46,28 @@ function regLinkClickHandlers() {
     });
 }
 
+function regAccClickHandlers() {
+    var $j = jQuery.noConflict();
+    $j('#save_acc').click(function() {
+        SFHybridApp.logToConsole("save_acc clicked");
+    });
+
+    $j('#cancel_acc').click(function() {
+        SFHybridApp.logToConsole("cancel_acc clicked");
+    });
+}
+
+function regOppClickHandlers() {
+    var $j = jQuery.noConflict();
+    $j('#save_opp').click(function() {
+        SFHybridApp.logToConsole("save_opp clicked");
+    });
+
+    $j('#cancel_opp').click(function() {
+        SFHybridApp.logToConsole("cancel_opp clicked");
+    });
+}
+
 function resetDisplay() {
     $j("#div_device_account_list").html("")
     $j("#div_device_opportunity_list").html("")
@@ -102,6 +124,11 @@ function onSuccessDeviceAccounts(response) {
     ul.delegate("li", "click", function(e) {
         SFHybridApp.logToConsole("Item Clicked: " + this.id);
         resetDisplay();
+        getAccById(this.id, function(response) {
+            $j('#id').val(response.currentPageOrderedEntries.Id);
+            $j('#name').val(response.currentPageOrderedEntries.Name);
+            $j('#description').val(response.currentPageOrderedEntries.Description);
+        }, onErrorDevice);
         $j('#div_account_editor').load("edit_account.html");
     });
     $j("#div_device_account_list").trigger("create")
@@ -129,6 +156,14 @@ function onSuccessDeviceOpportunities(response) {
     ul.delegate("li", "click", function(e) {
         SFHybridApp.logToConsole("Item Clicked: " + this.id);
         resetDisplay();
+        getOppById(this.id, function(response) {
+            $j('#id').val(response.currentPageOrderedEntries.Id);
+            $j('#name').val(response.currentPageOrderedEntries.Name);
+            $j('#description').val(response.currentPageOrderedEntries.Description);
+            $j('#accountid').val(response.currentPageOrderedEntries.AccountId);
+            $j('#closedate').val(response.currentPageOrderedEntries.CloseDate);
+            $j('#stagename').val(response.currentPageOrderedEntries.StageName);
+        }, onErrorDevice);
         $j('#div_opportunity_editor').load("edit_opportunity.html");
     });
     $j("#div_device_opportunity_list").trigger("create")
@@ -161,6 +196,11 @@ function onSuccessSfdcAccounts(response) {
     ul.delegate("li", "click", function(e) {
         SFHybridApp.logToConsole("Item Clicked: " + this.id);
         resetDisplay();
+        getAccById(this.id, function(response) {
+            $j('#id').val(response.currentPageOrderedEntries.Id);
+            $j('#name').val(response.currentPageOrderedEntries.Name);
+            $j('#description').val(response.currentPageOrderedEntries.Description);
+        }, onErrorDevice);
         $j('#div_account_editor').load("edit_account.html");
     });
 
@@ -198,6 +238,14 @@ function onSuccessSfdcOpportunities(response) {
     ul.delegate("li", "click", function(e) {
         SFHybridApp.logToConsole("Item Clicked: " + this.id);
         resetDisplay();
+        getOppById(this.id, function(response) {
+            $j('#id').val(response.currentPageOrderedEntries.Id);
+            $j('#name').val(response.currentPageOrderedEntries.Name);
+            $j('#description').val(response.currentPageOrderedEntries.Description);
+            $j('#accountid').val(response.currentPageOrderedEntries.AccountId);
+            $j('#closedate').val(response.currentPageOrderedEntries.CloseDate);
+            $j('#stagename').val(response.currentPageOrderedEntries.StageName);
+        }, onErrorDevice);
         $j('#div_opportunity_editor').load("edit_opportunity.html");
     });
 
