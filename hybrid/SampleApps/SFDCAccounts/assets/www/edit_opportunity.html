@@ -29,34 +29,56 @@
     <!-- Load our app-specific code. -->
     <script src="sfdc_smartstore.js"></script>
     <script src="sfdcaccounts.js"></script>
+    <script type="text/javascript" charset="utf-8">
+    jQuery(document).ready(function() {
+
+        // Add event listeners and so forth here.
+        SFHybridApp.logToConsole("onLoad: jquery ready");
+        document.addEventListener("deviceready", onDeviceReady, false);
+    });
+
+    // When this function is called, PhoneGap has been initialized and is ready to roll.
+    function onDeviceReady() {
+        SFHybridApp.logToConsole("onDeviceReady: PhoneGap ready");
+
+        // Register click handlers.
+        regAccClickHandlers();
+    }
+    </script>
   </head>
 
   <body>
     <div id="#content" data-role="content">
       <div data-role="fieldcontain">
         <label for="id">Id:</label>
-        <input type="text" name="id" id="id" value="" />
+        <input id="id" type="text" name="id" id="id" readonly="readonly" />
       </div>
       <div data-role="fieldcontain">
         <label for="name">Name:</label>
-        <input type="text" name="name" id="name" value="" />
+        <input id="name" type="text" name="name" id="name" readonly="readonly" />
       </div>
       <div data-role="fieldcontain">
         <label for="description">Description:</label>
-        <input type="text" name="description" id="description" value="" />
+        <input id="description" type="text" name="description" id="description" />
       </div>
       <div data-role="fieldcontain">
         <label for="accountid">AccountId:</label>
-        <input type="text" name="accountid" id="accountid" value="" />
+        <input id="accountid" type="text" name="accountid" id="accountid" readonly="readonly" />
       </div>
       <div data-role="fieldcontain">
         <label for="closedate">CloseDate:</label>
-        <input type="text" name="closedate" id="closedate" value="" />
+        <input id="closedate" type="text" name="closedate" id="closedate" readonly="readonly" />
       </div>
       <div data-role="fieldcontain">
         <label for="stagename">StageName:</label>
-        <input type="text" name="stagename" id="stagename" value="" />
+        <input id="stagename" type="text" name="stagename" id="stagename" readonly="readonly" />
       </div>
+      <p>
+        <a href="#" id="save_opp" data-role="button" data-inline="true">Save</a>
+      </p>
+      <p>
+        <a href="#" id="cancel_opp" data-role="button" data-inline="true">Cancel</a>
+      </p>
     </div>
   </body>
 </html>
