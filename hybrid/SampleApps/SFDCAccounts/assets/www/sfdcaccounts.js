@@ -50,10 +50,17 @@ function regAccClickHandlers() {
     var $j = jQuery.noConflict();
     $j('#save_acc').click(function() {
         SFHybridApp.logToConsole("save_acc clicked");
+        var id = $j("#div_account_editor input:text[name=id]").val();
+        var name = $j("#div_account_editor input:text[name=name]").val();
+        var description = $j("#div_account_editor input:text[name=description]").val();
+        var elem = {Id: id, Name: name, Description: description, isDirty: "true"};
+        resetDisplay();
+        addAccounts([elem], onSaveSuccess, onSaveError);
     });
 
     $j('#cancel_acc').click(function() {
         SFHybridApp.logToConsole("cancel_acc clicked");
+        resetDisplay();
     });
 }
 
@@ -61,10 +68,22 @@ function regOppClickHandlers() {
     var $j = jQuery.noConflict();
     $j('#save_opp').click(function() {
         SFHybridApp.logToConsole("save_opp clicked");
+        var id = $j("#div_opportunity_editor input:text[name=id]").val();
+        var name = $j("#div_opportunity_editor input:text[name=name]").val();
+        var description = $j("#div_opportunity_editor input:text[name=description]").val();
+        var accountid = $j("#div_opportunity_editor input:text[name=accountid]").val();
+        var closedate = $j("#div_opportunity_editor input:text[name=closedate]").val();
+        var stagename = $j("#div_opportunity_editor input:text[name=stagename]").val();
+        var elem = {Id: id, Name: name, Description: description,
+                AccountId: accountid, CloseDate: closedate,
+                StageName: stagename, isDirty: "true"};
+        resetDisplay();
+        addOpportunities([elem], onSaveSuccess, onSaveError);
     });
 
     $j('#cancel_opp').click(function() {
         SFHybridApp.logToConsole("cancel_opp clicked");
+        resetDisplay();
     });
 }
 
@@ -124,12 +143,12 @@ function onSuccessDeviceAccounts(response) {
     ul.delegate("li", "click", function(e) {
         SFHybridApp.logToConsole("Item Clicked: " + this.id);
         resetDisplay();
-        getAccById(this.id, function(response) {
-            $j('#id').val(response.currentPageOrderedEntries.Id);
-            $j('#name').val(response.currentPageOrderedEntries.Name);
-            $j('#description').val(response.currentPageOrderedEntries.Description);
-        }, onErrorDevice);
         $j('#div_account_editor').load("edit_account.html");
+        getAccById(this.id, function(response) {
+            $j("#div_account_editor input:text[name=id]").val(response.currentPageOrderedEntries[0].Id);
+            $j("#div_account_editor input:text[name=name]").val(response.currentPageOrderedEntries[0].Name);
+            $j("#div_account_editor input:text[name=description]").val(response.currentPageOrderedEntries[0].Description);
+        }, onErrorDevice);
     });
     $j("#div_device_account_list").trigger("create")
 }
@@ -156,15 +175,15 @@ function onSuccessDeviceOpportunities(response) {
     ul.delegate("li", "click", function(e) {
         SFHybridApp.logToConsole("Item Clicked: " + this.id);
         resetDisplay();
-        getOppById(this.id, function(response) {
-            $j('#id').val(response.currentPageOrderedEntries.Id);
-            $j('#name').val(response.currentPageOrderedEntries.Name);
-            $j('#description').val(response.currentPageOrderedEntries.Description);
-            $j('#accountid').val(response.currentPageOrderedEntries.AccountId);
-            $j('#closedate').val(response.currentPageOrderedEntries.CloseDate);
-            $j('#stagename').val(response.currentPageOrderedEntries.StageName);
-        }, onErrorDevice);
         $j('#div_opportunity_editor').load("edit_opportunity.html");
+        getOppById(this.id, function(response) {
+            $j("#div_opportunity_editor input:text[name=id]").val(response.currentPageOrderedEntries[0].Id);
+            $j("#div_opportunity_editor input:text[name=name]").val(response.currentPageOrderedEntries[0].Name);
+            $j("#div_opportunity_editor input:text[name=description]").val(response.currentPageOrderedEntries[0].Description);
+            $j("#div_opportunity_editor input:text[name=accountid]").val(response.currentPageOrderedEntries[0].AccountId);
+            $j("#div_opportunity_editor input:text[name=closedate]").val(response.currentPageOrderedEntries[0].CloseDate);
+            $j("#div_opportunity_editor input:text[name=stagename]").val(response.currentPageOrderedEntries[0].StageName);
+        }, onErrorDevice);
     });
     $j("#div_device_opportunity_list").trigger("create")
 }
@@ -196,12 +215,12 @@ function onSuccessSfdcAccounts(response) {
     ul.delegate("li", "click", function(e) {
         SFHybridApp.logToConsole("Item Clicked: " + this.id);
         resetDisplay();
-        getAccById(this.id, function(response) {
-            $j('#id').val(response.currentPageOrderedEntries.Id);
-            $j('#name').val(response.currentPageOrderedEntries.Name);
-            $j('#description').val(response.currentPageOrderedEntries.Description);
-        }, onErrorDevice);
         $j('#div_account_editor').load("edit_account.html");
+        getAccById(this.id, function(response) {
+            $j("#div_account_editor input:text[name=id]").val(response.currentPageOrderedEntries[0].Id);
+            $j("#div_account_editor input:text[name=name]").val(response.currentPageOrderedEntries[0].Name);
+            $j("#div_account_editor input:text[name=description]").val(response.currentPageOrderedEntries[0].Description);
+        }, onErrorDevice);
     });
 
     // Caches data locally, by putting it in the Smartstore.
@@ -238,15 +257,15 @@ function onSuccessSfdcOpportunities(response) {
     ul.delegate("li", "click", function(e) {
         SFHybridApp.logToConsole("Item Clicked: " + this.id);
         resetDisplay();
-        getOppById(this.id, function(response) {
-            $j('#id').val(response.currentPageOrderedEntries.Id);
-            $j('#name').val(response.currentPageOrderedEntries.Name);
-            $j('#description').val(response.currentPageOrderedEntries.Description);
-            $j('#accountid').val(response.currentPageOrderedEntries.AccountId);
-            $j('#closedate').val(response.currentPageOrderedEntries.CloseDate);
-            $j('#stagename').val(response.currentPageOrderedEntries.StageName);
-        }, onErrorDevice);
         $j('#div_opportunity_editor').load("edit_opportunity.html");
+        getOppById(this.id, function(response) {
+            $j("#div_opportunity_editor input:text[name=id]").val(response.currentPageOrderedEntries[0].Id);
+            $j("#div_opportunity_editor input:text[name=name]").val(response.currentPageOrderedEntries[0].Name);
+            $j("#div_opportunity_editor input:text[name=description]").val(response.currentPageOrderedEntries[0].Description);
+            $j("#div_opportunity_editor input:text[name=accountid]").val(response.currentPageOrderedEntries[0].AccountId);
+            $j("#div_opportunity_editor input:text[name=closedate]").val(response.currentPageOrderedEntries[0].CloseDate);
+            $j("#div_opportunity_editor input:text[name=stagename]").val(response.currentPageOrderedEntries[0].StageName);
+        }, onErrorDevice);
     });
 
     // Caches data locally, by putting it in the Smartstore.
@@ -280,14 +299,10 @@ function onErrorSfdc(error) {
 function syncAccounts() {
     fetchDirtyAccounts(function(response) {
         $j.each(response.currentPageOrderedEntries, function(i, currentPageOrderedEntries) {
-//            updateAccount(currentPageOrderedEntries.Id, currentPageOrderedEntries.Name,
-//                    currentPageOrderedEntries.Description, function(response) {
-//                    SFHybridApp.logToConsole("Successfully Synced Account!");
-//                }, onErrorSync);
             updateAccount(currentPageOrderedEntries.Id, currentPageOrderedEntries.Name,
-                    "Test!", function(response) {
-                SFHybridApp.logToConsole("Successfully Synced Account!");
-            }, onErrorSync);
+                    currentPageOrderedEntries.Description, function(response) {
+                    SFHybridApp.logToConsole("Successfully Synced Account!");
+                }, onErrorSync);
         });
         onSuccessSync();
         forcetkClient.query("SELECT Id, Name, Description FROM Account", onSuccessSfdcAccounts, onErrorSfdc);
