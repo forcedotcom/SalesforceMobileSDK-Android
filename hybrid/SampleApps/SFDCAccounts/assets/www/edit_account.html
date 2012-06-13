@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0;" />
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <title>Edit Account</title>
+
+    <!-- Include jquery mobile. -->
+    <link rel="stylesheet" href="jquery/jquery.mobile-1.0b2.min.css" />
+    <script src="jquery/jquery-1.6.2.min.js"></script>
+    <script src="jquery/jquery.mobile-1.0b2.min.js"></script>
+
+    <!-- Include phonegap/callback. -->
+    <script type="text/javascript" charset="utf-8" src="phonegap-1.2.0.js"></script>
+
+    <!-- Required for OAuth plugin support. -->
+    <script type="text/javascript" src="SalesforceOAuthPlugin.js"></script>
+
+    <!-- Include forcetk for REST transaction support. -->
+    <script src="forcetk.js"></script>
+
+    <!-- Include local utility functionality. -->
+    <link rel="stylesheet" type="text/css" href="SFHybridApp.css" />
+    <script type="text/javascript" charset="utf-8" src="SFHybridApp.js"></script>
+
+    <!-- Include the SmartStore plugin. -->
+    <script type="text/javascript" src="SFSmartStorePlugin.js"></script>
+
+    <!-- Load our app-specific code. -->
+    <script src="sfdc_smartstore.js"></script>
+    <script src="sfdcaccounts.js"></script>
+  </head>
+
+  <body>
+    <div id="#content" data-role="content">
+      <div data-role="fieldcontain">
+        <label for="id">Id:</label>
+        <input type="text" name="id" id="id" value="" />
+      </div>
+      <div data-role="fieldcontain">
+        <label for="name">Name:</label>
+        <input type="text" name="name" id="name" value="" />
+      </div>
+      <div data-role="fieldcontain">
+        <label for="description">Description:</label>
+        <input type="text" name="description" id="description" value="" />
+      </div>
+    </div>
+  </body>
+</html>

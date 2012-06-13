@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0;" />
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+
+    <!-- Include jquery mobile. -->
+    <link rel="stylesheet" href="jquery/jquery.mobile-1.0b2.min.css" />
+    <script src="jquery/jquery-1.6.2.min.js"></script>
+    <script src="jquery/jquery.mobile-1.0b2.min.js"></script>
+
+    <!-- Include phonegap/callback. -->
+    <script type="text/javascript" charset="utf-8" src="phonegap-1.2.0.js"></script>
+
+    <!-- Required for OAuth plugin support. -->
+    <script type="text/javascript" src="SalesforceOAuthPlugin.js"></script>
+
+    <!-- Include forcetk for REST transaction support. -->
+    <script src="forcetk.js"></script>
+
+    <!-- Include local utility functionality. -->
+    <link rel="stylesheet" type="text/css" href="SFHybridApp.css" />
+    <script type="text/javascript" charset="utf-8" src="SFHybridApp.js"></script>
+
+    <!-- Include the SmartStore plugin. -->
+    <script type="text/javascript" src="SFSmartStorePlugin.js"></script>
+
+    <!-- Load our app-specific code. -->
+    <script src="sfdc_smartstore.js"></script>
+    <script src="sfdcaccounts.js"></script>
+
+    <script type="text/javascript" charset="utf-8">
+
+    // The version of the REST API you wish to use in your app.
+    var apiVersion = "v23.0";
+    var forcetkClient;
+    var debugMode = true;
+
+    jQuery(document).ready(function() {
+
+        // Add event listeners and so forth here.
+        SFHybridApp.logToConsole("onLoad: jquery ready");
+        document.addEventListener("deviceready", onDeviceReady, false);
+    });
+
+    // When this function is called, PhoneGap has been initialized and is ready to roll.
+    function onDeviceReady() {
+        SFHybridApp.logToConsole("onDeviceReady: PhoneGap ready");
+
+        // Register soups for offline storage.
+        regAccSoup();
+    }
+
+    function onSuccessRegSoup() {
+        SFHybridApp.logToConsole("onSuccessRegSoup: Offline soups ready");
+        onRegSoup();
+    }
+
+    function onErrorRegSoup() {
+        SFHybridApp.logToConsole("onErrorRegSoup: Offline soups not ready");
+        onRegSoup();
+    }
+
+    function onRegSoup() {
+
+        // Call getAuthCredentials to get the initial session credentials.
+        SalesforceOAuthPlugin.getAuthCredentials(salesforceSessionRefreshed, getAuthCredentialsError);
+
+        // Register to receive notifications when autoRefreshOnForeground refreshes the SFDC session.
+        document.addEventListener("salesforceSessionRefresh", salesforceSessionRefreshed, false);
+
+        // Enable buttons.
+        regLinkClickHandlers();
+    }
+
+    function salesforceSessionRefreshed(creds) {
+        SFHybridApp.logToConsole("salesforceSessionRefreshed");
+        forcetkClient = new forcetk.Client(creds.clientId, creds.loginUrl);
+        forcetkClient.setSessionToken(creds.accessToken, apiVersion, creds.instanceUrl);
+        forcetkClient.setRefreshToken(creds.refreshToken);
+        forcetkClient.setUserAgentString(creds.userAgent);
+    }
+
+    function getAuthCredentialsError(error) {
+        SFHybridApp.logToConsole("getAuthCredentialsError: " + error);
+    }
+    </script>
+
+  </head>
+  <body>
+      <div data-role="page" data-theme="b" id="jqm-home">
+          <div  data-role="header">
+              <h1>Hybrid Accounts & Opportunities Application</h1>
+          </div>
+
+          <div id="#content" data-role="content">
+              <p>
+                  <a href="#" id="link_fetch_sfdc_accounts" data-role="button" data-inline="true">Fetch SFDC Accounts (Records on Server)</a>
+                  <a href="#" id="link_fetch_sfdc_opportunities" data-role="button" data-inline="true">Fetch SFDC Opportunities (Records on Server)</a>
+              </p>
+              <p>
+                  <a href="#" id="link_fetch_device_accounts" data-role="button" data-inline="true">Fetch Device Accounts (Records Cached Locally)</a>
+                  <a href="#" id="link_fetch_device_opportunities" data-role="button" data-inline="true">Fetch Device Opportunities (Records Cached Locally)</a>
+              </p>
+              <p>
+                  <a href="#" id="link_sync_accounts" data-role="button" data-inline="true">Sync Accounts (Uploads Device Edits to the Server)</a>
+                  <a href="#" id="link_sync_opportunities" data-role="button" data-inline="true">Sync Opportunities (Uploads Device Edits to the Server)</a>
+              </p>
+              <p>
+                  <a href="#" id="link_reset" data-role="button" data-inline="true">Reset Application (Clears Cached Data)</a>
+                  <a href="#" id="link_logout" data-role="button" data-inline="true">Logout</a>
+              </p>
+
+              <div id="div_device_account_list"></div>
+              <div id="div_device_opportunity_list"></div>
+              <div id="div_sfdc_account_list"></div>
+              <div id="div_sfdc_opportunity_list"></div>
+
+              <div id="div_account_editor"></div>
+              <div id="div_opportunity_editor"></div>
+
+              <h3>Console:</h3>
+              <p id="console" class="logWindow">
+              </p>
+          </div>
+      </div>
+  </body>
+</html>
