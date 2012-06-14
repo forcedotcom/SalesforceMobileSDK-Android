@@ -296,6 +296,39 @@ public class SmartStore  {
 			}
 		}
 	}
+	
+	/**
+	 * Destroy all the soups in the smartstore
+	 */
+	public void dropAllSoups() {
+		List<String> soupNames = getAllSoupNames();
+		for(String soupName : soupNames) {
+			dropSoup(soupName);
+		}
+	}
+		
+	/**
+	 * @return all soup names in the smartstore
+	 */
+	public List<String> getAllSoupNames() {
+		List<String> soupNames = new ArrayList<String>();
+		Cursor cursor = null;
+		try {
+			cursor = DBHelper.INSTANCE.query(db, SOUP_NAMES_TABLE, new String[] {SOUP_NAME_COL}, null, null, null);
+			if (cursor.moveToFirst()) {
+				do {
+					soupNames.add(cursor.getString(0));
+				}
+				while (cursor.moveToNext());
+			}
+		}
+		finally {
+			safeClose(cursor);
+		}
+		return soupNames;
+	}
+		
+	
 
 	/**
 	 * Run a query
