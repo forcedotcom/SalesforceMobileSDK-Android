@@ -10,6 +10,6 @@
 		</shape>
 	</item>
 	<item
-	        android:drawable="@drawable/highlight_glare">
+	        android:drawable="@drawable/sf__highlight_glare">
 	</item>
 </layer-list>
