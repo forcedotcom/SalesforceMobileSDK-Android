@@ -14,7 +14,7 @@
 		android:layout_centerInParent="true"/>
 	
 	 <LinearLayout
-	 	android:id="@+id/auth_container"
+	 	android:id="@+id/sf__auth_container"
         android:orientation="vertical"
         android:layout_width="408dp"
 		android:layout_height="470dp"
@@ -39,11 +39,11 @@
 		<RadioGroup android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
 		android:orientation="vertical"
-		android:id="@+id/server_list_group">	
+		android:id="@+id/sf__server_list_group">	
 	</RadioGroup>
 			
 	<Button 
-		android:id="@+id/show_custom_url_edit"		
+		android:id="@+id/sf__show_custom_url_edit"		
 		android:text="@string/sf__custom_url_button"
 		android:layout_marginTop="7dp"
 		android:layout_width="fill_parent"
@@ -59,7 +59,7 @@
 				  >
 
 			<Button 
-				android:id="@+id/apply_button"
+				android:id="@+id/sf__apply_button"
 				android:text="@string/sf__server_url_default_apply"
 				android:layout_weight="1"			
 				android:layout_margin="2dp"
@@ -69,7 +69,7 @@
 			/>
 				
 			<Button 
-				android:id="@+id/cancel_button"
+				android:id="@+id/sf__cancel_button"
 				android:text="@string/sf__server_url_default_cancel"
 				android:layout_weight="1"			
 				android:layout_margin="2dp"

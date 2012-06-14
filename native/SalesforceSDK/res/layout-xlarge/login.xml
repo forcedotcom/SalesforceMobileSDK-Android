@@ -42,7 +42,7 @@
                     android:background="#215F84" />
 
                 <WebView
-                    android:id="@+id/oauth_webview"
+                    android:id="@+id/sf__oauth_webview"
                     android:layout_width="408dp"
                     android:layout_height="match_parent"
                     android:scrollbars="none" />

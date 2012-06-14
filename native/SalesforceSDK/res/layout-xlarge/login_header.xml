@@ -18,7 +18,7 @@
 				android:layout_height="fill_parent">
 				
 				<TextView 
-				android:id="@+id/server_name"
+				android:id="@+id/sf__server_name"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				style="@style/Text.HeaderOptions" 
@@ -26,15 +26,15 @@
 				android:layout_centerVertical="true"
 				android:layout_alignParentLeft="true"/>
 					
-				<ImageView android:id="@+id/reload_page" android:src="@drawable/header_refresh_states"
+				<ImageView android:id="@+id/sf__reload_page" android:src="@drawable/header_refresh_states"
 					android:layout_width="60dp" android:layout_height="fill_parent"
 					android:scaleType="fitCenter" android:layout_alignParentRight="true"
 					android:clickable="true" android:onClick="onReloadClick" />
 					
 				<LinearLayout 
-					android:id="@+id/seperator"
+					android:id="@+id/sf__seperator"
 					xmlns:android="http://schemas.android.com/apk/res/android"
-					android:layout_toLeftOf="@id/reload_page"
+					android:layout_toLeftOf="@id/sf__reload_page"
 					android:orientation="horizontal"
 					android:layout_marginRight="9dp"
 					android:layout_width="2dp"
@@ -52,22 +52,22 @@
 				</LinearLayout> 
 				
 				<TextView 
-					android:id="@+id/clear_cookies"
+					android:id="@+id/sf__clear_cookies"
 					android:text="@string/sf__clear_cookies"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					style="@style/Text.HeaderOptions" 
 					android:layout_marginRight="9dp"
 					android:layout_centerVertical="true"
-					android:layout_toLeftOf="@id/seperator"
+					android:layout_toLeftOf="@id/sf__seperator"
 					android:clickable="true"
 					android:onClick="onClearCookiesClick"/>
 					
 				<LinearLayout 
 					xmlns:android="http://schemas.android.com/apk/res/android"
-					android:id="@+id/seperator2"
+					android:id="@+id/sf__seperator2"
 					android:layout_marginRight="9dp"
-					android:layout_toLeftOf="@id/clear_cookies"
+					android:layout_toLeftOf="@id/sf__clear_cookies"
 					android:orientation="horizontal"
 					android:layout_width="2dp"
 					android:layout_height="fill_parent">
@@ -84,21 +84,21 @@
 				</LinearLayout> 
 				
 				<TextView 
-					android:id="@+id/change_server"
+					android:id="@+id/sf__change_server"
 					android:text="@string/sf__pick_server"
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					style="@style/Text.HeaderOptions" 
 					android:layout_marginRight="9dp"
 					android:layout_centerVertical="true"
-					android:layout_toLeftOf="@id/seperator2"
+					android:layout_toLeftOf="@id/sf__seperator2"
 					android:clickable="true"
 					android:onClick="onPickServerClick"/>
 					
 				<LinearLayout 
-					android:id="@+id/seperator3"
+					android:id="@+id/sf__seperator3"
 					xmlns:android="http://schemas.android.com/apk/res/android"
-					android:layout_toLeftOf="@id/change_server"
+					android:layout_toLeftOf="@id/sf__change_server"
 					android:orientation="horizontal"
 					android:layout_marginRight="9dp"
 					android:layout_width="2dp"
@@ -115,17 +115,17 @@
 						android:background="@drawable/header_right_border"/>
 				</LinearLayout> 
 				
-				<ProgressBar android:id="@+id/load_spinner"
+				<ProgressBar android:id="@+id/sf__load_spinner"
 					android:layout_width="wrap_content" android:layout_height="wrap_content"
-					android:layout_toLeftOf="@id/seperator3"
+					android:layout_toLeftOf="@id/sf__seperator3"
 					android:layout_centerVertical="true" android:layout_marginRight="8dp"
 					android:indeterminateDrawable="@drawable/progress_spinner"
 					android:visibility="gone" />
 					
 				<LinearLayout 
-					android:id="@+id/load_separator"
+					android:id="@+id/sf__load_separator"
 					xmlns:android="http://schemas.android.com/apk/res/android"
-					android:layout_toLeftOf="@id/load_spinner"
+					android:layout_toLeftOf="@id/sf__load_spinner"
 					android:orientation="horizontal"
 					android:layout_marginRight="9dp"
 					android:layout_width="2dp"

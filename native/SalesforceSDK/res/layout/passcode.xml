@@ -15,7 +15,7 @@
         android:background="#888888">
 
 	    <TextView 
-	    	android:id="@+id/passcode_title"
+	    	android:id="@+id/sf__passcode_title"
 	    	android:layout_width="fill_parent"
 	    	android:layout_height="wrap_content"
 	    	android:gravity="center"
@@ -24,7 +24,7 @@
 	    />
 	    
 	    <EditText
-	    	android:id="@+id/passcode_text"
+	    	android:id="@+id/sf__passcode_text"
 	    	android:layout_width="wrap_content"
 	    	android:layout_height="wrap_content"
 	    	android:layout_gravity="center_horizontal"
@@ -36,7 +36,7 @@
 	    />
 	
 	    <TextView
-	    	android:id="@+id/passcode_error"
+	    	android:id="@+id/sf__passcode_error"
 	    	android:layout_width="wrap_content"
 	    	android:layout_height="wrap_content" 
 	    	android:layout_gravity="center_horizontal"
@@ -46,7 +46,7 @@
 	    />
 	    
 	    <TextView
-	    	android:id="@+id/passcode_instructions"
+	    	android:id="@+id/sf__passcode_instructions"
 	    	android:layout_width="wrap_content"
 	    	android:layout_height="wrap_content" 
 	    	android:layout_gravity="center_horizontal"
