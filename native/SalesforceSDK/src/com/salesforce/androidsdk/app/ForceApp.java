@@ -158,6 +158,13 @@ public abstract class ForceApp extends Application {
 		SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(passcodeHash == null ? "" : passcodeHash);
 		return new SmartStore(db);
 	}
+	
+	/**
+	 * @return true if the application has a smartstore database
+	 */
+	public boolean hasSmartStore() {
+		return getDatabasePath(DBOpenHelper.DB_NAME).exists();
+	}
 
 	/**
 	 * @return The hashed passcode, or null if it's not required.
@@ -197,6 +204,11 @@ public abstract class ForceApp extends Application {
     	// Finish front activity if specified
     	if (frontActivity != null) {
     		frontActivity.finish();
+    	}
+
+    	// Reset smartstore
+    	if (hasSmartStore()) {
+    		getSmartStore().dropAllSoups();
     	}
     	
     	// Reset passcode if any
