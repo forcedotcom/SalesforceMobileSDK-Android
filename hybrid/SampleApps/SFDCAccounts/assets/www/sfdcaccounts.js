@@ -143,7 +143,7 @@ function onSuccessDeviceAccounts(response) {
     ul.delegate("li", "click", function(e) {
         SFHybridApp.logToConsole("Item Clicked: " + this.id);
         resetDisplay();
-        $j('#div_account_editor').load("edit_account.html");
+        $j('#div_account_editor').load("editaccount.html");
         getAccById(this.id, function(response) {
             $j("#div_account_editor input:text[name=id]").val(response.currentPageOrderedEntries[0].Id);
             $j("#div_account_editor input:text[name=name]").val(response.currentPageOrderedEntries[0].Name);
@@ -175,7 +175,7 @@ function onSuccessDeviceOpportunities(response) {
     ul.delegate("li", "click", function(e) {
         SFHybridApp.logToConsole("Item Clicked: " + this.id);
         resetDisplay();
-        $j('#div_opportunity_editor').load("edit_opportunity.html");
+        $j('#div_opportunity_editor').load("editopportunity.html");
         getOppById(this.id, function(response) {
             $j("#div_opportunity_editor input:text[name=id]").val(response.currentPageOrderedEntries[0].Id);
             $j("#div_opportunity_editor input:text[name=name]").val(response.currentPageOrderedEntries[0].Name);
@@ -215,7 +215,7 @@ function onSuccessSfdcAccounts(response) {
     ul.delegate("li", "click", function(e) {
         SFHybridApp.logToConsole("Item Clicked: " + this.id);
         resetDisplay();
-        $j('#div_account_editor').load("edit_account.html");
+        $j('#div_account_editor').load("editaccount.html");
         getAccById(this.id, function(response) {
             $j("#div_account_editor input:text[name=id]").val(response.currentPageOrderedEntries[0].Id);
             $j("#div_account_editor input:text[name=name]").val(response.currentPageOrderedEntries[0].Name);
@@ -257,7 +257,7 @@ function onSuccessSfdcOpportunities(response) {
     ul.delegate("li", "click", function(e) {
         SFHybridApp.logToConsole("Item Clicked: " + this.id);
         resetDisplay();
-        $j('#div_opportunity_editor').load("edit_opportunity.html");
+        $j('#div_opportunity_editor').load("editopportunity.html");
         getOppById(this.id, function(response) {
             $j("#div_opportunity_editor input:text[name=id]").val(response.currentPageOrderedEntries[0].Id);
             $j("#div_opportunity_editor input:text[name=name]").val(response.currentPageOrderedEntries[0].Name);
