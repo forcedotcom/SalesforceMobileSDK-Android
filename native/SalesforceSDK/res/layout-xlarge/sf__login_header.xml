@@ -10,7 +10,7 @@
 			android:orientation="horizontal"
 			android:layout_width="fill_parent"
 			android:layout_height="50dp"
-			android:background="@drawable/toolbar_background">
+			android:background="@drawable/sf__toolbar_background">
 			
 
 			<RelativeLayout 
@@ -26,7 +26,7 @@
 				android:layout_centerVertical="true"
 				android:layout_alignParentLeft="true"/>
 					
-				<ImageView android:id="@+id/sf__reload_page" android:src="@drawable/header_refresh_states"
+				<ImageView android:id="@+id/sf__reload_page" android:src="@drawable/sf__header_refresh_states"
 					android:layout_width="60dp" android:layout_height="fill_parent"
 					android:scaleType="fitCenter" android:layout_alignParentRight="true"
 					android:clickable="true" android:onClick="onReloadClick" />
@@ -43,12 +43,12 @@
 					<View
 				   		android:layout_width="1dp"
 				    	android:layout_height="fill_parent"
-				    	android:background="@drawable/header_left_border"/>
+				    	android:background="@drawable/sf__header_left_border"/>
 				    	
 					<View
 						android:layout_width="1dp"
 						android:layout_height="fill_parent"
-						android:background="@drawable/header_right_border"/>
+						android:background="@drawable/sf__header_right_border"/>
 				</LinearLayout> 
 				
 				<TextView 
@@ -75,12 +75,12 @@
 					<View
 				   		android:layout_width="1dp"
 				    	android:layout_height="fill_parent"
-				    	android:background="@drawable/header_left_border"/>
+				    	android:background="@drawable/sf__header_left_border"/>
 				    	
 					<View
 						android:layout_width="1dp"
 						android:layout_height="fill_parent"
-						android:background="@drawable/header_right_border"/>
+						android:background="@drawable/sf__header_right_border"/>
 				</LinearLayout> 
 				
 				<TextView 
@@ -107,19 +107,19 @@
 					<View
 				   		android:layout_width="1dp"
 				    	android:layout_height="fill_parent"
-				    	android:background="@drawable/header_left_border"/>
+				    	android:background="@drawable/sf__header_left_border"/>
 				    	
 					<View
 						android:layout_width="1dp"
 						android:layout_height="fill_parent"
-						android:background="@drawable/header_right_border"/>
+						android:background="@drawable/sf__header_right_border"/>
 				</LinearLayout> 
 				
 				<ProgressBar android:id="@+id/sf__load_spinner"
 					android:layout_width="wrap_content" android:layout_height="wrap_content"
 					android:layout_toLeftOf="@id/sf__seperator3"
 					android:layout_centerVertical="true" android:layout_marginRight="8dp"
-					android:indeterminateDrawable="@drawable/progress_spinner"
+					android:indeterminateDrawable="@drawable/sf__progress_spinner"
 					android:visibility="gone" />
 					
 				<LinearLayout 
@@ -135,12 +135,12 @@
 					<View
 				   		android:layout_width="1dp"
 				    	android:layout_height="fill_parent"
-				    	android:background="@drawable/header_left_border"/>
+				    	android:background="@drawable/sf__header_left_border"/>
 				    	
 					<View
 						android:layout_width="1dp"
 						android:layout_height="fill_parent"
-						android:background="@drawable/header_right_border"/>
+						android:background="@drawable/sf__header_right_border"/>
 				</LinearLayout> 
 				
 		</RelativeLayout>
@@ -154,5 +154,5 @@
 	<View
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
-		android:background="@drawable/header_drop_shadow"/>
+		android:background="@drawable/sf__header_drop_shadow"/>
 </LinearLayout>

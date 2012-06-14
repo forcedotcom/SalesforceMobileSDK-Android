@@ -17,7 +17,7 @@
 			android:orientation="horizontal"
 			android:layout_width="fill_parent"
 			android:layout_height="50dp"
-			android:background="@drawable/toolbar_background">
+			android:background="@drawable/sf__toolbar_background">
 
 			<RelativeLayout 
 				android:layout_width="wrap_content"
@@ -47,12 +47,12 @@
 					<View
 				   		android:layout_width="1dp"
 				    	android:layout_height="fill_parent"
-				    	android:background="@drawable/header_left_border"/>
+				    	android:background="@drawable/sf__header_left_border"/>
 				    	
 					<View
 						android:layout_width="1dp"
 						android:layout_height="fill_parent"
-						android:background="@drawable/header_right_border"/>
+						android:background="@drawable/sf__header_right_border"/>
 				</LinearLayout> 
 		</RelativeLayout>
 	</LinearLayout>
@@ -65,5 +65,5 @@
 	<View
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
-		android:background="@drawable/header_drop_shadow"/>
+		android:background="@drawable/sf__header_drop_shadow"/>
 </LinearLayout>

@@ -4,13 +4,13 @@
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
 	android:orientation="vertical"	
-	android:background="@drawable/oauth_background">
+	android:background="@drawable/sf__oauth_background">
 	
-	<include layout="@layout/server_picker_header"/>
+	<include layout="@layout/sf__server_picker_header"/>
 	
 	<View android:layout_width="412dp"
 		android:layout_height="474dp"
-		android:background="@drawable/oauth_container_dropshadow"
+		android:background="@drawable/sf__oauth_container_dropshadow"
 		android:layout_centerInParent="true"/>
 	
 	 <LinearLayout
@@ -29,7 +29,7 @@
 			android:textColor="#ffffff"
 			android:textStyle="bold"
 			android:gravity="center_horizontal|center_vertical"
-			android:background="@drawable/login_content_header"/>
+			android:background="@drawable/sf__login_content_header"/>
 			
 		 <View
 			android:layout_width="fill_parent"
