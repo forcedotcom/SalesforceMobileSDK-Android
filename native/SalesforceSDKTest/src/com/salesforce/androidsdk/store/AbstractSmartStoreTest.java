@@ -148,6 +148,43 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		assertNull("getSoupTableName should have returned null", store.getSoupTableName(THIRD_TEST_SOUP));
 		assertFalse("Table for soup third_test_soup does exist", hasTable(soupTableName));
 	}
+
+	/**
+	 * Testing getAllSoupNames: register a new soup and then drop it and call getAllSoupNames before and after
+	 */
+	public void testGetAllSoupNames() {
+		// Before
+		assertEquals("One soup name expected", 1, store.getAllSoupNames().size());
+		assertTrue(TEST_SOUP + " should have been returned by getAllSoupNames", store.getAllSoupNames().contains(TEST_SOUP));
+
+		// Register another soup
+		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
+		assertEquals("Two soup names expected", 2, store.getAllSoupNames().size());
+		assertTrue(TEST_SOUP + " should have been returned by getAllSoupNames", store.getAllSoupNames().contains(TEST_SOUP));
+		assertTrue(THIRD_TEST_SOUP + " should have been returned by getAllSoupNames", store.getAllSoupNames().contains(THIRD_TEST_SOUP));
+
+		// Drop the latest soup
+		store.dropSoup(THIRD_TEST_SOUP);
+		assertEquals("One soup name expected", 1, store.getAllSoupNames().size());
+		assertTrue(TEST_SOUP + " should have been returned by getAllSoupNames", store.getAllSoupNames().contains(TEST_SOUP));
+	}
+	
+	/**
+	 * Testing dropAllSoups: register a couple of soups then drop them all
+	 */
+	public void testDropAllSoups() {
+		// Register another soup
+		assertEquals("One soup name expected", 1, store.getAllSoupNames().size());
+		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
+		assertEquals("Two soup names expected", 2, store.getAllSoupNames().size());
+
+		// Drop all
+		store.dropAllSoups();
+		assertEquals("No soup name expected", 0, store.getAllSoupNames().size());
+		assertFalse("Soup " + THIRD_TEST_SOUP + " should no longer exist", store.hasSoup(THIRD_TEST_SOUP));
+		assertFalse("Soup " + TEST_SOUP + " should no longer exist", store.hasSoup(TEST_SOUP));
+	}
+	
 	
 	/**
 	 * Testing create: create a single element with a single index pointing to a top level attribute
