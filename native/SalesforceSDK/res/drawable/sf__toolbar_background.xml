@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+	<item>
+		<shape>
+			<gradient 
+				android:startColor="#4bafe5" 
+				android:endColor="#006cba"
+				android:type="linear" 
+				android:angle="270" />
+		</shape>
+	</item>
+	<item
+	        android:drawable="@drawable/sf__highlight_glare">
+	</item>
+</layer-list>
