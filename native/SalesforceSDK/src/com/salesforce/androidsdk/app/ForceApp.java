@@ -69,7 +69,7 @@ public abstract class ForceApp extends Application {
 	/**
 	 * Current version of this SDK.
 	 */
-    public static final String SDK_VERSION = "1.2.unstable";
+    public static final String SDK_VERSION = "1.2";
 
     /*
      * Last phone version
