@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.store;
 
+import info.guardianproject.database.sqlcipher.SQLiteDatabase;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -51,14 +53,14 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	private static final String THIRD_TEST_SOUP = "third_test_soup";
 	
 	protected Context targetContext;
-	private Database db;
+	private SQLiteDatabase db;
 	private SmartStore store;
 	
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		DBOperations.resetDatabase(targetContext); // start clean
+		DBHelper.INSTANCE.reset(targetContext); // start clean
 		db = getWritableDatabase();
 		store = new SmartStore(db);
 		
@@ -70,7 +72,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
 	}
 	
-	protected abstract Database getWritableDatabase();
+	protected abstract SQLiteDatabase getWritableDatabase();
 
 	@Override
 	protected void tearDown() throws Exception {
@@ -146,6 +148,43 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		assertNull("getSoupTableName should have returned null", store.getSoupTableName(THIRD_TEST_SOUP));
 		assertFalse("Table for soup third_test_soup does exist", hasTable(soupTableName));
 	}
+
+	/**
+	 * Testing getAllSoupNames: register a new soup and then drop it and call getAllSoupNames before and after
+	 */
+	public void testGetAllSoupNames() {
+		// Before
+		assertEquals("One soup name expected", 1, store.getAllSoupNames().size());
+		assertTrue(TEST_SOUP + " should have been returned by getAllSoupNames", store.getAllSoupNames().contains(TEST_SOUP));
+
+		// Register another soup
+		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
+		assertEquals("Two soup names expected", 2, store.getAllSoupNames().size());
+		assertTrue(TEST_SOUP + " should have been returned by getAllSoupNames", store.getAllSoupNames().contains(TEST_SOUP));
+		assertTrue(THIRD_TEST_SOUP + " should have been returned by getAllSoupNames", store.getAllSoupNames().contains(THIRD_TEST_SOUP));
+
+		// Drop the latest soup
+		store.dropSoup(THIRD_TEST_SOUP);
+		assertEquals("One soup name expected", 1, store.getAllSoupNames().size());
+		assertTrue(TEST_SOUP + " should have been returned by getAllSoupNames", store.getAllSoupNames().contains(TEST_SOUP));
+	}
+	
+	/**
+	 * Testing dropAllSoups: register a couple of soups then drop them all
+	 */
+	public void testDropAllSoups() {
+		// Register another soup
+		assertEquals("One soup name expected", 1, store.getAllSoupNames().size());
+		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
+		assertEquals("Two soup names expected", 2, store.getAllSoupNames().size());
+
+		// Drop all
+		store.dropAllSoups();
+		assertEquals("No soup name expected", 0, store.getAllSoupNames().size());
+		assertFalse("Soup " + THIRD_TEST_SOUP + " should no longer exist", store.hasSoup(THIRD_TEST_SOUP));
+		assertFalse("Soup " + TEST_SOUP + " should no longer exist", store.hasSoup(TEST_SOUP));
+	}
+	
 	
 	/**
 	 * Testing create: create a single element with a single index pointing to a top level attribute
@@ -155,13 +194,11 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt = new JSONObject("{'key':'ka', 'value':'va'}");
 		JSONObject soupEltCreated = store.create(TEST_SOUP, soupElt);
 		
-		assertSameJSON("Wrong created soup element returned", soupElt, removeExtraFields(soupEltCreated));		
-		
 		// Check DB
 		Cursor c = null;
 		try {
 			String soupTableName = store.getSoupTableName(TEST_SOUP);
-			c = db.query(soupTableName, null, null, null, null);
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, null, null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected one soup element only", 1, c.getCount());
 			assertEquals("Wrong id", idOf(soupEltCreated), c.getLong(c.getColumnIndex("id")));
@@ -194,10 +231,6 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt2Created = store.create(OTHER_TEST_SOUP, soupElt2);
 		JSONObject soupElt3Created = store.create(OTHER_TEST_SOUP, soupElt3);
 		
-		assertSameJSON("Wrong created soup element returned", soupElt1, removeExtraFields(soupElt1Created));
-		assertSameJSON("Wrong created soup element returned", soupElt2, removeExtraFields(soupElt2Created));
-		assertSameJSON("Wrong created soup element returned", soupElt3, removeExtraFields(soupElt3Created));
-		
 		// Check DB
 		Cursor c = null;
 		try {
@@ -205,7 +238,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 			assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
 			assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
 			
-			c = db.query(soupTableName, null, "id ASC", null, null);
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -264,7 +297,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = store.getSoupTableName(TEST_SOUP);			
-			c = db.query(soupTableName, null, "id ASC", null, null);
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -316,7 +349,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = store.getSoupTableName(TEST_SOUP);			
-			c = db.query(soupTableName, null, "id ASC", null, null);
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -339,6 +372,102 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		}
 	}
 
+	/**
+	 * Testing upsert with external id: upsert multiple soup elements and re-upsert one of them, check them all
+	 * @throws JSONException
+	 */
+	public void testUpsertWithExternalId() throws JSONException {
+		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1'}");
+		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2'}");
+		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3'}");
+		
+		JSONObject soupElt1Upserted = store.upsert(TEST_SOUP, soupElt1, "key");
+		JSONObject soupElt2Upserted = store.upsert(TEST_SOUP, soupElt2, "key");
+		JSONObject soupElt3Upserted = store.upsert(TEST_SOUP, soupElt3, "key");
+
+		SystemClock.sleep(10); // to get a different last modified date
+		JSONObject soupElt2ForUpdate = new JSONObject("{'key':'ka2', 'value':'va2u'}");
+		JSONObject soupElt2Updated = store.upsert(TEST_SOUP, soupElt2ForUpdate, "key");
+		
+		JSONObject soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Upserted)).getJSONObject(0);
+		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Upserted)).getJSONObject(0);
+		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Upserted)).getJSONObject(0);
+
+		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
+		assertSameJSON("Retrieve mismatch", soupElt2Updated, soupElt2Retrieved);
+		assertSameJSON("Retrieve mismatch", soupElt3Upserted, soupElt3Retrieved);
+
+		// Check DB
+		Cursor c = null;
+		try {
+			String soupTableName = store.getSoupTableName(TEST_SOUP);			
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
+			assertTrue("Expected a soup element", c.moveToFirst());
+			assertEquals("Expected three soup elements", 3, c.getCount());
+			
+			assertEquals("Wrong id", idOf(soupElt1Upserted), c.getLong(c.getColumnIndex("id")));
+			assertEquals("Wrong created date", soupElt1Upserted.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
+			assertEquals("Created date and last modified date should be equal", c.getLong(c.getColumnIndex("created")),  c.getLong(c.getColumnIndex("lastModified")));				
+			
+			c.moveToNext();
+			assertEquals("Wrong id", idOf(soupElt2Upserted), c.getLong(c.getColumnIndex("id")));
+			assertEquals("Wrong created date", soupElt2Updated.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
+			assertTrue("Last modified date should be more recent than created date", c.getLong(c.getColumnIndex("created")) < c.getLong(c.getColumnIndex("lastModified")));				
+
+			c.moveToNext();
+			assertEquals("Wrong id", idOf(soupElt3Upserted), c.getLong(c.getColumnIndex("id")));
+			assertEquals("Wrong created date", soupElt3Upserted.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
+			assertEquals("Created date and last modified date should be equal", c.getLong(c.getColumnIndex("created")),  c.getLong(c.getColumnIndex("lastModified")));				
+		}
+		finally {
+			safeClose(c);
+		}
+	}
+	
+	
+	/**
+	 * Testing upsert passing a non-indexed path for the external id (should fail)
+	 * @throws JSONException
+	 */
+	public void testUpsertWithNonIndexedExternalId() throws JSONException {
+		JSONObject soupElt = new JSONObject("{'key':'ka1', 'value':'va1'}");
+		
+		try {
+			store.upsert(TEST_SOUP, soupElt, "value");
+			fail("Exception was expected: value is not an indexed field");
+		}
+		catch (RuntimeException e) {
+			assertTrue("Wrong exception", e.getMessage().contains("does not have an index"));
+		}
+	}
+
+	/**
+	 * Testing upsert with an external id that is not unique in the soup
+	 * @throws JSONException
+	 */
+	public void testUpsertWithNonUniqueExternalId() throws JSONException {
+		JSONObject soupElt1 = new JSONObject("{'key':'ka', 'value':'va1'}");
+		JSONObject soupElt2 = new JSONObject("{'key':'ka', 'value':'va2'}");
+		JSONObject soupElt3 = new JSONObject("{'key':'ka', 'value':'va3'}");
+		
+		JSONObject soupElt1Upserted = store.upsert(TEST_SOUP, soupElt1);
+		JSONObject soupElt2Upserted = store.upsert(TEST_SOUP, soupElt2);
+
+		JSONObject soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Upserted)).getJSONObject(0);
+		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Upserted)).getJSONObject(0);
+
+		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
+		assertSameJSON("Retrieve mismatch", soupElt2Upserted, soupElt2Retrieved);
+		
+		try {
+			store.upsert(TEST_SOUP, soupElt3, "key");
+			fail("Exception was expected: key is not unique in the soup");
+		}
+		catch (RuntimeException e) {
+			assertTrue("Wrong exception", e.getMessage().contains("are more than one soup elements"));
+		}
+	}
+	
 	/**
 	 * Testing retrieve: create multiple soup elements and retrieves them back
 	 * @throws JSONException 
@@ -388,7 +517,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = store.getSoupTableName(TEST_SOUP);
-			c = db.query(soupTableName, null, "id ASC", null, null);
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 2, c.getCount());
 			
@@ -402,6 +531,39 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		}
 	}
 
+	/**
+	 * Test query when looking for all elements
+	 * @throws JSONException 
+	 */
+	public void testAllQuery() throws JSONException {
+		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1', 'otherValue':'ova1'}");
+		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2', 'otherValue':'ova2'}");
+		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3', 'otherValue':'ova3'}");
+		
+		JSONObject soupElt1Created = store.create(TEST_SOUP, soupElt1);
+		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
+		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
+
+		// Query all - small page
+		JSONArray result = store.querySoup(TEST_SOUP, QuerySpec.buildAllQuerySpec(Order.ascending, 2), 0);
+		assertEquals("Two elements expected", 2, result.length());
+		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
+		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
+
+		// Query all - next small page
+		result = store.querySoup(TEST_SOUP, QuerySpec.buildAllQuerySpec(Order.ascending, 2), 1);
+		assertEquals("One element expected", 1, result.length());
+		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
+
+		// Query all - large page
+		result = store.querySoup(TEST_SOUP, QuerySpec.buildAllQuerySpec(Order.ascending, 10), 0);
+		assertEquals("Three elements expected", 3, result.length());
+		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
+		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
+		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(2));
+	
+	}
+	
 	/**
 	 * Test query when looking for a specific element
 	 * @throws JSONException 
@@ -502,6 +664,26 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(2));
 	}
 	
+	/**
+	 * Test upsert soup element with null value in indexed field
+	 * @throws JSONException 
+	 */
+	public void testUpsertWithNullInIndexedField() throws JSONException {
+		// Before
+		assertFalse("Soup third_test_soup should not exist", store.hasSoup(THIRD_TEST_SOUP));
+		
+		// Register
+		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
+		assertTrue("Register soup call failed", store.hasSoup(THIRD_TEST_SOUP));
+
+		// Upsert
+		JSONObject soupElt1 = new JSONObject("{'key':'ka', 'value':null}");
+		JSONObject soupElt1Upserted = store.upsert(THIRD_TEST_SOUP, soupElt1);
+		
+		// Check
+		JSONObject soupElt1Retrieved = store.retrieve(THIRD_TEST_SOUP, idOf(soupElt1Upserted)).getJSONObject(0);		
+		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
+	}
 	
 	
 	/**
@@ -512,7 +694,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	private boolean hasTable(String tableName) {
 		Cursor c = null;
 		try {
-			c = db.query("sqlite_master", null, null, null, "type = ? and name = ?", "table", tableName);
+			c = DBHelper.INSTANCE.query(db, "sqlite_master", null, null, null, "type = ? and name = ?", "table", tableName);
 			return c.getCount() == 1;
 		}
 		finally {
@@ -528,21 +710,6 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		if (c != null) {
 			c.close();
 		}
-	}
-
-	/**
-	 * Remove soup entry id, last modified date 
-	 * @param retrievedSoupElt
-	 * @return
-	 * @throws JSONException
-	 */
-	private JSONObject removeExtraFields(JSONObject retrievedSoupElt) throws JSONException {
-		
-		JSONObject cleansedElt = new JSONObject(retrievedSoupElt.toString());
-		cleansedElt.remove(SmartStore.SOUP_ENTRY_ID);
-		cleansedElt.remove(SmartStore.SOUP_LAST_MODIFIED_DATE);
-
-		return cleansedElt;
 	}
 
 	/**

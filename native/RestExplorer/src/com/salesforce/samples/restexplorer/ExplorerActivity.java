@@ -70,6 +70,7 @@ import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -83,6 +84,7 @@ public class ExplorerActivity extends TabActivity {
 	private static final String SINGLE_LINE = "------------------------------------------------------------------------------";
 	private static final int LOGOUT_CONFIRMATION_DIALOG_ID = 0;
 
+	private PasscodeManager passcodeManager;
 	private String apiVersion;
 	private RestClient client;
 	private TextView resultText;
@@ -99,6 +101,9 @@ public class ExplorerActivity extends TabActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
+		// Passcode manager
+		passcodeManager = ForceApp.APP.getPasscodeManager();		
+		
 		// ApiVersion
 		apiVersion = getString(R.string.api_version);
 
@@ -136,41 +141,43 @@ public class ExplorerActivity extends TabActivity {
 		findViewById(R.id.root).setVisibility(View.INVISIBLE);
 		
 		// Bring up passcode screen if needed
-		ForceApp.APP.getPasscodeManager().lockIfNeeded(this, true);
-		
-		// Do nothing - when the app gets unlocked we will be back here
-		if (ForceApp.APP.getPasscodeManager().isLocked()) {
-			return;
-		}
-		
-		// Login options
-		String accountType = ForceApp.APP.getAccountType();
-    	LoginOptions loginOptions = new LoginOptions(
-    			null, // gets overridden by LoginActivity based on server picked by uuser 
-    			ForceApp.APP.getPasscodeHash(),
-    			getString(R.string.oauth_callback_url),
-    			getString(R.string.oauth_client_id),
-    			new String[] {"api"});
-		
-		// Get a rest client
-		new ClientManager(this, accountType, loginOptions).getRestClient(this, new RestClientCallback() {
-			@Override
-			public void authenticatedRestClient(RestClient client) {
-				if (client == null) {
-					ForceApp.APP.logout(ExplorerActivity.this);
-					return;
+		if (passcodeManager.onResume(this)) {
+			// Login options
+			String accountType = ForceApp.APP.getAccountType();
+	    	LoginOptions loginOptions = new LoginOptions(
+	    			null, // gets overridden by LoginActivity based on server picked by uuser 
+	    			ForceApp.APP.getPasscodeHash(),
+	    			getString(R.string.oauth_callback_url),
+	    			getString(R.string.oauth_client_id),
+	    			new String[] {"api"});
+			
+			// Get a rest client
+			new ClientManager(this, accountType, loginOptions).getRestClient(this, new RestClientCallback() {
+				@Override
+				public void authenticatedRestClient(RestClient client) {
+					if (client == null) {
+						ForceApp.APP.logout(ExplorerActivity.this);
+						return;
+					}
+					ExplorerActivity.this.client = client;
+					
+					// Show everything
+					findViewById(R.id.root).setVisibility(View.VISIBLE);				
 				}
-				ExplorerActivity.this.client = client;
-				
-				// Show everything
-				findViewById(R.id.root).setVisibility(View.VISIBLE);				
-			}
-		});
+			});
+		}
 	}
+	
+	
+    @Override
+    public void onPause() {
+    	passcodeManager.onPause(this);
+    	super.onPause();
+    }
 	
 	@Override
 	public void onUserInteraction() {
-		ForceApp.APP.getPasscodeManager().recordUserInteraction();
+		passcodeManager.recordUserInteraction();
 	}
 
 	@Override

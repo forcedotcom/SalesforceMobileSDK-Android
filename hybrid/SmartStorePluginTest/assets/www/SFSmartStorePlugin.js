@@ -1,1 +1,1 @@
-../../../../external/shared/PhoneGap/SFSmartStorePlugin.js
+../../../../external/shared/PhoneGap/plugins/SFSmartStorePlugin.js

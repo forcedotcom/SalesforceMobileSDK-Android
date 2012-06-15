@@ -78,6 +78,25 @@ import com.salesforce.androidsdk.auth.HttpAccess.Execution;
  */
 public class OAuth2 {
 
+	// Misc constants: strings appearing in requests or responses
+	private static final String ACCESS_TOKEN = "access_token";
+	private static final String CLIENT_ID = "client_id";
+	private static final String ERROR = "error";
+	private static final String ERROR_DESCRIPTION = "error_description";
+	private static final String FORMAT = "format";
+	private static final String GRANT_TYPE = "grant_type";
+	private static final String ID = "id";
+	private static final String INSTANCE_URL = "instance_url";
+	private static final String JSON = "json";
+	private static final String MOBILE_POLICY = "mobile_policy";
+	private static final String PIN_LENGTH = "pin_length";
+	private static final String REFRESH_TOKEN = "refresh_token";
+	private static final String RESPONSE_TYPE = "response_type";
+	private static final String SCOPE = "scope";
+	private static final String SCREEN_LOCK = "screen_lock";
+	private static final String TOKEN = "token";
+	private static final String USERNAME = "username";
+	
 	// Login URLs / paths
 	public static final String DEFAULT_LOGIN_URL = "https://login.salesforce.com";
 	public static final String SANDBOX_LOGIN_URL = "https://test.salesforce.com";
@@ -106,16 +125,15 @@ public class OAuth2 {
 	    
 	    StringBuilder sb = new StringBuilder();
 	    sb.append(OAUTH_AUTH_PATH);
-	    sb.append("&response_type=token");
-	    sb.append("&client_id=");
-	    sb.append( Uri.encode(clientId) );
+	    sb.append("&").append(RESPONSE_TYPE).append("=").append(TOKEN);
+	    sb.append("&").append(CLIENT_ID).append("=").append(Uri.encode(clientId));
 	    if ((null != scopes) && (scopes.length > 0)) {
 	        //need to always have the refresh_token scope to reuse our refresh token
-	        sb.append("&scope=refresh_token");
+	        sb.append("&").append(SCOPE).append("=").append(REFRESH_TOKEN);
 
 	        StringBuilder scopeStr = new StringBuilder();
 	        for (String scope : scopes) {
-	            if (!scope.equalsIgnoreCase("refresh_token")) {
+	            if (!scope.equalsIgnoreCase(REFRESH_TOKEN)) {
 	                scopeStr.append(" ").append(scope);
 	            }
 	        }
@@ -143,17 +161,17 @@ public class OAuth2 {
 	public static TokenEndpointResponse refreshAuthToken(
 			HttpAccess httpAccessor, URI loginServer, String clientId,
 			String refreshToken) throws OAuthFailedException, IOException {
-		List<NameValuePair> params = makeTokenEndpointParams("refresh_token",
+		List<NameValuePair> params = makeTokenEndpointParams(REFRESH_TOKEN,
 				clientId);
-		params.add(new BasicNameValuePair("refresh_token", refreshToken));
-		params.add(new BasicNameValuePair("format", "json"));
+		params.add(new BasicNameValuePair(REFRESH_TOKEN, refreshToken));
+		params.add(new BasicNameValuePair(FORMAT, JSON));
 		TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor,
 				loginServer, params);
 		return tr;
 	}
 
 	/**
-	 * Call the identity service to determine the username of the user, given
+	 * Call the identity service to determine the username of the user and the mobile policy, given
 	 * their identity service ID and an access token.
 	 * 
 	 * @param httpAccessor
@@ -163,16 +181,14 @@ public class OAuth2 {
 	 * @throws IOException
 	 * @throws URISyntaxException
 	 */
-	public static final String getUsernameFromIdentityService(
+	public static final IdServiceResponse callIdentityService(
 			HttpAccess httpAccessor, String identityServiceIdUrl,
 			String authToken) throws IOException, URISyntaxException {
 
 		Map<String, String> idHeaders = new HashMap<String, String>();
 		idHeaders.put("Authorization", "OAuth " + authToken);
-		Execution exec = httpAccessor.doGet(idHeaders,
-				new URI(identityServiceIdUrl));
-		IdServiceResponse id = new IdServiceResponse(exec.response);
-		return id.username;
+		Execution exec = httpAccessor.doGet(idHeaders, new URI(identityServiceIdUrl));
+		return new IdServiceResponse(exec.response);
 	}
 
 	/**
@@ -211,8 +227,8 @@ public class OAuth2 {
 	private static List<NameValuePair> makeTokenEndpointParams(
 			String grantType, String clientId) {
 		List<NameValuePair> params = new ArrayList<NameValuePair>();
-		params.add(new BasicNameValuePair("grant_type", grantType));
-		params.add(new BasicNameValuePair("client_id", clientId));
+		params.add(new BasicNameValuePair(GRANT_TYPE, grantType));
+		params.add(new BasicNameValuePair(CLIENT_ID, clientId));
 		return params;
 	}
 
@@ -220,6 +236,8 @@ public class OAuth2 {
 	 * Exception thrown when refresh fails.
 	 */
 	public static class OAuthFailedException extends Exception {
+
+		private static final String INVALID_GRANT = "invalid_grant";
 
 		OAuthFailedException(TokenErrorResponse err, int httpStatusCode) {
 			super(err.toString());
@@ -234,7 +252,7 @@ public class OAuth2 {
 			return httpStatusCode == 401
 					|| httpStatusCode == 403
 					|| (httpStatusCode == 400 && response.error
-							.equals("invalid_grant"));
+							.equals(INVALID_GRANT));
 		}
 
 		private static final long serialVersionUID = 1L;
@@ -263,11 +281,20 @@ public class OAuth2 {
 	 */
 	public static class IdServiceResponse extends AbstractResponse {
 		public String username;
+		public int pinLength = -1;
+		public int screenLockTimeout = -1;
 
 		public IdServiceResponse(HttpResponse httpResponse) {
 			try {
 				JSONObject parsedResponse = parseResponse(httpResponse);
-				username = parsedResponse.getString("username");
+				username = parsedResponse.getString(USERNAME);
+				
+				// With connected apps (pilot in Summer '12), the server can specify a policy 
+				if (parsedResponse.has(MOBILE_POLICY)) {
+					pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
+					screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
+				}
+				
 			} catch (Exception e) {
 				Log.w("IdServiceResponse:contructor", "", e);
 			}
@@ -284,9 +311,9 @@ public class OAuth2 {
 		public TokenErrorResponse(HttpResponse httpResponse) {
 			try {
 				JSONObject parsedResponse = parseResponse(httpResponse);
-				error = parsedResponse.getString("error");
+				error = parsedResponse.getString(ERROR);
 				errorDescription = parsedResponse
-						.getString("error_description");
+						.getString(ERROR_DESCRIPTION);
 			} catch (Exception e) {
 				Log.w("TokenErrorResponse:contructor", "", e);
 			}
@@ -316,10 +343,10 @@ public class OAuth2 {
 		 */
 		public TokenEndpointResponse(Map<String, String> callbackUrlParams) {
 			try {
-				authToken = callbackUrlParams.get("access_token");
-				refreshToken = callbackUrlParams.get("refresh_token");
-				instanceUrl = callbackUrlParams.get("instance_url");
-				idUrl = callbackUrlParams.get("id");
+				authToken = callbackUrlParams.get(ACCESS_TOKEN);
+				refreshToken = callbackUrlParams.get(REFRESH_TOKEN);
+				instanceUrl = callbackUrlParams.get(INSTANCE_URL);
+				idUrl = callbackUrlParams.get(ID);
 				computeOtherFields();
 			} catch (Exception e) {
 				Log.w("TokenEndpointResponse:contructor", "", e);
@@ -333,9 +360,9 @@ public class OAuth2 {
 		public TokenEndpointResponse(HttpResponse httpResponse) {
 			try {
 				JSONObject parsedResponse = parseResponse(httpResponse);
-				authToken = parsedResponse.getString("access_token");
-				instanceUrl = parsedResponse.getString("instance_url");
-				idUrl  = parsedResponse.getString("id");
+				authToken = parsedResponse.getString(ACCESS_TOKEN);
+				instanceUrl = parsedResponse.getString(INSTANCE_URL);
+				idUrl  = parsedResponse.getString(ID);
 			} catch (Exception e) {
 				Log.w("TokenEndpointResponse:contructor", "", e);
 			}

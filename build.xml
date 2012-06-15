@@ -1,0 +1,169 @@
+<project name="SalesforceMobileSDK" default="usage" basedir=".">
+
+  <!-- Default target: describes useful targets -->
+  <target name="usage" description="Key targets of this build.xml">
+    <echo>
+      ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} 
+      Creates a native application, for instance:
+      ant create_native -Dapp.name=MyFirstNative -Dtarget.dir=./firstnative -Dpackage.name=com.acme.firstnative
+
+      ant create_hybrid_local -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName}
+      Creates a local hybrid application, for instance:
+      ant create_hybrid_local -Dapp.name=MyFirstHybridLocal -Dtarget.dir=./firsthybridlocal -Dpackage.name=com.acme.firsthybridlocal
+
+      ant create_hybrid_vf -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} -Dapex.page={apexPage}
+      Creates a visualforce hybrid application, for instance:
+      ant create_hybrid_vf -Dapp.name=MyFirstHybridVF -Dtarget.dir=./firsthybridvf -Dpackage.name=com.acme.firsthybridvf -Dapex.page=/apex/TestPageA
+
+
+      Arguments:
+      * appName: the name for the new application 
+      * targetDir: the directory where the code should reside 
+      * packageName: the java package for the new application e.g. com.acme.mobileapp
+      * apexPage: the apex page for the application e.g. /apex/MyFirstApp
+    </echo>
+  </target>
+
+  <!-- Location of SalesforceMobileSDK -->
+  <property name="sdk.dir" value="."/>
+
+  <!-- Target to compute package directory path and other properties -->
+  <target name="-pre">
+    <!-- Computing the package directory from the package name e.g. builds com/acme/mobileapp from com.acme.mobileapp -->
+    <pathconvert property="temp.package.dir">
+      <path>
+        <pathelement location="${package.name}" />
+      </path>
+      <mapper type="unpackage" from="*" to="*" />
+    </pathconvert>
+    <pathconvert property="package.dir">
+      <path>
+        <pathelement location="${temp.package.dir}" />
+      </path>
+      <globmapper from="${basedir}/*" to="*" />
+    </pathconvert>
+
+    <!-- Application ForceApp's subclass will be called ${app.name}App" -->
+    <property name="app.classname" value="${app.name}App" />
+  </target>
+
+  <!-- Target to create a native application -->
+  <target name="create_native" description="Create native application" 
+          depends="-pre_native,-create,-next_steps_info,-oauth_info_native" />
+
+  <target name="-pre_native" depends="-pre">
+    <property name="template.dir" value="${sdk.dir}/native/TemplateApp" />
+    <property name="template.app.name" value="Template" />
+    <property name="template.app.classname" value="TemplateApp" />
+    <property name="template.package.name" value="com.salesforce.samples.templateapp" />
+    <property name="template.package.dir" value="com/salesforce/samples/templateapp" />
+  </target>
+
+  <!-- Target to create a hybrid vf application -->
+  <target name="create_hybrid_vf" description="Create visualforce hybrid application" 
+          depends="-pre_hybrid_vf,-create,-post_hybrid_vf,-next_steps_info,-oauth_info_hybrid">
+  </target>
+
+  <target name="-pre_hybrid_vf" depends="-pre">
+    <property name="template.dir" value="${sdk.dir}/hybrid/SampleApps/VFConnector" />
+    <property name="template.app.name" value="VFConnector" />
+    <property name="template.app.classname" value="VFConnectorApp" />
+    <property name="template.package.name" value="com.salesforce.samples.vfconnector" />
+    <property name="template.package.dir" value="com/salesforce/samples/vfconnector" />
+  </target>
+
+  <target name="-post_hybrid_vf">
+    <echo message="Changing vf reference in bootconfig.js" />
+    <replaceregexp match="/apex/BasicVFPage" flags="g" replace="${apex.page}"
+                   file="${target.dir}/assets/www/bootconfig.js" />
+  </target>
+
+  <!-- Target to create a hybrid local application -->
+  <target name="create_hybrid_local" description="Create local hybrid application" 
+          depends="-pre_hybrid_local,-create,-next_steps_info,-oauth_info_hybrid" />
+
+  <target name="-pre_hybrid_local" depends="-pre">
+    <property name="template.dir" value="${sdk.dir}/hybrid/SampleApps/ContactExplorer" />
+    <property name="template.app.name" value="ContactExplorer" />
+    <property name="template.app.classname" value="ContactExplorerApp" />
+    <property name="template.package.name" value="com.salesforce.samples.contactexplorer" />
+    <property name="template.package.dir" value="com/salesforce/samples/contactexplorer" />
+  </target>
+
+  <!-- Internal target, called by create_* targets -->
+  <target name="-create">
+    <fileset id="target.files" dir="${target.dir}">
+      <include name="AndroidManifest.xml" />
+      <include name=".project" />
+      <include name="build.xml" />
+      <include name="res/values/strings.xml" />
+      <include name="res/values/rest.xml" />
+      <include name="src/${template.package.dir}/*.java" />
+    </fileset>
+
+    <mkdir dir="${target.dir}" />
+
+    <copy todir="${target.dir}">
+      <fileset dir="${template.dir}" />
+    </copy>
+
+    <echo message="Renaming application class to ${app.classname}" />
+    <replaceregexp match="${template.app.classname}" flags="g" replace="${app.classname}">
+      <fileset refid="target.files" />
+    </replaceregexp>
+    <move file="${target.dir}/src/${template.package.dir}/${template.app.classname}.java" 
+          tofile="${target.dir}/src/${template.package.dir}/${app.classname}.java" />
+
+    <echo message="Renaming application to ${app.name}" />
+    <replaceregexp match="${template.app.name}" flags="g" replace="${app.name}">
+      <fileset refid="target.files" />
+    </replaceregexp>
+
+    <echo message="Changing java package reference to ${package.name}" />
+    <replaceregexp match="${template.package.name}" flags="g" replace="${package.name}">
+      <fileset refid="target.files" />
+    </replaceregexp>
+
+    <mkdir dir="${target.dir}/src/${package.dir}"/>
+
+    <move todir="${target.dir}/src">
+      <fileset file="${target.dir}/src/${template.package.dir}/*.java" />
+    </move>
+
+    <delete dir="${target.dir}/src/com" />
+
+    <move todir="${target.dir}/src/${package.dir}">
+      <fileset file="${target.dir}/src/*.java" />
+    </move>
+  </target>
+
+  <!-- Internal targets, next steps info -->
+  <target name="-next_steps_info">
+    <echo>
+      Your application project is ready in ${target.dir}
+
+      To build the new application, do the following:
+      cd ${target.dir}
+      $ANDROID_SDK_DIR/android update project -p .
+      ant clean debug
+
+      To run the application, start an emulator or plugin your device and run:
+      ant installd
+    </echo>
+  </target>
+
+  <target name="-oauth_info_native">
+    <echo>
+      Before you ship, make sure to plug in your oauth client id and callback url in:
+        ${target.dir}/res/values/rest.xml
+    </echo>
+  </target>
+
+  <target name="-oauth_info_hybrid">
+    <echo>
+      Before you ship, make sure to plug in your oauth client id and callback url in:
+        ${target.dir}//assets/www/bootconfig.js
+    </echo>
+  </target>
+
+</project>

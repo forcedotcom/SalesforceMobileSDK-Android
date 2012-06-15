@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.app;
 
+import info.guardianproject.database.sqlcipher.SQLiteDatabase;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -40,6 +42,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.util.Log;
 import android.webkit.CookieManager;
@@ -50,8 +53,7 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
-import com.salesforce.androidsdk.store.DBOperations;
-import com.salesforce.androidsdk.store.Database;
+import com.salesforce.androidsdk.store.DBOpenHelper;
 import com.salesforce.androidsdk.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
@@ -67,7 +69,12 @@ public abstract class ForceApp extends Application {
 	/**
 	 * Current version of this SDK.
 	 */
-    public static final String SDK_VERSION = "1.1.3";
+    public static final String SDK_VERSION = "1.2";
+
+    /*
+     * Last phone version
+     */
+	private static final int GINGERBREAD_MR1 = 10;
 
 	/**
      * Instance of the ForceApp to use for this process.
@@ -81,12 +88,6 @@ public abstract class ForceApp extends Application {
 	 * 
 	 **************************************************************************************************/
     
-    /**
-	 * Note: If you return 0, the user will not have to enter a passcode.
-	 * @return The lock timeout in minutes, or 0 for never.
-	 */
-	public abstract int getLockTimeoutMinutes();
-	
     /**
      * @return The class for the main activity.
      */
@@ -142,7 +143,7 @@ public abstract class ForceApp extends Application {
 	public synchronized PasscodeManager getPasscodeManager() {
 		// Only creating passcode manager if used
 		if (passcodeManager == null) {
-			passcodeManager = new PasscodeManager(this, getLockTimeoutMinutes(),
+			passcodeManager = new PasscodeManager(this,
 					getVerificationHashConfig(),
 					getEncryptionHashConfig());
 		}
@@ -154,10 +155,15 @@ public abstract class ForceApp extends Application {
 	 */
 	public SmartStore getSmartStore() {
 		String passcodeHash = getPasscodeHash();
-		Database db = passcodeHash == null 
-				? DBOperations.getWritableDatabase(this) // not encrypted
-				: DBOperations.getWritableDatabase(this, passcodeHash); // encrypted
+		SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(passcodeHash == null ? "" : passcodeHash);
 		return new SmartStore(db);
+	}
+	
+	/**
+	 * @return true if the application has a smartstore database
+	 */
+	public boolean hasSmartStore() {
+		return getDatabasePath(DBOpenHelper.DB_NAME).exists();
 	}
 
 	/**
@@ -199,6 +205,14 @@ public abstract class ForceApp extends Application {
     	if (frontActivity != null) {
     		frontActivity.finish();
     	}
+
+    	// Reset smartstore
+    	if (hasSmartStore()) {
+    		getSmartStore().dropAllSoups();
+    	}
+    	
+    	// Reset passcode if any
+    	getPasscodeManager().reset(this);
     	
     	// Remove account if any
     	ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
@@ -247,6 +261,19 @@ public abstract class ForceApp extends Application {
 		return getString(getSalesforceR().stringAccountType());
 	}
 	
+    /**
+     * Helper function
+     * @return true if application is running on a tablet
+     */
+    public static boolean isTablet() {
+        if (Build.VERSION.SDK_INT <= GINGERBREAD_MR1) {
+            return false;
+        } else if ((APP.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
+            return true;
+        }
+        return false;
+    }
+	
 	@Override
     public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -254,12 +281,11 @@ public abstract class ForceApp extends Application {
 		  .append("   accountType: ").append(getAccountType()).append("\n")
 		  .append("   userAgent: ").append(getUserAgent()).append("\n")
 		  .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
-		  .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n")
-		  .append("   lockTimeoutMinutes: ").append(getLockTimeoutMinutes()).append("\n");
+		  .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n");
 
 		if (null != passcodeManager) {
 			//passcodeManager may be null at startup if the app is running in debug mode
-		  sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n");
+			sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n");
 		}
 		
 		sb.append("}\n");
@@ -277,7 +303,7 @@ public abstract class ForceApp extends Application {
 	private Map<String, String> uuids = new HashMap<String, String>();
 	private synchronized String getUuId(String name) {
 		if (uuids.get(name) != null) return uuids.get(name);
-		SharedPreferences sp = getSharedPreferences("uuids", Context.MODE_PRIVATE);
+		SharedPreferences sp = getSharedPreferences("uuids2", Context.MODE_PRIVATE);
 		if (!sp.contains(name)) {
 			String uuid = UUID.randomUUID().toString();
 			Editor e = sp.edit();

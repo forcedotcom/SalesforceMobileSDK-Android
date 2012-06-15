@@ -81,6 +81,11 @@ public class SmartStoreJSTest extends
         runTest("SmartStoreTestSuite","testUpsertSoupEntries");
     }
 
+    public void testUpsertSoupEntriesWithExternalId()  {
+        runTest("SmartStoreTestSuite","testUpsertSoupEntriesWithExternalId");
+    }
+
+    
     public void testUpsertToNonexistentSoup()  {
         runTest("SmartStoreTestSuite","testUpsertToNonexistentSoup");
     }
@@ -175,6 +180,8 @@ public class SmartStoreJSTest extends
 	 */
     private void runTest(String suiteClassName, String testName)  {
     	if (suitesToRun.contains(suiteClassName)) {
+    		// Debug.startMethodTracing(new File(getActivity().getFilesDir(), "SmartStoreJSTest_" + testName + ".trace").getAbsolutePath());
+    		
 	    	String jsCmd = "navigator.testrunner.setTestSuite('" + suiteClassName + "');" +
 	    			"navigator.testrunner.testSuite.startTest('" + testName + "');";
 	    	activity.sendJavascript(jsCmd);
@@ -191,6 +198,8 @@ public class SmartStoreJSTest extends
 			assertNotNull("No test result",result);
 			assertEquals("Wrong test completed", testName, result.testName);
 			assertTrue(result.testName + " " + result.message, result.success);
+			
+			// Debug.stopMethodTracing();
     	} else {
 	    	Log.w("SmartStoreJSTest.runTest", "Skipping suite: " + suiteClassName);
     	}

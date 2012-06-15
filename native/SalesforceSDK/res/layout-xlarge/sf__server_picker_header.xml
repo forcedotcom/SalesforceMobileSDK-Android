@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- 
+ Copyright 2011 Salesforce.com.
+ All Rights Reserved.
+ Company Confidential.
+ -->
+
+<LinearLayout
+		xmlns:android="http://schemas.android.com/apk/res/android"
+		android:orientation="vertical"
+		android:layout_width="fill_parent"
+		android:layout_height="60dp">		
+
+	<LinearLayout
+			xmlns:android="http://schemas.android.com/apk/res/android"
+			android:orientation="horizontal"
+			android:layout_width="fill_parent"
+			android:layout_height="50dp"
+			android:background="@drawable/sf__toolbar_background">
+
+			<RelativeLayout 
+				android:layout_width="wrap_content"
+				android:layout_height="fill_parent">
+				
+				<TextView 
+					android:id="@+id/sf__clear_server_url"
+					android:text="@string/sf__server_url_reset"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					style="@style/Text.HeaderOptions" 
+					android:layout_marginRight="9dp"
+					android:layout_centerVertical="true"
+					android:layout_alignParentRight="true"
+					android:clickable="true"
+					android:onClick="onResetClick"/>
+					
+				<LinearLayout 
+					xmlns:android="http://schemas.android.com/apk/res/android"
+					android:id="@+id/sf__seperator"
+					android:layout_marginRight="9dp"
+					android:layout_toLeftOf="@id/sf__clear_server_url"
+					android:orientation="horizontal"
+					android:layout_width="2dp"
+					android:layout_height="fill_parent">
+					
+					<View
+				   		android:layout_width="1dp"
+				    	android:layout_height="fill_parent"
+				    	android:background="@drawable/sf__header_left_border"/>
+				    	
+					<View
+						android:layout_width="1dp"
+						android:layout_height="fill_parent"
+						android:background="@drawable/sf__header_right_border"/>
+				</LinearLayout> 
+		</RelativeLayout>
+	</LinearLayout>
+	
+	<View
+		android:layout_width="fill_parent"
+		android:layout_height="1dp"
+		android:background="#74777F"/>
+		
+	<View
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:background="@drawable/sf__header_drop_shadow"/>
+</LinearLayout>

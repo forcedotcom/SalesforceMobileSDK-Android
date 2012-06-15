@@ -409,7 +409,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 		String badToken = "bad token";
 
 		// Create real account
-		clientManager.createNewAccount(TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME, TestCredentials.REFRESH_TOKEN, badToken, TestCredentials.INSTANCE_URL, TEST_LOGIN_URL, TestCredentials.CLIENT_ID, TestCredentials.ORG_ID, TestCredentials.USER_ID);
+		clientManager.createNewAccount(TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME, TestCredentials.REFRESH_TOKEN, badToken, TestCredentials.INSTANCE_URL, TEST_LOGIN_URL, TestCredentials.CLIENT_ID, TestCredentials.ORG_ID, TestCredentials.USER_ID, TEST_PASSCODE_HASH);
 		
 		// Peek rest client
 		RestClient restClient = clientManager.peekRestClient();
@@ -444,7 +444,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 	 * @return
 	 */
 	private Bundle createTestAccount() {
-		return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
+		return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, TEST_PASSCODE_HASH);
 	}
 
 
@@ -453,7 +453,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 	 * @return
 	 */
 	private Bundle createOtherTestAccount() {
-		return clientManager.createNewAccount(TEST_OTHER_ACCOUNT_NAME, TEST_OTHER_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID);
+		return clientManager.createNewAccount(TEST_OTHER_ACCOUNT_NAME, TEST_OTHER_USERNAME, TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, TEST_PASSCODE_HASH);
 	}
 	
 }

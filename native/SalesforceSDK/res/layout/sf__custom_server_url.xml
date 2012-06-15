@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+	<!--
+		focus on the layout itself to prevent the edit controls from gaining
+		on load.. clearFocus() doesn't work
+	-->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/sf__layout_root" android:orientation="vertical"
+	android:layout_width="fill_parent" android:layout_height="fill_parent"
+	android:padding="0dp" android:focusable="true"
+	android:focusableInTouchMode="true">
+
+	<EditText android:id="@+id/sf__picker_custom_label"
+		android:layout_height="wrap_content" android:layout_width="fill_parent"
+		android:layout_marginTop="7dp" android:layout_marginLeft="3dp"
+		android:layout_marginRight="3dp" android:inputType="text"
+		android:imeOptions="actionNext" />
+
+	<EditText android:id="@+id/sf__picker_custom_url" android:layout_height="wrap_content"
+		android:layout_width="fill_parent" android:layout_marginTop="7dp"
+		android:layout_marginLeft="3dp" android:layout_marginRight="3dp"
+		android:layout_marginBottom="10dp" android:inputType="text"
+		android:imeOptions="actionDone" />
+
+	<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		android:orientation="horizontal" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:padding="0dp">
+
+		<Button android:id="@+id/sf__apply_button" android:text="@string/sf__server_url_default_apply"
+			android:layout_weight="1" android:layout_margin="2dp"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+		/>
+
+		<Button android:id="@+id/sf__cancel_button" android:text="@string/sf__server_url_default_cancel"
+			android:layout_weight="1" android:layout_margin="2dp"
+			android:layout_width="wrap_content" android:layout_height="wrap_content"
+		/>
+
+	</LinearLayout>
+
+</LinearLayout>

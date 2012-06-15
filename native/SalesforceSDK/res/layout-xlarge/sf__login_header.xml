@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+		xmlns:android="http://schemas.android.com/apk/res/android"
+		android:orientation="vertical"
+		android:layout_width="fill_parent"
+		android:layout_height="60dp">		
+
+	<LinearLayout
+			xmlns:android="http://schemas.android.com/apk/res/android"
+			android:orientation="horizontal"
+			android:layout_width="fill_parent"
+			android:layout_height="50dp"
+			android:background="@drawable/sf__toolbar_background">
+			
+
+			<RelativeLayout 
+				android:layout_width="wrap_content"
+				android:layout_height="fill_parent">
+				
+				<TextView 
+				android:id="@+id/sf__server_name"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				style="@style/Text.HeaderOptions" 
+				android:layout_marginLeft="9dp"
+				android:layout_centerVertical="true"
+				android:layout_alignParentLeft="true"/>
+					
+				<ImageView android:id="@+id/sf__reload_page" android:src="@drawable/sf__header_refresh_states"
+					android:layout_width="60dp" android:layout_height="fill_parent"
+					android:scaleType="fitCenter" android:layout_alignParentRight="true"
+					android:clickable="true" android:onClick="onReloadClick" />
+					
+				<LinearLayout 
+					android:id="@+id/sf__seperator"
+					xmlns:android="http://schemas.android.com/apk/res/android"
+					android:layout_toLeftOf="@id/sf__reload_page"
+					android:orientation="horizontal"
+					android:layout_marginRight="9dp"
+					android:layout_width="2dp"
+					android:layout_height="fill_parent">
+					
+					<View
+				   		android:layout_width="1dp"
+				    	android:layout_height="fill_parent"
+				    	android:background="@drawable/sf__header_left_border"/>
+				    	
+					<View
+						android:layout_width="1dp"
+						android:layout_height="fill_parent"
+						android:background="@drawable/sf__header_right_border"/>
+				</LinearLayout> 
+				
+				<TextView 
+					android:id="@+id/sf__clear_cookies"
+					android:text="@string/sf__clear_cookies"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					style="@style/Text.HeaderOptions" 
+					android:layout_marginRight="9dp"
+					android:layout_centerVertical="true"
+					android:layout_toLeftOf="@id/sf__seperator"
+					android:clickable="true"
+					android:onClick="onClearCookiesClick"/>
+					
+				<LinearLayout 
+					xmlns:android="http://schemas.android.com/apk/res/android"
+					android:id="@+id/sf__seperator2"
+					android:layout_marginRight="9dp"
+					android:layout_toLeftOf="@id/sf__clear_cookies"
+					android:orientation="horizontal"
+					android:layout_width="2dp"
+					android:layout_height="fill_parent">
+					
+					<View
+				   		android:layout_width="1dp"
+				    	android:layout_height="fill_parent"
+				    	android:background="@drawable/sf__header_left_border"/>
+				    	
+					<View
+						android:layout_width="1dp"
+						android:layout_height="fill_parent"
+						android:background="@drawable/sf__header_right_border"/>
+				</LinearLayout> 
+				
+				<TextView 
+					android:id="@+id/sf__change_server"
+					android:text="@string/sf__pick_server"
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
+					style="@style/Text.HeaderOptions" 
+					android:layout_marginRight="9dp"
+					android:layout_centerVertical="true"
+					android:layout_toLeftOf="@id/sf__seperator2"
+					android:clickable="true"
+					android:onClick="onPickServerClick"/>
+					
+				<LinearLayout 
+					android:id="@+id/sf__seperator3"
+					xmlns:android="http://schemas.android.com/apk/res/android"
+					android:layout_toLeftOf="@id/sf__change_server"
+					android:orientation="horizontal"
+					android:layout_marginRight="9dp"
+					android:layout_width="2dp"
+					android:layout_height="fill_parent">
+					
+					<View
+				   		android:layout_width="1dp"
+				    	android:layout_height="fill_parent"
+				    	android:background="@drawable/sf__header_left_border"/>
+				    	
+					<View
+						android:layout_width="1dp"
+						android:layout_height="fill_parent"
+						android:background="@drawable/sf__header_right_border"/>
+				</LinearLayout> 
+				
+				<ProgressBar android:id="@+id/sf__load_spinner"
+					android:layout_width="wrap_content" android:layout_height="wrap_content"
+					android:layout_toLeftOf="@id/sf__seperator3"
+					android:layout_centerVertical="true" android:layout_marginRight="8dp"
+					android:indeterminateDrawable="@drawable/sf__progress_spinner"
+					android:visibility="gone" />
+					
+				<LinearLayout 
+					android:id="@+id/sf__load_separator"
+					xmlns:android="http://schemas.android.com/apk/res/android"
+					android:layout_toLeftOf="@id/sf__load_spinner"
+					android:orientation="horizontal"
+					android:layout_marginRight="9dp"
+					android:layout_width="2dp"
+					android:layout_height="fill_parent"
+					android:visibility="gone" >
+					
+					<View
+				   		android:layout_width="1dp"
+				    	android:layout_height="fill_parent"
+				    	android:background="@drawable/sf__header_left_border"/>
+				    	
+					<View
+						android:layout_width="1dp"
+						android:layout_height="fill_parent"
+						android:background="@drawable/sf__header_right_border"/>
+				</LinearLayout> 
+				
+		</RelativeLayout>
+	</LinearLayout>
+	
+	<View
+		android:layout_width="fill_parent"
+		android:layout_height="1dp"
+		android:background="#74777F"/>
+		
+	<View
+		android:layout_width="fill_parent"
+		android:layout_height="wrap_content"
+		android:background="@drawable/sf__header_drop_shadow"/>
+</LinearLayout>
