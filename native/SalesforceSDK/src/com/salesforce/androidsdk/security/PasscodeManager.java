@@ -26,10 +26,6 @@
  */
 package com.salesforce.androidsdk.security;
 
-import com.salesforce.androidsdk.ui.PasscodeActivity;
-import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -37,6 +33,10 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Handler;
 import android.util.Log;
+
+import com.salesforce.androidsdk.ui.PasscodeActivity;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 
 /**
@@ -48,11 +48,17 @@ import android.util.Log;
  */
 public class PasscodeManager  {
 
+	// Default min passcode length
+	protected static final int MIN_PASSCODE_LENGTH = 6;
+
 	// Key in preference for the passcode
 	private static final String KEY_PASSCODE ="passcode";
 	
 	// Private preference where we stored the passcode (hashed)
 	private static final String PREF_NAME = "user";
+
+	// Request code used to start passcode activity
+	public static final int PASSCODE_REQUEST_CODE = 777;
 
 	// this is a hash of the passcode to be used as part of the key to encrypt/decrypt oauth tokens 
 	// It's using a different salt/key than the one used to verify the entry
@@ -67,6 +73,8 @@ public class PasscodeManager  {
 	private long lastActivity;
 	private boolean locked;
 	private int timeoutMs;
+	private int minPasscodeLength;
+	private boolean enabled;
 
 	/**
 	 * @param ctx
@@ -74,12 +82,13 @@ public class PasscodeManager  {
 	 * @param verificationHashConfig
 	 * @param encryptionHashConfig
 	 */
-	public PasscodeManager(Context ctx, int lockTimeoutMinutes,
+	public PasscodeManager(Context ctx, 
 			HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
-		this.timeoutMs = lockTimeoutMinutes * 60 * 1000;
+		this.minPasscodeLength = MIN_PASSCODE_LENGTH;
 		this.lastActivity = now();
 		this.verificationHashConfig = verificationHashConfig;
 		this.encryptionHashConfig = encryptionHashConfig;
+		this.enabled = true;
 
 		// Locked at app startup if you're authenticated
 		this.locked = true;
@@ -99,6 +108,20 @@ public class PasscodeManager  {
 		Editor e = sp.edit();
 		e.remove(KEY_PASSCODE);
 		e.commit();
+	}
+	
+	/**
+	 * Enable/disable passcode screen
+	 */
+	public void setEnabled(boolean enabled) {
+		this.enabled = enabled;
+	}
+	
+	/**
+	 * @return true if passcode manager is enabled
+	 */
+	public boolean isEnabled() {
+		return enabled;
 	}
 	
 	/** 
@@ -178,7 +201,7 @@ public class PasscodeManager  {
 	public boolean lockIfNeeded(Activity newFrontActivity, boolean registerActivity) {
 		if (newFrontActivity != null)
 			frontActivity = newFrontActivity;
-		if (isLocked() || shouldLock()) {
+		if (isEnabled() && (isLocked() || shouldLock())) {
 			lock(frontActivity);
 			return true;
 		} else {
@@ -195,6 +218,36 @@ public class PasscodeManager  {
 			frontActivity = null;
 	}
 	
+	
+	/**
+	 * To be called by passcode protected activity when being paused
+	 */
+	public void onPause(Activity ctx) {
+    	// Disable passcode manager
+		setEnabled(false);
+	}
+
+	/**
+	 * To be called by passcode protected activity when being resumed
+	 * When passcode screen is about to be shown, false is returned, the activity will be resumed once 
+	 * the user has successfully enter her passcode
+	 *
+	 * @return true if the resume should be allowed to continue and false otherwise
+	 */
+	public boolean onResume(Activity ctx) {
+    	// Enable passcode manager
+    	setEnabled(true);
+    	
+		// Bring up passcode screen if needed
+		lockIfNeeded(ctx, true);
+		
+		// If locked, do nothing - when the app gets unlocked we will be back here
+		return !isLocked();
+	}
+	
+	/**
+	 * To be called by passcode protected activity whenever there is a user interaction
+	 */
 	public void recordUserInteraction() {
 		updateLast();
 	}
@@ -207,6 +260,14 @@ public class PasscodeManager  {
 		return timeoutMs;
 	}
 	
+	public int getMinPasscodeLength() {
+		return minPasscodeLength;
+	}
+
+	public void setMinPasscodeLength(int minPasscodeLength) {
+		this.minPasscodeLength = minPasscodeLength;
+	}
+
 	public boolean shouldLock() {
 		return timeoutMs > 0 && now() >= (lastActivity + timeoutMs);
 	}
@@ -216,7 +277,12 @@ public class PasscodeManager  {
 		Intent i = new Intent(ctx, PasscodeActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
 		i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-		ctx.startActivity(i);
+		if (ctx instanceof Activity) {
+			((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
+		}
+		else {
+			ctx.startActivity(i);
+		}
 	}
 
 	public void unlock(String passcode) {

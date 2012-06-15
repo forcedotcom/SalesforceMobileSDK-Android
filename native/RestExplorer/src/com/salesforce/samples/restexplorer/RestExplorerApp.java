@@ -46,11 +46,6 @@ public class RestExplorerApp extends ForceApp {
 	}
 	
 	@Override
-	public int getLockTimeoutMinutes() {
-		return 10;
-	}
-
-	@Override
 	protected String getKey(String name) {
 		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
 	}

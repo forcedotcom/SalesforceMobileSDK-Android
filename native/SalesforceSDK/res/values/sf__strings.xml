@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<!-- Errors -->
+	<string name="sf__generic_authentication_error_title">Error</string>
+	<string name="sf__generic_authentication_error">Authentication error. Please try again.</string>
+	<string name="sf__generic_error">An error has occurred %s\nPlease try again</string>
+	<string name="sf__invalid_server_url">Please type in a valid URL starting with https://</string>
+
+	<!-- Login -->
+	<string name="sf__login_title">Login</string>
+	<string name="sf__pick_server">Change Server</string>
+	<string name="sf__clear_cookies">Clear Cookies</string>
+	<string name="sf__reload">Reload</string>
+
+	<!-- Server picker -->
+	<string name="sf__server_picker_title">Pick Login Server</string>
+	<string name="sf__auth_login_production">Production</string>
+	<string name="sf__auth_login_sandbox">Sandbox</string>
+	<string name="sf__custom_url_button">Add Connection</string>
+	<string name="sf__server_url_edit_title">Edit Connection</string>
+	<string name="sf__server_url_add_title">Add Connection</string>
+	<string name="sf__server_url_default_custom_label">Name</string>
+	<string name="sf__server_url_default_custom_url">URL</string>
+	<string name="sf__server_url_default_cancel">Cancel</string>
+	<string name="sf__server_url_default_apply">Apply</string>
+	<string name="sf__server_url_reset">Reset</string>
+	
+	<!-- passcode entry screen -->
+	<string name="sf__passcode_create_title">Create Salesforce passcode</string>
+	<string name="sf__passcode_create_instructions">For increased security, please create a passcode that you will use to access Salesforce when the session has timed out due to inactivity.</string>
+	<string name="sf__passcode_confirm_title">Re-enter your Salesforce passcode</string>
+	<string name="sf__passcode_confirm_instructions">Confirm your mobile passcode for Salesforce</string>
+	<string name="sf__passcode_enter_title">Enter Salesforce Passcode</string>
+	<string name="sf__passcode_enter_instructions">Enter your mobile passcode for Salesforce</string>
+	<string name="sf__passcodes_dont_match">Passcodes don\'t match!</string>
+	<string name="sf__passcode_try_again">The passcode you entered is incorrect. Please try again. You have %d attempts remaining.</string>
+	<string name="sf__passcode_final">Final passcode attempt</string>
+	<string name="sf__passcode_min_length">The passcode must be at least %d characters long</string>	    
+
+</resources>

@@ -63,6 +63,7 @@ public class SmartStorePlugin extends Plugin {
 	private static final String INDEX_PATH = "indexPath";
 	private static final String LIKE_KEY = "likeKey";
 	private static final String MATCH_KEY = "matchKey";
+	private static final String EXTERNAL_ID_PATH = "externalIdPath";
 	private static final String ORDER = "order";
 	private static final String PAGE_SIZE = "pageSize";
 	private static final String PATH = "path";
@@ -253,6 +254,7 @@ public class SmartStorePlugin extends Plugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
 		JSONArray entriesJson = arg0.getJSONArray(ENTRIES);
+		String externalIdPath = arg0.getString(EXTERNAL_ID_PATH);
 		List<JSONObject> entries = new ArrayList<JSONObject>();
 		for (int i=0; i<entriesJson.length(); i++) {
 			entries.add(entriesJson.getJSONObject(i));
@@ -264,7 +266,7 @@ public class SmartStorePlugin extends Plugin {
 		try {
 			JSONArray results = new JSONArray();			
 			for (JSONObject entry : entries) {
-				results.put(smartStore.upsert(soupName, entry));
+				results.put(smartStore.upsert(soupName, entry, externalIdPath, false));
 			}
 			smartStore.setTransactionSuccessful();
 			return new PluginResult(PluginResult.Status.OK, results);

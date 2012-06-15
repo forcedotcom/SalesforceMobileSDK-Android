@@ -42,6 +42,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
@@ -126,8 +127,10 @@ public class ClientManager {
 		}
 
 		// OAuth tokens are stored encrypted
-		String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), loginOptions.passcodeHash);
-		String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), loginOptions.passcodeHash);
+		// Passcode might be created during login flow so loginOptions.passcodeHash could be outdated
+		String passcodeHash = (ForceApp.APP == null /* only in tests */ ? loginOptions.passcodeHash : ForceApp.APP.getPasscodeHash());
+		String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
+		String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), passcodeHash);
 		
 		// We also store the username, instance url, org id, user id and username in the account manager
 		String loginServer = accountManager.getUserData(acc, AuthenticatorService.KEY_LOGIN_URL);
@@ -227,13 +230,13 @@ public class ClientManager {
 	 * @param clientId
 	 * @param orgId
 	 * @param userId
+	 * @param passcodeHash
 	 * @return
 	 */
 	public Bundle createNewAccount(String accountName, String username, String refreshToken, String authToken,
-			String instanceUrl, String loginUrl, String clientId, String orgId, String userId) {
+			String instanceUrl, String loginUrl, String clientId, String orgId, String userId, String passcodeHash) {
 		
 		Bundle extras = new Bundle();
-		String passcodeHash = loginOptions == null ? null : loginOptions.passcodeHash;
 		extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
 		extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
 		extras.putString(AuthenticatorService.KEY_USERNAME, username);
@@ -252,7 +255,7 @@ public class ClientManager {
 	}
 	
 	/**
-	 * Should match the value in authenticator.xml.
+	 * Should match the value in authenticator.xml.12
 	 * @return The account type for this application.
 	 */
 	public String getAccountType() {
@@ -455,7 +458,7 @@ public class ClientManager {
 		private static final String LOGIN_URL = "loginUrl";
 
 		public String loginUrl;
-		public final String passcodeHash;
+		public String passcodeHash;
 		public final String oauthCallbackUrl;
 		public final String oauthClientId;
 		public final String[] oauthScopes;

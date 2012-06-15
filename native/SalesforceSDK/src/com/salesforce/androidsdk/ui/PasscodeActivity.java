@@ -43,7 +43,6 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 public class PasscodeActivity extends Activity implements OnEditorActionListener {
 
 	protected static final int MAX_PASSCODE_ATTEMPTS = 3;
-	protected static final int MIN_PASSCODE_LENGTH = 6;
 
 	private PasscodeMode currentMode;
 	private TextView title, instr, error;
@@ -136,7 +135,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 			if (enteredPasscode.equals(firstPasscode)) {
 				passcodeManager.store(this, enteredPasscode);
 				passcodeManager.unlock(enteredPasscode);
-				finish();
+				done();
 			}
 			else {
 				error.setText(getPasscodesDontMatchError());
@@ -146,7 +145,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 		case Check:
 			if (passcodeManager.check(this, enteredPasscode)) {
 				passcodeManager.unlock(enteredPasscode);
-				finish();
+				done();
 			} else {
 				int attempts = passcodeManager.addFailedPasscodeAttempt();
 				
@@ -167,6 +166,11 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 		}
 		return false;
     }
+
+	protected void done() {
+		setResult(RESULT_OK);
+		finish();
+	}
 
 	protected int getLayoutId() {
 		return salesforceR.layoutPasscode();
@@ -232,7 +236,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 	 * @return minimum length of passcode
 	 */
 	protected int getMinPasscodeLength() {
-		return MIN_PASSCODE_LENGTH;
+		return passcodeManager.getMinPasscodeLength();
 	}
 	
 	/**

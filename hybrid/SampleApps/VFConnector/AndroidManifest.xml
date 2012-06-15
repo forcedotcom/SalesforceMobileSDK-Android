@@ -64,13 +64,13 @@
         </activity>
         
 		<!-- Login activity -->
-		<activity android:name="com.salesforce.androidsdk.ui.LoginActivity" />
+		<activity android:name="com.salesforce.androidsdk.ui.LoginActivity" android:theme="@android:style/Theme.NoTitleBar"/>
 
 		<!-- Passcode activity -->
 		<activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
 		
 		<!-- Choose server activity -->
-		<activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity" android:excludeFromRecents="true" />
+		<activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity" android:excludeFromRecents="true" android:theme="@android:style/Theme.NoTitleBar" />
     </application>
 
 </manifest>

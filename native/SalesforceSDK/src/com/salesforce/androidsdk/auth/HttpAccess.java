@@ -26,8 +26,8 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import java.io.FilterInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Map;
 
@@ -41,6 +41,7 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
+import org.apache.http.entity.HttpEntityWrapper;
 
 import android.app.Application;
 import android.content.BroadcastReceiver;
@@ -212,7 +213,7 @@ public class HttpAccess extends BroadcastReceiver {
      */
     private void checkNetwork() throws IOException {
         if (!hasNetwork()) {
-            throw new IOException(networkFailReason == null ? "Network not available" : networkFailReason);
+            throw new NoNetworkException(networkFailReason == null ? "Network not available" : networkFailReason);
         }
     }
 	
@@ -330,6 +331,7 @@ public class HttpAccess extends BroadcastReceiver {
 		checkNetwork();
 	    try {
     		addHeaders(req, headers);
+    		AndroidHttpClient.modifyRequestToAcceptGzipResponse(req);
     		return execute(req);
         } catch (IOException t) {
             if (req.getMethod().equalsIgnoreCase("GET")) {
@@ -348,6 +350,12 @@ public class HttpAccess extends BroadcastReceiver {
 	 */
 	protected Execution execute(HttpRequestBase req) throws ClientProtocolException, IOException {
         HttpResponse res = http.execute(req);
+        HttpEntity entity = res.getEntity();
+        if (entity != null) {
+        	// Wrapping response entity to handle gzip decompression transparently
+        	// Note: AndroidHttpClient doesn't let you add response interceptors to the underlying DefaultHttpClient 
+        	res.setEntity(new GzipDecompressingEntity(res.getEntity()));
+        }
         return new Execution(req, res);
     }
 	
@@ -359,28 +367,6 @@ public class HttpAccess extends BroadcastReceiver {
 		if (headers == null) return;
 		for (Map.Entry<String, String> h : headers.entrySet()) {
 			req.addHeader(h.getKey(), h.getValue());
-		}
-	}
-	/** 
-	 * This wraps an HttpEntity, and when the steam is closed, will call consumeContent to ensure
-	 * that the entire response was read, and the connection can go back to the connection pool.
-	 */
-	static class EntityClosingStream extends FilterInputStream {
-		
-		EntityClosingStream(HttpEntity e) throws IllegalStateException, IOException {
-			super(e.getContent());
-			this.entity = e;
-		}
-		
-		private final HttpEntity entity;
-		
-		@Override 
-		public void close() throws IOException {
-			try {
-				super.close();
-			} finally {
-				entity.consumeContent();
-			}
 		}
 	}
 	
@@ -413,5 +399,38 @@ public class HttpAccess extends BroadcastReceiver {
 	        return METHOD_NAME;
 	    }
 	    
+	}
+	
+	/**
+	 * Entity wrapper for compressed (gzip-ped) or non-compressed entities
+	 */
+	public static class GzipDecompressingEntity extends HttpEntityWrapper {
+		public GzipDecompressingEntity(final HttpEntity entity) {
+			super(entity);
+		}
+
+		@Override
+		public InputStream getContent() throws IOException,
+				IllegalStateException {
+			return AndroidHttpClient.getUngzippedContent(wrappedEntity);
+		}
+
+		@Override
+		public long getContentLength() {
+			// length of ungzipped content is not known
+			return -1;
+		}
+	}
+	
+	/**
+	 * Thrown when offline during an attempted http call
+	 */
+	public static class NoNetworkException extends IOException {
+		private static final long serialVersionUID = 1L;
+
+		public NoNetworkException(String msg) {
+			super(msg);
+		}
+		
 	}
 }

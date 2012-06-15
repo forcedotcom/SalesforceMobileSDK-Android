@@ -1,1 +1,1 @@
-../../../../external/shared/PhoneGap/SFTestSuite.js
+../../../../external/shared/PhoneGap/test/SFTestSuite.js
