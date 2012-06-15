@@ -105,8 +105,13 @@ public enum DBHelper  {
 	public void removeFromCache(String soupName) {
 		String tableName = soupNameToTableNamesMap.get(soupName);
 		if (tableName != null) {
-			tableNameToInsertHelpersMap.remove(tableName);
-			tableNameToNextIdStatementsMap.remove(tableName);
+			InsertHelper ih = tableNameToInsertHelpersMap.remove(tableName);
+			if (ih != null) 
+				ih.close();
+			
+			SQLiteStatement prog = tableNameToNextIdStatementsMap.remove(tableName);
+			if (prog != null) 
+				prog.close();
 		}
 		soupNameToTableNamesMap.remove(soupName);
 		soupNameToIndexSpecsMap.remove(soupName);
@@ -220,10 +225,20 @@ public enum DBHelper  {
 	 * @param ctx
 	 */
 	public void reset(Context ctx) {
+		// Close all statements
+		for(InsertHelper  ih : tableNameToInsertHelpersMap.values()) {
+			ih.close();
+		}
+		for (SQLiteStatement prog : tableNameToNextIdStatementsMap.values()) {
+			prog.close();
+		}
+		
+		// Clear all maps
 		soupNameToTableNamesMap.clear();
 		soupNameToIndexSpecsMap.clear();
 		tableNameToInsertHelpersMap.clear();
 		tableNameToNextIdStatementsMap.clear();
+
 		DBOpenHelper.deleteDatabase(ctx);
 	}
 
