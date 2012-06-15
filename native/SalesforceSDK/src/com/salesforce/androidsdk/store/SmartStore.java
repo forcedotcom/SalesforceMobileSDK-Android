@@ -442,7 +442,6 @@ public class SmartStore  {
 			// Adding fields to soup element
 			soupElt.put(SOUP_ENTRY_ID, soupEntryId);
 			soupElt.put(SOUP_LAST_MODIFIED_DATE, now);
-			
 			ContentValues contentValues = new ContentValues();
 			contentValues.put(ID_COL, soupEntryId);
 			contentValues.put(SOUP_COL, ""); 
@@ -549,6 +548,8 @@ public class SmartStore  {
 		
 		long now = System.currentTimeMillis();
 		
+		// In the case of an upsert with external id, _soupEntryId won't be in soupElt
+		soupElt.put(SOUP_ENTRY_ID, soupEntryId);
 		// Updating last modified field in soup element
 		soupElt.put(SOUP_LAST_MODIFIED_DATE, now);
 
