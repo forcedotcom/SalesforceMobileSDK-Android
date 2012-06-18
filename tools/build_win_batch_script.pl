@@ -39,6 +39,9 @@ sub wanted {
         chdir $src_file_dir || die "Can't change to src dir path $src_file_dir: $!\n";
         my $abs_src_file_dir = getcwd();
         my $abs_src_file_path = File::Spec->catfile($abs_src_file_dir, $src_file_name);
+        if (! -e "$abs_src_file_path") {
+            die "ERROR: '$abs_src_file_path' is the source file linked to by '$abs_dest_file_path', but it doesn't exist!\n";
+        }
         chdir $File::Find::dir || die "Could not chdir back to orig dir ${File::Find::dir}: $!\n";
 
         # Make relative paths to the root of the repo out of the source and destination entries.
