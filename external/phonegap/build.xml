@@ -1,31 +1,22 @@
 <project name="phonegap" default="all">
-
-    <property environment="env"/>
-    <property id="target.name" name="target.name" value="${ant.project.name}"/>
-
-	<property name="framework.version" value="1.2.0" />
-	<property name="submodule.dir" location="../callback-android" />
+    <property environment="env" />
+    <property id="target.name" name="target.name" value="${ant.project.name}" />
+	<property name="framework.version" value="1.8.1" />
+	<property name="submodule.dir" location="../incubator-cordova-android" />
 	<property name="bin.dir" location="${submodule.dir}/bin" />
-	
-    <property name="framework.dir" location="${submodule.dir}/framework"/>
-	<property name="www.dir" location="${framework.dir}/assets/www"/>
-    
+        <property name="framework.dir" location="${submodule.dir}/framework" />
+	<property name="www.dir" location="${framework.dir}/assets/www" /> 
 	<property name="jsFileName" value="phonegap-${framework.version}.js" />
 	<property name="jarFileName" value="phonegap-${framework.version}.jar" />
-	
-    <target name="build">
-		<!--  the "create" command generates an error on phonegap 1.2.0: we ignore this error -->
-		<exec executable="${bin.dir}/create" 
+        <target name="build">
+	    <exec executable="${bin.dir}/create" 
 		dir="${submodule.dir}"
-		failonerror="false"
-		/>
+		failonerror="false" />
 	</target>
-
-   <target name="all" depends="build" 	>
-	  <move file="${www.dir}/${jsFileName}" 
-		tofile="${jsFileName}"/>
-	  <move file="${framework.dir}/${jarFileName}" 
-		tofile="${jarFileName}"/>
+        <target name="all" depends="build">
+	    <move file="${www.dir}/${jsFileName}" 
+		tofile="${jsFileName}" />
+	    <move file="${framework.dir}/${jarFileName}" 
+		tofile="${jarFileName}" />
 	</target>
-	
 </project>
