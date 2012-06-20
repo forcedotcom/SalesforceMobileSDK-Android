@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.DroidGap;
 
 import android.os.Bundle;
@@ -65,10 +66,6 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
-
-        // Ensure that we allow urls from all salesforce domains to be loaded
-        this.addWhiteListEntry("force.com", true);
-        this.addWhiteListEntry("salesforce.com", true);
 
         // Load bootstrap
         super.loadUrl(BOOTSTRAP_START_PAGE);
@@ -129,8 +126,8 @@ public class SalesforceDroidGapActivity extends DroidGap {
     }
 
     @Override
-    protected GapViewClient createWebViewClient() {
-        SalesforceGapViewClient result = new SalesforceGapViewClient(this,this);
+    protected CordovaWebViewClient createWebViewClient() {
+        SalesforceGapViewClient result = new SalesforceGapViewClient(this);
         return result;
     }
     /**

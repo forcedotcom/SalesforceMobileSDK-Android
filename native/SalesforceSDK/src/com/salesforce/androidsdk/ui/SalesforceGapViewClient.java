@@ -3,6 +3,7 @@ package com.salesforce.androidsdk.ui;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.DroidGap;
 
 import android.content.Context;
@@ -11,7 +12,7 @@ import android.content.SharedPreferences.Editor;
 import android.util.Log;
 import android.webkit.WebView;
 
-public class SalesforceGapViewClient extends GapViewClient {
+public class SalesforceGapViewClient extends CordovaWebViewClient {
 
     public static String TAG = "SalesforceGapViewClient";
     public static final String SFDC_WEB_VIEW_CLIENT_SETTINGS = "sfdc_gapviewclient";
@@ -26,8 +27,8 @@ public class SalesforceGapViewClient extends GapViewClient {
     protected boolean foundHomeUrl = false;
 
 
-    public SalesforceGapViewClient(DroidGap droidGap, DroidGap ctx) {
-        droidGap.super(ctx);
+    public SalesforceGapViewClient(DroidGap ctx) {
+        super(ctx);
     }
 
 
