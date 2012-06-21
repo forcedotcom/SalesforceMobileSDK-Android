@@ -15,6 +15,7 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 __What’s New in 1.2__
+
 **Connected Apps Pilot**
 * Apps implemented with the Mobile SDK will now respect Connected Apps policies.  Rules defined by administrators for PIN code protection and session timeout intervals will now be enforced by native and hybrid app implementations. (This feature requires the Connected Apps Pilot be turned on.)
 
