@@ -123,7 +123,7 @@ public class SalesforceOAuthPlugin extends Plugin {
                 updateRefreshTime();
                 setSidCookies(webView, SalesforceOAuthPlugin.client);
                 Log.i("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Firing salesforceSessionRefresh event");
-                ctx.sendJavascript("PhoneGap.fireDocumentEvent('salesforceSessionRefresh'," + getJSONCredentials(SalesforceOAuthPlugin.client).toString() + ");");
+                ctx.sendJavascript("cordova.fireDocumentEvent('salesforceSessionRefresh'," + getJSONCredentials(SalesforceOAuthPlugin.client).toString() + ");");
             }
 
             @Override
