@@ -307,7 +307,7 @@ public class OAuthWebviewHelper {
 		// Identity service succeeded
 		else {
 			// Putting together all the information needed to create the new account
-			accountOptions = new AccountOptions(id.username, tr.refreshToken, tr.authToken, tr.instanceUrl, tr.orgId, tr.userId);
+			accountOptions = new AccountOptions(id.username, tr.refreshToken, tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId);
 			
 			// Screen lock required by mobile policy
 			if (id.screenLockTimeout > 0) {
@@ -373,6 +373,7 @@ public class OAuthWebviewHelper {
 				accountOptions.authToken, 
 				accountOptions.instanceUrl,
 				loginOptions.loginUrl, 
+				accountOptions.identityUrl,
 				loginOptions.oauthClientId,
 				accountOptions.orgId, 
 				accountOptions.userId,
@@ -408,6 +409,7 @@ public class OAuthWebviewHelper {
 	protected static class AccountOptions {
 		private static final String USER_ID = "userId";
 		private static final String ORG_ID = "orgId";
+		private static final String IDENTITY_URL = "identityUrl";
 		private static final String INSTANCE_URL = "instanceUrl";
 		private static final String AUTH_TOKEN = "authToken";
 		private static final String REFRESH_TOKEN = "refreshToken";
@@ -416,6 +418,7 @@ public class OAuthWebviewHelper {
 		public final String username;
 		public final String refreshToken;
 		public final String authToken;
+		public final String identityUrl;
 		public final String instanceUrl;
 		public final String orgId;
 		public final String userId;
@@ -423,12 +426,13 @@ public class OAuthWebviewHelper {
 		private final Bundle bundle;
 		
 		public AccountOptions(String username, String refreshToken,
-				String authToken, String instanceUrl, String orgId,
-				String userId) {
+				String authToken, String identityUrl, String instanceUrl,
+				String orgId, String userId) {
 			super();
 			this.username = username;
 			this.refreshToken = refreshToken;
 			this.authToken = authToken;
+			this.identityUrl = identityUrl; 
 			this.instanceUrl = instanceUrl;
 			this.orgId = orgId;
 			this.userId = userId;
@@ -452,6 +456,7 @@ public class OAuthWebviewHelper {
 					options.getString(USERNAME),
 					options.getString(REFRESH_TOKEN),
 					options.getString(AUTH_TOKEN),
+					options.getString(IDENTITY_URL),
 					options.getString(INSTANCE_URL),
 					options.getString(ORG_ID),
 					options.getString(USER_ID)
