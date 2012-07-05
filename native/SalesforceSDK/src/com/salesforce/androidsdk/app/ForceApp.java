@@ -66,201 +66,201 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  */
 public abstract class ForceApp extends Application {
 
-	/**
-	 * Current version of this SDK.
-	 */
+    /**
+     * Current version of this SDK.
+     */
     public static final String SDK_VERSION = "1.3.unstable";
 
     /*
      * Last phone version
      */
-	private static final int GINGERBREAD_MR1 = 10;
+    private static final int GINGERBREAD_MR1 = 10;
 
-	/**
+    /**
      * Instance of the ForceApp to use for this process.
      */
     public static ForceApp APP;
-    
 
-	/**************************************************************************************************
-	 * 
-	 * Abstract methods: to be implemented by subclass
-	 * 
-	 **************************************************************************************************/
-    
+
+    /**************************************************************************************************
+     *
+     * Abstract methods: to be implemented by subclass
+     *
+     **************************************************************************************************/
+
     /**
      * @return The class for the main activity.
      */
-	public abstract Class<? extends Activity> getMainActivityClass();
-	
+    public abstract Class<? extends Activity> getMainActivityClass();
+
     /**
      * @return SalesforceR object which allows reference to resources living outside the SDK.
      */
     public abstract SalesforceR getSalesforceR();
-	
-	/**
-	 * This function must return the same value for name even when the application is restarted.
-	 * @param name The name associated with they key.
-	 * @return The key used for encrypting salts and keys.
-	 */
+
+    /**
+     * This function must return the same value for name even when the application is restarted.
+     * @param name The name associated with they key.
+     * @return The key used for encrypting salts and keys.
+     */
     protected abstract String getKey(String name);
 
-	/**************************************************************************************************/
+    /**************************************************************************************************/
 
     /**
      * @return the class of the activity used to perform the login process and create the account.
-     * You can override this if you want to customize the LoginAcitivty 
+     * You can override this if you want to customize the LoginAcitivty
      */
     public Class<? extends Activity> getLoginActivityClass() {
-    	return LoginActivity.class;
+        return LoginActivity.class;
     }
-    
+
     // passcode manager
     private PasscodeManager passcodeManager;
-    
+
     @Override
     public void onCreate() {
         super.onCreate();
 
         // Initialize encryption module
         Encryptor.init(this);
-        
+
         // Initialize the http client
         String extendedUserAgent = getUserAgent() + " Native";
         HttpAccess.init(this, extendedUserAgent);
-        
-    	// Ensure we have a CookieSyncManager
-    	CookieSyncManager.createInstance(this);
-        
-		// Done
+
+        // Ensure we have a CookieSyncManager
+        CookieSyncManager.createInstance(this);
+
+        // Done
         APP = this;
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
-    
-	/**
-	 * @return The passcode manager associated with the app.
-	 */
-	public synchronized PasscodeManager getPasscodeManager() {
-		// Only creating passcode manager if used
-		if (passcodeManager == null) {
-			passcodeManager = new PasscodeManager(this,
-					getVerificationHashConfig(),
-					getEncryptionHashConfig());
-		}
-		return passcodeManager;
-	}
-	
-	/**
-	 * @return the database used that contains the smart store
-	 */
-	public SmartStore getSmartStore() {
-		String passcodeHash = getPasscodeHash();
-		SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(passcodeHash == null ? "" : passcodeHash);
-		return new SmartStore(db);
-	}
-	
-	/**
-	 * @return true if the application has a smartstore database
-	 */
-	public boolean hasSmartStore() {
-		return getDatabasePath(DBOpenHelper.DB_NAME).exists();
-	}
 
-	/**
-	 * @return The hashed passcode, or null if it's not required.
-	 */
-	public String getPasscodeHash() {
-		return passcodeManager == null ? null : passcodeManager.getPasscodeHash();
-	}
-	
-	
-	/**
-	 * @return The name of the application (as defined in AndroidManifest.xml).
-	 */
-	public String getApplicationName() {
-		return getPackageManager().getApplicationLabel(getApplicationInfo()).toString();
-	}
-	
+    /**
+     * @return The passcode manager associated with the app.
+     */
+    public synchronized PasscodeManager getPasscodeManager() {
+        // Only creating passcode manager if used
+        if (passcodeManager == null) {
+            passcodeManager = new PasscodeManager(this,
+                    getVerificationHashConfig(),
+                    getEncryptionHashConfig());
+        }
+        return passcodeManager;
+    }
+
+    /**
+     * @return the database used that contains the smart store
+     */
+    public SmartStore getSmartStore() {
+        String passcodeHash = getPasscodeHash();
+        SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(passcodeHash == null ? "" : passcodeHash);
+        return new SmartStore(db);
+    }
+
+    /**
+     * @return true if the application has a smartstore database
+     */
+    public boolean hasSmartStore() {
+        return getDatabasePath(DBOpenHelper.DB_NAME).exists();
+    }
+
+    /**
+     * @return The hashed passcode, or null if it's not required.
+     */
+    public String getPasscodeHash() {
+        return passcodeManager == null ? null : passcodeManager.getPasscodeHash();
+    }
+
+
+    /**
+     * @return The name of the application (as defined in AndroidManifest.xml).
+     */
+    public String getApplicationName() {
+        return getPackageManager().getApplicationLabel(getApplicationInfo()).toString();
+    }
+
     /**
      * @return Hash salts and key to use for creating the hash of the passcode used for encryption.
-	 * Unique for installation.
+     * Unique for installation.
      */
     protected HashConfig getEncryptionHashConfig() {
-		return new HashConfig(getUuId("eprefix"), getUuId("esuffix"), getUuId("ekey"));
-	}
+        return new HashConfig(getUuId("eprefix"), getUuId("esuffix"), getUuId("ekey"));
+    }
 
     /**
      * @return The hash salt and key to use for creating the hash of the passcode used for verification.
      * Unique to the installation.
      */
-	protected HashConfig getVerificationHashConfig() {
-		return new HashConfig(getUuId("vprefix"), getUuId("vsuffix"), getUuId("vkey"));
-	}
-	
-	/**
+    protected HashConfig getVerificationHashConfig() {
+        return new HashConfig(getUuId("vprefix"), getUuId("vsuffix"), getUuId("vkey"));
+    }
+
+    /**
      * Wipe out the stored authentication credentials (remove account) and restart the app.
      */
     public void logout(Activity frontActivity) {
-    	// Finish front activity if specified
-    	if (frontActivity != null) {
-    		frontActivity.finish();
-    	}
+        // Finish front activity if specified
+        if (frontActivity != null) {
+            frontActivity.finish();
+        }
 
-    	// Reset smartstore
-    	if (hasSmartStore()) {
-    		getSmartStore().dropAllSoups();
-    	}
-    	
-    	// Reset passcode if any
-    	getPasscodeManager().reset(this);
-    	
-    	// Remove account if any
-    	ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
-    	clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
-			
-			@Override
-			public void run(AccountManagerFuture<Boolean> arg0) {
-		        // Clear cookies 
-		        CookieSyncManager.createInstance(ForceApp.this);
-		        CookieManager.getInstance().removeAllCookie();
-		    	
-		        // Restart application
-		        Intent i = new Intent(ForceApp.this, getMainActivityClass());
-		        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		        startActivity(i);
-			}
-		});
+        // Reset smartstore
+        if (hasSmartStore()) {
+            getSmartStore().dropAllSoups();
+        }
+
+        // Reset passcode if any
+        getPasscodeManager().reset(this);
+
+        // Remove account if any
+        ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
+        clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
+
+            @Override
+            public void run(AccountManagerFuture<Boolean> arg0) {
+                // Clear cookies
+                CookieSyncManager.createInstance(ForceApp.this);
+                CookieManager.getInstance().removeAllCookie();
+
+                // Restart application
+                Intent i = new Intent(ForceApp.this, getMainActivityClass());
+                i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+            }
+        });
     }
-    
-	/**
-	 * Set a user agent string based on the mobile SDK version. We are building
-	 * a user agent of the form: SalesforceMobileSDK/<salesforceSDK version>
-	 * android/<android OS version> appName/appVersion
-	 * 
-	 * @return The user agent string to use for all requests.
-	 */
-	public final String getUserAgent() {
-		String appName = "";
-		String appVersion = "";
-		try {
-			PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-			appName = getString(packageInfo.applicationInfo.labelRes);
-	    	appVersion = packageInfo.versionName;
-		} 
-		catch (NameNotFoundException e) {
-			Log.w("ForceApp:getUserAgent", e);
-		}
 
-		return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s", SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion);
-	}
+    /**
+     * Set a user agent string based on the mobile SDK version. We are building
+     * a user agent of the form: SalesforceMobileSDK/<salesforceSDK version>
+     * android/<android OS version> appName/appVersion
+     *
+     * @return The user agent string to use for all requests.
+     */
+    public final String getUserAgent() {
+        String appName = "";
+        String appVersion = "";
+        try {
+            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+            appName = getString(packageInfo.applicationInfo.labelRes);
+            appVersion = packageInfo.versionName;
+        }
+        catch (NameNotFoundException e) {
+            Log.w("ForceApp:getUserAgent", e);
+        }
+
+        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s", SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion);
+    }
 
     /**
      * @return The authentication account type (should match authenticator.xml).
      */
-	public String getAccountType() {
-		return getString(getSalesforceR().stringAccountType());
-	}
-	
+    public String getAccountType() {
+        return getString(getSalesforceR().stringAccountType());
+    }
+
     /**
      * Helper function
      * @return true if application is running on a tablet
@@ -273,43 +273,43 @@ public abstract class ForceApp extends Application {
         }
         return false;
     }
-	
-	@Override
-    public String toString() {
-		StringBuilder sb = new StringBuilder();
-		sb.append(this.getClass()).append(": {\n")
-		  .append("   accountType: ").append(getAccountType()).append("\n")
-		  .append("   userAgent: ").append(getUserAgent()).append("\n")
-		  .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
-		  .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n");
 
-		if (null != passcodeManager) {
-			//passcodeManager may be null at startup if the app is running in debug mode
-			sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n");
-		}
-		
-		sb.append("}\n");
-		
-		return sb.toString();
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(this.getClass()).append(": {\n")
+          .append("   accountType: ").append(getAccountType()).append("\n")
+          .append("   userAgent: ").append(getUserAgent()).append("\n")
+          .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
+          .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n");
+
+        if (null != passcodeManager) {
+            //passcodeManager may be null at startup if the app is running in debug mode
+            sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n");
+        }
+
+        sb.append("}\n");
+
+        return sb.toString();
 
     }
-    
-	/*
-	 * Random keys persisted encrypted in a private preference file
-	 * This is provided as an example.
-	 * We recommend you provide you own implementation for creating the HashConfig's.
-	 * 
-	 */
-	private Map<String, String> uuids = new HashMap<String, String>();
-	private synchronized String getUuId(String name) {
-		if (uuids.get(name) != null) return uuids.get(name);
-		SharedPreferences sp = getSharedPreferences("uuids2", Context.MODE_PRIVATE);
-		if (!sp.contains(name)) {
-			String uuid = UUID.randomUUID().toString();
-			Editor e = sp.edit();
-			e.putString(name, Encryptor.encrypt(uuid, getKey(name)));
-			e.commit();
-		}
-		return Encryptor.decrypt(sp.getString(name, null), getKey(name));
-	}
+
+    /*
+     * Random keys persisted encrypted in a private preference file
+     * This is provided as an example.
+     * We recommend you provide you own implementation for creating the HashConfig's.
+     *
+     */
+    private Map<String, String> uuids = new HashMap<String, String>();
+    private synchronized String getUuId(String name) {
+        if (uuids.get(name) != null) return uuids.get(name);
+        SharedPreferences sp = getSharedPreferences("uuids2", Context.MODE_PRIVATE);
+        if (!sp.contains(name)) {
+            String uuid = UUID.randomUUID().toString();
+            Editor e = sp.edit();
+            e.putString(name, Encryptor.encrypt(uuid, getKey(name)));
+            e.commit();
+        }
+        return Encryptor.decrypt(sp.getString(name, null), getKey(name));
+    }
 }

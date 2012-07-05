@@ -110,6 +110,7 @@ public class HttpAccess extends BroadcastReceiver {
             conMgr = null;
         }
         else {
+
             // Keep reference to app
             this.app = app;
 
@@ -143,6 +144,7 @@ public class HttpAccess extends BroadcastReceiver {
      * manager service.
      * @param context The context of the request.
      * @param intent Not used.
+>>>>>>> .merge_file_LJHOqE
      */
     @Override
     public void onReceive(Context context, Intent intent) {
