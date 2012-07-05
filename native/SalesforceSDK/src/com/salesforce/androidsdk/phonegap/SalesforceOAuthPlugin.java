@@ -74,6 +74,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 	private static final String USER_AGENT = "userAgent";
 	private static final String INSTANCE_URL = "instanceUrl";
 	private static final String LOGIN_URL = "loginUrl";
+	private static final String IDENTITY_URL = "identityUrl";
 	private static final String CLIENT_ID = "clientId";
 	private static final String ORG_ID = "orgId";
 	private static final String USER_ID = "userId";
@@ -310,6 +311,7 @@ public class SalesforceOAuthPlugin extends Plugin {
 		Map<String, String> data = new HashMap<String, String>();
 		data.put(ACCESS_TOKEN, client.getAuthToken());
 		data.put(REFRESH_TOKEN, client.getRefreshToken());
+		data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
 		data.put(USER_ID, clientInfo.userId);
 		data.put(ORG_ID, clientInfo.orgId);
 		data.put(CLIENT_ID, clientInfo.clientId);
