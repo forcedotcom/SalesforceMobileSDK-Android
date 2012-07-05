@@ -119,9 +119,12 @@ public class HttpAccess extends BroadcastReceiver {
             // Getting connectivity manager and current network type
             conMgr = (ConnectivityManager) app.getSystemService(Context.CONNECTIVITY_SERVICE);
             if (conMgr != null) {
-                currentNetworkSubType = conMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE).getSubtype();
-            }        
-	}
+                final NetworkInfo netInfo = conMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+                if (netInfo != null) {
+                    currentNetworkSubType = netInfo.getSubtype();
+                }
+            }
+        }
     }
 
     /**
