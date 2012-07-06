@@ -31,36 +31,38 @@ import android.content.Context;
 
 /**
  * Authentication credentials used to make live server calls in tests
- * 
+ *
  * Use web app to figure out login/instance urls, orgId, userId, username and clientId
- * 
+ *
  * For refresh token, edit RestClient.java toString() to print out refresh token and use "print info" button in RestExplorer.
  * Attaching a debugger to the RestExplorer and having a break point in RestClient.java toString() is probably the easiest way to go.
  */
 public class TestCredentials {
 
-	public static String API_VERSION;
-	public static String ACCOUNT_TYPE;
-	public static String ORG_ID;
-	public static String USERNAME;
-	public static String ACCOUNT_NAME;
-	public static String USER_ID;
-	public static String LOGIN_URL;
-	public static String INSTANCE_URL;
-	public static String CLIENT_ID;
-	public static String REFRESH_TOKEN;
-	
-	public static void init(Context ctx) {
-		API_VERSION = ctx.getString(R.string.api_version);
-		ACCOUNT_TYPE = ctx.getString(R.string.account_type);
-		ORG_ID = ctx.getString(R.string.org_id);
-		USERNAME = ctx.getString(R.string.username);
-		ACCOUNT_NAME = ctx.getString(R.string.account_name);
-		USER_ID = ctx.getString(R.string.user_id);
-		LOGIN_URL = ctx.getString(R.string.login_url);
-		INSTANCE_URL = ctx.getString(R.string.instance_url);
-		CLIENT_ID = ctx.getString(R.string.oauth_client_id);
-		REFRESH_TOKEN = ctx.getString(R.string.oauth_refresh_token);
-	}
-	
+    public static String API_VERSION;
+    public static String ACCOUNT_TYPE;
+    public static String ORG_ID;
+    public static String USERNAME;
+    public static String ACCOUNT_NAME;
+    public static String USER_ID;
+    public static String LOGIN_URL;
+    public static String INSTANCE_URL;
+    public static String IDENTITY_URL;
+    public static String CLIENT_ID;
+    public static String REFRESH_TOKEN;
+
+    public static void init(Context ctx) {
+        API_VERSION = ctx.getString(R.string.api_version);
+        ACCOUNT_TYPE = ctx.getString(R.string.account_type);
+        ORG_ID = ctx.getString(R.string.org_id);
+        USERNAME = ctx.getString(R.string.username);
+        ACCOUNT_NAME = ctx.getString(R.string.account_name);
+        USER_ID = ctx.getString(R.string.user_id);
+        LOGIN_URL = ctx.getString(R.string.login_url);
+        INSTANCE_URL = ctx.getString(R.string.instance_url);
+        IDENTITY_URL = ctx.getString(R.string.identity_url);
+        CLIENT_ID = ctx.getString(R.string.oauth_client_id);
+        REFRESH_TOKEN = ctx.getString(R.string.oauth_refresh_token);
+    }
+
 }
