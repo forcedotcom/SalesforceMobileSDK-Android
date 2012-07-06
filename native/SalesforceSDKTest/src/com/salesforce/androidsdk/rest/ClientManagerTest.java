@@ -61,7 +61,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private static final String TEST_CLIENT_ID = "test_client_d";
     private static final String TEST_LOGIN_URL = "https://test.salesforce.com";
     private static final String TEST_INSTANCE_URL = "https://tapp0.salesforce.com";
-    private static final String TEST_IDENTITY_URL = "https://tapp0.salesforce.com";
+    private static final String TEST_IDENTITY_URL = "https://test.salesforce.com";
     private static final String TEST_AUTH_TOKEN = "test_auth_token";
     private static final String TEST_REFRESH_TOKEN = "test_refresh_token";
     private static final String TEST_OTHER_ACCOUNT_NAME = "test_other_accountname";
