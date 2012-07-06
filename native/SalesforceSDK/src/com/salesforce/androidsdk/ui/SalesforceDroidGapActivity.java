@@ -68,13 +68,21 @@ public class SalesforceDroidGapActivity extends DroidGap {
         CookieSyncManager.createInstance(this);
 
         // Load bootstrap
-        super.loadUrl(BOOTSTRAP_START_PAGE);
+        super.loadUrl(getStartPageUrl());
 
         // Periodic auto-refresh - scheduled in onResume
         periodicAutoRefreshHandler = new Handler();
         periodicAutoRefresher = new PeriodicAutoRefresher();
     }
 
+    /** Returns the start page url for the application. 
+     * Must be overridden if you want a different start page.
+     * @return Start page url of the app.
+     */
+    public String getStartPageUrl() {
+    	return BOOTSTRAP_START_PAGE;
+    }
+    
     @Override
     public void init() {
         super.init();
