@@ -134,6 +134,7 @@ public class ClientManager {
 		
 		// We also store the username, instance url, org id, user id and username in the account manager
 		String loginServer = accountManager.getUserData(acc, AuthenticatorService.KEY_LOGIN_URL);
+		String idUrl = accountManager.getUserData(acc, AuthenticatorService.KEY_ID);
 		String instanceServer = accountManager.getUserData(acc, AuthenticatorService.KEY_INSTANCE_URL);
 		String orgId = accountManager.getUserData(acc, AuthenticatorService.KEY_ORG_ID);
 		String userId = accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID);
@@ -152,7 +153,7 @@ public class ClientManager {
 
 		try {
 			AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, authToken, refreshToken);
-			ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer), new URI(loginServer), accountName, username, userId, orgId);
+			ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer), new URI(loginServer), new URI(idUrl), accountName, username, userId, orgId);
 			return new RestClient(clientInfo, authToken, HttpAccess.DEFAULT, authTokenProvider);
 		} 
 		catch (URISyntaxException e) {
@@ -234,13 +235,14 @@ public class ClientManager {
 	 * @return
 	 */
 	public Bundle createNewAccount(String accountName, String username, String refreshToken, String authToken,
-			String instanceUrl, String loginUrl, String clientId, String orgId, String userId, String passcodeHash) {
+			String instanceUrl, String loginUrl, String idUrl, String clientId, String orgId, String userId, String passcodeHash) {
 		
 		Bundle extras = new Bundle();
 		extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
 		extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
 		extras.putString(AuthenticatorService.KEY_USERNAME, username);
 		extras.putString(AuthenticatorService.KEY_LOGIN_URL, loginUrl);
+		extras.putString(AuthenticatorService.KEY_ID, idUrl);
 		extras.putString(AuthenticatorService.KEY_INSTANCE_URL, instanceUrl);
 		extras.putString(AuthenticatorService.KEY_CLIENT_ID, clientId);
 		extras.putString(AuthenticatorService.KEY_ORG_ID, orgId);

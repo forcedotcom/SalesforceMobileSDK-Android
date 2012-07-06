@@ -74,6 +74,7 @@ public class SalesforceOAuthPlugin extends Plugin {
     private static final String USER_AGENT = "userAgent";
     private static final String INSTANCE_URL = "instanceUrl";
     private static final String LOGIN_URL = "loginUrl";
+    private static final String IDENTITY_URL = "identityUrl";
     private static final String CLIENT_ID = "clientId";
     private static final String ORG_ID = "orgId";
     private static final String USER_ID = "userId";
@@ -314,6 +315,7 @@ public class SalesforceOAuthPlugin extends Plugin {
         data.put(ORG_ID, clientInfo.orgId);
         data.put(CLIENT_ID, clientInfo.clientId);
         data.put(LOGIN_URL, clientInfo.loginUrl.toString());
+        data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
         data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
         data.put(USER_AGENT, ForceApp.APP.getUserAgent());
         return new JSONObject(data);
