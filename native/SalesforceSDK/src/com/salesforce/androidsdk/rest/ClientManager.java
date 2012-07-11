@@ -51,7 +51,7 @@ import com.salesforce.androidsdk.security.Encryptor;
 /**
  * ClientManager is a factory class for RestClient which stores OAuth credentials in the AccountManager.
  * If no account is found, it kicks off the login flow which creates a new account if successful.
- * 
+ *
  */
 public class ClientManager {
 
@@ -66,17 +66,17 @@ public class ClientManager {
 	 * @param loginOptions
 	 */
 	public ClientManager(Context ctx, String accountType, LoginOptions loginOptions) {
-		this.accountManager = AccountManager.get(ctx);		
+		this.accountManager = AccountManager.get(ctx);
 		this.accountType = accountType;
 		this.loginOptions = loginOptions;
 	}
 
 	/**
 	 * Method to create a RestClient asynchronously. It is intended to be used by code on the UI thread.
-	 * 
+	 *
 	 * If no accounts are found, it will kick off the login flow which will create a new account if successful.
-	 * After the account is created or if an account already existed, it creates a RestClient and returns it through restClientCallback. 
-	 * 
+	 * After the account is created or if an account already existed, it creates a RestClient and returns it through restClientCallback.
+	 *
 	 * Note: The work is actually being done by the service registered to handle authentication for this application account type.
 	 * @see AuthenticatorService
 	 *
@@ -97,28 +97,28 @@ public class ClientManager {
 					AccountManager.KEY_AUTHTOKEN, null /*required features*/, options,
 					activityContext, new AccMgrCallback(restClientCallback),
 					null /* handler */);
-		
+
 		}
 		// Account found
 		else {
 			Log.i("ClientManager:getRestClient", "Found account of type " + accountType);
 			accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN,
 					options, activityContext, new AccMgrCallback(restClientCallback), null /* handler */);
-		
+
 		}
 	}
-	
+
 	/**
-	 * Method to create RestClient synchronously. It is intended to be used by code not on the UI thread (e.g. ContentProvider). 
-	 * 
+	 * Method to create RestClient synchronously. It is intended to be used by code not on the UI thread (e.g. ContentProvider).
+	 *
 	 * If there is no account, it will throw an exception.
-	 * 
+	 *
 	 * @return
 	 * @throws AccountInfoNotFoundException
 	 */
 	public RestClient peekRestClient()
 			throws AccountInfoNotFoundException {
-		
+
 		Account acc = getAccount();
 		if (acc == null) {
 			AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
@@ -131,7 +131,7 @@ public class ClientManager {
 		String passcodeHash = (ForceApp.APP == null /* only in tests */ ? loginOptions.passcodeHash : ForceApp.APP.getPasscodeHash());
 		String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
 		String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), passcodeHash);
-		
+
 		// We also store the username, instance url, org id, user id and username in the account manager
 		String loginServer = accountManager.getUserData(acc, AuthenticatorService.KEY_LOGIN_URL);
 		String instanceServer = accountManager.getUserData(acc, AuthenticatorService.KEY_INSTANCE_URL);
@@ -154,7 +154,7 @@ public class ClientManager {
 			AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, authToken, refreshToken);
 			ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer), new URI(loginServer), accountName, username, userId, orgId);
 			return new RestClient(clientInfo, authToken, HttpAccess.DEFAULT, authTokenProvider);
-		} 
+		}
 		catch (URISyntaxException e) {
 			Log.w("ClientManager:peekRestClient", "Invalid server URL", e);
 			throw new AccountInfoNotFoundException("invalid server url", e);
@@ -167,7 +167,7 @@ public class ClientManager {
 	public void invalidateToken(String lastNewAuthToken) {
 		accountManager.invalidateAuthToken(getAccountType(), lastNewAuthToken);
 	}
-	
+
 	/**
 	 * @return The first account found with the application account type.
 	 */
@@ -193,14 +193,14 @@ public class ClientManager {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * @return All of the accounts found for this application account type.
 	 */
 	public Account[] getAccounts() {
 		return accountManager.getAccountsByType(getAccountType());
-	}	
-	
+	}
+
 	/**
 	 * Remove all of the accounts passed in.
 	 * @param accounts The array of accounts to remove.
@@ -209,7 +209,7 @@ public class ClientManager {
 		List<AccountManagerFuture<Boolean>> removalFutures = new ArrayList<AccountManagerFuture<Boolean>>();
 		for (Account a : accounts)
 			removalFutures.add(accountManager.removeAccount(a, null, null));
-		
+
 		for (AccountManagerFuture<Boolean> f : removalFutures) {
 			try {
 				f.getResult();
@@ -218,11 +218,11 @@ public class ClientManager {
 			}
 		}
 	}
-	
+
 	/**
 	 * Create a new account and return the details of the new account in a bundle.
-	 * @param accountName 
-	 * @param username                 
+	 * @param accountName
+	 * @param username
 	 * @param refreshToken
 	 * @param authToken
 	 * @param instanceUrl
@@ -235,7 +235,14 @@ public class ClientManager {
 	 */
 	public Bundle createNewAccount(String accountName, String username, String refreshToken, String authToken,
 			String instanceUrl, String loginUrl, String clientId, String orgId, String userId, String passcodeHash) {
-		
+		return createNewAccount(accountName, username, refreshToken, authToken,
+				instanceUrl, loginUrl, clientId, orgId, userId, passcodeHash, null);
+	}
+
+	public Bundle createNewAccount(String accountName, String username, String refreshToken, String authToken,
+			String instanceUrl, String loginUrl, String clientId, String orgId, String userId, String passcodeHash,
+			String clientSecret) {
+
 		Bundle extras = new Bundle();
 		extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
 		extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
@@ -245,15 +252,18 @@ public class ClientManager {
 		extras.putString(AuthenticatorService.KEY_CLIENT_ID, clientId);
 		extras.putString(AuthenticatorService.KEY_ORG_ID, orgId);
 		extras.putString(AuthenticatorService.KEY_USER_ID, userId);
+		if (clientSecret != null) {
+			extras.putString(AuthenticatorService.KEY_CLIENT_SECRET, clientSecret);
+		}
 		extras.putString(AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, passcodeHash));
 
 		Account acc = new Account(accountName, getAccountType());
 		accountManager.addAccountExplicitly(acc, Encryptor.encrypt(refreshToken, passcodeHash), extras);
 		accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
-		
+
 		return extras;
 	}
-	
+
 	/**
 	 * Should match the value in authenticator.xml.12
 	 * @return The account type for this application.
@@ -261,7 +271,7 @@ public class ClientManager {
 	public String getAccountType() {
 		return accountType;
 	}
-	
+
 	/**
 	 * @return The AccountManager for the application.
 	 */
@@ -281,8 +291,8 @@ public class ClientManager {
 		if (acc != null)
 			accountManager.removeAccount(acc, callback, null);
 	}
-	
-	
+
+
 	/**
 	 * Callback from either user account creation, or a call to getAuthToken, used
 	 * by the Android account management components.
@@ -294,7 +304,7 @@ public class ClientManager {
 		/**
 		 * Constructor
 		 * @param restCallback Who to directly call when we get a result for getAuthToken.
-		 * 			  
+		 *
 		 */
 		AccMgrCallback(RestClientCallback restCallback) {
 			assert restCallback != null : "you must supply a RestClientAvailable instance";
@@ -327,7 +337,7 @@ public class ClientManager {
 			restCallback.authenticatedRestClient(client);
 		}
 	}
-	
+
 	/**
 	 * RestClientCallback interface.
 	 * You must provide an implementation of this interface when calling
@@ -374,8 +384,8 @@ public class ClientManager {
 			Account acc = clientManager.getAccount();
 			if (acc == null)
 				return null;
-			
-			
+
+
 			// Wait if another thread is already fetching an access token
 			synchronized (lock) {
 				if (gettingAuthToken) {
@@ -389,16 +399,16 @@ public class ClientManager {
 				gettingAuthToken = true;
 			}
 
-			
+
 			// Invalidate current auth token
 			clientManager.invalidateToken(lastNewAuthToken);
-			
+
 			String newAuthToken = null;
 			try {
 				Bundle options = clientManager.loginOptions.asBundle();
 				Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, options, null /* activity */, null /* callback */,
 								null /* handler */).getResult();
-			
+
 				if (bundle == null) {
 					Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
 				}
@@ -418,12 +428,12 @@ public class ClientManager {
 			}
 			return newAuthToken;
 		}
-		
+
 		@Override
 		public String getRefreshToken() {
 			return refreshToken;
 		}
-		
+
 		@Override
 		public long getLastRefreshTime() {
 			return lastRefreshTime;
@@ -432,7 +442,7 @@ public class ClientManager {
 
 	/**
 	 * Exception thrown when no account could be found (during a
-	 * {@link ClientManager#peekRestClient() peekRestClient} call) 
+	 * {@link ClientManager#peekRestClient() peekRestClient} call)
 	 */
 	public static class AccountInfoNotFoundException extends Exception {
 		private static final long serialVersionUID = 1L;
@@ -445,7 +455,7 @@ public class ClientManager {
 			super(msg, cause);
 		}
 	}
-	
+
 	/**
 	 * Class encapsulating login options.
 	 * There are passed in a bundle to the auth service, which passes them as "extras" when starting the login activity.
@@ -456,14 +466,16 @@ public class ClientManager {
 		private static final String OAUTH_CALLBACK_URL = "oauthCallbackUrl";
 		private static final String PASSCODE_HASH = "passcodeHash";
 		private static final String LOGIN_URL = "loginUrl";
+		private static final String CLIENT_SECRET = "clientSecret";
 
 		public String loginUrl;
 		public String passcodeHash;
 		public final String oauthCallbackUrl;
 		public final String oauthClientId;
 		public final String[] oauthScopes;
-		private final Bundle bundle; 
-		
+		private final Bundle bundle;
+		public String clientSecret;
+
 		public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl, String oauthClientId, String[] oauthScopes) {
 			this.loginUrl = loginUrl;
 			this.passcodeHash = passcodeHash;
@@ -477,19 +489,26 @@ public class ClientManager {
 			bundle.putString(OAUTH_CALLBACK_URL, oauthCallbackUrl);
 			bundle.putString(OAUTH_CLIENT_ID, oauthClientId);
 			bundle.putStringArray(OAUTH_SCOPES, oauthScopes);
-		
+
 		}
-		
+
+		public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl, String oauthClientId, String[] oauthScopes, String clientSecret) {
+			this(loginUrl, passcodeHash, oauthCallbackUrl, oauthClientId, oauthScopes);
+			this.clientSecret = clientSecret;
+			bundle.putString(CLIENT_SECRET, clientSecret);
+		}
+
 		public Bundle asBundle() {
 			return bundle;
 		}
-		
+
 		public static LoginOptions fromBundle(Bundle options) {
-			return new LoginOptions(options.getString(LOGIN_URL), 
+			return new LoginOptions(options.getString(LOGIN_URL),
 									options.getString(PASSCODE_HASH),
 									options.getString(OAUTH_CALLBACK_URL),
 									options.getString(OAUTH_CLIENT_ID),
-									options.getStringArray(OAUTH_SCOPES));
+									options.getStringArray(OAUTH_SCOPES),
+									options.getString(CLIENT_SECRET));
 		}
 	}
 }
