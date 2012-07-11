@@ -167,12 +167,37 @@ public abstract class ForceApp extends Application {
     }
 
     /**
+     * Changes the passcode to a new value and re-encrypts the smartstore with the new passcode.
+     *
+     * @param oldPass Old passcode.
+     * @param newPass New passcode.
+     */
+    public void changePasscode(String oldPass, String newPass) {
+
+        // Check if the old passcode and the new one are the same.
+        if (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim())) {
+            return;
+        }
+
+        // If the old passcode is null, use the default key.
+        if (oldPass == null || oldPass.trim().equals("")) {
+            oldPass = Encryptor.getUniqueId(this);
+        }
+        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(oldPass);
+
+        // If the new passcode is null, use the default key.
+        if (newPass == null || newPass.trim().equals("")) {
+            newPass = Encryptor.getUniqueId(this);
+        }
+        SmartStore.changeKey(db, newPass);
+    }
+
+    /**
      * @return The hashed passcode, or null if it's not required.
      */
     public String getPasscodeHash() {
         return passcodeManager == null ? null : passcodeManager.getPasscodeHash();
     }
-
 
     /**
      * @return The name of the application (as defined in AndroidManifest.xml).
