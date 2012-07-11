@@ -171,6 +171,12 @@ public class OAuth2 {
 	 */
 	public static TokenEndpointResponse refreshAuthToken(
 			HttpAccess httpAccessor, URI loginServer, String clientId,
+			String refreshToken) throws OAuthFailedException, IOException {
+		return refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, null);
+	}
+
+	public static TokenEndpointResponse refreshAuthToken(
+			HttpAccess httpAccessor, URI loginServer, String clientId,
 			String refreshToken, String clientSecret) throws OAuthFailedException, IOException {
 		List<NameValuePair> params = makeTokenEndpointParams(REFRESH_TOKEN,
 				clientId, clientSecret);
