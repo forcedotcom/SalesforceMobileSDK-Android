@@ -234,6 +234,12 @@ public class ClientManager {
 	 * @return
 	 */
 	public Bundle createNewAccount(String accountName, String username, String refreshToken, String authToken,
+			String instanceUrl, String loginUrl, String clientId, String orgId, String userId, String passcodeHash) {
+		return createNewAccount(accountName, username, refreshToken, authToken,
+				instanceUrl, loginUrl, clientId, orgId, userId, passcodeHash, null);
+	}
+
+	public Bundle createNewAccount(String accountName, String username, String refreshToken, String authToken,
 			String instanceUrl, String loginUrl, String clientId, String orgId, String userId, String passcodeHash,
 			String clientSecret) {
 
@@ -246,7 +252,9 @@ public class ClientManager {
 		extras.putString(AuthenticatorService.KEY_CLIENT_ID, clientId);
 		extras.putString(AuthenticatorService.KEY_ORG_ID, orgId);
 		extras.putString(AuthenticatorService.KEY_USER_ID, userId);
-		extras.putString(AuthenticatorService.KEY_CLIENT_SECRET, clientSecret);
+		if (clientSecret != null) {
+			extras.putString(AuthenticatorService.KEY_CLIENT_SECRET, clientSecret);
+		}
 		extras.putString(AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, passcodeHash));
 
 		Account acc = new Account(accountName, getAccountType());
