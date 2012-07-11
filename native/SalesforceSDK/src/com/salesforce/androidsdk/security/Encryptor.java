@@ -136,57 +136,46 @@ public class Encryptor {
         // Check if file system encryption is available and active
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
             isFileSystemEncrypted = false;
-        }
-        else {
+        } else {
             DevicePolicyManager devicePolicyManager = (DevicePolicyManager) ctx.getSystemService(Service.DEVICE_POLICY_SERVICE);
-            // Note: Following method only exists if linking to an android.jar api 11 and above
+
+            // Note: Following method only exists if linking to an android.jar api 11 and above.
             isFileSystemEncrypted = devicePolicyManager.getStorageEncryptionStatus() == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE;
         }
 
-        // Make sure the cryptographic transformations we want to use are available
+        // Make sure the cryptographic transformations we want to use are available.
         bestCipherAvailable = null;
-
         try {
             getBestCipher();
         } catch (GeneralSecurityException gex) {
         }
-
         if (null == bestCipherAvailable) {
             return false;
         }
-
         try {
             Mac.getInstance(MAC_TRANSFORMATION);
-        }
-        catch (GeneralSecurityException e) {
+        } catch (GeneralSecurityException e) {
             Log.e(TAG, "No mac transformation available");
             return false;
         }
-
         return true;
     }
 
     public static Cipher getBestCipher() throws GeneralSecurityException {
         Cipher cipher = null;
-
         if (null != bestCipherAvailable) {
             return Cipher.getInstance(bestCipherAvailable);
         }
-
         try {
             cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION);
             if (null != cipher)
                 bestCipherAvailable = PREFER_CIPHER_TRANSFORMATION;
+        } catch (GeneralSecurityException gex1) {
+            // Preferred combo not available.
         }
-        catch (GeneralSecurityException gex1) {
-            //preferered combo not available
-        }
-
-
         if (null == bestCipherAvailable) {
             Log.e(TAG, "No cipher transformation available");
         }
-
         return cipher;
     }
 
@@ -196,7 +185,6 @@ public class Encryptor {
     public static boolean isFileSystemEncrypted() {
         return isFileSystemEncrypted;
     }
-
 
     /**
      * Decrypt data with key using aes256
@@ -360,7 +348,6 @@ public class Encryptor {
         SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
         IvParameterSpec ivSpec = new IvParameterSpec(initVector);
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
-
 
         byte[] padded = cipher.doFinal(meat, 0, meatLen);
         byte[] result = padded;

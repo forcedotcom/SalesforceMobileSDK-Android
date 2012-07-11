@@ -155,7 +155,7 @@ public abstract class ForceApp extends Application {
      */
     public SmartStore getSmartStore() {
         String passcodeHash = getPasscodeHash();
-        SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(passcodeHash == null ? "" : passcodeHash);
+        SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(passcodeHash == null ? Encryptor.getUniqueId(this) : passcodeHash);
         return new SmartStore(db);
     }
 
