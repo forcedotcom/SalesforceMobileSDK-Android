@@ -38,7 +38,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.Pair;
 import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -64,7 +63,7 @@ import com.salesforce.androidsdk.util.UriFragmentParser;
  *  d) we call the Id service to obtain additional info about the user
  *  e) we create a local account, and return an authentication result bundle.
  *  f) done!
- *  
+ *
  */
 public class OAuthWebviewHelper {
 
@@ -76,7 +75,7 @@ public class OAuthWebviewHelper {
 	 * the oauth process.
 	 */
 	public interface OAuthWebviewHelperEvents {
-		
+
 		/** we're starting to load this login page into the webview */
 		void loadingLoginPage(String loginUrl);
 
@@ -85,17 +84,17 @@ public class OAuthWebviewHelper {
 		 * 0..10000 (you can pass this directly to the activity progressbar)
 		 */
 		void onLoadingProgress(int totalProgress);
-		
+
 		/** We're doing something that takes some unknown amount of time */
 		void onIndeterminateProgress(boolean show);
-		
+
 		/** We've completed the auth process and here's the resulting Authentication Result bundle to return to the Authenticator */
 		void onAccountAuthenticatorResult(Bundle authResult);
-		
+
 		/** we're in some end state and requesting that the host activity be finished/closed. */
 		void finish();
 	}
-	
+
 	/**
 	 * Construct a new OAuthWebviewHelper and perform the initial configuration of the Webview.
 	 */
@@ -104,7 +103,7 @@ public class OAuthWebviewHelper {
 		this.callback = callback;
 		this.loginOptions = options;
 		this.webview = webview;
-		
+
 		webview.getSettings().setJavaScriptEnabled(true);
 		webview.setWebViewClient(new AuthWebViewClient());
 		webview.setWebChromeClient(makeWebChromeClient());
@@ -119,15 +118,15 @@ public class OAuthWebviewHelper {
 			clearCookies();
 		}
 	}
-	
+
 	private final OAuthWebviewHelperEvents callback;
-	private final LoginOptions loginOptions;
+	protected final LoginOptions loginOptions;
 	private final WebView webview;
 	private AccountOptions accountOptions;
-	
+
 	public void saveState(Bundle outState) {
 		webview.saveState(outState);
-		if (accountOptions != null) { 
+		if (accountOptions != null) {
 			// we have completed the auth flow but not created the account, because we need to create a pin
 			outState.putBundle(ACCOUNT_OPTIONS, accountOptions.asBundle());
 		}
@@ -136,20 +135,20 @@ public class OAuthWebviewHelper {
 	public WebView getWebView() {
 		return webview;
 	}
-	
+
 	public void clearCookies() {
 		CookieManager cm = CookieManager.getInstance();
 		cm.removeAllCookie();
 	}
-	
+
 	public void clearView() {
 		webview.clearView();
 	}
-	
+
 	/**
 	 * Method called by login activity when it resumes after the passcode activity
-	 * 
-	 * When the server has a mobile policy requiring a passcode, we start the passcode activity after completing the 
+	 *
+	 * When the server has a mobile policy requiring a passcode, we start the passcode activity after completing the
 	 * auth flow (see onAuthFlowComplete).
 	 * When the passcode activity completes, the login activity's onActivityResult gets invoked, and it calls this method
 	 * to finalize the account creation.
@@ -161,7 +160,7 @@ public class OAuthWebviewHelper {
 			callback.finish();
 		}
 	}
-	
+
 	/** Factory method for the WebChromeClient, you can replace this with something else if you need to */
 	protected WebChromeClient makeWebChromeClient() {
 		return new AuthWebChromeClient();
@@ -170,7 +169,7 @@ public class OAuthWebviewHelper {
 	protected Context getContext() {
 		return webview.getContext();
 	}
-	
+
 	/**
 	 * Called when the user facing part of the auth flow completed with an error.
 	 * We show the user an error and end the activity.
@@ -204,17 +203,17 @@ public class OAuthWebviewHelper {
 			t.show();
 		}
 	}
-	
-	
+
+
 	protected void showError(Exception exception) {
 		Toast.makeText(getContext(),
 				getContext().getString(ForceApp.APP.getSalesforceR().stringGenericError(), exception.toString()),
 				Toast.LENGTH_LONG).show();
 	}
-	
+
 	/**
-	 * Tells the webview to load the authorization page. 
-	 * We also update the window title, so its easier to 
+	 * Tells the webview to load the authorization page.
+	 * We also update the window title, so its easier to
 	 * see which system you're logging in to
 	 */
 	public void loadLoginPage() {
@@ -222,16 +221,20 @@ public class OAuthWebviewHelper {
 		loginOptions.loginUrl = getLoginUrl();
 
 		try {
-			URI uri = OAuth2.getAuthorizationUrl(
-			        new URI(loginOptions.loginUrl), 
-			        loginOptions.oauthClientId, 
-			        loginOptions.oauthCallbackUrl,
-			        loginOptions.oauthScopes);
+			URI uri = getAuthorizationUrl();
 			callback.loadingLoginPage(loginOptions.loginUrl);
 			webview.loadUrl(uri.toString());
 		} catch (URISyntaxException ex) {
 			showError(ex);
 		}
+	}
+
+	protected URI getAuthorizationUrl() throws URISyntaxException {
+		return OAuth2.getAuthorizationUrl(
+		        new URI(loginOptions.loginUrl),
+		        loginOptions.oauthClientId,
+		        loginOptions.oauthCallbackUrl,
+		        loginOptions.oauthScopes);
 	}
 
 	/**
@@ -243,7 +246,7 @@ public class OAuthWebviewHelper {
 				LoginActivity.SERVER_URL_PREFS_SETTINGS, Context.MODE_PRIVATE);
 
 		return settings.getString(LoginActivity.SERVER_URL_CURRENT_SELECTION, OAuth2.DEFAULT_LOGIN_URL);
-	}   
+	}
 
 	/**
 	 * WebViewClient which intercepts the redirect to the oauth callback url.
@@ -251,15 +254,15 @@ public class OAuthWebviewHelper {
 	 *
 	 */
 	protected class AuthWebViewClient extends WebViewClient {
-		
+
 		@Override
 		public boolean shouldOverrideUrlLoading(WebView view, String url) {
 			boolean isDone = url.startsWith(loginOptions.oauthCallbackUrl);
-			
+
 			if (isDone) {
 				Uri callbackUri = Uri.parse(url);
 				Map<String, String> params = UriFragmentParser.parse(callbackUri);
-				
+
 				String error = params.get("error");
 				// Did we fail?
 				if (error != null) {
@@ -272,116 +275,130 @@ public class OAuthWebviewHelper {
 					onAuthFlowComplete(tr);
 				}
 			}
-
 			return isDone;
 		}
 	}
-	
-	
+
+
 	/**
 	 * Called when the user facing part of the auth flow completed successfully.
 	 * The last step is to call the identity service to get the username.
 	 */
 	protected void onAuthFlowComplete(TokenEndpointResponse tr) {
-		IdServiceResponse id = null;
-		Exception exception = null;
-		
-		// Running identityTask to call identity service
-		try {
-			IdentityTask identityTask = new IdentityTask();
-			Pair<IdServiceResponse, Exception> idExec = identityTask.execute(tr).get();
-			id = idExec.first;
-			exception = idExec.second;
-		} catch(Exception e) {
-			exception = e;
-		}
-
-		// Identity service call failed
-		if (exception != null) {
-			Log.w("LoginActiviy.onAuthFlowComplete", exception);
-			// Error
-			onAuthFlowError(getContext().getString(ForceApp.APP.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-					getContext().getString(ForceApp.APP.getSalesforceR().stringGenericAuthenticationErrorBody()));
-			callback.finish();
-		}
-		// Identity service succeeded
-		else {
-			// Putting together all the information needed to create the new account
-			accountOptions = new AccountOptions(id.username, tr.refreshToken, tr.authToken, tr.instanceUrl, tr.orgId, tr.userId);
-			
-			// Screen lock required by mobile policy
-			if (id.screenLockTimeout > 0) {
-				PasscodeManager passcodeManager = ForceApp.APP.getPasscodeManager();
-				passcodeManager.reset(getContext()); // get rid of existing passcode if any
-				passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60 /* converting minutes to milliseconds*/);
-				passcodeManager.setMinPasscodeLength(id.pinLength);
-				
-				// This will bring up the create passcode screen - we will create the account in onResume
-				ForceApp.APP.getPasscodeManager().setEnabled(true);
-				ForceApp.APP.getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
-			}
-			// No screen lock required or no mobile policy specified
-			else {
-				addAccount();
-				callback.finish();
-			}
-		}
+		FinishAuthTask t = new FinishAuthTask();
+        t.execute(tr);
 	}
-	
-	/**
-	 * Background task that takes care of calling the identity service to get the user's username
-	 * and the mobile policy (if available)
-	 */
-	protected class IdentityTask extends AsyncTask<TokenEndpointResponse, Boolean, Pair<IdServiceResponse, Exception>> {
 
-		@Override
-		protected final Pair<IdServiceResponse, Exception> doInBackground(
-				TokenEndpointResponse... params) {
-			try {
-				publishProgress(true);
+	 // base class with common code for the background task that finishes off the auth process
+    protected abstract class BaseFinishAuthFlowTask<RequestType> extends AsyncTask<RequestType, Boolean, TokenEndpointResponse> {
 
-				TokenEndpointResponse tr= params[0];
-				IdServiceResponse id = OAuth2.callIdentityService(
+        protected volatile Exception backgroundException;
+        protected volatile IdServiceResponse id = null;
+
+        public BaseFinishAuthFlowTask() {
+
+        }
+
+        @Override
+        protected final TokenEndpointResponse doInBackground(RequestType ... params) {
+            try {
+                publishProgress(true);
+                // Remove old account
+                ClientManager clientManager = new ClientManager(getContext(), ForceApp.APP.getAccountType(), loginOptions);
+        		Account[] oldAccounts = clientManager.getAccounts();
+        		clientManager.removeAccounts(oldAccounts);
+
+                return performRequest(params[0]);
+            } catch (Exception ex) {
+                handleException(ex);
+            }
+            return null;
+        }
+
+
+        protected abstract TokenEndpointResponse performRequest(RequestType param) throws Exception;
+
+        @Override
+        protected void onPostExecute(OAuth2.TokenEndpointResponse tr) {
+            if (backgroundException != null) {
+            	Log.w("LoginActiviy.onAuthFlowComplete", backgroundException);
+    			// Error
+    			onAuthFlowError(getContext().getString(ForceApp.APP.getSalesforceR().stringGenericAuthenticationErrorTitle()),
+    					getContext().getString(ForceApp.APP.getSalesforceR().stringGenericAuthenticationErrorBody()));
+    			callback.finish();
+            } else {
+            	// Putting together all the information needed to create the new account
+    			accountOptions = new AccountOptions(id.username, tr.refreshToken, tr.authToken, tr.instanceUrl, tr.orgId, tr.userId);
+
+    			// Screen lock required by mobile policy
+    			if (id.screenLockTimeout > 0) {
+    				PasscodeManager passcodeManager = ForceApp.APP.getPasscodeManager();
+    				passcodeManager.reset(getContext()); // get rid of existing passcode if any
+    				passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60 /* converting minutes to milliseconds*/);
+    				passcodeManager.setMinPasscodeLength(id.pinLength);
+
+    				// This will bring up the create passcode screen - we will create the account in onResume
+    				ForceApp.APP.getPasscodeManager().setEnabled(true);
+    				ForceApp.APP.getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
+    			}
+    			// No screen lock required or no mobile policy specified
+    			else {
+    				addAccount();
+    				callback.finish();
+    			}
+            }
+        }
+
+        protected void handleException(Exception ex) {
+            if (ex.getMessage() != null)
+                Log.w("BaseFinishAuthFlowTask", "handleException", ex);
+            backgroundException = ex;
+        }
+
+        @Override
+        protected void onProgressUpdate(Boolean... values) {
+        	callback.onIndeterminateProgress(values[0]);
+        }
+    }
+
+    /**
+     * This is a background process that will call the identity service to get the info we need from
+     * the Identity service, and finally wrap up and create account.
+     */
+    private class FinishAuthTask extends BaseFinishAuthFlowTask<TokenEndpointResponse> {
+        @Override
+        protected TokenEndpointResponse performRequest(TokenEndpointResponse tr) throws Exception {
+    		try {
+				id = OAuth2.callIdentityService(
 					HttpAccess.DEFAULT, tr.idUrlWithInstance, tr.authToken);
-				return new Pair<IdServiceResponse, Exception>(id, null);
-			} catch (Exception e) {
-				Log.w("IdentityTask.doInBackground", e);
-				return new Pair<IdServiceResponse, Exception>(null, e);
-			}
-		}
-
-		@Override
-		protected void onProgressUpdate(Boolean... values) {
-			callback.onIndeterminateProgress(values[0]);
-		}
-	}
+    		} catch(Exception e) {
+    			backgroundException = e;
+    		}
+    		return tr;
+        }
+    }
 
 	protected void addAccount() {
 
 		ClientManager clientManager = new ClientManager(getContext(), ForceApp.APP.getAccountType(), loginOptions);
-		
-		// Old account
-		Account[] oldAccounts = clientManager.getAccounts();
-		
+
 		// Create account name (shown in Settings -> Accounts & sync)
 		String accountName = buildAccountName(accountOptions.username);
 
 		// New account
 		Bundle extras = clientManager.createNewAccount(accountName,
-				accountOptions.username, 
+				accountOptions.username,
 				accountOptions.refreshToken,
-				accountOptions.authToken, 
+				accountOptions.authToken,
 				accountOptions.instanceUrl,
-				loginOptions.loginUrl, 
+				loginOptions.loginUrl,
 				loginOptions.oauthClientId,
-				accountOptions.orgId, 
+				accountOptions.orgId,
 				accountOptions.userId,
-				loginOptions.passcodeHash);
-		
-		callback.onAccountAuthenticatorResult(extras);
+				loginOptions.passcodeHash,
+				loginOptions.clientSecret);
 
-		// Remove old accounts
-		clientManager.removeAccounts(oldAccounts);
+		callback.onAccountAuthenticatorResult(extras);
 	}
 
     /**
@@ -401,7 +418,7 @@ public class OAuthWebviewHelper {
 			callback.onLoadingProgress(newProgress * 100);
 		}
 	}
-	
+
 	/**
 	 * Class encapsulating the parameters required to create a new account
 	 */
@@ -412,7 +429,7 @@ public class OAuthWebviewHelper {
 		private static final String AUTH_TOKEN = "authToken";
 		private static final String REFRESH_TOKEN = "refreshToken";
 		private static final String USERNAME = "username";
-		
+
 		public final String username;
 		public final String refreshToken;
 		public final String authToken;
@@ -421,7 +438,7 @@ public class OAuthWebviewHelper {
 		public final String userId;
 
 		private final Bundle bundle;
-		
+
 		public AccountOptions(String username, String refreshToken,
 				String authToken, String instanceUrl, String orgId,
 				String userId) {
@@ -432,7 +449,7 @@ public class OAuthWebviewHelper {
 			this.instanceUrl = instanceUrl;
 			this.orgId = orgId;
 			this.userId = userId;
-		
+
 			bundle = new Bundle();
 			bundle.putString(USERNAME, username);
 			bundle.putString(REFRESH_TOKEN, refreshToken);
@@ -441,11 +458,11 @@ public class OAuthWebviewHelper {
 			bundle.putString(ORG_ID, orgId);
 			bundle.putString(USER_ID, userId);
 		}
-		
+
 		public Bundle asBundle() {
 			return bundle;
 		}
-		
+
 		public static AccountOptions fromBundle(Bundle options) {
 			if (options == null) return null;
 			return new AccountOptions(
@@ -457,6 +474,6 @@ public class OAuthWebviewHelper {
 					options.getString(USER_ID)
 					);
 		}
-		
+
 	}
 }
