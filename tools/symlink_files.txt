@@ -1,4 +1,4 @@
-"dist\SalesforceSDK-1.2.2.jar" "dist\SalesforceSDK.jar"
+"dist\SalesforceSDK-1.2.3.jar" "dist\SalesforceSDK.jar"
 "dist\SalesforceSDK.jar" "hybrid\SampleApps\ContactExplorer\libs\SalesforceSDK.jar"
 "dist\SalesforceSDK.jar" "hybrid\SampleApps\SFDCAccounts\libs\SalesforceSDK.jar"
 "dist\SalesforceSDK.jar" "hybrid\SampleApps\VFConnector\libs\SalesforceSDK.jar"
