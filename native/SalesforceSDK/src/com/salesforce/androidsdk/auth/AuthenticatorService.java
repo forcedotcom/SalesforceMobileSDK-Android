@@ -65,21 +65,22 @@ public class AuthenticatorService extends Service {
 	public static final String KEY_CLIENT_ID = "clientId";
 	public static final String KEY_ORG_ID = "orgId";
 	public static final String KEY_USERNAME = "username";
-	public static final String KEY_ID = "id";
-	
+    public static final String KEY_ID = "id";
+	public static final String KEY_CLIENT_SECRET = "clientSecret";
+
 	private Authenticator getAuthenticator() {
 		if (authenticator == null)
 			authenticator = new Authenticator(this);
 		return authenticator;
 	}
-	
+
 	@Override
 	public IBinder onBind(Intent intent) {
 		if (intent.getAction().equals(AccountManager.ACTION_AUTHENTICATOR_INTENT))
 			return getAuthenticator().getIBinder();
 		return null;
 	}
-	
+
 	/**
 	 * The Authenticator for salesforce accounts.
 	 * - addAccount Start the login flow (by launching the activity filtering the salesforce.intent.action.LOGIN intent).
@@ -88,18 +89,18 @@ public class AuthenticatorService extends Service {
 	private static class Authenticator extends AbstractAccountAuthenticator {
 
 		private final Context context;
-		
+
 		Authenticator(Context ctx) {
 			super(ctx);
 			this.context = ctx;
 		}
-		
+
 		@Override
 		public Bundle addAccount(
 		                AccountAuthenticatorResponse response,
-		                String accountType, 
+		                String accountType,
 		                String authTokenType,
-		                String[] requiredFeatures, 
+		                String[] requiredFeatures,
 		                Bundle options)
 				throws NetworkErrorException {
 
@@ -115,10 +116,10 @@ public class AuthenticatorService extends Service {
 		@Override
 		public Bundle getAuthToken(
 		                    AccountAuthenticatorResponse response,
-		                    Account account, 
-		                    String authTokenType, 
+		                    Account account,
+		                    String authTokenType,
 		                    Bundle options) throws NetworkErrorException {
-			
+
 			Log.i("Authenticator:getAuthToken", "Get auth token for " + account.name);
 			AccountManager mgr = AccountManager.get(context);
 			String passcodeHash = LoginOptions.fromBundle(options).passcodeHash;
@@ -129,15 +130,16 @@ public class AuthenticatorService extends Service {
 			String userId = mgr.getUserData(account, AuthenticatorService.KEY_USER_ID);
 			String orgId = mgr.getUserData(account, AuthenticatorService.KEY_ORG_ID);
 			String username = mgr.getUserData(account, AuthenticatorService.KEY_USERNAME);
+			String clientSecret = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET);
             Bundle resBundle = new Bundle();
 
 			try {
-    			TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken);
+    			TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken, clientSecret);
 
     			// handle the case where the org has been migrated to a new instance, or has turned on my domains.
     			if (!instServer.equalsIgnoreCase(tr.instanceUrl))
     				mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, tr.instanceUrl);
-    			
+
     			// Update auth token in account
     			mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(tr.authToken, passcodeHash));
 
@@ -150,7 +152,7 @@ public class AuthenticatorService extends Service {
                 resBundle.putString(AuthenticatorService.KEY_USERNAME, username);
                 resBundle.putString(AuthenticatorService.KEY_USER_ID, userId);
                 resBundle.putString(AuthenticatorService.KEY_ORG_ID, orgId);
-                
+
                 Log.i("Authenticator:getAuthToken", "Returning auth bundle for " + account.name);
 
 			} catch (ClientProtocolException e) {
@@ -167,18 +169,18 @@ public class AuthenticatorService extends Service {
                     // the exception explicitly indicates that the refresh token is no longer valid.
                     return makeAuthIntentBundle(response, options);
                 }
-                
+
                 resBundle.putString(AccountManager.KEY_ERROR_CODE, e.response.error);
                 resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, e.response.errorDescription);
             }
-            
+
             Log.i("Authenticator:getAuthToken", "Result: " + resBundle);
             return resBundle;
 		}
 
 		/**
 		 * Return bundle with intent to start the login flow.
-		 * 
+		 *
 		 * @param response
 		 * @param options
 		 * @return
