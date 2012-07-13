@@ -40,6 +40,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.salesforce.androidsdk.app.ForceApp;
+
 import android.app.Service;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
@@ -193,23 +195,21 @@ public class Encryptor {
      * @return decrypted data
      */
     public static String decrypt(String data, String key) {
-        if (key == null)
-            return data;
-
+        if (key == null) {
+            key = getUniqueId(ForceApp.APP);
+        }
         try {
-            // Decode with base64
+
+            // Decode with base64.
             byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = Base64.decode(data, Base64.DEFAULT);
 
-            // Decrypt with aes256
+            // Decrypt with aes256.
             byte[] decryptedData = decrypt(dataBytes, 0, dataBytes.length, keyBytes);
-
             return new String(decryptedData, 0, decryptedData.length, UTF8);
-
         } catch (Exception ex) {
             Log.w("Encryptor:decrypt", "error during decryption", ex);
         }
-
         return null;
     }
 
@@ -220,18 +220,18 @@ public class Encryptor {
      * @return base64, aes256 encrypted data
      */
     public static String encrypt(String data, String key) {
-        if (key == null)
-            return data;
-
+        if (key == null) {
+            key = getUniqueId(ForceApp.APP);
+        }
         try {
-            // Encrypt with our preferred Cipher
+
+            // Encrypt with our preferred cipher.
             byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = data.getBytes(UTF8);
             byte[] encryptedData = encrypt(dataBytes, keyBytes);
 
-            // Encode with base64
+            // Encode with base64.
             return Base64.encodeToString(encryptedData, Base64.DEFAULT);
-
         } catch (Exception ex) {
             Log.w("Encryptor:encrypt", "error during encryption", ex);
             return null;
