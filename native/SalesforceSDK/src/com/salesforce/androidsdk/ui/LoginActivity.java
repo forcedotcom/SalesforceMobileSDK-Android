@@ -50,7 +50,7 @@ import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
  * Authorization happens inside a web view. Once we get our authorization code,
  * we swap it for an access and refresh token a create an account through the
  * account manager to store them.
- * 
+ *
  * The bulk of the work for this is actually managed by OAuthWebviewHelper class.
  */
 public class LoginActivity extends AccountAuthenticatorActivity implements OAuthWebviewHelperEvents {
@@ -61,10 +61,10 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	public static final String SERVER_URL_PREFS_CUSTOM_URL = "server_url_custom_url";
 	public static final String SERVER_URL_PREFS_WHICH_SERVER = "which_server_index";
 	public static final String SERVER_URL_CURRENT_SELECTION = "server_url_current_string";
-	
+
 	// Request code when calling server picker activity
-    public static final int PICK_SERVER_REQUEST_CODE = 10;	
-	
+    public static final int PICK_SERVER_REQUEST_CODE = 10;
+
     private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
 	private OAuthWebviewHelper webviewHelper;
@@ -74,23 +74,23 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
     /**************************************************************************************************
      *
      * Activity lifecycle
-     * 
+     *
      **************************************************************************************************/
-	
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
 		// Object which allows reference to resources living outside the SDK
 		salesforceR = ForceApp.APP.getSalesforceR();
-		
+
 		// Getting login options from intent's extras
 		LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
-		
+
 		// We'll show progress in the window title bar
 		getWindow().requestFeature(Window.FEATURE_PROGRESS);
 		getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
-		
+
 		// Setup content view
 		setContentView(salesforceR.layoutLogin());
         loadSpinner = findViewById(salesforceR.idLoadSpinner());
@@ -98,12 +98,16 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
 		// Setup the WebView.
 		WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
-		webviewHelper = new OAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
+		webviewHelper = getOAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
 		webviewHelper.loadLoginPage();
 	}
 
-	
-	
+	protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback, LoginOptions loginOptions, WebView webView, Bundle savedInstanceState) {
+		return new OAuthWebviewHelper(callback, loginOptions, webView, savedInstanceState);
+	}
+
+
+
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -132,10 +136,10 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
     /**************************************************************************************************
      *
-     * Actions (Changer server / Clear cookies etc) are available through a menu 
-     * 
+     * Actions (Changer server / Clear cookies etc) are available through a menu
+     *
      **************************************************************************************************/
-	
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
@@ -170,15 +174,15 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
     public boolean onMenuItemSelected(int featureId, MenuItem item) {
         int itemId = item.getItemId();
 		if (itemId == salesforceR.idItemClearCookies()) {
-        	onClearCookiesClick(null); 
+        	onClearCookiesClick(null);
         	return true;
         }
         else if (itemId == salesforceR.idItemPickServer()) {
-        	onPickServerClick(null); 
+        	onPickServerClick(null);
         	return true;
         }
         else if (itemId == salesforceR.idItemReload()) {
-        	onReloadClick(null); 
+        	onReloadClick(null);
         	return true;
         }
         else {
@@ -188,10 +192,10 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
     /**************************************************************************************************
      *
-     * Callbacks from the OAuthWebviewHelper 
-     * 
+     * Callbacks from the OAuthWebviewHelper
+     *
      **************************************************************************************************/
-	
+
 	@Override
 	public void loadingLoginPage(String loginUrl) {
         TextView serverName = (TextView) findViewById(salesforceR.idServerName());
@@ -208,7 +212,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 			loadSpinner.setVisibility(totalProgress < 100 ? View.VISIBLE : View.GONE);
 		}
 		if (loadSeparator != null) {
-			loadSeparator.setVisibility(totalProgress < 100 ? View.VISIBLE : View.GONE);			
+			loadSeparator.setVisibility(totalProgress < 100 ? View.VISIBLE : View.GONE);
 		}
 	}
 
@@ -222,11 +226,11 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	public void onAccountAuthenticatorResult(Bundle authResult) {
 		setAccountAuthenticatorResult(authResult);
 	}
-	
+
     /**************************************************************************************************
      *
      * Buttons click handlers
-     * 
+     *
      **************************************************************************************************/
 
 	/**
@@ -247,7 +251,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	public void onReloadClick(View v) {
 		webviewHelper.loadLoginPage();
 	}
-	
+
 	/**
 	 * Called when "Pick server" button is clicked.
 	 * Start ServerPickerActivity

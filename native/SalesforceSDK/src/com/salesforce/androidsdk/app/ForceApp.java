@@ -310,12 +310,11 @@ public abstract class ForceApp extends Application {
             PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
             appName = getString(packageInfo.applicationInfo.labelRes);
             appVersion = packageInfo.versionName;
-        }
-        catch (NameNotFoundException e) {
+        } catch (NameNotFoundException e) {
             Log.w("ForceApp:getUserAgent", e);
         }
-
-        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s", SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion);
+        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s",
+                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion);
     }
 
     /**
@@ -346,16 +345,12 @@ public abstract class ForceApp extends Application {
           .append("   userAgent: ").append(getUserAgent()).append("\n")
           .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
           .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n");
-
         if (null != passcodeManager) {
             //passcodeManager may be null at startup if the app is running in debug mode
             sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n");
         }
-
         sb.append("}\n");
-
         return sb.toString();
-
     }
 
     /*
