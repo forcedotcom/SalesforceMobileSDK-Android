@@ -86,7 +86,7 @@
     <property name="jar.dir" value="../../dist"/>
 
     <!-- Copy salesforcesdk.jar to dist directory -->
-    <target name="jar" depends="-compile">
+    <target name="jar">
         <mkdir dir="${jar.dir}"/>
 
         <xpath input="AndroidManifest.xml" expression="/manifest/@android:versionName"
