@@ -26,8 +26,10 @@
  */
 package com.salesforce.androidsdk.security;
 
+import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.UUID;
@@ -40,8 +42,6 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import com.salesforce.androidsdk.app.ForceApp;
-
 import android.app.Service;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
@@ -51,6 +51,8 @@ import android.provider.Settings.Secure;
 import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
+
+import com.salesforce.androidsdk.app.ForceApp;
 
 /**
  * Helper class for encryption/decryption/hash computations
@@ -126,7 +128,21 @@ public class Encryptor {
         if (uniqueId == null) {
             generateUniqueId(context);
         }
-        return uniqueId.toString();
+        byte[] secretKey;
+        try {
+            secretKey = uniqueId.getBytes("UTF_8");
+            final MessageDigest md = MessageDigest.getInstance("SHA-1");
+            secretKey = md.digest(secretKey);
+            byte[] dest = new byte[16];
+            System.arraycopy(secretKey, 0, dest, 0, 16);
+            return Base64.encodeToString(dest, Base64.DEFAULT);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return uniqueId;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return uniqueId;
+        }
     }
 
     /**

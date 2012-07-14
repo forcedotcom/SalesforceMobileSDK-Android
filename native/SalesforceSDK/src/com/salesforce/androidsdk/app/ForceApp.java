@@ -210,8 +210,6 @@ public abstract class ForceApp extends Application {
                 final String orgId = acctManager.getUserData(account, AuthenticatorService.KEY_ORG_ID);
                 final String userId = acctManager.getUserData(account, AuthenticatorService.KEY_USER_ID);
                 final String username = acctManager.getUserData(account, AuthenticatorService.KEY_USERNAME);
-                final String accountName = acctManager.getUserData(account, AccountManager.KEY_ACCOUNT_NAME);
-                final String accountType = acctManager.getUserData(account, AccountManager.KEY_ACCOUNT_TYPE);
                 final String clientId = acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID);
 
                 // Encrypt data with new hash and put it back in AccountManager.
@@ -223,8 +221,6 @@ public abstract class ForceApp extends Application {
                 acctManager.setUserData(account, AuthenticatorService.KEY_ORG_ID, Encryptor.encrypt(orgId, newPass));
                 acctManager.setUserData(account, AuthenticatorService.KEY_USER_ID, Encryptor.encrypt(userId, newPass));
                 acctManager.setUserData(account, AuthenticatorService.KEY_USERNAME, Encryptor.encrypt(username, newPass));
-                acctManager.setUserData(account, AccountManager.KEY_ACCOUNT_NAME, Encryptor.encrypt(accountName, newPass));
-                acctManager.setUserData(account, AccountManager.KEY_ACCOUNT_TYPE, Encryptor.encrypt(accountType, newPass));
                 acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_ID, Encryptor.encrypt(clientId, newPass));
                 acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, authToken);
             }
