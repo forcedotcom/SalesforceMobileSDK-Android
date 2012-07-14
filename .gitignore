@@ -7,4 +7,4 @@ instrumentation/
 junit-reports/
 local.properties
 .DS_Store
-
+proguard-project.txt
