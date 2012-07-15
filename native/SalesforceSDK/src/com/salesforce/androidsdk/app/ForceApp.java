@@ -175,24 +175,18 @@ public abstract class ForceApp extends Application {
      * @param oldPass Old passcode.
      * @param newPass New passcode.
      */
-    public void changePasscode(String oldPass, String newPass) {
+    public synchronized void changePasscode(String oldPass, String newPass) {
 
         // Check if the old passcode and the new one are the same.
-        if (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim())) {
+        if ((oldPass == null && newPass == null) || (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim()))) {
             return;
         }
 
         // If the old passcode is null, use the default key.
-        if (oldPass == null || oldPass.trim().equals("")) {
-            oldPass = Encryptor.getUniqueId(this);
-        }
-        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(oldPass);
+        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase((oldPass == null || oldPass.trim().equals("")) ? Encryptor.getUniqueId(this) : oldPass);
 
         // If the new passcode is null, use the default key.
-        if (newPass == null || newPass.trim().equals("")) {
-            newPass = Encryptor.getUniqueId(this);
-        }
-        SmartStore.changeKey(db, newPass);
+        SmartStore.changeKey(db, (newPass == null || newPass.trim().equals("")) ? Encryptor.getUniqueId(this) : newPass);
 
         // Update data stored in AccountManager with new encryption key.
         final AccountManager acctManager = AccountManager.get(this);
@@ -204,13 +198,13 @@ public abstract class ForceApp extends Application {
                 // Grab existing data stored in AccountManager.
                 final String authToken = Encryptor.decrypt(acctManager.getUserData(account, AccountManager.KEY_AUTHTOKEN), oldPass);
                 final String refreshToken = Encryptor.decrypt(acctManager.getPassword(account), oldPass);
-                final String loginServer = acctManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL);
-                final String idUrl = acctManager.getUserData(account, AuthenticatorService.KEY_ID);
-                final String instanceServer = acctManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL);
-                final String orgId = acctManager.getUserData(account, AuthenticatorService.KEY_ORG_ID);
-                final String userId = acctManager.getUserData(account, AuthenticatorService.KEY_USER_ID);
-                final String username = acctManager.getUserData(account, AuthenticatorService.KEY_USERNAME);
-                final String clientId = acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID);
+                final String loginServer = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), oldPass);
+                final String idUrl = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_ID), oldPass);
+                final String instanceServer = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), oldPass);
+                final String orgId = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), oldPass);
+                final String userId = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_USER_ID), oldPass);
+                final String username = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_USERNAME), oldPass);
+                final String clientId = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), oldPass);
 
                 // Encrypt data with new hash and put it back in AccountManager.
                 acctManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, newPass));
@@ -222,7 +216,7 @@ public abstract class ForceApp extends Application {
                 acctManager.setUserData(account, AuthenticatorService.KEY_USER_ID, Encryptor.encrypt(userId, newPass));
                 acctManager.setUserData(account, AuthenticatorService.KEY_USERNAME, Encryptor.encrypt(username, newPass));
                 acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_ID, Encryptor.encrypt(clientId, newPass));
-                acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, authToken);
+                acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, newPass));
             }
         }
     }

@@ -143,7 +143,7 @@ public class AuthenticatorService extends Service {
                 mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(tr.authToken, passcodeHash));
                 resBundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
                 resBundle.putString(AccountManager.KEY_ACCOUNT_TYPE, account.type);
-                resBundle.putString(AccountManager.KEY_AUTHTOKEN, tr.authToken);
+                resBundle.putString(AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(tr.authToken, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, Encryptor.encrypt(loginServer, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, Encryptor.encrypt(instServer, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, Encryptor.encrypt(clientId, passcodeHash));
