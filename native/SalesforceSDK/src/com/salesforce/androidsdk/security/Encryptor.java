@@ -63,7 +63,7 @@ public class Encryptor {
     private static final String UTF8 = "UTF-8";
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
-    private static final String SHARED_PREF_FILE = "identifier.xml";
+    private static final String SHARED_PREF_FILE = "identifier";
     private static final String DEVICE_ID_SHARED_PREF = "id";
     private static final String BROKEN_ANDROID_ID = "9774d56d682e549c";
     private static final String ADDENDUM = "5cbfed76";
