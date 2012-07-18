@@ -50,6 +50,7 @@ import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
+import com.salesforce.androidsdk.auth.AccountWatcher.AccountRemoved;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -67,15 +68,15 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  * Super class for all force applications.
  * You should extend this class or make sure to initialize HttpAccess in your application's onCreate method.
  */
-public abstract class ForceApp extends Application {
+public abstract class ForceApp extends Application implements AccountRemoved {
 
     /**
      * Current version of this SDK.
      */
     public static final String SDK_VERSION = "1.3.unstable";
 
-    /*
-     * Last phone version
+    /**
+     * Last phone version.
      */
     private static final int GINGERBREAD_MR1 = 10;
 
@@ -83,7 +84,6 @@ public abstract class ForceApp extends Application {
      * Instance of the ForceApp to use for this process.
      */
     public static ForceApp APP;
-
 
     /**************************************************************************************************
      *
@@ -140,11 +140,17 @@ public abstract class ForceApp extends Application {
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
 
+    @Override
+    public void onAccountRemoved() {
+        ForceApp.APP.logout(null);
+    }
+
     /**
      * @return The passcode manager associated with the app.
      */
     public synchronized PasscodeManager getPasscodeManager() {
-        // Only creating passcode manager if used
+
+        // Only creating passcode manager if used.
         if (passcodeManager == null) {
             passcodeManager = new PasscodeManager(this,
                     getVerificationHashConfig(),
@@ -255,30 +261,32 @@ public abstract class ForceApp extends Application {
      * Wipe out the stored authentication credentials (remove account) and restart the app.
      */
     public void logout(Activity frontActivity) {
-        // Finish front activity if specified
+
+        // Finish front activity if specified.
         if (frontActivity != null) {
             frontActivity.finish();
         }
 
-        // Reset smartstore
+        // Reset smartstore.
         if (hasSmartStore()) {
             getSmartStore().dropAllSoups();
         }
 
-        // Reset passcode if any
+        // Reset passcode if any.
         getPasscodeManager().reset(this);
 
-        // Remove account if any
+        // Remove account if any.
         ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
         clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
 
             @Override
             public void run(AccountManagerFuture<Boolean> arg0) {
-                // Clear cookies
+
+                // Clear cookies.
                 CookieSyncManager.createInstance(ForceApp.this);
                 CookieManager.getInstance().removeAllCookie();
 
-                // Restart application
+                // Restart application.
                 Intent i = new Intent(ForceApp.this, getMainActivityClass());
                 i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(i);
