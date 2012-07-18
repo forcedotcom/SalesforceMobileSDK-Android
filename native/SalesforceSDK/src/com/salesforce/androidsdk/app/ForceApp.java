@@ -142,7 +142,8 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
     @Override
     public void onAccountRemoved() {
-        ForceApp.APP.logout(null);
+        ForceApp.APP.cleanUp(null);
+        ForceApp.APP.startLoginPage();
     }
 
     /**
@@ -258,9 +259,11 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
-     * Wipe out the stored authentication credentials (remove account) and restart the app.
+     * Cleans up cached credentials and data.
+     *
+     * @param frontActivity Front activity.
      */
-    public void logout(Activity frontActivity) {
+    protected void cleanUp(Activity frontActivity) {
 
         // Finish front activity if specified.
         if (frontActivity != null) {
@@ -274,6 +277,28 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
         // Reset passcode if any.
         getPasscodeManager().reset(this);
+    }
+
+    /**
+     * Starts login flow if user account has been removed.
+     */
+    protected void startLoginPage() {
+
+        // Clear cookies.
+        CookieSyncManager.createInstance(ForceApp.this);
+        CookieManager.getInstance().removeAllCookie();
+
+        // Restart application.
+        final Intent i = new Intent(ForceApp.this, getMainActivityClass());
+        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(i);
+    }
+
+    /**
+     * Wipe out the stored authentication credentials (remove account) and restart the app.
+     */
+    public void logout(Activity frontActivity) {
+        cleanUp(frontActivity);
 
         // Remove account if any.
         ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
@@ -281,15 +306,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
             @Override
             public void run(AccountManagerFuture<Boolean> arg0) {
-
-                // Clear cookies.
-                CookieSyncManager.createInstance(ForceApp.this);
-                CookieManager.getInstance().removeAllCookie();
-
-                // Restart application.
-                Intent i = new Intent(ForceApp.this, getMainActivityClass());
-                i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(i);
+                startLoginPage();
             }
         });
     }
