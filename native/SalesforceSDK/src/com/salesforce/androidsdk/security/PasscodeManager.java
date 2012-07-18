@@ -30,6 +30,7 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
@@ -92,7 +93,8 @@ public class PasscodeManager  {
         this.encryptionHashConfig = encryptionHashConfig;
         this.enabled = true;
         passcodeReceiver = new PasscodeChangeReceiver();
-        ctx.registerReceiver(passcodeReceiver, null);
+        final IntentFilter filter = new IntentFilter(PasscodeChangeReceiver.PASSCODE_FLOW_INTENT);
+        ctx.registerReceiver(passcodeReceiver, filter);
 
         // Locked at app startup if you're authenticated
         this.locked = true;
