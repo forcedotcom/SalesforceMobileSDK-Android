@@ -304,6 +304,9 @@ public class PasscodeManager  {
         Intent i = new Intent(ctx, PasscodeActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        if (ctx == ForceApp.APP) {
+            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        }
         if (ctx instanceof Activity) {
             ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
         } else {
