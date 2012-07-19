@@ -28,6 +28,9 @@ package com.salesforce.androidsdk.app;
 
 import info.guardianproject.database.sqlcipher.SQLiteDatabase;
 
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -44,6 +47,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.os.Build;
+import android.util.Base64;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -66,6 +70,8 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  * You should extend this class or make sure to initialize HttpAccess in your application's onCreate method.
  */
 public abstract class ForceApp extends Application implements AccountRemoved {
+
+    private static final String ADDENDUM = "5cbfed76";
 
     /**
      * Current version of this SDK.
@@ -162,8 +168,58 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      */
     public SmartStore getSmartStore() {
         String passcodeHash = getPasscodeHash();
-        SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(passcodeHash == null ? Encryptor.getUniqueId(this) : passcodeHash);
+        SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(passcodeHash == null ? getEncryptionKeyForPasscode(null) : passcodeHash);
         return new SmartStore(db);
+    }
+
+    /**
+     * Changes the passcode to a new value and re-encrypts the smartstore with the new passcode.
+     *
+     * @param oldPass Old passcode.
+     * @param newPass New passcode.
+     */
+    public static synchronized void changePasscode(String oldPass, String newPass) {
+
+        // Check if the old passcode and the new one are the same.
+        if ((oldPass == null && newPass == null) || (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim()))) {
+            return;
+        }
+        if (ForceApp.APP.hasSmartStore()) {
+
+            // If the old passcode is null, use the default key.
+            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(ForceApp.APP).getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
+
+            // If the new passcode is null, use the default key.
+            SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
+        }
+        ClientManager.changePasscode(oldPass, newPass);
+    }
+
+    /**
+     * Returns the unique ID being used.
+     *
+     * @param context Context.
+     * @return Unique ID.
+     */
+    public static synchronized String getEncryptionKeyForPasscode(String actualPass) {
+        if (actualPass != null && !actualPass.trim().equals("")) {
+            return actualPass;
+        }
+        byte[] secretKey;
+        try {
+            secretKey = ForceApp.APP.getUuId(ADDENDUM).getBytes("UTF_8");
+            final MessageDigest md = MessageDigest.getInstance("SHA-1");
+            secretKey = md.digest(secretKey);
+            byte[] dest = new byte[16];
+            System.arraycopy(secretKey, 0, dest, 0, 16);
+            return Base64.encodeToString(dest, Base64.DEFAULT);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return ForceApp.APP.getUuId(ADDENDUM);
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return ForceApp.APP.getUuId(ADDENDUM);
+        }
     }
 
     /**
@@ -319,7 +375,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * We recommend you provide you own implementation for creating the HashConfig's.
      */
     private Map<String, String> uuids = new HashMap<String, String>();
-    public synchronized String getUuId(String name) {
+    private synchronized String getUuId(String name) {
         if (uuids.get(name) != null) return uuids.get(name);
         SharedPreferences sp = getSharedPreferences("uuids2", Context.MODE_PRIVATE);
         if (!sp.contains(name)) {

@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import info.guardianproject.database.sqlcipher.SQLiteDatabase;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -49,8 +47,6 @@ import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.security.Encryptor;
-import com.salesforce.androidsdk.store.DBOpenHelper;
-import com.salesforce.androidsdk.store.SmartStore;
 
 /**
  * ClientManager is a factory class for RestClient which stores OAuth credentials in the AccountManager.
@@ -274,25 +270,12 @@ public class ClientManager {
     }
 
     /**
-     * Changes the passcode to a new value and re-encrypts the smartstore with the new passcode.
+     * Changes the passcode to a new value and re-encrypts the account manager data with the new passcode.
      *
      * @param oldPass Old passcode.
      * @param newPass New passcode.
      */
     public static synchronized void changePasscode(String oldPass, String newPass) {
-
-        // Check if the old passcode and the new one are the same.
-        if ((oldPass == null && newPass == null) || (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim()))) {
-            return;
-        }
-        if (ForceApp.APP.hasSmartStore()) {
-
-            // If the old passcode is null, use the default key.
-            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(ForceApp.APP).getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
-
-            // If the new passcode is null, use the default key.
-            SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
-        }
 
         // Update data stored in AccountManager with new encryption key.
         final AccountManager acctManager = AccountManager.get(ForceApp.APP);
@@ -325,10 +308,6 @@ public class ClientManager {
                 acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, newPass));
             }
         }
-    }
-
-    private static String getEncryptionKeyForPasscode(String actualPass) {
-        return ((actualPass == null || actualPass.trim().equals("")) ? Encryptor.getUniqueId(ForceApp.APP) : actualPass);
     }
 
     /**

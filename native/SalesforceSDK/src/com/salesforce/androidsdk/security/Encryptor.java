@@ -26,10 +26,8 @@
  */
 package com.salesforce.androidsdk.security;
 
-import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
@@ -59,34 +57,8 @@ public class Encryptor {
     private static final String UTF8 = "UTF-8";
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
-    private static final String ADDENDUM = "5cbfed76";
-
     private static String bestCipherAvailable;
     private static boolean isFileSystemEncrypted;
-
-    /**
-     * Returns the unique ID being used.
-     *
-     * @param context Context.
-     * @return Unique ID.
-     */
-    public static synchronized String getUniqueId(Context context) {
-        byte[] secretKey;
-        try {
-            secretKey = ForceApp.APP.getUuId(ADDENDUM).getBytes("UTF_8");
-            final MessageDigest md = MessageDigest.getInstance("SHA-1");
-            secretKey = md.digest(secretKey);
-            byte[] dest = new byte[16];
-            System.arraycopy(secretKey, 0, dest, 0, 16);
-            return Base64.encodeToString(dest, Base64.DEFAULT);
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-            return ForceApp.APP.getUuId(ADDENDUM);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            return ForceApp.APP.getUuId(ADDENDUM);
-        }
-    }
 
     /**
      * @param ctx
@@ -155,7 +127,7 @@ public class Encryptor {
      */
     public static String decrypt(String data, String key) {
         if (key == null) {
-            key = getUniqueId(ForceApp.APP);
+            key = ForceApp.getEncryptionKeyForPasscode(null);
         }
         try {
 
@@ -180,7 +152,7 @@ public class Encryptor {
      */
     public static String encrypt(String data, String key) {
         if (key == null) {
-            key = getUniqueId(ForceApp.APP);
+            key = ForceApp.getEncryptionKeyForPasscode(null);
         }
         try {
 

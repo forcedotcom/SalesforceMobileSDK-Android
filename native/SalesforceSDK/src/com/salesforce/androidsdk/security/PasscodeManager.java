@@ -38,7 +38,6 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -280,7 +279,7 @@ public class PasscodeManager  {
 
         // Passcode to no passcode.
         timeoutMs = newTimeout;
-        ClientManager.changePasscode(passcodeHash, null);
+        ForceApp.changePasscode(passcodeHash, null);
         reset(ForceApp.APP);
     }
 
@@ -385,7 +384,7 @@ public class PasscodeManager  {
                 if (extras != null) {
                     final String oldPass = extras.getString(OLD_PASSCODE_EXTRA);
                     final String newPass = extras.getString(NEW_PASSCODE_EXTRA);
-                    ClientManager.changePasscode(oldPass, newPass);
+                    ForceApp.changePasscode(oldPass, newPass);
                 }
             }
         }
