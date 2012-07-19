@@ -285,12 +285,14 @@ public class ClientManager {
         if ((oldPass == null && newPass == null) || (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim()))) {
             return;
         }
+        if (ForceApp.APP.hasSmartStore()) {
 
-        // If the old passcode is null, use the default key.
-        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(ForceApp.APP).getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
+            // If the old passcode is null, use the default key.
+            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(ForceApp.APP).getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
 
-        // If the new passcode is null, use the default key.
-        SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
+            // If the new passcode is null, use the default key.
+            SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
+        }
 
         // Update data stored in AccountManager with new encryption key.
         final AccountManager acctManager = AccountManager.get(ForceApp.APP);

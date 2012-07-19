@@ -313,14 +313,13 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         return sb.toString();
     }
 
-    /*
+    /**
      * Random keys persisted encrypted in a private preference file
      * This is provided as an example.
      * We recommend you provide you own implementation for creating the HashConfig's.
-     *
      */
     private Map<String, String> uuids = new HashMap<String, String>();
-    private synchronized String getUuId(String name) {
+    public synchronized String getUuId(String name) {
         if (uuids.get(name) != null) return uuids.get(name);
         SharedPreferences sp = getSharedPreferences("uuids2", Context.MODE_PRIVATE);
         if (!sp.contains(name)) {

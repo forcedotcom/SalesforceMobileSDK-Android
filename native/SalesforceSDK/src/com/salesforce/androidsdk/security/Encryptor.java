@@ -32,7 +32,6 @@ import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.UUID;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -45,10 +44,7 @@ import javax.crypto.spec.SecretKeySpec;
 import android.app.Service;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Build;
-import android.provider.Settings.Secure;
-import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
 
@@ -63,60 +59,10 @@ public class Encryptor {
     private static final String UTF8 = "UTF-8";
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
-    private static final String SHARED_PREF_FILE = "identifier";
-    private static final String DEVICE_ID_SHARED_PREF = "id";
-    private static final String BROKEN_ANDROID_ID = "9774d56d682e549c";
     private static final String ADDENDUM = "5cbfed76";
 
-    private static String uniqueId;
     private static String bestCipherAvailable;
     private static boolean isFileSystemEncrypted;
-
-    /**
-     * Generates a unique ID that can be used for encryption.
-     *
-     * @param context Context.
-     */
-    private static synchronized void generateUniqueId(Context context) {
-        if (uniqueId == null) {
-            final SharedPreferences prefs = context.getSharedPreferences(SHARED_PREF_FILE, 0);
-            final String id = prefs.getString(DEVICE_ID_SHARED_PREF, null);
-
-            // Checks if we have a unique identifier stored.
-            if (id != null) {
-                uniqueId = id + ADDENDUM;
-                return;
-            } else {
-                final String androidId = Secure.getString(context.getContentResolver(), Secure.ANDROID_ID);
-
-                /*
-                 * Checks if the Android ID is broken due to a bug in OS 2.2. If so, tries to
-                 * fetch the telephony device ID, and if everything fails, falls back to a random
-                 * unique identifier.
-                 */
-                if ((androidId != null) && (!androidId.equals(BROKEN_ANDROID_ID))) {
-                    uniqueId = androidId;
-                } else {
-                    final TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-                    if (tm != null) {
-                        final String deviceId = tm.getDeviceId();
-                        if (deviceId != null) {
-                            uniqueId = deviceId;
-                        }
-                    }
-                }
-
-                /*
-                 * If the unique ID is still null, this generates a random UUID to use.
-                 */
-                if (uniqueId == null) {
-                    uniqueId = UUID.randomUUID().toString();
-                }
-            }
-            prefs.edit().putString(DEVICE_ID_SHARED_PREF, uniqueId.toString()).commit();
-        }
-        uniqueId = uniqueId + ADDENDUM;
-    }
 
     /**
      * Returns the unique ID being used.
@@ -125,12 +71,9 @@ public class Encryptor {
      * @return Unique ID.
      */
     public static synchronized String getUniqueId(Context context) {
-        if (uniqueId == null) {
-            generateUniqueId(context);
-        }
         byte[] secretKey;
         try {
-            secretKey = uniqueId.getBytes("UTF_8");
+            secretKey = ForceApp.APP.getUuId(ADDENDUM).getBytes("UTF_8");
             final MessageDigest md = MessageDigest.getInstance("SHA-1");
             secretKey = md.digest(secretKey);
             byte[] dest = new byte[16];
@@ -138,10 +81,10 @@ public class Encryptor {
             return Base64.encodeToString(dest, Base64.DEFAULT);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
-            return uniqueId;
+            return ForceApp.APP.getUuId(ADDENDUM);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-            return uniqueId;
+            return ForceApp.APP.getUuId(ADDENDUM);
         }
     }
 
