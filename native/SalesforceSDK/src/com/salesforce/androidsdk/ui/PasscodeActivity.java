@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -36,6 +37,7 @@ import android.widget.TextView.OnEditorActionListener;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.security.PasscodeManager.PasscodeChangeReceiver;
 
 /**
  * Passcode activity: takes care of creating/verifying a user passcode.
@@ -148,11 +150,15 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
         case CreateConfirm:
             if (enteredPasscode.equals(firstPasscode)) {
+                final String oldPass = passcodeManager.getPasscodeHash();
                 passcodeManager.store(this, enteredPasscode);
                 passcodeManager.unlock(enteredPasscode);
+                final Intent intent = new Intent(PasscodeChangeReceiver.PASSCODE_FLOW_INTENT);
+                intent.putExtra(PasscodeChangeReceiver.OLD_PASSCODE_EXTRA, oldPass);
+                intent.putExtra(PasscodeChangeReceiver.NEW_PASSCODE_EXTRA, passcodeManager.getPasscodeHash());
+                sendBroadcast(intent);
                 done();
-            }
-            else {
+            } else {
                 error.setText(getPasscodesDontMatchError());
             }
             return true;
@@ -163,7 +169,6 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
                 done();
             } else {
                 int attempts = passcodeManager.addFailedPasscodeAttempt();
-
                 entry.setText("");
                 int maxAttempts = getMaxPasscodeAttempts();
                 if (attempts < maxAttempts - 1) {
