@@ -53,13 +53,11 @@ The Salesforce Mobile SDK provides PIN-based OAuth token encryption for Android 
 
 The following steps will help you get started with your development environment, whether you choose to develop native apps or hybrid apps.  See the README files in the native/ and hybrid/ folders for additional notes pertaining to development in those environments.
 
-1. Install the Android SDK (r14 or above): http://developer.android.com/sdk/index.html
+1. Install the Android SDK (r20 or above): http://developer.android.com/sdk/index.html
 2. Install ant 1.8.0 or later: http://ant.apache.org/manual/install.html (in order to build from the command line)
 3. Install Eclipse: http://www.eclipse.org/
-4. Install the Android Development Tools (ADT) plugin for Eclipse (r14 or above): http://developer.android.com/sdk/eclipse-adt.html
+4. Install the Android Development Tools (ADT) plugin for Eclipse (r20 or above): http://developer.android.com/sdk/eclipse-adt.html
 5. Get setup on github: http://help.github.com/
-
-**A word about the Android 4.0 (API 14) SDK:** Starting with the SDK that's deployed with API 14, Google has introduced some fundamental changes in Eclipse project configurations, build configuratons, library project configurations, and other areas.  Because of this, **you will not be able to build any of the projects in this repository without upgrading to API 14**.  Note that updating to r14 will not impact your ability to build for earlier Android platforms.  It's just the toolset changes of the SDK that require the upgrade.
 
 # Downloading the Salesforce SDK
 
