@@ -125,12 +125,6 @@ public class ClientManager {
             Log.i("ClientManager:peekRestClient", "No user account found", e);
             throw e;
         }
-
-        // OAuth tokens are stored encrypted
-        // Passcode might be created during login flow so loginOptions.passcodeHash could be outdated
-        if (loginOptions.passcodeHash != ForceApp.APP.getPasscodeHash()) {
-            ForceApp.APP.changePasscode(loginOptions.passcodeHash, ForceApp.APP.getPasscodeHash());
-        }
         String passcodeHash = (ForceApp.APP == null /* only in tests */ ? loginOptions.passcodeHash : ForceApp.APP.getPasscodeHash());
         String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
         String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), passcodeHash);
