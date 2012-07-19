@@ -65,7 +65,7 @@ public class AuthenticatorService extends Service {
     public static final String KEY_CLIENT_ID = "clientId";
     public static final String KEY_ORG_ID = "orgId";
     public static final String KEY_USERNAME = "username";
-    public static final String KEY_ID = "id";
+    public static final String KEY_ID_URL = "id";
     public static final String KEY_CLIENT_SECRET = "clientSecret";
 
     private Authenticator getAuthenticator() {

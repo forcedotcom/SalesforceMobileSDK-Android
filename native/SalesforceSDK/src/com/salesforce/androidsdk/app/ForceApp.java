@@ -32,8 +32,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import android.accounts.Account;
-import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
@@ -51,7 +49,6 @@ import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.auth.AccountWatcher.AccountRemoved;
-import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.Encryptor;
@@ -174,58 +171,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      */
     public boolean hasSmartStore() {
         return getDatabasePath(DBOpenHelper.DB_NAME).exists();
-    }
-
-    /**
-     * Changes the passcode to a new value and re-encrypts the smartstore with the new passcode.
-     *
-     * @param oldPass Old passcode.
-     * @param newPass New passcode.
-     */
-    public synchronized void changePasscode(String oldPass, String newPass) {
-
-        // Check if the old passcode and the new one are the same.
-        if ((oldPass == null && newPass == null) || (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim()))) {
-            return;
-        }
-
-        // If the old passcode is null, use the default key.
-        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase((oldPass == null || oldPass.trim().equals("")) ? Encryptor.getUniqueId(this) : oldPass);
-
-        // If the new passcode is null, use the default key.
-        SmartStore.changeKey(db, (newPass == null || newPass.trim().equals("")) ? Encryptor.getUniqueId(this) : newPass);
-
-        // Update data stored in AccountManager with new encryption key.
-        final AccountManager acctManager = AccountManager.get(this);
-        if (acctManager != null) {
-            final Account[] accounts = acctManager.getAccountsByType(getAccountType());
-            if (accounts != null && accounts.length > 0) {
-                final Account account = accounts[0];
-
-                // Grab existing data stored in AccountManager.
-                final String authToken = Encryptor.decrypt(acctManager.getUserData(account, AccountManager.KEY_AUTHTOKEN), oldPass);
-                final String refreshToken = Encryptor.decrypt(acctManager.getPassword(account), oldPass);
-                final String loginServer = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), oldPass);
-                final String idUrl = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_ID), oldPass);
-                final String instanceServer = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), oldPass);
-                final String orgId = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), oldPass);
-                final String userId = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_USER_ID), oldPass);
-                final String username = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_USERNAME), oldPass);
-                final String clientId = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), oldPass);
-
-                // Encrypt data with new hash and put it back in AccountManager.
-                acctManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, newPass));
-                acctManager.setPassword(account, Encryptor.encrypt(refreshToken, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_LOGIN_URL, Encryptor.encrypt(loginServer, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_ID, Encryptor.encrypt(idUrl, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, Encryptor.encrypt(instanceServer, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_ORG_ID, Encryptor.encrypt(orgId, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_USER_ID, Encryptor.encrypt(userId, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_USERNAME, Encryptor.encrypt(username, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_ID, Encryptor.encrypt(clientId, newPass));
-                acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, newPass));
-            }
-        }
     }
 
     /**
