@@ -156,12 +156,9 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
         // Only creating passcode manager if used.
         if (passcodeManager == null) {
-            final SharedPreferences sp = getSharedPreferences(PasscodeManager.ORG_SETTINGS_PREF, Context.MODE_PRIVATE);
-            int timeout = sp.getInt(PasscodeManager.KEY_TIMEOUT, 0);
-            int passLen = sp.getInt(PasscodeManager.KEY_PASSCODE_LENGTH, -1);
             passcodeManager = new PasscodeManager(this,
                     getVerificationHashConfig(),
-                    getEncryptionHashConfig(), timeout, passLen);
+                    getEncryptionHashConfig());
         }
         return passcodeManager;
     }
