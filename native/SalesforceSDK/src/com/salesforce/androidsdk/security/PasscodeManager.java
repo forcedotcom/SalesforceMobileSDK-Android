@@ -59,6 +59,15 @@ public class PasscodeManager  {
     // Private preference where we stored the passcode (hashed)
     private static final String PREF_NAME = "user";
 
+    // Private preference where we stored the org settings.
+    public static final String ORG_SETTINGS_PREF = "org_settings";
+
+    // Key in preference for the access timeout.
+    public static final String KEY_TIMEOUT ="access_timeout";
+
+    // Key in preference for the passcode length.
+    public static final String KEY_PASSCODE_LENGTH ="passcode_length";
+
     // Request code used to start passcode activity
     public static final int PASSCODE_REQUEST_CODE = 777;
 
@@ -80,18 +89,28 @@ public class PasscodeManager  {
     private boolean enabled;
 
     /**
-     * @param ctx
-     * @param lockTimeoutMinutes
-     * @param verificationHashConfig
-     * @param encryptionHashConfig
+     * Parameterized constructor.
+     *
+     * @param ctx Context.
+     * @param verificationHashConfig Verification HashConfig.
+     * @param encryptionHashConfig Encryption HashConfig.
+     * @param timeout Access timeout value.
+     * @param minLength Minimum length of passcode.
      */
-    public PasscodeManager(Context ctx,
-            HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
+    public PasscodeManager(Context ctx, HashConfig verificationHashConfig, HashConfig encryptionHashConfig,
+            int timeout, int minLength) {
         this.minPasscodeLength = MIN_PASSCODE_LENGTH;
         this.lastActivity = now();
         this.verificationHashConfig = verificationHashConfig;
         this.encryptionHashConfig = encryptionHashConfig;
         this.enabled = true;
+        this.timeoutMs = timeout;
+        if (minLength == -1) {
+            this.minPasscodeLength = MIN_PASSCODE_LENGTH;
+        } else {
+            this.minPasscodeLength = minLength;
+        }
+        storeOrgSettings(ctx);
         passcodeReceiver = new PasscodeChangeReceiver();
         final IntentFilter filter = new IntentFilter(PasscodeChangeReceiver.PASSCODE_FLOW_INTENT);
         ctx.registerReceiver(passcodeReceiver, filter);
@@ -100,6 +119,19 @@ public class PasscodeManager  {
         this.locked = true;
         handler = new Handler();
         handler.postDelayed(new LockChecker(), 20 * 1000);
+    }
+
+    /**
+     * Stores the org settings in a private file.
+     *
+     * @param context Context.
+     */
+    private void storeOrgSettings(Context context) {
+        final SharedPreferences sp = context.getSharedPreferences(ORG_SETTINGS_PREF, Context.MODE_PRIVATE);
+        Editor e = sp.edit();
+        e.putInt(KEY_TIMEOUT, timeoutMs);
+        e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
+        e.commit();
     }
 
     /**
@@ -114,6 +146,9 @@ public class PasscodeManager  {
         Editor e = sp.edit();
         e.remove(KEY_PASSCODE);
         e.commit();
+        timeoutMs = 0;
+        minPasscodeLength = MIN_PASSCODE_LENGTH;
+        storeOrgSettings(ctx);
     }
 
     /**
@@ -274,6 +309,7 @@ public class PasscodeManager  {
         if (timeoutMs == 0) {
             timeoutMs = newTimeout;
             showLockActivity(ForceApp.APP);
+            storeOrgSettings(ForceApp.APP);
             return;
         }
 
