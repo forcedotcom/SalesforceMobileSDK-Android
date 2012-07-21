@@ -59,6 +59,15 @@ public class PasscodeManager  {
     // Private preference where we stored the passcode (hashed)
     private static final String PREF_NAME = "user";
 
+    // Private preference where we stored the org settings.
+    private static final String MOBILE_POLICY_PREF = "mobile_policy";
+
+    // Key in preference for the access timeout.
+    private static final String KEY_TIMEOUT ="access_timeout";
+
+    // Key in preference for the passcode length.
+    private static final String KEY_PASSCODE_LENGTH ="passcode_length";
+
     // Request code used to start passcode activity
     public static final int PASSCODE_REQUEST_CODE = 777;
 
@@ -80,18 +89,19 @@ public class PasscodeManager  {
     private boolean enabled;
 
     /**
-     * @param ctx
-     * @param lockTimeoutMinutes
-     * @param verificationHashConfig
-     * @param encryptionHashConfig
+     * Parameterized constructor.
+     *
+     * @param ctx Context.
+     * @param verificationHashConfig Verification HashConfig.
+     * @param encryptionHashConfig Encryption HashConfig.
      */
-    public PasscodeManager(Context ctx,
-            HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
+    public PasscodeManager(Context ctx, HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
         this.minPasscodeLength = MIN_PASSCODE_LENGTH;
         this.lastActivity = now();
         this.verificationHashConfig = verificationHashConfig;
         this.encryptionHashConfig = encryptionHashConfig;
         this.enabled = true;
+        readMobilePolicy(ctx);
         passcodeReceiver = new PasscodeChangeReceiver();
         final IntentFilter filter = new IntentFilter(PasscodeChangeReceiver.PASSCODE_FLOW_INTENT);
         ctx.registerReceiver(passcodeReceiver, filter);
@@ -100,6 +110,36 @@ public class PasscodeManager  {
         this.locked = true;
         handler = new Handler();
         handler.postDelayed(new LockChecker(), 20 * 1000);
+    }
+
+    /**
+     * Stores the mobile policy in a private file.
+     *
+     * @param context Context.
+     */
+    private void storeMobilePolicy(Context context) {
+        final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+        Editor e = sp.edit();
+        e.putInt(KEY_TIMEOUT, timeoutMs);
+        e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
+        e.commit();
+    }
+
+    /**
+     * Reads the mobile policy from a private file.
+     *
+     * @param context Context.
+     */
+    private void readMobilePolicy(Context context) {
+        final SharedPreferences sp = context.getSharedPreferences(PasscodeManager.MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+        if (!sp.contains(KEY_TIMEOUT) || !sp.contains(KEY_PASSCODE_LENGTH)) {
+            timeoutMs = 0;
+            minPasscodeLength = MIN_PASSCODE_LENGTH;
+            storeMobilePolicy(context);
+            return;
+        }
+        timeoutMs = sp.getInt(PasscodeManager.KEY_TIMEOUT, 0);
+        minPasscodeLength = sp.getInt(PasscodeManager.KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
     }
 
     /**
@@ -114,6 +154,9 @@ public class PasscodeManager  {
         Editor e = sp.edit();
         e.remove(KEY_PASSCODE);
         e.commit();
+        timeoutMs = 0;
+        minPasscodeLength = MIN_PASSCODE_LENGTH;
+        storeMobilePolicy(ctx);
     }
 
     /**
@@ -274,6 +317,7 @@ public class PasscodeManager  {
         if (timeoutMs == 0) {
             timeoutMs = newTimeout;
             showLockActivity(ForceApp.APP);
+            storeMobilePolicy(ForceApp.APP);
             return;
         }
 
