@@ -187,10 +187,10 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         if (ForceApp.APP.hasSmartStore()) {
 
             // If the old passcode is null, use the default key.
-            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(ForceApp.APP).getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
+            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(ForceApp.APP).getWritableDatabase(ForceApp.APP.getEncryptionKeyForPasscode(oldPass));
 
             // If the new passcode is null, use the default key.
-            SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
+            SmartStore.changeKey(db, ForceApp.APP.getEncryptionKeyForPasscode(newPass));
         }
         ClientManager.changePasscode(oldPass, newPass);
     }
@@ -201,7 +201,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @param context Context.
      * @return Unique ID.
      */
-    public static synchronized String getEncryptionKeyForPasscode(String actualPass) {
+    public synchronized String getEncryptionKeyForPasscode(String actualPass) {
         if (actualPass != null && !actualPass.trim().equals("")) {
             return actualPass;
         }
