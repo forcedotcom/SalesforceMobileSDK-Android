@@ -126,7 +126,9 @@ public class Encryptor {
      * @return decrypted data
      */
     public static String decrypt(String data, String key) {
-        key = ForceApp.APP.getEncryptionKeyForPasscode(key);
+        if (key == null) {
+            key = ForceApp.APP.getEncryptionKeyForPasscode(key);
+        }
         try {
 
             // Decode with base64.
@@ -149,7 +151,9 @@ public class Encryptor {
      * @return base64, aes256 encrypted data
      */
     public static String encrypt(String data, String key) {
-        key = ForceApp.APP.getEncryptionKeyForPasscode(key);
+        if (key == null) {
+            key = ForceApp.APP.getEncryptionKeyForPasscode(key);
+        }
         try {
 
             // Encrypt with our preferred cipher.
