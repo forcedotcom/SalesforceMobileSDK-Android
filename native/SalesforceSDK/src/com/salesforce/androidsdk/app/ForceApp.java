@@ -88,6 +88,8 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      */
     public static ForceApp APP;
 
+    private String encryptionKey;
+
     /**************************************************************************************************
      *
      * Abstract methods: to be implemented by subclass
@@ -205,6 +207,9 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         if (actualPass != null && !actualPass.trim().equals("")) {
             return actualPass;
         }
+        if (encryptionKey != null) {
+            return encryptionKey;
+        }
         byte[] secretKey;
         try {
             secretKey = ForceApp.APP.getUuId(ADDENDUM).getBytes("UTF_8");
@@ -212,14 +217,15 @@ public abstract class ForceApp extends Application implements AccountRemoved {
             secretKey = md.digest(secretKey);
             byte[] dest = new byte[16];
             System.arraycopy(secretKey, 0, dest, 0, 16);
-            return Base64.encodeToString(dest, Base64.DEFAULT);
+            encryptionKey = Base64.encodeToString(dest, Base64.DEFAULT);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
-            return ForceApp.APP.getUuId(ADDENDUM);
+            encryptionKey = ForceApp.APP.getUuId(ADDENDUM);
         } catch (NoSuchAlgorithmException e) {
             e.printStackTrace();
-            return ForceApp.APP.getUuId(ADDENDUM);
+            encryptionKey = ForceApp.APP.getUuId(ADDENDUM);
         }
+        return encryptionKey;
     }
 
     /**
@@ -385,5 +391,27 @@ public abstract class ForceApp extends Application implements AccountRemoved {
             e.commit();
         }
         return Encryptor.decrypt(sp.getString(name, null), getKey(name));
+    }
+
+    /**
+     * Encrypts the data using the passcode as the encryption key.
+     *
+     * @param data Data to be encrypted.
+     * @param passcode Encryption key.
+     * @return Encrypted data.
+     */
+    public static String encryptWithPasscode(String data, String passcode) {
+        return Encryptor.encrypt(data, ForceApp.APP.getEncryptionKeyForPasscode(passcode));
+    }
+
+    /**
+     * Decrypts the data using the passcode as the decryption key.
+     *
+     * @param data Data to be decrypted.
+     * @param passcode Decryption key.
+     * @return Decrypted data.
+     */
+    public static String decryptWithPasscode(String data, String passcode) {
+        return Encryptor.decrypt(data, ForceApp.APP.getEncryptionKeyForPasscode(passcode));
     }
 }

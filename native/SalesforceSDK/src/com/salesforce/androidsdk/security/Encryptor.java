@@ -46,8 +46,6 @@ import android.os.Build;
 import android.util.Base64;
 import android.util.Log;
 
-import com.salesforce.androidsdk.app.ForceApp;
-
 /**
  * Helper class for encryption/decryption/hash computations
  */
@@ -126,9 +124,6 @@ public class Encryptor {
      * @return decrypted data
      */
     public static String decrypt(String data, String key) {
-        if (key == null) {
-            key = ForceApp.APP.getEncryptionKeyForPasscode(key);
-        }
         try {
 
             // Decode with base64.
@@ -151,9 +146,6 @@ public class Encryptor {
      * @return base64, aes256 encrypted data
      */
     public static String encrypt(String data, String key) {
-        if (key == null) {
-            key = ForceApp.APP.getEncryptionKeyForPasscode(key);
-        }
         try {
 
             // Encrypt with our preferred cipher.
