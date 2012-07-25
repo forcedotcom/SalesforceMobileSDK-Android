@@ -48,7 +48,6 @@ import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.security.Encryptor;
 
 /**
  * The service used for taking care of authentication for a Salesforce-based application.
@@ -56,135 +55,131 @@ import com.salesforce.androidsdk.security.Encryptor;
  */
 public class AuthenticatorService extends Service {
 
-	private static Authenticator authenticator;
+    private static Authenticator authenticator;
 
-	// Keys to extra info in the account
-	public static final String KEY_LOGIN_URL = "loginUrl";
-	public static final String KEY_INSTANCE_URL = "instanceUrl";
-	public static final String KEY_USER_ID = "userId";
-	public static final String KEY_CLIENT_ID = "clientId";
-	public static final String KEY_ORG_ID = "orgId";
-	public static final String KEY_USERNAME = "username";
-	public static final String KEY_CLIENT_SECRET = "clientSecret";
+    // Keys to extra info in the account
+    public static final String KEY_LOGIN_URL = "loginUrl";
+    public static final String KEY_INSTANCE_URL = "instanceUrl";
+    public static final String KEY_USER_ID = "userId";
+    public static final String KEY_CLIENT_ID = "clientId";
+    public static final String KEY_ORG_ID = "orgId";
+    public static final String KEY_USERNAME = "username";
+    public static final String KEY_ID_URL = "id";
+    public static final String KEY_CLIENT_SECRET = "clientSecret";
 
-	private Authenticator getAuthenticator() {
-		if (authenticator == null)
-			authenticator = new Authenticator(this);
-		return authenticator;
-	}
+    private Authenticator getAuthenticator() {
+        if (authenticator == null)
+            authenticator = new Authenticator(this);
+        return authenticator;
+    }
 
-	@Override
-	public IBinder onBind(Intent intent) {
-		if (intent.getAction().equals(AccountManager.ACTION_AUTHENTICATOR_INTENT))
-			return getAuthenticator().getIBinder();
-		return null;
-	}
+    @Override
+    public IBinder onBind(Intent intent) {
+        if (intent.getAction().equals(AccountManager.ACTION_AUTHENTICATOR_INTENT))
+            return getAuthenticator().getIBinder();
+        return null;
+    }
 
-	/**
-	 * The Authenticator for salesforce accounts.
-	 * - addAccount Start the login flow (by launching the activity filtering the salesforce.intent.action.LOGIN intent).
-	 * - getAuthToken Refresh the token by calling {@link OAuth2#refreshAuthToken(HttpAccess, URI, String, String) OAuth2.refreshAuthToken}.
-	 */
-	private static class Authenticator extends AbstractAccountAuthenticator {
+    /**
+     * The Authenticator for salesforce accounts.
+     * - addAccount Start the login flow (by launching the activity filtering the salesforce.intent.action.LOGIN intent).
+     * - getAuthToken Refresh the token by calling {@link OAuth2#refreshAuthToken(HttpAccess, URI, String, String) OAuth2.refreshAuthToken}.
+     */
+    private static class Authenticator extends AbstractAccountAuthenticator {
 
-		private final Context context;
+        private final Context context;
 
-		Authenticator(Context ctx) {
-			super(ctx);
-			this.context = ctx;
-		}
+        Authenticator(Context ctx) {
+            super(ctx);
+            this.context = ctx;
+        }
 
-		@Override
-		public Bundle addAccount(
-		                AccountAuthenticatorResponse response,
-		                String accountType,
-		                String authTokenType,
-		                String[] requiredFeatures,
-		                Bundle options)
-				throws NetworkErrorException {
+        @Override
+        public Bundle addAccount(
+                        AccountAuthenticatorResponse response,
+                        String accountType,
+                        String authTokenType,
+                        String[] requiredFeatures,
+                        Bundle options)
+                throws NetworkErrorException {
 
-			Log.i("Authenticator:addAccount", "Options: " + options);
-			return makeAuthIntentBundle(response, options);
-		}
+            Log.i("Authenticator:addAccount", "Options: " + options);
+            return makeAuthIntentBundle(response, options);
+        }
 
-		/**
-		 * Uses the refresh token to get a new access token.
-		 * Remember that the authenticator runs under its own separate process, so if you want to debug you
-		 * need to attach to the :auth process, and not the main chatter process.
-		 */
-		@Override
-		public Bundle getAuthToken(
-		                    AccountAuthenticatorResponse response,
-		                    Account account,
-		                    String authTokenType,
-		                    Bundle options) throws NetworkErrorException {
+        /**
+         * Uses the refresh token to get a new access token.
+         * Remember that the authenticator runs under its own separate process, so if you want to debug you
+         * need to attach to the :auth process, and not the main chatter process.
+         */
+        @Override
+        public Bundle getAuthToken(
+                            AccountAuthenticatorResponse response,
+                            Account account,
+                            String authTokenType,
+                            Bundle options) throws NetworkErrorException {
+            Log.i("Authenticator:getAuthToken", "Get auth token for " + account.name);
+            final AccountManager mgr = AccountManager.get(context);
+            final String passcodeHash = LoginOptions.fromBundle(options).passcodeHash;
+            final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(account), passcodeHash);
+            final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), passcodeHash);
+            final String clientId = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
+            final String instServer = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
+            final String userId = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_USER_ID), passcodeHash);
+            final String orgId = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_ORG_ID), passcodeHash);
+            final String username = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_USERNAME), passcodeHash);
+            final String clientSecret = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET), passcodeHash);
+            final Bundle resBundle = new Bundle();
+            try {
+                final TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken, clientSecret);
 
-			Log.i("Authenticator:getAuthToken", "Get auth token for " + account.name);
-			AccountManager mgr = AccountManager.get(context);
-			String passcodeHash = LoginOptions.fromBundle(options).passcodeHash;
-			String refreshToken = Encryptor.decrypt(mgr.getPassword(account), passcodeHash);
-			String loginServer = mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_URL);
-			String clientId = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID);
-			String instServer = mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL);
-			String userId = mgr.getUserData(account, AuthenticatorService.KEY_USER_ID);
-			String orgId = mgr.getUserData(account, AuthenticatorService.KEY_ORG_ID);
-			String username = mgr.getUserData(account, AuthenticatorService.KEY_USERNAME);
-			String clientSecret = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET);
-            Bundle resBundle = new Bundle();
+                // Handle the case where the org has been migrated to a new instance, or has turned on my domains.
+                if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
+                    mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, ForceApp.encryptWithPasscode(tr.instanceUrl, passcodeHash));
+                }
 
-			try {
-    			TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken, clientSecret);
-
-    			// handle the case where the org has been migrated to a new instance, or has turned on my domains.
-    			if (!instServer.equalsIgnoreCase(tr.instanceUrl))
-    				mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, tr.instanceUrl);
-
-    			// Update auth token in account
-    			mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(tr.authToken, passcodeHash));
-
-    			resBundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
+                // Update auth token in account.
+                mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(tr.authToken, passcodeHash));
+                resBundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
                 resBundle.putString(AccountManager.KEY_ACCOUNT_TYPE, account.type);
-                resBundle.putString(AccountManager.KEY_AUTHTOKEN, tr.authToken);
-                resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, loginServer);
-                resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, instServer);
-                resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, clientId);
-                resBundle.putString(AuthenticatorService.KEY_USERNAME, username);
-                resBundle.putString(AuthenticatorService.KEY_USER_ID, userId);
-                resBundle.putString(AuthenticatorService.KEY_ORG_ID, orgId);
-
+                resBundle.putString(AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(tr.authToken, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, ForceApp.encryptWithPasscode(loginServer, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, ForceApp.encryptWithPasscode(instServer, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, ForceApp.encryptWithPasscode(clientId, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_USERNAME, ForceApp.encryptWithPasscode(username, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_USER_ID, ForceApp.encryptWithPasscode(userId, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_ORG_ID, ForceApp.encryptWithPasscode(orgId, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_CLIENT_SECRET, ForceApp.encryptWithPasscode(clientSecret, passcodeHash));
                 Log.i("Authenticator:getAuthToken", "Returning auth bundle for " + account.name);
-
-			} catch (ClientProtocolException e) {
-				Log.w("Authenticator:getAuthToken", "", e);
-				throw new NetworkErrorException(e);
-			} catch (IOException e) {
-				Log.w("Authenticator:getAuthToken", "", e);
-				throw new NetworkErrorException(e);
-			} catch (URISyntaxException e) {
-				Log.w("Authenticator:getAuthToken", "", e);
-				throw new NetworkErrorException(e);
+            } catch (ClientProtocolException e) {
+                Log.w("Authenticator:getAuthToken", "", e);
+                throw new NetworkErrorException(e);
+            } catch (IOException e) {
+                Log.w("Authenticator:getAuthToken", "", e);
+                throw new NetworkErrorException(e);
+            } catch (URISyntaxException e) {
+                Log.w("Authenticator:getAuthToken", "", e);
+                throw new NetworkErrorException(e);
             } catch (OAuthFailedException e) {
                 if (e.isRefreshTokenInvalid()) {
                     // the exception explicitly indicates that the refresh token is no longer valid.
                     return makeAuthIntentBundle(response, options);
                 }
-
                 resBundle.putString(AccountManager.KEY_ERROR_CODE, e.response.error);
                 resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, e.response.errorDescription);
             }
-
             Log.i("Authenticator:getAuthToken", "Result: " + resBundle);
             return resBundle;
-		}
+        }
 
-		/**
-		 * Return bundle with intent to start the login flow.
-		 *
-		 * @param response
-		 * @param options
-		 * @return
-		 */
-		private Bundle makeAuthIntentBundle(AccountAuthenticatorResponse response, Bundle options) {
+        /**
+         * Return bundle with intent to start the login flow.
+         *
+         * @param response
+         * @param options
+         * @return
+         */
+        private Bundle makeAuthIntentBundle(AccountAuthenticatorResponse response, Bundle options) {
             Bundle reply = new Bundle();
             Intent i = new Intent(context, ForceApp.APP.getLoginActivityClass());
             i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -193,31 +188,31 @@ public class AuthenticatorService extends Service {
                 i.putExtras(options);
             reply.putParcelable(AccountManager.KEY_INTENT, i);
             return reply;
-		}
+        }
 
-		@Override
-		public Bundle updateCredentials(AccountAuthenticatorResponse response, Account account, String authTokenType, Bundle options) throws NetworkErrorException {
-			return null;
-		}
+        @Override
+        public Bundle updateCredentials(AccountAuthenticatorResponse response, Account account, String authTokenType, Bundle options) throws NetworkErrorException {
+            return null;
+        }
 
-		@Override
-		public Bundle confirmCredentials(AccountAuthenticatorResponse response, Account account, Bundle options) throws NetworkErrorException {
-			return null;
-		}
+        @Override
+        public Bundle confirmCredentials(AccountAuthenticatorResponse response, Account account, Bundle options) throws NetworkErrorException {
+            return null;
+        }
 
-		@Override
-		public Bundle editProperties(AccountAuthenticatorResponse response, String accountType) {
-			return null;
-		}
+        @Override
+        public Bundle editProperties(AccountAuthenticatorResponse response, String accountType) {
+            return null;
+        }
 
-		@Override
-		public String getAuthTokenLabel(String authTokenType) {
-			return null;
-		}
+        @Override
+        public String getAuthTokenLabel(String authTokenType) {
+            return null;
+        }
 
-		@Override
-		public Bundle hasFeatures(AccountAuthenticatorResponse response, Account account, String[] features) throws NetworkErrorException {
-			return null;
-		}
-	}
+        @Override
+        public Bundle hasFeatures(AccountAuthenticatorResponse response, Account account, String[] features) throws NetworkErrorException {
+            return null;
+        }
+    }
 }

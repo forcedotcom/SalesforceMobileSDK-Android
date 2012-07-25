@@ -24,45 +24,50 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk;
+package com.salesforce.androidsdk.auth;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.accounts.OnAccountsUpdateListener;
 import android.content.Context;
 
+import com.salesforce.androidsdk.app.ForceApp;
 
 /**
- * Authentication credentials used to make live server calls in tests
+ * This class acts as a listener for the account removal event.
  *
- * Use web app to figure out login/instance urls, orgId, userId, username and clientId
- *
- * For refresh token, edit RestClient.java toString() to print out refresh token and use "print info" button in RestExplorer.
- * Attaching a debugger to the RestExplorer and having a break point in RestClient.java toString() is probably the easiest way to go.
+ * @author bhariharan
  */
-public class TestCredentials {
+public class AccountWatcher implements OnAccountsUpdateListener {
 
-    public static String API_VERSION;
-    public static String ACCOUNT_TYPE;
-    public static String ORG_ID;
-    public static String USERNAME;
-    public static String ACCOUNT_NAME;
-    public static String USER_ID;
-    public static String LOGIN_URL;
-    public static String INSTANCE_URL;
-    public static String IDENTITY_URL;
-    public static String CLIENT_ID;
-    public static String REFRESH_TOKEN;
+    private final AccountManager mgr;
+    private final AccountRemoved callback;
 
-    public static void init(Context ctx) {
-        API_VERSION = ctx.getString(R.string.api_version);
-        ACCOUNT_TYPE = ctx.getString(R.string.account_type);
-        ORG_ID = ctx.getString(R.string.org_id);
-        USERNAME = ctx.getString(R.string.username);
-        ACCOUNT_NAME = ctx.getString(R.string.account_name);
-        USER_ID = ctx.getString(R.string.user_id);
-        LOGIN_URL = ctx.getString(R.string.login_url);
-        INSTANCE_URL = ctx.getString(R.string.instance_url);
-        IDENTITY_URL = ctx.getString(R.string.identity_url);
-        CLIENT_ID = ctx.getString(R.string.oauth_client_id);
-        REFRESH_TOKEN = ctx.getString(R.string.oauth_refresh_token);
+    public interface AccountRemoved {
+        void onAccountRemoved();
     }
 
+    public AccountWatcher(Context ctx, AccountRemoved cb) {
+        assert ctx != null : "Context must not be null";
+        assert cb  != null : "AccountRemoved callback must not be null";
+        this.callback = cb;
+        this.mgr = AccountManager.get(ctx);
+        this.mgr.addOnAccountsUpdatedListener(this, null, false);
+    }
+
+    @Override
+    public void onAccountsUpdated(Account[] accounts) {
+
+        // Check if there's an entry for our account type, if not fire the callback.
+        for (final Account a : accounts) {
+            if (ForceApp.APP.getAccountType().equals(a.type)) {
+                return;
+            }
+        }
+        callback.onAccountRemoved();
+    }
+
+    public void remove() {
+        mgr.removeOnAccountsUpdatedListener(this);
+    }
 }

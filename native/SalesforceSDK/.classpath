@@ -3,7 +3,8 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry kind="lib" path="libs/phonegap-1.2.0.jar" sourcepath="libs/callback-android-framework/src"/>
 	<classpathentry kind="lib" path="libs/sqlcipher.jar"/>
+	<classpathentry kind="lib" path="libs/cordova-1.8.1.jar" sourcepath="libs/incubator-cordova-android-framework/src"/>
+	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
