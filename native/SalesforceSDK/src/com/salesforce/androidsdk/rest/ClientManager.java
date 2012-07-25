@@ -46,7 +46,6 @@ import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
-import com.salesforce.androidsdk.security.Encryptor;
 
 /**
  * ClientManager is a factory class for RestClient which stores OAuth credentials in the AccountManager.
@@ -126,18 +125,18 @@ public class ClientManager {
             throw e;
         }
         String passcodeHash = (ForceApp.APP == null /* only in tests */ ? loginOptions.passcodeHash : ForceApp.APP.getPasscodeHash());
-        String authToken = Encryptor.decrypt(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
-        String refreshToken = Encryptor.decrypt(accountManager.getPassword(acc), passcodeHash);
+        String authToken = ForceApp.decryptWithPasscode(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
+        String refreshToken = ForceApp.decryptWithPasscode(accountManager.getPassword(acc), passcodeHash);
 
         // We also store the username, instance url, org id, user id and username in the account manager
-        String loginServer = Encryptor.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_LOGIN_URL), passcodeHash);
-        String idUrl = Encryptor.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_ID_URL), passcodeHash);
-        String instanceServer = Encryptor.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
-        String orgId = Encryptor.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_ORG_ID), passcodeHash);
-        String userId = Encryptor.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID), passcodeHash);
-        String username = Encryptor.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_USERNAME), passcodeHash);
+        String loginServer = ForceApp.decryptWithPasscode(accountManager.getUserData(acc, AuthenticatorService.KEY_LOGIN_URL), passcodeHash);
+        String idUrl = ForceApp.decryptWithPasscode(accountManager.getUserData(acc, AuthenticatorService.KEY_ID_URL), passcodeHash);
+        String instanceServer = ForceApp.decryptWithPasscode(accountManager.getUserData(acc, AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
+        String orgId = ForceApp.decryptWithPasscode(accountManager.getUserData(acc, AuthenticatorService.KEY_ORG_ID), passcodeHash);
+        String userId = ForceApp.decryptWithPasscode(accountManager.getUserData(acc, AuthenticatorService.KEY_USER_ID), passcodeHash);
+        String username = ForceApp.decryptWithPasscode(accountManager.getUserData(acc, AuthenticatorService.KEY_USERNAME), passcodeHash);
         String accountName = accountManager.getUserData(acc, AccountManager.KEY_ACCOUNT_NAME);
-        String clientId = Encryptor.decrypt(accountManager.getUserData(acc, AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
+        String clientId = ForceApp.decryptWithPasscode(accountManager.getUserData(acc, AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
 
         if (authToken == null)
             throw new AccountInfoNotFoundException(AccountManager.KEY_AUTHTOKEN);
@@ -244,20 +243,20 @@ public class ClientManager {
         Bundle extras = new Bundle();
         extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
         extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
-        extras.putString(AuthenticatorService.KEY_USERNAME, Encryptor.encrypt(username, passcodeHash));
-        extras.putString(AuthenticatorService.KEY_LOGIN_URL, Encryptor.encrypt(loginUrl, passcodeHash));
-        extras.putString(AuthenticatorService.KEY_ID_URL, Encryptor.encrypt(idUrl, passcodeHash));
-        extras.putString(AuthenticatorService.KEY_INSTANCE_URL, Encryptor.encrypt(instanceUrl, passcodeHash));
-        extras.putString(AuthenticatorService.KEY_CLIENT_ID, Encryptor.encrypt(clientId, passcodeHash));
-        extras.putString(AuthenticatorService.KEY_ORG_ID, Encryptor.encrypt(orgId, passcodeHash));
-        extras.putString(AuthenticatorService.KEY_USER_ID, Encryptor.encrypt(userId, passcodeHash));
+        extras.putString(AuthenticatorService.KEY_USERNAME, ForceApp.encryptWithPasscode(username, passcodeHash));
+        extras.putString(AuthenticatorService.KEY_LOGIN_URL, ForceApp.encryptWithPasscode(loginUrl, passcodeHash));
+        extras.putString(AuthenticatorService.KEY_ID_URL, ForceApp.encryptWithPasscode(idUrl, passcodeHash));
+        extras.putString(AuthenticatorService.KEY_INSTANCE_URL, ForceApp.encryptWithPasscode(instanceUrl, passcodeHash));
+        extras.putString(AuthenticatorService.KEY_CLIENT_ID, ForceApp.encryptWithPasscode(clientId, passcodeHash));
+        extras.putString(AuthenticatorService.KEY_ORG_ID, ForceApp.encryptWithPasscode(orgId, passcodeHash));
+        extras.putString(AuthenticatorService.KEY_USER_ID, ForceApp.encryptWithPasscode(userId, passcodeHash));
         if (clientSecret != null) {
-            extras.putString(AuthenticatorService.KEY_CLIENT_SECRET, Encryptor.encrypt(clientSecret, passcodeHash));
+            extras.putString(AuthenticatorService.KEY_CLIENT_SECRET, ForceApp.encryptWithPasscode(clientSecret, passcodeHash));
         }
-        extras.putString(AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, passcodeHash));
+        extras.putString(AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(authToken, passcodeHash));
         Account acc = new Account(accountName, getAccountType());
-        accountManager.addAccountExplicitly(acc, Encryptor.encrypt(refreshToken, passcodeHash), extras);
-        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, passcodeHash));
+        accountManager.addAccountExplicitly(acc, ForceApp.encryptWithPasscode(refreshToken, passcodeHash), extras);
+        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(authToken, passcodeHash));
         return extras;
     }
 
@@ -285,27 +284,27 @@ public class ClientManager {
                 final Account account = accounts[0];
 
                 // Grab existing data stored in AccountManager.
-                final String authToken = Encryptor.decrypt(acctManager.getUserData(account, AccountManager.KEY_AUTHTOKEN), oldPass);
-                final String refreshToken = Encryptor.decrypt(acctManager.getPassword(account), oldPass);
-                final String loginServer = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), oldPass);
-                final String idUrl = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_ID_URL), oldPass);
-                final String instanceServer = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), oldPass);
-                final String orgId = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), oldPass);
-                final String userId = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_USER_ID), oldPass);
-                final String username = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_USERNAME), oldPass);
-                final String clientId = Encryptor.decrypt(acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), oldPass);
+                final String authToken = ForceApp.decryptWithPasscode(acctManager.getUserData(account, AccountManager.KEY_AUTHTOKEN), oldPass);
+                final String refreshToken = ForceApp.decryptWithPasscode(acctManager.getPassword(account), oldPass);
+                final String loginServer = ForceApp.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), oldPass);
+                final String idUrl = ForceApp.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_ID_URL), oldPass);
+                final String instanceServer = ForceApp.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), oldPass);
+                final String orgId = ForceApp.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), oldPass);
+                final String userId = ForceApp.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_USER_ID), oldPass);
+                final String username = ForceApp.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_USERNAME), oldPass);
+                final String clientId = ForceApp.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), oldPass);
 
                 // Encrypt data with new hash and put it back in AccountManager.
-                acctManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, newPass));
-                acctManager.setPassword(account, Encryptor.encrypt(refreshToken, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_LOGIN_URL, Encryptor.encrypt(loginServer, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_ID_URL, Encryptor.encrypt(idUrl, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, Encryptor.encrypt(instanceServer, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_ORG_ID, Encryptor.encrypt(orgId, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_USER_ID, Encryptor.encrypt(userId, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_USERNAME, Encryptor.encrypt(username, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_ID, Encryptor.encrypt(clientId, newPass));
-                acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(authToken, newPass));
+                acctManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(authToken, newPass));
+                acctManager.setPassword(account, ForceApp.encryptWithPasscode(refreshToken, newPass));
+                acctManager.setUserData(account, AuthenticatorService.KEY_LOGIN_URL, ForceApp.encryptWithPasscode(loginServer, newPass));
+                acctManager.setUserData(account, AuthenticatorService.KEY_ID_URL, ForceApp.encryptWithPasscode(idUrl, newPass));
+                acctManager.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, ForceApp.encryptWithPasscode(instanceServer, newPass));
+                acctManager.setUserData(account, AuthenticatorService.KEY_ORG_ID, ForceApp.encryptWithPasscode(orgId, newPass));
+                acctManager.setUserData(account, AuthenticatorService.KEY_USER_ID, ForceApp.encryptWithPasscode(userId, newPass));
+                acctManager.setUserData(account, AuthenticatorService.KEY_USERNAME, ForceApp.encryptWithPasscode(username, newPass));
+                acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_ID, ForceApp.encryptWithPasscode(clientId, newPass));
+                acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(authToken, newPass));
             }
         }
     }
@@ -449,7 +448,7 @@ public class ClientManager {
                 if (bundle == null) {
                     Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
                 } else {
-                    newAuthToken = Encryptor.decrypt(bundle.getString(AccountManager.KEY_AUTHTOKEN), ForceApp.APP.getPasscodeHash());
+                    newAuthToken = ForceApp.decryptWithPasscode(bundle.getString(AccountManager.KEY_AUTHTOKEN), ForceApp.APP.getPasscodeHash());
                 }
             } catch (Exception e) {
                 Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken:getNewAuthToken",

@@ -48,7 +48,6 @@ import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.security.Encryptor;
 
 /**
  * The service used for taking care of authentication for a Salesforce-based application.
@@ -122,35 +121,35 @@ public class AuthenticatorService extends Service {
             Log.i("Authenticator:getAuthToken", "Get auth token for " + account.name);
             final AccountManager mgr = AccountManager.get(context);
             final String passcodeHash = LoginOptions.fromBundle(options).passcodeHash;
-            final String refreshToken = Encryptor.decrypt(mgr.getPassword(account), passcodeHash);
-            final String loginServer = Encryptor.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), passcodeHash);
-            final String clientId = Encryptor.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
-            final String instServer = Encryptor.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
-            final String userId = Encryptor.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_USER_ID), passcodeHash);
-            final String orgId = Encryptor.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_ORG_ID), passcodeHash);
-            final String username = Encryptor.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_USERNAME), passcodeHash);
-            final String clientSecret = Encryptor.decrypt(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET), passcodeHash);
+            final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(account), passcodeHash);
+            final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), passcodeHash);
+            final String clientId = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
+            final String instServer = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
+            final String userId = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_USER_ID), passcodeHash);
+            final String orgId = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_ORG_ID), passcodeHash);
+            final String username = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_USERNAME), passcodeHash);
+            final String clientSecret = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET), passcodeHash);
             final Bundle resBundle = new Bundle();
             try {
                 final TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken, clientSecret);
 
                 // Handle the case where the org has been migrated to a new instance, or has turned on my domains.
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
-                    mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, Encryptor.encrypt(tr.instanceUrl, passcodeHash));
+                    mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, ForceApp.encryptWithPasscode(tr.instanceUrl, passcodeHash));
                 }
 
                 // Update auth token in account.
-                mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(tr.authToken, passcodeHash));
+                mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(tr.authToken, passcodeHash));
                 resBundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
                 resBundle.putString(AccountManager.KEY_ACCOUNT_TYPE, account.type);
-                resBundle.putString(AccountManager.KEY_AUTHTOKEN, Encryptor.encrypt(tr.authToken, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, Encryptor.encrypt(loginServer, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, Encryptor.encrypt(instServer, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, Encryptor.encrypt(clientId, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_USERNAME, Encryptor.encrypt(username, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_USER_ID, Encryptor.encrypt(userId, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_ORG_ID, Encryptor.encrypt(orgId, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_CLIENT_SECRET, Encryptor.encrypt(clientSecret, passcodeHash));
+                resBundle.putString(AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(tr.authToken, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, ForceApp.encryptWithPasscode(loginServer, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, ForceApp.encryptWithPasscode(instServer, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, ForceApp.encryptWithPasscode(clientId, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_USERNAME, ForceApp.encryptWithPasscode(username, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_USER_ID, ForceApp.encryptWithPasscode(userId, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_ORG_ID, ForceApp.encryptWithPasscode(orgId, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_CLIENT_SECRET, ForceApp.encryptWithPasscode(clientSecret, passcodeHash));
                 Log.i("Authenticator:getAuthToken", "Returning auth bundle for " + account.name);
             } catch (ClientProtocolException e) {
                 Log.w("Authenticator:getAuthToken", "", e);
