@@ -118,11 +118,15 @@ public class PasscodeManager  {
      * @param context Context.
      */
     private void storeMobilePolicy(Context context) {
-        final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
-        Editor e = sp.edit();
-        e.putInt(KEY_TIMEOUT, timeoutMs);
-        e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
-        e.commit();
+
+        // Context will be null only in test runs.
+        if (context != null) {
+            final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+            Editor e = sp.edit();
+            e.putInt(KEY_TIMEOUT, timeoutMs);
+            e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
+            e.commit();
+        }
     }
 
     /**
@@ -131,15 +135,19 @@ public class PasscodeManager  {
      * @param context Context.
      */
     private void readMobilePolicy(Context context) {
-        final SharedPreferences sp = context.getSharedPreferences(PasscodeManager.MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
-        if (!sp.contains(KEY_TIMEOUT) || !sp.contains(KEY_PASSCODE_LENGTH)) {
-            timeoutMs = 0;
-            minPasscodeLength = MIN_PASSCODE_LENGTH;
-            storeMobilePolicy(context);
-            return;
+
+        // Context will be null only in test runs.
+        if (context != null) {
+            final SharedPreferences sp = context.getSharedPreferences(PasscodeManager.MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+            if (!sp.contains(KEY_TIMEOUT) || !sp.contains(KEY_PASSCODE_LENGTH)) {
+                timeoutMs = 0;
+                minPasscodeLength = MIN_PASSCODE_LENGTH;
+                storeMobilePolicy(context);
+                return;
+            }
+            timeoutMs = sp.getInt(PasscodeManager.KEY_TIMEOUT, 0);
+            minPasscodeLength = sp.getInt(PasscodeManager.KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
         }
-        timeoutMs = sp.getInt(PasscodeManager.KEY_TIMEOUT, 0);
-        minPasscodeLength = sp.getInt(PasscodeManager.KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
     }
 
     /**
