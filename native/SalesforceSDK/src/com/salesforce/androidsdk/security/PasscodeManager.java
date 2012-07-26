@@ -188,7 +188,14 @@ public class PasscodeManager  {
     public boolean check(Context ctx, String passcode) {
         SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         String hashedPasscode = sp.getString(KEY_PASSCODE, null);
-        return hashedPasscode.equals(hash(passcode, verificationHashConfig));
+        if (hashedPasscode != null) {
+            return hashedPasscode.equals(hash(passcode, verificationHashConfig));
+        }
+
+        /*
+         * If the stored passcode hash is null, there is no passcode.
+         */
+        return true;
     }
 
     /**
@@ -313,10 +320,13 @@ public class PasscodeManager  {
             return;
         }
 
-        // No passcode to passcode.
-        if (timeoutMs == 0) {
+        /*
+         * Either access timeout has changed from one non-zero value to another,
+         * which doesn't alter the passcode situation, or the app goes from
+         * no passcode to passcode, which will trigger the passcode creation flow.
+         */
+        if (timeoutMs == 0 || (timeoutMs > 0 && newTimeout > 0)) {
             timeoutMs = newTimeout;
-            showLockActivity(ForceApp.APP);
             storeMobilePolicy(ForceApp.APP);
             return;
         }
