@@ -186,6 +186,9 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         if ((oldPass == null && newPass == null) || (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim()))) {
             return;
         }
+
+        // Reset cached encryption key, since the passcode has changed.
+        ForceApp.APP.encryptionKey = null;
         if (ForceApp.APP.hasSmartStore()) {
 
             // If the old passcode is null, use the default key.
