@@ -44,6 +44,7 @@ import android.os.Bundle;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
@@ -132,19 +133,19 @@ public class ClientManagerTest extends InstrumentationTestCase {
         assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
 
         String encryptedAuthToken = accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN);
-        String decryptedAuthToken = Encryptor.decrypt(encryptedAuthToken, TEST_PASSCODE_HASH);
+        String decryptedAuthToken = ForceApp.decryptWithPasscode(encryptedAuthToken, TEST_PASSCODE_HASH);
         assertEquals("Wrong auth token", TEST_AUTH_TOKEN, decryptedAuthToken);
 
         String encryptedRefreshToken = accountManager.getPassword(account);
-        String decryptedRefreshToken = Encryptor.decrypt(encryptedRefreshToken, TEST_PASSCODE_HASH);
-        assertEquals("Wrong refresh token",TEST_REFRESH_TOKEN, decryptedRefreshToken);
+        String decryptedRefreshToken = ForceApp.decryptWithPasscode(encryptedRefreshToken, TEST_PASSCODE_HASH);
+        assertEquals("Wrong refresh token", TEST_REFRESH_TOKEN, decryptedRefreshToken);
 
-        assertEquals("Wrong instance url", TEST_INSTANCE_URL, accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL));
-        assertEquals("Wrong login url", TEST_LOGIN_URL, accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL));
-        assertEquals("Wrong client id", TEST_CLIENT_ID, accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID));
-        assertEquals("Wrong user id", TEST_USER_ID, accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID));
-        assertEquals("Wrong org id", TEST_ORG_ID, accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID));
-        assertEquals("Wrong username", TEST_USERNAME, accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME));
+        assertEquals("Wrong instance url", TEST_INSTANCE_URL, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), TEST_PASSCODE_HASH));
+        assertEquals("Wrong login url", TEST_LOGIN_URL, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), TEST_PASSCODE_HASH));
+        assertEquals("Wrong client id", TEST_CLIENT_ID, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), TEST_PASSCODE_HASH));
+        assertEquals("Wrong user id", TEST_USER_ID, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID), TEST_PASSCODE_HASH));
+        assertEquals("Wrong org id", TEST_ORG_ID, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), TEST_PASSCODE_HASH));
+        assertEquals("Wrong username", TEST_USERNAME, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), TEST_PASSCODE_HASH));
     }
 
 
