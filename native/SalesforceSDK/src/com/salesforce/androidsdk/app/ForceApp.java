@@ -201,10 +201,10 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
-     * Returns the unique ID being used.
+     * Returns the encryption key being used.
      *
-     * @param context Context.
-     * @return Unique ID.
+     * @param actualPass Passcode.
+     * @return Encryption key for passcode.
      */
     public synchronized String getEncryptionKeyForPasscode(String actualPass) {
         if (actualPass != null && !actualPass.trim().equals("")) {
@@ -405,7 +405,15 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @return Encrypted data.
      */
     public static String encryptWithPasscode(String data, String passcode) {
-        return Encryptor.encrypt(data, ForceApp.APP.getEncryptionKeyForPasscode(passcode));
+        String encKey = null;
+
+        /*
+         * ForceApp.APP == null in test runs.
+         */
+        if (ForceApp.APP != null) {
+            encKey = ForceApp.APP.getEncryptionKeyForPasscode(passcode);
+        }
+        return Encryptor.encrypt(data, encKey);
     }
 
     /**
@@ -416,6 +424,14 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @return Decrypted data.
      */
     public static String decryptWithPasscode(String data, String passcode) {
-        return Encryptor.decrypt(data, ForceApp.APP.getEncryptionKeyForPasscode(passcode));
+        String decKey = null;
+
+        /*
+         * ForceApp.APP == null in test runs.
+         */
+        if (ForceApp.APP != null) {
+            decKey = ForceApp.APP.getEncryptionKeyForPasscode(passcode);
+        }
+        return Encryptor.decrypt(data, decKey);
     }
 }
