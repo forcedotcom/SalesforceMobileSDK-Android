@@ -56,6 +56,7 @@ import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
+import com.salesforce.androidsdk.util.EventsListenerQueue;
 
 /**
  * Tests for ExplorerActivity

@@ -405,15 +405,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @return Encrypted data.
      */
     public static String encryptWithPasscode(String data, String passcode) {
-        String encKey = null;
-
-        /*
-         * ForceApp.APP == null in test runs.
-         */
-        if (ForceApp.APP != null) {
-            encKey = ForceApp.APP.getEncryptionKeyForPasscode(passcode);
-        }
-        return Encryptor.encrypt(data, encKey);
+        return Encryptor.encrypt(data, ForceApp.APP.getEncryptionKeyForPasscode(passcode));
     }
 
     /**
@@ -424,14 +416,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @return Decrypted data.
      */
     public static String decryptWithPasscode(String data, String passcode) {
-        String decKey = null;
-
-        /*
-         * ForceApp.APP == null in test runs.
-         */
-        if (ForceApp.APP != null) {
-            decKey = ForceApp.APP.getEncryptionKeyForPasscode(passcode);
-        }
-        return Encryptor.decrypt(data, decKey);
+        return Encryptor.decrypt(data, ForceApp.APP.getEncryptionKeyForPasscode(passcode));
     }
 }

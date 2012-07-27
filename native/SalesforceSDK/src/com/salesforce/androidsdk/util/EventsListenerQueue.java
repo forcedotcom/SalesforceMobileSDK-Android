@@ -24,13 +24,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.restexplorer;
+package com.salesforce.androidsdk.util;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
-import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.EventsObserver;
 
 /**
  * This tracks activity events using a queue, allowing for tests to wait for certain events to turn up.
@@ -46,18 +46,18 @@ public class EventsListenerQueue {
 
     public EventsListenerQueue() {
         observer = new MyListener();
-		EventsObservable.get().registerObserver(observer);
+        EventsObservable.get().registerObserver(observer);
     }
-    
+
     public void tearDown() {
         EventsObservable.get().unregisterObserver(observer);
     }
-    
+
     // remove any events in the queue
     public void clearQueue() {
         events.clear();
     }
-    
+
     /** will return the next event in the queue, waiting if needed for a reasonable amount of time */
     public Event getNextEvent() {
         try {
@@ -69,37 +69,37 @@ public class EventsListenerQueue {
             throw new RuntimeException("Was interupted waiting for activity event");
         }
     }
-    
+
     /** will wait for expected event in the queue, waiting till the timeout specified */
     public void waitForEvent(EventType expectedType, int timeout) {
-    	long end = System.currentTimeMillis() + timeout;
-    	long remaining = timeout;
-    	while (remaining > 0) {
-    		try {
-				Event e = events.poll(remaining, TimeUnit.MILLISECONDS);
-				if (e != null && e.type == expectedType) {
-					return;
-				}
-			} catch (InterruptedException e) {
-				throw new RuntimeException("Was interupted waiting for activity event");
-			}
-			remaining = end - System.currentTimeMillis();
-    	}
-    	throw new RuntimeException("Failure ** Timeout waiting for an event ");
+        long end = System.currentTimeMillis() + timeout;
+        long remaining = timeout;
+        while (remaining > 0) {
+            try {
+                Event e = events.poll(remaining, TimeUnit.MILLISECONDS);
+                if (e != null && e.type == expectedType) {
+                    return;
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException("Was interupted waiting for activity event");
+            }
+            remaining = end - System.currentTimeMillis();
+        }
+        throw new RuntimeException("Failure ** Timeout waiting for an event ");
     }
-    
+
     public boolean peekEvent() {
         return events.peek() == null;
     }
-    
+
     private BlockingQueue<Event> events = new ArrayBlockingQueue<Event>(10);
-	private MyListener observer;
+    private MyListener observer;
 
     public class MyListener implements EventsObserver {
 
-		@Override
-		public void onEvent(EventType evt) {
-			events.offer(new Event(evt));
-		}
+        @Override
+        public void onEvent(EventType evt) {
+            events.offer(new Event(evt));
+        }
     }
 }

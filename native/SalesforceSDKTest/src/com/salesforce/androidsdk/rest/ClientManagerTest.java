@@ -51,6 +51,8 @@ import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.util.EventsListenerQueue;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 public class ClientManagerTest extends InstrumentationTestCase {
 
@@ -75,6 +77,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private ClientManager clientManager;
     private AccountManager accountManager;
     private LoginOptions loginOptions;
+    private EventsListenerQueue eq;
 
     @Override
     public void setUp() throws Exception {
@@ -84,12 +87,22 @@ public class ClientManagerTest extends InstrumentationTestCase {
         loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_PASSCODE_HASH, TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES);
         clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, loginOptions);
         accountManager = clientManager.getAccountManager();
+        eq = new EventsListenerQueue();
+
+        // Wait for app initialization to complete.
+        if (ForceApp.APP == null) {
+            eq.waitForEvent(EventType.AppCreateComplete, 5000);
+        }
     }
 
     @Override
     public void tearDown() throws Exception {
         cleanupAccounts();
         assertNoAccounts();
+        if (eq != null) {
+            eq.tearDown();
+            eq = null;
+        }
     }
 
     /**
