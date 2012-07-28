@@ -39,11 +39,13 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
+import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
+import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -56,7 +58,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 public class ClientManagerTest extends InstrumentationTestCase {
 
-    private static final String TEST_PASSCODE_HASH = Encryptor.hash("passcode", "hash-key");
+    public static final String TEST_PASSCODE_HASH = Encryptor.hash("passcode", "hash-key");
     private static final String TEST_ORG_ID = "test_org_id";
     private static final String TEST_USER_ID = "test_user_id";
     private static final String TEST_ACCOUNT_NAME = "test_accountname";
@@ -90,6 +92,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         eq = new EventsListenerQueue();
 
         // Wait for app initialization to complete.
+        Instrumentation.newApplication(TestForceApp.class, targetContext);
         if (ForceApp.APP == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
@@ -103,6 +106,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
             eq.tearDown();
             eq = null;
         }
+        ForceApp.APP = null;
+        super.tearDown();
     }
 
     /**
@@ -456,7 +461,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
         clientManager.removeAccounts(accountManager.getAccountsByType(TEST_ACCOUNT_TYPE));
     }
 
-
     /**
      * Create test account
      * @return
@@ -467,7 +471,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
                 TEST_ORG_ID, TEST_USER_ID, TEST_PASSCODE_HASH);
     }
 
-
     /**
      * Create other test account
      * @return
@@ -477,5 +480,4 @@ public class ClientManagerTest extends InstrumentationTestCase {
                 TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL,
                 TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, TEST_PASSCODE_HASH);
     }
-
 }
