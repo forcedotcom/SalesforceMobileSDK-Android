@@ -39,21 +39,26 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
+import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
+import com.salesforce.androidsdk.TestForceApp;
+import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.util.EventsListenerQueue;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 public class ClientManagerTest extends InstrumentationTestCase {
 
-    private static final String TEST_PASSCODE_HASH = Encryptor.hash("passcode", "hash-key");
+    public static final String TEST_PASSCODE_HASH = Encryptor.hash("passcode", "hash-key");
     private static final String TEST_ORG_ID = "test_org_id";
     private static final String TEST_USER_ID = "test_user_id";
     private static final String TEST_ACCOUNT_NAME = "test_accountname";
@@ -74,6 +79,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private ClientManager clientManager;
     private AccountManager accountManager;
     private LoginOptions loginOptions;
+    private EventsListenerQueue eq;
 
     @Override
     public void setUp() throws Exception {
@@ -83,12 +89,25 @@ public class ClientManagerTest extends InstrumentationTestCase {
         loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_PASSCODE_HASH, TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES);
         clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, loginOptions);
         accountManager = clientManager.getAccountManager();
+        eq = new EventsListenerQueue();
+
+        // Wait for app initialization to complete.
+        Instrumentation.newApplication(TestForceApp.class, targetContext);
+        if (ForceApp.APP == null) {
+            eq.waitForEvent(EventType.AppCreateComplete, 5000);
+        }
     }
 
     @Override
     public void tearDown() throws Exception {
         cleanupAccounts();
         assertNoAccounts();
+        if (eq != null) {
+            eq.tearDown();
+            eq = null;
+        }
+        ForceApp.APP = null;
+        super.tearDown();
     }
 
     /**
@@ -132,19 +151,19 @@ public class ClientManagerTest extends InstrumentationTestCase {
         assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
 
         String encryptedAuthToken = accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN);
-        String decryptedAuthToken = Encryptor.decrypt(encryptedAuthToken, TEST_PASSCODE_HASH);
+        String decryptedAuthToken = ForceApp.decryptWithPasscode(encryptedAuthToken, TEST_PASSCODE_HASH);
         assertEquals("Wrong auth token", TEST_AUTH_TOKEN, decryptedAuthToken);
 
         String encryptedRefreshToken = accountManager.getPassword(account);
-        String decryptedRefreshToken = Encryptor.decrypt(encryptedRefreshToken, TEST_PASSCODE_HASH);
-        assertEquals("Wrong refresh token",TEST_REFRESH_TOKEN, decryptedRefreshToken);
+        String decryptedRefreshToken = ForceApp.decryptWithPasscode(encryptedRefreshToken, TEST_PASSCODE_HASH);
+        assertEquals("Wrong refresh token", TEST_REFRESH_TOKEN, decryptedRefreshToken);
 
-        assertEquals("Wrong instance url", TEST_INSTANCE_URL, accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL));
-        assertEquals("Wrong login url", TEST_LOGIN_URL, accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL));
-        assertEquals("Wrong client id", TEST_CLIENT_ID, accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID));
-        assertEquals("Wrong user id", TEST_USER_ID, accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID));
-        assertEquals("Wrong org id", TEST_ORG_ID, accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID));
-        assertEquals("Wrong username", TEST_USERNAME, accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME));
+        assertEquals("Wrong instance url", TEST_INSTANCE_URL, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), TEST_PASSCODE_HASH));
+        assertEquals("Wrong login url", TEST_LOGIN_URL, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), TEST_PASSCODE_HASH));
+        assertEquals("Wrong client id", TEST_CLIENT_ID, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), TEST_PASSCODE_HASH));
+        assertEquals("Wrong user id", TEST_USER_ID, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID), TEST_PASSCODE_HASH));
+        assertEquals("Wrong org id", TEST_ORG_ID, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), TEST_PASSCODE_HASH));
+        assertEquals("Wrong username", TEST_USERNAME, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), TEST_PASSCODE_HASH));
     }
 
 
@@ -442,7 +461,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
         clientManager.removeAccounts(accountManager.getAccountsByType(TEST_ACCOUNT_TYPE));
     }
 
-
     /**
      * Create test account
      * @return
@@ -453,7 +471,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
                 TEST_ORG_ID, TEST_USER_ID, TEST_PASSCODE_HASH);
     }
 
-
     /**
      * Create other test account
      * @return
@@ -463,5 +480,4 @@ public class ClientManagerTest extends InstrumentationTestCase {
                 TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL,
                 TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, TEST_PASSCODE_HASH);
     }
-
 }

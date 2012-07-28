@@ -201,10 +201,10 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
-     * Returns the unique ID being used.
+     * Returns the encryption key being used.
      *
-     * @param context Context.
-     * @return Unique ID.
+     * @param actualPass Passcode.
+     * @return Encryption key for passcode.
      */
     public synchronized String getEncryptionKeyForPasscode(String actualPass) {
         if (actualPass != null && !actualPass.trim().equals("")) {
