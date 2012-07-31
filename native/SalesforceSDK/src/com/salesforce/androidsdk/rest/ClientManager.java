@@ -256,7 +256,7 @@ public class ClientManager {
         extras.putString(AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(authToken, passcodeHash));
         Account acc = new Account(accountName, getAccountType());
         accountManager.addAccountExplicitly(acc, ForceApp.encryptWithPasscode(refreshToken, passcodeHash), extras);
-        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(authToken, passcodeHash));
+        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
         return extras;
     }
 
@@ -304,7 +304,7 @@ public class ClientManager {
                 acctManager.setUserData(account, AuthenticatorService.KEY_USER_ID, ForceApp.encryptWithPasscode(userId, newPass));
                 acctManager.setUserData(account, AuthenticatorService.KEY_USERNAME, ForceApp.encryptWithPasscode(username, newPass));
                 acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_ID, ForceApp.encryptWithPasscode(clientId, newPass));
-                acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(authToken, newPass));
+                acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, authToken);
             }
         }
     }
@@ -421,7 +421,6 @@ public class ClientManager {
             if (acc == null)
                 return null;
 
-
             // Wait if another thread is already fetching an access token
             synchronized (lock) {
                 if (gettingAuthToken) {
@@ -435,10 +434,8 @@ public class ClientManager {
                 gettingAuthToken = true;
             }
 
-
             // Invalidate current auth token
             clientManager.invalidateToken(lastNewAuthToken);
-
             String newAuthToken = null;
             try {
                 Bundle options = clientManager.loginOptions.asBundle();
@@ -448,7 +445,7 @@ public class ClientManager {
                 if (bundle == null) {
                     Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
                 } else {
-                    newAuthToken = ForceApp.decryptWithPasscode(bundle.getString(AccountManager.KEY_AUTHTOKEN), ForceApp.APP.getPasscodeHash());
+                    newAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
                 }
             } catch (Exception e) {
                 Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken:getNewAuthToken",
