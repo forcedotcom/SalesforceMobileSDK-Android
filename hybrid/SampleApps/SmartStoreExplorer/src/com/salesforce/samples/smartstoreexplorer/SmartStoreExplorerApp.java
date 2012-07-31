@@ -29,6 +29,7 @@ package com.salesforce.samples.smartstoreexplorer;
 import android.app.Activity;
 
 import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
 
@@ -48,7 +49,7 @@ public class SmartStoreExplorerApp extends ForceApp {
 
     @Override
     protected String getKey(String name) {
-        return null;
+    	return Encryptor.hash(name + "W00h00t!11", name + "G@nd01f");
     }
 
     @Override
