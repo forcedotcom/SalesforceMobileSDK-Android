@@ -128,7 +128,11 @@ public class AuthenticatorService extends Service {
             final String userId = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_USER_ID), passcodeHash);
             final String orgId = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_ORG_ID), passcodeHash);
             final String username = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_USERNAME), passcodeHash);
-            final String clientSecret = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET), passcodeHash);
+            final String encClientSecret = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET);
+            String clientSecret = null;
+            if (encClientSecret != null) {
+                clientSecret = ForceApp.decryptWithPasscode(encClientSecret, passcodeHash);
+            }
             final Bundle resBundle = new Bundle();
             try {
                 final TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken, clientSecret);
@@ -142,14 +146,18 @@ public class AuthenticatorService extends Service {
                 mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(tr.authToken, passcodeHash));
                 resBundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
                 resBundle.putString(AccountManager.KEY_ACCOUNT_TYPE, account.type);
-                resBundle.putString(AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(tr.authToken, passcodeHash));
+                resBundle.putString(AccountManager.KEY_AUTHTOKEN, tr.authToken);
                 resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, ForceApp.encryptWithPasscode(loginServer, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, ForceApp.encryptWithPasscode(instServer, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, ForceApp.encryptWithPasscode(clientId, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_USERNAME, ForceApp.encryptWithPasscode(username, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_USER_ID, ForceApp.encryptWithPasscode(userId, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_ORG_ID, ForceApp.encryptWithPasscode(orgId, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_CLIENT_SECRET, ForceApp.encryptWithPasscode(clientSecret, passcodeHash));
+                String encrClientSecret = null;
+                if (clientSecret != null) {
+                    encrClientSecret = ForceApp.encryptWithPasscode(clientSecret, passcodeHash);
+                }
+                resBundle.putString(AuthenticatorService.KEY_CLIENT_SECRET, encrClientSecret);
                 Log.i("Authenticator:getAuthToken", "Returning auth bundle for " + account.name);
             } catch (ClientProtocolException e) {
                 Log.w("Authenticator:getAuthToken", "", e);
