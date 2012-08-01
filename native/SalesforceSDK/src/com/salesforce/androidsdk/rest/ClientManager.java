@@ -450,7 +450,7 @@ public class ClientManager {
                     if (newAuthToken == null) {
                         final Intent loginFlowIntent = bundle.getParcelable(AccountManager.KEY_INTENT);
                         if (loginFlowIntent != null) {
-                            ForceApp.APP.logout(null);
+                            ForceApp.APP.logout(null, false);
                         }
                     }
                 }

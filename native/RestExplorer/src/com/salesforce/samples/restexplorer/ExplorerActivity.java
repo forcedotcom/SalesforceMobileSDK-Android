@@ -76,624 +76,624 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * Activity for explorer
- * 
+ *
  */
 public class ExplorerActivity extends TabActivity {
 
-	private static final String DOUBLE_LINE = "==============================================================================";
-	private static final String SINGLE_LINE = "------------------------------------------------------------------------------";
-	private static final int LOGOUT_CONFIRMATION_DIALOG_ID = 0;
+    private static final String DOUBLE_LINE = "==============================================================================";
+    private static final String SINGLE_LINE = "------------------------------------------------------------------------------";
+    private static final int LOGOUT_CONFIRMATION_DIALOG_ID = 0;
 
-	private PasscodeManager passcodeManager;
-	private String apiVersion;
-	private RestClient client;
-	private TextView resultText;
-	AlertDialog logoutConfirmationDialog;
+    private PasscodeManager passcodeManager;
+    private String apiVersion;
+    private RestClient client;
+    private TextView resultText;
+    AlertDialog logoutConfirmationDialog;
 
-	// Use for objectId fields auto-complete
-	private TreeSet<String> knownIds = new TreeSet<String>();
+    // Use for objectId fields auto-complete
+    private TreeSet<String> knownIds = new TreeSet<String>();
 
-	RestClient getClient() {
-		return client;
-	}
-	
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+    RestClient getClient() {
+        return client;
+    }
 
-		// Passcode manager
-		passcodeManager = ForceApp.APP.getPasscodeManager();		
-		
-		// ApiVersion
-		apiVersion = getString(R.string.api_version);
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-		// Setup view
-		setContentView(R.layout.explorer);
-		
-		// Setup tabs
-		TabHost tabHost = (TabHost) findViewById(android.R.id.tabhost);
-		addTab(tabHost, "versions", R.string.versions_tab, R.id.versions_tab);
-		addTab(tabHost, "resources", R.string.resources_tab, R.id.resources_tab);
-		addTab(tabHost, "describe_global", R.string.describe_global_tab,
-				R.id.describe_global_tab);
-		addTab(tabHost, "metadata", R.string.metadata_tab, R.id.metadata_tab);
-		addTab(tabHost, "describe", R.string.describe_tab, R.id.describe_tab);
-		addTab(tabHost, "create", R.string.create_tab, R.id.create_tab);
-		addTab(tabHost, "retrieve", R.string.retrieve_tab, R.id.retrieve_tab);
-		addTab(tabHost, "update", R.string.update_tab, R.id.update_tab);
-		addTab(tabHost, "upsert", R.string.upsert_tab, R.id.upsert_tab);
-		addTab(tabHost, "delete", R.string.delete_tab, R.id.delete_tab);
-		addTab(tabHost, "query", R.string.query_tab, R.id.query_tab);
-		addTab(tabHost, "search", R.string.search_tab, R.id.search_tab);
-		addTab(tabHost, "manual", R.string.manual_request_tab,
-				R.id.manual_request_tab);
+        // Passcode manager
+        passcodeManager = ForceApp.APP.getPasscodeManager();
 
-		// Make result area scrollable
-		resultText = (TextView) findViewById(R.id.result_text);
-		resultText.setMovementMethod(new ScrollingMovementMethod());
-	}
-	
-	@Override 
-	public void onResume() {
-		super.onResume();
-		
-		// Hide everything until we are logged in
-		findViewById(R.id.root).setVisibility(View.INVISIBLE);
-		
-		// Bring up passcode screen if needed
-		if (passcodeManager.onResume(this)) {
-			// Login options
-			String accountType = ForceApp.APP.getAccountType();
-	    	LoginOptions loginOptions = new LoginOptions(
-	    			null, // gets overridden by LoginActivity based on server picked by uuser 
-	    			ForceApp.APP.getPasscodeHash(),
-	    			getString(R.string.oauth_callback_url),
-	    			getString(R.string.oauth_client_id),
-	    			new String[] {"api"});
-			
-			// Get a rest client
-			new ClientManager(this, accountType, loginOptions).getRestClient(this, new RestClientCallback() {
-				@Override
-				public void authenticatedRestClient(RestClient client) {
-					if (client == null) {
-						ForceApp.APP.logout(ExplorerActivity.this);
-						return;
-					}
-					ExplorerActivity.this.client = client;
-					
-					// Show everything
-					findViewById(R.id.root).setVisibility(View.VISIBLE);				
-				}
-			});
-		}
-	}
-	
-	
+        // ApiVersion
+        apiVersion = getString(R.string.api_version);
+
+        // Setup view
+        setContentView(R.layout.explorer);
+
+        // Setup tabs
+        TabHost tabHost = (TabHost) findViewById(android.R.id.tabhost);
+        addTab(tabHost, "versions", R.string.versions_tab, R.id.versions_tab);
+        addTab(tabHost, "resources", R.string.resources_tab, R.id.resources_tab);
+        addTab(tabHost, "describe_global", R.string.describe_global_tab,
+                R.id.describe_global_tab);
+        addTab(tabHost, "metadata", R.string.metadata_tab, R.id.metadata_tab);
+        addTab(tabHost, "describe", R.string.describe_tab, R.id.describe_tab);
+        addTab(tabHost, "create", R.string.create_tab, R.id.create_tab);
+        addTab(tabHost, "retrieve", R.string.retrieve_tab, R.id.retrieve_tab);
+        addTab(tabHost, "update", R.string.update_tab, R.id.update_tab);
+        addTab(tabHost, "upsert", R.string.upsert_tab, R.id.upsert_tab);
+        addTab(tabHost, "delete", R.string.delete_tab, R.id.delete_tab);
+        addTab(tabHost, "query", R.string.query_tab, R.id.query_tab);
+        addTab(tabHost, "search", R.string.search_tab, R.id.search_tab);
+        addTab(tabHost, "manual", R.string.manual_request_tab,
+                R.id.manual_request_tab);
+
+        // Make result area scrollable
+        resultText = (TextView) findViewById(R.id.result_text);
+        resultText.setMovementMethod(new ScrollingMovementMethod());
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        // Hide everything until we are logged in
+        findViewById(R.id.root).setVisibility(View.INVISIBLE);
+
+        // Bring up passcode screen if needed
+        if (passcodeManager.onResume(this)) {
+            // Login options
+            String accountType = ForceApp.APP.getAccountType();
+            LoginOptions loginOptions = new LoginOptions(
+                    null, // gets overridden by LoginActivity based on server picked by uuser
+                    ForceApp.APP.getPasscodeHash(),
+                    getString(R.string.oauth_callback_url),
+                    getString(R.string.oauth_client_id),
+                    new String[] {"api"});
+
+            // Get a rest client
+            new ClientManager(this, accountType, loginOptions).getRestClient(this, new RestClientCallback() {
+                @Override
+                public void authenticatedRestClient(RestClient client) {
+                    if (client == null) {
+                        ForceApp.APP.logout(ExplorerActivity.this, true);
+                        return;
+                    }
+                    ExplorerActivity.this.client = client;
+
+                    // Show everything
+                    findViewById(R.id.root).setVisibility(View.VISIBLE);
+                }
+            });
+        }
+    }
+
+
     @Override
     public void onPause() {
-    	passcodeManager.onPause(this);
-    	super.onPause();
+        passcodeManager.onPause(this);
+        super.onPause();
     }
-	
-	@Override
-	public void onUserInteraction() {
-		passcodeManager.recordUserInteraction();
-	}
 
-	@Override
-	protected Dialog onCreateDialog(int id) {
-		if (id == LOGOUT_CONFIRMATION_DIALOG_ID) {
-			logoutConfirmationDialog = new AlertDialog.Builder(this)
-				.setTitle(R.string.logout_title)
-				.setPositiveButton(R.string.logout_yes,
-						new DialogInterface.OnClickListener() {
-							@Override
-							public void onClick(DialogInterface dialog,
-									int which) {
-								ForceApp.APP.logout(ExplorerActivity.this);
-							}
-						})
-				.setNegativeButton(R.string.logout_cancel, null)
-				.create();
-			return logoutConfirmationDialog;
-		}
-		return super.onCreateDialog(id);
-	}
-	
-	
-	private void addTab(TabHost tabHost, String tag, int titleId, int tabId) {
-		tabHost.addTab(tabHost.newTabSpec(tag).setIndicator(getString(titleId))
-				.setContent(tabId));
-	}
+    @Override
+    public void onUserInteraction() {
+        passcodeManager.recordUserInteraction();
+    }
 
-	/**************************************************************************************************
-	 * 
-	 * Buttons click handlers
-	 * 
-	 **************************************************************************************************/
+    @Override
+    protected Dialog onCreateDialog(int id) {
+        if (id == LOGOUT_CONFIRMATION_DIALOG_ID) {
+            logoutConfirmationDialog = new AlertDialog.Builder(this)
+                .setTitle(R.string.logout_title)
+                .setPositiveButton(R.string.logout_yes,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog,
+                                    int which) {
+                                ForceApp.APP.logout(ExplorerActivity.this, true);
+                            }
+                        })
+                .setNegativeButton(R.string.logout_cancel, null)
+                .create();
+            return logoutConfirmationDialog;
+        }
+        return super.onCreateDialog(id);
+    }
 
-	/**
-	 * Called when "print info" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onPrintInfoClick(View v) {
-		printInfo();
-	}
 
-	/**
-	 * Called when "clear" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onClearClick(View v) {
-		resultText.setText("");
-	}
+    private void addTab(TabHost tabHost, String tag, int titleId, int tabId) {
+        tabHost.addTab(tabHost.newTabSpec(tag).setIndicator(getString(titleId))
+                .setContent(tabId));
+    }
 
-	/**
-	 * Called when "get versions" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onGetVersionsClick(View v) {
-		sendRequest(RestRequest.getRequestForVersions());
-	}
+    /**************************************************************************************************
+     *
+     * Buttons click handlers
+     *
+     **************************************************************************************************/
 
-	/**
-	 * Called when "get resources" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onGetResourcesClick(View v) {
-		sendRequest(RestRequest.getRequestForResources(apiVersion));
-	}
+    /**
+     * Called when "print info" button is clicked.
+     *
+     * @param v
+     */
+    public void onPrintInfoClick(View v) {
+        printInfo();
+    }
 
-	/**
-	 * Called when "describe global" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onDescribeGlobalClick(View v) {
-		sendRequest(RestRequest.getRequestForDescribeGlobal(apiVersion));
-	}
+    /**
+     * Called when "clear" button is clicked.
+     *
+     * @param v
+     */
+    public void onClearClick(View v) {
+        resultText.setText("");
+    }
 
-	/**
-	 * Called when "get metadata" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onGetMetadataClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.metadata_object_type_text))
-				.getText().toString();
-		sendRequest(RestRequest.getRequestForMetadata(apiVersion, objectType));
-	}
+    /**
+     * Called when "get versions" button is clicked.
+     *
+     * @param v
+     */
+    public void onGetVersionsClick(View v) {
+        sendRequest(RestRequest.getRequestForVersions());
+    }
 
-	/**
-	 * Called when "describe" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onDescribeClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.describe_object_type_text))
-				.getText().toString();
-		sendRequest(RestRequest.getRequestForDescribe(apiVersion, objectType));
-	}
+    /**
+     * Called when "get resources" button is clicked.
+     *
+     * @param v
+     */
+    public void onGetResourcesClick(View v) {
+        sendRequest(RestRequest.getRequestForResources(apiVersion));
+    }
 
-	/**
-	 * Called when "create" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onCreateClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.create_object_type_text))
-				.getText().toString();
-		Map<String, Object> fields = parseFieldMap(R.id.create_fields_text);
+    /**
+     * Called when "describe global" button is clicked.
+     *
+     * @param v
+     */
+    public void onDescribeGlobalClick(View v) {
+        sendRequest(RestRequest.getRequestForDescribeGlobal(apiVersion));
+    }
 
-		RestRequest request = null;
-		try {
-			request = RestRequest.getRequestForCreate(apiVersion, objectType,
-					fields);
-		} catch (Exception e) {
-			printHeader("Could not build create request");
-			printException(e);
-			return;
-		}
-		sendRequest(request);
-	}
+    /**
+     * Called when "get metadata" button is clicked.
+     *
+     * @param v
+     */
+    public void onGetMetadataClick(View v) {
+        String objectType = ((EditText) findViewById(R.id.metadata_object_type_text))
+                .getText().toString();
+        sendRequest(RestRequest.getRequestForMetadata(apiVersion, objectType));
+    }
 
-	/**
-	 * Called when "retrieve" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onRetrieveClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.retrieve_object_type_text))
-				.getText().toString();
-		String objectId = ((EditText) findViewById(R.id.retrieve_object_id_text))
-				.getText().toString();
-		List<String> fieldList = parseFieldList(R.id.retrieve_field_list_text);
+    /**
+     * Called when "describe" button is clicked.
+     *
+     * @param v
+     */
+    public void onDescribeClick(View v) {
+        String objectType = ((EditText) findViewById(R.id.describe_object_type_text))
+                .getText().toString();
+        sendRequest(RestRequest.getRequestForDescribe(apiVersion, objectType));
+    }
 
-		RestRequest request = null;
-		try {
-			request = RestRequest.getRequestForRetrieve(apiVersion, objectType,
-					objectId, fieldList);
-		} catch (Exception e) {
-			printHeader("Could not build retrieve request");
-			printException(e);
-			return;
-		}
-		sendRequest(request);
-	}
+    /**
+     * Called when "create" button is clicked.
+     *
+     * @param v
+     */
+    public void onCreateClick(View v) {
+        String objectType = ((EditText) findViewById(R.id.create_object_type_text))
+                .getText().toString();
+        Map<String, Object> fields = parseFieldMap(R.id.create_fields_text);
 
-	/**
-	 * Called when "update" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onUpdateClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.update_object_type_text))
-				.getText().toString();
-		String objectId = ((EditText) findViewById(R.id.update_object_id_text))
-				.getText().toString();
-		Map<String, Object> fields = parseFieldMap(R.id.update_fields_text);
+        RestRequest request = null;
+        try {
+            request = RestRequest.getRequestForCreate(apiVersion, objectType,
+                    fields);
+        } catch (Exception e) {
+            printHeader("Could not build create request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
 
-		RestRequest request = null;
-		try {
-			request = RestRequest.getRequestForUpdate(apiVersion, objectType,
-					objectId, fields);
-		} catch (Exception e) {
-			printHeader("Could not build update request");
-			printException(e);
-			return;
-		}
-		sendRequest(request);
-	}
+    /**
+     * Called when "retrieve" button is clicked.
+     *
+     * @param v
+     */
+    public void onRetrieveClick(View v) {
+        String objectType = ((EditText) findViewById(R.id.retrieve_object_type_text))
+                .getText().toString();
+        String objectId = ((EditText) findViewById(R.id.retrieve_object_id_text))
+                .getText().toString();
+        List<String> fieldList = parseFieldList(R.id.retrieve_field_list_text);
 
-	/**
-	 * Called when "upsert" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onUpsertClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.upsert_object_type_text))
-				.getText().toString();
-		String externalIdField = ((EditText) findViewById(R.id.upsert_external_id_field_text))
-				.getText().toString();
-		String externalId = ((EditText) findViewById(R.id.upsert_external_id_text))
-				.getText().toString();
-		Map<String, Object> fields = parseFieldMap(R.id.upsert_fields_text);
+        RestRequest request = null;
+        try {
+            request = RestRequest.getRequestForRetrieve(apiVersion, objectType,
+                    objectId, fieldList);
+        } catch (Exception e) {
+            printHeader("Could not build retrieve request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
 
-		RestRequest request = null;
-		try {
-			request = RestRequest.getRequestForUpsert(apiVersion, objectType,
-					externalIdField, externalId, fields);
-		} catch (Exception e) {
-			printHeader("Could not build upsert request");
-			printException(e);
-			return;
-		}
-		sendRequest(request);
-	}
+    /**
+     * Called when "update" button is clicked.
+     *
+     * @param v
+     */
+    public void onUpdateClick(View v) {
+        String objectType = ((EditText) findViewById(R.id.update_object_type_text))
+                .getText().toString();
+        String objectId = ((EditText) findViewById(R.id.update_object_id_text))
+                .getText().toString();
+        Map<String, Object> fields = parseFieldMap(R.id.update_fields_text);
 
-	/**
-	 * Called when "delete" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onDeleteClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.delete_object_type_text))
-				.getText().toString();
-		String objectId = ((EditText) findViewById(R.id.delete_object_id_text))
-				.getText().toString();
+        RestRequest request = null;
+        try {
+            request = RestRequest.getRequestForUpdate(apiVersion, objectType,
+                    objectId, fields);
+        } catch (Exception e) {
+            printHeader("Could not build update request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
 
-		sendRequest(RestRequest.getRequestForDelete(apiVersion, objectType,
-				objectId));
-	}
+    /**
+     * Called when "upsert" button is clicked.
+     *
+     * @param v
+     */
+    public void onUpsertClick(View v) {
+        String objectType = ((EditText) findViewById(R.id.upsert_object_type_text))
+                .getText().toString();
+        String externalIdField = ((EditText) findViewById(R.id.upsert_external_id_field_text))
+                .getText().toString();
+        String externalId = ((EditText) findViewById(R.id.upsert_external_id_text))
+                .getText().toString();
+        Map<String, Object> fields = parseFieldMap(R.id.upsert_fields_text);
 
-	/**
-	 * Called when "query" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onQueryClick(View v) {
-		String soql = ((EditText) findViewById(R.id.query_soql_text)).getText()
-				.toString();
-		RestRequest request = null;
-		try {
-			request = RestRequest.getRequestForQuery(apiVersion, soql);
-		} catch (UnsupportedEncodingException e) {
-			printHeader("Could not build query request");
-			printException(e);
-			return;
-		}
+        RestRequest request = null;
+        try {
+            request = RestRequest.getRequestForUpsert(apiVersion, objectType,
+                    externalIdField, externalId, fields);
+        } catch (Exception e) {
+            printHeader("Could not build upsert request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
 
-		sendRequest(request);
-	}
+    /**
+     * Called when "delete" button is clicked.
+     *
+     * @param v
+     */
+    public void onDeleteClick(View v) {
+        String objectType = ((EditText) findViewById(R.id.delete_object_type_text))
+                .getText().toString();
+        String objectId = ((EditText) findViewById(R.id.delete_object_id_text))
+                .getText().toString();
 
-	/**
-	 * Called when "search" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onSearchClick(View v) {
-		String sosl = ((EditText) findViewById(R.id.search_sosl_text))
-				.getText().toString();
-		RestRequest request = null;
-		try {
-			request = RestRequest.getRequestForSearch(apiVersion, sosl);
-		} catch (UnsupportedEncodingException e) {
-			printHeader("Could not build search request");
-			printException(e);
-			return;
-		}
+        sendRequest(RestRequest.getRequestForDelete(apiVersion, objectType,
+                objectId));
+    }
 
-		sendRequest(request);
-	}
+    /**
+     * Called when "query" button is clicked.
+     *
+     * @param v
+     */
+    public void onQueryClick(View v) {
+        String soql = ((EditText) findViewById(R.id.query_soql_text)).getText()
+                .toString();
+        RestRequest request = null;
+        try {
+            request = RestRequest.getRequestForQuery(apiVersion, soql);
+        } catch (UnsupportedEncodingException e) {
+            printHeader("Could not build query request");
+            printException(e);
+            return;
+        }
 
-	/**
-	 * Called when "manual" button is clicked.
-	 * 
-	 * @param v
-	 */
-	public void onManualRequestClick(View v) {
-		RestRequest request = null;
-		try {
-			String path = ((EditText) findViewById(R.id.manual_request_path_text))
-					.getText().toString();
-			HttpEntity paramsEntity = getParamsEntity(R.id.manual_request_params_text);
-			RestMethod method = getMethod(R.id.manual_request_method_radiogroup);
-			request = new RestRequest(method, path, paramsEntity);
-		} catch (UnsupportedEncodingException e) {
-			printHeader("Could not build manual request");
-			printException(e);
-			return;
-		}
+        sendRequest(request);
+    }
 
-		sendRequest(request);
-	}
+    /**
+     * Called when "search" button is clicked.
+     *
+     * @param v
+     */
+    public void onSearchClick(View v) {
+        String sosl = ((EditText) findViewById(R.id.search_sosl_text))
+                .getText().toString();
+        RestRequest request = null;
+        try {
+            request = RestRequest.getRequestForSearch(apiVersion, sosl);
+        } catch (UnsupportedEncodingException e) {
+            printHeader("Could not build search request");
+            printException(e);
+            return;
+        }
 
-	/**
-	 * @param manualRequestParamsText
-	 * @return
-	 * @throws UnsupportedEncodingException
-	 */
-	private HttpEntity getParamsEntity(int manualRequestParamsText)
-			throws UnsupportedEncodingException {
-		Map<String, Object> params = parseFieldMap(R.id.manual_request_params_text);
-		if (params == null) {
-			params = new HashMap<String, Object>();
-		}
-		List<NameValuePair> paramsList = new ArrayList<NameValuePair>();
-		for (Entry<String, Object> param : params.entrySet()) {
-			paramsList.add(new BasicNameValuePair(param.getKey(),
-					(String) param.getValue()));
-		}
-		return new UrlEncodedFormEntity(paramsList);
-	}
+        sendRequest(request);
+    }
 
-	/**
-	 * @param methodRadioGroup
-	 * @return
-	 */
-	private RestMethod getMethod(int methodRadioGroup) {
-		RadioGroup radioGroup = (RadioGroup) findViewById(methodRadioGroup);
-		RadioButton radioButton = (RadioButton) findViewById(radioGroup
-				.getCheckedRadioButtonId());
-		RestMethod method = RestMethod.valueOf((String) radioButton.getTag());
-		return method;
-	}
+    /**
+     * Called when "manual" button is clicked.
+     *
+     * @param v
+     */
+    public void onManualRequestClick(View v) {
+        RestRequest request = null;
+        try {
+            String path = ((EditText) findViewById(R.id.manual_request_path_text))
+                    .getText().toString();
+            HttpEntity paramsEntity = getParamsEntity(R.id.manual_request_params_text);
+            RestMethod method = getMethod(R.id.manual_request_method_radiogroup);
+            request = new RestRequest(method, path, paramsEntity);
+        } catch (UnsupportedEncodingException e) {
+            printHeader("Could not build manual request");
+            printException(e);
+            return;
+        }
 
-	/**
-	 * Called when "Logout" button is clicked. Brings up the logout confirmation
-	 * dialog.
-	 * 
-	 * @param v
-	 */
-	public void onLogoutClick(View v) {
-		showDialog(LOGOUT_CONFIRMATION_DIALOG_ID);
-	}
+        sendRequest(request);
+    }
 
-	/**
-	 * Helper to read json string representing field name-value map
-	 * 
-	 * @param jsonTextField
-	 * @return
-	 */
-	private Map<String, Object> parseFieldMap(int jsonTextField) {
-		String fieldsString = ((EditText) findViewById(jsonTextField))
-				.getText().toString();
-		if (fieldsString.length() == 0) {
-			return null;
-		}
+    /**
+     * @param manualRequestParamsText
+     * @return
+     * @throws UnsupportedEncodingException
+     */
+    private HttpEntity getParamsEntity(int manualRequestParamsText)
+            throws UnsupportedEncodingException {
+        Map<String, Object> params = parseFieldMap(R.id.manual_request_params_text);
+        if (params == null) {
+            params = new HashMap<String, Object>();
+        }
+        List<NameValuePair> paramsList = new ArrayList<NameValuePair>();
+        for (Entry<String, Object> param : params.entrySet()) {
+            paramsList.add(new BasicNameValuePair(param.getKey(),
+                    (String) param.getValue()));
+        }
+        return new UrlEncodedFormEntity(paramsList);
+    }
 
-		try {
-			JSONObject fieldsJson = new JSONObject(fieldsString);
-			Map<String, Object> fields = new HashMap<String, Object>();
-			JSONArray names = fieldsJson.names();
-			for (int i = 0; i < names.length(); i++) {
-				String name = (String) names.get(i);
-				fields.put(name, fieldsJson.get(name));
-			}
-			return fields;
+    /**
+     * @param methodRadioGroup
+     * @return
+     */
+    private RestMethod getMethod(int methodRadioGroup) {
+        RadioGroup radioGroup = (RadioGroup) findViewById(methodRadioGroup);
+        RadioButton radioButton = (RadioButton) findViewById(radioGroup
+                .getCheckedRadioButtonId());
+        RestMethod method = RestMethod.valueOf((String) radioButton.getTag());
+        return method;
+    }
 
-		} catch (Exception e) {
-			printHeader("Could not parse: " + fieldsString);
-			printException(e);
-			return null;
-		}
-	}
+    /**
+     * Called when "Logout" button is clicked. Brings up the logout confirmation
+     * dialog.
+     *
+     * @param v
+     */
+    public void onLogoutClick(View v) {
+        showDialog(LOGOUT_CONFIRMATION_DIALOG_ID);
+    }
 
-	/**
-	 * @param retrieveFieldsListText
-	 * @return
-	 */
-	private List<String> parseFieldList(int retrieveFieldsListText) {
-		String fieldsCsv = ((EditText) findViewById(retrieveFieldsListText))
-				.getText().toString();
-		return Arrays.asList(fieldsCsv.split(","));
-	}
+    /**
+     * Helper to read json string representing field name-value map
+     *
+     * @param jsonTextField
+     * @return
+     */
+    private Map<String, Object> parseFieldMap(int jsonTextField) {
+        String fieldsString = ((EditText) findViewById(jsonTextField))
+                .getText().toString();
+        if (fieldsString.length() == 0) {
+            return null;
+        }
 
-	/**
-	 * Helper that sends request to server and print result in text field
-	 * 
-	 * @param request
-	 */
-	private void sendRequest(RestRequest request) {
-		hideKeyboard();
+        try {
+            JSONObject fieldsJson = new JSONObject(fieldsString);
+            Map<String, Object> fields = new HashMap<String, Object>();
+            JSONArray names = fieldsJson.names();
+            for (int i = 0; i < names.length(); i++) {
+                String name = (String) names.get(i);
+                fields.put(name, fieldsJson.get(name));
+            }
+            return fields;
 
-		println("");
-		printHeader(request);
+        } catch (Exception e) {
+            printHeader("Could not parse: " + fieldsString);
+            printException(e);
+            return null;
+        }
+    }
 
-		try {
-			sendFromUIThread(request);
-			// response is printed by RestCallTask:onPostExecute
-		} catch (Exception e) {
-			printException(e);
-		}
-	}
+    /**
+     * @param retrieveFieldsListText
+     * @return
+     */
+    private List<String> parseFieldList(int retrieveFieldsListText) {
+        String fieldsCsv = ((EditText) findViewById(retrieveFieldsListText))
+                .getText().toString();
+        return Arrays.asList(fieldsCsv.split(","));
+    }
 
-	/**
-	 * Send restRequest using RestClient's sendAsync method.
-	 * Note: Synchronous calls are not allowed from code running on the UI thread. 
-	 * @param restRequest
-	 */
-	private void sendFromUIThread(RestRequest restRequest) {
-		client.sendAsync(restRequest, new AsyncRequestCallback() {
-			private long start = System.nanoTime();
+    /**
+     * Helper that sends request to server and print result in text field
+     *
+     * @param request
+     */
+    private void sendRequest(RestRequest request) {
+        hideKeyboard();
 
-			@Override
-			public void onSuccess(RestRequest request, RestResponse result) {
-				try {
-					long duration = System.nanoTime() - start;
-					println(result);
-					int size = result.asString().length();
-					int statusCode = result.getStatusCode();
-					printRequestInfo(duration, size, statusCode);
-					extractIdsFromResponse(result.asString());
-				} catch (Exception e) {
-					printException(e);
-				}
-			
-				EventsObservable.get().notifyEvent(EventType.RenditionComplete);
-			}
-			
-			@Override
-			public void onError(Exception exception) {
-				printException(exception);
-				EventsObservable.get().notifyEvent(EventType.RenditionComplete);				
-			}
-		});
-	}
+        println("");
+        printHeader(request);
 
-	/**
-	 * Helper method to hide soft keyboard
-	 */
-	private void hideKeyboard() {
-		InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-		imm.hideSoftInputFromWindow(resultText.getWindowToken(), 0);
-	}
-	
-	
-	/**************************************************************************************************
-	 * 
-	 * Pretty printing helpers
-	 * 
-	 **************************************************************************************************/
+        try {
+            sendFromUIThread(request);
+            // response is printed by RestCallTask:onPostExecute
+        } catch (Exception e) {
+            printException(e);
+        }
+    }
 
-	private void printRequestInfo(long nanoDuration, int characterLength, int statusCode) {
-		println(SINGLE_LINE);
-		println("Time (ms): " + nanoDuration / 1000000);
-		println("Size (chars): " + characterLength);
-		println("Status code: " + statusCode);
-	}
+    /**
+     * Send restRequest using RestClient's sendAsync method.
+     * Note: Synchronous calls are not allowed from code running on the UI thread.
+     * @param restRequest
+     */
+    private void sendFromUIThread(RestRequest restRequest) {
+        client.sendAsync(restRequest, new AsyncRequestCallback() {
+            private long start = System.nanoTime();
 
-	private void printException(Exception e) {
-		println("Error: " + e.getClass().getSimpleName());
-		println(e.getMessage());
-	}
+            @Override
+            public void onSuccess(RestRequest request, RestResponse result) {
+                try {
+                    long duration = System.nanoTime() - start;
+                    println(result);
+                    int size = result.asString().length();
+                    int statusCode = result.getStatusCode();
+                    printRequestInfo(duration, size, statusCode);
+                    extractIdsFromResponse(result.asString());
+                } catch (Exception e) {
+                    printException(e);
+                }
 
-	private void printHeader(Object obj) {
-		println(DOUBLE_LINE);
-		println(obj);
-		println(SINGLE_LINE);
-	}
+                EventsObservable.get().notifyEvent(EventType.RenditionComplete);
+            }
 
-	/**
-	 * Helper method to pretty print object in the result_text field
-	 * 
-	 * @param object
-	 */
-	private void println(Object object) {
-		if (resultText == null)
-			return;
+            @Override
+            public void onError(Exception exception) {
+                printException(exception);
+                EventsObservable.get().notifyEvent(EventType.RenditionComplete);
+            }
+        });
+    }
 
-		StringBuffer sb = new StringBuffer(resultText.getText());
-		String text;
-		if (object == null) {
-			text = "null";
-		} else {
-			text = object.toString();
-		}
-		sb.append(text).append("\n");
-		resultText.setText(sb);
+    /**
+     * Helper method to hide soft keyboard
+     */
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(resultText.getWindowToken(), 0);
+    }
 
-		// Auto scroll to bottom if needed
-		if (resultText.getLayout() != null) {
-			int scroll = resultText.getLayout().getLineTop(
-					resultText.getLineCount())
-					- resultText.getHeight();
-			resultText.scrollTo(0, scroll > 0 ? scroll : 0);
-		}
-	}
-	
-	/**
-	 * Dump info about app and rest client 
-	 */
-	private void printInfo() {
-		printHeader("Info");
-		println(ForceApp.APP);
-		println(client);
-	}
 
-	/**
-	 * Helper to show/hide several views
-	 * 
-	 * @param resIds
-	 */
-	public void showHide(boolean show, int... resIds) {
-		for (int resId : resIds) {
-			View v = findViewById(resId);
-			if (v != null)
-				v.setVisibility(show ? View.VISIBLE : View.GONE);
-		}
-	}
+    /**************************************************************************************************
+     *
+     * Pretty printing helpers
+     *
+     **************************************************************************************************/
 
-	/**************************************************************************************************
-	 * 
-	 * Extracting ids from response for auto-complete
-	 * 
-	 **************************************************************************************************/
+    private void printRequestInfo(long nanoDuration, int characterLength, int statusCode) {
+        println(SINGLE_LINE);
+        println("Time (ms): " + nanoDuration / 1000000);
+        println("Size (chars): " + characterLength);
+        println("Status code: " + statusCode);
+    }
 
-	private Pattern idPattern = Pattern.compile("0[0-9a-zA-Z]{17}");
+    private void printException(Exception e) {
+        println("Error: " + e.getClass().getSimpleName());
+        println(e.getMessage());
+    }
 
-	private void extractIdsFromResponse(String responseString) {
-		Matcher matcher = idPattern.matcher(responseString);
-		List<String> ids = new ArrayList<String>();
-		while (matcher.find()) {
-			ids.add(matcher.group());
-		}
-		knownIds.addAll(ids);
-		fixAutoCompleteFields(R.id.retrieve_object_id_text, R.id.update_object_id_text,
-				R.id.delete_object_id_text);
-	}
+    private void printHeader(Object obj) {
+        println(DOUBLE_LINE);
+        println(obj);
+        println(SINGLE_LINE);
+    }
 
-	private void fixAutoCompleteFields(int... fieldIds) {
-		for (int fieldId : fieldIds) {
-			AutoCompleteTextView tv = (AutoCompleteTextView) findViewById(fieldId);
-			tv.setAdapter(new ArrayAdapter<String>(this,
-					android.R.layout.simple_dropdown_item_1line, knownIds
-							.toArray(new String[] {})));
-		}
-	}
+    /**
+     * Helper method to pretty print object in the result_text field
+     *
+     * @param object
+     */
+    private void println(Object object) {
+        if (resultText == null)
+            return;
+
+        StringBuffer sb = new StringBuffer(resultText.getText());
+        String text;
+        if (object == null) {
+            text = "null";
+        } else {
+            text = object.toString();
+        }
+        sb.append(text).append("\n");
+        resultText.setText(sb);
+
+        // Auto scroll to bottom if needed
+        if (resultText.getLayout() != null) {
+            int scroll = resultText.getLayout().getLineTop(
+                    resultText.getLineCount())
+                    - resultText.getHeight();
+            resultText.scrollTo(0, scroll > 0 ? scroll : 0);
+        }
+    }
+
+    /**
+     * Dump info about app and rest client
+     */
+    private void printInfo() {
+        printHeader("Info");
+        println(ForceApp.APP);
+        println(client);
+    }
+
+    /**
+     * Helper to show/hide several views
+     *
+     * @param resIds
+     */
+    public void showHide(boolean show, int... resIds) {
+        for (int resId : resIds) {
+            View v = findViewById(resId);
+            if (v != null)
+                v.setVisibility(show ? View.VISIBLE : View.GONE);
+        }
+    }
+
+    /**************************************************************************************************
+     *
+     * Extracting ids from response for auto-complete
+     *
+     **************************************************************************************************/
+
+    private Pattern idPattern = Pattern.compile("0[0-9a-zA-Z]{17}");
+
+    private void extractIdsFromResponse(String responseString) {
+        Matcher matcher = idPattern.matcher(responseString);
+        List<String> ids = new ArrayList<String>();
+        while (matcher.find()) {
+            ids.add(matcher.group());
+        }
+        knownIds.addAll(ids);
+        fixAutoCompleteFields(R.id.retrieve_object_id_text, R.id.update_object_id_text,
+                R.id.delete_object_id_text);
+    }
+
+    private void fixAutoCompleteFields(int... fieldIds) {
+        for (int fieldId : fieldIds) {
+            AutoCompleteTextView tv = (AutoCompleteTextView) findViewById(fieldId);
+            tv.setAdapter(new ArrayAdapter<String>(this,
+                    android.R.layout.simple_dropdown_item_1line, knownIds
+                            .toArray(new String[] {})));
+        }
+    }
 
 }

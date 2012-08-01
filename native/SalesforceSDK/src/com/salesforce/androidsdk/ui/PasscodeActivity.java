@@ -178,7 +178,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
                 } else {
                     passcodeManager.reset(this);
                     if (logoutEnabled) {
-                        ForceApp.APP.logout(this);
+                        ForceApp.APP.logout(this, true);
                     }
                 }
             }
