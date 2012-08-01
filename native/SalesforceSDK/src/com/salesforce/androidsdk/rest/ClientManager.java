@@ -41,6 +41,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Looper;
 import android.util.Log;
 
 import com.salesforce.androidsdk.app.ForceApp;
@@ -450,6 +451,7 @@ public class ClientManager {
                     if (newAuthToken == null) {
                         final Intent loginFlowIntent = bundle.getParcelable(AccountManager.KEY_INTENT);
                         if (loginFlowIntent != null) {
+                            Looper.prepare();
                             ForceApp.APP.logout(null, false);
                         }
                     }
