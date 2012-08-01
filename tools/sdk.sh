@@ -50,6 +50,7 @@ usage ()
     echo "        ContactExplorer"
     echo "        VFConnector"
     echo "        SFDCAccounts"
+    echo "        SmartStoreExplorer"
     echo "    <test_target> can be "
     echo "        all"
     echo "        SalesforceSDKTest"
@@ -138,6 +139,7 @@ else
     build_project_if_requested "SFDCAccounts" $HYBRID_TOP/SampleApps/SFDCAccounts
     build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer
     build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector
+    build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer
 
     build_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest .
     build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest ../RestExplorer
