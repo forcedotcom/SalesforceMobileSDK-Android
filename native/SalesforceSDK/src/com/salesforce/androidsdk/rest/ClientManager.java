@@ -39,6 +39,7 @@ import android.accounts.AccountManagerFuture;
 import android.accounts.AccountsException;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -446,6 +447,12 @@ public class ClientManager {
                     Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
                 } else {
                     newAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                    if (newAuthToken == null) {
+                        final Intent loginFlowIntent = bundle.getParcelable(AccountManager.KEY_INTENT);
+                        if (loginFlowIntent != null) {
+                            ForceApp.APP.logout(null);
+                        }
+                    }
                 }
             } catch (Exception e) {
                 Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken:getNewAuthToken",
