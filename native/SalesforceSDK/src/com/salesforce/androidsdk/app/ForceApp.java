@@ -52,6 +52,7 @@ import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
+import com.salesforce.androidsdk.auth.AccountWatcher;
 import com.salesforce.androidsdk.auth.AccountWatcher.AccountRemoved;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -89,6 +90,9 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     public static ForceApp APP;
 
     private String encryptionKey;
+
+    @SuppressWarnings("unused")
+    private AccountWatcher accWatcher;
 
     /**************************************************************************************************
      *
@@ -142,13 +146,25 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
         // Done
         APP = this;
+        accWatcher = new AccountWatcher(APP, APP);
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
+    }
+
+    @Override
+    public void onTerminate() {
+        super.onTerminate();
+        accWatcher = null;
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        accWatcher = null;
     }
 
     @Override
     public void onAccountRemoved() {
         ForceApp.APP.cleanUp(null);
-        ForceApp.APP.startLoginPage();
     }
 
     /**
@@ -306,20 +322,35 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
-     * Wipe out the stored authentication credentials (remove account) and restart the app.
+     * Wipe out the stored authentication credentials (remove account) and restart the app, if specified.
      */
     public void logout(Activity frontActivity) {
+        logout(frontActivity, true);
+    }
+
+    /**
+     * Wipe out the stored authentication credentials (remove account) and restart the app, if specified.
+     */
+    public void logout(Activity frontActivity, final boolean showLoginPage) {
         cleanUp(frontActivity);
 
         // Remove account if any.
         ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
-        clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
-
-            @Override
-            public void run(AccountManagerFuture<Boolean> arg0) {
+        if (clientMgr.getAccount() == null) {
+            if (showLoginPage) {
                 startLoginPage();
             }
-        });
+        } else {
+            clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
+
+                @Override
+                public void run(AccountManagerFuture<Boolean> arg0) {
+                    if (showLoginPage) {
+                        startLoginPage();
+                    }
+                }
+            });
+        }
     }
 
     /**
