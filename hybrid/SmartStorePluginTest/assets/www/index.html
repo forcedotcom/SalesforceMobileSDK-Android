@@ -36,11 +36,7 @@
 
     $(function() {
         // When this function is called, PhoneGap has been initialized and is ready to roll 
-        var onDeviceReady = function () {
-            //we no longer setup the testSuite here but rather via calls to navigator.testrunner
-            navigator.testrunner.onReadyForTests();
-        };
-    	document.addEventListener("deviceready", onDeviceReady,false);
+    	document.addEventListener("deviceready", navigator.testrunner.onReadyForTests,false);
     });
     </script>
         
