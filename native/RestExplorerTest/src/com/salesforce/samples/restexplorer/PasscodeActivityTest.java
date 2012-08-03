@@ -288,7 +288,6 @@ public class PasscodeActivityTest extends
 		// Entering 132645 and submitting -> expect passcode manager to be reset
 		setText(R.id.sf__passcode_text, "132645");
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
-		assertTrue("Application should be locked", passcodeManager.isLocked());
 		assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
 	}
 	
