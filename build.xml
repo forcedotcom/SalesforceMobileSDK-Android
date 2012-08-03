@@ -26,11 +26,9 @@
 
   <!-- Location of SalesforceMobileSDK -->
   <property name="sdk.dir" location=""/>
-  <echo message="sdk.dir=${sdk.dir}" />
 
   <!-- Location of SalesforceMobileSDK relative to the target app-->
   <property name="sdk.dir.from.target" location="" relative="true" basedir="${target.dir}"/>
-  <echo message="sdk.dir=${sdk.dir.from.target}" />
 
   <!-- Target to compute package directory path and other properties -->
   <target name="-pre">
