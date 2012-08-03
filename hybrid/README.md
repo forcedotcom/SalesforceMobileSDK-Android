@@ -15,6 +15,7 @@ For the rest of this document, we assume that you have setup three shell variabl
 **If you haven't, just make sure to replace $ANDROID_SDK_DIR, $SALESFORCE_SDK_DIR and HYBRID_DIR in the snippets below with the actual paths.**
 
 Inside the HYBRID_DIR, you will find several projects:
+
 1. **SampleApps/ContactExplorer**: The ContactExplorer sample app uses PhoneGap (aka "cordova") to retrieve local device contacts.  It also uses the forcetk.js toolkit to implement REST transactions with the Salesforce REST API.  The app uses the OAuth2 support in Salesforce SDK to obtain OAuth credentials, then propagates those credentials to forcetk by sending a javascript event
 2. **SampleApps/VFConnector**: The VFConnector sample app demonstrates how to wrap a VisualForce page in a native container.  This example assumes that your org has a VisualForce page called "BasicVFTest".  The app first obtains OAuth login credentials using the Salesforce SDK OAuth2 support, then uses those credentials to set appropriate webview cookies for accessing VisualForce pages
 3. **SampleApps/SFDCAccounts**: The SFDCAccounts sample app demonstrates how to take accounts and opportunities offline using SmartStore and forcetk
