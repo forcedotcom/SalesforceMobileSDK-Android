@@ -35,7 +35,6 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity.PasscodeMode;
 
-
 /**
  * Tests for PasscodeActivity
  */
@@ -46,7 +45,6 @@ public class PasscodeActivityTest extends
 	private PasscodeActivity passcodeActivity;
 	private PasscodeManager passcodeManager;
 
-
 	public PasscodeActivityTest() {
 		super("com.salesforce.samples.restexplorer", PasscodeActivity.class);
 	}
@@ -56,8 +54,8 @@ public class PasscodeActivityTest extends
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
 		passcodeManager = ForceApp.APP.getPasscodeManager();
-		passcodeManager.setTimeoutMs(600000);
 		passcodeManager.reset(targetContext);
+		passcodeManager.setTimeoutMs(600000);
 		assertTrue("Application should be locked", passcodeManager.isLocked());
 		assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
 		passcodeActivity = getActivity();
