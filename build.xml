@@ -3,7 +3,7 @@
   <!-- Default target: describes useful targets -->
   <target name="usage" description="Key targets of this build.xml">
     <echo>
-      ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} 
+      ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName}
       Creates a native application, for instance:
       ant create_native -Dapp.name=MyFirstNative -Dtarget.dir=./firstnative -Dpackage.name=com.acme.firstnative
 
@@ -25,7 +25,10 @@
   </target>
 
   <!-- Location of SalesforceMobileSDK -->
-  <property name="sdk.dir" value="."/>
+  <property name="sdk.dir" location=""/>
+
+  <!-- Location of SalesforceMobileSDK relative to the target app-->
+  <property name="sdk.dir.from.target" location="" relative="true" basedir="${target.dir}"/>
 
   <!-- Target to compute package directory path and other properties -->
   <target name="-pre">
@@ -106,6 +109,11 @@
     <copy todir="${target.dir}">
       <fileset dir="${template.dir}" />
     </copy>
+
+    <echo message="Adjustring SalesforceSDK library project reference" />
+    <replaceregexp match="=.*SalesforceSDK$" flags="g" replace="=${sdk.dir.from.target}/native/SalesforceSDK">
+      <fileset file="${target.dir}/project.properties" />
+    </replaceregexp>
 
     <echo message="Renaming application class to ${app.classname}" />
     <replaceregexp match="${template.app.classname}" flags="g" replace="${app.classname}">
