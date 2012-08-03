@@ -7,6 +7,7 @@ FALSE=1
 TARGETS=""
 VERBOSE=$FALSE
 BUILD_OUTPUT_FILTER='^BUILD '
+TEST_OUTPUT_FILTER='Tests run\|OK'
 
 process_args()
 {
@@ -62,6 +63,7 @@ verbose ()
 {
     VERBOSE=$TRUE
     BUILD_OUTPUT_FILTER=""
+    TEST_OUTPUT_FILTER=""
 }
 
 should_do ()
@@ -119,9 +121,9 @@ run_test_project_if_requested ()
     then
         header "Running test project $1"
         cd $2
-        ant installt | grep "$BUILD_OUTPUT_FILTER"
-        ant test | grep "$BUILD_OUTPUT_FILTER"
-        ant uninstall | grep "$BUILD_OUTPUT_FILTER"
+        ant installt | grep "$TEST_OUTPUT_FILTER"
+        ant test | grep "$TEST_OUTPUT_FILTER"
+        ant uninstall | grep "$TEST_OUTPUT_FILTER"
         cd $TOP
     fi
 }
