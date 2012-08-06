@@ -26,17 +26,26 @@
  */
 package com.salesforce.samples.templateapp;
 
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+
+import org.json.JSONArray;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
-import android.webkit.CookieSyncManager;
-import android.widget.TextView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
 
 /**
@@ -45,14 +54,13 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 public class MainActivity extends Activity {
 
 	private PasscodeManager passcodeManager;
+    private RestClient client;
+    private ArrayAdapter<String> listAdapter;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-    	// Ensure we have a CookieSyncManager
-    	CookieSyncManager.createInstance(this);
-		
 		// Passcode manager
 		passcodeManager = ForceApp.APP.getPasscodeManager();		
 		
@@ -66,6 +74,10 @@ public class MainActivity extends Activity {
 		
 		// Hide everything until we are logged in
 		findViewById(R.id.root).setVisibility(View.INVISIBLE);
+		
+		// Create list adapter
+		listAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, new ArrayList<String>());
+		((ListView) findViewById(R.id.contacts_list)).setAdapter(listAdapter);				
 		
 		// Bring up passcode screen if needed
 		if (passcodeManager.onResume(this)) {
@@ -87,13 +99,12 @@ public class MainActivity extends Activity {
 						ForceApp.APP.logout(MainActivity.this);
 						return;
 					}
-					
+
+                    // Keeping reference to rest client
+                    MainActivity.this.client = client; 
+
 					// Show everything
 					findViewById(R.id.root).setVisibility(View.VISIBLE);
-	
-					// Show welcome
-					((TextView) findViewById(R.id.welcome_text)).setText(getString(R.string.welcome, client.getClientInfo().username));
-					
 				}
 			});
 		}
@@ -118,5 +129,60 @@ public class MainActivity extends Activity {
 	 */
 	public void onLogoutClick(View v) {
 		ForceApp.APP.logout(this);
+	}
+	
+	/**
+	 * Called when "Clear" button is clicked. 
+	 * 
+	 * @param v
+	 */
+	public void onClearClick(View v) {
+		listAdapter.clear();
+	}	
+
+	/**
+	 * Called when "Fetch Contacts" button is clicked
+	 * 
+	 * @param v
+	 * @throws UnsupportedEncodingException 
+	 */
+	public void onFetchContactsClick(View v) throws UnsupportedEncodingException {
+        sendRequest("SELECT Name FROM Contact");
+	}
+
+	/**
+	 * Called when "Fetch Accounts" button is clicked
+	 * 
+	 * @param v
+	 * @throws UnsupportedEncodingException 
+	 */
+	public void onFetchAccountsClick(View v) throws UnsupportedEncodingException {
+		sendRequest("SELECT Name FROM Account");
+	}	
+	
+	private void sendRequest(String soql) throws UnsupportedEncodingException {
+		RestRequest restRequest = RestRequest.getRequestForQuery(getString(R.string.api_version), soql);
+
+		client.sendAsync(restRequest, new AsyncRequestCallback() {
+			@Override
+			public void onSuccess(RestRequest request, RestResponse result) {
+				try {
+					listAdapter.clear();
+					JSONArray records = result.asJSONObject().getJSONArray("records");
+					for (int i = 0; i < records.length(); i++) {
+						listAdapter.add(records.getJSONObject(i).getString("Name"));
+					}					
+				} catch (Exception e) {
+					onError(e);
+				}
+			}
+			
+			@Override
+			public void onError(Exception exception) {
+                Toast.makeText(MainActivity.this,
+                               MainActivity.this.getString(ForceApp.APP.getSalesforceR().stringGenericError(), exception.toString()),
+                               Toast.LENGTH_LONG).show();
+			}
+		});
 	}
 }
