@@ -6,12 +6,24 @@
 
 	<include layout="@layout/header" />
 
-	<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-		android:layout_width="fill_parent" android:layout_height="fill_parent">
-
-		<TextView android:id="@+id/welcome_text" android:layout_width="wrap_content"
-			android:layout_height="wrap_content" android:layout_centerHorizontal="true"
-			android:layout_centerVertical="true" android:textSize="24sp"/>
-
-	</RelativeLayout>
+	<LinearLayout android:orientation="horizontal" android:layout_width="fill_parent"
+	    android:layout_height="wrap_content">
+		<Button android:id="@+id/fetch_contacts" android:layout_width="wrap_content"
+		      android:layout_height="wrap_content"
+		      android:onClick="onFetchContactsClick"
+		      android:text="@string/fetch_contacts_button" />
+		
+		<Button android:id="@+id/fetch_accounts" android:layout_width="wrap_content"
+		      android:layout_height="wrap_content"
+		      android:onClick="onFetchAccountsClick"
+		      android:text="@string/fetch_accounts_button" />		
+	
+	    <Button android:id="@+id/clear" android:layout_width="wrap_content"
+		      android:layout_height="wrap_content"
+		      android:onClick="onClearClick"
+		      android:text="@string/clear_button" />
+	</LinearLayout>
+	
+	<ListView android:id="@+id/contacts_list" android:layout_width="fill_parent"
+	          android:layout_height="fill_parent" />
 </LinearLayout>
