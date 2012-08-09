@@ -35,6 +35,7 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
@@ -402,7 +403,7 @@ public class PasscodeManager  {
     private class LockChecker implements Runnable {
         public void run() {
             try {	
-                // Log.i("LockChecker:run",  "isLocked:" + locked + " elapsedSinceLastActivity:" + ((now() - lastActivity)/1000) + " timeout:" + (timeoutMs / 1000));
+                Log.d("LockChecker:run",  "isLocked:" + locked + " elapsedSinceLastActivity:" + ((now() - lastActivity)/1000) + " timeout:" + (timeoutMs / 1000));
                 if (!locked)
                     lockIfNeeded(null, false);
             } finally {
