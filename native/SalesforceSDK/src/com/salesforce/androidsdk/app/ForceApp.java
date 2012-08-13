@@ -304,6 +304,12 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         // Reset passcode and encryption key, if any.
         getPasscodeManager().reset(this);
         encryptionKey = null;
+        uuids = null;
+        passcodeManager = null;
+        final SharedPreferences sp = getSharedPreferences("uuids2", Context.MODE_PRIVATE);
+        if (sp != null) {
+            sp.edit().clear().commit();
+        }
     }
 
     /**
