@@ -304,8 +304,15 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         // Reset passcode and encryption key, if any.
         getPasscodeManager().reset(this);
         encryptionKey = null;
-        uuids = null;
         passcodeManager = null;
+        resetUuids();
+    }
+
+    /**
+     * Resets the generated UUIDs and wipes out the shared pref file that houses them.
+     */
+    private void resetUuids() {
+        uuids = null;
         final SharedPreferences sp = getSharedPreferences("uuids2", Context.MODE_PRIVATE);
         if (sp != null) {
             sp.edit().clear().commit();
@@ -338,6 +345,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * Wipe out the stored authentication credentials (remove account) and restart the app, if specified.
      */
     public void logout(Activity frontActivity, final boolean showLoginPage) {
+        accWatcher = null;
         cleanUp(frontActivity);
 
         // Remove account if any.

@@ -86,6 +86,7 @@ public class PasscodeManager  {
     private boolean locked;
     private int timeoutMs;
     private int minPasscodeLength;
+    private LockChecker lockChecker;
 
     /**
      * Parameterized constructor.
@@ -106,6 +107,7 @@ public class PasscodeManager  {
 
         // Locked at app startup if you're authenticated.
         this.locked = true;
+        lockChecker = new LockChecker();
     }
 
     /**
@@ -170,8 +172,9 @@ public class PasscodeManager  {
     public void setEnabled(boolean enabled) {
         if (enabled) {
             handler = new Handler();
-            handler.postDelayed(new LockChecker(), 20 * 1000);
+            handler.postDelayed(lockChecker, 20 * 1000);
         } else {
+            handler.removeCallbacks(lockChecker);
             handler = null;
         }
     }
