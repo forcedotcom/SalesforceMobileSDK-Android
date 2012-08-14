@@ -167,6 +167,10 @@ public class HttpAccess extends BroadcastReceiver {
 
         // Try mobile connection.
         final NetworkInfo mobileInfo = conMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+	if (mobileInfo == null) {
+            setHasNetwork(false, "No active data connection");
+            return;
+        }
 
         // Reset network if type changed.
         if (mobileInfo != null) {
