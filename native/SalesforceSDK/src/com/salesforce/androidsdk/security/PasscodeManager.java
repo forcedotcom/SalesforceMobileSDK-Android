@@ -86,7 +86,7 @@ public class PasscodeManager  {
     private boolean locked;
     private int timeoutMs;
     private int minPasscodeLength;
-    private boolean enabled;
+    private LockChecker lockChecker;
 
     /**
      * Parameterized constructor.
@@ -100,16 +100,14 @@ public class PasscodeManager  {
         this.lastActivity = now();
         this.verificationHashConfig = verificationHashConfig;
         this.encryptionHashConfig = encryptionHashConfig;
-        this.enabled = true;
         readMobilePolicy(ctx);
         passcodeReceiver = new PasscodeChangeReceiver();
         final IntentFilter filter = new IntentFilter(PasscodeChangeReceiver.PASSCODE_FLOW_INTENT);
         ctx.registerReceiver(passcodeReceiver, filter);
 
-        // Locked at app startup if you're authenticated
+        // Locked at app startup if you're authenticated.
         this.locked = true;
-        handler = new Handler();
-        handler.postDelayed(new LockChecker(), 20 * 1000);
+        lockChecker = new LockChecker();
     }
 
     /**
@@ -165,20 +163,29 @@ public class PasscodeManager  {
         timeoutMs = 0;
         minPasscodeLength = MIN_PASSCODE_LENGTH;
         storeMobilePolicy(ctx);
+        handler = null;
     }
 
     /**
-     * Enable/disable passcode screen
+     * Enable/disable passcode screen.
      */
     public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
+        if (enabled) {
+            handler = new Handler();
+            handler.postDelayed(lockChecker, 20 * 1000);
+        } else {
+            if (handler != null) {
+                handler.removeCallbacks(lockChecker);
+            }
+            handler = null;
+        }
     }
 
     /**
-     * @return true if passcode manager is enabled
+     * @return true if passcode manager is enabled.
      */
     public boolean isEnabled() {
-        return enabled;
+        return (handler != null);
     }
 
     /**
@@ -402,12 +409,14 @@ public class PasscodeManager  {
       */
     private class LockChecker implements Runnable {
         public void run() {
-            try {	
+            try {
                 Log.d("LockChecker:run",  "isLocked:" + locked + " elapsedSinceLastActivity:" + ((now() - lastActivity)/1000) + " timeout:" + (timeoutMs / 1000));
                 if (!locked)
                     lockIfNeeded(null, false);
             } finally {
-                handler.postDelayed(this, 20 * 1000);
+                if (handler != null) {
+                    handler.postDelayed(this, 20 * 1000);
+                }
             }
         }
     }
