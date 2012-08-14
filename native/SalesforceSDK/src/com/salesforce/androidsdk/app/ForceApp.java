@@ -345,8 +345,10 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * Wipe out the stored authentication credentials (remove account) and restart the app, if specified.
      */
     public void logout(Activity frontActivity, final boolean showLoginPage) {
-        accWatcher.remove();
-        accWatcher = null;
+        if (accWatcher ! = null) {
+            accWatcher.remove();
+            accWatcher = null;
+        }
         cleanUp(frontActivity);
 
         // Remove account if any.
