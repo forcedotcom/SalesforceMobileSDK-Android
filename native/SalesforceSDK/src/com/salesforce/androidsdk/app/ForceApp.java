@@ -90,8 +90,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     public static ForceApp APP;
 
     private String encryptionKey;
-
-    @SuppressWarnings("unused")
     private AccountWatcher accWatcher;
 
     /**************************************************************************************************
@@ -153,12 +151,14 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     @Override
     public void onTerminate() {
         super.onTerminate();
+        accWatcher.remove();
         accWatcher = null;
     }
 
     @Override
     public void onLowMemory() {
         super.onLowMemory();
+        accWatcher.remove();
         accWatcher = null;
     }
 
@@ -303,8 +303,8 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
         // Reset passcode and encryption key, if any.
         getPasscodeManager().reset(this);
-        encryptionKey = null;
         passcodeManager = null;
+        encryptionKey = null;
         resetUuids();
     }
 
@@ -312,7 +312,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * Resets the generated UUIDs and wipes out the shared pref file that houses them.
      */
     private void resetUuids() {
-        uuids = null;
+        uuids = new HashMap<String, String>();
         final SharedPreferences sp = getSharedPreferences("uuids2", Context.MODE_PRIVATE);
         if (sp != null) {
             sp.edit().clear().commit();
@@ -345,6 +345,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * Wipe out the stored authentication credentials (remove account) and restart the app, if specified.
      */
     public void logout(Activity frontActivity, final boolean showLoginPage) {
+        accWatcher.remove();
         accWatcher = null;
         cleanUp(frontActivity);
 

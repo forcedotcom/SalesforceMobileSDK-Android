@@ -174,7 +174,9 @@ public class PasscodeManager  {
             handler = new Handler();
             handler.postDelayed(lockChecker, 20 * 1000);
         } else {
-            handler.removeCallbacks(lockChecker);
+            if (handler != null) {
+                handler.removeCallbacks(lockChecker);
+            }
             handler = null;
         }
     }
