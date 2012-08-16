@@ -219,11 +219,11 @@ public class Encryptor {
         // must be a multiple of a block length (16 bytes)
         int length = data == null ? 0 : data.length;
         int len = (length + 15) & ~15;
+
         //pad with the number of pad bytes
         byte paddingValue = (byte) (len - length);
         byte[] padded = new byte[len];
         System.arraycopy(data, 0, padded, 0, length);
-
         for (int i = length; i < len; i++)
             padded[i] = paddingValue;
 
@@ -233,6 +233,7 @@ public class Encryptor {
         // encrypt
         Cipher cipher = getBestCipher();
         SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
+
         //generate a unique IV per encrypt
         byte[] initVector = generateInitVector();
         IvParameterSpec ivSpec = new IvParameterSpec(initVector);
@@ -243,7 +244,6 @@ public class Encryptor {
         byte[] result = new byte[initVector.length + meat.length];
         System.arraycopy(initVector, 0, result, 0, initVector.length);
         System.arraycopy(meat, 0, result, initVector.length, meat.length);
-
         return result;
     }
 
@@ -272,23 +272,22 @@ public class Encryptor {
         int meatOffset = offset + initVector.length;
         byte[] meat = new byte[meatLen];
         System.arraycopy(data, meatOffset, meat, 0, meatLen);
-
         Cipher cipher = getBestCipher();
         SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
         IvParameterSpec ivSpec = new IvParameterSpec(initVector);
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
-
         byte[] padded = cipher.doFinal(meat, 0, meatLen);
         byte[] result = padded;
         byte paddingValue = padded[padded.length - 1];
         if (0 != paddingValue) {
-            byte compare = padded[padded.length - paddingValue];
-            if (compare == paddingValue) {
-                result = new byte[padded.length - paddingValue];
-                System.arraycopy(padded, 0, result, 0, result.length);
+            if (paddingValue < (byte) 16) {
+                byte compare = padded[padded.length - paddingValue];
+                if (compare == paddingValue) {
+                    result = new byte[padded.length - paddingValue];
+                    System.arraycopy(padded, 0, result, 0, result.length);
+                }
             }
         }
-
         return result;
     }
 }

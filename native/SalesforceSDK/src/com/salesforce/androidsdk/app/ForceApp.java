@@ -151,15 +151,19 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     @Override
     public void onTerminate() {
         super.onTerminate();
-        accWatcher.remove();
-        accWatcher = null;
+        if (accWatcher != null) {
+            accWatcher.remove();
+            accWatcher = null;
+        }
     }
 
     @Override
     public void onLowMemory() {
         super.onLowMemory();
-        accWatcher.remove();
-        accWatcher = null;
+        if (accWatcher != null) {
+            accWatcher.remove();
+            accWatcher = null;
+        }
     }
 
     @Override
