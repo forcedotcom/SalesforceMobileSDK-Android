@@ -102,8 +102,6 @@ public class AuthenticatorService extends Service {
                         String[] requiredFeatures,
                         Bundle options)
                 throws NetworkErrorException {
-
-            Log.i("Authenticator:addAccount", "Options: " + options);
             return makeAuthIntentBundle(response, options);
         }
 
@@ -118,7 +116,6 @@ public class AuthenticatorService extends Service {
                             Account account,
                             String authTokenType,
                             Bundle options) throws NetworkErrorException {
-            Log.i("Authenticator:getAuthToken", "Get auth token for " + account.name);
             final AccountManager mgr = AccountManager.get(context);
             final String passcodeHash = LoginOptions.fromBundle(options).passcodeHash;
             final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(account), passcodeHash);
@@ -158,7 +155,6 @@ public class AuthenticatorService extends Service {
                     encrClientSecret = ForceApp.encryptWithPasscode(clientSecret, passcodeHash);
                 }
                 resBundle.putString(AuthenticatorService.KEY_CLIENT_SECRET, encrClientSecret);
-                Log.i("Authenticator:getAuthToken", "Returning auth bundle for " + account.name);
             } catch (ClientProtocolException e) {
                 Log.w("Authenticator:getAuthToken", "", e);
                 throw new NetworkErrorException(e);
@@ -176,7 +172,6 @@ public class AuthenticatorService extends Service {
                 resBundle.putString(AccountManager.KEY_ERROR_CODE, e.response.error);
                 resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, e.response.errorDescription);
             }
-            Log.i("Authenticator:getAuthToken", "Result: " + resBundle);
             return resBundle;
         }
 
