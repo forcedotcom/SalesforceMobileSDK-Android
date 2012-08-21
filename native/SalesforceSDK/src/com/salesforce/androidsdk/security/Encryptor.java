@@ -55,7 +55,6 @@ public class Encryptor {
     private static final String UTF8 = "UTF-8";
     private static final String PREFER_CIPHER_TRANSFORMATION = "AES/CBC/PKCS5Padding";
     private static final String MAC_TRANSFORMATION = "HmacSHA256";
-    private static final String DEF_KEY = "234jbsdf342akj4-cxh1hsdkhfesdbcshusd5263";
     private static String bestCipherAvailable;
     private static boolean isFileSystemEncrypted;
 
@@ -128,9 +127,6 @@ public class Encryptor {
         if (key == null) {
             return data;
         }
-        if (!isBase64Encoded(key)) {
-            key = Encryptor.hash(key, key + DEF_KEY);
-        }
         try {
 
             // Decode with base64.
@@ -156,9 +152,6 @@ public class Encryptor {
         if (key == null) {
             return data;
         }
-        if (!isBase64Encoded(key)) {
-            key = Encryptor.hash(key, key + DEF_KEY);
-        }
         try {
 
             // Encrypt with our preferred cipher.
@@ -180,7 +173,7 @@ public class Encryptor {
      * @param key String.
      * @return True - if encoded, False - otherwise.
      */
-    private static boolean isBase64Encoded(String key) {
+    public static boolean isBase64Encoded(String key) {
         try {
             Base64.decode(key, Base64.DEFAULT);
             return true;
