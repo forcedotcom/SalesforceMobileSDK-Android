@@ -78,116 +78,113 @@ import com.salesforce.androidsdk.auth.HttpAccess.Execution;
  */
 public class OAuth2 {
 
-	// Misc constants: strings appearing in requests or responses
-	private static final String ACCESS_TOKEN = "access_token";
-	private static final String CLIENT_ID = "client_id";
-	private static final String ERROR = "error";
-	private static final String ERROR_DESCRIPTION = "error_description";
-	private static final String FORMAT = "format";
-	private static final String GRANT_TYPE = "grant_type";
-	private static final String ID = "id";
-	private static final String INSTANCE_URL = "instance_url";
-	private static final String JSON = "json";
-	private static final String MOBILE_POLICY = "mobile_policy";
-	private static final String PIN_LENGTH = "pin_length";
-	private static final String REFRESH_TOKEN = "refresh_token";
-	private static final String RESPONSE_TYPE = "response_type";
-	private static final String SCOPE = "scope";
-	private static final String SCREEN_LOCK = "screen_lock";
-	private static final String TOKEN = "token";
-	private static final String USERNAME = "username";
-	private static final String CODE = "code";
-	private static final String ACTIVATED_CLIENT_CODE = "activated_client_code";
+    // Misc constants: strings appearing in requests or responses
+    private static final String ACCESS_TOKEN = "access_token";
+    private static final String CLIENT_ID = "client_id";
+    private static final String ERROR = "error";
+    private static final String ERROR_DESCRIPTION = "error_description";
+    private static final String FORMAT = "format";
+    private static final String GRANT_TYPE = "grant_type";
+    private static final String ID = "id";
+    private static final String INSTANCE_URL = "instance_url";
+    private static final String JSON = "json";
+    private static final String MOBILE_POLICY = "mobile_policy";
+    private static final String PIN_LENGTH = "pin_length";
+    private static final String REFRESH_TOKEN = "refresh_token";
+    private static final String RESPONSE_TYPE = "response_type";
+    private static final String SCOPE = "scope";
+    private static final String SCREEN_LOCK = "screen_lock";
+    private static final String TOKEN = "token";
+    private static final String USERNAME = "username";
+    private static final String CODE = "code";
+    private static final String ACTIVATED_CLIENT_CODE = "activated_client_code";
 
-	// Login URLs / paths
-	public static final String DEFAULT_LOGIN_URL = "https://login.salesforce.com";
-	public static final String SANDBOX_LOGIN_URL = "https://test.salesforce.com";
-	private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=mobile";
-	private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
+    // Login URLs / paths
+    public static final String DEFAULT_LOGIN_URL = "https://login.salesforce.com";
+    public static final String SANDBOX_LOGIN_URL = "https://test.salesforce.com";
+    private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=mobile";
+    private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
 
-	/**
-	 * Build the URL to the authorization web page for this login server.
-	 * You need not provide refresh_token, as it is provided automatically.
-	 *
-	 * @param loginServer
-	 *            the base protocol and server to use (e.g.
-	 *            https://login.salesforce.com)
-	 * @param clientId
-	 *            OAuth client ID
-	 * @param callbackUrl
-	 *            OAuth callback url
-	 * @param scopes A list of OAuth scopes to request (eg {"visualforce","api"}). If null, the default OAuth scope is provided.
-	 * @return A URL to start the OAuth flow in a web browser/view.
-	 *
-	 * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
-	 *
-	 */
-	public static URI getAuthorizationUrl(URI loginServer, String clientId,
-			String callbackUrl, String[] scopes) {
-	   return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, null);
-	}
+    /**
+     * Build the URL to the authorization web page for this login server.
+     * You need not provide refresh_token, as it is provided automatically.
+     *
+     * @param loginServer
+     *            the base protocol and server to use (e.g.
+     *            https://login.salesforce.com)
+     * @param clientId
+     *            OAuth client ID
+     * @param callbackUrl
+     *            OAuth callback url
+     * @param scopes A list of OAuth scopes to request (eg {"visualforce","api"}). If null, the default OAuth scope is provided.
+     * @return A URL to start the OAuth flow in a web browser/view.
+     *
+     * @see <a href="https://help.salesforce.com/apex/HTViewHelpDoc?language=en&id=remoteaccess_oauth_scopes.htm">RemoteAccess OAuth Scopes</a>
+     *
+     */
+    public static URI getAuthorizationUrl(URI loginServer, String clientId,
+            String callbackUrl, String[] scopes) {
+       return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, null);
+    }
 
-	public static URI getAuthorizationUrl(URI loginServer, String clientId,
-			String callbackUrl, String[] scopes, String clientSecret) {
+    public static URI getAuthorizationUrl(URI loginServer, String clientId,
+            String callbackUrl, String[] scopes, String clientSecret) {
+        final StringBuilder sb = new StringBuilder(loginServer.toString());
+        sb.append(OAUTH_AUTH_PATH);
+        if (clientSecret != null) {
+            sb.append("&").append(RESPONSE_TYPE).append("=").append(ACTIVATED_CLIENT_CODE);
+        } else {
+            sb.append("&").append(RESPONSE_TYPE).append("=").append(TOKEN);
+        }
+        sb.append("&").append(CLIENT_ID).append("=").append(Uri.encode(clientId));
+        if ((null != scopes) && (scopes.length > 0)) {
+            //need to always have the refresh_token scope to reuse our refresh token
+            sb.append("&").append(SCOPE).append("=").append(REFRESH_TOKEN);
 
-	    StringBuilder sb = new StringBuilder();
-	    sb.append(OAUTH_AUTH_PATH);
-	    if (clientSecret != null) {
-	    	sb.append("&").append(RESPONSE_TYPE).append("=").append(ACTIVATED_CLIENT_CODE);
-	    } else {
-	    	sb.append("&").append(RESPONSE_TYPE).append("=").append(TOKEN);
-	    }
-	    sb.append("&").append(CLIENT_ID).append("=").append(Uri.encode(clientId));
-	    if ((null != scopes) && (scopes.length > 0)) {
-	        //need to always have the refresh_token scope to reuse our refresh token
-	        sb.append("&").append(SCOPE).append("=").append(REFRESH_TOKEN);
+            StringBuilder scopeStr = new StringBuilder();
+            for (String scope : scopes) {
+                if (!scope.equalsIgnoreCase(REFRESH_TOKEN)) {
+                    scopeStr.append(" ").append(scope);
+                }
+            }
+            String safeScopeStr = Uri.encode(scopeStr.toString());
+            sb.append(safeScopeStr);
+        }
+        sb.append("&redirect_uri=");
+        sb.append(callbackUrl);
+        return URI.create(sb.toString());
+    }
 
-	        StringBuilder scopeStr = new StringBuilder();
-	        for (String scope : scopes) {
-	            if (!scope.equalsIgnoreCase(REFRESH_TOKEN)) {
-	                scopeStr.append(" ").append(scope);
-	            }
-	        }
-	        String safeScopeStr = Uri.encode(scopeStr.toString());
-	        sb.append(safeScopeStr);
-	    }
-	    sb.append("&redirect_uri=");
-	    sb.append(callbackUrl);
+    /**
+     * Get a new auth token using the refresh token.
+     *
+     * @param httpAccessor
+     * @param loginServer
+     * @param clientId
+     * @param refreshToken
+     * @return
+     * @throws OAuthFailedException
+     * @throws IOException
+     */
+    public static TokenEndpointResponse refreshAuthToken(
+            HttpAccess httpAccessor, URI loginServer, String clientId,
+            String refreshToken) throws OAuthFailedException, IOException {
+        return refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, null);
+    }
 
-	    String approvalUrl = sb.toString();
-	    return loginServer.resolve(approvalUrl);
-	}
+    public static TokenEndpointResponse refreshAuthToken(
+            HttpAccess httpAccessor, URI loginServer, String clientId,
+            String refreshToken, String clientSecret) throws OAuthFailedException, IOException {
+        List<NameValuePair> params = makeTokenEndpointParams(REFRESH_TOKEN,
+                clientId, clientSecret);
+        params.add(new BasicNameValuePair(REFRESH_TOKEN, refreshToken));
+        params.add(new BasicNameValuePair(FORMAT, JSON));
+        TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor,
+                loginServer, params);
+        return tr;
+    }
 
-	/**
-	 * Get a new auth token using the refresh token.
-	 *
-	 * @param httpAccessor
-	 * @param loginServer
-	 * @param clientId
-	 * @param refreshToken
-	 * @return
-	 * @throws OAuthFailedException
-	 * @throws IOException
-	 */
-	public static TokenEndpointResponse refreshAuthToken(
-			HttpAccess httpAccessor, URI loginServer, String clientId,
-			String refreshToken) throws OAuthFailedException, IOException {
-		return refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, null);
-	}
-
-	public static TokenEndpointResponse refreshAuthToken(
-			HttpAccess httpAccessor, URI loginServer, String clientId,
-			String refreshToken, String clientSecret) throws OAuthFailedException, IOException {
-		List<NameValuePair> params = makeTokenEndpointParams(REFRESH_TOKEN,
-				clientId, clientSecret);
-		params.add(new BasicNameValuePair(REFRESH_TOKEN, refreshToken));
-		params.add(new BasicNameValuePair(FORMAT, JSON));
-		TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor,
-				loginServer, params);
-		return tr;
-	}
-
-	 /** @returns a TokenEndointResponse from the give authorization code, this is typically the first step after
+     /** @returns a TokenEndointResponse from the give authorization code, this is typically the first step after
      * receiving an authorization code from the oAuth authorization UI flow.
      * In addition, this will also call the Identity service to fetch & populate the username field.
      *
@@ -201,7 +198,7 @@ public class OAuth2 {
      *
      */
     public static TokenEndpointResponse swapAuthCodeForTokens(HttpAccess httpAccessor, URI loginServerUrl, String clientSecret,
-    		String authCode, String clientId, String callbackUrl) throws IOException, URISyntaxException, OAuthFailedException {
+            String authCode, String clientId, String callbackUrl) throws IOException, URISyntaxException, OAuthFailedException {
         // call the token endpoint, and swap our authorization code for a refresh & access tokens.
         List<NameValuePair> params = makeTokenEndpointParams("authorization_code", clientId, clientSecret);
         params.add(new BasicNameValuePair("code", authCode));
@@ -211,220 +208,220 @@ public class OAuth2 {
         return tr;
     }
 
-	/**
-	 * Call the identity service to determine the username of the user and the mobile policy, given
-	 * their identity service ID and an access token.
-	 *
-	 * @param httpAccessor
-	 * @param identityServiceIdUrl
-	 * @param authToken
-	 * @return
-	 * @throws IOException
-	 * @throws URISyntaxException
-	 */
-	public static final IdServiceResponse callIdentityService(
-			HttpAccess httpAccessor, String identityServiceIdUrl,
-			String authToken) throws IOException, URISyntaxException {
+    /**
+     * Call the identity service to determine the username of the user and the mobile policy, given
+     * their identity service ID and an access token.
+     *
+     * @param httpAccessor
+     * @param identityServiceIdUrl
+     * @param authToken
+     * @return
+     * @throws IOException
+     * @throws URISyntaxException
+     */
+    public static final IdServiceResponse callIdentityService(
+            HttpAccess httpAccessor, String identityServiceIdUrl,
+            String authToken) throws IOException, URISyntaxException {
 
-		Map<String, String> idHeaders = new HashMap<String, String>();
-		idHeaders.put("Authorization", "OAuth " + authToken);
-		Execution exec = httpAccessor.doGet(idHeaders, new URI(identityServiceIdUrl));
-		return new IdServiceResponse(exec.response);
-	}
+        Map<String, String> idHeaders = new HashMap<String, String>();
+        idHeaders.put("Authorization", "OAuth " + authToken);
+        Execution exec = httpAccessor.doGet(idHeaders, new URI(identityServiceIdUrl));
+        return new IdServiceResponse(exec.response);
+    }
 
-	/**
-	 * @param httpAccessor
-	 * @param loginServer
-	 * @param params
-	 * @return
-	 * @throws OAuthFailedException
-	 * @throws IOException
-	 */
-	private static TokenEndpointResponse makeTokenEndpointRequest(
-			HttpAccess httpAccessor, URI loginServer, List<NameValuePair> params)
-			throws OAuthFailedException, IOException {
-		UrlEncodedFormEntity req = new UrlEncodedFormEntity(params, "UTF-8");
-		try {
-			// Call the token endpoint, and get tokens, instance url etc.
-			Execution ex = httpAccessor.doPost(null, loginServer
-							.resolve(OAUTH_TOKEN_PATH), req);
-			int statusCode = ex.response.getStatusLine().getStatusCode();
-			if (statusCode == 200) {
-				return new TokenEndpointResponse(ex.response);
-			} else {
-				throw new OAuthFailedException(new TokenErrorResponse(
-						ex.response), statusCode);
-			}
-		} catch (UnsupportedEncodingException ex1) {
-			throw new RuntimeException(ex1); // should never happen
-		}
-	}
+    /**
+     * @param httpAccessor
+     * @param loginServer
+     * @param params
+     * @return
+     * @throws OAuthFailedException
+     * @throws IOException
+     */
+    private static TokenEndpointResponse makeTokenEndpointRequest(
+            HttpAccess httpAccessor, URI loginServer, List<NameValuePair> params)
+            throws OAuthFailedException, IOException {
+        UrlEncodedFormEntity req = new UrlEncodedFormEntity(params, "UTF-8");
+        try {
+            // Call the token endpoint, and get tokens, instance url etc.
+            Execution ex = httpAccessor.doPost(null, loginServer
+                            .resolve(OAUTH_TOKEN_PATH), req);
+            int statusCode = ex.response.getStatusLine().getStatusCode();
+            if (statusCode == 200) {
+                return new TokenEndpointResponse(ex.response);
+            } else {
+                throw new OAuthFailedException(new TokenErrorResponse(
+                        ex.response), statusCode);
+            }
+        } catch (UnsupportedEncodingException ex1) {
+            throw new RuntimeException(ex1); // should never happen
+        }
+    }
 
-	/**
-	 * @param grantType
-	 * @param clientId
-	 * @return
-	 */
-	private static List<NameValuePair> makeTokenEndpointParams(
-			String grantType, String clientId, String clientSecret) {
-		List<NameValuePair> params = new ArrayList<NameValuePair>();
-		params.add(new BasicNameValuePair(GRANT_TYPE, grantType));
-		params.add(new BasicNameValuePair(CLIENT_ID, clientId));
-		if (clientSecret != null) {
-			params.add(new BasicNameValuePair("client_secret", clientSecret));
-		}
-		return params;
-	}
+    /**
+     * @param grantType
+     * @param clientId
+     * @return
+     */
+    private static List<NameValuePair> makeTokenEndpointParams(
+            String grantType, String clientId, String clientSecret) {
+        List<NameValuePair> params = new ArrayList<NameValuePair>();
+        params.add(new BasicNameValuePair(GRANT_TYPE, grantType));
+        params.add(new BasicNameValuePair(CLIENT_ID, clientId));
+        if (clientSecret != null) {
+            params.add(new BasicNameValuePair("client_secret", clientSecret));
+        }
+        return params;
+    }
 
-	/**
-	 * Exception thrown when refresh fails.
-	 */
-	public static class OAuthFailedException extends Exception {
+    /**
+     * Exception thrown when refresh fails.
+     */
+    public static class OAuthFailedException extends Exception {
 
-		private static final String INVALID_GRANT = "invalid_grant";
+        private static final String INVALID_GRANT = "invalid_grant";
 
-		OAuthFailedException(TokenErrorResponse err, int httpStatusCode) {
-			super(err.toString());
-			this.response = err;
-			this.httpStatusCode = httpStatusCode;
-		}
+        OAuthFailedException(TokenErrorResponse err, int httpStatusCode) {
+            super(err.toString());
+            this.response = err;
+            this.httpStatusCode = httpStatusCode;
+        }
 
-		final TokenErrorResponse response;
-		final int httpStatusCode;
+        final TokenErrorResponse response;
+        final int httpStatusCode;
 
-		boolean isRefreshTokenInvalid() {
-			return httpStatusCode == 401
-					|| httpStatusCode == 403
-					|| (httpStatusCode == 400 && response.error
-							.equals(INVALID_GRANT));
-		}
+        boolean isRefreshTokenInvalid() {
+            return httpStatusCode == 401
+                    || httpStatusCode == 403
+                    || (httpStatusCode == 400 && response.error
+                            .equals(INVALID_GRANT));
+        }
 
-		private static final long serialVersionUID = 1L;
-	}
+        private static final long serialVersionUID = 1L;
+    }
 
-	/**************************************************************************************************
-	 *
-	 * Helper classes to parse responses
-	 *
-	 **************************************************************************************************/
+    /**************************************************************************************************
+     *
+     * Helper classes to parse responses
+     *
+     **************************************************************************************************/
 
-	public static class AbstractResponse {
+    public static class AbstractResponse {
 
-		protected JSONObject parseResponse(HttpResponse httpResponse)
-				throws IOException, JSONException {
-			String responseAsString = EntityUtils.toString(httpResponse
-					.getEntity(), HTTP.UTF_8);
-			JSONObject parsedResponse = new JSONObject(responseAsString);
-			return parsedResponse;
-		}
+        protected JSONObject parseResponse(HttpResponse httpResponse)
+                throws IOException, JSONException {
+            String responseAsString = EntityUtils.toString(httpResponse
+                    .getEntity(), HTTP.UTF_8);
+            JSONObject parsedResponse = new JSONObject(responseAsString);
+            return parsedResponse;
+        }
 
-	}
+    }
 
-	/**
-	 * Helper class to parse an identity service response.
-	 */
-	public static class IdServiceResponse extends AbstractResponse {
-		public String username;
-		public int pinLength = -1;
-		public int screenLockTimeout = -1;
+    /**
+     * Helper class to parse an identity service response.
+     */
+    public static class IdServiceResponse extends AbstractResponse {
+        public String username;
+        public int pinLength = -1;
+        public int screenLockTimeout = -1;
 
-		public IdServiceResponse(HttpResponse httpResponse) {
-			try {
-				JSONObject parsedResponse = parseResponse(httpResponse);
-				username = parsedResponse.getString(USERNAME);
+        public IdServiceResponse(HttpResponse httpResponse) {
+            try {
+                JSONObject parsedResponse = parseResponse(httpResponse);
+                username = parsedResponse.getString(USERNAME);
 
-				// With connected apps (pilot in Summer '12), the server can specify a policy
-				if (parsedResponse.has(MOBILE_POLICY)) {
-					pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
-					screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
-				}
+                // With connected apps (pilot in Summer '12), the server can specify a policy
+                if (parsedResponse.has(MOBILE_POLICY)) {
+                    pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
+                    screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
+                }
 
-			} catch (Exception e) {
-				Log.w("IdServiceResponse:contructor", "", e);
-			}
-		}
-	}
+            } catch (Exception e) {
+                Log.w("IdServiceResponse:contructor", "", e);
+            }
+        }
+    }
 
-	/**
-	 * Helper class to parse a token refresh error response.
-	 */
-	public static class TokenErrorResponse extends AbstractResponse {
-		public String error;
-		public String errorDescription;
+    /**
+     * Helper class to parse a token refresh error response.
+     */
+    public static class TokenErrorResponse extends AbstractResponse {
+        public String error;
+        public String errorDescription;
 
-		public TokenErrorResponse(HttpResponse httpResponse) {
-			try {
-				JSONObject parsedResponse = parseResponse(httpResponse);
-				error = parsedResponse.getString(ERROR);
-				errorDescription = parsedResponse
-						.getString(ERROR_DESCRIPTION);
-			} catch (Exception e) {
-				Log.w("TokenErrorResponse:contructor", "", e);
-			}
-		}
+        public TokenErrorResponse(HttpResponse httpResponse) {
+            try {
+                JSONObject parsedResponse = parseResponse(httpResponse);
+                error = parsedResponse.getString(ERROR);
+                errorDescription = parsedResponse
+                        .getString(ERROR_DESCRIPTION);
+            } catch (Exception e) {
+                Log.w("TokenErrorResponse:contructor", "", e);
+            }
+        }
 
-		@Override
-		public String toString() {
-			return error + ":" + errorDescription;
-		}
-	}
+        @Override
+        public String toString() {
+            return error + ":" + errorDescription;
+        }
+    }
 
-	/**
-	 * Helper class to parse a token refresh response.
-	 */
-	public static class TokenEndpointResponse extends AbstractResponse {
-		public String authToken;
-		public String refreshToken;
-		public String instanceUrl;
-		public String idUrl;
-		public String idUrlWithInstance;
-		public String orgId;
-		public String userId;
-		public String code;
+    /**
+     * Helper class to parse a token refresh response.
+     */
+    public static class TokenEndpointResponse extends AbstractResponse {
+        public String authToken;
+        public String refreshToken;
+        public String instanceUrl;
+        public String idUrl;
+        public String idUrlWithInstance;
+        public String orgId;
+        public String userId;
+        public String code;
 
-		/**
-		 * Constructor used during login flow
-		 * @param callbackUrlParams
-		 */
-		public TokenEndpointResponse(Map<String, String> callbackUrlParams) {
-			try {
-				authToken = callbackUrlParams.get(ACCESS_TOKEN);
-				refreshToken = callbackUrlParams.get(REFRESH_TOKEN);
-				instanceUrl = callbackUrlParams.get(INSTANCE_URL);
-				idUrl = callbackUrlParams.get(ID);
-				code = callbackUrlParams.get(CODE);
-				computeOtherFields();
-			} catch (Exception e) {
-				Log.w("TokenEndpointResponse:contructor", "", e);
-			}
-		}
+        /**
+         * Constructor used during login flow
+         * @param callbackUrlParams
+         */
+        public TokenEndpointResponse(Map<String, String> callbackUrlParams) {
+            try {
+                authToken = callbackUrlParams.get(ACCESS_TOKEN);
+                refreshToken = callbackUrlParams.get(REFRESH_TOKEN);
+                instanceUrl = callbackUrlParams.get(INSTANCE_URL);
+                idUrl = callbackUrlParams.get(ID);
+                code = callbackUrlParams.get(CODE);
+                computeOtherFields();
+            } catch (Exception e) {
+                Log.w("TokenEndpointResponse:contructor", "", e);
+            }
+        }
 
-		/**
-		 * Constructor used during refresh flow
-		 * @param httpResponse
-		 */
-		public TokenEndpointResponse(HttpResponse httpResponse) {
-			try {
-				JSONObject parsedResponse = parseResponse(httpResponse);
-				authToken = parsedResponse.getString(ACCESS_TOKEN);
-				instanceUrl = parsedResponse.getString(INSTANCE_URL);
-				idUrl  = parsedResponse.getString(ID);
-				computeOtherFields();
-				if (parsedResponse.has(REFRESH_TOKEN)) {
-					refreshToken = parsedResponse.getString(REFRESH_TOKEN);
-				}
+        /**
+         * Constructor used during refresh flow
+         * @param httpResponse
+         */
+        public TokenEndpointResponse(HttpResponse httpResponse) {
+            try {
+                JSONObject parsedResponse = parseResponse(httpResponse);
+                authToken = parsedResponse.getString(ACCESS_TOKEN);
+                instanceUrl = parsedResponse.getString(INSTANCE_URL);
+                idUrl  = parsedResponse.getString(ID);
+                computeOtherFields();
+                if (parsedResponse.has(REFRESH_TOKEN)) {
+                    refreshToken = parsedResponse.getString(REFRESH_TOKEN);
+                }
 
-			} catch (Exception e) {
-				Log.w("TokenEndpointResponse:contructor", "", e);
-			}
-		}
+            } catch (Exception e) {
+                Log.w("TokenEndpointResponse:contructor", "", e);
+            }
+        }
 
 
-		private void computeOtherFields() throws URISyntaxException {
-			idUrlWithInstance = idUrl.replace(new URI(idUrl).getHost(), new URI(instanceUrl).getHost());
-			String[] idUrlFragments = idUrl.split("/");
-			userId = idUrlFragments[idUrlFragments.length - 1];
-			orgId = idUrlFragments[idUrlFragments.length - 2];
-		}
-	}
+        private void computeOtherFields() throws URISyntaxException {
+            idUrlWithInstance = idUrl.replace(new URI(idUrl).getHost(), new URI(instanceUrl).getHost());
+            String[] idUrlFragments = idUrl.split("/");
+            userId = idUrlFragments[idUrlFragments.length - 1];
+            orgId = idUrlFragments[idUrlFragments.length - 2];
+        }
+    }
 }
