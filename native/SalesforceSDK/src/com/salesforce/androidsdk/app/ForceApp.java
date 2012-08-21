@@ -121,7 +121,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      *
      * For example:
      * <code>
-     * Encryptor.hash(name + "12s9adfgret=6235inkasd=012", name + "12kl0dsakj4-cuygsdf625wkjasdol8")
+     * Encryptor.hash(name + "12s9adfgret=6235inkasd=012", name + "12kl0dsakj4-cuygsdf625wkjasdol8");
      * </code>
      *
      * @param name The name associated with the key.
