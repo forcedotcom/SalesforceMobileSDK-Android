@@ -6,6 +6,9 @@ import java.util.List;
 import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.DroidGap;
 
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -53,6 +56,7 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
             e.commit();
 
             this.foundHomeUrl = true;
+            EventsObservable.get().notifyEvent(EventType.GapWebViewPageFinished);
         }
 
         super.onPageFinished(view, url);
