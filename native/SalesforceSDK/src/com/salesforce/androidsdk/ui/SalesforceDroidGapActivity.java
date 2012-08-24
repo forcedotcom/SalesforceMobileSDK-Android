@@ -34,6 +34,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebSettings;
+import android.webkit.WebView;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
@@ -131,6 +132,10 @@ public class SalesforceDroidGapActivity extends DroidGap {
     @Override
     public void onUserInteraction() {
         passcodeManager.recordUserInteraction();
+    }
+    
+    public WebView getWebView() {
+    	return appView;
     }
 
     @Override

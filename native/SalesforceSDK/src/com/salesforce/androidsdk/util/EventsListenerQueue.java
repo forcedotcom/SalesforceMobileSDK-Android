@@ -65,14 +65,14 @@ public class EventsListenerQueue {
     }
 
     /** will wait for expected event in the queue, waiting till the timeout specified */
-    public void waitForEvent(EventType expectedType, int timeout) {
+    public Event waitForEvent(EventType expectedType, int timeout) {
         long end = System.currentTimeMillis() + timeout;
         long remaining = timeout;
         while (remaining > 0) {
             try {
                 Event e = events.poll(remaining, TimeUnit.MILLISECONDS);
                 if (e != null && e.getType() == expectedType) {
-                    return;
+                    return e;
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException("Was interupted waiting for activity event");
