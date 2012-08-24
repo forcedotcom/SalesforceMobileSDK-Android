@@ -6,14 +6,15 @@ import java.util.List;
 import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.DroidGap;
 
-import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.util.Log;
 import android.webkit.WebView;
+
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.Event;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 public class SalesforceGapViewClient extends CordovaWebViewClient {
 
@@ -33,6 +34,8 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
     public SalesforceGapViewClient(DroidGap ctx) {
         super(ctx);
     }
+    
+    
 
 
     /**
@@ -56,7 +59,7 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
             e.commit();
 
             this.foundHomeUrl = true;
-            EventsObservable.get().notifyEvent(EventType.GapWebViewPageFinished);
+            EventsObservable.get().notifyEvent(new Event(EventType.GapWebViewPageFinished, url));
         }
 
         super.onPageFinished(view, url);
