@@ -39,6 +39,7 @@ public class EventsObservable extends Observable<EventsObserver> {
     	AppUnlocked,
     	RenditionComplete,
     	LoginWebViewPageFinished,
+    	LogoutComplete,
     	GapWebViewPageFinished,
     	Other
     }
