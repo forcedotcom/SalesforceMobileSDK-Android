@@ -30,19 +30,13 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * This tracks activity events using a queue, allowing for tests to wait for certain events to turn up.
  */
 public class EventsListenerQueue {
-
-    public static class Event {
-        public final EventType type;
-        Event(EventType t) {
-            this.type = t;
-        }
-    }
 
     public EventsListenerQueue() {
         observer = new MyListener();
@@ -77,7 +71,7 @@ public class EventsListenerQueue {
         while (remaining > 0) {
             try {
                 Event e = events.poll(remaining, TimeUnit.MILLISECONDS);
-                if (e != null && e.type == expectedType) {
+                if (e != null && e.getType() == expectedType) {
                     return;
                 }
             } catch (InterruptedException e) {
@@ -98,8 +92,8 @@ public class EventsListenerQueue {
     public class MyListener implements EventsObserver {
 
         @Override
-        public void onEvent(EventType evt) {
-            events.offer(new Event(evt));
+        public void onEvent(Event evt) {
+            events.offer(evt);
         }
     }
 }

@@ -39,9 +39,33 @@ public class EventsObservable extends Observable<EventsObserver> {
     	AppUnlocked,
     	RenditionComplete,
     	LoginWebViewPageFinished,
-    	GapWebViewPageFinished
+    	GapWebViewPageFinished,
+    	Other
     }
 
+    public static class Event {
+    	private EventType type;
+		private String data;
+
+		public Event(EventType eventType) {
+			this(eventType, null);
+		}		
+		
+		public Event(EventType type, String data) {
+    		this.type = type;
+    		this.data = data;
+    	}
+    
+		public EventType getType() {
+			return type;
+		}
+		
+		public String getData() {
+			return data;
+		}
+		
+    }
+    
     public interface Listener {
     	void onActivityEvent(EventType evt);
     }
@@ -52,7 +76,11 @@ public class EventsObservable extends Observable<EventsObserver> {
         return instance;
     }
 
-    public void notifyEvent(EventType evt) {
+    public void notifyEvent(EventType type) {
+    	notifyEvent(new Event(type));
+    }
+    
+    public void notifyEvent(Event evt) {
         synchronized(mObservers) {
             for (EventsObserver o : mObservers)
                 o.onEvent(evt);
