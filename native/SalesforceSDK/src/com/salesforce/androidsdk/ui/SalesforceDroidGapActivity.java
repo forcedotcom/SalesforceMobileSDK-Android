@@ -39,6 +39,8 @@ import android.webkit.WebView;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * Class that defines the main activity for a PhoneGap-based application.
@@ -103,6 +105,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
             webSettings.setAppCacheMaxSize(1024 * 1024 * 8);
             webSettings.setAllowFileAccess(true);
             webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
+            EventsObservable.get().notifyEvent(EventType.GapWebViewCreateComplete, appView);
         }
     }
 
@@ -132,10 +135,6 @@ public class SalesforceDroidGapActivity extends DroidGap {
     @Override
     public void onUserInteraction() {
         passcodeManager.recordUserInteraction();
-    }
-    
-    public WebView getWebView() {
-    	return appView;
     }
 
     @Override

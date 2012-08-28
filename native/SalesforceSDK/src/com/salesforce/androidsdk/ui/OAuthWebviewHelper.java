@@ -52,7 +52,6 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
@@ -259,7 +258,7 @@ public class OAuthWebviewHelper {
 
         @Override
 		public void onPageFinished(WebView view, String url) {
-        	EventsObservable.get().notifyEvent(new Event(EventType.LoginWebViewPageFinished, url));
+        	EventsObservable.get().notifyEvent(EventType.AuthWebViewPageFinished, url);
         	super.onPageFinished(view, url);
 		}
 

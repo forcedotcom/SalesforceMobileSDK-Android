@@ -44,6 +44,8 @@ import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * Login Activity: takes care of authenticating the user.
@@ -98,6 +100,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
 		// Setup the WebView.
 		WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
+		EventsObservable.get().notifyEvent(EventType.AuthWebViewCreateComplete, webView);
 		webviewHelper = getOAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
 		webviewHelper.loadLoginPage();
 	}
