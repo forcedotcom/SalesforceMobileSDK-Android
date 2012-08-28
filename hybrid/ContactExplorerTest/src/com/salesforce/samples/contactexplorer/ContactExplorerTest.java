@@ -29,56 +29,16 @@ package com.salesforce.samples.contactexplorer;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.app.Instrumentation;
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.test.InstrumentationTestCase;
 import android.webkit.WebView;
 
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.ui.LoginActivity;
-import com.salesforce.androidsdk.util.EventsListenerQueue;
-import com.salesforce.androidsdk.util.EventsListenerQueue.BlockForEvent;
-import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
 
 /**
  * Tests for Contact Explorer
  */
-public class ContactExplorerTest extends InstrumentationTestCase {
-
-	private int TIMEOUT = 15000; // ms
-    private Instrumentation instrumentation;
-	private EventsListenerQueue eq;
-	private WebView gapWebView;
-	
-	
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-
-        instrumentation = getInstrumentation();
-        eq = new EventsListenerQueue();
-
-        waitForStartup();
-    	logout();
-    	useSandbox();
-    	prepareBridge();
-    	launchMainActivity();
-    	login();    
-    }
-    
-    @Override
-    public void tearDown() throws Exception {
-        if (eq != null) {
-            eq.tearDown();
-            eq = null;
-        }
-        super.tearDown();
-    }
+public class ContactExplorerTest extends HybridInstrumentationTestCase {
 
 	public void testFetchSfdcAccounts() throws Exception {
 		interceptExistingJavaScriptFunction(gapWebView, "onSuccessSfdcAccounts");
@@ -110,102 +70,7 @@ public class ContactExplorerTest extends InstrumentationTestCase {
 		assertEquals("record should be an " + expectedType, expectedType, record.getJSONObject("attributes").getString("type"));
 	}
 
-	private void login() {
-		WebView loginWebView = (WebView) waitForEvent(EventType.AuthWebViewCreateComplete).getData();
-		waitForEvent(EventType.AuthWebViewPageFinished);
-		sendJavaScript(loginWebView, "document.login.un.value='w@cs0.com';document.login.password.value='123456';document.login.submit();"); // login
-		waitForEvent(EventType.AuthWebViewPageFinished);
-		//runJavaScript(loginWebView, "document.editPage.oaapprove.click()"); // approve
-		sendJavaScript(loginWebView, "document.editPage[6].click()"); // approve
-		waitForEvent(EventType.GapWebViewPageFinished);
-	}
-
-	private void waitForStartup() {
-		// Wait for app initialization to complete
-        if (ForceApp.APP == null) {
-            eq.waitForEvent(EventType.AppCreateComplete, TIMEOUT);
-        }
-	}	
-	
-    private void logout() {
-		ForceApp.APP.logout(null, false);
-		waitForEvent(EventType.LogoutComplete);
-	}
-
-	private void useSandbox() {
-		// Our username/password is for a sandbox org
-		SharedPreferences settings = instrumentation.getTargetContext().getSharedPreferences(
-	            LoginActivity.SERVER_URL_PREFS_SETTINGS,
-	            Context.MODE_PRIVATE);
-	    SharedPreferences.Editor editor = settings.edit();
-	    editor.putString(LoginActivity.SERVER_URL_CURRENT_SELECTION, OAuth2.SANDBOX_LOGIN_URL);
-	    editor.commit();
-	}
-
-	private void launchMainActivity() {
-		final Intent intent = new Intent(Intent.ACTION_MAIN);
-		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		intent.setClassName(instrumentation.getTargetContext(), ForceApp.APP.getMainActivityClass().getName());
-		instrumentation.startActivitySync(intent);
-	}
-
-	private void prepareBridge() {
-			// Bridge must be installed before anything gets loaded in the webview
-			eq.registerBlock(new BlockForEvent(EventType.GapWebViewCreateComplete) {
-				@Override
-				public void run(Event evt) {
-					gapWebView = (WebView) evt.getData();
-					gapWebView.addJavascriptInterface(new Object() {
-						@SuppressWarnings("unused")
-						public void send(String msg) {
-							EventsObservable.get()
-									.notifyEvent(EventType.Other, msg);
-						}
-					}, "contactExplorerTest");
-				}
-			});
-	 }
-
-	private Event waitForEvent(EventType type) {
-    	Event evt = eq.waitForEvent(type, TIMEOUT);
-    	if (type == EventType.AuthWebViewPageFinished || type == EventType.GapWebViewPageFinished) {
-    		waitSome();
-    		// When page finished is fired, DOM is not ready :-(
-    	}
-    	return evt;
-    }
-  
-    protected void waitSome() {
-        try {
-            Thread.sleep(2000);
-        }
-        catch (InterruptedException e) {
-            fail("Test interrupted");
-        }
-    }
-	
-
     private void sendClick(WebView webView, String target) {
 		sendJavaScript(webView, "jQuery('" + target + "').trigger('click')");
 	}
-
-	private void sendJavaScript(final WebView webView, final String js) {
-    	try {
-			runTestOnUiThread(new Runnable() {
-				@Override
-				public void run() {
-					webView.loadUrl("javascript:" + js); // TODO proper escaping
-				}				
-			});
-		} catch (Throwable e) {
-			e.printStackTrace();
-			fail(e.getMessage());
-		}
-    }
-
-	private void interceptExistingJavaScriptFunction(WebView webView, String functionName) {
-		sendJavaScript(gapWebView, "var old" + functionName + "=" +  functionName);
-		sendJavaScript(gapWebView, functionName + " = function() { contactExplorerTest.send(JSON.stringify(arguments)); old" + functionName + ".apply(null, arguments)}");
-	}
-    	
 }
