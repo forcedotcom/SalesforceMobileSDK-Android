@@ -34,6 +34,7 @@ import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity.PasscodeMode;
+import com.salesforce.androidsdk.util.BaseActivityInstrumentationTestCase;
 
 /**
  * Tests for PasscodeActivity

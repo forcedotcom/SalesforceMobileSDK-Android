@@ -27,6 +27,7 @@
 package com.salesforce.samples.restexplorer;
 
 import com.salesforce.androidsdk.ui.ServerPickerActivity;
+import com.salesforce.androidsdk.util.BaseActivityInstrumentationTestCase;
 
 import android.widget.Button;
 import android.widget.EditText;
