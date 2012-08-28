@@ -47,17 +47,20 @@ usage ()
     echo "        RestExplorer"
     echo "        TemplateApp"
     echo "        CloudTunes"
-    echo "        SmartStorePluginTest"
     echo "        ContactExplorer"
     echo "        VFConnector"
     echo "        SFDCAccounts"
     echo "        SmartStoreExplorer"
+    echo "        SalesforceSDKTest"
+    echo "        RestExplorerTest"
+    echo "        ContactExplorerTest"
+    echo "        SmartStorePluginTest"
     echo "    <test_target> can be "
     echo "        all"
     echo "        SalesforceSDKTest"
     echo "        RestExplorerTest"
-    echo "        SmartStorePluginTest"
     echo "        ContactExplorerTest"
+    echo "        SmartStorePluginTest"
 }
 
 verbose ()
