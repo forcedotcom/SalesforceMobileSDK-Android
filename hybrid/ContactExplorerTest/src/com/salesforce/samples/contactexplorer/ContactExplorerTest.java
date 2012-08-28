@@ -33,6 +33,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.test.InstrumentationTestCase;
+import android.util.Log;
 import android.webkit.WebView;
 
 import com.salesforce.androidsdk.app.ForceApp;
@@ -67,10 +68,37 @@ public class ContactExplorerTest extends InstrumentationTestCase {
     	useSandbox();
     	prepareBridge();
     	launchMainActivity();
-    
+    	login();    
     }
 
-	public void testLoginFlow() throws Exception {
+	public void testFetchSfdcAccounts() throws Exception {
+		interceptExistingJavaScriptFunction("onSuccessSfdcAccounts");
+		runJavaScript(gapWebView, "jQuery('#link_fetch_sfdc_accounts').trigger('click')");
+		Event evt = waitForEvent(EventType.Other);
+		Log.i("arguments", "" + evt.getData());
+		JSONObject response = (new JSONObject((String) evt.getData())).getJSONObject("0");
+		assertTrue("response should have records", response.has("records"));
+		JSONObject record = response.getJSONArray("records").getJSONObject(0);
+		assertEquals("record should be an account", "Account", record.getJSONObject("attributes").getString("type"));
+	}
+
+	public void testFetchSfdcContacts() throws Exception {
+		interceptExistingJavaScriptFunction("onSuccessSfdcContacts");
+		runJavaScript(gapWebView, "jQuery('#link_fetch_sfdc_contacts').trigger('click')");
+		Event evt = waitForEvent(EventType.Other);
+		Log.i("arguments", "" + evt.getData());
+		JSONObject response = (new JSONObject((String) evt.getData())).getJSONObject("0");
+		assertTrue("response should have records", response.has("records"));
+		JSONObject record = response.getJSONArray("records").getJSONObject(0);
+		assertEquals("record should be a contact", "Contact", record.getString("type"));
+	}
+	
+	public void testLogout() throws Exception {
+		runJavaScript(gapWebView, "jQuery('#link_logout').trigger('click')");
+		waitForEvent(EventType.LogoutComplete);
+	}
+
+	private void login() {
 		WebView loginWebView = (WebView) waitForEvent(EventType.AuthWebViewCreateComplete).getData();
 		waitForEvent(EventType.AuthWebViewPageFinished);
 		runJavaScript(loginWebView, "document.login.un.value='w@cs0.com';document.login.password.value='123456';document.login.submit();"); // login
@@ -78,10 +106,6 @@ public class ContactExplorerTest extends InstrumentationTestCase {
 		//runJavaScript(loginWebView, "document.editPage.oaapprove.click()"); // approve
 		runJavaScript(loginWebView, "document.editPage[6].click()"); // approve
 		waitForEvent(EventType.GapWebViewPageFinished);
-		runJavaScript(gapWebView, "jQuery('#link_fetch_sfdc_contacts').trigger('click')");
-		Event evtWithResponse = waitForEvent(EventType.Other);
-		JSONObject response = new JSONObject((String) evtWithResponse.getData());
-		
 	}
 
 	private void waitForStartup() {
@@ -121,20 +145,34 @@ public class ContactExplorerTest extends InstrumentationTestCase {
 					gapWebView = (WebView) evt.getData();
 					gapWebView.addJavascriptInterface(new Object() {
 						@SuppressWarnings("unused")
-						public void notifyEvent(String msg) {
+						public void send(String msg) {
 							EventsObservable.get()
 									.notifyEvent(EventType.Other, msg);
 						}
-					}, "containerObserver");
+					}, "contactExplorerTest");
 				}
 			});
 	 }
 
-	private Event waitForEvent(EventType evt) {
-    	return eq.waitForEvent(evt, TIMEOUT);
+	private Event waitForEvent(EventType type) {
+    	Event evt = eq.waitForEvent(type, TIMEOUT);
+    	if (type == EventType.AuthWebViewPageFinished || type == EventType.GapWebViewPageFinished) {
+    		waitSome();
+    		// When page finished is fired, DOM is not ready :-(
+    	}
+    	return evt;
     }
   
-    
+    protected void waitSome() {
+        try {
+            Thread.sleep(2000);
+        }
+        catch (InterruptedException e) {
+            fail("Test interrupted");
+        }
+    }
+	
+
     private void runJavaScript(final WebView webView, final String js) {
     	try {
 			runTestOnUiThread(new Runnable() {
@@ -148,5 +186,10 @@ public class ContactExplorerTest extends InstrumentationTestCase {
 			fail(e.getMessage());
 		}
     }
+
+	private void interceptExistingJavaScriptFunction(String functionName) {
+		runJavaScript(gapWebView, "var old" + functionName + "=" +  functionName);
+		runJavaScript(gapWebView, functionName + " = function() { contactExplorerTest.send(JSON.stringify(arguments)); oldOnSuccessSfdcAccounts.apply(null, arguments)}");
+	}
     	
 }
