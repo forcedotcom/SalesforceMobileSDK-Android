@@ -109,8 +109,22 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     public abstract SalesforceR getSalesforceR();
 
     /**
-     * This function must return the same value for name even when the application is restarted.
-     * @param name The name associated with they key.
+     * This function must return the same value for name
+     * even when the application is restarted. The value this
+     * function returns must be Base64 encoded.
+     *
+     * {@link Encryptor#isBase64Encoded(String)} can be used to
+     * determine whether the generated key is Base64 encoded.
+     *
+     * {@link Encryptor#hash(String, String)} can be used to
+     * generate a Base64 encoded string.
+     *
+     * For example:
+     * <code>
+     * Encryptor.hash(name + "12s9adfgret=6235inkasd=012", name + "12kl0dsakj4-cuygsdf625wkjasdol8");
+     * </code>
+     *
+     * @param name The name associated with the key.
      * @return The key used for encrypting salts and keys.
      */
     protected abstract String getKey(String name);

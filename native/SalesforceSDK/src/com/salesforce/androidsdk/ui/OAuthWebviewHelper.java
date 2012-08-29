@@ -34,10 +34,12 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
+import android.net.http.SslError;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.webkit.CookieManager;
+import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -205,7 +207,6 @@ public class OAuthWebviewHelper {
         }
     }
 
-
     protected void showError(Exception exception) {
         Toast.makeText(getContext(),
                 getContext().getString(ForceApp.APP.getSalesforceR().stringGenericError(), exception.toString()),
@@ -265,11 +266,9 @@ public class OAuthWebviewHelper {
 		@Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             boolean isDone = url.startsWith(loginOptions.oauthCallbackUrl);
-
             if (isDone) {
                 Uri callbackUri = Uri.parse(url);
                 Map<String, String> params = UriFragmentParser.parse(callbackUri);
-
                 String error = params.get("error");
                 // Did we fail?
                 if (error != null) {
@@ -284,8 +283,31 @@ public class OAuthWebviewHelper {
             }
             return isDone;
         }
-    }
 
+        @Override
+        public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
+            final StringBuilder sb = new StringBuilder("SSL Error: ");
+            int primError = error.getPrimaryError();
+            switch (primError) {
+                case SslError.SSL_EXPIRED:
+                    sb.append("Expired Certificate.");
+                    break;
+                case SslError.SSL_IDMISMATCH:
+                    sb.append("Hostname Mismatch.");
+                    break;
+                case SslError.SSL_NOTYETVALID:
+                    sb.append("Certificate Not Yet Valid.");
+                    break;
+                case SslError.SSL_UNTRUSTED:
+                    sb.append("Untrusted Certificate Authority.");
+                    break;
+                default:
+                    sb.append("Unknown Error.");
+            }
+            Toast.makeText(getContext(), sb.toString(), Toast.LENGTH_LONG).show();
+            handler.cancel();
+        }
+    }
 
     /**
      * Called when the user facing part of the auth flow completed successfully.

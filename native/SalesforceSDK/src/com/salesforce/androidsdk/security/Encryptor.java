@@ -168,6 +168,21 @@ public class Encryptor {
     }
 
     /**
+     * Checks if the string is Base64 encoded.
+     *
+     * @param key String.
+     * @return True - if encoded, False - otherwise.
+     */
+    public static boolean isBase64Encoded(String key) {
+        try {
+            Base64.decode(key, Base64.DEFAULT);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
      * Return hmac-sha256 hash of data using key
      * @param data
      * @param key
