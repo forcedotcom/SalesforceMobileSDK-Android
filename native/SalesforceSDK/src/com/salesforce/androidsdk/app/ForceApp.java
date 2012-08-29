@@ -372,15 +372,18 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         // Remove account if any.
         ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
         if (clientMgr.getAccount() == null) {
+        	EventsObservable.get().notifyEvent(EventType.LogoutComplete);                	
+    		        	
             if (showLoginPage) {
                 startLoginPage();
             }
         } else {
             clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
-
-                @Override
+            	@Override
                 public void run(AccountManagerFuture<Boolean> arg0) {
-                    if (showLoginPage) {
+            		EventsObservable.get().notifyEvent(EventType.LogoutComplete);                	
+            		
+            		if (showLoginPage) {
                         startLoginPage();
                     }
                 }

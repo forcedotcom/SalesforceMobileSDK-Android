@@ -21,6 +21,8 @@ Inside the HYBRID_DIR, you will find several projects:
 3. **SampleApps/SFDCAccounts**: The SFDCAccounts sample app demonstrates how to take accounts and opportunities offline using SmartStore and forcetk
 4. **SampleApps/SmartStoreExplorer**: The SmartStoreExplorer sample app let you explore SmartStore APIs
 5. **SmartStorePluginTest**: Test project for the SmartStore phonegap plugin
+6. **SampleApps/ContactExplorerTest**: Test project for ContactExplorer
+7. **SampleApps/VFConnectorTest**: Test project for VFConnector
 
 # Creating a new hybrid application using SalesforceSDK
 

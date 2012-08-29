@@ -53,6 +53,8 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
 /**
@@ -256,6 +258,12 @@ public class OAuthWebviewHelper {
     protected class AuthWebViewClient extends WebViewClient {
 
         @Override
+		public void onPageFinished(WebView view, String url) {
+        	EventsObservable.get().notifyEvent(EventType.AuthWebViewPageFinished, url);
+        	super.onPageFinished(view, url);
+		}
+
+		@Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
             boolean isDone = url.startsWith(loginOptions.oauthCallbackUrl);
             if (isDone) {

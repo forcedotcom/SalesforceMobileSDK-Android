@@ -26,31 +26,65 @@
  */
 package com.salesforce.androidsdk.util;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * This tracks activity events using a queue, allowing for tests to wait for certain events to turn up.
  */
-public class EventsListenerQueue {
+public class EventsListenerQueue implements EventsObserver {
+	
+    static public abstract class BlockForEvent {
+    	private EventType type;
+    	
+    	public BlockForEvent(EventType type) {
+    		this.type = type;
+    	}
+    	public EventType getType() {
+    		return type;
+    	}
+    	
+    	public abstract void run(Event evt);
+    }
+    
+    private BlockingQueue<Event> events;  
+    private Set<BlockForEvent> blocks = new HashSet<BlockForEvent>();
 
-    public static class Event {
-        public final EventType type;
-        Event(EventType t) {
-            this.type = t;
-        }
+	public EventsListenerQueue() {
+    	events = new ArrayBlockingQueue<Event>(10);
+        EventsObservable.get().registerObserver(this);
     }
 
-    public EventsListenerQueue() {
-        observer = new MyListener();
-        EventsObservable.get().registerObserver(observer);
-    }
-
+	public void onEvent(Event evt) {
+		List<BlockForEvent> matchingBlocks = new ArrayList<BlockForEvent>();
+		for (BlockForEvent block : blocks) {
+			if (block.getType() == evt.getType()) {
+				block.run(evt);
+				matchingBlocks.add(block);
+			}
+		}
+		blocks.removeAll(matchingBlocks);
+		events.offer(evt);
+	}
+	
+	/**
+	 * Register a block of code to run the next time a certain event is fired
+	 * @param block
+	 */
+	public void registerBlock(BlockForEvent block) {
+		blocks.add(block);
+	}
+	
     public void tearDown() {
-        EventsObservable.get().unregisterObserver(observer);
+        EventsObservable.get().unregisterObserver(this);
     }
 
     // remove any events in the queue
@@ -71,14 +105,14 @@ public class EventsListenerQueue {
     }
 
     /** will wait for expected event in the queue, waiting till the timeout specified */
-    public void waitForEvent(EventType expectedType, int timeout) {
+    public Event waitForEvent(EventType expectedType, int timeout) {
         long end = System.currentTimeMillis() + timeout;
         long remaining = timeout;
         while (remaining > 0) {
             try {
                 Event e = events.poll(remaining, TimeUnit.MILLISECONDS);
-                if (e != null && e.type == expectedType) {
-                    return;
+                if (e != null && e.getType() == expectedType) {
+                    return e;
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException("Was interupted waiting for activity event");
@@ -90,16 +124,5 @@ public class EventsListenerQueue {
 
     public boolean peekEvent() {
         return events.peek() == null;
-    }
-
-    private BlockingQueue<Event> events = new ArrayBlockingQueue<Event>(10);
-    private MyListener observer;
-
-    public class MyListener implements EventsObserver {
-
-        @Override
-        public void onEvent(EventType evt) {
-            events.offer(new Event(evt));
-        }
     }
 }
