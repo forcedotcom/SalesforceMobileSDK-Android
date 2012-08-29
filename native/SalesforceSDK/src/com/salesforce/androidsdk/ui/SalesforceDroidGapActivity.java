@@ -34,7 +34,6 @@ import android.os.Handler;
 import android.util.Log;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebSettings;
-import android.webkit.WebView;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
