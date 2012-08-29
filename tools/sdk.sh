@@ -55,12 +55,14 @@ usage ()
     echo "        RestExplorerTest"
     echo "        ContactExplorerTest"
     echo "        SmartStorePluginTest"
+    echo "        VFConnectorTest"
     echo "    <test_target> can be "
     echo "        all"
     echo "        SalesforceSDKTest"
     echo "        RestExplorerTest"
     echo "        ContactExplorerTest"
     echo "        SmartStorePluginTest"
+    echo "        VFConnectorTest"
 }
 
 verbose ()
@@ -151,9 +153,11 @@ else
     build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest ../RestExplorer
     build_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/SmartStorePluginTest .
     build_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/ContactExplorerTest ../ContactExplorer
+    build_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/VFConnectorTest ../VFConnector
 
     run_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest
     run_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest
     run_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/SmartStorePluginTest
     run_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/ContactExplorerTest
+    run_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/VFConnectorTest
 fi
