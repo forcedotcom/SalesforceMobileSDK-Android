@@ -26,12 +26,12 @@
  */
 package com.salesforce.androidsdk.util;
 
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.EventsObservable.Event;
 
 /**
  * Observer of sdk events
  */
 public interface EventsObserver {
 
-    void onEvent(EventType evt);
+    void onEvent(Event evt);
 }
