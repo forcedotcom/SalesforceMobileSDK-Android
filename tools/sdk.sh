@@ -150,10 +150,10 @@ else
     build_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest .
     build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest ../RestExplorer
     build_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/SmartStorePluginTest .
-    build_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/ContactExplorerTest ../SampleApps/ContactExplorer
+    build_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/ContactExplorerTest ../ContactExplorer
 
     run_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest
     run_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest
     run_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/SmartStorePluginTest
-    run_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/ContactExplorerTest
+    run_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/ContactExplorerTest
 fi
