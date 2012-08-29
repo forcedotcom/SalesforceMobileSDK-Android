@@ -73,4 +73,12 @@ public class ContactExplorerTest extends HybridInstrumentationTestCase {
     private void sendClick(WebView webView, String target) {
 		sendJavaScript(webView, "jQuery('" + target + "').trigger('click')");
 	}
+    
+    protected String getTestUsername() {
+    	return "sdktest@cs0.com";
+    }
+    
+    protected String getTestPassword() {
+    	return "123456"; // shouldn't check in
+    }
 }

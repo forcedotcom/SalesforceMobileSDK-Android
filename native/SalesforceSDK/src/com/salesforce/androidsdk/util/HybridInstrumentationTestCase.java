@@ -43,7 +43,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 /**
  * Super class for tests of hybrid application
  */
-public class HybridInstrumentationTestCase extends InstrumentationTestCase {
+public abstract class HybridInstrumentationTestCase extends InstrumentationTestCase {
 	
 	protected static String HYBRID_CONTAINER = "hybridContainer";
 	protected int TIMEOUT = 15000; // ms
@@ -76,6 +76,10 @@ public class HybridInstrumentationTestCase extends InstrumentationTestCase {
         }
         super.tearDown();
     }
+
+	protected abstract String getTestUsername();
+
+	protected abstract String getTestPassword();
 
 	protected void waitForStartup() {
 		// Wait for app initialization to complete
@@ -119,7 +123,7 @@ public class HybridInstrumentationTestCase extends InstrumentationTestCase {
 	protected void login() {
 		WebView loginWebView = (WebView) waitForEvent(EventType.AuthWebViewCreateComplete).getData();
 		waitForEvent(EventType.AuthWebViewPageFinished);
-		sendJavaScript(loginWebView, "document.login.un.value='w@cs0.com';document.login.password.value='123456';document.login.submit();"); // login
+		sendJavaScript(loginWebView, "document.login.un.value='" + getTestUsername() + "';document.login.password.value='" + getTestPassword() + "';document.login.submit();"); // login
 		waitForEvent(EventType.AuthWebViewPageFinished);
 		//runJavaScript(loginWebView, "document.editPage.oaapprove.click()"); // approve
 		sendJavaScript(loginWebView, "document.editPage[6].click()"); // approve
