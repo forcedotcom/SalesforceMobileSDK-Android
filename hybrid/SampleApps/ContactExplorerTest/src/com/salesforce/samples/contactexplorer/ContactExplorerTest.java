@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -36,7 +36,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
 
 /**
- * Tests for Contact Explorer
+ * Tests for ContactExplorer
  */
 public class ContactExplorerTest extends HybridInstrumentationTestCase {
 
