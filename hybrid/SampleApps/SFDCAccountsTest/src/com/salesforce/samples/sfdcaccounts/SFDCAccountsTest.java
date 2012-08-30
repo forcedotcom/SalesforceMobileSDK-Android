@@ -43,8 +43,8 @@ public class SFDCAccountsTest extends HybridInstrumentationTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        interceptExistingJavaScriptFunction(gapWebView, "regLinkClickHandlers");
-        waitForEvent(EventType.Other);
+        interceptExistingJavaScriptFunction(gapWebView, "salesforceSessionRefreshed");
+        waitForEvent(EventType.Other); // It's only after salesforceSessionRefreshed gets called that forcetk is initialized
     }
 
 	public void testFetchSfdcAccounts() throws Exception {

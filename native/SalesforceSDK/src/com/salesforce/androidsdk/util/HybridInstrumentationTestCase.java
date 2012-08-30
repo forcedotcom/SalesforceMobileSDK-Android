@@ -46,7 +46,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 public abstract class HybridInstrumentationTestCase extends InstrumentationTestCase {
 	
 	protected static String HYBRID_CONTAINER = "hybridContainer";
-	protected int TIMEOUT = 15000; // ms
+	protected int TIMEOUT = 30000; // ms
 
 	protected EventsListenerQueue eq;
 	protected Instrumentation instrumentation;
@@ -84,7 +84,7 @@ public abstract class HybridInstrumentationTestCase extends InstrumentationTestC
 	protected void waitForStartup() {
 		// Wait for app initialization to complete
 	    if (ForceApp.APP == null) {
-	        eq.waitForEvent(EventType.AppCreateComplete, TIMEOUT);
+	    	waitForEvent(EventType.AppCreateComplete);
 	    }
 	}
 
@@ -138,13 +138,17 @@ public abstract class HybridInstrumentationTestCase extends InstrumentationTestC
 	}
 
 	protected Event waitForEvent(EventType type) {
-    	Event evt = eq.waitForEvent(type, TIMEOUT);
+    	Event evt = eq.waitForEvent(type, getWaitTimeout());
     	if (type == EventType.AuthWebViewPageFinished || type == EventType.GapWebViewPageFinished) {
     		waitSome();
     		// When page finished is fired, DOM is not ready :-(
     	}
     	return evt;
     }
+
+	private int getWaitTimeout() {
+		return TIMEOUT;
+	}
   
     protected void waitSome() {
         try {
