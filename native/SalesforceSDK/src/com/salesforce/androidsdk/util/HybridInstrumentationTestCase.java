@@ -125,8 +125,8 @@ public abstract class HybridInstrumentationTestCase extends InstrumentationTestC
 		waitForEvent(EventType.AuthWebViewPageFinished);
 		sendJavaScript(loginWebView, "document.login.un.value='" + getTestUsername() + "';document.login.password.value='" + getTestPassword() + "';document.login.submit();"); // login
 		waitForEvent(EventType.AuthWebViewPageFinished);
-		//runJavaScript(loginWebView, "document.editPage.oaapprove.click()"); // approve
-		sendJavaScript(loginWebView, "document.editPage[6].click()"); // approve
+		sendJavaScript(loginWebView, "document.editPage.oaapprove.click()"); // approve
+		// sendJavaScript(loginWebView, "document.editPage[6].click()"); // approve
 		waitForEvent(EventType.GapWebViewPageFinished);
 	}
 
