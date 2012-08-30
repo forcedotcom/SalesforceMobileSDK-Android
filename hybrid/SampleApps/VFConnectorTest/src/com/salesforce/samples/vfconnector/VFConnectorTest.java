@@ -26,7 +26,6 @@
  */
 package com.salesforce.samples.vfconnector;
 
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
 
 /**
@@ -35,9 +34,8 @@ import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
 public class VFConnectorTest extends HybridInstrumentationTestCase {
 
 	public void testLoad() throws Exception {
-		sendJavaScript(gapWebView, HYBRID_CONTAINER + ".send(document.body.innerHTML)");
-		String bodyInnerHTML = (String) waitForEvent(EventType.Other).getData();
-		assertTrue("Page should contain 'This is your new Page'", bodyInnerHTML.contains("This is your new Page"));
+		String bodyHTML = getHTML("document.body");
+		assertTrue("Page should contain 'This is your new Page'", bodyHTML.contains("This is your new Page"));
 	}
 
     

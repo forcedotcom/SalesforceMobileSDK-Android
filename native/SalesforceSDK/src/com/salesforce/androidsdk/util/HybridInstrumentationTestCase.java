@@ -174,4 +174,8 @@ public abstract class HybridInstrumentationTestCase extends InstrumentationTestC
 		sendJavaScript(gapWebView, functionName + " = function() { " + HYBRID_CONTAINER + ".send(JSON.stringify(arguments)); old" + functionName + ".apply(null, arguments)}");
 	}
     	
+	protected String getHTML(String domElt) {
+		sendJavaScript(gapWebView, HYBRID_CONTAINER + ".send(" + domElt + ".outerHTML)");
+		return (String) waitForEvent(EventType.Other).getData();		
+	}
 }
