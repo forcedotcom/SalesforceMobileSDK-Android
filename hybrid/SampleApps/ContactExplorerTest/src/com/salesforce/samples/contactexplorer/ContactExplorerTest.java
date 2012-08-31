@@ -75,7 +75,7 @@ public class ContactExplorerTest extends HybridInstrumentationTestCase {
 	}
     
     protected String getTestUsername() {
-    	return "sdktest@cs0.com";
+    	return "readonly@cs0.mobilesdk.ee.org";
     }
     
     protected String getTestPassword() {

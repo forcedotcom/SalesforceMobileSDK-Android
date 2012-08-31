@@ -38,9 +38,8 @@ public class VFConnectorTest extends HybridInstrumentationTestCase {
 		assertTrue("Page should contain 'This is your new Page'", bodyHTML.contains("This is your new Page"));
 	}
 
-    
     protected String getTestUsername() {
-    	return "sdktest@cs0.com";
+    	return "readonly@cs0.mobilesdk.ee.org";
     }
     
     protected String getTestPassword() {
