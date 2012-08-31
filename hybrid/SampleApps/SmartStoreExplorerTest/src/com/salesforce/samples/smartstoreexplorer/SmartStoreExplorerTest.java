@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.contactexplorer;
+package com.salesforce.samples.smartstoreexplorer;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -36,38 +36,13 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
 
 /**
- * Tests for ContactExplorer
+ * Tests for SmartStoreExplorer
  */
-public class ContactExplorerTest extends HybridInstrumentationTestCase {
+public class SmartStoreExplorerTest extends HybridInstrumentationTestCase {
 
-	public void testFetchSfdcAccounts() throws Exception {
-		interceptExistingJavaScriptFunction(gapWebView, "onSuccessSfdcAccounts");
-		sendClick(gapWebView, "#link_fetch_sfdc_accounts");
-		Event evt = waitForEvent(EventType.Other);
-		validateResponse((String) evt.getData(), "Account");
-		sendClick(gapWebView, "#link_logout");
-		waitForEvent(EventType.LogoutComplete);
-	}
-
-	public void testFetchSfdcContacts() throws Exception {
-		interceptExistingJavaScriptFunction(gapWebView, "onSuccessSfdcContacts");
-		sendClick(gapWebView, "#link_fetch_sfdc_contacts");
-		Event evt = waitForEvent(EventType.Other);
-		validateResponse((String) evt.getData(), "Contact");
-		sendClick(gapWebView, "#link_logout");
-		waitForEvent(EventType.LogoutComplete);
-	}
-	
 	public void testLogout() throws Exception {
 		sendClick(gapWebView, "#link_logout");
 		waitForEvent(EventType.LogoutComplete);
-	}
-
-	private void validateResponse(String data, String expectedType) throws JSONException {
-		JSONObject response = (new JSONObject(data)).getJSONObject("0"); // we get the arguments dictionary back from javascript
-		assertTrue("response should have records", response.has("records"));
-		JSONObject record = response.getJSONArray("records").getJSONObject(0);
-		assertEquals("record should be an " + expectedType, expectedType, record.getJSONObject("attributes").getString("type"));
 	}
 
     private void sendClick(WebView webView, String target) {

@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.contactexplorer;
+package com.salesforce.samples.sfdcaccounts;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -38,7 +38,14 @@ import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
 /**
  * Tests for ContactExplorer
  */
-public class ContactExplorerTest extends HybridInstrumentationTestCase {
+public class SFDCAccountsTest extends HybridInstrumentationTestCase {
+	
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        interceptExistingJavaScriptFunction(gapWebView, "salesforceSessionRefreshed");
+        waitForEvent(EventType.Other); // It's only after salesforceSessionRefreshed gets called that forcetk is initialized
+    }
 
 	public void testFetchSfdcAccounts() throws Exception {
 		interceptExistingJavaScriptFunction(gapWebView, "onSuccessSfdcAccounts");
@@ -49,11 +56,11 @@ public class ContactExplorerTest extends HybridInstrumentationTestCase {
 		waitForEvent(EventType.LogoutComplete);
 	}
 
-	public void testFetchSfdcContacts() throws Exception {
-		interceptExistingJavaScriptFunction(gapWebView, "onSuccessSfdcContacts");
-		sendClick(gapWebView, "#link_fetch_sfdc_contacts");
+	public void testFetchSfdcOpportunities() throws Exception {
+		interceptExistingJavaScriptFunction(gapWebView, "onSuccessSfdcOpportunities");
+		sendClick(gapWebView, "#link_fetch_sfdc_opportunities");
 		Event evt = waitForEvent(EventType.Other);
-		validateResponse((String) evt.getData(), "Contact");
+		validateResponse((String) evt.getData(), "Opportunity");
 		sendClick(gapWebView, "#link_logout");
 		waitForEvent(EventType.LogoutComplete);
 	}
