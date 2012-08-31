@@ -57,6 +57,7 @@ usage ()
     echo "        SmartStorePluginTest"
     echo "        VFConnectorTest"
     echo "        SFDCAccountsTest"
+    echo "        SmartStoreExplorerTest"
     echo "    <test_target> can be "
     echo "        all"
     echo "        SalesforceSDKTest"
@@ -65,6 +66,7 @@ usage ()
     echo "        SmartStorePluginTest"
     echo "        VFConnectorTest"
     echo "        SFDCAccountsTest"
+    echo "        SmartStoreExplorerTest"
 }
 
 verbose ()
@@ -157,6 +159,7 @@ else
     build_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/ContactExplorerTest ../ContactExplorer
     build_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/VFConnectorTest ../VFConnector
     build_test_project_if_requested "SFDCAccountsTest" $HYBRID_TOP/SampleApps/SFDCAccountsTest ../SFDCAccounts
+    build_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/SmartStoreExplorerTest ../SmartStoreExplorer
 
     run_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest
     run_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest
@@ -164,4 +167,5 @@ else
     run_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/ContactExplorerTest
     run_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/VFConnectorTest
     run_test_project_if_requested "SFDCAccountsTest" $HYBRID_TOP/SampleApps/SFDCAccountsTest
+    run_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/SmartStoreExplorerTest
 fi
