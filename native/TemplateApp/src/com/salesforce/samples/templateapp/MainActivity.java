@@ -47,6 +47,8 @@ import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * Main activity
@@ -105,6 +107,9 @@ public class MainActivity extends Activity {
 
 					// Show everything
 					findViewById(R.id.root).setVisibility(View.VISIBLE);
+					
+					// Let observers know
+					EventsObservable.get().notifyEvent(EventType.RenditionComplete, MainActivity.this);
 				}
 			});
 		}

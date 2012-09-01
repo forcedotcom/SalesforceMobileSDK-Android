@@ -24,25 +24,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartstoreexplorer;
+package com.salesforce.samples.templateapp;
 
-import android.webkit.WebView;
+import android.app.Activity;
 
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
+import com.salesforce.androidsdk.util.ForceAppInstrumentationTestCase;
 
 /**
  * Tests for SmartStoreExplorer
  */
-public class SmartStoreExplorerTest extends HybridInstrumentationTestCase {
+public class TemplateAppTest extends ForceAppInstrumentationTestCase {
 
-	public void testLogout() throws Exception {
-		sendClick(gapWebView, "#link_logout");
-		waitForEvent(EventType.LogoutComplete);
+	private Activity ctx;
+	
+	protected void login() {
+		super.login();
+		ctx = (Activity) waitForEvent(EventType.RenditionComplete).getData();
 	}
-
-    private void sendClick(WebView webView, String target) {
-		sendJavaScript(webView, "jQuery('" + target + "').trigger('click')");
+	
+	public void testLogout() throws Exception {
+		clickView(ctx.findViewById(R.id.logout_button));
+		waitForEvent(EventType.LogoutComplete);
 	}
 
 }

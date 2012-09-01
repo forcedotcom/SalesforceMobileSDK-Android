@@ -24,9 +24,10 @@ Inside the $NATIVE_DIR, you will find several projects:
 1. **SalesforceSDK**: The Salesforce SDK library project which provides support for OAuth2, REST API calls, pin screen (driven by mobile policy) and SmartStore
 2. **SalesforceSDKTest**: Test project for SalesforceSDK
 3. **TemplateApp**: Template used when creating new native application using SalesforceSDK
-4. **RestExplorer**: A app using SalesforceSDK to explore the REST API calls
-5. **RestExplorerTest**: Test project for the RestExplorer project
-6. **SampleApps/CloudTunes**: A sample native application using SalesforceSDK
+4. **TemplateAppTest**: Test project for the TemplateApp project
+5. **RestExplorer**: A app using SalesforceSDK to explore the REST API calls
+6. **RestExplorerTest**: Test project for the RestExplorer project
+7. **SampleApps/CloudTunes**: A sample native application using SalesforceSDK
 
 # Creating a new native application using SalesforceSDK
 
