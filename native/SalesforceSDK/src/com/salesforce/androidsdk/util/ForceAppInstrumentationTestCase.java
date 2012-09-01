@@ -31,6 +31,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.test.InstrumentationTestCase;
+import android.view.View;
 import android.webkit.WebView;
 
 import com.salesforce.androidsdk.app.ForceApp;
@@ -153,4 +154,18 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 			fail(e.getMessage());
 		}
     }
+	
+    protected void clickView(final View v) {
+        try {
+            runTestOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    v.performClick();
+                }
+            });
+        }
+        catch (Throwable t) {
+            fail("Failed to click view " + v);
+        }
+    }	
 }

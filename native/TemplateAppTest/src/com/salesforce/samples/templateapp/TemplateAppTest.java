@@ -45,18 +45,7 @@ public class TemplateAppTest extends ForceAppInstrumentationTestCase {
 	}
 	
 	public void testLogout() throws Exception {
-		final View v = ctx.findViewById(R.id.logout_button);
-		try {
-			runTestOnUiThread(new Runnable() {
-			    @Override
-			    public void run() {
-			        v.performClick();
-			    }
-			});
-		} catch (Throwable e) {
-			fail("Failed to click view " + v);
-		}
-
+		clickView(ctx.findViewById(R.id.logout_button));
 		waitForEvent(EventType.LogoutComplete);
 	}
 
