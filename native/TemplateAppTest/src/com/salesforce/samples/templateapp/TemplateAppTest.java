@@ -27,7 +27,6 @@
 package com.salesforce.samples.templateapp;
 
 import android.app.Activity;
-import android.view.View;
 
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.ForceAppInstrumentationTestCase;
