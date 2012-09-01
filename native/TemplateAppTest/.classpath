@@ -6,5 +6,6 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="lib" path="libs/android-junit-report-1.2.6.jar"/>
+	<classpathentry kind="src" path="/SalesforceSDK"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
