@@ -26,12 +26,8 @@
  */
 package com.salesforce.samples.smartstoreexplorer;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.webkit.WebView;
 
-import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
 
@@ -48,12 +44,5 @@ public class SmartStoreExplorerTest extends HybridInstrumentationTestCase {
     private void sendClick(WebView webView, String target) {
 		sendJavaScript(webView, "jQuery('" + target + "').trigger('click')");
 	}
-    
-    protected String getTestUsername() {
-    	return "readonly@cs0.mobilesdk.ee.org";
-    }
-    
-    protected String getTestPassword() {
-    	return "123456"; // shouldn't check in
-    }
+
 }
