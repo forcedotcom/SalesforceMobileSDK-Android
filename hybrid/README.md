@@ -23,6 +23,8 @@ Inside the HYBRID_DIR, you will find several projects:
 5. **SmartStorePluginTest**: Test project for the SmartStore phonegap plugin
 6. **SampleApps/ContactExplorerTest**: Test project for ContactExplorer
 7. **SampleApps/VFConnectorTest**: Test project for VFConnector
+8. **SampleApps/SFDCAccountsTest**: Test project for SFDCAccounts
+9. **SampleApps/SmartStoreExplorerTest**: Test project for SmartStoreExplorer
 
 # Creating a new hybrid application using SalesforceSDK
 

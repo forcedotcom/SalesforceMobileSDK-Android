@@ -316,7 +316,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
         // Reset smartstore.
         if (hasSmartStore()) {
-            getSmartStore().dropAllSoups();
+        	DBOpenHelper.deleteDatabase(this);
         }
 
         // Reset passcode and encryption key, if any.

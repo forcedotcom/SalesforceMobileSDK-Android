@@ -46,7 +46,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 public abstract class HybridInstrumentationTestCase extends InstrumentationTestCase {
 	
 	protected static String HYBRID_CONTAINER = "hybridContainer";
-	protected int TIMEOUT = 15000; // ms
+	protected int TIMEOUT = 30000; // ms
 
 	protected EventsListenerQueue eq;
 	protected Instrumentation instrumentation;
@@ -84,7 +84,7 @@ public abstract class HybridInstrumentationTestCase extends InstrumentationTestC
 	protected void waitForStartup() {
 		// Wait for app initialization to complete
 	    if (ForceApp.APP == null) {
-	        eq.waitForEvent(EventType.AppCreateComplete, TIMEOUT);
+	    	waitForEvent(EventType.AppCreateComplete);
 	    }
 	}
 
@@ -125,8 +125,8 @@ public abstract class HybridInstrumentationTestCase extends InstrumentationTestC
 		waitForEvent(EventType.AuthWebViewPageFinished);
 		sendJavaScript(loginWebView, "document.login.un.value='" + getTestUsername() + "';document.login.password.value='" + getTestPassword() + "';document.login.submit();"); // login
 		waitForEvent(EventType.AuthWebViewPageFinished);
-		//runJavaScript(loginWebView, "document.editPage.oaapprove.click()"); // approve
-		sendJavaScript(loginWebView, "document.editPage[6].click()"); // approve
+		sendJavaScript(loginWebView, "document.editPage.oaapprove.click()"); // approve
+		// sendJavaScript(loginWebView, "document.editPage[6].click()"); // approve
 		waitForEvent(EventType.GapWebViewPageFinished);
 	}
 
@@ -138,13 +138,17 @@ public abstract class HybridInstrumentationTestCase extends InstrumentationTestC
 	}
 
 	protected Event waitForEvent(EventType type) {
-    	Event evt = eq.waitForEvent(type, TIMEOUT);
+    	Event evt = eq.waitForEvent(type, getWaitTimeout());
     	if (type == EventType.AuthWebViewPageFinished || type == EventType.GapWebViewPageFinished) {
     		waitSome();
     		// When page finished is fired, DOM is not ready :-(
     	}
     	return evt;
     }
+
+	private int getWaitTimeout() {
+		return TIMEOUT;
+	}
   
     protected void waitSome() {
         try {
@@ -174,4 +178,8 @@ public abstract class HybridInstrumentationTestCase extends InstrumentationTestC
 		sendJavaScript(gapWebView, functionName + " = function() { " + HYBRID_CONTAINER + ".send(JSON.stringify(arguments)); old" + functionName + ".apply(null, arguments)}");
 	}
     	
+	protected String getHTML(String domElt) {
+		sendJavaScript(gapWebView, HYBRID_CONTAINER + ".send(" + domElt + ".outerHTML)");
+		return (String) waitForEvent(EventType.Other).getData();		
+	}
 }
