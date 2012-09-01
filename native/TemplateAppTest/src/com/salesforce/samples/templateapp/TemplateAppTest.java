@@ -24,62 +24,40 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.util;
+package com.salesforce.samples.templateapp;
 
-import android.webkit.WebView;
+import android.app.Activity;
+import android.view.View;
 
-import com.salesforce.androidsdk.util.EventsListenerQueue.BlockForEvent;
-import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.ForceAppInstrumentationTestCase;
 
 /**
- * Super class for tests of hybrid application
+ * Tests for SmartStoreExplorer
  */
-public abstract class HybridInstrumentationTestCase extends ForceAppInstrumentationTestCase {
+public class TemplateAppTest extends ForceAppInstrumentationTestCase {
+
+	private Activity ctx;
 	
-	protected static String HYBRID_CONTAINER = "hybridContainer";
-	protected WebView gapWebView;
-	
-	
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-    }
-    
 	protected void login() {
 		super.login();
-		waitForEvent(EventType.GapWebViewPageFinished);
+		ctx = (Activity) waitForEvent(EventType.RenditionComplete).getData();
+	}
+	
+	public void testLogout() throws Exception {
+		final View v = ctx.findViewById(R.id.logout_button);
+		try {
+			runTestOnUiThread(new Runnable() {
+			    @Override
+			    public void run() {
+			        v.performClick();
+			    }
+			});
+		} catch (Throwable e) {
+			fail("Failed to click view " + v);
+		}
+
+		waitForEvent(EventType.LogoutComplete);
 	}
 
-	protected void launchMainActivity() {
-		prepareBridge();
-		super.launchMainActivity();
-	}
-
-	protected void prepareBridge() {
-		// Bridge must be installed before anything gets loaded in the webview
-		eq.registerBlock(new BlockForEvent(EventType.GapWebViewCreateComplete) {
-			@Override
-			public void run(Event evt) {
-				gapWebView = (WebView) evt.getData();
-				gapWebView.addJavascriptInterface(new Object() {
-					@SuppressWarnings("unused")
-					public void send(String msg) {
-						EventsObservable.get()
-								.notifyEvent(EventType.Other, msg);
-					}
-				}, HYBRID_CONTAINER);
-			}
-		});
-	 }
-
-	protected void interceptExistingJavaScriptFunction(WebView webView, String functionName) {
-		sendJavaScript(gapWebView, "var old" + functionName + "=" +  functionName);
-		sendJavaScript(gapWebView, functionName + " = function() { " + HYBRID_CONTAINER + ".send(JSON.stringify(arguments)); old" + functionName + ".apply(null, arguments)}");
-	}
-    	
-	protected String getHTML(String domElt) {
-		sendJavaScript(gapWebView, HYBRID_CONTAINER + ".send(" + domElt + ".outerHTML)");
-		return (String) waitForEvent(EventType.Other).getData();		
-	}
 }
