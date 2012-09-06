@@ -26,16 +26,8 @@
  */
 package com.salesforce.androidsdk.util;
 
-import android.app.Instrumentation;
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.test.InstrumentationTestCase;
 import android.webkit.WebView;
 
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsListenerQueue.BlockForEvent;
 import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -43,135 +35,43 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 /**
  * Super class for tests of hybrid application
  */
-public abstract class HybridInstrumentationTestCase extends InstrumentationTestCase {
+public abstract class HybridInstrumentationTestCase extends ForceAppInstrumentationTestCase {
 	
 	protected static String HYBRID_CONTAINER = "hybridContainer";
-	protected int TIMEOUT = 30000; // ms
-
-	protected EventsListenerQueue eq;
-	protected Instrumentation instrumentation;
 	protected WebView gapWebView;
 	
 	
     @Override
     public void setUp() throws Exception {
         super.setUp();
-
-        instrumentation = getInstrumentation();
-        eq = new EventsListenerQueue();
-
-        waitForStartup();
-    	logout();
-    	useSandbox();
-    	prepareBridge();
-    	launchMainActivity();
-    	login();    
     }
     
-    @Override
-    public void tearDown() throws Exception {
-        if (eq != null) {
-            eq.tearDown();
-            eq = null;
-        }
-        super.tearDown();
-    }
-
-	protected abstract String getTestUsername();
-
-	protected abstract String getTestPassword();
-
-	protected void waitForStartup() {
-		// Wait for app initialization to complete
-	    if (ForceApp.APP == null) {
-	    	waitForEvent(EventType.AppCreateComplete);
-	    }
-	}
-
-	protected void logout() {
-		ForceApp.APP.logout(null, false);
-		waitForEvent(EventType.LogoutComplete);
-	}
-
-	protected void useSandbox() {
-		// Our username/password is for a sandbox org
-		SharedPreferences settings = instrumentation.getTargetContext().getSharedPreferences(
-	            LoginActivity.SERVER_URL_PREFS_SETTINGS,
-	            Context.MODE_PRIVATE);
-	    SharedPreferences.Editor editor = settings.edit();
-	    editor.putString(LoginActivity.SERVER_URL_CURRENT_SELECTION, OAuth2.SANDBOX_LOGIN_URL);
-	    editor.commit();
-	}
-
-	protected void prepareBridge() {
-			// Bridge must be installed before anything gets loaded in the webview
-			eq.registerBlock(new BlockForEvent(EventType.GapWebViewCreateComplete) {
-				@Override
-				public void run(Event evt) {
-					gapWebView = (WebView) evt.getData();
-					gapWebView.addJavascriptInterface(new Object() {
-						@SuppressWarnings("unused")
-						public void send(String msg) {
-							EventsObservable.get()
-									.notifyEvent(EventType.Other, msg);
-						}
-					}, HYBRID_CONTAINER);
-				}
-			});
-	 }
-
 	protected void login() {
-		WebView loginWebView = (WebView) waitForEvent(EventType.AuthWebViewCreateComplete).getData();
-		waitForEvent(EventType.AuthWebViewPageFinished);
-		sendJavaScript(loginWebView, "document.login.un.value='" + getTestUsername() + "';document.login.password.value='" + getTestPassword() + "';document.login.submit();"); // login
-		waitForEvent(EventType.AuthWebViewPageFinished);
-		sendJavaScript(loginWebView, "document.editPage.oaapprove.click()"); // approve
-		// sendJavaScript(loginWebView, "document.editPage[6].click()"); // approve
+		super.login();
 		waitForEvent(EventType.GapWebViewPageFinished);
 	}
 
 	protected void launchMainActivity() {
-		final Intent intent = new Intent(Intent.ACTION_MAIN);
-		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		intent.setClassName(instrumentation.getTargetContext(), ForceApp.APP.getMainActivityClass().getName());
-		instrumentation.startActivitySync(intent);
+		prepareBridge();
+		super.launchMainActivity();
 	}
 
-	protected Event waitForEvent(EventType type) {
-    	Event evt = eq.waitForEvent(type, getWaitTimeout());
-    	if (type == EventType.AuthWebViewPageFinished || type == EventType.GapWebViewPageFinished) {
-    		waitSome();
-    		// When page finished is fired, DOM is not ready :-(
-    	}
-    	return evt;
-    }
-
-	private int getWaitTimeout() {
-		return TIMEOUT;
-	}
-  
-    protected void waitSome() {
-        try {
-            Thread.sleep(2000);
-        }
-        catch (InterruptedException e) {
-            fail("Test interrupted");
-        }
-    }
-	
-	protected void sendJavaScript(final WebView webView, final String js) {
-    	try {
-			runTestOnUiThread(new Runnable() {
-				@Override
-				public void run() {
-					webView.loadUrl("javascript:" + js); // TODO proper escaping
-				}				
-			});
-		} catch (Throwable e) {
-			e.printStackTrace();
-			fail(e.getMessage());
-		}
-    }
+	protected void prepareBridge() {
+		// Bridge must be installed before anything gets loaded in the webview
+		eq.registerBlock(new BlockForEvent(EventType.GapWebViewCreateComplete) {
+			@Override
+			public void run(Event evt) {
+				gapWebView = (WebView) evt.getData();
+				gapWebView.addJavascriptInterface(new Object() {
+					@SuppressWarnings("unused")
+					public void send(String msg) {
+						EventsObservable.get()
+								.notifyEvent(EventType.Other, msg);
+					}
+				}, HYBRID_CONTAINER);
+			}
+		});
+	 }
 
 	protected void interceptExistingJavaScriptFunction(WebView webView, String functionName) {
 		sendJavaScript(gapWebView, "var old" + functionName + "=" +  functionName);

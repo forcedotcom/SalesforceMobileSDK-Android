@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.restexplorer;
+package com.salesforce.samples.templateapp;
 
 import com.salesforce.androidsdk.ui.ServerPickerActivity;
 import com.salesforce.androidsdk.util.BaseActivityInstrumentationTestCase;
@@ -45,7 +45,7 @@ public class ServerPickerActivityTest extends
 	private EditText txtUrl;
 
 	public ServerPickerActivityTest() {
-		super("com.salesforce.samples.restexplorer", ServerPickerActivity.class);
+		super("com.salesforce.samples.templateapp", ServerPickerActivity.class);
 	}
 	
 	@Override

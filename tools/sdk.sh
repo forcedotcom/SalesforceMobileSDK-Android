@@ -53,6 +53,7 @@ usage ()
     echo "        SmartStoreExplorer"
     echo "        SalesforceSDKTest"
     echo "        RestExplorerTest"
+    echo "        TemplateAppTest"
     echo "        ContactExplorerTest"
     echo "        SmartStorePluginTest"
     echo "        VFConnectorTest"
@@ -62,6 +63,7 @@ usage ()
     echo "        all"
     echo "        SalesforceSDKTest"
     echo "        RestExplorerTest"
+    echo "        TemplateAppTest"
     echo "        ContactExplorerTest"
     echo "        SmartStorePluginTest"
     echo "        VFConnectorTest"
@@ -155,6 +157,7 @@ else
 
     build_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest .
     build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest ../RestExplorer
+    build_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/TemplateAppTest ../TemplateApp
     build_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/SmartStorePluginTest .
     build_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/ContactExplorerTest ../ContactExplorer
     build_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/VFConnectorTest ../VFConnector
@@ -163,6 +166,7 @@ else
 
     run_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest
     run_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest
+    run_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/TemplateAppTest
     run_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/SmartStorePluginTest
     run_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/ContactExplorerTest
     run_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/VFConnectorTest
