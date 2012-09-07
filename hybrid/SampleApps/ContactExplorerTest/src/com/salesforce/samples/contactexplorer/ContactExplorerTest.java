@@ -45,8 +45,6 @@ public class ContactExplorerTest extends HybridInstrumentationTestCase {
 		sendClick(gapWebView, "#link_fetch_sfdc_accounts");
 		Event evt = waitForEvent(EventType.Other);
 		validateResponse((String) evt.getData(), "Account");
-		sendClick(gapWebView, "#link_logout");
-		waitForEvent(EventType.LogoutComplete);
 	}
 
 	public void testFetchSfdcContacts() throws Exception {
@@ -54,13 +52,12 @@ public class ContactExplorerTest extends HybridInstrumentationTestCase {
 		sendClick(gapWebView, "#link_fetch_sfdc_contacts");
 		Event evt = waitForEvent(EventType.Other);
 		validateResponse((String) evt.getData(), "Contact");
-		sendClick(gapWebView, "#link_logout");
-		waitForEvent(EventType.LogoutComplete);
 	}
 	
 	public void testLogout() throws Exception {
 		sendClick(gapWebView, "#link_logout");
 		waitForEvent(EventType.LogoutComplete);
+		cleanupActivityFollowingLogout();
 	}
 
 	private void validateResponse(String data, String expectedType) throws JSONException {

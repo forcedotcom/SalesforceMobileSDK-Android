@@ -68,6 +68,9 @@ public class MainActivity extends Activity {
 		
 		// Setup view
 		setContentView(R.layout.main);
+
+		// Let observers know
+		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
 	}
 	
 	@Override 
@@ -109,7 +112,7 @@ public class MainActivity extends Activity {
 					findViewById(R.id.root).setVisibility(View.VISIBLE);
 					
 					// Let observers know
-					EventsObservable.get().notifyEvent(EventType.RenditionComplete, MainActivity.this);
+					EventsObservable.get().notifyEvent(EventType.RenditionComplete);
 				}
 			});
 		}
