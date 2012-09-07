@@ -43,7 +43,7 @@
       <path>
         <pathelement location="${temp.package.dir}" />
       </path>
-      <globmapper from="${basedir}/*" to="*" />
+      <globmapper from="${basedir}/*" to="*" handledirsep="true" />
     </pathconvert>
 
     <!-- Application ForceApp's subclass will be called ${app.name}App" -->
