@@ -26,26 +26,18 @@
  */
 package com.salesforce.samples.templateapp;
 
-import android.app.Activity;
-
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.ForceAppInstrumentationTestCase;
+import com.salesforce.androidsdk.util.NativeInstrumentationTestCase;
 
 /**
  * Tests for SmartStoreExplorer
  */
-public class TemplateAppTest extends ForceAppInstrumentationTestCase {
+public class TemplateAppTest extends NativeInstrumentationTestCase {
 
-	private Activity ctx;
-	
-	protected void login() {
-		super.login();
-		ctx = (Activity) waitForEvent(EventType.RenditionComplete).getData();
-	}
-	
 	public void testLogout() throws Exception {
-		clickView(ctx.findViewById(R.id.logout_button));
+		clickView(mainActivity.findViewById(R.id.logout_button));
 		waitForEvent(EventType.LogoutComplete);
+		cleanupActivityFollowingLogout();
 	}
 
 }

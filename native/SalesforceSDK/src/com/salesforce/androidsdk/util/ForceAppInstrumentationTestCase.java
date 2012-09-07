@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.util;
 
+import android.app.Activity;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.content.Intent;
@@ -49,6 +50,8 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 
 	protected EventsListenerQueue eq;
 	protected Instrumentation instrumentation;
+
+	protected Activity mainActivity;
 	
 	
     @Override
@@ -67,6 +70,10 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
     
     @Override
     public void tearDown() throws Exception {
+    	if (mainActivity != null) {
+    		mainActivity.finish();
+    	}
+    	
         if (eq != null) {
             eq.tearDown();
             eq = null;
@@ -116,7 +123,7 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 		final Intent intent = new Intent(Intent.ACTION_MAIN);
 		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		intent.setClassName(instrumentation.getTargetContext(), ForceApp.APP.getMainActivityClass().getName());
-		instrumentation.startActivitySync(intent);
+		mainActivity = instrumentation.startActivitySync(intent);
 	}
 
 	protected Event waitForEvent(EventType type) {
@@ -167,5 +174,10 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
         catch (Throwable t) {
             fail("Failed to click view " + v);
         }
-    }	
+    }
+
+	protected void cleanupActivityFollowingLogout() {
+		Activity activity = (Activity) waitForEvent(EventType.MainActivityCreateComplete).getData();
+		activity.finish();
+	}	
 }

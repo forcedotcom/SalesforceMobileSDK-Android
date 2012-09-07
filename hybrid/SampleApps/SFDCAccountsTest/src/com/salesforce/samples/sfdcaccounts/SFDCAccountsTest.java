@@ -52,8 +52,6 @@ public class SFDCAccountsTest extends HybridInstrumentationTestCase {
 		sendClick(gapWebView, "#link_fetch_sfdc_accounts");
 		Event evt = waitForEvent(EventType.Other);
 		validateResponse((String) evt.getData(), "Account");
-		sendClick(gapWebView, "#link_logout");
-		waitForEvent(EventType.LogoutComplete);
 	}
 
 	public void testFetchSfdcOpportunities() throws Exception {
@@ -61,13 +59,12 @@ public class SFDCAccountsTest extends HybridInstrumentationTestCase {
 		sendClick(gapWebView, "#link_fetch_sfdc_opportunities");
 		Event evt = waitForEvent(EventType.Other);
 		validateResponse((String) evt.getData(), "Opportunity");
-		sendClick(gapWebView, "#link_logout");
-		waitForEvent(EventType.LogoutComplete);
 	}
 	
 	public void testLogout() throws Exception {
 		sendClick(gapWebView, "#link_logout");
 		waitForEvent(EventType.LogoutComplete);
+		cleanupActivityFollowingLogout();
 	}
 
 	private void validateResponse(String data, String expectedType) throws JSONException {

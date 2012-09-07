@@ -40,12 +40,6 @@ public abstract class HybridInstrumentationTestCase extends ForceAppInstrumentat
 	protected static String HYBRID_CONTAINER = "hybridContainer";
 	protected WebView gapWebView;
 	
-	
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-    }
-    
 	protected void login() {
 		super.login();
 		waitForEvent(EventType.GapWebViewPageFinished);
@@ -75,7 +69,7 @@ public abstract class HybridInstrumentationTestCase extends ForceAppInstrumentat
 
 	protected void interceptExistingJavaScriptFunction(WebView webView, String functionName) {
 		sendJavaScript(gapWebView, "var old" + functionName + "=" +  functionName);
-		sendJavaScript(gapWebView, functionName + " = function() { " + HYBRID_CONTAINER + ".send(JSON.stringify(arguments)); old" + functionName + ".apply(null, arguments)}");
+		sendJavaScript(gapWebView, functionName + " = function() { console.log(\"Intercepting " + functionName + "\"); " + HYBRID_CONTAINER + ".send(JSON.stringify(arguments)); old" + functionName + ".apply(null, arguments)}");
 	}
     	
 	protected String getHTML(String domElt) {

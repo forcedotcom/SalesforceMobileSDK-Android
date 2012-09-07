@@ -69,6 +69,10 @@ public class SalesforceDroidGapActivity extends DroidGap {
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
 
+
+		// Let observers know
+		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);        
+        
         // Load bootstrap
         super.loadUrl(getStartPageUrl());
 
