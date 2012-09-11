@@ -77,7 +77,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "1.3.unstable";
+    public static final String SDK_VERSION = "1.3";
 
     /**
      * Last phone version.

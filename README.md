@@ -14,7 +14,12 @@ This pulls submodule dependencies from github.
 
 Introduction
 ==
-__What’s New in 1.2__
+__What’s New in 1.3__
+* Updated libraries, notably an upgrade to Cordova 1.8.1 which requires some JavaScript library reference changes in hybrid apps
+* SmartStore databases are now encrypted with a default key when a PIN is not provided
+* Refactored SalesforceSDK as a library project, which requires minor Eclipse project updates for upgraded apps
+
+__Version 1.2__
 
 **Connected Apps Pilot**
 * Apps implemented with the Mobile SDK will now respect Connected Apps policies.  Rules defined by administrators for PIN code protection and session timeout intervals will now be enforced by native and hybrid app implementations. (This feature requires the Connected Apps Pilot be turned on.)
