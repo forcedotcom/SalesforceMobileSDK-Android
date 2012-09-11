@@ -157,6 +157,11 @@
 
       To run the application, start an emulator or plugin your device and run:
       ant installd
+
+      To import your new applicaiton in Eclipse, do the following:
+      import both the ${sdk.dir}/native/SalesforceSDK and the ${target.dir} projects in your workspace
+      build all
+      run your application by choosing "Run as Android application"
     </echo>
   </target>
 
@@ -170,7 +175,7 @@
   <target name="-oauth_info_hybrid">
     <echo>
       Before you ship, make sure to plug in your oauth client id and callback url in:
-        ${target.dir}//assets/www/bootconfig.js
+        ${target.dir}/assets/www/bootconfig.js
     </echo>
   </target>
 
