@@ -151,17 +151,17 @@
       Your application project is ready in ${target.dir}
 
       To build the new application, do the following:
-      cd ${target.dir}
-      $ANDROID_SDK_DIR/android update project -p .
-      ant clean debug
+        cd ${target.dir}
+        $ANDROID_SDK_DIR/android update project -p .
+        ant clean debug
 
       To run the application, start an emulator or plugin your device and run:
-      ant installd
+        ant installd
 
-      To import your new application in Eclipse, do the following:
-      import both the ${sdk.dir}/native/SalesforceSDK and the ${target.dir} projects in your workspace
-      build all
-      run your application by choosing "Run as Android application"
+      To use your new application in Eclipse, do the following:
+        import both the ${sdk.dir}/native/SalesforceSDK and the ${target.dir} projects in your workspace
+        build all
+        run your application by choosing "Run as Android application"
     </echo>
   </target>
 
