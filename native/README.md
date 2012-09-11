@@ -5,7 +5,7 @@ This folder contains the native libraries of the Salesforce SDK, as well as test
 ### SDK notes
 
 * The SDK is supported and tested for Android 2.2 and above.
-* The SalesforceSDK project is built with the Android 3.0 (Honeycomb) library.  The primary reason for this is that we want to be able to make a conditional check at runtime for file system encryption capabilities.  This check is guarded from being called on earlier Android platforms, the net result being that you can still use the salesforcesdk.jar in earlier Android application versions, down to the mininum-supported Android 2.2.
+* The SalesforceSDK project is built with the Android 3.0 (Honeycomb) library.  The primary reason for this is that we want to be able to make a conditional check at runtime for file system encryption capabilities.  This check is guarded from being called on earlier Android platforms, the net result being that you can still use the SalesforceSDK in earlier Android application versions, down to the mininum-supported Android 2.2.
 
 # Setting up your development environment
 
@@ -21,12 +21,13 @@ For the rest of this document, we assume that you have setup three shell variabl
 
 Inside the $NATIVE_DIR, you will find several projects:
 
-1. **SalesforceSDK**: The Salesforce SDK which provides support for OAuth2 and REST API calls
-2. **SalesforceSDKTest**: Tests for the SalesforceSDK project
+1. **SalesforceSDK**: The Salesforce SDK library project which provides support for OAuth2, REST API calls, pin screen (driven by mobile policy) and SmartStore
+2. **SalesforceSDKTest**: Test project for SalesforceSDK
 3. **TemplateApp**: Template used when creating new native application using SalesforceSDK
-4. **RestExplorer**: A app using SalesforceSDK to explore the REST API calls
-5. **RestExplorerTest**: Tests for the RestExplorer project
-6. **SampleApps/CloudTunes**: A sample native application using SalesforceSDK
+4. **TemplateAppTest**: Test project for the TemplateApp project
+5. **RestExplorer**: A app using SalesforceSDK to explore the REST API calls
+6. **RestExplorerTest**: Test project for the RestExplorer project
+7. **SampleApps/CloudTunes**: A sample native application using SalesforceSDK
 
 # Creating a new native application using SalesforceSDK
 
@@ -75,8 +76,6 @@ $TARGET_DIR/res/values/rest.xml
 5. Create a gen folder for the SalesforceSDKTest, RestExplorer and RestExplorerTest projects (right-click the project and choose new -> folder).
 6. Create a res folder for the SalesforceSDK project.
 
-**Cleaning and rebuilding in Eclipse**: With the latest version of the Android SDK Tools (v14), there are issues around cleaning your workspace (Project -> Clean...) and rebuilding it.  Specifically, projects that are dependent on Android Library projects do not properly follow the build dependency ordering, so when every project is cleaned, dependent projects do not pick up the existence of the Library project.  The result is that all of the non-Library projects will have build errors after a clean.
-
 If you would like to rebuild everything, we recommend cleaning/rebuilding the Library (SalesforceSDK) project *by itself* first, followed by the cleaning and rebuilding of the dependent projects, to avoid these build errors.
 
 The RestExplorer is a sample app that demonstrates how to use the OAuth and REST API functions of the Salesforce SDK. It is also useful to investigate the various REST API actions from a Honeycomb tablet.
@@ -90,12 +89,6 @@ Make sure to generate the local.properties file for each project by doing:
 <pre>
 cd $NATIVE_DIR/[project dir]
 android update project --path .
-</pre>
-
-To build the SDK jar, run the following ant target:
-<pre>
-cd $NATIVE_DIR/SalesforceSDK
-ant jar
 </pre>
 
 To compile and deploy the RestExplorer app, first plug in a device or start an emulator, then run the follwoing ant targets:

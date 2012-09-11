@@ -14,7 +14,12 @@ This pulls submodule dependencies from github.
 
 Introduction
 ==
-__What’s New in 1.2__
+__What’s New in 1.3__
+* Updated libraries, notably an upgrade to Cordova 1.8.1 which requires some JavaScript library reference changes in hybrid apps
+* SmartStore databases are now encrypted with a default key when a PIN is not provided
+* Refactored SalesforceSDK as a library project, which requires minor Eclipse project updates for upgraded apps
+
+__Version 1.2__
 
 **Connected Apps Pilot**
 * Apps implemented with the Mobile SDK will now respect Connected Apps policies.  Rules defined by administrators for PIN code protection and session timeout intervals will now be enforced by native and hybrid app implementations. (This feature requires the Connected Apps Pilot be turned on.)
@@ -53,13 +58,11 @@ The Salesforce Mobile SDK provides PIN-based OAuth token encryption for Android 
 
 The following steps will help you get started with your development environment, whether you choose to develop native apps or hybrid apps.  See the README files in the native/ and hybrid/ folders for additional notes pertaining to development in those environments.
 
-1. Install the Android SDK (r14 or above): http://developer.android.com/sdk/index.html
+1. Install the Android SDK (r20 or above): http://developer.android.com/sdk/index.html
 2. Install ant 1.8.0 or later: http://ant.apache.org/manual/install.html (in order to build from the command line)
 3. Install Eclipse: http://www.eclipse.org/
-4. Install the Android Development Tools (ADT) plugin for Eclipse (r14 or above): http://developer.android.com/sdk/eclipse-adt.html
+4. Install the Android Development Tools (ADT) plugin for Eclipse (r20 or above): http://developer.android.com/sdk/eclipse-adt.html
 5. Get setup on github: http://help.github.com/
-
-**A word about the Android 4.0 (API 14) SDK:** Starting with the SDK that's deployed with API 14, Google has introduced some fundamental changes in Eclipse project configurations, build configuratons, library project configurations, and other areas.  Because of this, **you will not be able to build any of the projects in this repository without upgrading to API 14**.  Note that updating to r14 will not impact your ability to build for earlier Android platforms.  It's just the toolset changes of the SDK that require the upgrade.
 
 # Downloading the Salesforce SDK
 

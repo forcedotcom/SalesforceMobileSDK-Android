@@ -7,6 +7,7 @@ FALSE=1
 TARGETS=""
 VERBOSE=$FALSE
 BUILD_OUTPUT_FILTER='^BUILD '
+TEST_OUTPUT_FILTER='Tests run\|OK'
 
 process_args()
 {
@@ -46,21 +47,35 @@ usage ()
     echo "        RestExplorer"
     echo "        TemplateApp"
     echo "        CloudTunes"
-    echo "        SmartStorePluginTest"
     echo "        ContactExplorer"
     echo "        VFConnector"
     echo "        SFDCAccounts"
+    echo "        SmartStoreExplorer"
+    echo "        SalesforceSDKTest"
+    echo "        RestExplorerTest"
+    echo "        TemplateAppTest"
+    echo "        ContactExplorerTest"
+    echo "        SmartStorePluginTest"
+    echo "        VFConnectorTest"
+    echo "        SFDCAccountsTest"
+    echo "        SmartStoreExplorerTest"
     echo "    <test_target> can be "
     echo "        all"
     echo "        SalesforceSDKTest"
     echo "        RestExplorerTest"
+    echo "        TemplateAppTest"
+    echo "        ContactExplorerTest"
     echo "        SmartStorePluginTest"
+    echo "        VFConnectorTest"
+    echo "        SFDCAccountsTest"
+    echo "        SmartStoreExplorerTest"
 }
 
 verbose ()
 {
     VERBOSE=$TRUE
     BUILD_OUTPUT_FILTER=""
+    TEST_OUTPUT_FILTER=""
 }
 
 should_do ()
@@ -118,9 +133,9 @@ run_test_project_if_requested ()
     then
         header "Running test project $1"
         cd $2
-        ant installt | grep "$BUILD_OUTPUT_FILTER"
-        ant test | grep "$BUILD_OUTPUT_FILTER"
-        ant uninstall | grep "$BUILD_OUTPUT_FILTER"
+        ant installt | grep "$TEST_OUTPUT_FILTER"
+        ant test | grep "$TEST_OUTPUT_FILTER"
+        ant uninstall | grep "$TEST_OUTPUT_FILTER"
         cd $TOP
     fi
 }
@@ -138,12 +153,23 @@ else
     build_project_if_requested "SFDCAccounts" $HYBRID_TOP/SampleApps/SFDCAccounts
     build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer
     build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector
+    build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer
 
     build_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest .
     build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest ../RestExplorer
+    build_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/TemplateAppTest ../TemplateApp
     build_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/SmartStorePluginTest .
+    build_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/ContactExplorerTest ../ContactExplorer
+    build_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/VFConnectorTest ../VFConnector
+    build_test_project_if_requested "SFDCAccountsTest" $HYBRID_TOP/SampleApps/SFDCAccountsTest ../SFDCAccounts
+    build_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/SmartStoreExplorerTest ../SmartStoreExplorer
 
     run_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest
     run_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest
+    run_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/TemplateAppTest
     run_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/SmartStorePluginTest
+    run_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/ContactExplorerTest
+    run_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/VFConnectorTest
+    run_test_project_if_requested "SFDCAccountsTest" $HYBRID_TOP/SampleApps/SFDCAccountsTest
+    run_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/SmartStoreExplorerTest
 fi
