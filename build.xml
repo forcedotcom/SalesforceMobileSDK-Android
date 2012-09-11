@@ -3,7 +3,7 @@
   <!-- Default target: describes useful targets -->
   <target name="usage" description="Key targets of this build.xml">
     <echo>
-      ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} 
+      ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName}
       Creates a native application, for instance:
       ant create_native -Dapp.name=MyFirstNative -Dtarget.dir=./firstnative -Dpackage.name=com.acme.firstnative
 
@@ -25,7 +25,10 @@
   </target>
 
   <!-- Location of SalesforceMobileSDK -->
-  <property name="sdk.dir" value="."/>
+  <property name="sdk.dir" location=""/>
+
+  <!-- Location of SalesforceMobileSDK relative to the target app-->
+  <property name="sdk.dir.from.target" location="" relative="true" basedir="${target.dir}"/>
 
   <!-- Target to compute package directory path and other properties -->
   <target name="-pre">
@@ -40,7 +43,7 @@
       <path>
         <pathelement location="${temp.package.dir}" />
       </path>
-      <globmapper from="${basedir}/*" to="*" />
+      <globmapper from="${basedir}/*" to="*" handledirsep="true" />
     </pathconvert>
 
     <!-- Application ForceApp's subclass will be called ${app.name}App" -->
@@ -107,6 +110,11 @@
       <fileset dir="${template.dir}" />
     </copy>
 
+    <echo message="Adjustring SalesforceSDK library project reference" />
+    <replaceregexp match="=.*SalesforceSDK$" flags="g" replace="=${sdk.dir.from.target}/native/SalesforceSDK">
+      <fileset file="${target.dir}/project.properties" />
+    </replaceregexp>
+
     <echo message="Renaming application class to ${app.classname}" />
     <replaceregexp match="${template.app.classname}" flags="g" replace="${app.classname}">
       <fileset refid="target.files" />
@@ -143,12 +151,17 @@
       Your application project is ready in ${target.dir}
 
       To build the new application, do the following:
-      cd ${target.dir}
-      $ANDROID_SDK_DIR/android update project -p .
-      ant clean debug
+        cd ${target.dir}
+        $ANDROID_SDK_DIR/android update project -p .
+        ant clean debug
 
       To run the application, start an emulator or plugin your device and run:
-      ant installd
+        ant installd
+
+      To use your new application in Eclipse, do the following:
+        import both the ${sdk.dir}/native/SalesforceSDK and the ${target.dir} projects in your workspace
+        build all
+        run your application by choosing "Run as Android application"
     </echo>
   </target>
 
@@ -162,7 +175,7 @@
   <target name="-oauth_info_hybrid">
     <echo>
       Before you ship, make sure to plug in your oauth client id and callback url in:
-        ${target.dir}//assets/www/bootconfig.js
+        ${target.dir}/assets/www/bootconfig.js
     </echo>
   </target>
 
