@@ -37,11 +37,37 @@ public class EventsObservable extends Observable<EventsObserver> {
     	AppCreateComplete,
     	AppLocked,
     	AppUnlocked,
-    	RenditionComplete;
+    	MainActivityCreateComplete,
+    	AuthWebViewCreateComplete,
+    	AuthWebViewPageFinished,
+    	GapWebViewCreateComplete,
+    	GapWebViewPageFinished,
+    	LogoutComplete,
+    	RenditionComplete,
+    	Other
     }
 
-    public interface Listener {
-    	void onActivityEvent(EventType evt);
+    public static class Event {
+    	private EventType type;
+		private Object data;
+
+		public Event(EventType eventType) {
+			this(eventType, null);
+		}		
+		
+		public Event(EventType type, Object data) {
+    		this.type = type;
+    		this.data = data;
+    	}
+    
+		public EventType getType() {
+			return type;
+		}
+		
+		public Object getData() {
+			return data;
+		}
+		
     }
     
     private static final EventsObservable instance = new EventsObservable();
@@ -50,7 +76,15 @@ public class EventsObservable extends Observable<EventsObserver> {
         return instance;
     }
 
-    public void notifyEvent(EventType evt) {
+    public void notifyEvent(EventType type) {
+    	notifyEvent(type, null);
+    }
+    
+    public void notifyEvent(EventType type, Object data) {
+    	notifyEvent(new Event(type, data));
+    }
+    
+    private void notifyEvent(Event evt) {
         synchronized(mObservers) {
             for (EventsObserver o : mObservers)
                 o.onEvent(evt);

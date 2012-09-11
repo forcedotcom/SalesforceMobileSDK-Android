@@ -9,45 +9,35 @@
     <script src="jquery/jquery-1.6.2.min.js"></script>
     <script src="jquery/jquery.mobile-1.0b2.min.js"></script>
         
-    <!-- include local utility functionality -->
-    <link rel="stylesheet" type="text/css" href="SFHybridApp.css" />
-    <script type="text/javascript" src="SFHybridApp.js"></script>
+    <!-- include cordova -->
+    <script src="cordova-1.8.1.js"></script>
 
-    <!-- include phonegap / callback -->
-	<script type="text/javascript" charset="utf-8" src="phonegap-1.2.0.js"></script>
-        
+    <!-- include local utility functionality -->
+    <script src="SFHybridApp.js"></script>
+
     <!-- required for smartstore plugin support -->    
-    <script type="text/javascript" src="SFSmartStorePlugin.js"></script>
+    <script src="SFSmartStorePlugin.js"></script>
 
     <!-- required for testrunner plugin support -->    
-    <script type="text/javascript" src="SFTestRunnerPlugin.js"></script>
+    <script src="SFTestRunnerPlugin.js"></script>
 
 	<!-- load qunit -->
     <link rel="stylesheet" type="text/css" href="qunit.css" />
-    <script type="text/javascript" src="qunit.js"></script>
+    <script src="qunit.js"></script>
 
-	<!-- we load all the test suite definitions here but don't run them until 
+	<!-- we load all the test suite definitions here but do not run them until 
 	the native test runner tells us to -->
-	<script type="text/javascript" src="SFTestSuite.js"></script>
-    <script type="text/javascript" src="SFSmartStoreTestSuite.js"></script>
-    <script type="text/javascript" src="SFSmartStoreLoadTestSuite.js"></script>
+	<script src="SFTestSuite.js"></script>
+    <script src="SFSmartStoreTestSuite.js"></script>
+    <script src="SFSmartStoreLoadTestSuite.js"></script>
 
-    <script type="text/javascript" charset="utf-8">
+    <script>
     var debugMode = true;
 
     $(function() {
-        //Add event listeners and so forth here
-        SFHybridApp.logToConsole("onLoad: jquery ready");
-		document.addEventListener("deviceready", onDeviceReady,false);
+        // When this function is called, PhoneGap has been initialized and is ready to roll 
+    	document.addEventListener("deviceready", navigator.testrunner.onReadyForTests,false);
     });
-
-    // When this function is called, PhoneGap has been initialized and is ready to roll 
-    function onDeviceReady() {
-    	SFHybridApp.logToConsole("onDeviceReady: PhoneGap ready");
-		//we no longer setup the testSuite here but rather via calls to navigator.testrunner
-        navigator.testrunner.onReadyForTests();
-    }
-        
     </script>
         
   </head>

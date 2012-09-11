@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cordova>
+    <access origin="http://127.0.0.1*"/> <!-- allow local pages -->
+    <access origin="https://force.com" subdomains="true" />
+    <access origin="https://salesforce.com" subdomains="true" />
+    <log level="DEBUG"/>
+    <preference name="classicRender" value="true" />
+</cordova>
+
+
+

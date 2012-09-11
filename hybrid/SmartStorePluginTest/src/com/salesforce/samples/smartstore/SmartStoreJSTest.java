@@ -183,7 +183,7 @@ public class SmartStoreJSTest extends
     		// Debug.startMethodTracing(new File(getActivity().getFilesDir(), "SmartStoreJSTest_" + testName + ".trace").getAbsolutePath());
     		
 	    	String jsCmd = "navigator.testrunner.setTestSuite('" + suiteClassName + "');" +
-	    			"navigator.testrunner.testSuite.startTest('" + testName + "');";
+	    			"navigator.testrunner.startTest('" + testName + "');";
 	    	activity.sendJavascript(jsCmd);
 	
 			// Block until test completes
