@@ -158,7 +158,7 @@
       To run the application, start an emulator or plugin your device and run:
       ant installd
 
-      To import your new applicaiton in Eclipse, do the following:
+      To import your new application in Eclipse, do the following:
       import both the ${sdk.dir}/native/SalesforceSDK and the ${target.dir} projects in your workspace
       build all
       run your application by choosing "Run as Android application"
