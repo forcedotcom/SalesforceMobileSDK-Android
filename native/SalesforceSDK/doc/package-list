@@ -1,0 +1,9 @@
+com.salesforce.androidsdk
+com.salesforce.androidsdk.app
+com.salesforce.androidsdk.auth
+com.salesforce.androidsdk.phonegap
+com.salesforce.androidsdk.rest
+com.salesforce.androidsdk.security
+com.salesforce.androidsdk.store
+com.salesforce.androidsdk.ui
+com.salesforce.androidsdk.util
