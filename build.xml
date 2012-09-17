@@ -37,7 +37,7 @@
       <path>
         <pathelement path="${package.name}" />
       </path>
-      <mapper type="unpackage" from="${basedir}/*" to="*" />
+      <mapper type="unpackage" from="${basedir}${file.separator}*" to="*"/>
     </pathconvert>
 
     <!-- Application ForceApp's subclass will be called ${app.name}App" -->
