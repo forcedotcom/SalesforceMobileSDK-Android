@@ -113,7 +113,7 @@
     </copy>
 
     <echo message="Adjustring SalesforceSDK library project reference" />
-    <replaceregexp match="=.*SalesforceSDK$" flags="g" replace="=${sdk.dir.from.target}/native/SalesforceSDK">
+    <replaceregexp match="=.*SalesforceSDK" flags="g" replace="=${sdk.dir.from.target}/native/SalesforceSDK">
       <fileset file="${target.dir}/project.properties" />
     </replaceregexp>
 
