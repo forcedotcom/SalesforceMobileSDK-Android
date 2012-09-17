@@ -33,17 +33,11 @@
   <!-- Target to compute package directory path and other properties -->
   <target name="-pre">
     <!-- Computing the package directory from the package name e.g. builds com/acme/mobileapp from com.acme.mobileapp -->
-    <pathconvert property="temp.package.dir">
-      <path>
-        <pathelement location="${package.name}" />
-      </path>
-      <mapper type="unpackage" from="*" to="*" />
-    </pathconvert>
     <pathconvert property="package.dir">
       <path>
-        <pathelement location="${temp.package.dir}" />
+        <pathelement path="${package.name}" />
       </path>
-      <globmapper from="${basedir}/*" to="*" handledirsep="true" />
+      <mapper type="unpackage" from="${basedir}/*" to="*" />
     </pathconvert>
 
     <!-- Application ForceApp's subclass will be called ${app.name}App" -->
