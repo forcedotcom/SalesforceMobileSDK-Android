@@ -32,12 +32,14 @@
 
   <!-- Target to compute package directory path and other properties -->
   <target name="-pre">
+    <condition property="regexp.safe.file.separator" value="\${file.separator}" else="${file.separator}">
+      <equals arg1="${file.separator}" arg2="\" />
+    </condition>
+
     <!-- Computing the package directory from the package name e.g. builds com/acme/mobileapp from com.acme.mobileapp -->
     <pathconvert property="package.dir">
-      <path>
-        <pathelement path="${package.name}" />
-      </path>
-      <mapper type="unpackage" from="${basedir}${file.separator}*" to="*"/>
+      <path path="${package.name}" />
+      <mapper type="unpackage" from="${basedir}${regexp.safe.file.separator}*" to="*"/>
     </pathconvert>
 
     <!-- Application ForceApp's subclass will be called ${app.name}App" -->
