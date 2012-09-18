@@ -38,6 +38,7 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.UUIDManager;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -50,6 +51,14 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  */
 public class PasscodeManager  {
 
+	// UUID keys
+	private static final String VKEY = "vkey";
+	private static final String VSUFFIX = "vsuffix";
+	private static final String VPREFIX = "vprefix";
+	private static final String EKEY = "ekey";
+	private static final String ESUFFIX = "esuffix";
+	private static final String EPREFIX = "eprefix";
+	
     // Default min passcode length
     protected static final int MIN_PASSCODE_LENGTH = 6;
 
@@ -95,7 +104,12 @@ public class PasscodeManager  {
      * @param verificationHashConfig Verification HashConfig.
      * @param encryptionHashConfig Encryption HashConfig.
      */
-    public PasscodeManager(Context ctx, HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
+   public PasscodeManager(Context ctx) {
+	   this(ctx, 
+		   new HashConfig(UUIDManager.getUuId(VPREFIX), UUIDManager.getUuId(VSUFFIX), UUIDManager.getUuId(VKEY)),
+		   new HashConfig(UUIDManager.getUuId(EPREFIX), UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY)));
+   }
+   public PasscodeManager(Context ctx, HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
         this.minPasscodeLength = MIN_PASSCODE_LENGTH;
         this.lastActivity = now();
         this.verificationHashConfig = verificationHashConfig;
@@ -204,7 +218,7 @@ public class PasscodeManager  {
         SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         String hashedPasscode = sp.getString(KEY_PASSCODE, null);
         if (hashedPasscode != null) {
-            return hashedPasscode.equals(hash(passcode, verificationHashConfig));
+            return hashedPasscode.equals(hashForVerification(passcode));
         }
 
         /*
@@ -221,7 +235,7 @@ public class PasscodeManager  {
     public void store(Context ctx, String passcode) {
         SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         Editor e = sp.edit();
-        e.putString(KEY_PASSCODE, hash(passcode, verificationHashConfig));
+        e.putString(KEY_PASSCODE, hashForVerification(passcode));
         e.commit();
     }
 
@@ -386,7 +400,7 @@ public class PasscodeManager  {
     public void unlock(String passcode) {
         locked = false;
         failedPasscodeAttempts = 0;
-        passcodeHash = hash(passcode, encryptionHashConfig);
+        passcodeHash = hashForEncryption(passcode);
         updateLast();
         EventsObservable.get().notifyEvent(EventType.AppUnlocked);
     }
@@ -399,6 +413,14 @@ public class PasscodeManager  {
         lastActivity = now();
     }
 
+    public String hashForVerification(String passcode) {
+    	return hash(passcode, verificationHashConfig);
+    }
+    
+    public String hashForEncryption(String passcode) {
+    	return hash(passcode, encryptionHashConfig);
+    }
+    
     private String hash(String passcode, HashConfig hashConfig) {
         return Encryptor.hash(hashConfig.prefix + passcode + hashConfig.suffix, hashConfig.key);
     }

@@ -27,27 +27,15 @@
 package com.salesforce.androidsdk.app;
 
 import info.guardianproject.database.sqlcipher.SQLiteDatabase;
-
-import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
 import android.app.Application;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.os.Build;
-import android.util.Base64;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -58,7 +46,6 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
-import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
 import com.salesforce.androidsdk.store.DBOpenHelper;
 import com.salesforce.androidsdk.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -71,8 +58,6 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  * You should extend this class or make sure to initialize HttpAccess in your application's onCreate method.
  */
 public abstract class ForceApp extends Application implements AccountRemoved {
-
-    private static final String ADDENDUM = "5cbfed76";
 
     /**
      * Current version of this SDK.
@@ -192,9 +177,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
         // Only creating passcode manager if used.
         if (passcodeManager == null) {
-            passcodeManager = new PasscodeManager(this,
-                    getVerificationHashConfig(),
-                    getEncryptionHashConfig());
+            passcodeManager = new PasscodeManager(this);
         }
         return passcodeManager;
     }
@@ -244,25 +227,10 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         if (actualPass != null && !actualPass.trim().equals("")) {
             return actualPass;
         }
-        if (encryptionKey != null) {
-            return encryptionKey;
+        if (encryptionKey == null) {
+        	encryptionKey = getPasscodeManager().hashForEncryption("");
         }
-        byte[] secretKey;
-        try {
-            secretKey = ForceApp.APP.getUuId(ADDENDUM).getBytes("UTF_8");
-            final MessageDigest md = MessageDigest.getInstance("SHA-1");
-            secretKey = md.digest(secretKey);
-            byte[] dest = new byte[16];
-            System.arraycopy(secretKey, 0, dest, 0, 16);
-            encryptionKey = Base64.encodeToString(dest, Base64.DEFAULT);
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-            encryptionKey = ForceApp.APP.getUuId(ADDENDUM);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            encryptionKey = ForceApp.APP.getUuId(ADDENDUM);
-        }
-        return encryptionKey;
+    	return encryptionKey;
     }
 
     /**
@@ -287,22 +255,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
-     * @return Hash salts and key to use for creating the hash of the passcode used for encryption.
-     * Unique for installation.
-     */
-    protected HashConfig getEncryptionHashConfig() {
-        return new HashConfig(getUuId("eprefix"), getUuId("esuffix"), getUuId("ekey"));
-    }
-
-    /**
-     * @return The hash salt and key to use for creating the hash of the passcode used for verification.
-     * Unique to the installation.
-     */
-    protected HashConfig getVerificationHashConfig() {
-        return new HashConfig(getUuId("vprefix"), getUuId("vsuffix"), getUuId("vkey"));
-    }
-
-    /**
      * Cleans up cached credentials and data.
      *
      * @param frontActivity Front activity.
@@ -323,19 +275,9 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         getPasscodeManager().reset(this);
         passcodeManager = null;
         encryptionKey = null;
-        resetUuids();
+        UUIDManager.resetUuids();
     }
 
-    /**
-     * Resets the generated UUIDs and wipes out the shared pref file that houses them.
-     */
-    private void resetUuids() {
-        uuids = new HashMap<String, String>();
-        final SharedPreferences sp = getSharedPreferences("uuids2", Context.MODE_PRIVATE);
-        if (sp != null) {
-            sp.edit().clear().commit();
-        }
-    }
 
     /**
      * Starts login flow if user account has been removed.
@@ -446,24 +388,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         }
         sb.append("}\n");
         return sb.toString();
-    }
-
-    /**
-     * Random keys persisted encrypted in a private preference file
-     * This is provided as an example.
-     * We recommend you provide you own implementation for creating the HashConfig's.
-     */
-    private Map<String, String> uuids = new HashMap<String, String>();
-    private synchronized String getUuId(String name) {
-        if (uuids.get(name) != null) return uuids.get(name);
-        SharedPreferences sp = getSharedPreferences("uuids2", Context.MODE_PRIVATE);
-        if (!sp.contains(name)) {
-            String uuid = UUID.randomUUID().toString();
-            Editor e = sp.edit();
-            e.putString(name, Encryptor.encrypt(uuid, getKey(name)));
-            e.commit();
-        }
-        return Encryptor.decrypt(sp.getString(name, null), getKey(name));
     }
 
     /**
