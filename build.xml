@@ -32,18 +32,20 @@
 
   <!-- Target to compute package directory path and other properties -->
   <target name="-pre">
-    <!-- Computing the package directory from the package name e.g. builds com/acme/mobileapp from com.acme.mobileapp -->
-    <pathconvert property="temp.package.dir">
-      <path>
-        <pathelement location="${package.name}" />
-      </path>
+    <!-- Following returns basedir with dots replaced by file separators -->
+    <pathconvert property="basedirunpackaged">
+      <path path="." />
       <mapper type="unpackage" from="*" to="*" />
     </pathconvert>
+    <!-- Following returns basedir + package.name with dot replaced by file separators -->
+    <pathconvert property="temp.package.dir">
+      <path path="${package.name}" />
+      <mapper type="unpackage" from="*" to="*" />      
+    </pathconvert>
+    <!-- Following returns package directory from the package name e.g. com/acme/mobileapp for com.acme.mobileapp -->
     <pathconvert property="package.dir">
-      <path>
-        <pathelement location="${temp.package.dir}" />
-      </path>
-      <globmapper from="${basedir}/*" to="*" handledirsep="true" />
+      <path path="${temp.package.dir}" />
+      <globmapper from="${basedirunpackaged}/*" to="*" handledirsep="true" />
     </pathconvert>
 
     <!-- Application ForceApp's subclass will be called ${app.name}App" -->
@@ -111,7 +113,7 @@
     </copy>
 
     <echo message="Adjustring SalesforceSDK library project reference" />
-    <replaceregexp match="=.*SalesforceSDK$" flags="g" replace="=${sdk.dir.from.target}/native/SalesforceSDK">
+    <replaceregexp match="=.*SalesforceSDK" flags="g" replace="=${sdk.dir.from.target}/native/SalesforceSDK">
       <fileset file="${target.dir}/project.properties" />
     </replaceregexp>
 
