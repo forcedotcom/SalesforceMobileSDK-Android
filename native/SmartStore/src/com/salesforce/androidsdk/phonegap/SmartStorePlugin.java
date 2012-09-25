@@ -40,6 +40,7 @@ import android.util.Log;
 import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.store.SmartStore;
 import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
 import com.salesforce.androidsdk.store.SmartStore.Order;
@@ -146,7 +147,7 @@ public class SmartStorePlugin extends Plugin {
 			soupEntryIds[i] = jsonSoupEntryIds.getLong(i); 
 		
 		// Run remove
-		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		SmartStore smartStore = getSmartStore();
 		smartStore.delete(soupName, soupEntryIds);
 		
 		return new PluginResult(PluginResult.Status.OK);
@@ -169,7 +170,7 @@ public class SmartStorePlugin extends Plugin {
 			soupEntryIds[i] = jsonSoupEntryIds.getLong(i); 
 		
 		// Run retrieve
-		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		SmartStore smartStore = getSmartStore();
 		JSONArray result = smartStore.retrieve(soupName, soupEntryIds);
 
 		return new PluginResult(PluginResult.Status.OK, result);
@@ -216,7 +217,7 @@ public class SmartStorePlugin extends Plugin {
 		storeCursor.moveToPageIndex(index);
 		
 		// Build json result
-		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		SmartStore smartStore = getSmartStore();
 		JSONObject result = storeCursor.toJSON(smartStore);
 		
 		// Done
@@ -236,7 +237,7 @@ public class SmartStorePlugin extends Plugin {
 		String soupName = arg0.getString(SOUP_NAME);
 
 		// Run upsert
-		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		SmartStore smartStore = getSmartStore();
 		boolean exists = smartStore.hasSoup(soupName);
 		
 		return new PluginResult(PluginResult.Status.OK, exists);
@@ -261,7 +262,7 @@ public class SmartStorePlugin extends Plugin {
 		}
 		
 		// Run upsert
-		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		SmartStore smartStore = getSmartStore();
 		smartStore.beginTransaction();
 		try {
 			JSONArray results = new JSONArray();			
@@ -296,7 +297,7 @@ public class SmartStorePlugin extends Plugin {
 		}
 
 		// Run register
-		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		SmartStore smartStore = getSmartStore();
 		smartStore.registerSoup(soupName, indexSpecs.toArray(new IndexSpec[0]));
 		return new PluginResult(PluginResult.Status.OK, soupName);
 	}
@@ -332,7 +333,7 @@ public class SmartStorePlugin extends Plugin {
 		}
 		
 		// Run query
-		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		SmartStore smartStore = getSmartStore();
 		int countRows = smartStore.countQuerySoup(soupName, querySpec);
 		int totalPages = countRows / querySpec.pageSize + 1;
 		
@@ -360,11 +361,15 @@ public class SmartStorePlugin extends Plugin {
 		String soupName = arg0.getString(SOUP_NAME);
 		
 		// Run remove
-		SmartStore smartStore = ForceApp.APP.getSmartStore();
+		SmartStore smartStore = getSmartStore();
 		smartStore.dropSoup(soupName);
 		return new PluginResult(PluginResult.Status.OK);
 	}
 
+	
+	private SmartStore getSmartStore() {
+		return ((ForceAppWithSmartStore) ForceApp.APP).getSmartStore();
+	}
 	
 	/**
 	 * Store Cursor

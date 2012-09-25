@@ -28,7 +28,7 @@ package com.salesforce.samples.smartstoreexplorer;
 
 import android.app.Activity;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
@@ -38,7 +38,7 @@ import com.salesforce.androidsdk.ui.SalesforceR;
  *
  * @author khawkins
  */
-public class SmartStoreExplorerApp extends ForceApp {
+public class SmartStoreExplorerApp extends ForceAppWithSmartStore {
 
     private SalesforceR salesforceR = new SalesforceRImpl();
 

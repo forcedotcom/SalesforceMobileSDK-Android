@@ -44,6 +44,7 @@ usage ()
     echo "    <build_target> can be "
     echo "        all"
     echo "        SalesforceSDK"
+    echo "        SmartStore"
     echo "        RestExplorer"
     echo "        TemplateApp"
     echo "        CloudTunes"
@@ -62,6 +63,7 @@ usage ()
     echo "    <test_target> can be "
     echo "        all"
     echo "        SalesforceSDKTest"
+    echo "        SmartStoreTest"
     echo "        RestExplorerTest"
     echo "        TemplateAppTest"
     echo "        ContactExplorerTest"
@@ -147,6 +149,7 @@ else
     process_args $@
 
     build_project_if_requested "SalesforceSDK" $NATIVE_TOP/SalesforceSDK
+    build_project_if_requested "SmartStore" $NATIVE_TOP/SmartStore
     build_project_if_requested "RestExplorer" $NATIVE_TOP/RestExplorer
     build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp
     build_project_if_requested "CloudTunes" $NATIVE_TOP/SampleApps/CloudTunes
@@ -156,6 +159,7 @@ else
     build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer
 
     build_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest .
+    build_test_project_if_requested "SmartStoreTest" $NATIVE_TOP/SmartStoreTest .
     build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest ../RestExplorer
     build_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/TemplateAppTest ../TemplateApp
     build_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/SmartStorePluginTest .
@@ -165,6 +169,7 @@ else
     build_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/SmartStoreExplorerTest ../SmartStoreExplorer
 
     run_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest
+    run_test_project_if_requested "SmartStoreTest" $NATIVE_TOP/SmartStoreTest
     run_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest
     run_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/TemplateAppTest
     run_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/SmartStorePluginTest
