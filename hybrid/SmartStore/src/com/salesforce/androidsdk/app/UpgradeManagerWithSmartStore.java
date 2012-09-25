@@ -26,91 +26,57 @@
  */
 package com.salesforce.androidsdk.app;
 
-import android.content.Context;
-import android.content.SharedPreferences;
-
 /**
  * This class handles upgrades from one version to another.
  * 
  * @author bhariharan
  */
-public class UpgradeManager {
+public class UpgradeManagerWithSmartStore extends UpgradeManager {
 
 	/**
-	 * Current version of account manager implementation.
+	 * Current version of smartstore implementation.
 	 */
-	private static final int ACC_MGR_VERSION = 2;
+	private static final int SMART_STORE_VERSION = 2;
 	
 	/**
-	 * Name of the shared preference file that contains version information.
+	 * Key in shared preference file for smart store version.
 	 */
-	private static final String VERSION_SHARED_PREF = "version_info";
+	private static final String SMART_STORE_KEY = "smart_store_version";
+
+	private static UpgradeManagerWithSmartStore UPGRADE_MGR_WITH_SMART_STORE = null;
 	
-	/**
-	 * Key in shared preference file for account manager version.
-	 */
-	private static final String ACC_MGR_KEY = "acc_mgr_version";
-
-	private static UpgradeManager UPGRADE_MANAGER = null;
-
 	/**
 	 * Returns an instance of this class.
 	 *
 	 * @return Instance of this class.
 	 */
-	public static synchronized UpgradeManager getInstance() {
-		if (UPGRADE_MANAGER == null) {
-			UPGRADE_MANAGER = new UpgradeManager();
+	public static synchronized UpgradeManagerWithSmartStore getInstance() {
+		if (UPGRADE_MGR_WITH_SMART_STORE == null) {
+			UPGRADE_MGR_WITH_SMART_STORE = new UpgradeManagerWithSmartStore();
 		}
-		return UPGRADE_MANAGER;
+		return UPGRADE_MGR_WITH_SMART_STORE;
 	}
-
+	
 	/**
-	 * Upgrades account manager data from existing client
+	 * Upgrades smartstore data from existing client
 	 * version to the current version.
 	 */
-	public synchronized void upgradeAccMgr() {
-		final int installedVersion = getInstalledAccMgrVersion();
-		if (installedVersion == ACC_MGR_VERSION) {
+	public synchronized void upgradeSmartStore() {
+		final int installedVersion = getInstalledSmartStoreVersion();
+		if (installedVersion == SMART_STORE_VERSION) {
 			return;
 		}
 
 		// Update shared preference file to reflect the latest version.
-		writeCurVersion(ACC_MGR_KEY, ACC_MGR_VERSION);
+		writeCurVersion(SMART_STORE_KEY, SMART_STORE_VERSION);
 	}
-	
+
 	/**
-	 * Writes the current version to the shared preference file.
+	 * Returns the currently installed version of smartstore.
 	 * 
-	 * @param key Key to update.
-	 * @param value New version number.
+	 * @return Currently installed version of smartstore.
 	 */
-	protected synchronized void writeCurVersion(String key, int value) {
-		final SharedPreferences sp = ForceApp.APP.getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
-		if (sp == null || !sp.contains(key)) {
-			sp.edit().putInt(key, value).commit();
-		}
-	}
-	
-	/**
-	 * Returns the currently installed version of account manager.
-	 * 
-	 * @return Currently installed version of account manager.
-	 */
-	public int getInstalledAccMgrVersion() {
-		return getInstalledVersion(ACC_MGR_KEY);
-	}
-	
-	/**
-	 * Returns the currently installed version of the specified key.
-	 * 
-	 * @return Currently installed version of the specified key.
-	 */
-	protected int getInstalledVersion(String key) {
-		final SharedPreferences sp = ForceApp.APP.getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
-		if (sp == null || !sp.contains(key)) {
-			return 0;
-		}
-		return sp.getInt(key, 0);
+	public int getInstalledSmartStoreVersion() {
+		return getInstalledVersion(SMART_STORE_KEY);
 	}
 }
