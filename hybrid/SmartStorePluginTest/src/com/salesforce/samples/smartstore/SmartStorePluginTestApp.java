@@ -28,7 +28,7 @@ package com.salesforce.samples.smartstore;
 
 import android.app.Activity;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
 
@@ -38,7 +38,7 @@ import com.salesforce.androidsdk.ui.SalesforceR;
  * All Salesforce mobile app must extend ForceApp. 
  * ForceApp takes care of intializing the network http clients (among other things).
  */
-public class SmartStorePluginTestApp extends ForceApp {
+public class SmartStorePluginTestApp extends ForceAppWithSmartStore {
 
 	private SalesforceR salesforceR = new SalesforceRImpl();
 	

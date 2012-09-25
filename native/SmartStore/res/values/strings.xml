@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      These aren't prefixed as they're expected to be overriden   
+    -->
+	<string name="app_name">SmartStore</string>
+</resources>
