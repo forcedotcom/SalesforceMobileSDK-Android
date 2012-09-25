@@ -24,26 +24,36 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.sfdcaccounts;
+package com.salesforce.androidsdk;
 
 import android.app.Activity;
 
 import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
-import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.ui.SalesforceR;
 
 /**
- * Application class for the SFDCAccounts app.
+ * Test implementation of ForceAppWithSmartStore.
  *
  * @author bhariharan
  */
-public class SFDCAccountsApp extends ForceAppWithSmartStore {
+public class TestForceApp extends ForceAppWithSmartStore {
 
-    private SalesforceR salesforceR = new SalesforceRImpl();
+    public static final String TEST_PASSCODE_HASH = Encryptor.hash("passcode", "hash-key");
+    
+	
+    public TestForceApp() {
+        APP = this;
+    }
 
     @Override
     public Class<? extends Activity> getMainActivityClass() {
-        return SalesforceDroidGapActivity.class;
+        return null;
+    }
+
+    @Override
+    public SalesforceR getSalesforceR() {
+        return null;
     }
 
     @Override
@@ -52,7 +62,7 @@ public class SFDCAccountsApp extends ForceAppWithSmartStore {
     }
 
     @Override
-    public SalesforceR getSalesforceR() {
-        return salesforceR;
+    public String getPasscodeHash() {
+        return TEST_PASSCODE_HASH;
     }
 }
