@@ -28,7 +28,7 @@ package com.salesforce.samples.sfdcaccounts;
 
 import android.app.Activity;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
 
@@ -37,7 +37,7 @@ import com.salesforce.androidsdk.ui.SalesforceR;
  *
  * @author bhariharan
  */
-public class SFDCAccountsApp extends ForceApp {
+public class SFDCAccountsApp extends ForceAppWithSmartStore {
 
     private SalesforceR salesforceR = new SalesforceRImpl();
 

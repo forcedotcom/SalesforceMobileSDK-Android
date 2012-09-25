@@ -362,7 +362,7 @@ public class PasscodeManager  {
 
         // Passcode to no passcode.
         timeoutMs = newTimeout;
-        ForceApp.changePasscode(passcodeHash, null);
+        ForceApp.APP.changePasscode(passcodeHash, null);
         reset(ForceApp.APP);
     }
 
@@ -477,7 +477,7 @@ public class PasscodeManager  {
                 if (extras != null) {
                     final String oldPass = extras.getString(OLD_PASSCODE_EXTRA);
                     final String newPass = extras.getString(NEW_PASSCODE_EXTRA);
-                    ForceApp.changePasscode(oldPass, newPass);
+                    ForceApp.APP.changePasscode(oldPass, newPass);
                 }
             }
         }

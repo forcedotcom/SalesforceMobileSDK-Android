@@ -44,6 +44,7 @@ usage ()
     echo "    <build_target> can be "
     echo "        all"
     echo "        SalesforceSDK"
+    echo "        SmartStore"
     echo "        RestExplorer"
     echo "        TemplateApp"
     echo "        CloudTunes"
@@ -62,6 +63,7 @@ usage ()
     echo "    <test_target> can be "
     echo "        all"
     echo "        SalesforceSDKTest"
+    echo "        SmartStoreTest"
     echo "        RestExplorerTest"
     echo "        TemplateAppTest"
     echo "        ContactExplorerTest"
@@ -147,29 +149,32 @@ else
     process_args $@
 
     build_project_if_requested "SalesforceSDK" $NATIVE_TOP/SalesforceSDK
-    build_project_if_requested "RestExplorer" $NATIVE_TOP/RestExplorer
     build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp
     build_project_if_requested "CloudTunes" $NATIVE_TOP/SampleApps/CloudTunes
-    build_project_if_requested "SFDCAccounts" $HYBRID_TOP/SampleApps/SFDCAccounts
+    build_project_if_requested "RestExplorer" $NATIVE_TOP/SampleApps/RestExplorer
+    build_project_if_requested "SmartStore" $HYBRID_TOP/SmartStore
     build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer
-    build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector
+    build_project_if_requested "SFDCAccounts" $HYBRID_TOP/SampleApps/SFDCAccounts
     build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer
+    build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector
 
-    build_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest .
-    build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest ../RestExplorer
-    build_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/TemplateAppTest ../TemplateApp
-    build_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/SmartStorePluginTest .
-    build_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/ContactExplorerTest ../ContactExplorer
-    build_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/VFConnectorTest ../VFConnector
-    build_test_project_if_requested "SFDCAccountsTest" $HYBRID_TOP/SampleApps/SFDCAccountsTest ../SFDCAccounts
-    build_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/SmartStoreExplorerTest ../SmartStoreExplorer
+    build_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/test/SalesforceSDKTest .
+    build_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/test/TemplateAppTest ../../TemplateApp
+    build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/SampleApps/test/RestExplorerTest ../../RestExplorer
+    build_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/test/SmartStorePluginTest .
+    build_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest .
+    build_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/test/ContactExplorerTest ../../ContactExplorer
+    build_test_project_if_requested "SFDCAccountsTest" $HYBRID_TOP/SampleApps/test/SFDCAccountsTest ../../SFDCAccounts
+    build_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/test/SmartStoreExplorerTest ../../SmartStoreExplorer
+    build_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/test/VFConnectorTest ../../VFConnector
 
-    run_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/SalesforceSDKTest
-    run_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/RestExplorerTest
-    run_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/TemplateAppTest
-    run_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/SmartStorePluginTest
-    run_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/ContactExplorerTest
-    run_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/VFConnectorTest
-    run_test_project_if_requested "SFDCAccountsTest" $HYBRID_TOP/SampleApps/SFDCAccountsTest
-    run_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/SmartStoreExplorerTest
+    run_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/test/SalesforceSDKTest
+    run_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/test/TemplateAppTest
+    run_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/SampleApps/test/RestExplorerTest
+    run_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/test/SmartStorePluginTest
+    run_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest
+    run_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/test/ContactExplorerTest
+    run_test_project_if_requested "SFDCAccountsTest" $HYBRID_TOP/SampleApps/test/SFDCAccountsTest
+    run_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/test/SmartStoreExplorerTest
+    run_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/test/VFConnectorTest
 fi

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.app;
 
-import info.guardianproject.database.sqlcipher.SQLiteDatabase;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
@@ -46,8 +45,6 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
-import com.salesforce.androidsdk.store.DBOpenHelper;
-import com.salesforce.androidsdk.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -183,40 +180,29 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
-     * @return the database used that contains the smart store
-     */
-    public SmartStore getSmartStore() {
-        String passcodeHash = getPasscodeHash();
-        SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(passcodeHash == null ? getEncryptionKeyForPasscode(null) : passcodeHash);
-        return new SmartStore(db);
-    }
-
-    /**
-     * Changes the passcode to a new value and re-encrypts the smartstore with the new passcode.
-     *
+     * Changes the passcode to a new value
+     * 
      * @param oldPass Old passcode.
      * @param newPass New passcode.
      */
-    public static synchronized void changePasscode(String oldPass, String newPass) {
-
-        // Check if the old passcode and the new one are the same.
-        if ((oldPass == null && newPass == null) || (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim()))) {
-            return;
+    public synchronized void changePasscode(String oldPass, String newPass) {
+        if (!isNewPasscode(oldPass, newPass)) {
+        	return;
         }
-
-        // Reset cached encryption key, since the passcode has changed.
-        ForceApp.APP.encryptionKey = null;
-        if (ForceApp.APP.hasSmartStore()) {
-
-            // If the old passcode is null, use the default key.
-            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(ForceApp.APP).getWritableDatabase(ForceApp.APP.getEncryptionKeyForPasscode(oldPass));
-
-            // If the new passcode is null, use the default key.
-            SmartStore.changeKey(db, ForceApp.APP.getEncryptionKeyForPasscode(newPass));
-        }
+        encryptionKey = null; // Reset cached encryption key, since the passcode has changed
         ClientManager.changePasscode(oldPass, newPass);
     }
 
+    /**
+     * @param oldPass
+     * @param newPass
+     * @return true if newPass is truly different from oldPass
+     */
+    protected boolean isNewPasscode(String oldPass, String newPass) {
+		return ((oldPass == null && newPass == null) 
+				|| (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim())));
+	}
+    
     /**
      * Returns the encryption key being used.
      *
@@ -231,13 +217,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         	encryptionKey = getPasscodeManager().hashForEncryption("");
         }
     	return encryptionKey;
-    }
-
-    /**
-     * @return true if the application has a smartstore database
-     */
-    public boolean hasSmartStore() {
-        return getDatabasePath(DBOpenHelper.DB_NAME).exists();
     }
 
     /**
@@ -264,11 +243,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         // Finish front activity if specified.
         if (frontActivity != null) {
             frontActivity.finish();
-        }
-
-        // Reset smartstore.
-        if (hasSmartStore()) {
-        	DBOpenHelper.deleteDatabase(this);
         }
 
         // Reset passcode and encryption key, if any.
