@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -31,7 +31,6 @@ import java.util.ArrayList;
 
 import org.json.JSONArray;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -39,23 +38,18 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.security.PasscodeManager;
-import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.ui.NativeMainActivity;
 
 /**
  * Main activity
  */
-public class MainActivity extends Activity {
+public class MainActivity extends NativeMainActivity {
 
-	private PasscodeManager passcodeManager;
     private RestClient client;
     private ArrayAdapter<String> listAdapter;
 	
@@ -63,72 +57,41 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		// Passcode manager
-		passcodeManager = ForceApp.APP.getPasscodeManager();		
-		
 		// Setup view
 		setContentView(R.layout.main);
-
-		// Let observers know
-		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
 	}
 	
 	@Override 
 	public void onResume() {
-		super.onResume();
-		
 		// Hide everything until we are logged in
 		findViewById(R.id.root).setVisibility(View.INVISIBLE);
-		
+
 		// Create list adapter
 		listAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, new ArrayList<String>());
 		((ListView) findViewById(R.id.contacts_list)).setAdapter(listAdapter);				
 		
-		// Bring up passcode screen if needed
-		if (passcodeManager.onResume(this)) {
+		super.onResume();
+	}		
 		
-			// Login options
-			String accountType = ForceApp.APP.getAccountType();
-	    	LoginOptions loginOptions = new LoginOptions(
-	    			null, // login host is chosen by user through the server picker 
-	    			ForceApp.APP.getPasscodeHash(),
-	    			getString(R.string.oauth_callback_url),
-	    			getString(R.string.oauth_client_id),
-	    			new String[] {"api"});
-			
-			// Get a rest client
-			new ClientManager(this, accountType, loginOptions).getRestClient(this, new RestClientCallback() {
-				@Override
-				public void authenticatedRestClient(RestClient client) {
-					if (client == null) {
-						ForceApp.APP.logout(MainActivity.this);
-						return;
-					}
-
-                    // Keeping reference to rest client
-                    MainActivity.this.client = client; 
-
-					// Show everything
-					findViewById(R.id.root).setVisibility(View.VISIBLE);
-					
-					// Let observers know
-					EventsObservable.get().notifyEvent(EventType.RenditionComplete);
-				}
-			});
-		}
-	}
-
 	@Override
-	public void onUserInteraction() {
-		passcodeManager.recordUserInteraction();
+	protected LoginOptions getLoginOptions() {
+    	LoginOptions loginOptions = new LoginOptions(
+    			null, // login host is chosen by user through the server picker 
+    			ForceApp.APP.getPasscodeHash(),
+    			getString(R.string.oauth_callback_url),
+    			getString(R.string.oauth_client_id),
+    			new String[] {"api"});
+    	return loginOptions;
 	}
 	
-    @Override
-    public void onPause() {
-    	passcodeManager.onPause(this);
-        super.onPause();
-    }
-	
+	@Override
+	public void onResume(RestClient client) {
+        // Keeping reference to rest client
+        this.client = client; 
+
+		// Show everything
+		findViewById(R.id.root).setVisibility(View.VISIBLE);
+	}
 
 	/**
 	 * Called when "Logout" button is clicked. 
