@@ -20,7 +20,7 @@
       * targetDir: the directory where the code should reside 
       * packageName: the java package for the new application e.g. com.acme.mobileapp
       * apexPage: the apex page for the application e.g. /apex/MyFirstApp
-      * useSmartStore: only specify that parameter if you want SmartStore support
+      * only pass -Duse.smartstore=true if you want SmartStore support
     </echo>
   </target>
 
