@@ -21,12 +21,12 @@ For the rest of this document, we assume that you have setup three shell variabl
 
 Inside the $NATIVE_DIR, you will find several projects:
 
-1. **SalesforceSDK**: The Salesforce SDK library project which provides support for OAuth2, REST API calls, pin screen (driven by mobile policy) and SmartStore
-2. **SalesforceSDKTest**: Test project for SalesforceSDK
-3. **TemplateApp**: Template used when creating new native application using SalesforceSDK
-4. **TemplateAppTest**: Test project for the TemplateApp project
-5. **RestExplorer**: A app using SalesforceSDK to explore the REST API calls
-6. **RestExplorerTest**: Test project for the RestExplorer project
+1. **SalesforceSDK**: The Salesforce SDK library project which provides support for OAuth2, REST API calls, pin screen (driven by mobile policy)
+2. **TemplateApp**: Template used when creating new native application using SalesforceSDK
+3. **test/SalesforceSDKTest**: Test project for SalesforceSDK
+4. **test/TemplateAppTest**: Test project for the TemplateApp project
+5. **SampleApps/RestExplorer**: A app using SalesforceSDK to explore the REST API calls
+6. **SampleApps/test/RestExplorerTest**: Test project for the RestExplorer project
 7. **SampleApps/CloudTunes**: A sample native application using SalesforceSDK
 
 # Creating a new native application using SalesforceSDK
