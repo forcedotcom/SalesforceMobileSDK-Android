@@ -37,8 +37,17 @@ import com.salesforce.androidsdk.store.SmartStore;
  */
 public abstract class ForceAppWithSmartStore extends ForceApp {
 
+	@Override
+	public void onCreate() {
+		super.onCreate();
+
+        // Upgrade to the latest version.
+        UpgradeManagerWithSmartStore.getInstance().upgradeSmartStore();
+	}
+	
     @Override
     protected void cleanUp(Activity frontActivity) {
+
         // Reset smartstore.
         if (hasSmartStore()) {
         	DBOpenHelper.deleteDatabase(this);
