@@ -16,15 +16,17 @@ For the rest of this document, we assume that you have setup three shell variabl
 
 Inside the HYBRID_DIR, you will find several projects:
 
-1. **SampleApps/ContactExplorer**: The ContactExplorer sample app uses PhoneGap (aka "cordova") to retrieve local device contacts.  It also uses the forcetk.js toolkit to implement REST transactions with the Salesforce REST API.  The app uses the OAuth2 support in Salesforce SDK to obtain OAuth credentials, then propagates those credentials to forcetk by sending a javascript event
-2. **SampleApps/VFConnector**: The VFConnector sample app demonstrates how to wrap a VisualForce page in a native container.  This example assumes that your org has a VisualForce page called "BasicVFTest".  The app first obtains OAuth login credentials using the Salesforce SDK OAuth2 support, then uses those credentials to set appropriate webview cookies for accessing VisualForce pages
-3. **SampleApps/SFDCAccounts**: The SFDCAccounts sample app demonstrates how to take accounts and opportunities offline using SmartStore and forcetk
-4. **SampleApps/SmartStoreExplorer**: The SmartStoreExplorer sample app let you explore SmartStore APIs
-5. **SmartStorePluginTest**: Test project for the SmartStore phonegap plugin
-6. **SampleApps/ContactExplorerTest**: Test project for ContactExplorer
-7. **SampleApps/VFConnectorTest**: Test project for VFConnector
-8. **SampleApps/SFDCAccountsTest**: Test project for SFDCAccounts
-9. **SampleApps/SmartStoreExplorerTest**: Test project for SmartStoreExplorer
+1. **SmartStore**: Library project which provides the SmartStore functionality
+2. **test/SmartStoreTest**: Test project for SmartStore
+3. **test/SmartStorePluginTest**: Test project for the SmartStore phonegap plugin
+4. **SampleApps/ContactExplorer**: The ContactExplorer sample app uses PhoneGap (aka "cordova") to retrieve local device contacts.  It also uses the forcetk.js toolkit to implement REST transactions with the Salesforce REST API.  The app uses the OAuth2 support in Salesforce SDK to obtain OAuth credentials, then propagates those credentials to forcetk by sending a javascript event
+5. **SampleApps/VFConnector**: The VFConnector sample app demonstrates how to wrap a VisualForce page in a native container.  This example assumes that your org has a VisualForce page called "BasicVFTest".  The app first obtains OAuth login credentials using the Salesforce SDK OAuth2 support, then uses those credentials to set appropriate webview cookies for accessing VisualForce pages
+6. **SampleApps/SFDCAccounts**: The SFDCAccounts sample app demonstrates how to take accounts and opportunities offline using SmartStore and forcetk
+7. **SampleApps/SmartStoreExplorer**: The SmartStoreExplorer sample app let you explore SmartStore APIs
+8. **SampleApps/test/ContactExplorerTest**: Test project for ContactExplorer
+9. **SampleApps/test/VFConnectorTest**: Test project for VFConnector
+10. **SampleApps/test/SFDCAccountsTest**: Test project for SFDCAccounts
+11. **SampleApps/test/SmartStoreExplorerTest**: Test project for SmartStoreExplorer
 
 # Creating a new hybrid application using SalesforceSDK
 
