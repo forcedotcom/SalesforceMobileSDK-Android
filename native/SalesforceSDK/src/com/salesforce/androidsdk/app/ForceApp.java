@@ -141,6 +141,9 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         // Done
         APP = this;
         accWatcher = new AccountWatcher(APP, APP);
+
+        // Upgrade to the latest version.
+        UpgradeManager.getInstance().upgradeAccMgr();
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
 
