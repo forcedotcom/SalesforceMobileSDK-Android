@@ -23,7 +23,6 @@ Inside the HYBRID_DIR, you will find several projects:
 5. **SampleApps/VFConnector**: The VFConnector sample app demonstrates how to wrap a VisualForce page in a native container.  This example assumes that your org has a VisualForce page called "BasicVFTest".  The app first obtains OAuth login credentials using the Salesforce SDK OAuth2 support, then uses those credentials to set appropriate webview cookies for accessing VisualForce pages
 6. **SampleApps/SFDCAccounts**: The SFDCAccounts sample app demonstrates how to take accounts and opportunities offline using SmartStore and forcetk
 7. **SampleApps/SmartStoreExplorer**: The SmartStoreExplorer sample app let you explore SmartStore APIs
-
 8. **SampleApps/test/ContactExplorerTest**: Test project for ContactExplorer
 9. **SampleApps/test/VFConnectorTest**: Test project for VFConnector
 10. **SampleApps/test/SFDCAccountsTest**: Test project for SFDCAccounts
