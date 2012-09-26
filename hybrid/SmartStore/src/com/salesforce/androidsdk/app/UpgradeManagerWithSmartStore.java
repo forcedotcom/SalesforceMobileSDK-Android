@@ -28,55 +28,50 @@ package com.salesforce.androidsdk.app;
 
 /**
  * This class handles upgrades from one version to another.
- * 
+ *
  * @author bhariharan
  */
 public class UpgradeManagerWithSmartStore extends UpgradeManager {
 
-	/**
-	 * Current version of smartstore implementation.
-	 */
-	private static final int SMART_STORE_VERSION = 2;
-	
-	/**
-	 * Key in shared preference file for smart store version.
-	 */
-	private static final String SMART_STORE_KEY = "smart_store_version";
+    /**
+     * Key in shared preference file for smart store version.
+     */
+    private static final String SMART_STORE_KEY = "smart_store_version";
 
-	private static UpgradeManagerWithSmartStore UPGRADE_MGR_WITH_SMART_STORE = null;
-	
-	/**
-	 * Returns an instance of this class.
-	 *
-	 * @return Instance of this class.
-	 */
-	public static synchronized UpgradeManagerWithSmartStore getInstance() {
-		if (UPGRADE_MGR_WITH_SMART_STORE == null) {
-			UPGRADE_MGR_WITH_SMART_STORE = new UpgradeManagerWithSmartStore();
-		}
-		return UPGRADE_MGR_WITH_SMART_STORE;
-	}
-	
-	/**
-	 * Upgrades smartstore data from existing client
-	 * version to the current version.
-	 */
-	public synchronized void upgradeSmartStore() {
-		final int installedVersion = getInstalledSmartStoreVersion();
-		if (installedVersion == SMART_STORE_VERSION) {
-			return;
-		}
+    private static UpgradeManagerWithSmartStore instance = null;
 
-		// Update shared preference file to reflect the latest version.
-		writeCurVersion(SMART_STORE_KEY, SMART_STORE_VERSION);
-	}
+    /**
+     * Returns an instance of this class.
+     *
+     * @return Instance of this class.
+     */
+    public static synchronized UpgradeManagerWithSmartStore getInstance() {
+        if (instance == null) {
+            instance = new UpgradeManagerWithSmartStore();
+        }
+        return instance;
+    }
 
-	/**
-	 * Returns the currently installed version of smartstore.
-	 * 
-	 * @return Currently installed version of smartstore.
-	 */
-	public int getInstalledSmartStoreVersion() {
-		return getInstalledVersion(SMART_STORE_KEY);
-	}
+    /**
+     * Upgrades smartstore data from existing client
+     * version to the current version.
+     */
+    public synchronized void upgradeSmartStore() {
+        final String installedVersion = getInstalledSmartStoreVersion();
+        if (installedVersion.equals(ForceAppWithSmartStore.SDK_VERSION)) {
+            return;
+        }
+
+        // Update shared preference file to reflect the latest version.
+        writeCurVersion(SMART_STORE_KEY, ForceAppWithSmartStore.SDK_VERSION);
+    }
+
+    /**
+     * Returns the currently installed version of smartstore.
+     *
+     * @return Currently installed version of smartstore.
+     */
+    public String getInstalledSmartStoreVersion() {
+        return getInstalledVersion(SMART_STORE_KEY);
+    }
 }

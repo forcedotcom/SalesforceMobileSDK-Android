@@ -31,86 +31,81 @@ import android.content.SharedPreferences;
 
 /**
  * This class handles upgrades from one version to another.
- * 
+ *
  * @author bhariharan
  */
 public class UpgradeManager {
 
-	/**
-	 * Current version of account manager implementation.
-	 */
-	private static final int ACC_MGR_VERSION = 2;
-	
-	/**
-	 * Name of the shared preference file that contains version information.
-	 */
-	private static final String VERSION_SHARED_PREF = "version_info";
-	
-	/**
-	 * Key in shared preference file for account manager version.
-	 */
-	private static final String ACC_MGR_KEY = "acc_mgr_version";
+    /**
+     * Name of the shared preference file that contains version information.
+     */
+    private static final String VERSION_SHARED_PREF = "version_info";
 
-	private static UpgradeManager UPGRADE_MANAGER = null;
+    /**
+     * Key in shared preference file for account manager version.
+     */
+    private static final String ACC_MGR_KEY = "acc_mgr_version";
 
-	/**
-	 * Returns an instance of this class.
-	 *
-	 * @return Instance of this class.
-	 */
-	public static synchronized UpgradeManager getInstance() {
-		if (UPGRADE_MANAGER == null) {
-			UPGRADE_MANAGER = new UpgradeManager();
-		}
-		return UPGRADE_MANAGER;
-	}
+    private static UpgradeManager instance = null;
 
-	/**
-	 * Upgrades account manager data from existing client
-	 * version to the current version.
-	 */
-	public synchronized void upgradeAccMgr() {
-		final int installedVersion = getInstalledAccMgrVersion();
-		if (installedVersion == ACC_MGR_VERSION) {
-			return;
-		}
+    /**
+     * Returns an instance of this class.
+     *
+     * @return Instance of this class.
+     */
+    public static synchronized UpgradeManager getInstance() {
+        if (instance == null) {
+            instance = new UpgradeManager();
+        }
+        return instance;
+    }
 
-		// Update shared preference file to reflect the latest version.
-		writeCurVersion(ACC_MGR_KEY, ACC_MGR_VERSION);
-	}
-	
-	/**
-	 * Writes the current version to the shared preference file.
-	 * 
-	 * @param key Key to update.
-	 * @param value New version number.
-	 */
-	protected synchronized void writeCurVersion(String key, int value) {
-		final SharedPreferences sp = ForceApp.APP.getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
-		if (sp == null || !sp.contains(key)) {
-			sp.edit().putInt(key, value).commit();
-		}
-	}
-	
-	/**
-	 * Returns the currently installed version of account manager.
-	 * 
-	 * @return Currently installed version of account manager.
-	 */
-	public int getInstalledAccMgrVersion() {
-		return getInstalledVersion(ACC_MGR_KEY);
-	}
-	
-	/**
-	 * Returns the currently installed version of the specified key.
-	 * 
-	 * @return Currently installed version of the specified key.
-	 */
-	protected int getInstalledVersion(String key) {
-		final SharedPreferences sp = ForceApp.APP.getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
-		if (sp == null || !sp.contains(key)) {
-			return 0;
-		}
-		return sp.getInt(key, 0);
-	}
+    /**
+     * Upgrades account manager data from existing client
+     * version to the current version.
+     */
+    public synchronized void upgradeAccMgr() {
+        final String installedVersion = getInstalledAccMgrVersion();
+        if (installedVersion.equals(ForceApp.SDK_VERSION)) {
+            return;
+        }
+
+        // Update shared preference file to reflect the latest version.
+        writeCurVersion(ACC_MGR_KEY, ForceApp.SDK_VERSION);
+    }
+
+    /**
+     * Writes the current version to the shared preference file.
+     *
+     * @param key Key to update.
+     * @param value New version number.
+     */
+    protected synchronized void writeCurVersion(String key, String value) {
+        final SharedPreferences sp = ForceApp.APP.getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
+        if (sp == null || !sp.contains(key)) {
+            sp.edit().putString(key, value).commit();
+        }
+    }
+
+    /**
+     * Returns the currently installed version of account manager.
+     *
+     * @return Currently installed version of account manager.
+     */
+    public String getInstalledAccMgrVersion() {
+        return getInstalledVersion(ACC_MGR_KEY);
+    }
+
+    /**
+     * Returns the currently installed version of the specified key.
+     *
+     * @return Currently installed version of the specified key.
+     */
+    protected String getInstalledVersion(String key) {
+        final SharedPreferences sp = ForceApp.APP.getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
+        if (sp == null || !sp.contains(key)) {
+            return "";
+        }
+        return sp.getString(key, "");
+    }
 }
