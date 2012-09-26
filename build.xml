@@ -3,24 +3,24 @@
   <!-- Default target: describes useful targets -->
   <target name="usage" description="Key targets of this build.xml">
     <echo>
-      ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName}
+      ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} [-Duse.smartstore=true]
       Creates a native application, for instance:
-      ant create_native -Dapp.name=MyFirstNative -Dtarget.dir=./firstnative -Dpackage.name=com.acme.firstnative
+      ant create_native -Dapp.name=MyFirstNative -Dtarget.dir=./firstnative -Dpackage.name=com.acme.firstnative 
 
-      ant create_hybrid_local -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName}
+      ant create_hybrid_local -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} [-Duse.smartstore=true]
       Creates a local hybrid application, for instance:
-      ant create_hybrid_local -Dapp.name=MyFirstHybridLocal -Dtarget.dir=./firsthybridlocal -Dpackage.name=com.acme.firsthybridlocal
+      ant create_hybrid_local -Dapp.name=MyFirstHybridLocal -Dtarget.dir=./firsthybridlocal -Dpackage.name=com.acme.firsthybridlocal 
 
-      ant create_hybrid_vf -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} -Dapex.page={apexPage}
+      ant create_hybrid_vf -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} -Dapex.page={apexPage} [-Duse.smartstore=true]
       Creates a visualforce hybrid application, for instance:
       ant create_hybrid_vf -Dapp.name=MyFirstHybridVF -Dtarget.dir=./firsthybridvf -Dpackage.name=com.acme.firsthybridvf -Dapex.page=/apex/TestPageA
-
 
       Arguments:
       * appName: the name for the new application 
       * targetDir: the directory where the code should reside 
       * packageName: the java package for the new application e.g. com.acme.mobileapp
       * apexPage: the apex page for the application e.g. /apex/MyFirstApp
+      * useSmartStore: only specify that parameter if you want SmartStore support
     </echo>
   </target>
 
@@ -54,7 +54,7 @@
 
   <!-- Target to create a native application -->
   <target name="create_native" description="Create native application" 
-          depends="-pre_native,-create,-next_steps_info,-oauth_info_native" />
+          depends="-pre_native,-create,-use_smartstore,-next_steps_info,-oauth_info_native" />
 
   <target name="-pre_native" depends="-pre">
     <property name="template.dir" value="${sdk.dir}/native/TemplateApp" />
@@ -66,7 +66,7 @@
 
   <!-- Target to create a hybrid vf application -->
   <target name="create_hybrid_vf" description="Create visualforce hybrid application" 
-          depends="-pre_hybrid_vf,-create,-post_hybrid_vf,-next_steps_info,-oauth_info_hybrid">
+          depends="-pre_hybrid_vf,-create,-use_smartstore,-post_hybrid_vf,-next_steps_info,-oauth_info_hybrid">
   </target>
 
   <target name="-pre_hybrid_vf" depends="-pre">
@@ -85,7 +85,7 @@
 
   <!-- Target to create a hybrid local application -->
   <target name="create_hybrid_local" description="Create local hybrid application" 
-          depends="-pre_hybrid_local,-create,-next_steps_info,-oauth_info_hybrid" />
+          depends="-pre_hybrid_local,-create,-use_smartstore,-next_steps_info,-oauth_info_hybrid" />
 
   <target name="-pre_hybrid_local" depends="-pre">
     <property name="template.dir" value="${sdk.dir}/hybrid/SampleApps/ContactExplorer" />
@@ -147,8 +147,26 @@
     </move>
   </target>
 
+  <target name="-use_smartstore" if="use.smartstore">
+    <echo message="Adding smartstore support" />
+    <copy file="${sdk.dir}/external/sqlcipher/assets/icudt46l.zip" todir="${target.dir}/assets" />
+
+    <echo message="Adding SmartStore library reference in project.properties" />
+    <concat destfile="${target.dir}/project.properties" append="true">android.library.reference.2=${sdk.dir.from.target}/hybrid/SmartStore</concat>
+
+    <echo message="Extending ForceAppWithSmartStore instead of ForceApp" />
+    <replaceregexp match="ForceApp" flags="g" replace="ForceAppWithSmartStore">
+      <fileset file="${target.dir}/src/${package.dir}/${app.classname}.java" />
+    </replaceregexp>
+  </target>
+
   <!-- Internal targets, next steps info -->
   <target name="-next_steps_info">
+    <condition property="library.projects" 
+               value="the native/SalesforceSDK and the hybrid/SmartStore library projects"
+               else="the native/SalesforceSDK library project">
+      <isset property="use.smartstore" />
+    </condition>
     <echo>
       Your application project is ready in ${target.dir}
 
@@ -161,7 +179,7 @@
         ant installd
 
       To use your new application in Eclipse, do the following:
-        import both the ${sdk.dir}/native/SalesforceSDK and the ${target.dir} projects in your workspace
+        import ${library.projects} and the ${target.dir} project in your workspace
         build all
         run your application by choosing "Run as Android application"
     </echo>
