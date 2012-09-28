@@ -30,7 +30,6 @@ import android.app.Activity;
 
 import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
-import com.salesforce.androidsdk.ui.SalesforceR;
 
 
 /**
@@ -40,8 +39,6 @@ import com.salesforce.androidsdk.ui.SalesforceR;
  */
 public class SmartStorePluginTestApp extends ForceAppWithSmartStore {
 
-	private SalesforceR salesforceR = new SalesforceRImpl();
-	
 	@Override
 	public Class<? extends Activity> getMainActivityClass() {
 		return SalesforceDroidGapActivity.class;
@@ -50,10 +47,5 @@ public class SmartStorePluginTestApp extends ForceAppWithSmartStore {
 	@Override
 	protected String getKey(String name) {
 		return null;
-	}
-
-	@Override
-	public SalesforceR getSalesforceR() {
-		return salesforceR;
 	}
 }
