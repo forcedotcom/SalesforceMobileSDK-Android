@@ -26,6 +26,7 @@
 "external\shared\PhoneGap\sfdcaccounts\sfdcsmartstore.js" "hybrid\SampleApps\SFDCAccounts\assets\www\sfdcsmartstore.js"
 "external\shared\PhoneGap\smartstoreexplorer\index.html" "hybrid\SampleApps\SmartStoreExplorer\assets\www\index.html"
 "external\shared\PhoneGap\smartstoreexplorer\smartstoreexplorer.js" "hybrid\SampleApps\SmartStoreExplorer\assets\www\smartstoreexplorer.js"
+"external\shared\PhoneGap\test\SFAbstractSmartStoreTestSuite.js" "hybrid\test\SmartStorePluginTest\assets\www\SFAbstractSmartStoreTestSuite.js"
 "external\shared\PhoneGap\test\SFSmartStoreLoadTestSuite.js" "hybrid\test\SmartStorePluginTest\assets\www\SFSmartStoreLoadTestSuite.js"
 "external\shared\PhoneGap\test\SFSmartStoreTestSuite.js" "hybrid\test\SmartStorePluginTest\assets\www\SFSmartStoreTestSuite.js"
 "external\shared\PhoneGap\test\SFTestRunnerPlugin.js" "hybrid\test\SmartStorePluginTest\assets\www\SFTestRunnerPlugin.js"
