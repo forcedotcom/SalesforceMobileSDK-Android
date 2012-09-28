@@ -73,6 +73,8 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
     private String encryptionKey;
     private AccountWatcher accWatcher;
+	private SalesforceR salesforceR = new SalesforceR();
+
 
     /**************************************************************************************************
      *
@@ -84,11 +86,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @return The class for the main activity.
      */
     public abstract Class<? extends Activity> getMainActivityClass();
-
-    /**
-     * @return SalesforceR object which allows reference to resources living outside the SDK.
-     */
-    public abstract SalesforceR getSalesforceR();
 
     /**
      * This function must return the same value for name
@@ -113,6 +110,16 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
     /**************************************************************************************************/
 
+    /**
+     * Before 1.3, SalesforceSDK was packaged as a jar, and project had to provide a subclass of SalesforceR.
+     * Since 1.3, SalesforceSDK is packaged as a library project and we no longer need to to that.
+     * @return SalesforceR object which allows reference to resources living outside the SDK.
+     */
+    public SalesforceR getSalesforceR() {
+    	return salesforceR;
+    }
+    
+    
     /**
      * @return the class of the activity used to perform the login process and create the account.
      * You can override this if you want to customize the LoginAcitivty
