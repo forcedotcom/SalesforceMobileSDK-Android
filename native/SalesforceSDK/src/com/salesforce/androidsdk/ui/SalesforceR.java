@@ -26,66 +26,71 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import com.salesforce.androidsdk.R;
+
 
 
 
 /**
- * Since the SalesforceSDK is packaged as a jar, it can't have resources.
- * Class that allows references to resources defined outside the SDK.
- * Projects making use of the SDK need to provide a subclass that returns the actual resource id. 
+ * Before 1.3, SalesforceSDK was packaged as a jar which can't have resources.
+ * All the methods were returning -1 and a project using the SDK had to provide a subclass returning actual resource ids.
+ * 
+ * Since 1.3, SalesforceSDK is packaged as a library project and therefore contains its resources.
+ * We are only keeping this class for backward compatibility reason, for projects that use the SDK as a jar or that have 
+ * provided custom screens (login, passcode etc) and used SalesforceR to point to their own screens.
  */
 
 public class SalesforceR {
 	/* Login */
-	public int stringAccountType() { return -1; }
-	public int layoutLogin() { return -1; }
-	public int idLoginWebView() { return -1; }
-	public int stringGenericError() { return -1; }
-	public int stringGenericAuthenticationErrorTitle() { return -1; }
-	public int stringGenericAuthenticationErrorBody() { return -1; }
-	public int menuLogin() { return -1; }
-	public int idAuthContainer() { return -1; }
-	public int idItemClearCookies() { return -1; }
-	public int idItemPickServer() { return -1; }
-	public int idItemReload() { return -1; }
-	public int idLoadSpinner() { return -1; }
-	public int idLoadSeparator() { return -1; }
-	public int idServerName() { return -1; }
-	public int styleTextHostName() { return -1; }
-	public int styleTextHostUrl() { return -1; }
+	public int stringAccountType() { return R.string.account_type; }
+	public int layoutLogin() {return R.layout.sf__login; }
+	public int idLoginWebView() {return R.id.sf__oauth_webview; }
+	public int stringGenericError() {return R.string.sf__generic_error; }
+	public int stringGenericAuthenticationErrorTitle() {return R.string.sf__generic_authentication_error_title; } 
+	public int stringGenericAuthenticationErrorBody() {return R.string.sf__generic_authentication_error; }
+	public int menuLogin() { return R.menu.sf__login; }
+	public int idAuthContainer() { return R.id.sf__auth_container; }
+	public int idItemClearCookies() { return R.id.sf__menu_clear_cookies; }
+	public int idItemPickServer() { return R.id.sf__menu_pick_server; }
+	public int idItemReload() { return R.id.sf__menu_reload; }
+	public int idLoadSeparator() { return R.id.sf__load_separator; }
+	public int idLoadSpinner() { return R.id.sf__load_spinner; }
+	public int idServerName() { return R.id.sf__server_name; }
+	public int styleTextHostName() { return R.style.Text_HostName; }
+	public int styleTextHostUrl() { return R.style.Text_HostUrl; }
 	/* Passcode */
-	public int layoutPasscode() { return -1; }
-	public int idPasscodeTitle() { return -1; }
-	public int idPasscodeError() { return -1; }
-	public int idPasscodeInstructions() { return -1; }
-	public int idPasscodeText() { return -1; }
-	public int stringPasscodeCreateTitle() { return -1; }
-	public int stringPasscodeEnterTitle() { return -1; }
-	public int stringPasscodeConfirmTitle() { return -1; }
-	public int stringPasscodeEnterInstructions() { return -1; }
-	public int stringPasscodeCreateInstructions() { return -1; }
-	public int stringPasscodeConfirmInstructions() { return -1; }
-	public int stringPasscodeMinLength() { return -1; }
-	public int stringPasscodeTryAgain() { return -1; }
-	public int stringPasscodeFinal() { return -1; }
-	public int stringPasscodesDontMatch() { return -1; }
+	public int layoutPasscode() {return R.layout.sf__passcode; }
+	public int idPasscodeTitle() {return R.id.sf__passcode_title; }
+	public int idPasscodeError() {return R.id.sf__passcode_error; }
+	public int idPasscodeInstructions() {return R.id.sf__passcode_instructions; }
+	public int idPasscodeText() {return R.id.sf__passcode_text; }
+	public int stringPasscodeCreateTitle() {return R.string.sf__passcode_create_title; }
+	public int stringPasscodeEnterTitle() {return R.string.sf__passcode_enter_title; }
+	public int stringPasscodeConfirmTitle() {return R.string.sf__passcode_confirm_title; }
+	public int stringPasscodeEnterInstructions() {return R.string.sf__passcode_enter_instructions; }
+	public int stringPasscodeCreateInstructions() {return R.string.sf__passcode_create_instructions; }
+	public int stringPasscodeConfirmInstructions() {return R.string.sf__passcode_confirm_instructions; }
+	public int stringPasscodeMinLength() {return R.string.sf__passcode_min_length; }
+	public int stringPasscodeTryAgain() {return R.string.sf__passcode_try_again; }
+	public int stringPasscodeFinal() {return R.string.sf__passcode_final; }
+	public int stringPasscodesDontMatch() {return R.string.sf__passcodes_dont_match; }
 	/* Server picker */
-	public int idPickerCustomLabel() { return -1; }
-	public int idPickerCustomUrl() { return -1; }
-	public int stringServerUrlDefaultCustomLabel() { return -1; }
-	public int stringServerUrlDefaultCustomUrl() { return -1; }
-	public int stringServerUrlAddTitle() { return -1; }
-	public int stringServerUrlEditTitle() { return -1; }
-	public int layoutCustomServerUrl() { return -1; }
-	public int idApplyButton() { return -1; }
-	public int idCancelButton() { return -1; }
-	public int stringInvalidServerUrl() { return -1; }
-	public int idServerListGroup() { return -1; }
-	public int layoutServerPicker() { return -1; }
-	public int stringAuthLoginProduction() { return -1; }
-	public int stringAuthLoginSandbox() { return -1; }
-	public int menuClearCustomUrl() { return -1; }
-	public int idMenuClearCustomUrl() { return -1; }
-	public int drawableEditIcon() { return -1; }
-	public int idShowCustomUrlEdit() { return -1; }
+	public int idPickerCustomLabel() {return R.id.sf__picker_custom_label; }
+	public int idPickerCustomUrl() {return R.id.sf__picker_custom_url; }
+	public int stringServerUrlDefaultCustomLabel() {return R.string.sf__server_url_default_custom_label;}
+	public int stringServerUrlDefaultCustomUrl() {return R.string.sf__server_url_default_custom_url;}
+	public int stringServerUrlAddTitle() {return R.string.sf__server_url_add_title;}
+	public int stringServerUrlEditTitle() {return R.string.sf__server_url_edit_title;}
+	public int layoutCustomServerUrl() {return R.layout.sf__custom_server_url; }
+	public int idApplyButton() {return R.id.sf__apply_button;}
+	public int idCancelButton() {return R.id.sf__cancel_button;}
+	public int stringInvalidServerUrl() {return R.string.sf__invalid_server_url;}
+	public int idServerListGroup() {return R.id.sf__server_list_group; }
+	public int layoutServerPicker() {return R.layout.sf__server_picker; }
+	public int stringAuthLoginProduction() {return R.string.sf__auth_login_production;}
+	public int stringAuthLoginSandbox() {return R.string.sf__auth_login_sandbox;}
+	public int menuClearCustomUrl() {return R.menu.sf__clear_custom_url; }
+	public int idMenuClearCustomUrl() {return R.id.sf__menu_clear_custom_url;}
+	public int drawableEditIcon() {return R.drawable.sf__edit_icon; }
+	public int idShowCustomUrlEdit() {return R.id.sf__show_custom_url_edit;}
 }
