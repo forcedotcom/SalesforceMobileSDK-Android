@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -37,7 +37,6 @@ import org.json.JSONObject;
 
 import android.util.Log;
 
-import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
@@ -50,7 +49,7 @@ import com.salesforce.androidsdk.store.SmartStore.QueryType;
 /**
  * PhoneGap plugin for smart store.
  */
-public class SmartStorePlugin extends Plugin {
+public class SmartStorePlugin extends ForcePlugin {
 	// Keys in json from/to javascript
 	private static final String BEGIN_KEY = "beginKey";
 	private static final String CURRENT_PAGE_INDEX = "currentPageIndex";
@@ -92,15 +91,8 @@ public class SmartStorePlugin extends Plugin {
 		pgUpsertSoupEntries
 	}
 
-    /**
-     * Executes the plugin request and returns PluginResult.
-     * 
-     * @param actionStr     The action to execute.
-     * @param args          JSONArray of arguments for the plugin.
-     * @param callbackId    The callback ID used when calling back into JavaScript.
-     * @return              A PluginResult object with a status and message.
-     */
-    public PluginResult execute(String actionStr, JSONArray args, String callbackId) {
+	@Override
+    public PluginResult execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, String callbackId) {
     	// All smart store action need to be serialized
     	synchronized(SmartStorePlugin.class) {
 	    	Log.i("SmartStorePlugin.execute", "actionStr: " + actionStr);
