@@ -27,6 +27,8 @@
 package com.salesforce.androidsdk.phonegap;
 
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.util.Log;
 
@@ -38,6 +40,9 @@ import com.phonegap.api.PluginResult;
  */
 public abstract class ForcePlugin extends Plugin {
 	
+	private static final String VERSION_KEY = "version";
+
+
 	/**
 	 * Enum to represent SDK version that the javascript code tries to invoke
 	 *
@@ -66,22 +71,48 @@ public abstract class ForcePlugin extends Plugin {
     /**
      * Executes the plugin request and returns PluginResult.
      *
-     * @param actionVersionStr     The action with version to exectute
-     * @param args          JSONArray of arguments for the plugin.
+     * @param action        The action to exectute
+     * @param args          JSONArray of arguments for the plugin (possibly starting with version)
      * @param callbackId    The callback ID used when calling back into JavaScript.
      * @return              A PluginResult object with a status and message.
      */
-    public PluginResult execute(String actionVersionStr, JSONArray args, String callbackId) {
-        Log.i(getClass().getSimpleName() + ".execute", "actionVersionStr: " + actionVersionStr);
-        
-	    String[] actionVersion = actionVersionStr.split("/");
-	    String actionStr = actionVersion[0];
-	    String versionStr = actionVersion.length > 0 ? actionVersion[1] : "";
-	    JavaScriptPluginVersion jsVersion = JavaScriptPluginVersion.fromString(versionStr);
-	    Log.i(getClass().getSimpleName() + ".execute", "action: " + actionStr + ",version:" + jsVersion.name());
-	        
-        return execute(actionStr, jsVersion, args, callbackId);
+    public PluginResult execute(String action, JSONArray args, String callbackId) {
+    	try {
+    		
+    		// args is an array
+    		// when versioned, the first element is {"version": "vX.Y"}    		
+	    	JavaScriptPluginVersion jsVersion = JavaScriptPluginVersion.UNKNOWN;
+	    	if (args.length() > 0) {
+	    		JSONObject firstArg = args.optJSONObject(0);
+	    		if (firstArg != null) {
+	    			if (firstArg.has(VERSION_KEY)) {
+	    				jsVersion = JavaScriptPluginVersion.fromString(firstArg.getString(VERSION_KEY));
+	    				args = shift(args);
+	    			}
+	    		}
+	    	}
+
+	    	Log.i(getClass().getSimpleName() + ".execute", "action: " + action + ", version: " + jsVersion);
+	    		    	
+	        return execute(action, jsVersion, args, callbackId);
+    	}
+    	catch (JSONException e) {
+    		return new PluginResult(PluginResult.Status.JSON_EXCEPTION);
+    	}
     }
+
+
+	/**
+	 * @param args
+	 * @return copy of args JSONArray without the first element
+	 * @throws JSONException 
+	 */
+	private JSONArray shift(JSONArray args) throws JSONException {
+		JSONArray res = new JSONArray();
+		for (int i = 1; i<args.length(); i++)
+			res.put(args.get(i));
+		return res;
+	}
 
 
 	/**
@@ -91,7 +122,7 @@ public abstract class ForcePlugin extends Plugin {
      * @param args          JSONArray of arguments for the plugin.
      * @param callbackId    The callback ID used when calling back into JavaScript.
      * @return              A PluginResult object with a status and message.
-	 * @return
+	 * @throws JSONExceptiopn
 	 */
-	abstract protected PluginResult execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, String callbackId);
+	abstract protected PluginResult execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, String callbackId) throws JSONException;
 }

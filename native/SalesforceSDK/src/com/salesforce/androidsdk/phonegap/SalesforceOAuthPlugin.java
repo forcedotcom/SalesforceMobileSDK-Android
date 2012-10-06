@@ -139,7 +139,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     }
 
     @Override
-    public PluginResult execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, String callbackId) {
+    public PluginResult execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, String callbackId) throws JSONException {
         // Figure out action
         Action action = null;
         try {
@@ -154,9 +154,6 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         }
         catch (IllegalArgumentException e) {
             return new PluginResult(PluginResult.Status.INVALID_ACTION, e.getMessage());
-        }
-        catch (JSONException e) {
-            return new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());
         }
     }
 

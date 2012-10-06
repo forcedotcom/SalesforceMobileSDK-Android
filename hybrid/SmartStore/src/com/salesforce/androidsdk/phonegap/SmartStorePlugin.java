@@ -40,6 +40,7 @@ import android.util.Log;
 import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
+import com.salesforce.androidsdk.phonegap.ForcePlugin.JavaScriptPluginVersion;
 import com.salesforce.androidsdk.store.SmartStore;
 import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
 import com.salesforce.androidsdk.store.SmartStore.Order;
@@ -91,11 +92,10 @@ public class SmartStorePlugin extends ForcePlugin {
 		pgUpsertSoupEntries
 	}
 
-	@Override
-    public PluginResult execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, String callbackId) {
-    	// All smart store action need to be serialized
+    @Override
+    public PluginResult execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, String callbackId) throws JSONException {
+        // All smart store action need to be serialized
     	synchronized(SmartStorePlugin.class) {
-	    	Log.i("SmartStorePlugin.execute", "actionStr: " + actionStr);
 	    	// Figure out action
 	    	Action action = null;
 	    	try {
@@ -115,9 +115,6 @@ public class SmartStorePlugin extends ForcePlugin {
 	    	}
 	    	catch (IllegalArgumentException e) {
 	    		return new PluginResult(PluginResult.Status.INVALID_ACTION, e.getMessage());
-	    	}
-	    	catch (JSONException e) {
-	    		return new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());    		
 	    	}
     	}
     }
