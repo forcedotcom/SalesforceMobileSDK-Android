@@ -56,7 +56,7 @@ usage ()
     echo "        RestExplorerTest"
     echo "        TemplateAppTest"
     echo "        ContactExplorerTest"
-    echo "        SmartStorePluginTest"
+    echo "        ForcePluginsTest"
     echo "        VFConnectorTest"
     echo "        SFDCAccountsTest"
     echo "        SmartStoreExplorerTest"
@@ -67,7 +67,7 @@ usage ()
     echo "        RestExplorerTest"
     echo "        TemplateAppTest"
     echo "        ContactExplorerTest"
-    echo "        SmartStorePluginTest"
+    echo "        ForcePluginsTest"
     echo "        VFConnectorTest"
     echo "        SFDCAccountsTest"
     echo "        SmartStoreExplorerTest"
@@ -161,7 +161,7 @@ else
     build_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/test/SalesforceSDKTest .
     build_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/test/TemplateAppTest ../../TemplateApp
     build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/SampleApps/test/RestExplorerTest ../../RestExplorer
-    build_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/test/SmartStorePluginTest .
+    build_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest .
     build_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest .
     build_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/test/ContactExplorerTest ../../ContactExplorer
     build_test_project_if_requested "SFDCAccountsTest" $HYBRID_TOP/SampleApps/test/SFDCAccountsTest ../../SFDCAccounts
@@ -171,7 +171,7 @@ else
     run_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/test/SalesforceSDKTest
     run_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/test/TemplateAppTest
     run_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/SampleApps/test/RestExplorerTest
-    run_test_project_if_requested "SmartStorePluginTest" $HYBRID_TOP/test/SmartStorePluginTest
+    run_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest
     run_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest
     run_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/test/ContactExplorerTest
     run_test_project_if_requested "SFDCAccountsTest" $HYBRID_TOP/SampleApps/test/SFDCAccountsTest
