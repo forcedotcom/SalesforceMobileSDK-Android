@@ -44,31 +44,6 @@ public abstract class ForcePlugin extends Plugin {
 
 
 	/**
-	 * Enum to represent SDK version that the javascript code tries to invoke
-	 *
-	 */
-	public enum JavaScriptPluginVersion {
-		UNKNOWN(""),
-		V_2_0("v2.0");
-		
-		private String version;
-		
-		private JavaScriptPluginVersion(String version) {
-			this.version = version;
-		}
-		
-		public static JavaScriptPluginVersion fromString(String version) {
-			for (JavaScriptPluginVersion jsVersion : values()) {
-				if (jsVersion.version.equals(version)) {
-					return jsVersion;
-				}
-			}
-			return UNKNOWN;
-		}
-	}
-	
-	
-    /**
      * Executes the plugin request and returns PluginResult.
      *
      * @param action        The action to exectute
@@ -80,18 +55,19 @@ public abstract class ForcePlugin extends Plugin {
     	try {
     		
     		// args is an array
-    		// when versioned, the first element is {"version": "vX.Y"}    		
-	    	JavaScriptPluginVersion jsVersion = JavaScriptPluginVersion.UNKNOWN;
-	    	if (args.length() > 0) {
+    		// when versioned, the first element is {"version": "X.Y"}    		
+    		String jsVersionStr = "";
+    		if (args.length() > 0) {
 	    		JSONObject firstArg = args.optJSONObject(0);
 	    		if (firstArg != null) {
 	    			if (firstArg.has(VERSION_KEY)) {
-	    				jsVersion = JavaScriptPluginVersion.fromString(firstArg.getString(VERSION_KEY));
+	    				jsVersionStr = firstArg.getString(VERSION_KEY);
 	    				args = shift(args);
 	    			}
 	    		}
 	    	}
 
+    		JavaScriptPluginVersion jsVersion = new JavaScriptPluginVersion(jsVersionStr);
 	    	Log.i(getClass().getSimpleName() + ".execute", "action: " + action + ", version: " + jsVersion);
 	    		    	
 	        return execute(action, jsVersion, args, callbackId);

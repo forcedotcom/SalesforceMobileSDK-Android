@@ -35,12 +35,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.util.Log;
-
 import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
-import com.salesforce.androidsdk.phonegap.ForcePlugin.JavaScriptPluginVersion;
 import com.salesforce.androidsdk.store.SmartStore;
 import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
 import com.salesforce.androidsdk.store.SmartStore.Order;
