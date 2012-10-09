@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.salesforce.samples.smartstore"
+	package="com.salesforce.androidsdk.tests" 
     android:versionCode="1"
     android:versionName="1.0" >
     
@@ -35,7 +35,7 @@
 
     <application
         android:label="@string/app_name"
-        android:name=".SmartStorePluginTestApp">
+        android:name="com.salesforce.androidsdk.ForcePluginsTestApp">
 
 		<uses-library android:name="android.test.runner" />        
 
@@ -52,8 +52,8 @@
         
     </application>
     
-    <instrumentation android:targetPackage="com.salesforce.samples.smartstore" 
+    <instrumentation android:targetPackage="com.salesforce.androidsdk.tests" 
                      android:name="com.zutubi.android.junitreport.JUnitReportTestRunner" 
-                     android:label="Tests for SmartStore Plugin" />
+                     android:label="Tests for Force Plugins" />
 
 </manifest>

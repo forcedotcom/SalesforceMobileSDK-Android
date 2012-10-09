@@ -46,6 +46,7 @@ public class SDKInfoPlugin extends ForcePlugin {
     private static final String SDK_VERSION = "sdkVersion";
     private static final String APP_NAME = "appName";
     private static final String APP_VERSION = "appVersion";
+	private static final String FORCE_PLUGINS_AVAILABLE = "forcePluginsAvailable";
     
     
     /**
@@ -107,7 +108,7 @@ public class SDKInfoPlugin extends ForcePlugin {
        data.put(SDK_VERSION, ForceApp.SDK_VERSION);
        data.put(APP_NAME, appName);
        data.put(APP_VERSION, appVersion);
-       
+       data.put(FORCE_PLUGINS_AVAILABLE, new String[] {}); // TBD
        return data;
    }
     
