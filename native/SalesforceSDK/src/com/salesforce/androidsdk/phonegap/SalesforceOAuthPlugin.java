@@ -45,7 +45,6 @@ import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebView;
 
-import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
@@ -62,7 +61,7 @@ import com.salesforce.androidsdk.ui.SalesforceGapViewClient;
 /**
  * PhoneGap plugin for Salesforce OAuth.
  */
-public class SalesforceOAuthPlugin extends Plugin {
+public class SalesforceOAuthPlugin extends ForcePlugin {
     // Keys in oauth properties map
     private static final String AUTO_REFRESH_ON_FOREGROUND = "autoRefreshOnForeground";
     private static final String AUTO_REFRESH_PERIODICALLY = "autoRefreshPeriodically";
@@ -139,16 +138,8 @@ public class SalesforceOAuthPlugin extends Plugin {
         });
     }
 
-    /**
-     * Executes the plugin request and returns PluginResult.
-     *
-     * @param actionStr     The action to execute.
-     * @param args          JSONArray of arguments for the plugin.
-     * @param callbackId    The callback ID used when calling back into JavaScript.
-     * @return              A PluginResult object with a status and message.
-     */
-    public PluginResult execute(String actionStr, JSONArray args, String callbackId) {
-        Log.i("SalesforceOAuthPlugin.execute", "actionStr: " + actionStr);
+    @Override
+    public PluginResult execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, String callbackId) throws JSONException {
         // Figure out action
         Action action = null;
         try {
@@ -163,9 +154,6 @@ public class SalesforceOAuthPlugin extends Plugin {
         }
         catch (IllegalArgumentException e) {
             return new PluginResult(PluginResult.Status.INVALID_ACTION, e.getMessage());
-        }
-        catch (JSONException e) {
-            return new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());
         }
     }
 
