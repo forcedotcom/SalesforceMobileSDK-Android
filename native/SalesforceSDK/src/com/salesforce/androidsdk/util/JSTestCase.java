@@ -60,7 +60,7 @@ public class JSTestCase extends
 	 * @
 	 */
     protected void runTest(String testName)  {
-        // Debug.startMethodTracing(new File(getActivity().getFilesDir(), "SmartStoreJSTest_" + testName + ".trace").getAbsolutePath());
+        // Debug.startMethodTracing(new File(getActivity().getFilesDir(), getClass().getSimpleName() + "_" + testName + ".trace").getAbsolutePath());
     		
         String jsCmd = "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
             "navigator.testrunner.startTest('" + testName + "');";
