@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,28 +24,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartstore;
+package com.salesforce.androidsdk.phonegap;
 
-import android.app.Activity;
-
-import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
-import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.util.JSTestCase;
 
 
 /**
- * Test application for smart store plugin
- * All Salesforce mobile app must extend ForceApp. 
- * ForceApp takes care of intializing the network http clients (among other things).
+ * Running javascript tests for SDKInfo plugin
  */
-public class SmartStorePluginTestApp extends ForceAppWithSmartStore {
+public class SDKInfoJSTest extends JSTestCase {
 
-	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return SalesforceDroidGapActivity.class;
-	}
-	
-	@Override
-	protected String getKey(String name) {
-		return null;
-	}
+    public SDKInfoJSTest() {
+        super("SDKInfoTestSuite");
+    }
+
+    public void testGetInfo()  {
+    	runTest("testGetInfo");
+    }
 }
