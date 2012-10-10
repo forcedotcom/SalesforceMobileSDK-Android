@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
-import org.apache.cordova.DroidGap;
 import org.apache.cordova.api.CordovaInterface;
 
 import android.app.Activity;
