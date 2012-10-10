@@ -34,6 +34,7 @@ import android.util.Log;
 
 import com.phonegap.api.Plugin;
 import com.phonegap.api.PluginResult;
+import com.salesforce.androidsdk.app.ForceApp;
 
 /**
  * Abstract super class for all Salesforce plugins
@@ -68,8 +69,15 @@ public abstract class ForcePlugin extends Plugin {
 	    	}
 
     		JavaScriptPluginVersion jsVersion = new JavaScriptPluginVersion(jsVersionStr);
-	    	Log.i(getClass().getSimpleName() + ".execute", "action: " + action + ", version: " + jsVersion);
-	    		    	
+	    	Log.i(getClass().getSimpleName() + ".execute", "action: " + action + ", jsVersion: " + jsVersion);
+
+	    	if (jsVersion.isOlder()) {
+		    	Log.w(getClass().getSimpleName() + ".execute", "is being called by js from older sdk, jsVersion: " + jsVersion + ", nativeVersion: " + ForceApp.SDK_VERSION);
+	    	}
+	    	else if (jsVersion.isNewer()) {
+		    	Log.w(getClass().getSimpleName() + ".execute", "is being called by js from newer sdk, jsVersion: " + jsVersion + ", nativeVersion: " + ForceApp.SDK_VERSION);
+	    	}
+	    	
 	        return execute(action, jsVersion, args, callbackId);
     	}
     	catch (JSONException e) {
