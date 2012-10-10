@@ -94,6 +94,16 @@ public class JavaScriptPluginVersionTest extends InstrumentationTestCase {
 		assertEquals(-1, JavaScriptPluginVersion.compareVersions("1.2.9", "1.2.14"));
 		assertEquals(1, JavaScriptPluginVersion.compareVersions("1.2.14", "1.2.9"));
 	}
+
+	/**
+	 * Create JavaScriptPluginVersion for empty version (always considered older)
+	 */
+	public void testJavaScriptPluginVersionsWitNoVersion() {
+		assertEquals(-1, JavaScriptPluginVersion.compareVersions("", "2.0"));
+		assertEquals(0, JavaScriptPluginVersion.compareVersions("", ""));
+		assertEquals(1, JavaScriptPluginVersion.compareVersions("2.0", ""));
+	}
+	
 	
 	/**
 	 * Create JavaScriptPluginVersion for old versions and make sure isCurrent/isOlder/isNewer returns the value expected
