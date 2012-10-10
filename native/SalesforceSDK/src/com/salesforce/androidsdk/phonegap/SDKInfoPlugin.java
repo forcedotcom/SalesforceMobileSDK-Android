@@ -116,7 +116,7 @@ public class SDKInfoPlugin extends ForcePlugin {
        data.put(SDK_VERSION, ForceApp.SDK_VERSION);
        data.put(APP_NAME, appName);
        data.put(APP_VERSION, appVersion);
-       data.put(FORCE_PLUGINS_AVAILABLE, getForcePlugins(ctx));
+       data.put(FORCE_PLUGINS_AVAILABLE, new JSONArray(getForcePlugins(ctx)));
        return data;
    }
 
