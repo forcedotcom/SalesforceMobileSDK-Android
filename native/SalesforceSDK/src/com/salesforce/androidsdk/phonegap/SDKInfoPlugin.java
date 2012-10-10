@@ -89,7 +89,7 @@ public class SDKInfoPlugin extends ForcePlugin {
     protected PluginResult getInfo(JSONArray args, final String callbackId) throws JSONException {
         Log.i("SalesforceOAuthPlugin.authenticate", "authenticate called");
         try {
-            return new PluginResult(PluginResult.Status.OK, getSDKInfo((Context) ctx));
+            return new PluginResult(PluginResult.Status.OK, getSDKInfo(cordova.getActivity()));
         }
         catch (NameNotFoundException e) {
             return new PluginResult(PluginResult.Status.ERROR, e.getMessage());

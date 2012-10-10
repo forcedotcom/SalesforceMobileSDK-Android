@@ -3,9 +3,12 @@ package com.salesforce.androidsdk.ui;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.DroidGap;
+import org.apache.cordova.api.CordovaInterface;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -29,12 +32,18 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
     // The first non-reserved URL that's loaded will be considered the app's "home page", for caching purposes.
     protected boolean foundHomeUrl = false;
 
+    protected Activity ctx;
 
-    public SalesforceGapViewClient(DroidGap ctx) {
-        super(ctx);
+    /**
+     * Constructor.
+     * 
+     * @param cordova
+     * @param view
+     */
+    public SalesforceGapViewClient(CordovaInterface cordova, CordovaWebView view) {
+        super(cordova, view);
+        this.ctx = cordova.getActivity();
     }
-    
-    
 
 
     /**
@@ -45,14 +54,12 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
      */
     @Override
     public void onPageFinished(WebView view, String url) {
-        SalesforceDroidGapActivity myCtx = (SalesforceDroidGapActivity)this.ctx;
-
         // The first URL that's loaded that's not one of the URLs used in the bootstrap process will
         // be considered the "app home URL", which can be loaded directly in the event that the app is offline.
         if (!this.foundHomeUrl && !isReservedUrl(url)) {
             Log.i(TAG,"Setting '" + url + "' as the home page URL for this app");
 
-            SharedPreferences sp = myCtx.getSharedPreferences(SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
+            SharedPreferences sp = ctx.getSharedPreferences(SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
             Editor e = sp.edit();
             e.putString(APP_HOME_URL_PROP_KEY, url);
             e.commit();

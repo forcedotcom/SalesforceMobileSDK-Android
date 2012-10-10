@@ -168,15 +168,15 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         Log.i("SalesforceOAuthPlugin.authenticate", "authenticate called");
         JSONObject oauthProperties = new JSONObject((String) args.get(0));
         LoginOptions loginOptions = parseLoginOptions(oauthProperties);
-        clientManager = new ClientManager(ctx.getContext(), ForceApp.APP.getAccountType(), loginOptions);
+        clientManager = new ClientManager(cordova.getActivity(), ForceApp.APP.getAccountType(), loginOptions);
         autoRefreshOnForeground = oauthProperties.getBoolean(AUTO_REFRESH_ON_FOREGROUND);
         autoRefreshPeriodically = oauthProperties.getBoolean(AUTO_REFRESH_PERIODICALLY);
-        clientManager.getRestClient((Activity) ctx, new RestClientCallback() {
+        clientManager.getRestClient(cordova.getActivity(), new RestClientCallback() {
             @Override
             public void authenticatedRestClient(RestClient c) {
                 if (c == null) {
                     Log.w("SalesforceOAuthPlugin.authenticate", "authenticate failed - logging out");
-                    logout((Activity) ctx);
+                    logout(cordova.getActivity());
                 }
                 else {
                     Log.i("SalesforceOAuthPlugin.authenticate", "authenticate successful");
@@ -232,7 +232,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     protected PluginResult getAppHomeUrl(String callbackId)  {
         Log.i("SalesforceOAuthPlugin.getAppHomeUrl", "getAppHomeUrl called");
 
-        SharedPreferences sp = ((Activity) this.ctx).getSharedPreferences(SalesforceGapViewClient.SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
+        SharedPreferences sp = cordova.getActivity().getSharedPreferences(SalesforceGapViewClient.SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
         String url = sp.getString(SalesforceGapViewClient.APP_HOME_URL_PROP_KEY, null);
 
         PluginResult result = new PluginResult(PluginResult.Status.OK,url);
@@ -247,7 +247,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
      */
     protected PluginResult logoutCurrentUser() {
         Log.i("SalesforceOAuthPlugin.logoutCurrentUser", "logoutCurrentUser called");
-        logout((Activity) ctx);
+        logout(cordova.getActivity());
         return new PluginResult(PluginResult.Status.OK);
     }
 

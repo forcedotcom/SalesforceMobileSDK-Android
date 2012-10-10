@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import org.apache.cordova.CordovaChromeClient;
+import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.DroidGap;
 
@@ -90,8 +92,8 @@ public class SalesforceDroidGapActivity extends DroidGap {
     }
     
     @Override
-    public void init() {
-        super.init();
+    public void init(CordovaWebView webView, CordovaWebViewClient webViewClient, CordovaChromeClient webChromeClient) {
+        super.init(webView, new SalesforceGapViewClient(this, webView), webChromeClient);
         final String uaStr = ForceApp.APP.getUserAgent();
         if (null != this.appView) {
             WebSettings webSettings = this.appView.getSettings();
@@ -140,11 +142,6 @@ public class SalesforceDroidGapActivity extends DroidGap {
         passcodeManager.recordUserInteraction();
     }
 
-    @Override
-    protected CordovaWebViewClient createWebViewClient() {
-        SalesforceGapViewClient result = new SalesforceGapViewClient(this);
-        return result;
-    }
     /**
      * Schedule auto-refresh runnable
      */
