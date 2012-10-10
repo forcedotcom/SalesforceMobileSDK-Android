@@ -26,13 +26,19 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.XmlResourceParser;
 import android.util.Log;
 
 import com.phonegap.api.PluginResult;
@@ -47,7 +53,9 @@ public class SDKInfoPlugin extends ForcePlugin {
     private static final String APP_NAME = "appName";
     private static final String APP_VERSION = "appVersion";
 	private static final String FORCE_PLUGINS_AVAILABLE = "forcePluginsAvailable";
-    
+    	
+	// Cached 
+	private static List<String> forcePlugins;
     
     /**
      * Supported plugin actions that the client can take.
@@ -99,7 +107,7 @@ public class SDKInfoPlugin extends ForcePlugin {
     * @throws NameNotFoundException 
     * @throws JSONException 
     */
-   private static JSONObject getSDKInfo(Context ctx) throws NameNotFoundException, JSONException {
+   public static JSONObject getSDKInfo(Context ctx) throws NameNotFoundException, JSONException {
        PackageInfo packageInfo = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0);
        String appName = ctx.getString(packageInfo.applicationInfo.labelRes);
        String appVersion = packageInfo.versionName;
@@ -108,10 +116,52 @@ public class SDKInfoPlugin extends ForcePlugin {
        data.put(SDK_VERSION, ForceApp.SDK_VERSION);
        data.put(APP_NAME, appName);
        data.put(APP_VERSION, appVersion);
-       data.put(FORCE_PLUGINS_AVAILABLE, new String[] {}); // TBD
+       data.put(FORCE_PLUGINS_AVAILABLE, new JSONArray(getForcePlugins(ctx)));
        return data;
    }
-    
-    
+
+   
+	/**
+	 * @param ctx
+	 * @return list of force plugins (read from XML the first time, and stored in field afterwards)
+	 */
+	public static List<String> getForcePlugins(Context ctx) {
+		if (forcePlugins == null) {
+			forcePlugins = getForcePluginsFromXML(ctx);
+		}
+		return forcePlugins;
+	}
+
+	/**
+	 * @param ctx
+	 * @return list of force plugins (read from XML)
+	 */
+	public static List<String> getForcePluginsFromXML(Context ctx) {
+		List<String> services = new ArrayList<String>();
+		
+		int id = ctx.getResources().getIdentifier("plugins", "xml", ctx.getPackageName());
+		if (id != 0) {
+			XmlResourceParser xml = ctx.getResources().getXml(id);
+			int eventType = -1;
+			while (eventType != XmlResourceParser.END_DOCUMENT) {
+				if (eventType == XmlResourceParser.START_TAG) {
+					if (xml.getName().equals("plugin")) {
+						String service = xml.getAttributeValue(null, "name");
+						if (service.startsWith("com.salesforce.")) {
+							services.add(service);
+						}
+					}
+				}
+				try {
+					eventType = xml.next();
+				} catch (XmlPullParserException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return services;
+	}
 
 }
