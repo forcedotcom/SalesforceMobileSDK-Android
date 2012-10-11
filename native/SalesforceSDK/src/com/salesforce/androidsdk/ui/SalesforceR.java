@@ -64,6 +64,7 @@ public class SalesforceR {
 	public int idPasscodeError() {return R.id.sf__passcode_error; }
 	public int idPasscodeInstructions() {return R.id.sf__passcode_instructions; }
 	public int idPasscodeText() {return R.id.sf__passcode_text; }
+	public int idPasscodeForgot() {return R.id.sf__passcode_forgot; }
 	public int stringPasscodeCreateTitle() {return R.string.sf__passcode_create_title; }
 	public int stringPasscodeEnterTitle() {return R.string.sf__passcode_enter_title; }
 	public int stringPasscodeConfirmTitle() {return R.string.sf__passcode_confirm_title; }
@@ -74,6 +75,10 @@ public class SalesforceR {
 	public int stringPasscodeTryAgain() {return R.string.sf__passcode_try_again; }
 	public int stringPasscodeFinal() {return R.string.sf__passcode_final; }
 	public int stringPasscodesDontMatch() {return R.string.sf__passcodes_dont_match; }
+	public int stringPasscodeForgot() {return R.string.sf__passcode_forgot_string; }
+	public int stringPasscodeLogoutConfirmation() {return R.string.sf__passcode_logout_confirmation; }
+	public int stringPasscodeLogoutYes() {return R.string.sf__passcode_logout_yes; }
+	public int stringPasscodeLogoutNo() {return R.string.sf__passcode_logout_no; }
 	/* Server picker */
 	public int idPickerCustomLabel() {return R.id.sf__picker_custom_label; }
 	public int idPickerCustomUrl() {return R.id.sf__picker_custom_url; }
