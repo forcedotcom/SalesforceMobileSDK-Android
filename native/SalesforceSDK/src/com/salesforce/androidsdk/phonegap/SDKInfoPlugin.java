@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.cordova.api.CallbackContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -41,7 +42,6 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
 
-import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
 
 /**
@@ -65,34 +65,33 @@ public class SDKInfoPlugin extends ForcePlugin {
     }
 
     @Override
-    public PluginResult execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, String callbackId) throws JSONException {
+    public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, CallbackContext callbackContext) throws JSONException {
         // Figure out action
         Action action = null;
         try {
             action = Action.valueOf(actionStr);
             switch(action) {
-                case getInfo:  return getInfo(args, callbackId);
-                default: return new PluginResult(PluginResult.Status.INVALID_ACTION, actionStr); // should never happen
+                case getInfo:  getInfo(args, callbackContext); return true;
+                default: return false;
             }
         }
         catch (IllegalArgumentException e) {
-            return new PluginResult(PluginResult.Status.INVALID_ACTION, e.getMessage());
+        	return false;
         }
     }
 
     /**
      * Native implementation for "getInfo" action.
-     * @param callbackId The callback ID used when calling back into Javascript.
-     * @return The plugin result (ok if authenticated, error otherwise).
+     * @param callbackContext Used when calling back into Javascript.
      * @throws JSONException
      */
-    protected PluginResult getInfo(JSONArray args, final String callbackId) throws JSONException {
+    protected void getInfo(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         Log.i("SalesforceOAuthPlugin.authenticate", "authenticate called");
         try {
-            return new PluginResult(PluginResult.Status.OK, getSDKInfo((Context) ctx));
+            callbackContext.success(getSDKInfo(cordova.getActivity()));
         }
         catch (NameNotFoundException e) {
-            return new PluginResult(PluginResult.Status.ERROR, e.getMessage());
+            callbackContext.error(e.getMessage());
         }
     }
 

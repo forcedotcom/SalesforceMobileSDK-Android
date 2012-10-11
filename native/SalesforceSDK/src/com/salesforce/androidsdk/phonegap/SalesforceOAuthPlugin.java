@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.cordova.DroidGap;
+import org.apache.cordova.api.CallbackContext;
+import org.apache.cordova.api.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -45,7 +47,6 @@ import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebView;
 
-import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -139,44 +140,44 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     }
 
     @Override
-    public PluginResult execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, String callbackId) throws JSONException {
+    public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, CallbackContext callbackContext) throws JSONException {
         // Figure out action
         Action action = null;
         try {
             action = Action.valueOf(actionStr);
             switch(action) {
-                case authenticate:       	return authenticate(args, callbackId);
-                case getAuthCredentials: 	return getAuthCredentials(callbackId);
-                case logoutCurrentUser:		return logoutCurrentUser();
-                case getAppHomeUrl:			return this.getAppHomeUrl(callbackId);
-                default: return new PluginResult(PluginResult.Status.INVALID_ACTION, actionStr); // should never happen
+                case authenticate:       	authenticate(args, callbackContext); return true;
+                case getAuthCredentials: 	getAuthCredentials(callbackContext); return true;
+                case logoutCurrentUser:		logoutCurrentUser(callbackContext); return true;
+                case getAppHomeUrl:			getAppHomeUrl(callbackContext); return true;
+                default: return false;
             }
         }
         catch (IllegalArgumentException e) {
-            return new PluginResult(PluginResult.Status.INVALID_ACTION, e.getMessage());
+            return false;
         }
     }
 
     /**
      * Native implementation for "authenticate" action
      * @param args The arguments used for authentication.
-     * @param callbackId The callback ID used when calling back into Javascript.
+     * @param callbackContext Used when calling back into Javascript.
      * @return NO_RESULT since authentication is asynchronous.
      * @throws JSONException
      */
-    protected PluginResult authenticate(JSONArray args, final String callbackId) throws JSONException {
+    protected void authenticate(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         Log.i("SalesforceOAuthPlugin.authenticate", "authenticate called");
         JSONObject oauthProperties = new JSONObject((String) args.get(0));
         LoginOptions loginOptions = parseLoginOptions(oauthProperties);
-        clientManager = new ClientManager(ctx.getContext(), ForceApp.APP.getAccountType(), loginOptions);
+        clientManager = new ClientManager(cordova.getActivity(), ForceApp.APP.getAccountType(), loginOptions);
         autoRefreshOnForeground = oauthProperties.getBoolean(AUTO_REFRESH_ON_FOREGROUND);
         autoRefreshPeriodically = oauthProperties.getBoolean(AUTO_REFRESH_PERIODICALLY);
-        clientManager.getRestClient((Activity) ctx, new RestClientCallback() {
+        clientManager.getRestClient(cordova.getActivity(), new RestClientCallback() {
             @Override
             public void authenticatedRestClient(RestClient c) {
                 if (c == null) {
                     Log.w("SalesforceOAuthPlugin.authenticate", "authenticate failed - logging out");
-                    logout((Activity) ctx);
+                    logout(cordova.getActivity());
                 }
                 else {
                     Log.i("SalesforceOAuthPlugin.authenticate", "authenticate successful");
@@ -193,12 +194,12 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
                         public void onSuccess(RestRequest request, RestResponse response) {
                             updateRefreshTime();
                             setSidCookies(webView, SalesforceOAuthPlugin.client);
-                            success(new PluginResult(PluginResult.Status.OK, getJSONCredentials(SalesforceOAuthPlugin.client)), callbackId);
+                            callbackContext.success(getJSONCredentials(SalesforceOAuthPlugin.client));
                         }
 
                         @Override
                         public void onError(Exception exception) {
-                            error(exception.getMessage(), callbackId);
+                            callbackContext.error(exception.getMessage());
                         }
                     });
                 }
@@ -208,47 +209,48 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         // Done
         PluginResult noop = new PluginResult(PluginResult.Status.NO_RESULT);
         noop.setKeepCallback(true);
-        return noop;
+        callbackContext.sendPluginResult(noop);
     }
 
     /**
      * Native implementation for "getAuthCredentials" action.
-     * @param callbackId The callback ID used when calling back into Javascript.
-     * @return The plugin result (ok if authenticated, error otherwise).
+     * @param callbackContext Used when calling back into Javascript.
      * @throws JSONException
      */
-    protected PluginResult getAuthCredentials(String callbackId) throws JSONException {
+    protected void getAuthCredentials(CallbackContext callbackContext) throws JSONException {
         Log.i("SalesforceOAuthPlugin.getAuthCredentials", "getAuthCredentials called");
         if (client == null) {
             Log.w("SalesforceOAuthPlugin.getAuthCredentials", "getAuthCredentials failed - never authenticated");
-            return new PluginResult(PluginResult.Status.ERROR, "Never authenticated");
+            callbackContext.error("Never authenticated");
         }
         else {
             Log.i("SalesforceOAuthPlugin.getAuthCredentials", "getAuthCredentials successful");
-            return new PluginResult(PluginResult.Status.OK, getJSONCredentials(client));
+            callbackContext.success(getJSONCredentials(client));
         }
     }
 
-    protected PluginResult getAppHomeUrl(String callbackId)  {
+    /**
+     * @param callbackContext Used when calling back into Javascript.
+     */
+    protected void getAppHomeUrl(CallbackContext callbackContext)  {
         Log.i("SalesforceOAuthPlugin.getAppHomeUrl", "getAppHomeUrl called");
 
-        SharedPreferences sp = ((Activity) this.ctx).getSharedPreferences(SalesforceGapViewClient.SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
+        SharedPreferences sp = cordova.getActivity().getSharedPreferences(SalesforceGapViewClient.SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
         String url = sp.getString(SalesforceGapViewClient.APP_HOME_URL_PROP_KEY, null);
 
-        PluginResult result = new PluginResult(PluginResult.Status.OK,url);
-        return result;
+        callbackContext.success(url);
     }
 
 
 
     /**
      * Native implementation for "logout" action
-     * @return This should always return the ok plugin result.
+     * @param callbackContext Used when calling back into Javascript.
      */
-    protected PluginResult logoutCurrentUser() {
+    protected void logoutCurrentUser(CallbackContext callbackContext) {
         Log.i("SalesforceOAuthPlugin.logoutCurrentUser", "logoutCurrentUser called");
-        logout((Activity) ctx);
-        return new PluginResult(PluginResult.Status.OK);
+        logout(cordova.getActivity());
+        callbackContext.success();
     }
 
     /**************************************************************************************************

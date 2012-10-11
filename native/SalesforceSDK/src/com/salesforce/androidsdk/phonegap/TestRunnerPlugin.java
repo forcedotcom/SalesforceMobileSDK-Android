@@ -29,19 +29,17 @@ package com.salesforce.androidsdk.phonegap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import org.apache.cordova.api.CallbackContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.util.Log;
 
-import com.phonegap.api.Plugin;
-import com.phonegap.api.PluginResult;
-
 /**
  * PhoneGap plugin to run javascript tests.
  */
-public class TestRunnerPlugin extends Plugin {
+public class TestRunnerPlugin extends ForcePlugin {
 
 	private static final String TAG = "TestRunnerPlugin";
 	
@@ -63,46 +61,35 @@ public class TestRunnerPlugin extends Plugin {
 		onTestComplete
 	};
 
-    /**
-     * Executes the plugin request and returns PluginResult.
-     * 
-     * @param actionStr     The action to execute.
-     * @param args          JSONArray of arguments for the plugin.
-     * @param callbackId    The callback ID used when calling back into JavaScript.
-     * @return              A PluginResult object with a status and message.
-     */
-    public PluginResult execute(String actionStr, JSONArray args, String callbackId) {
-    	Log.i("TestRunnerPlugin.execute", "actionStr: " + actionStr);
+    @Override
+    public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, CallbackContext callbackContext) throws JSONException {
     	// Figure out action
     	Action action = null;
     	try {
     		action = Action.valueOf(actionStr);
 			switch(action) {
-			case onReadyForTests:            return onReadyForTests(args, callbackId);
-			case onTestComplete:             return onTestComplete(args, callbackId);
-			default: return new PluginResult(PluginResult.Status.INVALID_ACTION, actionStr); // should never happen
+				case onReadyForTests:            onReadyForTests(args, callbackContext); return true;
+				case onTestComplete:             onTestComplete(args, callbackContext); return true;
+				default: return false;
 	    	}
     	}
     	catch (IllegalArgumentException e) {
-    		return new PluginResult(PluginResult.Status.INVALID_ACTION, e.getMessage());
-    	}
-    	catch (JSONException e) {
-    		return new PluginResult(PluginResult.Status.JSON_EXCEPTION, e.getMessage());    		
+    		return false;
     	}
     	catch (InterruptedException e) {
-    		return new PluginResult(PluginResult.Status.ERROR, e.getMessage());
+    		callbackContext.error(e.getMessage()); 
+    		return true; 
     	}
     }
 
 	/**
 	 * Native implementation of onTestComplete
 	 * @param args
-	 * @param callbackId
-	 * @return
+	 * @param callbackContext
 	 * @throws JSONException
 	 * @throws InterruptedException 
 	 */
-	private PluginResult onTestComplete(JSONArray args, String callbackId) throws JSONException, InterruptedException {
+	private void onTestComplete(JSONArray args,  CallbackContext callbackContext) throws JSONException, InterruptedException {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String testName = arg0.getString(TEST_NAME);
@@ -117,18 +104,17 @@ public class TestRunnerPlugin extends Plugin {
 		Log.w(TAG,testResult.testName + " completed in " + testResult.duration);
 	
         
-		return new PluginResult(PluginResult.Status.OK);
+		callbackContext.success();
 	}
 
 	/**
 	 * Native implementation of onReadyForTests
 	 * @param args
-	 * @param callbackId
-	 * @return
+	 * @param callbackContext
 	 */
-	private PluginResult onReadyForTests(JSONArray args, String callbackId)  {
+	private void onReadyForTests(JSONArray args,  CallbackContext callbackContext)  {
 		readyForTests.add(Boolean.TRUE);
-		return new PluginResult(PluginResult.Status.OK);
+		callbackContext.success();
 	}
 	
 	public static class TestResult {
