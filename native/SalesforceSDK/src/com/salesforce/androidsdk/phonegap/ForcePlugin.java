@@ -26,20 +26,20 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import org.apache.cordova.api.CallbackContext;
+import org.apache.cordova.api.CordovaPlugin;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.util.Log;
 
-import com.phonegap.api.Plugin;
-import com.phonegap.api.PluginResult;
 import com.salesforce.androidsdk.app.ForceApp;
 
 /**
  * Abstract super class for all Salesforce plugins
  */
-public abstract class ForcePlugin extends Plugin {
+public abstract class ForcePlugin extends CordovaPlugin {
 	
 	private static final String VERSION_KEY = "version";
 
@@ -49,40 +49,36 @@ public abstract class ForcePlugin extends Plugin {
      *
      * @param action        The action to exectute
      * @param args          JSONArray of arguments for the plugin (possibly starting with version)
-     * @param callbackId    The callback ID used when calling back into JavaScript.
+     * @param callbackContext Used when calling back into Javascript.
      * @return              A PluginResult object with a status and message.
+     * @throws              JSONException
      */
-    public PluginResult execute(String action, JSONArray args, String callbackId) {
-    	try {
-    		
-    		// args is an array
-    		// when versioned, the first element is {"version": "X.Y"}    		
-    		String jsVersionStr = "";
-    		if (args.length() > 0) {
-	    		JSONObject firstArg = args.optJSONObject(0);
-	    		if (firstArg != null) {
-	    			if (firstArg.has(VERSION_KEY)) {
-	    				jsVersionStr = firstArg.getString(VERSION_KEY);
-	    				args = shift(args);
-	    			}
-	    		}
-	    	}
-
-    		JavaScriptPluginVersion jsVersion = new JavaScriptPluginVersion(jsVersionStr);
-	    	Log.i(getClass().getSimpleName() + ".execute", "action: " + action + ", jsVersion: " + jsVersion);
-
-	    	if (jsVersion.isOlder()) {
-		    	Log.w(getClass().getSimpleName() + ".execute", "is being called by js from older sdk, jsVersion: " + jsVersion + ", nativeVersion: " + ForceApp.SDK_VERSION);
-	    	}
-	    	else if (jsVersion.isNewer()) {
-		    	Log.w(getClass().getSimpleName() + ".execute", "is being called by js from newer sdk, jsVersion: " + jsVersion + ", nativeVersion: " + ForceApp.SDK_VERSION);
-	    	}
-	    	
-	        return execute(action, jsVersion, args, callbackId);
+	@Override
+    public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
+		// args is an array
+		// when versioned, the first element is {"version": "X.Y"}    		
+		String jsVersionStr = "";
+		if (args.length() > 0) {
+    		JSONObject firstArg = args.optJSONObject(0);
+    		if (firstArg != null) {
+    			if (firstArg.has(VERSION_KEY)) {
+    				jsVersionStr = firstArg.getString(VERSION_KEY);
+    				args = shift(args);
+    			}
+    		}
     	}
-    	catch (JSONException e) {
-    		return new PluginResult(PluginResult.Status.JSON_EXCEPTION);
+
+		JavaScriptPluginVersion jsVersion = new JavaScriptPluginVersion(jsVersionStr);
+    	Log.i(getClass().getSimpleName() + ".execute", "action: " + action + ", jsVersion: " + jsVersion);
+
+    	if (jsVersion.isOlder()) {
+	    	Log.w(getClass().getSimpleName() + ".execute", "is being called by js from older sdk, jsVersion: " + jsVersion + ", nativeVersion: " + ForceApp.SDK_VERSION);
     	}
+    	else if (jsVersion.isNewer()) {
+	    	Log.w(getClass().getSimpleName() + ".execute", "is being called by js from newer sdk, jsVersion: " + jsVersion + ", nativeVersion: " + ForceApp.SDK_VERSION);
+    	}
+    	
+        return execute(action, jsVersion, args, callbackContext);
     }
 
 
@@ -104,9 +100,9 @@ public abstract class ForcePlugin extends Plugin {
      * @param actionStr     The action to execute
      @ @param jsVersion     The version targeted
      * @param args          JSONArray of arguments for the plugin.
-     * @param callbackId    The callback ID used when calling back into JavaScript.
-     * @return              A PluginResult object with a status and message.
+     * @param callbackContext Used when calling back into Javascript.
+     * @return              Whether the action was valid.
 	 * @throws JSONExceptiopn
 	 */
-	abstract protected PluginResult execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, String callbackId) throws JSONException;
+	abstract protected boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, CallbackContext callbackContext) throws JSONException;
 }
