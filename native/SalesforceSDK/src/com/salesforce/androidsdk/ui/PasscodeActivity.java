@@ -80,6 +80,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         if (forgotPasscodeView != null) {
             forgotPasscodeView.setText(Html.fromHtml(getForgotPasscodeString()));
         }
+        forgotPasscodeView.setOnClickListener(this);
         logoutAlertDialog = buildLogoutDialog();
         title = getTitleView();
         error = getErrorView();
@@ -266,15 +267,15 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     }
 
     protected String getLogoutConfirmationString() {
-        return getString(salesforceR.stringPasscodeForgot());
+        return getString(salesforceR.stringPasscodeLogoutConfirmation());
     }
 
     protected String getLogoutYesString() {
-        return getString(salesforceR.stringPasscodeForgot());
+        return getString(salesforceR.stringPasscodeLogoutYes());
     }
 
     protected String getLogoutNoString() {
-        return getString(salesforceR.stringPasscodeForgot());
+        return getString(salesforceR.stringPasscodeLogoutNo());
     }
 
     protected String getCreateInstructions() {
@@ -334,7 +335,15 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
                     int which) {
             	ForceApp.APP.logout(PasscodeActivity.this);
             }
-        }).setNegativeButton(getLogoutNoString(), null)
+        }).setNegativeButton(getLogoutNoString(),
+        		new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog,
+                    int which) {
+            	isLogoutAlertShowing = false;
+            }
+        })
         .create();
     }
 }
