@@ -33,7 +33,7 @@ import com.salesforce.androidsdk.phonegap.TestRunnerPlugin.TestResult;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 
 /**
- * Extend this classt to run tests written in JavaScript
+ * Extend this class to run tests written in JavaScript
  */
 public class JSTestCase extends
 		ActivityInstrumentationTestCase2<SalesforceDroidGapActivity> {
