@@ -26,6 +26,7 @@
  */
 package com.salesforce.samples.templateapp;
 
+import android.app.AlertDialog;
 import android.content.Context;
 import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
@@ -49,7 +50,7 @@ public class PasscodeActivityTest extends
 	public PasscodeActivityTest() {
 		super("com.salesforce.samples.templateapp", PasscodeActivity.class);
 	}
-	
+
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
@@ -63,11 +64,12 @@ public class PasscodeActivityTest extends
 		assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
 		passcodeActivity.enableLogout(false); // logout is async, it creates havoc when running other tests
 	}
-	
+
 	/**
 	 * Test passcode creation flow when no mistakes are made by user
 	 */
 	public void testCreateWithNoMistakes() {
+
 		// Entering in 123456 and submitting
 		setText(R.id.sf__passcode_text, "123456");
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
@@ -80,11 +82,12 @@ public class PasscodeActivityTest extends
 		assertFalse("Application should be unlocked", passcodeManager.isLocked());
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
 	}
-	
+
 	/**
 	 * Test passcode creation flow when user try to enter a passcode too short
 	 */
 	public void testCreateWithPasscodeTooShort() {
+
 		// Entering in 123 and submitting -> expect passcode too short error
 		setText(R.id.sf__passcode_text, "123");
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
@@ -105,11 +108,11 @@ public class PasscodeActivityTest extends
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
 	}
 
-	
 	/**
 	 * Test passcode creation flow when user enter a passcode too short during confirmation
 	 */
 	public void testCreateWithConfirmPasscodeTooShort() {
+
 		// Entering in 123456 and submitting
 		setText(R.id.sf__passcode_text, "123456");
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
@@ -130,11 +133,11 @@ public class PasscodeActivityTest extends
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
 	}
 
-	
 	/**
 	 * Test passcode creation flow when user enter a different passcode during confirmation
 	 */
 	public void testCreateWithWrongConfirmPasscode() {
+
 		// Entering in 123456 and submitting
 		setText(R.id.sf__passcode_text, "123456");
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
@@ -155,11 +158,11 @@ public class PasscodeActivityTest extends
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
 	}
 
-	
 	/**
 	 * Test passcode verification flow when no mistakes are made by user
 	 */
 	public void testVerificationWithNoMistakes() {
+
 		// Store passcode and set mode to Check
 		passcodeManager.store(targetContext, "123456");
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
@@ -174,11 +177,11 @@ public class PasscodeActivityTest extends
 		assertFalse("Application should be unlocked", passcodeManager.isLocked());
 	}
 
-	
 	/**
 	 * Test passcode verification flow when user enters wrong passcode once
 	 */
 	public void testVerificationWithWrongPasscodeOnce() {
+
 		// Store passcode and set mode to Check
 		passcodeManager.store(targetContext, "123456");
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
@@ -205,6 +208,7 @@ public class PasscodeActivityTest extends
 	 * Test passcode verification flow when user enters wrong passcode twice
 	 */
 	public void testVerificationWithWrongPasscodeTwice() {
+
 		// Store passcode and set mode to Check
 		passcodeManager.store(targetContext, "123456");
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
@@ -234,12 +238,12 @@ public class PasscodeActivityTest extends
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
 		assertFalse("Application should be unlocked", passcodeManager.isLocked());
 	}
-	
-	
+
 	/**
 	 * Test passcode verification flow when user enters a passcode too short
 	 */
 	public void testVerificationWithPasscodeTooShort() {
+
 		// Store passcode and set mode to Check
 		passcodeManager.store(targetContext, "123456");
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
@@ -257,11 +261,11 @@ public class PasscodeActivityTest extends
 		assertEquals("Wrong failure count", 1, passcodeManager.getFailedPasscodeAttempts());
 	}
 	
-	
 	/**
 	 * Test passcode verification flow when user enters wrong passcode too many times
 	 */
 	public void testVerificationWithWrongPasscodeTooManyTimes() {
+
 		// Store passcode and set mode to Check
 		passcodeManager.store(targetContext, "123456");
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
@@ -291,7 +295,36 @@ public class PasscodeActivityTest extends
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
 		assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
 	}
-	
+
+	/**
+	 * Test when user clicks on the 'Forgot Passcode' link.
+	 */
+	public void testForgotPasscodeLink() throws Throwable {
+
+		// Store passcode and set mode to Check.
+		passcodeManager.store(targetContext, "123456");
+		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
+		gotoVerificationMode();
+
+		// We should still be locked.
+		assertTrue("Application should still be locked", passcodeManager.isLocked());
+
+		// Click on 'Forgot Passcode' link.
+		assertFalse("Logout dialog should not be showing", getActivity().getIsLogoutDialogShowing());
+		clickView(getActivity().findViewById(R.id.sf__passcode_forgot));
+		assertTrue("Logout dialog should be showing", getActivity().getIsLogoutDialogShowing());
+
+		// Clicking on 'Cancel' should take us back to the passcode screen.
+		final AlertDialog logoutDialog = getActivity().getLogoutAlertDialog();
+		clickView(logoutDialog.getButton(AlertDialog.BUTTON_NEGATIVE));
+		assertFalse("Logout dialog should not be showing", getActivity().getIsLogoutDialogShowing());
+
+		// Clicking on 'Ok' should log the user out.
+		clickView(getActivity().findViewById(R.id.sf__passcode_forgot));
+		clickView(logoutDialog.getButton(AlertDialog.BUTTON_POSITIVE));
+		assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
+	}
+
 	private void gotoVerificationMode() {
     	try {
 	        runTestOnUiThread(new Runnable() {
@@ -299,10 +332,8 @@ public class PasscodeActivityTest extends
 	            	passcodeActivity.setMode(PasscodeMode.Check);
 	            }
 	        });
-    	}
-    	catch (Throwable t) {
+    	} catch (Throwable t) {
     		fail("Failed to go to check mode");
     	}
 	}
-	
 }
