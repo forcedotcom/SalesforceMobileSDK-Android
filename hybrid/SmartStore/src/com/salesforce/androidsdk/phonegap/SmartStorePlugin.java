@@ -44,6 +44,7 @@ import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
 import com.salesforce.androidsdk.store.SmartStore.Order;
 import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
 import com.salesforce.androidsdk.store.SmartStore.QueryType;
+import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
 
 /**
  * PhoneGap plugin for smart store.
@@ -113,6 +114,10 @@ public class SmartStorePlugin extends ForcePlugin {
 	    	}
 	    	catch (IllegalArgumentException e) {
                 return false;
+	    	}
+	    	catch (SmartStoreException e) {
+	    		callbackContext.error(e.getMessage());
+	    		return true;
 	    	}
     	}
     }
