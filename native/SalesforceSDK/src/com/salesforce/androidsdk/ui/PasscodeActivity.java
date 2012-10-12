@@ -27,10 +27,15 @@
 package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Html;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
@@ -42,9 +47,10 @@ import com.salesforce.androidsdk.security.PasscodeManager.PasscodeChangeReceiver
 /**
  * Passcode activity: takes care of creating/verifying a user passcode.
  */
-public class PasscodeActivity extends Activity implements OnEditorActionListener {
+public class PasscodeActivity extends Activity implements OnEditorActionListener, OnClickListener {
 
     private static final String EXTRA_KEY = "input_text";
+    private static final String LOGOUT_EXTRA = "logout_key";
     protected static final int MAX_PASSCODE_ATTEMPTS = 3;
 
     private PasscodeMode currentMode;
@@ -54,6 +60,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private String firstPasscode;
     private SalesforceR salesforceR;
     private boolean logoutEnabled;
+    private AlertDialog logoutAlertDialog;
+    private boolean isLogoutAlertShowing;
 
     public enum PasscodeMode {
         Create,
@@ -65,9 +73,15 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Object which allows reference to resources living outside the SDK
+        // Object which allows reference to resources living outside the SDK.
         salesforceR = ForceApp.APP.getSalesforceR();
         setContentView(getLayoutId());
+        final TextView forgotPasscodeView = getForgotPasscodeView();
+        if (forgotPasscodeView != null) {
+            forgotPasscodeView.setText(Html.fromHtml(getForgotPasscodeString()));
+        }
+        forgotPasscodeView.setOnClickListener(this);
+        logoutAlertDialog = buildLogoutDialog();
         title = getTitleView();
         error = getErrorView();
         instr = getInstructionsView();
@@ -80,6 +94,10 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             final String inputText = savedInstanceState.getString(EXTRA_KEY);
             if (entry != null && inputText != null) {
                 entry.setText(inputText.trim());
+            }
+            isLogoutAlertShowing = savedInstanceState.getBoolean(LOGOUT_EXTRA);
+            if (isLogoutAlertShowing) {
+            	logoutAlertDialog.show();
             }
         }
     }
@@ -101,6 +119,11 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         if (entry != null && entry.getText() != null) {
             savedInstance.putString(EXTRA_KEY, entry.getText().toString());
         }
+        if (isLogoutAlertShowing) {
+        	logoutAlertDialog.dismiss();
+            savedInstance.putBoolean(LOGOUT_EXTRA, true);
+            isLogoutAlertShowing = false;
+        }
     }
 
     public PasscodeMode getMode() {
@@ -109,7 +132,6 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
     public void setMode(PasscodeMode newMode) {
         if (newMode == currentMode) return;
-
         switch(newMode) {
         case Check:
             title.setText(getEnterTitle());
@@ -124,7 +146,6 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             instr.setText(getConfirmInstructions());
             break;
         }
-
         entry.setText("");
         error.setText("");
         currentMode = newMode;
@@ -209,6 +230,10 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         return (TextView) findViewById(salesforceR.idPasscodeTitle());
     }
 
+    protected TextView getForgotPasscodeView() {
+        return (TextView) findViewById(salesforceR.idPasscodeForgot());
+    }
+
     protected TextView getErrorView() {
         return (TextView) findViewById(salesforceR.idPasscodeError());
     }
@@ -235,6 +260,22 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
     protected String getEnterInstructions() {
         return getString(salesforceR.stringPasscodeEnterInstructions());
+    }
+
+    protected String getForgotPasscodeString() {
+        return getString(salesforceR.stringPasscodeForgot());
+    }
+
+    protected String getLogoutConfirmationString() {
+        return getString(salesforceR.stringPasscodeLogoutConfirmation());
+    }
+
+    protected String getLogoutYesString() {
+        return getString(salesforceR.stringPasscodeLogoutYes());
+    }
+
+    protected String getLogoutNoString() {
+        return getString(salesforceR.stringPasscodeLogoutNo());
     }
 
     protected String getCreateInstructions() {
@@ -273,5 +314,36 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
      */
     protected int getMaxPasscodeAttempts() {
         return MAX_PASSCODE_ATTEMPTS;
+    }
+
+	@Override
+	public void onClick(View v) {
+		if (v.equals(getForgotPasscodeView())) {
+			logoutAlertDialog.show();
+			isLogoutAlertShowing = true;
+		}
+	}
+
+    private AlertDialog buildLogoutDialog() {
+        return new AlertDialog.Builder(this)
+        .setMessage(getLogoutConfirmationString())
+        .setPositiveButton(getLogoutYesString(),
+                new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog,
+                    int which) {
+            	ForceApp.APP.logout(PasscodeActivity.this);
+            }
+        }).setNegativeButton(getLogoutNoString(),
+        		new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog,
+                    int which) {
+            	isLogoutAlertShowing = false;
+            }
+        })
+        .create();
     }
 }
