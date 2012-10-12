@@ -116,7 +116,7 @@ public class JavaScriptPluginVersion {
 
 	@Override
 	public String toString() {
-		return version + "(" + (isCurrent() ? "current" : (isOlder() ? "older" : "newer")) + ")";
+		return version;
 	}
 	
 }

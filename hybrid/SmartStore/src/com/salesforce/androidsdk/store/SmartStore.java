@@ -669,7 +669,7 @@ public class SmartStore  {
         try {
             cursor = db.query(soupTableName, new String[] {ID_COL}, columnName + " = ?", new String[] { fieldValue }, null, null, null);
             if (cursor.getCount() > 1) {
-                throw new RuntimeException(String.format("There are more than one soup elements where %s is %s", fieldPath, fieldValue));
+                throw new SmartStoreException(String.format("There are more than one soup elements where %s is %s", fieldPath, fieldValue));
             }
             if (cursor.moveToFirst()) {
                 return cursor.getLong(0);
@@ -736,7 +736,7 @@ public class SmartStore  {
                 return cursor.getString(0);
             }
             else {
-                throw new RuntimeException(String.format("%s does not have an index on %s", soupName, path));
+                throw new SmartStoreException(String.format("%s does not have an index on %s", soupName, path));
             }
         }
         finally {
@@ -767,7 +767,7 @@ public class SmartStore  {
                     null, getSoupNamePredicate(), soupName);
 
             if (!cursor.moveToFirst()) {
-                throw new RuntimeException(String.format("%s does not have any indices", soupName));
+                throw new SmartStoreException(String.format("%s does not have any indices", soupName));
             }
 
             List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
