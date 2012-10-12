@@ -52,10 +52,10 @@ public class SDKInfoPlugin extends ForcePlugin {
     private static final String SDK_VERSION = "sdkVersion";
     private static final String APP_NAME = "appName";
     private static final String APP_VERSION = "appVersion";
-	private static final String FORCE_PLUGINS_AVAILABLE = "forcePluginsAvailable";
-    	
-	// Cached 
-	private static List<String> forcePlugins;
+    private static final String FORCE_PLUGINS_AVAILABLE = "forcePluginsAvailable";
+        
+    // Cached 
+    private static List<String> forcePlugins;
     
     /**
      * Supported plugin actions that the client can take.
@@ -76,7 +76,7 @@ public class SDKInfoPlugin extends ForcePlugin {
             }
         }
         catch (IllegalArgumentException e) {
-        	return false;
+            return false;
         }
     }
 
@@ -120,47 +120,50 @@ public class SDKInfoPlugin extends ForcePlugin {
    }
 
    
-	/**
-	 * @param ctx
-	 * @return list of force plugins (read from XML the first time, and stored in field afterwards)
-	 */
-	public static List<String> getForcePlugins(Context ctx) {
-		if (forcePlugins == null) {
-			forcePlugins = getForcePluginsFromXML(ctx);
-		}
-		return forcePlugins;
-	}
+    /**
+     * @param ctx
+     * @return list of force plugins (read from XML the first time, and stored in field afterwards)
+     */
+    public static List<String> getForcePlugins(Context ctx) {
+        if (forcePlugins == null) {
+            forcePlugins = getForcePluginsFromXML(ctx);
+        }
+        return forcePlugins;
+    }
 
-	/**
-	 * @param ctx
-	 * @return list of force plugins (read from XML)
-	 */
-	public static List<String> getForcePluginsFromXML(Context ctx) {
-		List<String> services = new ArrayList<String>();
-		
-		int id = ctx.getResources().getIdentifier("config", "xml", ctx.getPackageName());
-		if (id != 0) {
-			XmlResourceParser xml = ctx.getResources().getXml(id);
-			int eventType = -1;
-			while (eventType != XmlResourceParser.END_DOCUMENT) {
-				if (eventType == XmlResourceParser.START_TAG) {
-					if (xml.getName().equals("plugin")) {
-						String service = xml.getAttributeValue(null, "name");
-						if (service.startsWith("com.salesforce.")) {
-							services.add(service);
-						}
-					}
-				}
-				try {
-					eventType = xml.next();
-				} catch (XmlPullParserException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-		return services;
-	}
+    /**
+     * @param ctx
+     * @return list of force plugins (read from XML)
+     */
+    public static List<String> getForcePluginsFromXML(Context ctx) {
+        List<String> services = new ArrayList<String>();
+        
+        int id = ctx.getResources().getIdentifier("config", "xml", ctx.getPackageName());
+        if (id == 0) {
+            id = ctx.getResources().getIdentifier("plugins", "xml", ctx.getPackageName());
+        }
+        if (id != 0) {
+            XmlResourceParser xml = ctx.getResources().getXml(id);
+            int eventType = -1;
+            while (eventType != XmlResourceParser.END_DOCUMENT) {
+                if (eventType == XmlResourceParser.START_TAG) {
+                    if (xml.getName().equals("plugin")) {
+                        String service = xml.getAttributeValue(null, "name");
+                        if (service.startsWith("com.salesforce.")) {
+                            services.add(service);
+                        }
+                    }
+                }
+                try {
+                    eventType = xml.next();
+                } catch (XmlPullParserException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return services;
+    }
 
 }
