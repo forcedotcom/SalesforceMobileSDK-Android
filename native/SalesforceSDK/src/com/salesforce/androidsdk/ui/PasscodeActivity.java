@@ -324,6 +324,24 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 		}
 	}
 
+	/**
+	 * Returns whether the logout alert dialog is showing.
+	 *
+	 * @return True - if the logout dialog is showing, False - otherwise.
+	 */
+	public boolean getIsLogoutDialogShowing() {
+		return isLogoutAlertShowing;
+	}
+
+	/**
+	 * Returns an instance of the logout alert dialog.
+	 *
+	 * @return Instance of the logout alert dialog.
+	 */
+	public AlertDialog getLogoutAlertDialog() {
+		return logoutAlertDialog;
+	}
+
     private AlertDialog buildLogoutDialog() {
         return new AlertDialog.Builder(this)
         .setMessage(getLogoutConfirmationString())
