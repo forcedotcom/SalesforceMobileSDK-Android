@@ -30,7 +30,6 @@ import org.apache.cordova.api.CallbackContext;
 import org.apache.cordova.api.CordovaPlugin;
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import android.util.Log;
 
@@ -41,7 +40,7 @@ import com.salesforce.androidsdk.app.ForceApp;
  */
 public abstract class ForcePlugin extends CordovaPlugin {
 	
-	private static final String VERSION_KEY = "version";
+	private static final String VERSION_KEY = "pluginSDKVersion";
 
 
 	/**
@@ -56,15 +55,13 @@ public abstract class ForcePlugin extends CordovaPlugin {
 	@Override
     public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
 		// args is an array
-		// when versioned, the first element is {"version": "X.Y"}    		
+		// when versioned, the first element is the string "pluginSDKVersion:xxx" where xxx is the version    		
 		String jsVersionStr = "";
 		if (args.length() > 0) {
-    		JSONObject firstArg = args.optJSONObject(0);
-    		if (firstArg != null) {
-    			if (firstArg.has(VERSION_KEY)) {
-    				jsVersionStr = firstArg.getString(VERSION_KEY);
-    				args = shift(args);
-    			}
+    		String firstArg = args.optString(0);
+    		if (firstArg.startsWith(VERSION_KEY)) {
+    			jsVersionStr = firstArg.substring(VERSION_KEY.length() + 1);
+    			args = shift(args);
     		}
     	}
 
