@@ -26,12 +26,38 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import java.io.IOException;
+import java.util.Scanner;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.content.Context;
+import android.util.Log;
+
 /**
  * Class encapsulating the application configuration (consumer key, oauth scopes, refresh behavior)
- * 
  */
 public class BootConfig {
 
+	// We expect a assets/www/bootconfig.json
+	private static final String BOOTCONFIG_PATH = "www/bootconfig.json";
+		
+	// bootconfig.json should contain a map with the following keys
+	private static final String REMOTE_ACCESS_CONSUMER_KEY = "remoteAccessConsumerKey";
+	private static final String OAUTH_REDIRECT_URI = "oauthRedirectURI";
+	private static final String OAUTH_SCOPES = "oauthScopes";
+	private static final String AUTO_REFRESH_ON_FOREGROUND = "autoRefreshOnForeground";
+	private static final String AUTO_REFRESH_PERIODICALLY = "autoRefreshPeriodically";
+	private static final String ATTEMPT_OFFLINE_LOAD = "attemptOfflineLoad";
+
+	// Default for optional configs
+	private static final boolean DEFAULT_AUTO_REFRESH_ON_FOREGROUND = true;
+	private static final boolean DEFAULT_AUTO_REFRESH_PERIODICALLY = true;
+	private static final boolean DEFAULT_ATTEMPT_OFFLINE_LOAD = true;
+
+	
 	private String remoteAccessConsumerKey;
 	private String oauthRedirectURI;
 	private String[] oauthScopes;
@@ -42,13 +68,68 @@ public class BootConfig {
 	private boolean attemptOfflineLoad;
 	
 	/**
-	 * Read boot configuration from xml
+	 * Read boot configuration from www/assets/bootconfig.json
+	 * @throws BootConfigException 
 	 */
-	private void readFromXML() 
+	public void readFromJSON(Context ctx) throws BootConfigException
 	{
-		// TODO
+		String jsonStr = readBootConfigFile(ctx);
+		parseBootConfigStr(jsonStr);
 	}
-	
+
+	/**
+	 * @param ctx
+	 * @return
+	 * @throws BootConfigException
+	 */
+	private String readBootConfigFile(Context ctx)
+			throws BootConfigException {
+		Scanner scanner = null;
+		try {
+			scanner = new Scanner(ctx.getAssets().open(BOOTCONFIG_PATH));
+			return scanner.useDelimiter("\\A").next(); // good trick to get a string from a stream see http://weblogs.java.net/blog/pat/archive/2004/10/stupid_scanner_1.html
+		}
+		catch (IOException e) {
+			throw new BootConfigException("Failed to open " + BOOTCONFIG_PATH, e);
+		}
+		finally {
+			if (scanner != null) {
+				scanner.close();
+			}
+		}
+	}
+
+	/**
+	 * @param jsonStr
+	 * @throws BootConfigException
+	 */
+	private void parseBootConfigStr(String jsonStr) throws BootConfigException {
+		try {
+			JSONObject config = new JSONObject(jsonStr);
+			
+			Log.i(getClass().getSimpleName(), "config: " + config.toString(2));
+
+			// Required
+			remoteAccessConsumerKey = config.getString(REMOTE_ACCESS_CONSUMER_KEY);
+			oauthRedirectURI = config.getString(OAUTH_REDIRECT_URI);
+			JSONArray jsonScopes = config.getJSONArray(OAUTH_SCOPES);
+			oauthScopes = new String[jsonScopes.length()];
+			for (int i=0; i<oauthScopes.length; i++) {
+				oauthScopes[i] = jsonScopes.getString(i);
+			}
+			isLocal = config.getBoolean("isLocal");
+			startPage = config.getString("startPage");
+			
+			// Optional
+			autoRefreshOnForeground = config.optBoolean(AUTO_REFRESH_ON_FOREGROUND, DEFAULT_AUTO_REFRESH_ON_FOREGROUND);
+			autoRefreshPeriodically = config.optBoolean(AUTO_REFRESH_PERIODICALLY, DEFAULT_AUTO_REFRESH_PERIODICALLY);
+			attemptOfflineLoad = config.optBoolean(ATTEMPT_OFFLINE_LOAD, DEFAULT_ATTEMPT_OFFLINE_LOAD);
+		}
+		catch (JSONException e) {
+			throw new BootConfigException("Failed to parse " + BOOTCONFIG_PATH, e);
+		}
+	}
+
 	/**
 	 * @return consumer key value specified for your remote access object or connected app
 	 */
@@ -103,5 +184,17 @@ public class BootConfig {
 	 */
 	public boolean attemptOfflineLoad() {
 		return attemptOfflineLoad;
+	}
+
+	/**
+	 * Exception thrown for all bootconfig parsing errors
+	 *
+	 */
+	static public class BootConfigException extends Exception {
+		private static final long serialVersionUID = 1L;
+
+		public BootConfigException(String msg, Throwable cause) {
+			super(msg, cause);
+		}
 	}
 }
