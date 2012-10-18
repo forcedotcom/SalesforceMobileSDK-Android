@@ -29,10 +29,10 @@ var startData = new SFHybridApp.LocalAppStartData("index.html", false);  // Used
 
 // Whether the container app should automatically refresh our oauth session on app foreground:
 // generally a good idea.
-var autoRefreshOnForeground = true;
+var autoRefreshOnForeground = false;
 
 // Whether the container app should automatically refresh our oauth session periodically
-var autoRefreshPeriodically = true; 
+var autoRefreshPeriodically = false; 
 
 //-----------------------------------------------------------------
 // End configuration block

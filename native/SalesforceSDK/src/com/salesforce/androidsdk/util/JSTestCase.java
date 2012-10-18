@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.util;
 
 import android.test.ActivityInstrumentationTestCase2;
+import android.util.Log;
 
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin;
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin.TestResult;
@@ -65,7 +66,7 @@ public class JSTestCase extends
         String jsCmd = "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
             "navigator.testrunner.startTest('" + testName + "');";
         activity.sendJavascript(jsCmd);
-	
+        Log.i(getClass().getSimpleName(), "running test:" + testName);
         // Block until test completes
         TestResult result = null;
         try {
