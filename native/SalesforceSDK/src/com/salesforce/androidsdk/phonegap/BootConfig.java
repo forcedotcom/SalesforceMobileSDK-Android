@@ -67,11 +67,26 @@ public class BootConfig {
 	private boolean autoRefreshPeriodically;
 	private boolean attemptOfflineLoad;
 	
+	
+	private static BootConfig INSTANCE = null;
+	
 	/**
-	 * Read boot configuration from www/assets/bootconfig.json
-	 * @throws BootConfigException 
+     * Method to (build and) get the singleton instance
+	 * @param ctx
+	 * @return
 	 */
-	public void readFromJSON(Context ctx) throws BootConfigException
+	public static BootConfig getBootConfig(Context ctx) {
+		if (INSTANCE == null) {
+			INSTANCE = new BootConfig();
+			INSTANCE.readFromJSON(ctx);
+		}
+		return INSTANCE;
+	}
+	
+	/**
+	 * Initialize thie BootConfig object by reading the content of bootconfig.json
+	 */
+	private void readFromJSON(Context ctx)
 	{
 		String jsonStr = readBootConfigFile(ctx);
 		parseBootConfigStr(jsonStr);
@@ -79,11 +94,9 @@ public class BootConfig {
 
 	/**
 	 * @param ctx
-	 * @return
-	 * @throws BootConfigException
+	 * @return string content of bootconfig.json
 	 */
-	private String readBootConfigFile(Context ctx)
-			throws BootConfigException {
+	private String readBootConfigFile(Context ctx) {
 		Scanner scanner = null;
 		try {
 			scanner = new Scanner(ctx.getAssets().open(BOOTCONFIG_PATH));
@@ -100,10 +113,10 @@ public class BootConfig {
 	}
 
 	/**
+	 * Initialize this BootConfig object by parsing jsonStr
 	 * @param jsonStr
-	 * @throws BootConfigException
 	 */
-	private void parseBootConfigStr(String jsonStr) throws BootConfigException {
+	private void parseBootConfigStr(String jsonStr) {
 		try {
 			JSONObject config = new JSONObject(jsonStr);
 			
@@ -190,7 +203,7 @@ public class BootConfig {
 	 * Exception thrown for all bootconfig parsing errors
 	 *
 	 */
-	static public class BootConfigException extends Exception {
+	static public class BootConfigException extends RuntimeException {
 		private static final long serialVersionUID = 1L;
 
 		public BootConfigException(String msg, Throwable cause) {
