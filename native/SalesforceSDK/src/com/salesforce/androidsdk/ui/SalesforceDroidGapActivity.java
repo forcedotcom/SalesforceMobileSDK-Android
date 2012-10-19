@@ -26,19 +26,31 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.cordova.CordovaChromeClient;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.DroidGap;
+import org.json.JSONObject;
 
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.SystemClock;
 import android.util.Log;
+import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebSettings;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
+import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
+import com.salesforce.androidsdk.phonegap.BootConfig;
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -48,39 +60,62 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  */
 public class SalesforceDroidGapActivity extends DroidGap {
 
-    /**
-     * The URL to the bootstrap page for hybrid apps.
-     */
+    // Keys in credentials map
+    private static final String USER_AGENT = "userAgent";
+    private static final String INSTANCE_URL = "instanceUrl";
+    private static final String LOGIN_URL = "loginUrl";
+    private static final String IDENTITY_URL = "identityUrl";
+    private static final String CLIENT_ID = "clientId";
+    private static final String ORG_ID = "orgId";
+    private static final String USER_ID = "userId";
+    private static final String REFRESH_TOKEN = "refreshToken";
+    private static final String ACCESS_TOKEN = "accessToken";
+	
+	// The URL to the bootstrap page for hybrid apps.
     public static final String BOOTSTRAP_START_PAGE = "file:///android_asset/www/bootstrap.html";
 
+    // Used in refresh REST call
+    private static final String API_VERSION = "v26.0";
+	
     // For periodic auto-refresh - every 10 minutes
     private static final long AUTO_REFRESH_PERIOD_MILLISECONDS = 10*60*1000;
 
+    // Min refresh interval (needs to be shorter than shortest session setting)
+    private static final int MIN_REFRESH_INTERVAL_MILLISECONDS = 10*60*1000; // 10 minutes
+
+    private long lastRefreshTime = -1;
     private Handler periodicAutoRefreshHandler;
     private PeriodicAutoRefresher periodicAutoRefresher;
     private PasscodeManager passcodeManager;
+	private BootConfig bootconfig;
+    private RestClient client;
+	
 
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+		// Get bootconfig
+		bootconfig = BootConfig.getBootConfig(this);
+		
         // Passcode manager
         passcodeManager = ForceApp.APP.getPasscodeManager();
 
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
 
-
 		// Let observers know
-		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);        
-        
-        // Load bootstrap
-        super.loadUrl(getStartPageUrl());
+		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
 
-        // Periodic auto-refresh - scheduled in onResume
-        periodicAutoRefreshHandler = new Handler();
-        periodicAutoRefresher = new PeriodicAutoRefresher();
+        // Load bootstrap
+		super.loadUrl(getStartPageUrl());
+
+        // Periodic auto-refresh
+    	if (bootconfig.autoRefreshPeriodically()) {
+	        periodicAutoRefreshHandler = new Handler();
+	        periodicAutoRefresher = new PeriodicAutoRefresher();
+    	}
     }
 
     /** Returns the start page url for the application. 
@@ -117,10 +152,12 @@ public class SalesforceDroidGapActivity extends DroidGap {
     @Override
     public void onResume() {
         if (passcodeManager.onResume(this)) {
-            if (SalesforceOAuthPlugin.shouldAutoRefreshOnForeground()) {
-                SalesforceOAuthPlugin.autoRefresh(appView, this);
+        	if (shouldAutoRefreshOnForeground()) {
+                autoRefresh();
             }
-            schedulePeriodicAutoRefresh();
+        	if (bootconfig.autoRefreshPeriodically()) {
+        		schedulePeriodicAutoRefresh();
+    		}	
             CookieSyncManager.getInstance().startSync();
         }
 
@@ -132,7 +169,9 @@ public class SalesforceDroidGapActivity extends DroidGap {
         passcodeManager.onPause(this);
 
         // Disable session refresh when app is backgrounded
-        unschedulePeriodicAutoRefresh();
+    	if (bootconfig.autoRefreshPeriodically()) {
+    		unschedulePeriodicAutoRefresh();
+    	}
         CookieSyncManager.getInstance().stopSync();
         super.onPause();
     }
@@ -141,7 +180,106 @@ public class SalesforceDroidGapActivity extends DroidGap {
     public void onUserInteraction() {
         passcodeManager.recordUserInteraction();
     }
+    
+    /**
+     * If auto-refresh on foreground is enabled, this method will be called when the app resumes.
+     * If auto-refresh periodically is enabled, this method will be called periodically.
+     * Does a cheap rest call:
+     * - if session has already expired, the access token will be refreshed
+     * - otherwise it will get extended
+     */
+    public void autoRefresh() {
+        Log.i("SalesforceDroidGapActivity.autoRefresh", "autoRefresh called");
+        // Do a cheap rest call - access token will be refreshed if needed
+        client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
+            @Override
+            public void onSuccess(RestRequest request, RestResponse response) {
+                Log.i("SalesforceDroidGapActivity.autoRefresh", "Auto-refresh succeeded");
+                updateRefreshTime();
+                setSidCookies();
+                Log.i("SalesforceDroidGapActivity.autoRefresh", "Firing salesforceSessionRefresh event");
+                sendJavascript("cordova.fireDocumentEvent('salesforceSessionRefresh'," + getJSONCredentials(client).toString() + ");");
+            }
 
+            @Override
+            public void onError(Exception exception) {
+                Log.w("SalesforceDroidGapActivity.autoRefresh", "Auto-refresh failed - " + exception);
+
+                // Only logout if we are NOT offline
+                if (!(exception instanceof NoNetworkException)) {
+                    ForceApp.APP.logout(SalesforceDroidGapActivity.this);
+                }
+            }
+        });
+    }
+    
+    /**
+     * @return true if auto-refresh on foreground should take place now
+     */
+    public boolean shouldAutoRefreshOnForeground() {
+        boolean b = bootconfig.autoRefreshOnForeground()
+                && lastRefreshTime > 0 // we have authenticated
+                &&  (System.currentTimeMillis() - lastRefreshTime > MIN_REFRESH_INTERVAL_MILLISECONDS);
+        Log.i("SalesforceDroidGapActivity.shouldAutoRefreshOnForeground", "" + b);
+        return b;
+    }
+
+   /**
+    * Set cookies on cookie manager
+    * @param client
+    */
+   private void setSidCookies() {
+       Log.i("SalesforceDroidGapActivity.setSidCookies", "setting cookies");
+       CookieSyncManager cookieSyncMgr = CookieSyncManager.getInstance();
+       CookieManager cookieMgr = CookieManager.getInstance();
+       cookieMgr.setAcceptCookie(true);  // Required to set additional cookies that the auth process will return.
+       cookieMgr.removeSessionCookie();
+
+       SystemClock.sleep(250); // removeSessionCookies kicks out a thread - let it finish
+       String accessToken = client.getAuthToken();
+
+       // Android 3.0+ clients want to use the standard .[domain] format. Earlier clients will only work
+       // with the [domain] format.  Set them both; each platform will leverage its respective format.
+       addSidCookieForDomain(cookieMgr,"salesforce.com", accessToken);
+       addSidCookieForDomain(cookieMgr,".salesforce.com", accessToken);
+       // Log.i("SalesforceOAuthPlugin.setSidCookies", "accessToken=" + accessToken);
+
+       cookieSyncMgr.sync();
+   }
+
+   private void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
+       String cookieStr = "sid=" + sid;
+       cookieMgr.setCookie(domain, cookieStr);
+   }    
+    
+   /**
+    * @return credentials as JSONObject
+    */
+   private JSONObject getJSONCredentials(RestClient client) {
+       ClientInfo clientInfo = client.getClientInfo();
+       Map<String, String> data = new HashMap<String, String>();
+       data.put(ACCESS_TOKEN, client.getAuthToken());
+       data.put(REFRESH_TOKEN, client.getRefreshToken());
+       data.put(USER_ID, clientInfo.userId);
+       data.put(ORG_ID, clientInfo.orgId);
+       data.put(CLIENT_ID, clientInfo.clientId);
+       data.put(LOGIN_URL, clientInfo.loginUrl.toString());
+       data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
+       data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
+       data.put(USER_AGENT, ForceApp.APP.getUserAgent());
+       return new JSONObject(data);
+   }
+  
+    /**
+     * Update last refresh time to avoid un-necessary auto-refresh
+     */
+    private void updateRefreshTime() {
+        Log.i("SalesforceDroidGapActivity.updateRefreshTime", "lastRefreshTime before: " + lastRefreshTime);
+        lastRefreshTime = System.currentTimeMillis();
+        Log.i("SalesforceDroidGapActivity.updateRefreshTime", "lastRefreshTime after: " + lastRefreshTime);
+    }
+
+    
     /**
      * Schedule auto-refresh runnable
      */
@@ -164,9 +302,9 @@ public class SalesforceDroidGapActivity extends DroidGap {
     private class PeriodicAutoRefresher implements Runnable {
         public void run() {
             try {
-                Log.i("SalesforceOAuthPlugin.PeriodicAutoRefresher.run", "run called");
-                if (SalesforceOAuthPlugin.shouldAutoRefreshPeriodically()) {
-                    SalesforceOAuthPlugin.autoRefresh(appView, SalesforceDroidGapActivity.this);
+                Log.i("SalesforceDroidGapActivity.PeriodicAutoRefresher.run", "run called");
+                if (bootconfig.autoRefreshPeriodically()) {
+                    autoRefresh();
                 }
             } finally {
                 schedulePeriodicAutoRefresh();
