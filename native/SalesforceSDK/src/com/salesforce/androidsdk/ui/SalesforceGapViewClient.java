@@ -70,6 +70,15 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
         super.onPageFinished(view, url);
     }
 
+    
+    /**
+     * @return app's home page
+     */
+    public static String getAppHomeUrl(Context ctx) {
+        SharedPreferences sp = ctx.getSharedPreferences(SalesforceGapViewClient.SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
+        String url = sp.getString(SalesforceGapViewClient.APP_HOME_URL_PROP_KEY, null);
+        return url;
+    }
 
     /**
      * Whether the given URL is one of the expected URLs used in the bootstrapping process

@@ -27,12 +27,17 @@
 package com.salesforce.androidsdk.ui;
 
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.cordova.CordovaChromeClient;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.DroidGap;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
 import android.os.Bundle;
@@ -46,6 +51,10 @@ import android.webkit.WebSettings;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
 import com.salesforce.androidsdk.phonegap.BootConfig;
+import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
@@ -83,14 +92,24 @@ public class SalesforceDroidGapActivity extends DroidGap {
     // Min refresh interval (needs to be shorter than shortest session setting)
     private static final int MIN_REFRESH_INTERVAL_MILLISECONDS = 10*60*1000; // 10 minutes
 
+    // Refresh handling
     private long lastRefreshTime = -1;
     private Handler periodicAutoRefreshHandler;
     private PeriodicAutoRefresher periodicAutoRefresher;
-    private PasscodeManager passcodeManager;
-	private BootConfig bootconfig;
-    private RestClient client;
 	
+	// Rest client
+    private RestClient client;
+	private ClientManager clientManager;
 
+	// Passcode
+	private PasscodeManager passcodeManager;
+    
+    // Config
+	private BootConfig bootconfig;
+
+	// Page loaded?
+	private boolean pageLoaded = false;	
+	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -98,34 +117,39 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
 		// Get bootconfig
 		bootconfig = BootConfig.getBootConfig(this);
+
+		// Get clientManager
+        LoginOptions loginOptions = new LoginOptions(
+                null, // set by app
+                ForceApp.APP.getPasscodeHash(),
+                bootconfig.getOauthRedirectURI(),
+                bootconfig.getRemoteAccessConsumerKey(),
+                bootconfig.getOauthScopes());
+        clientManager = new ClientManager(this, ForceApp.APP.getAccountType(), loginOptions);
 		
+        // Get client (if already logged in)
+        try {
+			client = clientManager.peekRestClient();
+		} catch (AccountInfoNotFoundException e) {
+			client = null;
+		}
+        
         // Passcode manager
         passcodeManager = ForceApp.APP.getPasscodeManager();
 
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
 
-		// Let observers know
-		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
-
-        // Load bootstrap
-		super.loadUrl(getStartPageUrl());
-
-        // Periodic auto-refresh
+        // Periodic auto-refresh handler setup
     	if (bootconfig.autoRefreshPeriodically()) {
 	        periodicAutoRefreshHandler = new Handler();
 	        periodicAutoRefresher = new PeriodicAutoRefresher();
     	}
+        
+		// Let observers know
+		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
     }
 
-    /** Returns the start page url for the application. 
-     * Must be overridden if you want a different start page.
-     * @return Start page url of the app.
-     */
-    public String getStartPageUrl() {
-    	return BOOTSTRAP_START_PAGE;
-    }
-    
     @Override
     public void init(CordovaWebView webView, CordovaWebViewClient webViewClient, CordovaChromeClient webChromeClient) {
         super.init(webView, new SalesforceGapViewClient(this, webView), webChromeClient);
@@ -152,12 +176,43 @@ public class SalesforceDroidGapActivity extends DroidGap {
     @Override
     public void onResume() {
         if (passcodeManager.onResume(this)) {
-        	if (shouldAutoRefreshOnForeground()) {
-                autoRefresh();
-            }
-        	if (bootconfig.autoRefreshPeriodically()) {
-        		schedulePeriodicAutoRefresh();
-    		}	
+        	// Logged in
+        	if (client != null) {
+        		// Page never loaded
+        		if (!pageLoaded) {
+        			loadUrl(getStartPageUrl());
+        			pageLoaded  = true;
+        		}
+        		// Page already loaded
+        		else {
+	        		if (shouldAutoRefreshOnForeground()) {
+		                autoRefresh();
+		            }
+        		}
+        		
+	        	if (bootconfig.autoRefreshPeriodically()) {
+	        		schedulePeriodicAutoRefresh();
+	    		}
+        	}
+        	// Not logged in
+        	else {
+        		// Connected
+            	if (ForceApp.APP.hasNetwork()) {
+            		if (bootconfig.shouldAuthenticate()) {
+            			clientManager.getRestClient(this, new RestClientCallback() {
+
+							@Override
+							public void authenticatedRestClient(
+									RestClient client) {
+								SalesforceDroidGapActivity.this.client = client;
+							}});
+            		}
+            	}
+            	// Not connected
+            	else {
+            		// Not supported??
+            	}
+        	}
             CookieSyncManager.getInstance().startSync();
         }
 
@@ -218,12 +273,57 @@ public class SalesforceDroidGapActivity extends DroidGap {
      */
     public boolean shouldAutoRefreshOnForeground() {
         boolean b = bootconfig.autoRefreshOnForeground()
-                && lastRefreshTime > 0 // we have authenticated
+                && hasAuthenticated()
                 &&  (System.currentTimeMillis() - lastRefreshTime > MIN_REFRESH_INTERVAL_MILLISECONDS);
         Log.i("SalesforceDroidGapActivity.shouldAutoRefreshOnForeground", "" + b);
         return b;
     }
-
+    
+    /**
+     * @return true if we have authenticated before
+     */
+    public boolean hasAuthenticated() {
+    	return client != null;
+    }
+    
+    /**
+     * @return start page url 
+     */
+    public String getStartPageUrl() {
+    	String url;
+    	// Local
+    	if (bootconfig.isLocal()) {
+    		url = "file:///android_assets/www/" + bootconfig.getStartPage();
+    	}
+    	// Remote
+    	else {
+    		// Connected
+    		if (ForceApp.APP.hasNetwork()) {
+	    		url = client.getClientInfo().instanceUrl.toString() + "/secur/frontdoor.jsp?";
+	    		List<NameValuePair> params = new LinkedList<NameValuePair>();
+	    		params.add(new BasicNameValuePair("sid", client.getAuthToken()));
+	    		params.add(new BasicNameValuePair("retURL", bootconfig.getStartPage()));
+	    		params.add(new BasicNameValuePair("display", "touch"));
+	    		url += URLEncodedUtils.format(params, "UTF-8");
+    		}
+    		// Not connected
+    		else {
+    			// Should load offline
+    			if (bootconfig.attemptOfflineLoad()) {
+    				url = SalesforceGapViewClient.getAppHomeUrl(this);
+    				if (url == null) {
+    					throw new HybridAppLoadException("");
+    				}
+    			}
+    			// Should not load offline
+    			else {
+    				url = null;
+    			}
+    		}
+    	}
+    	return url;
+    }
+    
    /**
     * Set cookies on cookie manager
     * @param client
@@ -310,5 +410,19 @@ public class SalesforceDroidGapActivity extends DroidGap {
                 schedulePeriodicAutoRefresh();
             }
         }
+    }
+    
+    /**
+     * Exception thrown if initial web page load fails
+     *
+     */
+    public static class HybridAppLoadException extends RuntimeException {
+
+		public HybridAppLoadException(String msg) {
+			super(msg);
+		}
+
+		private static final long serialVersionUID = 1L;
+    	
     }
 }

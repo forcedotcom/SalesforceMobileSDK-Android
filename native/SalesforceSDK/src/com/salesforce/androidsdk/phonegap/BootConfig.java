@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.phonegap;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.Scanner;
 
 import org.json.JSONArray;
@@ -48,11 +49,13 @@ public class BootConfig {
 	private static final String REMOTE_ACCESS_CONSUMER_KEY = "remoteAccessConsumerKey";
 	private static final String OAUTH_REDIRECT_URI = "oauthRedirectURI";
 	private static final String OAUTH_SCOPES = "oauthScopes";
+	private static final String SHOULD_AUTHENTICATE = "shouldAuthenticate";
 	private static final String AUTO_REFRESH_ON_FOREGROUND = "autoRefreshOnForeground";
 	private static final String AUTO_REFRESH_PERIODICALLY = "autoRefreshPeriodically";
 	private static final String ATTEMPT_OFFLINE_LOAD = "attemptOfflineLoad";
 
 	// Default for optional configs
+	private static final boolean DEFAULT_SHOULD_AUTHENTICATE = true;
 	private static final boolean DEFAULT_AUTO_REFRESH_ON_FOREGROUND = true;
 	private static final boolean DEFAULT_AUTO_REFRESH_PERIODICALLY = true;
 	private static final boolean DEFAULT_ATTEMPT_OFFLINE_LOAD = true;
@@ -63,6 +66,7 @@ public class BootConfig {
 	private String[] oauthScopes;
 	private boolean isLocal;
 	private String startPage;
+	private boolean shouldAuthenticate;
 	private boolean autoRefreshOnForeground;
 	private boolean autoRefreshPeriodically;
 	private boolean attemptOfflineLoad;
@@ -134,6 +138,7 @@ public class BootConfig {
 			startPage = config.getString("startPage");
 			
 			// Optional
+			shouldAuthenticate = config.optBoolean(SHOULD_AUTHENTICATE, DEFAULT_SHOULD_AUTHENTICATE);
 			autoRefreshOnForeground = config.optBoolean(AUTO_REFRESH_ON_FOREGROUND, DEFAULT_AUTO_REFRESH_ON_FOREGROUND);
 			autoRefreshPeriodically = config.optBoolean(AUTO_REFRESH_PERIODICALLY, DEFAULT_AUTO_REFRESH_PERIODICALLY);
 			attemptOfflineLoad = config.optBoolean(ATTEMPT_OFFLINE_LOAD, DEFAULT_ATTEMPT_OFFLINE_LOAD);
@@ -176,6 +181,13 @@ public class BootConfig {
 	 */
 	public String getStartPage() {
 		return startPage;
+	}
+
+	/**
+	 * @return true if app should go through login flow the first time it's started
+	 */
+	public boolean shouldAuthenticate() {
+		return shouldAuthenticate;
 	}
 
 	/**
