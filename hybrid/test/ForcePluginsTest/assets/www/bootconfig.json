@@ -1,0 +1,11 @@
+{
+    remoteAccessConsumerKey: "__NOT_USED__",
+    oauthRedirectURI: "__NOT_USED__",
+    oauthScopes: ["__NOT_USED__"],
+    isLocal: true,
+    startPage: "index.html",
+    shouldAuthenticate: false,
+    autoRefreshOnForeground: false,
+    autoRefreshPeriodically: false,
+    attemptOfflineLoad: false
+}        

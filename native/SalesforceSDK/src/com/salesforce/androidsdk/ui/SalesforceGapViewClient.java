@@ -25,7 +25,7 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
 
     // Full and partial URLs to exclude from consideration when determining the home page URL.
     private static final List<String> RESERVED_URL_PATTERNS =
-            Arrays.asList(SalesforceDroidGapActivity.BOOTSTRAP_START_PAGE, "/secur/frontdoor.jsp", "/secur/contentDoor");
+            Arrays.asList("/secur/frontdoor.jsp", "/secur/contentDoor");
 
 
     // The first non-reserved URL that's loaded will be considered the app's "home page", for caching purposes.

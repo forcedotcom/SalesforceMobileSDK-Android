@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.phonegap;
 
 import java.io.IOException;
-import java.net.URL;
 import java.util.Scanner;
 
 import org.json.JSONArray;
@@ -124,7 +123,7 @@ public class BootConfig {
 		try {
 			JSONObject config = new JSONObject(jsonStr);
 			
-			Log.i(getClass().getSimpleName(), "config: " + config.toString(2));
+			Log.i("BootConfig.parseBootConfigStr", "config: " + config.toString(2));
 
 			// Required
 			remoteAccessConsumerKey = config.getString(REMOTE_ACCESS_CONSUMER_KEY);

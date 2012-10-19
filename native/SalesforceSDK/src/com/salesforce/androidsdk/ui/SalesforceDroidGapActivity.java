@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-12, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -35,6 +35,7 @@ import org.apache.cordova.CordovaChromeClient;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.DroidGap;
+import org.apache.cordova.api.CallbackContext;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
@@ -80,9 +81,6 @@ public class SalesforceDroidGapActivity extends DroidGap {
     private static final String REFRESH_TOKEN = "refreshToken";
     private static final String ACCESS_TOKEN = "accessToken";
 	
-	// The URL to the bootstrap page for hybrid apps.
-    public static final String BOOTSTRAP_START_PAGE = "file:///android_asset/www/bootstrap.html";
-
     // Used in refresh REST call
     private static final String API_VERSION = "v26.0";
 	
@@ -107,12 +105,13 @@ public class SalesforceDroidGapActivity extends DroidGap {
     // Config
 	private BootConfig bootconfig;
 
-	// Page loaded?
-	private boolean pageLoaded = false;	
+	// Web app loaded?
+	private boolean webAppLoaded = false;	
 	
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
+    	Log.i("SalesforceDroidGapActivity.onCreate", "onCreate called");
         super.onCreate(savedInstanceState);
 
 		// Get bootconfig
@@ -125,6 +124,8 @@ public class SalesforceDroidGapActivity extends DroidGap {
                 bootconfig.getOauthRedirectURI(),
                 bootconfig.getRemoteAccessConsumerKey(),
                 bootconfig.getOauthScopes());
+        Log.i("SalesforceDroidGapActivity.onCreate", "loginOptions:" + loginOptions.toString());
+        
         clientManager = new ClientManager(this, ForceApp.APP.getAccountType(), loginOptions);
 		
         // Get client (if already logged in)
@@ -145,20 +146,20 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	        periodicAutoRefreshHandler = new Handler();
 	        periodicAutoRefresher = new PeriodicAutoRefresher();
     	}
-        
+    	
 		// Let observers know
 		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
     }
 
     @Override
     public void init(CordovaWebView webView, CordovaWebViewClient webViewClient, CordovaChromeClient webChromeClient) {
+    	Log.i("SalesforceDroidGapActivity.init", "init called");
         super.init(webView, new SalesforceGapViewClient(this, webView), webChromeClient);
         final String uaStr = ForceApp.APP.getUserAgent();
         if (null != this.appView) {
             WebSettings webSettings = this.appView.getSettings();
             String origUserAgent = webSettings.getUserAgentString();
             final String extendedUserAgentString = uaStr + " Hybrid " + (origUserAgent == null ? "" : origUserAgent);
-            Log.d("SalesforceDroidGapActivity:init", "User-Agent string: " + extendedUserAgentString);
             webSettings.setUserAgentString(extendedUserAgentString);
 
             // Configure HTML5 cache support.
@@ -175,18 +176,21 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
     @Override
     public void onResume() {
+    	Log.i("SalesforceDroidGapActivity.onResume", "onResume called");    	
         if (passcodeManager.onResume(this)) {
         	// Logged in
         	if (client != null) {
-        		// Page never loaded
-        		if (!pageLoaded) {
+        		// Web app never loaded
+        		if (!webAppLoaded) {
+                	Log.i("SalesforceDroidGapActivity.onResume", "Already logged in / web app never loaded");
         			loadUrl(getStartPageUrl());
-        			pageLoaded  = true;
+        			webAppLoaded  = true;
         		}
-        		// Page already loaded
+        		// Web app already loaded
         		else {
-	        		if (shouldAutoRefreshOnForeground()) {
-		                autoRefresh();
+                	Log.i("SalesforceDroidGapActivity.onResume", "Already logged in / web app already loaded");
+        			if (shouldAutoRefreshOnForeground()) {
+		                autoRefresh(null);
 		            }
         		}
         		
@@ -198,18 +202,14 @@ public class SalesforceDroidGapActivity extends DroidGap {
         	else {
         		// Connected
             	if (ForceApp.APP.hasNetwork()) {
+                	Log.i("SalesforceDroidGapActivity.onResume", "Not logged in / Connected");
             		if (bootconfig.shouldAuthenticate()) {
-            			clientManager.getRestClient(this, new RestClientCallback() {
-
-							@Override
-							public void authenticatedRestClient(
-									RestClient client) {
-								SalesforceDroidGapActivity.this.client = client;
-							}});
+            			authenticate(null);
             		}
             	}
             	// Not connected
             	else {
+                	Log.i("SalesforceDroidGapActivity.onResume", "Not logged in / Not connected");
             		// Not supported??
             	}
         	}
@@ -221,7 +221,8 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
     @Override
     public void onPause() {
-        passcodeManager.onPause(this);
+    	Log.i("SalesforceDroidGapActivity.onPause", "onPause called");
+    	passcodeManager.onPause(this);
 
         // Disable session refresh when app is backgrounded
     	if (bootconfig.autoRefreshPeriodically()) {
@@ -237,33 +238,69 @@ public class SalesforceDroidGapActivity extends DroidGap {
     }
     
     /**
-     * If auto-refresh on foreground is enabled, this method will be called when the app resumes.
-     * If auto-refresh periodically is enabled, this method will be called periodically.
+     * Get a RestClient and refresh the auth token
+     * @param callbackContext when not null credentials/errors are sent through to callbackContext.success()/error()
+     */
+    public void authenticate(final CallbackContext callbackContext) {
+    	Log.i("SalesforceDroidGapActivity.authenticate", "authenticate called");
+    	clientManager.getRestClient(this, new RestClientCallback() {
+			@Override
+			public void authenticatedRestClient(RestClient client) {
+				if (client == null) {
+			    	Log.i("SalesforceDroidGapActivity.authenticate", "authenticatedRestClient called with null client");
+					ForceApp.APP.logout(SalesforceDroidGapActivity.this);
+	            }
+	            else {
+			    	Log.i("SalesforceDroidGapActivity.authenticate", "authenticatedRestClient called with actual client");
+	            	boolean justLoggedIn = (SalesforceDroidGapActivity.this.client == null);
+	                SalesforceDroidGapActivity.this.client = client;
+	                
+	                if (!justLoggedIn) {
+	                	autoRefresh(callbackContext);
+	                }
+	            }
+			}
+    	});
+    }
+    
+    /**
      * Does a cheap rest call:
      * - if session has already expired, the access token will be refreshed
      * - otherwise it will get extended
+     * @param callbackContext when not null credentials are send back through callbackContext.success()
+     *                        otherwise they are sent back through a
      */
-    public void autoRefresh() {
-        Log.i("SalesforceDroidGapActivity.autoRefresh", "autoRefresh called");
-        // Do a cheap rest call - access token will be refreshed if needed
-        client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
+    public void autoRefresh(final CallbackContext callbackContext) {
+    	Log.i("SalesforceDroidGapActivity.autoRefresh", "autoRefresh called");
+    	client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
             @Override
             public void onSuccess(RestRequest request, RestResponse response) {
-                Log.i("SalesforceDroidGapActivity.autoRefresh", "Auto-refresh succeeded");
+            	Log.i("SalesforceDroidGapActivity.autoRefresh", "cheap api call successful");
                 updateRefreshTime();
                 setSidCookies();
-                Log.i("SalesforceDroidGapActivity.autoRefresh", "Firing salesforceSessionRefresh event");
-                sendJavascript("cordova.fireDocumentEvent('salesforceSessionRefresh'," + getJSONCredentials(client).toString() + ");");
+                
+                JSONObject credentials = getJSONCredentials();
+                if (callbackContext != null) {
+                	callbackContext.success(credentials);
+                }
+                else {
+                	sendJavascript("cordova.fireDocumentEvent('salesforceSessionRefresh'," + credentials.toString() + ");");
+                }
             }
 
             @Override
             public void onError(Exception exception) {
-                Log.w("SalesforceDroidGapActivity.autoRefresh", "Auto-refresh failed - " + exception);
+            	Log.i("SalesforceDroidGapActivity.autoRefresh", "cheap api call failed");
 
-                // Only logout if we are NOT offline
-                if (!(exception instanceof NoNetworkException)) {
-                    ForceApp.APP.logout(SalesforceDroidGapActivity.this);
-                }
+            	if (callbackContext != null) {
+            		callbackContext.error(exception.getMessage());
+            	}
+            	else {
+	            	// Only logout if we are NOT offline
+	                if (!(exception instanceof NoNetworkException)) {
+	                    ForceApp.APP.logout(SalesforceDroidGapActivity.this);
+	                }
+            	}
             }
         });
     }
@@ -273,51 +310,51 @@ public class SalesforceDroidGapActivity extends DroidGap {
      */
     public boolean shouldAutoRefreshOnForeground() {
         boolean b = bootconfig.autoRefreshOnForeground()
-                && hasAuthenticated()
+                && client != null
                 &&  (System.currentTimeMillis() - lastRefreshTime > MIN_REFRESH_INTERVAL_MILLISECONDS);
         Log.i("SalesforceDroidGapActivity.shouldAutoRefreshOnForeground", "" + b);
         return b;
     }
     
     /**
-     * @return true if we have authenticated before
-     */
-    public boolean hasAuthenticated() {
-    	return client != null;
-    }
-    
-    /**
      * @return start page url 
      */
     public String getStartPageUrl() {
+    	Log.i("SalesforceDroidGapActivity.getStartPageUrl", "getStartPageUrl called");
+    	String startPage = bootconfig.getStartPage();
     	String url;
     	// Local
     	if (bootconfig.isLocal()) {
-    		url = "file:///android_assets/www/" + bootconfig.getStartPage();
+        	Log.i("SalesforceDroidGapActivity.getStartPageUrl", "local web app: " + startPage);
+    		url = "file:///android_asset/www/" + startPage;
     	}
     	// Remote
     	else {
     		// Connected
     		if (ForceApp.APP.hasNetwork()) {
-	    		url = client.getClientInfo().instanceUrl.toString() + "/secur/frontdoor.jsp?";
+            	Log.i("SalesforceDroidGapActivity.getStartPageUrl", "remote web app: " + startPage);
+    			url = client.getClientInfo().instanceUrl.toString() + "/secur/frontdoor.jsp?";
 	    		List<NameValuePair> params = new LinkedList<NameValuePair>();
 	    		params.add(new BasicNameValuePair("sid", client.getAuthToken()));
-	    		params.add(new BasicNameValuePair("retURL", bootconfig.getStartPage()));
+	    		params.add(new BasicNameValuePair("retURL", startPage));
 	    		params.add(new BasicNameValuePair("display", "touch"));
 	    		url += URLEncodedUtils.format(params, "UTF-8");
     		}
     		// Not connected
     		else {
+            	Log.i("SalesforceDroidGapActivity.getStartPageUrl", "starting from cache");
+
     			// Should load offline
     			if (bootconfig.attemptOfflineLoad()) {
     				url = SalesforceGapViewClient.getAppHomeUrl(this);
     				if (url == null) {
-    					throw new HybridAppLoadException("");
+    					throw new HybridAppLoadException("Remote web app never loaded cannot start while offline");
     				}
+                	Log.i("SalesforceDroidGapActivity.getStartPageUrl", "remote web app cached: " + url);
     			}
     			// Should not load offline
     			else {
-    				url = null;
+					throw new HybridAppLoadException("Remote web app with attemptOfflineLoad=false cannot start while offline");
     			}
     		}
     	}
@@ -355,19 +392,24 @@ public class SalesforceDroidGapActivity extends DroidGap {
    /**
     * @return credentials as JSONObject
     */
-   private JSONObject getJSONCredentials(RestClient client) {
-       ClientInfo clientInfo = client.getClientInfo();
-       Map<String, String> data = new HashMap<String, String>();
-       data.put(ACCESS_TOKEN, client.getAuthToken());
-       data.put(REFRESH_TOKEN, client.getRefreshToken());
-       data.put(USER_ID, clientInfo.userId);
-       data.put(ORG_ID, clientInfo.orgId);
-       data.put(CLIENT_ID, clientInfo.clientId);
-       data.put(LOGIN_URL, clientInfo.loginUrl.toString());
-       data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
-       data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
-       data.put(USER_AGENT, ForceApp.APP.getUserAgent());
-       return new JSONObject(data);
+   public JSONObject getJSONCredentials() {
+	   if (client != null) {
+	       ClientInfo clientInfo = client.getClientInfo();
+	       Map<String, String> data = new HashMap<String, String>();
+	       data.put(ACCESS_TOKEN, client.getAuthToken());
+	       data.put(REFRESH_TOKEN, client.getRefreshToken());
+	       data.put(USER_ID, clientInfo.userId);
+	       data.put(ORG_ID, clientInfo.orgId);
+	       data.put(CLIENT_ID, clientInfo.clientId);
+	       data.put(LOGIN_URL, clientInfo.loginUrl.toString());
+	       data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
+	       data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
+	       data.put(USER_AGENT, ForceApp.APP.getUserAgent());
+	       return new JSONObject(data);
+	   }
+	   else {
+		   return null;
+	   }
    }
   
     /**
@@ -404,7 +446,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
             try {
                 Log.i("SalesforceDroidGapActivity.PeriodicAutoRefresher.run", "run called");
                 if (bootconfig.autoRefreshPeriodically()) {
-                    autoRefresh();
+                    autoRefresh(null);
                 }
             } finally {
                 schedulePeriodicAutoRefresh();
