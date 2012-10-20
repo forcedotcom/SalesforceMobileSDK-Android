@@ -182,7 +182,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         	if (client != null) {
         		// Web app never loaded
         		if (!webAppLoaded) {
-                	Log.i("SalesforceDroidGapActivity.onResume", "Already logged in / web app never loaded");
+                	Log.i("SalesforceDroidGapActivity.onResume", "Already logged in / web app never loaded / loading web app");
         			loadUrl(getStartPageUrl());
         			webAppLoaded  = true;
         		}
@@ -200,18 +200,25 @@ public class SalesforceDroidGapActivity extends DroidGap {
         	}
         	// Not logged in
         	else {
-        		// Connected
-            	if (ForceApp.APP.hasNetwork()) {
-                	Log.i("SalesforceDroidGapActivity.onResume", "Not logged in / Connected");
-            		if (bootconfig.shouldAuthenticate()) {
+        		// Need to be authenticated
+        		if (bootconfig.shouldAuthenticate()) {
+            		// Connected
+                	if (ForceApp.APP.hasNetwork()) {
+                    	Log.i("SalesforceDroidGapActivity.onResume", "Not logged in / connected / should authenticate");
             			authenticate(null);
-            		}
-            	}
-            	// Not connected
-            	else {
-                	Log.i("SalesforceDroidGapActivity.onResume", "Not logged in / Not connected");
-            		// Not supported??
-            	}
+                	}
+                	// Not connected
+                	else {
+    					throw new HybridAppLoadException("Not logged in / not connected / should authenticate but cannot");
+                	}
+        		}
+        		// Does not need to be authenticated
+        		else {
+                	Log.i("SalesforceDroidGapActivity.onResume", "Not logged in / should not authenticate / loading web app");
+        			loadUrl(getStartPageUrl());
+        			webAppLoaded  = true;
+        		}
+        		
         	}
             CookieSyncManager.getInstance().startSync();
         }
