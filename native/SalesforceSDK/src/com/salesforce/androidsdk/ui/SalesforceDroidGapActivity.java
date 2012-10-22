@@ -178,13 +178,15 @@ public class SalesforceDroidGapActivity extends DroidGap {
     public void onResume() {
     	Log.i("SalesforceDroidGapActivity.onResume", "onResume called");    	
         if (passcodeManager.onResume(this)) {
+        	// Not logged in
+        	if (client == null) {
+        		onResumeNotLoggedIn();
+        	}
         	// Logged in
-        	if (client != null) {
+        	else {
         		// Web app never loaded
         		if (!webAppLoaded) {
-                	Log.i("SalesforceDroidGapActivity.onResume", "Already logged in / web app never loaded / loading web app");
-        			loadUrl(getStartPageUrl());
-        			webAppLoaded  = true;
+        			onResumeLoggedInNotLoaded();
         		}
         		// Web app already loaded
         		else {
@@ -197,34 +199,77 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	        	if (bootconfig.autoRefreshPeriodically()) {
 	        		schedulePeriodicAutoRefresh();
 	    		}
+
+	            CookieSyncManager.getInstance().startSync();
         	}
-        	// Not logged in
-        	else {
-        		// Need to be authenticated
-        		if (bootconfig.shouldAuthenticate()) {
-            		// Connected
-                	if (ForceApp.APP.hasNetwork()) {
-                    	Log.i("SalesforceDroidGapActivity.onResume", "Not logged in / connected / should authenticate");
-            			authenticate(null);
-                	}
-                	// Not connected
-                	else {
-    					throw new HybridAppLoadException("Not logged in / not connected / should authenticate but cannot");
-                	}
-        		}
-        		// Does not need to be authenticated
-        		else {
-                	Log.i("SalesforceDroidGapActivity.onResume", "Not logged in / should not authenticate / loading web app");
-        			loadUrl(getStartPageUrl());
-        			webAppLoaded  = true;
-        		}
-        		
-        	}
-            CookieSyncManager.getInstance().startSync();
         }
 
         super.onResume();
     }
+
+	/**
+	 * Called when resuming activity and user is not authenticated
+	 */
+	private void onResumeNotLoggedIn() {
+		// Need to be authenticated
+		if (bootconfig.shouldAuthenticate()) {
+			// Online
+			if (ForceApp.APP.hasNetwork()) {
+		    	Log.i("SalesforceDroidGapActivity.onResumeNotLoggedIn", "Should authenticate / online - authenticating");
+				authenticate(null);
+			}
+			// Offline
+			else {
+				Log.w("SalesforceDroidGapActivity.onResumeNotLoggedIn", "Should authenticate / offline - cannot proceed");
+				loadErrorPage();
+			}
+		}
+		// Does not need to be authenticated
+		else {
+			// Local
+			if (bootconfig.isLocal()) {
+				Log.i("SalesforceDroidGapActivity.onResumeNotLoggedIn", "Should not authenticate / local start page - loading web app");
+				loadLocalStartPage();
+			}
+			// Remote
+			else {
+				Log.w("SalesforceDroidGapActivity.onResumeNotLoggedIn", "Should not authenticate / remote start page - cannot proceed");
+				loadErrorPage();
+			}
+		}
+	}
+
+	/**
+	 * Called when resuming activity and user is authenticated but webview has not been loaded yet
+	 */
+	private void onResumeLoggedInNotLoaded() {
+		// Local
+		if (bootconfig.isLocal()) {
+			Log.i("SalesforceDroidGapActivity.onResumeLoggedInNotLoaded", "Local start page - loading web app");
+			loadLocalStartPage();
+		}
+		// Remote
+		else {
+			// Online
+			if (ForceApp.APP.hasNetwork()) {
+		    	Log.i("SalesforceDroidGapActivity.onResumeLoggedInNotLoaded", "Remote start page / online - loading web app");
+		    	loadRemoteStartPage();
+			}
+			// Offline
+			else {
+				// Has cached version
+				if (SalesforceGapViewClient.hasCachedAppHome(this)) {
+		        	Log.i("SalesforceDroidGapActivity.onResumeLoggedInNotLoaded", "Remote start page / offline / cached - loading cached web app");
+					loadCachedStartPage();
+				}
+				// No cached version
+				else {
+		        	Log.w("SalesforceDroidGapActivity.onResumeLoggedInNotLoaded", "Remote start page / offline / not cached - cannot proceed");
+		        	loadErrorPage();
+				}
+			}
+		}
+	}
 
     @Override
     public void onPause() {
@@ -243,6 +288,10 @@ public class SalesforceDroidGapActivity extends DroidGap {
     public void onUserInteraction() {
         passcodeManager.recordUserInteraction();
     }
+    
+	public BootConfig getBootConfig() {
+		return bootconfig;
+	}
     
     /**
      * Get a RestClient and refresh the auth token
@@ -324,48 +373,50 @@ public class SalesforceDroidGapActivity extends DroidGap {
     }
     
     /**
-     * @return start page url 
+     * Load local start page
      */
-    public String getStartPageUrl() {
-    	Log.i("SalesforceDroidGapActivity.getStartPageUrl", "getStartPageUrl called");
+    public void loadLocalStartPage() {
+    	assert bootconfig.isLocal();
     	String startPage = bootconfig.getStartPage();
-    	String url;
-    	// Local
-    	if (bootconfig.isLocal()) {
-        	Log.i("SalesforceDroidGapActivity.getStartPageUrl", "local web app: " + startPage);
-    		url = "file:///android_asset/www/" + startPage;
-    	}
-    	// Remote
-    	else {
-    		// Connected
-    		if (ForceApp.APP.hasNetwork()) {
-            	Log.i("SalesforceDroidGapActivity.getStartPageUrl", "remote web app: " + startPage);
-    			url = client.getClientInfo().instanceUrl.toString() + "/secur/frontdoor.jsp?";
-	    		List<NameValuePair> params = new LinkedList<NameValuePair>();
-	    		params.add(new BasicNameValuePair("sid", client.getAuthToken()));
-	    		params.add(new BasicNameValuePair("retURL", startPage));
-	    		params.add(new BasicNameValuePair("display", "touch"));
-	    		url += URLEncodedUtils.format(params, "UTF-8");
-    		}
-    		// Not connected
-    		else {
-            	Log.i("SalesforceDroidGapActivity.getStartPageUrl", "starting from cache");
+    	Log.i("SalesforceDroidGapActivity.loadLocalStartPage", "loading: " + startPage);
+    	loadUrl("file:///android_asset/www/" + startPage);
+    	webAppLoaded = true;
+    }		
 
-    			// Should load offline
-    			if (bootconfig.attemptOfflineLoad()) {
-    				url = SalesforceGapViewClient.getAppHomeUrl(this);
-    				if (url == null) {
-    					throw new HybridAppLoadException("Remote web app never loaded cannot start while offline");
-    				}
-                	Log.i("SalesforceDroidGapActivity.getStartPageUrl", "remote web app cached: " + url);
-    			}
-    			// Should not load offline
-    			else {
-					throw new HybridAppLoadException("Remote web app with attemptOfflineLoad=false cannot start while offline");
-    			}
-    		}
-    	}
-    	return url;
+    /**
+     * Load remote start page (front-doored)
+     */
+    public void loadRemoteStartPage() {
+    	assert bootconfig.isLocal();
+    	String startPage = bootconfig.getStartPage();
+    	Log.i("SalesforceDroidGapActivity.loadRemoteStartPage", "loading: " + startPage);
+		String url = client.getClientInfo().instanceUrl.toString() + "/secur/frontdoor.jsp?";
+		List<NameValuePair> params = new LinkedList<NameValuePair>();
+		params.add(new BasicNameValuePair("sid", client.getAuthToken()));
+		params.add(new BasicNameValuePair("retURL", startPage));
+		params.add(new BasicNameValuePair("display", "touch"));
+		url += URLEncodedUtils.format(params, "UTF-8");
+		loadUrl(url);
+    	webAppLoaded = true;
+    }
+
+	/**
+	 * Load cached start page
+	 */
+	private void loadCachedStartPage() {
+		String url = SalesforceGapViewClient.getAppHomeUrl(this);
+		loadUrl(url);
+    	webAppLoaded = true;
+	}
+    
+    /**
+     * Load error page
+     */
+    public String loadErrorPage() {
+    	Log.i("SalesforceDroidGapActivity.getErrorPageUrl", "getErrorPageUrl called");
+    	String errorPage = bootconfig.getErrorPage();
+    	Log.i("SalesforceDroidGapActivity.getErrorPageUrl", "local error page: " + errorPage);
+    	return "file:///android_asset/www/" + errorPage;
     }
     
    /**
@@ -474,4 +525,5 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		private static final long serialVersionUID = 1L;
     	
     }
+
 }

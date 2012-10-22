@@ -41,6 +41,8 @@ import android.util.Log;
  */
 public class BootConfig {
 
+
+
 	// We expect a assets/www/bootconfig.json
 	private static final String BOOTCONFIG_PATH = "www/bootconfig.json";
 		
@@ -48,6 +50,9 @@ public class BootConfig {
 	private static final String REMOTE_ACCESS_CONSUMER_KEY = "remoteAccessConsumerKey";
 	private static final String OAUTH_REDIRECT_URI = "oauthRedirectURI";
 	private static final String OAUTH_SCOPES = "oauthScopes";
+	private static final String IS_LOCAL = "isLocal";
+	private static final String START_PAGE = "startPage";
+	private static final String ERROR_PAGE = "errorPage";
 	private static final String SHOULD_AUTHENTICATE = "shouldAuthenticate";
 	private static final String AUTO_REFRESH_ON_FOREGROUND = "autoRefreshOnForeground";
 	private static final String AUTO_REFRESH_PERIODICALLY = "autoRefreshPeriodically";
@@ -65,6 +70,7 @@ public class BootConfig {
 	private String[] oauthScopes;
 	private boolean isLocal;
 	private String startPage;
+	private String errorPage;
 	private boolean shouldAuthenticate;
 	private boolean autoRefreshOnForeground;
 	private boolean autoRefreshPeriodically;
@@ -133,8 +139,9 @@ public class BootConfig {
 			for (int i=0; i<oauthScopes.length; i++) {
 				oauthScopes[i] = jsonScopes.getString(i);
 			}
-			isLocal = config.getBoolean("isLocal");
-			startPage = config.getString("startPage");
+			isLocal = config.getBoolean(IS_LOCAL);
+			startPage = config.getString(START_PAGE);
+			errorPage = config.getString(ERROR_PAGE);
 			
 			// Optional
 			shouldAuthenticate = config.optBoolean(SHOULD_AUTHENTICATE, DEFAULT_SHOULD_AUTHENTICATE);
@@ -176,12 +183,19 @@ public class BootConfig {
 	}
 	
 	/**
-	 * @return path to start page (e.g. index.html or /apex/basicpage)
+	 * @return path to start page local or remote (e.g. index.html or /apex/basicpage)
 	 */
 	public String getStartPage() {
 		return startPage;
 	}
 
+	/**
+	 * @return path to local error page 
+	 */
+	public String getErrorPage() {
+		return errorPage;
+	}
+	
 	/**
 	 * @return true if app should go through login flow the first time it's started
 	 */

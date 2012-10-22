@@ -4,6 +4,7 @@
 	oauthScopes = ["web", "api"],
 	isLocal: false,
 	startPage: "/apex/BasicVFPage";
+    errorPage: "error.html",
 	shouldAuthenticate: true,
 	autoRefreshOnForeground: true,
 	autoRefreshPeriodically: true,

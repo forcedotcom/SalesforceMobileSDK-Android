@@ -1,5 +1,6 @@
 package com.salesforce.androidsdk.ui;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
@@ -80,6 +81,15 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
         return url;
     }
 
+    /**
+     * @param ctx
+     * @return true if there is a cached version of the app's home page
+     */
+    public static boolean hasCachedAppHome(Context ctx) {
+    	String cachedAppHomeUrl = getAppHomeUrl(ctx);
+    	return cachedAppHomeUrl != null && (new File(cachedAppHomeUrl)).exists();
+    }
+    
     /**
      * Whether the given URL is one of the expected URLs used in the bootstrapping process
      * of the app.  Used for determining the app's "home page" URL.
