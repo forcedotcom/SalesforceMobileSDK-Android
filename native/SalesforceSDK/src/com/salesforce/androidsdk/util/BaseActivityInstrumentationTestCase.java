@@ -180,7 +180,7 @@ public class BaseActivityInstrumentationTestCase<T extends Activity> extends Act
 
     protected void waitSome() {
         try {
-            Thread.sleep(1000);
+            Thread.sleep(500);
         }
         catch (InterruptedException e) {
             fail("Test interrupted");

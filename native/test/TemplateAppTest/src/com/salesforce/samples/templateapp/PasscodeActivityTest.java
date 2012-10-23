@@ -311,17 +311,21 @@ public class PasscodeActivityTest extends
 
 		// Click on 'Forgot Passcode' link.
 		assertFalse("Logout dialog should not be showing", getActivity().getIsLogoutDialogShowing());
-		clickView(getActivity().findViewById(R.id.sf__passcode_forgot));
+		clickView(getActivity().findViewById(R.id.sf__passcode_forgot)); 
+		waitSome();
 		assertTrue("Logout dialog should be showing", getActivity().getIsLogoutDialogShowing());
 
 		// Clicking on 'Cancel' should take us back to the passcode screen.
 		final AlertDialog logoutDialog = getActivity().getLogoutAlertDialog();
-		clickView(logoutDialog.getButton(AlertDialog.BUTTON_NEGATIVE));
+		clickView(logoutDialog.getButton(AlertDialog.BUTTON_NEGATIVE)); 
+		waitSome();
 		assertFalse("Logout dialog should not be showing", getActivity().getIsLogoutDialogShowing());
 
 		// Clicking on 'Ok' should log the user out.
-		clickView(getActivity().findViewById(R.id.sf__passcode_forgot));
-		clickView(logoutDialog.getButton(AlertDialog.BUTTON_POSITIVE));
+		clickView(getActivity().findViewById(R.id.sf__passcode_forgot)); 
+		waitSome();
+		clickView(logoutDialog.getButton(AlertDialog.BUTTON_POSITIVE)); 
+		waitSome();
 		assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
 	}
 
