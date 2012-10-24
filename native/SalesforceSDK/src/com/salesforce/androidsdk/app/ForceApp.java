@@ -244,6 +244,13 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
+     * @return true if network is available (NB doesn't mean all servers are reachable though)
+     */
+    public boolean hasNetwork() {
+    	return HttpAccess.DEFAULT.hasNetwork();
+    }
+    
+    /**
      * Cleans up cached credentials and data.
      *
      * @param frontActivity Front activity.

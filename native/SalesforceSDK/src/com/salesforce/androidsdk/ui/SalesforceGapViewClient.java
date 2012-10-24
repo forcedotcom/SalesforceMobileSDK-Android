@@ -1,5 +1,6 @@
 package com.salesforce.androidsdk.ui;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
 
     // Full and partial URLs to exclude from consideration when determining the home page URL.
     private static final List<String> RESERVED_URL_PATTERNS =
-            Arrays.asList(SalesforceDroidGapActivity.BOOTSTRAP_START_PAGE, "/secur/frontdoor.jsp", "/secur/contentDoor");
+            Arrays.asList("/secur/frontdoor.jsp", "/secur/contentDoor");
 
 
     // The first non-reserved URL that's loaded will be considered the app's "home page", for caching purposes.
@@ -70,7 +71,25 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
         super.onPageFinished(view, url);
     }
 
+    
+    /**
+     * @return app's home page
+     */
+    public static String getAppHomeUrl(Context ctx) {
+        SharedPreferences sp = ctx.getSharedPreferences(SalesforceGapViewClient.SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
+        String url = sp.getString(SalesforceGapViewClient.APP_HOME_URL_PROP_KEY, null);
+        return url;
+    }
 
+    /**
+     * @param ctx
+     * @return true if there is a cached version of the app's home page
+     */
+    public static boolean hasCachedAppHome(Context ctx) {
+    	String cachedAppHomeUrl = getAppHomeUrl(ctx);
+    	return cachedAppHomeUrl != null && (new File(cachedAppHomeUrl)).exists();
+    }
+    
     /**
      * Whether the given URL is one of the expected URLs used in the bootstrapping process
      * of the app.  Used for determining the app's "home page" URL.
