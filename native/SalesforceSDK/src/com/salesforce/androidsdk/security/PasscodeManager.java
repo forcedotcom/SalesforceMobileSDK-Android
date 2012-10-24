@@ -432,7 +432,9 @@ public class PasscodeManager  {
     private class LockChecker implements Runnable {
         public void run() {
             try {
-                Log.d("LockChecker:run",  "isLocked:" + locked + " elapsedSinceLastActivity:" + ((now() - lastActivity)/1000) + " timeout:" + (timeoutMs / 1000));
+            	if (isEnabled()) {
+            		Log.d("LockChecker:run",  "isLocked:" + locked + " elapsedSinceLastActivity:" + ((now() - lastActivity)/1000) + " timeout:" + (timeoutMs / 1000));
+            	}
                 if (!locked)
                     lockIfNeeded(null, false);
             } finally {
