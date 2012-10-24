@@ -124,7 +124,6 @@ public class SalesforceDroidGapActivity extends DroidGap {
                 bootconfig.getOauthRedirectURI(),
                 bootconfig.getRemoteAccessConsumerKey(),
                 bootconfig.getOauthScopes());
-        Log.i("SalesforceDroidGapActivity.onCreate", "loginOptions:" + loginOptions.toString());
         
         clientManager = new ClientManager(this, ForceApp.APP.getAccountType(), loginOptions);
 		
