@@ -95,7 +95,7 @@ ant installd
 
 Before you ship, make sure to plug in your oauth client id and callback url in:
 <pre>
-$TARGET_DIR/assets/www/bootconfig.js
+$TARGET_DIR/assets/www/bootconfig.json
 </pre>
 
 # Running your new native application from Eclipse
