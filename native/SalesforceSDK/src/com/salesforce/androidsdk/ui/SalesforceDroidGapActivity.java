@@ -386,7 +386,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
      * Load remote start page (front-doored)
      */
     public void loadRemoteStartPage() {
-    	assert bootconfig.isLocal();
+    	assert !bootconfig.isLocal();
     	String startPage = bootconfig.getStartPage();
     	Log.i("SalesforceDroidGapActivity.loadRemoteStartPage", "loading: " + startPage);
 		String url = client.getClientInfo().instanceUrl.toString() + "/secur/frontdoor.jsp?";
@@ -409,13 +409,13 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	}
     
     /**
-     * Load error page
+     * Load error page 
      */
-    public String loadErrorPage() {
+    public void loadErrorPage() {
     	Log.i("SalesforceDroidGapActivity.getErrorPageUrl", "getErrorPageUrl called");
     	String errorPage = bootconfig.getErrorPage();
     	Log.i("SalesforceDroidGapActivity.getErrorPageUrl", "local error page: " + errorPage);
-    	return "file:///android_asset/www/" + errorPage;
+		loadUrl("file:///android_asset/www/" + errorPage);
     }
     
    /**
