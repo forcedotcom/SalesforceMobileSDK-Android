@@ -93,6 +93,14 @@ public class SmartStoreJSTest extends JSTestCase {
         runTest("testManipulateCursor");
     }
 
+    public void testMoveCursorToPreviousPageFromFirstPage() {
+        runTest("testMoveCursorToPreviousPageFromFirstPage");
+    }
+
+    public void testMoveCursorToNextPageFromLastPage() {
+        runTest("testMoveCursorToNextPageFromLastPage");
+    }
+
     public void testArbitrarySoupNames()  {
         runTest("testArbitrarySoupNames");
     }
