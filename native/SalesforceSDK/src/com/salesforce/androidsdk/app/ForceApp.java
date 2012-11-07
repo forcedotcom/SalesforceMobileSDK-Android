@@ -73,8 +73,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
     private String encryptionKey;
     private AccountWatcher accWatcher;
-	private SalesforceR salesforceR = new SalesforceR();
-
+    private SalesforceR salesforceR = new SalesforceR();
 
     /**************************************************************************************************
      *
@@ -116,10 +115,9 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @return SalesforceR object which allows reference to resources living outside the SDK.
      */
     public SalesforceR getSalesforceR() {
-    	return salesforceR;
+        return salesforceR;
     }
-    
-    
+
     /**
      * @return the class of the activity used to perform the login process and create the account.
      * You can override this if you want to customize the LoginAcitivty
@@ -164,15 +162,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        if (accWatcher != null) {
-            accWatcher.remove();
-            accWatcher = null;
-        }
-    }
-
-    @Override
     public void onAccountRemoved() {
         ForceApp.APP.cleanUp(null);
     }
@@ -191,13 +180,13 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
     /**
      * Changes the passcode to a new value
-     * 
+     *
      * @param oldPass Old passcode.
      * @param newPass New passcode.
      */
     public synchronized void changePasscode(String oldPass, String newPass) {
         if (!isNewPasscode(oldPass, newPass)) {
-        	return;
+            return;
         }
         encryptionKey = null; // Reset cached encryption key, since the passcode has changed
         ClientManager.changePasscode(oldPass, newPass);
@@ -209,10 +198,10 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @return true if newPass is truly different from oldPass
      */
     protected boolean isNewPasscode(String oldPass, String newPass) {
-		return ((oldPass == null && newPass == null) 
-				|| (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim())));
-	}
-    
+        return ((oldPass == null && newPass == null)
+                || (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim())));
+    }
+
     /**
      * Returns the encryption key being used.
      *
@@ -224,9 +213,9 @@ public abstract class ForceApp extends Application implements AccountRemoved {
             return actualPass;
         }
         if (encryptionKey == null) {
-        	encryptionKey = getPasscodeManager().hashForEncryption("");
+            encryptionKey = getPasscodeManager().hashForEncryption("");
         }
-    	return encryptionKey;
+        return encryptionKey;
     }
 
     /**
@@ -269,7 +258,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         UUIDManager.resetUuids();
     }
 
-
     /**
      * Starts login flow if user account has been removed.
      */
@@ -305,18 +293,16 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         // Remove account if any.
         ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
         if (clientMgr.getAccount() == null) {
-        	EventsObservable.get().notifyEvent(EventType.LogoutComplete);                	
-    		        	
+            EventsObservable.get().notifyEvent(EventType.LogoutComplete);
             if (showLoginPage) {
                 startLoginPage();
             }
         } else {
             clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
-            	@Override
+                @Override
                 public void run(AccountManagerFuture<Boolean> arg0) {
-            		EventsObservable.get().notifyEvent(EventType.LogoutComplete);                	
-            		
-            		if (showLoginPage) {
+                    EventsObservable.get().notifyEvent(EventType.LogoutComplete);
+                    if (showLoginPage) {
                         startLoginPage();
                     }
                 }
