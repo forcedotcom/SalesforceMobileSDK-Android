@@ -32,6 +32,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.test.InstrumentationTestCase;
+import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
 
@@ -127,11 +128,13 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 	}
 
 	protected Event waitForEvent(EventType type) {
+		Log.i("ForceAppInstrumentationTestCase.waitForEvent", "Waiting for " + type);
     	Event evt = eq.waitForEvent(type, getWaitTimeout());
     	if (type == EventType.AuthWebViewPageFinished || type == EventType.GapWebViewPageFinished) {
     		waitSome();
     		// When page finished is fired, DOM is not ready :-(
     	}
+		Log.i("ForceAppInstrumentationTestCase.waitForEvent", "Got " + evt.getType());
     	return evt;
     }
 
@@ -153,6 +156,7 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 			runTestOnUiThread(new Runnable() {
 				@Override
 				public void run() {
+					Log.i("ForceAppInstrumentationTestCase:sendJavaScript", js);
 					webView.loadUrl("javascript:" + js); // TODO proper escaping
 				}				
 			});

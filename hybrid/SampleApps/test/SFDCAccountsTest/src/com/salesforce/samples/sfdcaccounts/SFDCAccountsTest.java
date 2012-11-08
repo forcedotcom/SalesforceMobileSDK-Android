@@ -43,8 +43,9 @@ public class SFDCAccountsTest extends HybridInstrumentationTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        interceptExistingJavaScriptFunction(gapWebView, "salesforceSessionRefreshed");
-        waitForEvent(EventType.Other); // It's only after salesforceSessionRefreshed gets called that forcetk is initialized
+        // XXX because we wait a bit after loading the page, we end up installing the "interceptor" too late
+        // interceptExistingJavaScriptFunction(gapWebView, "salesforceSessionRefreshed");
+        // waitForEvent(EventType.Other); // It's only after salesforceSessionRefreshed gets called that forcetk is initialized
     }
 
 	public void testFetchSfdcAccounts() throws Exception {
