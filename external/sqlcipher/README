@@ -1,25 +1,28 @@
 
-SQLCipher for Android 1.1.0-rc1
-2012/01/25
+SQLCipher for Android v1 (0.0.6-FINAL)
+2011/11/29
 
 CHANGELOG
-- includes updates for ICS support
+- includes icu44 data file for devices without it built-in ( < 2.2)
+- complete support for original Android SQLite/database package APIs
+- improved platform support through unified library (less lib .so files)
+- added support for CrossProcess Cursors
+- now support Observers/callbacks
 
 CURRENT TESTED PLATFORM SUPPORT
 
-Android 2.1   (SDK Level 7)
-Android 2.2   (SDK Level 8)
-Android 2.3   (SDK Level 9)
+Android 2.1 (SDK Level 7)
+Android 2.2 (SDK Level 8)
+Android 2.3 (SDK Level 9)
 Android 2.3.3 (SDK Level 10)
-Android 3.0   (SDK Level 11)
-Android 3.1   (SDK Level 12)
-Android 3.2   (SDK Level 13)
-Android 4.0   (SDK Level 14)
-Android 4.0.3 (SDK Level 15)
+Android 3.0 (SDK Level 11)
+Android 3.1 (SDK Level 12)
+Android 3.2 (SDK Level 13)
+Android 4.0 (Not Tested)
 
 HOW TO
 
-1) copy the libs folder into your project. If you are targeting below 4.0, include the 'icudt46l.zip' in the assets folder as well.
+1) copy the libs folder into your project. If you are targeting 2.2 and below, include the 'icudt44l.zip' in the assets folder as well.
 
 2) Update your import path from android.database to info.guardianproject.database and you are almost there!
 
@@ -40,7 +43,6 @@ https://guardianproject.info/code/sqlcipher/
 http://sqlcipher.net
 
 Or contact us:
-https://groups.google.com/forum/#!forum/sqlcipher
 root@guardianproject.info
 #guardianproject on freenode
 
