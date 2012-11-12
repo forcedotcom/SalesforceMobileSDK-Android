@@ -24,27 +24,19 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.phonegap;
 
-import java.util.List;
+package com.salesforce.androidsdk.util;
 
-import android.test.InstrumentationTestCase;
+import java.util.concurrent.TimeUnit;
 
+import android.test.AndroidTestRunner;
 
 /**
- * Tests for SDKInfoPlugin
- *
+ * This extends the report runner that generates a standard junit report file, with the timerun cap.
  */
-public class SDKInfoPluginTest extends InstrumentationTestCase {
+public class JUnitReportTestRunner extends com.zutubi.android.junitreport.JUnitReportTestRunner {
 
-	/**
-	 * Test for getForcePluginsFromXML
-	 */
-	public void testGetForcePluginsFromXML() {
-		List<String> plugins = SDKInfoPlugin.getForcePluginsFromXML(getInstrumentation().getTargetContext());
-		assertEquals("Wrong number of force plugins", 2, plugins.size());
-		assertTrue("oauth plugin should have been returned", plugins.contains("com.salesforce.oauth"));
-		assertTrue("sdkinfo plugin should have been returned", plugins.contains("com.salesforce.sdkinfo"));
-	}
-	
+    protected AndroidTestRunner makeAndroidTestRunner() {
+        return new TimeLimitedTestRunner(60 * 60, TimeUnit.SECONDS);
+    }
 }
