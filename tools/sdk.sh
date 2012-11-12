@@ -45,7 +45,6 @@ usage ()
     echo "        all"
     echo "        SalesforceSDK"
     echo "        SmartStore"
-    echo "        SalesforceSDKTestUtil"
     echo "        RestExplorer"
     echo "        TemplateApp"
     echo "        CloudTunes"
@@ -150,7 +149,6 @@ else
     process_args $@
 
     build_project_if_requested "SalesforceSDK" $NATIVE_TOP/SalesforceSDK
-    build_project_if_requested "SalesforceSDKTestUtil" $NATIVE_TOP/SalesforceSDKTestUtil
     build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp
     build_project_if_requested "CloudTunes" $NATIVE_TOP/SampleApps/CloudTunes
     build_project_if_requested "RestExplorer" $NATIVE_TOP/SampleApps/RestExplorer
