@@ -26,8 +26,7 @@
  */
 package com.salesforce.androidsdk.store;
 
-import info.guardianproject.database.sqlcipher.SQLiteDatabase;
-
+import net.sqlcipher.database.SQLiteDatabase;
 
 /**
  * Tests for encrypted smart store
