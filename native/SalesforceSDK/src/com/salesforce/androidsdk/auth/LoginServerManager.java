@@ -211,7 +211,7 @@ public class LoginServerManager {
 	/**
 	 * Return production and sandbox as the login servers (only called when servers.xml is missing)
 	 */
-	private List<LoginServer> getLegacyLoginServers() {
+	List<LoginServer> getLegacyLoginServers() {
 		SalesforceR salesforceR = ForceApp.APP.getSalesforceR();
 		List<LoginServer> loginServers = new ArrayList<LoginServer>();
 
@@ -230,7 +230,7 @@ public class LoginServerManager {
 	/**
 	 * @return login servers defined in res/xml/servers.xml or null
 	 */
-	private List<LoginServer> getLoginServersFromXML() {
+	List<LoginServer> getLoginServersFromXML() {
 		List<LoginServer> loginServers = null;
 		
 		int id = ctx.getResources().getIdentifier("servers", "xml", ctx.getPackageName());
