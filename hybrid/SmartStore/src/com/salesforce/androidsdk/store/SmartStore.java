@@ -26,10 +26,10 @@
  */
 package com.salesforce.androidsdk.store;
 
-import info.guardianproject.database.sqlcipher.SQLiteDatabase;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import net.sqlcipher.database.SQLiteDatabase;
 
 import org.json.JSONArray;
 import org.json.JSONException;
