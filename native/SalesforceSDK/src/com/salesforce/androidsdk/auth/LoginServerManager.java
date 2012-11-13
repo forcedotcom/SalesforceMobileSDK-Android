@@ -168,11 +168,13 @@ public class LoginServerManager {
     	if (index == defaultLoginServers.size() && customServer != null) {
     		setSelectedLoginServer(customServer);
     	}
-    	if (index >= 0 && index < defaultLoginServers.size()) {
+    	else if (index >= 0 && index < defaultLoginServers.size()) {
     		setSelectedLoginServer(defaultLoginServers.get(index));
     	}
-    	// Bad index - selecting first
-    	setSelectedLoginServer(defaultLoginServers.get(0));
+    	else {
+    		// Bad index - selecting first
+    		setSelectedLoginServer(defaultLoginServers.get(0));
+    	}
     }
     
     
