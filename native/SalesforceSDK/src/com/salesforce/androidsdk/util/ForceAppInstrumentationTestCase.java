@@ -28,17 +28,13 @@ package com.salesforce.androidsdk.util;
 
 import android.app.Activity;
 import android.app.Instrumentation;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -64,7 +60,7 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 
         waitForStartup();
     	logout();
-    	useSandbox();
+    	ForceApp.APP.getLoginServerManager().useSandbox();
     	launchMainActivity();
     	login();    
     }
@@ -100,16 +96,6 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 	protected void logout() {
 		ForceApp.APP.logout(null, false);
 		waitForEvent(EventType.LogoutComplete);
-	}
-
-	protected void useSandbox() {
-		// Our username/password is for a sandbox org
-		SharedPreferences settings = instrumentation.getTargetContext().getSharedPreferences(
-	            LoginActivity.SERVER_URL_PREFS_SETTINGS,
-	            Context.MODE_PRIVATE);
-	    SharedPreferences.Editor editor = settings.edit();
-	    editor.putString(LoginActivity.SERVER_URL_CURRENT_SELECTION, OAuth2.SANDBOX_LOGIN_URL);
-	    editor.commit();
 	}
 
 	protected void login() {
