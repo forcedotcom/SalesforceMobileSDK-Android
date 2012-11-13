@@ -26,14 +26,13 @@
  */
 package com.salesforce.androidsdk.store;
 
-import info.guardianproject.database.DatabaseUtils.InsertHelper;
-import info.guardianproject.database.sqlcipher.SQLiteDatabase;
-import info.guardianproject.database.sqlcipher.SQLiteDoneException;
-import info.guardianproject.database.sqlcipher.SQLiteStatement;
-
 import java.util.HashMap;
 import java.util.Map;
 
+import net.sqlcipher.DatabaseUtils.InsertHelper;
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteDoneException;
+import net.sqlcipher.database.SQLiteStatement;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
