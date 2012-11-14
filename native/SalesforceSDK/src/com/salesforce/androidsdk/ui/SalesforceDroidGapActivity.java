@@ -98,7 +98,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         if (null != this.appView) {
             WebSettings webSettings = this.appView.getSettings();
             String origUserAgent = webSettings.getUserAgentString();
-            final String extendedUserAgentString = uaStr + " Hybrid " + (origUserAgent == null ? "" : origUserAgent);
+            final String extendedUserAgentString = uaStr + (origUserAgent == null ? "" : " " + origUserAgent);
             Log.d("SalesforceDroidGapActivity:init", "User-Agent string: " + extendedUserAgentString);
             webSettings.setUserAgentString(extendedUserAgentString);
 
