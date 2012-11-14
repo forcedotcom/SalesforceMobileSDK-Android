@@ -26,37 +26,33 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import android.app.Activity;
 import android.app.Dialog;
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnDismissListener;
-import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.style.TextAppearanceSpan;
-import android.util.Pair;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView.BufferType;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.auth.LoginServerManager;
+import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
 
 /**
  *
@@ -81,13 +77,10 @@ public class ServerPickerActivity extends Activity implements
         }
     }
 
-    private static final int DEFAULT_URL_SELECTION = 0;
-
     private static final int SERVER_DIALOG_ID = 0;
     // custom url radio button has, sigh, custom event handling
     private int customRadioButtonId = -1;
 
-    private ArrayList<Pair<String, String>> defaultServers;
     private Logger logger;
     private int restoredConfigIndex = -1;
     // used to restore radio index on a cancel (case where it gets saved by the
@@ -99,6 +92,7 @@ public class ServerPickerActivity extends Activity implements
 
     public CustomServerUrlEditor urlEditDialog;
     private SalesforceR salesforceR;
+    private LoginServerManager loginServerManager;
 
     /**
      * hooks for the edit url dialog dismiss is positive (apply) cancel is back
@@ -108,17 +102,8 @@ public class ServerPickerActivity extends Activity implements
     boolean wasEditUrlDialogCanceled = false;
 
     private void clearCustomUrlSetting() {
-        SharedPreferences settings = getSharedPreferences(
-                LoginActivity.SERVER_URL_PREFS_SETTINGS,
-                Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = settings.edit();
-        editor.clear();
-        editor.commit();
-        rebuildDisplay();
-    }
-
-    public int getIndexForCustomUrl() {
-        return defaultServers.size();
+    	loginServerManager.reset();
+    	rebuildDisplay();
     }
 
     @Override
@@ -191,18 +176,10 @@ public class ServerPickerActivity extends Activity implements
 
         // Object which allows reference to resources living outside the SDK
         salesforceR = ForceApp.APP.getSalesforceR();
+        
+        loginServerManager = ForceApp.APP.getLoginServerManager();
 
         setContentView(salesforceR.layoutServerPicker());
-
-        defaultServers = new ArrayList<Pair<String, String>>();
-
-        // start in one place for standard urls
-        defaultServers.add(new Pair<String, String>(
-                getString(salesforceR.stringAuthLoginProduction()),
-                OAuth2.DEFAULT_LOGIN_URL));
-        defaultServers.add(new Pair<String, String>(
-                getString(salesforceR.stringAuthLoginSandbox()),
-                OAuth2.SANDBOX_LOGIN_URL));
 
         SavedConfig savedConfig = (SavedConfig) getLastNonConfigurationInstance();
 
@@ -286,25 +263,14 @@ public class ServerPickerActivity extends Activity implements
     }
 
     private void restoreStartingState() {
-        SharedPreferences settings = getSharedPreferences(
-                LoginActivity.SERVER_URL_PREFS_SETTINGS,
-                Context.MODE_PRIVATE);
-        Editor edit = settings.edit();
-        edit.putInt(LoginActivity.SERVER_URL_PREFS_WHICH_SERVER,
-                startingIndex);
-        edit.commit();
+    	loginServerManager.setSelectedLoginServerByIndex(startingIndex);
     }
 
     /**
      * restore the starting index if the user cancels after setting a custom url
      */
     private void saveStartingState() {
-        SharedPreferences settings = getSharedPreferences(
-                LoginActivity.SERVER_URL_PREFS_SETTINGS,
-                Context.MODE_PRIVATE);
-        startingIndex = settings.getInt(
-                LoginActivity.SERVER_URL_PREFS_WHICH_SERVER,
-                DEFAULT_URL_SELECTION);
+        startingIndex = loginServerManager.getSelectedLoginServer().index;
     }
 
     /**
@@ -334,21 +300,9 @@ public class ServerPickerActivity extends Activity implements
             return;
         }
 
-        String selectedUrl = selectedView.getTag().toString();
-
-        SharedPreferences settings = getSharedPreferences(
-                LoginActivity.SERVER_URL_PREFS_SETTINGS,
-                Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = settings.edit();
-        // used here
-        editor.putInt(LoginActivity.SERVER_URL_PREFS_WHICH_SERVER,
-                selectedId);
-        // used by auth flow etc.
-        editor.putString(LoginActivity.SERVER_URL_CURRENT_SELECTION,
-                selectedUrl);
-        editor.commit();
+        loginServerManager.setSelectedLoginServerByIndex(selectedId);
     }
-
+    
     /**
      * clicked cancel or back button
      *
@@ -378,14 +332,18 @@ public class ServerPickerActivity extends Activity implements
      * selectedId -> childAtIndex, use findViewById
      *
      * @param radioGroup
+     * @param serer
      * @param index
      * @param isCustom
      * @param titleText
      * @param urlText
      */
-    private void setRadioState(RadioGroup radioGroup, int index,
-            boolean isCustom, String titleText, String urlText) {
-
+    private void setRadioState(RadioGroup radioGroup, LoginServer server) {
+    	int index = server.index;
+    	boolean isCustom = server.isCustom;
+    	String titleText = server.name;
+    	String urlText = server.url;
+    	
         RadioButton rb = new RadioButton(this);
 
         rb.setId(index);
@@ -478,44 +436,23 @@ public class ServerPickerActivity extends Activity implements
      * another way, select the correct radio button, show the custom url if set
      */
     private void setupRadioButtons() {
-
-        SharedPreferences settings = getSharedPreferences(
-                LoginActivity.SERVER_URL_PREFS_SETTINGS,
-                Context.MODE_PRIVATE);
-
         RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
 
-        int index = 0;
-        for (Pair<String, String> currServer : defaultServers) {
-            setRadioState(radioGroup, index, false, currServer.first,
-                    currServer.second);
-            index++;
+        for (LoginServer currentServer : loginServerManager.getDefaultLoginServers()) {
+            setRadioState(radioGroup, currentServer);
         }
 
         // custom url set, may or may not be selected. ui is a radio with an
         // edit link either way.
         View postView = findViewById(salesforceR.idShowCustomUrlEdit());
 
-        if (settings.getString(
-                LoginActivity.SERVER_URL_PREFS_CUSTOM_URL, null) != null) {
-
-            postView.setVisibility(View.GONE);
-
-            // add another radio button with an edit link set to the custom
-            // state, track the id correctly
-            setRadioState(
-                    radioGroup,
-                    getIndexForCustomUrl(),
-                    true,
-                    settings
-                            .getString(
-                                    LoginActivity.SERVER_URL_PREFS_CUSTOM_LABEL,
-                                    "Error"), settings.getString(
-                            LoginActivity.SERVER_URL_PREFS_CUSTOM_URL,
-                            "Error"));
-
-        } else {
-            postView.setVisibility(View.VISIBLE);
+        LoginServer customServer = loginServerManager.getCustomLoginServer();
+        if (customServer != null) {
+        	postView.setVisibility(View.GONE);
+            setRadioState(radioGroup, customServer);
+        }
+        else {
+        	postView.setVisibility(View.VISIBLE);
         }
 
         // set selection
@@ -524,9 +461,7 @@ public class ServerPickerActivity extends Activity implements
             which = restoredConfigIndex;
             restoredConfigIndex = -1;
         } else {
-            which = settings.getInt(
-                    LoginActivity.SERVER_URL_PREFS_WHICH_SERVER,
-                    DEFAULT_URL_SELECTION);
+            which = loginServerManager.getSelectedLoginServer().index;
         }
 
         radioGroup.check(which);

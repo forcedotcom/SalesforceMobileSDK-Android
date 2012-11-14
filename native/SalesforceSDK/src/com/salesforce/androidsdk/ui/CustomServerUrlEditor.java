@@ -26,11 +26,8 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import com.salesforce.androidsdk.app.ForceApp;
-
 import android.app.Dialog;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.SpannableString;
@@ -41,6 +38,10 @@ import android.webkit.URLUtil;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.auth.LoginServerManager;
+import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
 
 /**
  * Custom dialog to allow the user to set a label and url to use for the login.
@@ -54,6 +55,7 @@ public class CustomServerUrlEditor extends Dialog {
 
 	boolean isDefault;
 	private SalesforceR salesforceR;
+	private LoginServerManager loginServerManager;
 	private int width;
 
 	public CustomServerUrlEditor(Context context, int width) {
@@ -61,6 +63,9 @@ public class CustomServerUrlEditor extends Dialog {
 		
 		// Object which allows reference to resources living outside the SDK
 		salesforceR = ForceApp.APP.getSalesforceR();
+		
+		// Login server manager
+		loginServerManager = ForceApp.APP.getLoginServerManager();
 		
 		// Width
 		this.width = width;
@@ -121,18 +126,11 @@ public class CustomServerUrlEditor extends Dialog {
 	@Override
 	protected void onStart() {
 
-		final SharedPreferences settings = getContext().getSharedPreferences(
-				LoginActivity.SERVER_URL_PREFS_SETTINGS,
-				Context.MODE_PRIVATE);
-
-		String label = settings.getString(
-				LoginActivity.SERVER_URL_PREFS_CUSTOM_LABEL,
+		LoginServer customServer = loginServerManager.getCustomLoginServer();
+		String label = (customServer != null ? customServer.name : 
 				getEditDefaultValue((salesforceR.idPickerCustomLabel())));
-
-		String urlValue = settings.getString(
-				LoginActivity.SERVER_URL_PREFS_CUSTOM_URL,
+		String urlValue = (customServer != null ? customServer.url : 
 				getEditDefaultValue((salesforceR.idPickerCustomUrl())));
-
 		isDefault = urlValue
 				.equals(getString(salesforceR.stringServerUrlDefaultCustomUrl()));
 
@@ -167,22 +165,7 @@ public class CustomServerUrlEditor extends Dialog {
 				}
 
 				// save state and finish
-				// these settings are only used by the url chooser sys...
-				SharedPreferences.Editor editor = settings.edit();
-				editor.putString(
-						LoginActivity.SERVER_URL_PREFS_CUSTOM_LABEL,
-						lbl);
-				editor.putString(
-						LoginActivity.SERVER_URL_PREFS_CUSTOM_URL, val);
-
-				ServerPickerActivity cla = (ServerPickerActivity) getOwnerActivity();
-
-				editor.putInt(
-						LoginActivity.SERVER_URL_PREFS_WHICH_SERVER,
-						cla.getIndexForCustomUrl());
-
-				editor.commit();
-
+				loginServerManager.setCustomLoginServer(lbl, val);
 				dismiss();
 			}
 		});
