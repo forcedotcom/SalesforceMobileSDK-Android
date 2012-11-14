@@ -216,6 +216,13 @@ public class HttpAccess extends BroadcastReceiver {
     public synchronized boolean hasNetwork() {
         return hasNetwork;
     }
+    
+    /**
+     * @return user agent
+     */
+    public String getUserAgent() {
+    	return userAgent;
+    }
 
     /**
      * @param b
