@@ -57,13 +57,6 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  */
 public class LoginActivity extends AccountAuthenticatorActivity implements OAuthWebviewHelperEvents {
 
-	// Key for login servers properties stored in preferences
-	public static final String SERVER_URL_PREFS_SETTINGS = "server_url_prefs";
-	public static final String SERVER_URL_PREFS_CUSTOM_LABEL = "server_url_custom_label";
-	public static final String SERVER_URL_PREFS_CUSTOM_URL = "server_url_custom_url";
-	public static final String SERVER_URL_PREFS_WHICH_SERVER = "which_server_index";
-	public static final String SERVER_URL_CURRENT_SELECTION = "server_url_current_string";
-
 	// Request code when calling server picker activity
     public static final int PICK_SERVER_REQUEST_CODE = 10;
 
