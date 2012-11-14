@@ -1,19 +1,19 @@
 
-SQLCipher for Android 1.1.0-rc1
-2012/01/25
+SQLCipher for Android 2.0.9
+2012/11/12
 
 CHANGELOG
-- includes updates for ICS support
+- includes x86 support
 
 CURRENT TESTED PLATFORM SUPPORT
 
-Android 2.1   (SDK Level 7)
-Android 2.2   (SDK Level 8)
-Android 2.3   (SDK Level 9)
+Android 2.1 (SDK Level 7)
+Android 2.2 (SDK Level 8)
+Android 2.3 (SDK Level 9)
 Android 2.3.3 (SDK Level 10)
-Android 3.0   (SDK Level 11)
-Android 3.1   (SDK Level 12)
-Android 3.2   (SDK Level 13)
+Android 3.0 (SDK Level 11)
+Android 3.1 (SDK Level 12)
+Android 3.2 (SDK Level 13)
 Android 4.0   (SDK Level 14)
 Android 4.0.3 (SDK Level 15)
 
