@@ -9,7 +9,7 @@
     </application>
 
     <instrumentation android:targetPackage="com.salesforce.samples.sfdcaccounts" 
-                     android:name="com.zutubi.android.junitreport.JUnitReportTestRunner" 
+                     android:name="com.salesforce.androidsdk.util.JUnitReportTestRunner" 
                      android:label="Tests for SFDCAccounts" />
     
     <!-- device os versions http://developer.android.com/guide/publishing/versioning.html -->

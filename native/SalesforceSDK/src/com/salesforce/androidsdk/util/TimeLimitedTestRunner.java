@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,18 +24,47 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
 
-import net.sqlcipher.database.SQLiteDatabase;
+package com.salesforce.androidsdk.util;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import android.test.AndroidTestRunner;
+import android.util.Log;
 
 /**
- * Tests for plain smart store
- *
+ * A TestRunner that limits the lifetime of the test run.
  */
-public class PlainSmartStoreTest extends AbstractSmartStoreTest {
+public class TimeLimitedTestRunner extends AndroidTestRunner {
+    public TimeLimitedTestRunner(int maxRuntime, TimeUnit maxUnits) {
+        this.maxRuntime = maxRuntime;
+        this.maxRuntimeUnit = maxUnits;
+    }
 
-	@Override
-	protected SQLiteDatabase getWritableDatabase() {
-		return DBOpenHelper.getOpenHelper(targetContext).getWritableDatabase("");
-	}
+    private final long maxRuntime;
+    private final TimeUnit maxRuntimeUnit;
+
+    @Override
+    public void runTest() {
+        ExecutorService exec = Executors.newSingleThreadExecutor();
+        Future<Boolean> f = exec.submit(new Callable<Boolean>() {
+            @Override
+            public Boolean call() {
+                TimeLimitedTestRunner.super.runTest();
+                return true;
+            }
+        });
+        try {
+            f.get(maxRuntime, maxRuntimeUnit);
+        } catch (TimeoutException ex) {
+           Log.e("TimeLimitedTestRunner.runTest", String.format("TestRunner has timed out after: %d %s.", maxRuntime, maxRuntimeUnit.name()), ex);
+        } catch (Exception ex){
+            Log.e("TimeLimitedTestRunner.runTest", "TestRunner did not complete successfully, check the exception logged above.", ex);
+        }
+    }
 }

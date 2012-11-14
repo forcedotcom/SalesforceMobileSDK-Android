@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.app;
 
-import info.guardianproject.database.sqlcipher.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteDatabase;
 import android.app.Activity;
 
 import com.salesforce.androidsdk.store.DBOpenHelper;
