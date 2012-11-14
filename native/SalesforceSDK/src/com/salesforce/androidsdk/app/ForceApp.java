@@ -47,6 +47,7 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
+import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -141,8 +142,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         Encryptor.init(this);
 
         // Initialize the http client
-        String extendedUserAgent = getUserAgent() + " Native";
-        HttpAccess.init(this, extendedUserAgent);
+        HttpAccess.init(this, getUserAgent());
 
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
@@ -320,9 +320,8 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
     /**
      * Set a user agent string based on the mobile SDK version. We are building
-     * a user agent of the form: SalesforceMobileSDK/<salesforceSDK version>
-     * android/<android OS version> appName/appVersion
-     *
+     * a user agent of the form: 
+     *   SalesforceMobileSDK/<salesforceSDK version> android/<android OS version> appName/appVersion <Native|Hybrid>
      * @return The user agent string to use for all requests.
      */
     public final String getUserAgent() {
@@ -335,9 +334,17 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         } catch (NameNotFoundException e) {
             Log.w("ForceApp:getUserAgent", e);
         }
-        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s",
-                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion);
-    }
+	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native");
+	    return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s",
+	            SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, nativeOrHybrid);
+	}
+
+	/**
+	 * @return true if this is an hybrid application
+	 */
+	public boolean isHybrid() {
+		return SalesforceDroidGapActivity.class.isAssignableFrom(getMainActivityClass());
+	}
 
     /**
      * @return The authentication account type (should match authenticator.xml).
