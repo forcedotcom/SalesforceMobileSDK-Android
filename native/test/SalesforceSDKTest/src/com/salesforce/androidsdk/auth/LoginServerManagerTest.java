@@ -30,6 +30,7 @@ import java.util.List;
 
 import android.app.Instrumentation;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestForceApp;
@@ -38,15 +39,27 @@ import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.util.EventsListenerQueue;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
+/**
+ * Tests for LoginServerManager
+ *
+ */
 public class LoginServerManagerTest extends InstrumentationTestCase {
 
+	private static final String PRODUCTION_URL = "https://login.salesforce.com";
+	private static final String SANDBOX_URL = "https://test.salesforce.com";
+	private static final String CUSTOM_NAME = "New";
+	private static final String CUSTOM_URL = "https://new.com";
+	private static final String CUSTOM_NAME_2 = "New2";
+	private static final String CUSTOM_URL_2 = "https://new2.com";
+	
 	private LoginServerManager loginServerManager;
 	private EventsListenerQueue eq;
+	private Context targetContext;
 
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		Context targetContext = getInstrumentation().getTargetContext();
+		targetContext = getInstrumentation().getTargetContext();
         eq = new EventsListenerQueue();
 
         // Wait for app initialization to complete.
@@ -59,7 +72,10 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 
     @Override
     public void tearDown() throws Exception {
-        if (eq != null) {
+    	if (loginServerManager != null) {
+    		loginServerManager.reset();
+    	}
+    	if (eq != null) {
             eq.tearDown();
             eq = null;
         }
@@ -67,6 +83,17 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
         super.tearDown();
     }
 
+    /**
+	 * Test for getLoginServerFromURL
+	 */
+	public void testGetLoginServerFromURL() {
+		assertEquals("Expected production", "Production", loginServerManager.getLoginServerFromURL(PRODUCTION_URL).name);
+		assertEquals("Expected production", "Sandbox", loginServerManager.getLoginServerFromURL(SANDBOX_URL).name);
+		assertEquals("Expected production", "Other", loginServerManager.getLoginServerFromURL("https://other.salesforce.com").name);
+		assertNull("Expected null", loginServerManager.getLoginServerFromURL("https://wrong.salesforce.com"));
+	}	
+	
+    
 	/**
 	 * Test for getDefaultLoginServer
 	 */
@@ -79,17 +106,152 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	}
 
 	/**
-	 * Test for getLegacyLoginServers
+	 * Test for getSelectedLoginServer/setSelectedLoginServer when there is no custom login server
 	 */
-	public void testGetLegacyLoginServers() {
-		List<LoginServer> servers = loginServerManager.getLegacyLoginServers();
-		assertEquals("Wrong number of servers", 2, servers.size());
-		assertProduction(servers.get(0));
-		assertSandbox(servers.get(1));
+	public void testGetSetLoginServerWithoutCustomServer() {
+		// Starting point, nothing in prefs, production selected by default
+		checkPrefs(null, null, null);
+		assertProduction(loginServerManager.getSelectedLoginServer());
+		
+		// Selecting production
+		loginServerManager.setSelectedLoginServer(loginServerManager.getDefaultLoginServers().get(0));
+		checkPrefs(null, null, PRODUCTION_URL);
+		assertProduction(loginServerManager.getSelectedLoginServer());
+
+		// Selecting sandbox
+		loginServerManager.setSelectedLoginServer(loginServerManager.getDefaultLoginServers().get(1));
+		checkPrefs(null, null, SANDBOX_URL);
+		assertSandbox(loginServerManager.getSelectedLoginServer());
+		
+		// Selecting other
+		loginServerManager.setSelectedLoginServer(loginServerManager.getDefaultLoginServers().get(2));
+		assertOther(loginServerManager.getSelectedLoginServer());
 	}
 
 	/**
-	 * Test for getLegacyLoginServers
+	 * Test for getSelectedLoginServer/setSelectedLoginServer when there is a custom login server
+	 */
+	public void testGetSetLoginServerWithCustomServer() {
+		// Starting point, nothing in prefs, production selected by default
+		checkPrefs(null, null, null);
+		assertProduction(loginServerManager.getSelectedLoginServer());
+
+		// Setting custom. production should still be selected
+		loginServerManager.setCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
+		checkPrefs(CUSTOM_NAME, CUSTOM_URL, null);
+		assertProduction(loginServerManager.getSelectedLoginServer());
+		
+		// Selecting custom
+		loginServerManager.setSelectedLoginServer(loginServerManager.getCustomLoginServer());
+		checkPrefs(CUSTOM_NAME, CUSTOM_URL, CUSTOM_URL);
+		assertCustom(loginServerManager.getSelectedLoginServer());
+	}
+	
+	
+	/**
+	 * Test for getCustomLoginServer/setCustomLoginServer
+	 */
+	public void testGetSetCustomLoginServer() {
+		// Starting point, nothing in prefs, custom is null
+		checkPrefs(null, null, null);
+		assertNull("Expected no custom login server", loginServerManager.getCustomLoginServer());
+
+		// Adding custom
+		loginServerManager.setCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
+		checkPrefs(CUSTOM_NAME, CUSTOM_URL, null);
+		assertCustom(loginServerManager.getCustomLoginServer());
+		
+		// Changing custom
+		loginServerManager.setCustomLoginServer(CUSTOM_NAME_2, CUSTOM_URL_2);
+		checkPrefs(CUSTOM_NAME_2, CUSTOM_URL_2, null);
+		assertCustom2(loginServerManager.getCustomLoginServer());
+	}
+
+	/**
+	 * Test for useSandbox
+	 */
+	public void testUseSandbox() {
+		// Starting point, nothing in prefs, production selected by default
+		checkPrefs(null, null, null);
+		assertEquals("Expected production", PRODUCTION_URL, loginServerManager.getSelectedLoginServer().url);
+
+		// Calling useSandbox
+		loginServerManager.useSandbox();
+		assertSandbox(loginServerManager.getSelectedLoginServer());
+	}
+	
+	
+	/**
+	 * Test for setSelectedLoginServerByIndex when there is no custom login server
+	 */
+	public void testSetSelectedLoginServerByIndexWithoutCustomServer() {
+		// Starting point, nothing in prefs, production selected by default
+		checkPrefs(null, null, null);
+		assertProduction(loginServerManager.getSelectedLoginServer());
+		
+		// Selecting production
+		loginServerManager.setSelectedLoginServerByIndex(0);
+		checkPrefs(null, null, PRODUCTION_URL);
+		assertProduction(loginServerManager.getSelectedLoginServer());
+
+		// Selecting sandbox
+		loginServerManager.setSelectedLoginServerByIndex(1);
+		checkPrefs(null, null, SANDBOX_URL);
+		assertSandbox(loginServerManager.getSelectedLoginServer());
+		
+		// Selecting other
+		loginServerManager.setSelectedLoginServerByIndex(2);
+		assertOther(loginServerManager.getSelectedLoginServer());
+	}
+
+	/**
+	 * Test for setSelectedLoginServerByIndex when there is a custom login server
+	 */
+	public void testSetSelectedLoginServerByIndexWithCustomServer() {
+		// Starting point, nothing in prefs, production selected by default
+		checkPrefs(null, null, null);
+		assertProduction(loginServerManager.getSelectedLoginServer());
+
+		// Setting custom. production should still be selected
+		loginServerManager.setCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
+		checkPrefs(CUSTOM_NAME, CUSTOM_URL, null);
+		assertProduction(loginServerManager.getSelectedLoginServer());
+		
+		// Selecting custom
+		loginServerManager.setSelectedLoginServerByIndex(3);
+		checkPrefs(CUSTOM_NAME, CUSTOM_URL, CUSTOM_URL);
+		assertCustom(loginServerManager.getSelectedLoginServer());
+	}
+
+	
+	/**
+	 * Test for reset
+	 */
+	public void testReset() {
+		// Starting point, nothing in prefs, custom is null
+		checkPrefs(null, null, null);
+		assertNull("Expected no custom login server", loginServerManager.getCustomLoginServer());
+
+		// Adding custom
+		loginServerManager.setCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
+		checkPrefs(CUSTOM_NAME, CUSTOM_URL, null);
+		assertCustom(loginServerManager.getCustomLoginServer());
+		
+		// Selecting sandbox
+		loginServerManager.setSelectedLoginServerByIndex(1);
+		checkPrefs(CUSTOM_NAME, CUSTOM_URL, SANDBOX_URL);
+		assertSandbox(loginServerManager.getSelectedLoginServer());
+		
+		// Calling reset - selection should go back to production and prefs should be cleared
+		loginServerManager.reset();
+		checkPrefs(null, null, null);
+		assertNull("Expected no custom login server", loginServerManager.getCustomLoginServer());
+		assertProduction(loginServerManager.getSelectedLoginServer());
+	}
+	
+	
+	/**
+	 * Test for getLoginServersFromXML
 	 */
 	public void testGetLoginServersFromXML() {
 		List<LoginServer> servers = loginServerManager.getLoginServersFromXML();
@@ -99,27 +261,21 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 		assertOther(servers.get(2));
 	}
 	
-	/**
-	 * Test for getLoginServerFromURL
-	 */
-	public void testGetLoginServerFromURL() {
-		assertEquals("Expected production", "Production", loginServerManager.getLoginServerFromURL("https://login.salesforce.com").name);
-		assertEquals("Expected production", "Sandbox", loginServerManager.getLoginServerFromURL("https://test.salesforce.com").name);
-		assertEquals("Expected production", "Other", loginServerManager.getLoginServerFromURL("https://other.salesforce.com").name);
-		assertNull("Expected null", loginServerManager.getLoginServerFromURL("https://wrong.salesforce.com"));
-	}	
 	
-	
+	//
+	// Helper methods
+	//
+
 	private void assertProduction(LoginServer server) {
-		assertEquals("Expected production", "Production", server.name);
-		assertEquals("Expected production's login", "https://login.salesforce.com", server.url);
+		assertEquals("Expected production's name", "Production", server.name);
+		assertEquals("Expected production's url", PRODUCTION_URL, server.url);
 		assertEquals("Expected production to be index 0", 0, server.index);
 		assertEquals("Expected production to be marked as not custom", false, server.isCustom);
 	}
 
 	private void assertSandbox(LoginServer server) {
-		assertEquals("Expected sandbox", "Sandbox", server.name);
-		assertEquals("Expected sandbox's login", "https://test.salesforce.com", server.url);
+		assertEquals("Expected sandbox's name", "Sandbox", server.name);
+		assertEquals("Expected sandbox's url", SANDBOX_URL, server.url);
 		assertEquals("Expected sandbox to be index 1", 1, server.index);
 		assertEquals("Expected sandbox to be marked as not custom", false, server.isCustom);
 	}
@@ -129,10 +285,52 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	 * @param server
 	 */
 	private void assertOther(LoginServer server) {
-		assertEquals("Expected other", "Other", server.name);
-		assertEquals("Expected other's login", "https://other.salesforce.com", server.url);
+		assertEquals("Expected other's name", "Other", server.name);
+		assertEquals("Expected other's url", "https://other.salesforce.com", server.url);
 		assertEquals("Expected other to be index 2", 2, server.index);
 		assertEquals("Expected other to be marked as not custom", false, server.isCustom);
+	}
+
+	private void assertCustom(LoginServer server) {
+		assertEquals("Expected custom's name", CUSTOM_NAME, server.name);
+		assertEquals("Expected custom's url", CUSTOM_URL, server.url);
+		assertEquals("Expected custom to be index 3", 3, server.index);
+		assertEquals("Expected custom to be marked as not custom", true, server.isCustom);
+	}	
+	
+	private void assertCustom2(LoginServer server) {
+		assertEquals("Expected custom2's name", CUSTOM_NAME_2, server.name);
+		assertEquals("Expected custom2's url", CUSTOM_URL_2, server.url);
+		assertEquals("Expected custom2 to be index 3", 3, server.index);
+		assertEquals("Expected custom2 to be marked as not custom", true, server.isCustom);
+	}		
+	
+	/**
+	 * Check custom label, custom url and current selection preferences
+	 * @param customLabel
+	 * @param customUrl
+	 * @param currentSelection
+	 */
+	private void checkPrefs(String customLabel, String customUrl, String currentSelection) {
+		SharedPreferences settings = targetContext.getSharedPreferences(LoginServerManager.SERVER_URL_PREFS_SETTINGS, Context.MODE_PRIVATE);
+		checkPref(settings, LoginServerManager.SERVER_URL_PREFS_CUSTOM_LABEL, customLabel);
+		checkPref(settings, LoginServerManager.SERVER_URL_PREFS_CUSTOM_URL, customUrl);
+		checkPref(settings, LoginServerManager.SERVER_URL_CURRENT_SELECTION, currentSelection);
+	}
+	
+	/**
+	 * Check one preference
+	 * @param settings
+	 * @param key
+	 * @param expectedValue
+	 */
+	private void checkPref(SharedPreferences settings, String key, String expectedValue) {
+		if (expectedValue == null) {
+			assertFalse("Expected null value for key " + key, settings.contains(key));
+		}
+		else {
+			assertEquals("Expected value " + expectedValue + " for " + key, expectedValue, settings.getString(key, null));
+		}
 	}
 
 }

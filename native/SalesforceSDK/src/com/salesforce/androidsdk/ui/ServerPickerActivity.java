@@ -102,7 +102,7 @@ public class ServerPickerActivity extends Activity implements
     boolean wasEditUrlDialogCanceled = false;
 
     private void clearCustomUrlSetting() {
-    	loginServerManager.clearCustomLoginServer();
+    	loginServerManager.reset();
     	rebuildDisplay();
     }
 

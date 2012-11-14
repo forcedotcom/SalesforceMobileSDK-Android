@@ -195,11 +195,10 @@ public class LoginServerManager {
 	
 	/**
 	 * Clear custom login server in memory and pref file
+	 * Reset selected server to be the first default login server (production)
 	 */
-	public void clearCustomLoginServer() {
-		if (selectedServer == customServer) {
-			selectedServer = defaultLoginServers.get(0);
-		}
+	public void reset() {
+		selectedServer = defaultLoginServers.get(0);
 		customServer = null;
 
 		// Update pref
