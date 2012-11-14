@@ -47,6 +47,7 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 
 	private static final String PRODUCTION_URL = "https://login.salesforce.com";
 	private static final String SANDBOX_URL = "https://test.salesforce.com";
+	private static final String OTHER_URL = "https://other.salesforce.com";
 	private static final String CUSTOM_NAME = "New";
 	private static final String CUSTOM_URL = "https://new.com";
 	private static final String CUSTOM_NAME_2 = "New2";
@@ -87,9 +88,9 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	 * Test for getLoginServerFromURL
 	 */
 	public void testGetLoginServerFromURL() {
-		assertEquals("Expected production", "Production", loginServerManager.getLoginServerFromURL(PRODUCTION_URL).name);
-		assertEquals("Expected production", "Sandbox", loginServerManager.getLoginServerFromURL(SANDBOX_URL).name);
-		assertEquals("Expected production", "Other", loginServerManager.getLoginServerFromURL("https://other.salesforce.com").name);
+        assertProduction(loginServerManager.getLoginServerFromURL(PRODUCTION_URL));
+        assertSandbox(loginServerManager.getLoginServerFromURL(SANDBOX_URL));
+        assertOther(loginServerManager.getLoginServerFromURL(OTHER_URL));
 		assertNull("Expected null", loginServerManager.getLoginServerFromURL("https://wrong.salesforce.com"));
 	}	
 	
@@ -286,7 +287,7 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	 */
 	private void assertOther(LoginServer server) {
 		assertEquals("Expected other's name", "Other", server.name);
-		assertEquals("Expected other's url", "https://other.salesforce.com", server.url);
+		assertEquals("Expected other's url", OTHER_URL, server.url);
 		assertEquals("Expected other to be index 2", 2, server.index);
 		assertEquals("Expected other to be marked as not custom", false, server.isCustom);
 	}
