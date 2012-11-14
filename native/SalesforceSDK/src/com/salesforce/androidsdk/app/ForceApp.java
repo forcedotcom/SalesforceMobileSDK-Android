@@ -42,6 +42,7 @@ import android.webkit.CookieSyncManager;
 import com.salesforce.androidsdk.auth.AccountWatcher;
 import com.salesforce.androidsdk.auth.AccountWatcher.AccountRemoved;
 import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
@@ -128,6 +129,9 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
     // passcode manager
     private PasscodeManager passcodeManager;
+    
+    // login server manager
+    private LoginServerManager loginServerManager;
 
     @Override
     public void onCreate() {
@@ -166,6 +170,17 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         ForceApp.APP.cleanUp(null);
     }
 
+    /**
+     * @return The login server manager associated with the app.
+     */
+    public synchronized LoginServerManager getLoginServerManager() {
+
+        if (loginServerManager == null) {
+        	loginServerManager = new LoginServerManager(this);
+        }
+        return loginServerManager;
+    }    
+    
     /**
      * @return The passcode manager associated with the app.
      */

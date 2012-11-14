@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,18 +24,19 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
 
-import net.sqlcipher.database.SQLiteDatabase;
+package com.salesforce.androidsdk.util;
+
+import java.util.concurrent.TimeUnit;
+
+import android.test.AndroidTestRunner;
 
 /**
- * Tests for plain smart store
- *
+ * This extends the report runner that generates a standard junit report file, with the timerun cap.
  */
-public class PlainSmartStoreTest extends AbstractSmartStoreTest {
+public class JUnitReportTestRunner extends com.zutubi.android.junitreport.JUnitReportTestRunner {
 
-	@Override
-	protected SQLiteDatabase getWritableDatabase() {
-		return DBOpenHelper.getOpenHelper(targetContext).getWritableDatabase("");
-	}
+    protected AndroidTestRunner makeAndroidTestRunner() {
+        return new TimeLimitedTestRunner(60 * 60, TimeUnit.SECONDS);
+    }
 }

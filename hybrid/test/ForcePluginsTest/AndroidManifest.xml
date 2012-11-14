@@ -53,7 +53,7 @@
     </application>
     
     <instrumentation android:targetPackage="com.salesforce.androidsdk.tests" 
-                     android:name="com.zutubi.android.junitreport.JUnitReportTestRunner" 
+                     android:name="com.salesforce.androidsdk.util.JUnitReportTestRunner"
                      android:label="Tests for Force Plugins" />
 
 </manifest>

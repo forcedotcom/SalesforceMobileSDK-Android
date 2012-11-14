@@ -1,11 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <plugins>
-    <access origin="http://127.0.0.1*"/> <!-- allow local pages -->
-    <access origin="https://force.com" subdomains="true" />
-    <access origin="https://salesforce.com" subdomains="true" />
-    <log level="DEBUG"/>
-    <preference name="classicRender" value="true" />
-
     <plugin name="App" value="org.apache.cordova.App"/>
     <plugin name="Geolocation" value="org.apache.cordova.GeoBroker"/>
     <plugin name="Device" value="org.apache.cordova.Device"/>
@@ -23,4 +17,6 @@
     <plugin name="Capture" value="org.apache.cordova.Capture"/>
     <plugin name="com.salesforce.oauth" value="com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin"/>
     <plugin name="com.salesforce.sdkinfo" value="com.salesforce.androidsdk.phonegap.SDKInfoPlugin"/>
+    <plugin name="com.salesforce.smartstore" value="com.salesforce.androidsdk.phonegap.SmartStorePlugin"/>
+    <plugin name="com.salesforce.testrunner" value="com.salesforce.androidsdk.phonegap.TestRunnerPlugin"/>
 </plugins>
