@@ -31,6 +31,8 @@ import org.json.JSONObject;
 
 import android.webkit.WebView;
 
+import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
@@ -59,6 +61,25 @@ public class ContactExplorerTest extends HybridInstrumentationTestCase {
 		waitForEvent(EventType.LogoutComplete);
 		cleanupActivityFollowingLogout();
 	}
+
+	/**
+	 * Load app and check the user agent of the webview
+	 * @throws Exception
+	 */
+	public void testUserAgentOfWebView() throws Exception {
+		String userAgent = gapWebView.getSettings().getUserAgentString();
+		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + ForceApp.SDK_VERSION));
+		assertTrue("User agent should contain ContactExplorer/1.0 Hybrid", userAgent.contains("ContactExplorer/1.0 Hybrid"));
+	}
+	
+	/**
+	 * Check the user agent used by http access
+	 */
+	public void testUserAgentOfHttpAccess() {
+		String userAgent = HttpAccess.DEFAULT.getUserAgent();
+		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + ForceApp.SDK_VERSION));
+		assertTrue("User agent should contain ContactExplorer/1.0 Hybrid", userAgent.contains("ContactExplorer/1.0 Hybrid"));
+	}	
 
 	private void validateResponse(String data, String expectedType) throws JSONException {
 		JSONObject response = (new JSONObject(data)).getJSONObject("0"); // we get the arguments dictionary back from javascript
