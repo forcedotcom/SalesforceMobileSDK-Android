@@ -26,6 +26,8 @@
  */
 package com.salesforce.samples.vfconnector;
 
+import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
 
 /**
@@ -33,9 +35,31 @@ import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
  */
 public class VFConnectorTest extends HybridInstrumentationTestCase {
 
+	/**
+	 * Load app and check the body of the webview
+	 * @throws Exception
+	 */
 	public void testLoad() throws Exception {
 		String bodyHTML = getHTML("document.body");
 		assertTrue("Page should contain 'This is your new Page'", bodyHTML.contains("This is your new Page"));
 	}
 
+	/**
+	 * Load app and check the user agent of the webview
+	 * @throws Exception
+	 */
+	public void testUserAgentOfWebView() throws Exception {
+		String userAgent = gapWebView.getSettings().getUserAgentString();
+		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + ForceApp.SDK_VERSION));
+		assertTrue("User agent should contain VFConnector/1.0 Hybrid", userAgent.contains("VFConnector/1.0 Hybrid"));
+	}
+	
+	/**
+	 * Check the user agent used by http access
+	 */
+	public void testUserAgentOfHttpAccess() {
+		String userAgent = HttpAccess.DEFAULT.getUserAgent();
+		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + ForceApp.SDK_VERSION));
+		assertTrue("User agent should contain VFConnector/1.0 Hybrid", userAgent.contains("VFConnector/1.0 Hybrid"));
+	}
 }
