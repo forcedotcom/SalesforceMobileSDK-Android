@@ -43,7 +43,9 @@ import com.salesforce.androidsdk.auth.AccountWatcher;
 import com.salesforce.androidsdk.auth.AccountWatcher.AccountRemoved;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.LoginServerManager;
+import com.salesforce.androidsdk.phonegap.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -76,6 +78,8 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     private String encryptionKey;
     private AccountWatcher accWatcher;
     private SalesforceR salesforceR = new SalesforceR();
+    private PasscodeManager passcodeManager;
+    private LoginServerManager loginServerManager;
 
     /**************************************************************************************************
      *
@@ -128,11 +132,28 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         return LoginActivity.class;
     }
 
-    // passcode manager
-    private PasscodeManager passcodeManager;
-    
-    // login server manager
-    private LoginServerManager loginServerManager;
+	/**
+     * Note: Native applications need to override getLoginOptions in their subclass of ForceApp
+	 * @return login options for the app
+	 */
+	public LoginOptions getLoginOptions() {
+		if (isHybrid()) {
+            BootConfig config = BootConfig.getBootConfig(this);		
+		
+            // Get clientManager
+            LoginOptions loginOptions = new LoginOptions(
+                                                         null, // set by app
+                                                         getPasscodeHash(),
+                                                         config.getOauthRedirectURI(),
+                                                         config.getRemoteAccessConsumerKey(),
+                                                         config.getOauthScopes());
+        
+            return loginOptions;
+		}
+		else {
+            throw new RuntimeException("Native applications need to override getLoginOptions in their subclass of ForceApp");
+		}
+	}
 
     @Override
     public void onCreate() {
