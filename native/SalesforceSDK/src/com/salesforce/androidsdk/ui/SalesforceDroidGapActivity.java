@@ -54,7 +54,6 @@ import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
 import com.salesforce.androidsdk.phonegap.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
@@ -117,15 +116,8 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		// Get bootconfig
 		bootconfig = BootConfig.getBootConfig(this);
 
-		// Get clientManager
-        LoginOptions loginOptions = new LoginOptions(
-                null, // set by app
-                ForceApp.APP.getPasscodeHash(),
-                bootconfig.getOauthRedirectURI(),
-                bootconfig.getRemoteAccessConsumerKey(),
-                bootconfig.getOauthScopes());
-        
-        clientManager = new ClientManager(this, ForceApp.APP.getAccountType(), loginOptions);
+        // Get clientManager
+        clientManager = new ClientManager(this, ForceApp.APP.getAccountType(), ForceApp.APP.getLoginOptions());
 		
         // Get client (if already logged in)
         try {

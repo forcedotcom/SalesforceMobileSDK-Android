@@ -29,6 +29,7 @@ package com.salesforce.samples.templateapp;
 import android.app.Activity;
 
 import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
 
 
@@ -40,6 +41,17 @@ public class TemplateApp extends ForceApp {
 	@Override
 	public Class<? extends Activity> getMainActivityClass() {
 		return MainActivity.class;
+	}
+	
+	@Override
+	public LoginOptions getLoginOptions() {
+    	LoginOptions loginOptions = new LoginOptions(
+    			null, // login host is chosen by user through the server picker 
+    			ForceApp.APP.getPasscodeHash(),
+    			getString(R.string.oauth_callback_url),
+    			getString(R.string.oauth_client_id),
+    			new String[] {"api"});
+    	return loginOptions;
 	}
 	
 	@Override

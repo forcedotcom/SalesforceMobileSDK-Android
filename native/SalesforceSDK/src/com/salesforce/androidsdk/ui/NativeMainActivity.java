@@ -52,11 +52,6 @@ public abstract class NativeMainActivity extends Activity {
     **************************************************************************************************/
 
 	/**
-	 * @return LoginOptions to use for this application
-	 */
-	protected abstract LoginOptions getLoginOptions();
-
-	/**
 	 * Method is called after the activity resumes once we have a RestClient
 	 * 
 	 * @param client
@@ -86,7 +81,7 @@ public abstract class NativeMainActivity extends Activity {
 		
 			// Login options
 			String accountType = ForceApp.APP.getAccountType();
-	    	LoginOptions loginOptions = getLoginOptions();
+	    	LoginOptions loginOptions = ForceApp.APP.getLoginOptions();
 			
 			// Get a rest client
 			new ClientManager(this, accountType, loginOptions).getRestClient(this, new RestClientCallback() {
