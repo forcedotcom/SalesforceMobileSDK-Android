@@ -103,10 +103,18 @@ public class AuthenticatorService extends Service {
                         Bundle options)
                 throws NetworkErrorException {
             // Log.i("Authenticator:addAccount", "Options: " + options);
-            return makeAuthIntentBundle(response, options);
+        	if (isAddFromSettings(options)) {
+        		options.putAll(ForceApp.APP.getLoginOptions().asBundle());
+        	}
+        	return makeAuthIntentBundle(response, options);
         }
 
-        /**
+        private boolean isAddFromSettings(Bundle options) {
+			// Is there a better way? 
+        	return options.containsKey("androidPackageName") && options.getString("androidPackageName").equals("com.android.settings");
+		}
+
+		/**
          * Uses the refresh token to get a new access token.
          * Remember that the authenticator runs under its own separate process, so if you want to debug you
          * need to attach to the :auth process, and not the main chatter process.

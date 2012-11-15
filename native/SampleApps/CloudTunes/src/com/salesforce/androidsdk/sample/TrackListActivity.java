@@ -48,13 +48,8 @@ public class TrackListActivity  extends Activity{
 		super.onResume();
 		
 		// Login options
-		String accountType = getString(R.string.account_type);
-		LoginOptions loginOptions = new LoginOptions(
-				null, // gets overridden by LoginActivity based on server picked by uuser 
-				ForceApp.APP.getPasscodeHash(),
-				getString(R.string.oauth_callback_url),
-				getString(R.string.oauth_client_id),
-				new String[] {"api"});
+		String accountType = ForceApp.APP.getAccountType();
+		LoginOptions loginOptions = ForceApp.APP.getLoginOptions();
 		
 		new ClientManager(this, accountType, loginOptions).getRestClient(this, new RestClientCallback() {
 			@Override

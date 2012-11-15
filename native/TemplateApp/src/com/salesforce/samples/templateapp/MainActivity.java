@@ -38,7 +38,6 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -72,17 +71,6 @@ public class MainActivity extends NativeMainActivity {
 		
 		super.onResume();
 	}		
-		
-	@Override
-	protected LoginOptions getLoginOptions() {
-    	LoginOptions loginOptions = new LoginOptions(
-    			null, // login host is chosen by user through the server picker 
-    			ForceApp.APP.getPasscodeHash(),
-    			getString(R.string.oauth_callback_url),
-    			getString(R.string.oauth_client_id),
-    			new String[] {"api"});
-    	return loginOptions;
-	}
 	
 	@Override
 	public void onResume(RestClient client) {
