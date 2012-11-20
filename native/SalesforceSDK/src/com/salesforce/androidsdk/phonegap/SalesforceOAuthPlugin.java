@@ -28,12 +28,15 @@ package com.salesforce.androidsdk.phonegap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.cordova.DroidGap;
 import org.apache.cordova.api.CallbackContext;
 import org.apache.cordova.api.PluginResult;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -57,6 +60,7 @@ import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.ui.SalesforceGapViewClient;
 
 /**
@@ -64,8 +68,6 @@ import com.salesforce.androidsdk.ui.SalesforceGapViewClient;
  */
 public class SalesforceOAuthPlugin extends ForcePlugin {
     // Keys in oauth properties map
-    private static final String AUTO_REFRESH_ON_FOREGROUND = "autoRefreshOnForeground";
-    private static final String AUTO_REFRESH_PERIODICALLY = "autoRefreshPeriodically";
     private static final String OAUTH_REDIRECT_URI = "oauthRedirectURI";
     private static final String OAUTH_SCOPES = "oauthScopes";
     private static final String REMOTE_ACCESS_CONSUMER_KEY = "remoteAccessConsumerKey";
@@ -80,13 +82,9 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     private static final String USER_ID = "userId";
     private static final String REFRESH_TOKEN = "refreshToken";
     private static final String ACCESS_TOKEN = "accessToken";
-
-    // Min refresh interval (needs to be shorter than shortest session setting)
-    private static final int MIN_REFRESH_INTERVAL_MILLISECONDS = 10*60*1000; // 10 minutes
-
+    
     // Used in refresh REST call
-    private static final String API_VERSION = "v23.0";
-
+	private static final String API_VERSION = "v26.0";
 
     /**
      * Supported plugin actions that the client can take.
@@ -101,44 +99,41 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     /* static because it needs to survive plugin being torn down when a new URL is loaded */
     private static ClientManager clientManager;
     private static RestClient client;
-    private static boolean autoRefreshOnForeground;
-    private static boolean autoRefreshPeriodically;
-    private static long lastRefreshTime = -1;
 
     /**
-     * If auto-refresh on foreground is enabled, this method will be called when the app resumes.
-     * If auto-refresh periodically is enabled, this method will be called periodically.
-     * Does a cheap rest call:
-     * - if session has already expired, the access token will be refreshed
-     * - otherwise it will get extended
+     * If an action causes a redirect to the login page, this method will be called.
+     * It causes the session to be refreshed and reloads url through the front door.
+     * @param ctx the calling activity
      * @param webView the WebView running the application.
-     * @param ctx the Phonegap activity for the app.
+     * @param url the page to load once the session has been refreshed.
      */
-    public static void autoRefresh(final WebView webView, final DroidGap ctx) {
-        Log.i("SalesforceOAuthPlugin.autoRefresh", "autoRefresh called");
+    public static void refresh(final Activity ctx, final WebView webView, final String url) {
+        Log.i("SalesforceOAuthPlugin.refresh", "refresh called");
         // Do a cheap rest call - access token will be refreshed if needed
         client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
-            @Override
-            public void onSuccess(RestRequest request, RestResponse response) {
-                Log.i("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Auto-refresh succeeded");
-                updateRefreshTime();
-                setSidCookies(webView, SalesforceOAuthPlugin.client);
-                Log.i("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Firing salesforceSessionRefresh event");
-                ctx.sendJavascript("cordova.fireDocumentEvent('salesforceSessionRefresh'," + getJSONCredentials(SalesforceOAuthPlugin.client).toString() + ");");
-            }
-
-            @Override
-            public void onError(Exception exception) {
-                Log.w("SalesforceOAuthPlugin.autoRefreshIfNeeded", "Auto-refresh failed - " + exception);
-
-                // Only logout if we are NOT offline
-                if (!(exception instanceof NoNetworkException)) {
-                    logout(ctx);
+                @Override
+                public void onSuccess(RestRequest request, RestResponse response) {
+                    Log.i("SalesforceOAuthPlugin.refresh", "Refresh succeeded");
+                    setSidCookies(webView, SalesforceOAuthPlugin.client);
+                    // XXX Does it still make sense to fire a refresh event?
+                    // Log.i("SalesforceOAuthPlugin.refresh", "Firing salesforceSessionRefresh event");
+                    // ctx.sendJavascript("cordova.fireDocumentEvent('salesforceSessionRefresh'," + getJSONCredentials(SalesforceOAuthPlugin.client).toString() + ");");
+                    String frontDoorUrl = getFrontDoorUrl(url);
+                    ((SalesforceDroidGapActivity) ctx).loadUrl(frontDoorUrl);
                 }
-            }
-        });
-    }
 
+                @Override
+                public void onError(Exception exception) {
+                    Log.w("SalesforceOAuthPlugin.refresh", "Refresh failed - " + exception);
+
+                    // Only logout if we are NOT offline
+                    if (!(exception instanceof NoNetworkException)) {
+                        logout(((SalesforceDroidGapActivity) ctx));
+                    }
+                }
+            });
+    }    
+    
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, CallbackContext callbackContext) throws JSONException {
         // Figure out action
@@ -170,8 +165,6 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         JSONObject oauthProperties = new JSONObject((String) args.get(0));
         LoginOptions loginOptions = parseLoginOptions(oauthProperties);
         clientManager = new ClientManager(cordova.getActivity(), ForceApp.APP.getAccountType(), loginOptions);
-        autoRefreshOnForeground = oauthProperties.getBoolean(AUTO_REFRESH_ON_FOREGROUND);
-        autoRefreshPeriodically = oauthProperties.getBoolean(AUTO_REFRESH_PERIODICALLY);
         clientManager.getRestClient(cordova.getActivity(), new RestClientCallback() {
             @Override
             public void authenticatedRestClient(RestClient c) {
@@ -182,26 +175,8 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
                 else {
                     Log.i("SalesforceOAuthPlugin.authenticate", "authenticate successful");
                     SalesforceOAuthPlugin.client = c;
-
-                    // Do a cheap rest call - access token will be refreshed if needed
-                    // If the login took place a while back (e.g. the already logged in application was restarted)
-                    // Then the returned session id (access token) might be stale
-                    // It's not an issue if one uses exclusively RestClient for calling the server
-                    // because it takes care of refreshing the access token when needed
-                    // But a stale session id will cause the webview to redirect to the web login
-                    SalesforceOAuthPlugin.client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
-                        @Override
-                        public void onSuccess(RestRequest request, RestResponse response) {
-                            updateRefreshTime();
-                            setSidCookies(webView, SalesforceOAuthPlugin.client);
-                            callbackContext.success(getJSONCredentials(SalesforceOAuthPlugin.client));
-                        }
-
-                        @Override
-                        public void onError(Exception exception) {
-                            callbackContext.error(exception.getMessage());
-                        }
-                    });
+                    setSidCookies(webView, SalesforceOAuthPlugin.client);
+                    callbackContext.success(getJSONCredentials(SalesforceOAuthPlugin.client));
                 }
             }
         });
@@ -253,39 +228,22 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         callbackContext.success();
     }
 
-    /**************************************************************************************************
-     *
-     * Helper methods for auto-refresh
-     *
-     **************************************************************************************************/
+    
 
     /**
-     * @return true if periodic auto-refresh should take place now
+     * @param url
+     * @return front-door url
      */
-    public static boolean shouldAutoRefreshPeriodically() {
-        Log.i("SalesforceOAuthPlugin.shouldAutoRefreshPeriodically", "" + autoRefreshPeriodically);
-        return autoRefreshPeriodically;
-    }
-
-    /**
-     * @return true if periodic auto-refresh on foreground should take place now
-     */
-    public static boolean shouldAutoRefreshOnForeground() {
-        boolean b = autoRefreshOnForeground
-                && lastRefreshTime > 0 // we have authenticated
-                &&  (System.currentTimeMillis() - lastRefreshTime > MIN_REFRESH_INTERVAL_MILLISECONDS);
-        Log.i("SalesforceOAuthPlugin.shouldAutoRefreshOnForeground", "" + b);
-        return b;
-    }
-
-    /**
-     * Update last refresh time to avoid un-necessary auto-refresh
-     */
-    private static void updateRefreshTime() {
-        Log.i("SalesforceOAuthPlugin.updateRefreshTime", "lastRefreshTime before: " + lastRefreshTime);
-        lastRefreshTime = System.currentTimeMillis();
-        Log.i("SalesforceOAuthPlugin.updateRefreshTime", "lastRefreshTime after: " + lastRefreshTime);
-    }
+    private static String getFrontDoorUrl(String url) {
+    	Log.i("SalesforceOAuthPlugin.loadPageThroughFrontDoor", "loading: " + url);
+		String frontDoorUrl = client.getClientInfo().instanceUrl.toString() + "/secur/frontdoor.jsp?";
+		List<NameValuePair> params = new LinkedList<NameValuePair>();
+		params.add(new BasicNameValuePair("sid", client.getAuthToken()));
+		params.add(new BasicNameValuePair("retURL", url));
+		params.add(new BasicNameValuePair("display", "touch"));
+		frontDoorUrl += URLEncodedUtils.format(params, "UTF-8");
+		return frontDoorUrl;
+    }    
 
     /**************************************************************************************************
      *
@@ -348,9 +306,6 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     protected static void logout(Activity ctx) {
         ForceApp.APP.logout(ctx);
         SalesforceOAuthPlugin.client = null;
-        SalesforceOAuthPlugin.autoRefreshOnForeground = false;
-        SalesforceOAuthPlugin.autoRefreshPeriodically = false;
-        SalesforceOAuthPlugin.lastRefreshTime = -1;
     }
 
 
