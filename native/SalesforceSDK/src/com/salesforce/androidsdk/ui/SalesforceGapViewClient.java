@@ -30,6 +30,7 @@ package com.salesforce.androidsdk.ui;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
@@ -39,11 +40,13 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.net.Uri;
 import android.util.Log;
 import android.webkit.WebView;
 
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.UriFragmentParser;
 
 public class SalesforceGapViewClient extends CordovaWebViewClient {
 
@@ -72,6 +75,38 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
         this.ctx = cordova.getActivity();
     }
 
+    @Override
+    public boolean shouldOverrideUrlLoading(final WebView view, String url) {
+        String startURL = isLoginRedirect(url);
+        if (startURL != null) {
+        	((SalesforceDroidGapActivity) ctx).refresh(startURL);
+        	return true;
+        }
+        else {
+        	return super.shouldOverrideUrlLoading(view,  url);
+        }
+    }
+    
+    /**
+     * Login redirect are of the form https://host/?ec=30x&startURL=xyz
+     * @param url
+     * @return null if this is not a login redirect and return the the value for startURL if this is a login redirect
+     */
+    private String isLoginRedirect(String url) {
+    	Uri uri = Uri.parse(url);
+        Map<String, String> params = UriFragmentParser.parse(uri);
+    	String ec = params.get("ec");
+        String startURL = params.get("startURL");
+    	if (uri.getPath().equals("/")
+    			&& ec != null && (ec.equals("301") || ec.equals("302"))
+    			&& startURL != null) {
+    		return startURL;
+    	}
+    	else {
+    		return null;
+    	}
+    }
+    
 
     /**
      * Notify the host application that a page has finished loading.
