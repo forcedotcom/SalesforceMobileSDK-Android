@@ -77,18 +77,34 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
 
     @Override
     public boolean shouldOverrideUrlLoading(final WebView view, String url) {
-    	// Are we being redirected to the login page
-    	Uri callbackUri = Uri.parse(url);
-        Map<String, String> params = UriFragmentParser.parse(callbackUri);
-        String ec = params.get("ec");
-        String startURL = params.get("startURL");
-        if (ec != null && (ec.equals("301") || ec.equals("302"))) {
+        String startURL = isLoginRedirect(url);
+        if (startURL != null) {
         	SalesforceOAuthPlugin.refresh(ctx, view, startURL);
         	return true;
         }
         else {
         	return super.shouldOverrideUrlLoading(view,  url);
         }
+    }
+    
+    /**
+     * Login redirect are of the form https://host/?ec=30x&startURL=xyz
+     * @param url
+     * @return null if this is not a login redirect and return the the value for startURL if this is a login redirect
+     */
+    private String isLoginRedirect(String url) {
+    	Uri uri = Uri.parse(url);
+        Map<String, String> params = UriFragmentParser.parse(uri);
+    	String ec = params.get("ec");
+        String startURL = params.get("startURL");
+    	if (uri.getPath().equals("/")
+    			&& ec != null && (ec.equals("301") || ec.equals("302"))
+    			&& startURL != null) {
+    		return startURL;
+    	}
+    	else {
+    		return null;
+    	}
     }
     
 
