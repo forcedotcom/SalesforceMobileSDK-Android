@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk;
 
 import android.content.Context;
+import com.salesforce.androidsdk.tests.R;
 
 
 /**
