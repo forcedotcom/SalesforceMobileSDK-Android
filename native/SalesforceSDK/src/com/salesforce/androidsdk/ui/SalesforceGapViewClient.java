@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.ui;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
@@ -38,11 +39,14 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.net.Uri;
 import android.util.Log;
 import android.webkit.WebView;
 
+import com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.UriFragmentParser;
 
 public class SalesforceGapViewClient extends CordovaWebViewClient {
 
@@ -71,6 +75,22 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
         this.ctx = cordova.getActivity();
     }
 
+    @Override
+    public boolean shouldOverrideUrlLoading(final WebView view, String url) {
+    	// Are we being redirected to the login page
+    	Uri callbackUri = Uri.parse(url);
+        Map<String, String> params = UriFragmentParser.parse(callbackUri);
+        String ec = params.get("ec");
+        String startURL = params.get("startURL");
+        if (ec != null && (ec.equals("301") || ec.equals("302"))) {
+        	SalesforceOAuthPlugin.refresh(ctx, view, startURL);
+        	return true;
+        }
+        else {
+        	return super.shouldOverrideUrlLoading(view,  url);
+        }
+    }
+    
 
     /**
      * Notify the host application that a page has finished loading.
