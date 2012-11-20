@@ -67,11 +67,12 @@ import com.salesforce.androidsdk.ui.SalesforceGapViewClient;
  * PhoneGap plugin for Salesforce OAuth.
  */
 public class SalesforceOAuthPlugin extends ForcePlugin {
-    // Keys in oauth properties map
+	// Keys in oauth properties map
     private static final String OAUTH_REDIRECT_URI = "oauthRedirectURI";
     private static final String OAUTH_SCOPES = "oauthScopes";
     private static final String REMOTE_ACCESS_CONSUMER_KEY = "remoteAccessConsumerKey";
-
+    private static final String OAUTH_PROPERTIES = "oauthProperties";
+    
     // Keys in credentials map
     private static final String USER_AGENT = "userAgent";
     private static final String INSTANCE_URL = "instanceUrl";
@@ -162,7 +163,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
      */
     protected void authenticate(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         Log.i("SalesforceOAuthPlugin.authenticate", "authenticate called");
-        JSONObject oauthProperties = new JSONObject((String) args.get(0));
+        JSONObject oauthProperties = args.getJSONObject(0).getJSONObject(OAUTH_PROPERTIES);
         LoginOptions loginOptions = parseLoginOptions(oauthProperties);
         clientManager = new ClientManager(cordova.getActivity(), ForceApp.APP.getAccountType(), loginOptions);
         clientManager.getRestClient(cordova.getActivity(), new RestClientCallback() {
