@@ -42,7 +42,6 @@ import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.SystemClock;
 import android.util.Log;
 import android.webkit.CookieManager;
@@ -83,17 +82,6 @@ public class SalesforceDroidGapActivity extends DroidGap {
     // Used in refresh REST call
     private static final String API_VERSION = "v26.0";
 	
-    // For periodic auto-refresh - every 10 minutes
-    private static final long AUTO_REFRESH_PERIOD_MILLISECONDS = 10*60*1000;
-
-    // Min refresh interval (needs to be shorter than shortest session setting)
-    private static final int MIN_REFRESH_INTERVAL_MILLISECONDS = 10*60*1000; // 10 minutes
-
-    // Refresh handling
-    private long lastRefreshTime = -1;
-    private Handler periodicAutoRefreshHandler;
-    private PeriodicAutoRefresher periodicAutoRefresher;
-	
 	// Rest client
     private RestClient client;
 	private ClientManager clientManager;
@@ -132,12 +120,6 @@ public class SalesforceDroidGapActivity extends DroidGap {
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
 
-        // Periodic auto-refresh handler setup
-    	if (bootconfig.autoRefreshPeriodically()) {
-	        periodicAutoRefreshHandler = new Handler();
-	        periodicAutoRefresher = new PeriodicAutoRefresher();
-    	}
-    	
 		// Let observers know
 		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
     }
@@ -182,14 +164,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         		// Web app already loaded
         		else {
                 	Log.i("SalesforceDroidGapActivity.onResume", "Already logged in / web app already loaded");
-        			if (shouldAutoRefreshOnForeground()) {
-		                autoRefresh(null);
-		            }
         		}
-        		
-	        	if (bootconfig.autoRefreshPeriodically()) {
-	        		schedulePeriodicAutoRefresh();
-	    		}
 
 	            CookieSyncManager.getInstance().startSync();
         	}
@@ -267,11 +242,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
     	Log.i("SalesforceDroidGapActivity.onPause", "onPause called");
     	passcodeManager.onPause(this);
 
-        // Disable session refresh when app is backgrounded
-    	if (bootconfig.autoRefreshPeriodically()) {
-    		unschedulePeriodicAutoRefresh();
-    	}
-        CookieSyncManager.getInstance().stopSync();
+    	CookieSyncManager.getInstance().stopSync();
         super.onPause();
     }
 
@@ -299,69 +270,39 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	            }
 	            else {
 			    	Log.i("SalesforceDroidGapActivity.authenticate", "authenticatedRestClient called with actual client");
-	            	boolean justLoggedIn = (SalesforceDroidGapActivity.this.client == null);
 	                SalesforceDroidGapActivity.this.client = client;
-	                
-	                if (!justLoggedIn) {
-	                	autoRefresh(callbackContext);
-	                }
 	            }
 			}
     	});
     }
     
     /**
-     * Does a cheap rest call:
-     * - if session has already expired, the access token will be refreshed
-     * - otherwise it will get extended
-     * @param callbackContext when not null credentials are send back through callbackContext.success()
-     *                        otherwise they are sent back through a
+     * If an action causes a redirect to the login page, this method will be called.
+     * It causes the session to be refreshed and reloads url through the front door.
+     * @param url the page to load once the session has been refreshed.
      */
-    public void autoRefresh(final CallbackContext callbackContext) {
-    	Log.i("SalesforceDroidGapActivity.autoRefresh", "autoRefresh called");
-    	client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
-            @Override
-            public void onSuccess(RestRequest request, RestResponse response) {
-            	Log.i("SalesforceDroidGapActivity.autoRefresh", "cheap api call successful");
-                updateRefreshTime();
-                setSidCookies();
-                
-                JSONObject credentials = getJSONCredentials();
-                if (callbackContext != null) {
-                	callbackContext.success(credentials);
+    public void refresh(final String url) {
+        Log.i("SalesforceDroidGapActivity.refresh", "refresh called");
+        client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
+                @Override
+                public void onSuccess(RestRequest request, RestResponse response) {
+                    Log.i("SalesforceOAuthPlugin.refresh", "Refresh succeeded");
+                    setSidCookies();
+                    String frontDoorUrl = getFrontDoorUrl(url);
+                    loadUrl(frontDoorUrl);
                 }
-                else {
-                	sendJavascript("cordova.fireDocumentEvent('salesforceSessionRefresh'," + credentials.toString() + ");");
+
+                @Override
+                public void onError(Exception exception) {
+                    Log.w("SalesforceDroidGapActivity.refresh", "Refresh failed - " + exception);
+
+                    // Only logout if we are NOT offline
+                    if (!(exception instanceof NoNetworkException)) {
+                        ForceApp.APP.logout(SalesforceDroidGapActivity.this);
+                    }
                 }
-            }
-
-            @Override
-            public void onError(Exception exception) {
-            	Log.i("SalesforceDroidGapActivity.autoRefresh", "cheap api call failed");
-
-            	if (callbackContext != null) {
-            		callbackContext.error(exception.getMessage());
-            	}
-            	else {
-	            	// Only logout if we are NOT offline
-	                if (!(exception instanceof NoNetworkException)) {
-	                    ForceApp.APP.logout(SalesforceDroidGapActivity.this);
-	                }
-            	}
-            }
-        });
-    }
-    
-    /**
-     * @return true if auto-refresh on foreground should take place now
-     */
-    public boolean shouldAutoRefreshOnForeground() {
-        boolean b = bootconfig.autoRefreshOnForeground()
-                && client != null
-                &&  (System.currentTimeMillis() - lastRefreshTime > MIN_REFRESH_INTERVAL_MILLISECONDS);
-        Log.i("SalesforceDroidGapActivity.shouldAutoRefreshOnForeground", "" + b);
-        return b;
-    }
+            });
+    }        
     
     /**
      * Load local start page
@@ -381,14 +322,23 @@ public class SalesforceDroidGapActivity extends DroidGap {
     	assert !bootconfig.isLocal();
     	String startPage = bootconfig.getStartPage();
     	Log.i("SalesforceDroidGapActivity.loadRemoteStartPage", "loading: " + startPage);
-		String url = client.getClientInfo().instanceUrl.toString() + "/secur/frontdoor.jsp?";
-		List<NameValuePair> params = new LinkedList<NameValuePair>();
-		params.add(new BasicNameValuePair("sid", client.getAuthToken()));
-		params.add(new BasicNameValuePair("retURL", startPage));
-		params.add(new BasicNameValuePair("display", "touch"));
-		url += URLEncodedUtils.format(params, "UTF-8");
+		String url = getFrontDoorUrl(startPage);
 		loadUrl(url);
     	webAppLoaded = true;
+    }
+    
+    /**
+     * @param url
+     * @return front-door url
+     */
+    public String getFrontDoorUrl(String url) {
+		String frontDoorUrl = client.getClientInfo().instanceUrl.toString() + "/secur/frontdoor.jsp?";
+		List<NameValuePair> params = new LinkedList<NameValuePair>();
+		params.add(new BasicNameValuePair("sid", client.getAuthToken()));
+		params.add(new BasicNameValuePair("retURL", url));
+		params.add(new BasicNameValuePair("display", "touch"));
+		frontDoorUrl += URLEncodedUtils.format(params, "UTF-8");
+    	return frontDoorUrl;
     }
 
 	/**
@@ -460,49 +410,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		   return null;
 	   }
    }
-  
-    /**
-     * Update last refresh time to avoid un-necessary auto-refresh
-     */
-    private void updateRefreshTime() {
-        Log.i("SalesforceDroidGapActivity.updateRefreshTime", "lastRefreshTime before: " + lastRefreshTime);
-        lastRefreshTime = System.currentTimeMillis();
-        Log.i("SalesforceDroidGapActivity.updateRefreshTime", "lastRefreshTime after: " + lastRefreshTime);
-    }
 
-    
-    /**
-     * Schedule auto-refresh runnable
-     */
-    protected void schedulePeriodicAutoRefresh() {
-        Log.i("SalesforceDroidGapActivity.schedulePeriodicAutoRefresh", "schedulePeriodicAutoRefresh called");
-        periodicAutoRefreshHandler.postDelayed(periodicAutoRefresher, AUTO_REFRESH_PERIOD_MILLISECONDS);
-    }
-
-    /**
-     * Unschedule auto-refresh runnable
-     */
-    protected void unschedulePeriodicAutoRefresh() {
-        Log.i("SalesforceDroidGapActivity.unschedulePeriodicAutoRefresh", "unschedulePeriodicAutoRefresh called");
-        periodicAutoRefreshHandler.removeCallbacks(periodicAutoRefresher);
-    }
-
-    /**
-     * Runnable that automatically refresh session
-      */
-    private class PeriodicAutoRefresher implements Runnable {
-        public void run() {
-            try {
-                Log.i("SalesforceDroidGapActivity.PeriodicAutoRefresher.run", "run called");
-                if (bootconfig.autoRefreshPeriodically()) {
-                    autoRefresh(null);
-                }
-            } finally {
-                schedulePeriodicAutoRefresh();
-            }
-        }
-    }
-    
     /**
      * Exception thrown if initial web page load fails
      *

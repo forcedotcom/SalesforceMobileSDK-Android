@@ -54,14 +54,10 @@ public class BootConfig {
 	private static final String START_PAGE = "startPage";
 	private static final String ERROR_PAGE = "errorPage";
 	private static final String SHOULD_AUTHENTICATE = "shouldAuthenticate";
-	private static final String AUTO_REFRESH_ON_FOREGROUND = "autoRefreshOnForeground";
-	private static final String AUTO_REFRESH_PERIODICALLY = "autoRefreshPeriodically";
 	private static final String ATTEMPT_OFFLINE_LOAD = "attemptOfflineLoad";
 
 	// Default for optional configs
 	private static final boolean DEFAULT_SHOULD_AUTHENTICATE = true;
-	private static final boolean DEFAULT_AUTO_REFRESH_ON_FOREGROUND = true;
-	private static final boolean DEFAULT_AUTO_REFRESH_PERIODICALLY = true;
 	private static final boolean DEFAULT_ATTEMPT_OFFLINE_LOAD = true;
 
 	
@@ -72,8 +68,6 @@ public class BootConfig {
 	private String startPage;
 	private String errorPage;
 	private boolean shouldAuthenticate;
-	private boolean autoRefreshOnForeground;
-	private boolean autoRefreshPeriodically;
 	private boolean attemptOfflineLoad;
 	
 	
@@ -145,8 +139,6 @@ public class BootConfig {
 			
 			// Optional
 			shouldAuthenticate = config.optBoolean(SHOULD_AUTHENTICATE, DEFAULT_SHOULD_AUTHENTICATE);
-			autoRefreshOnForeground = config.optBoolean(AUTO_REFRESH_ON_FOREGROUND, DEFAULT_AUTO_REFRESH_ON_FOREGROUND);
-			autoRefreshPeriodically = config.optBoolean(AUTO_REFRESH_PERIODICALLY, DEFAULT_AUTO_REFRESH_PERIODICALLY);
 			attemptOfflineLoad = config.optBoolean(ATTEMPT_OFFLINE_LOAD, DEFAULT_ATTEMPT_OFFLINE_LOAD);
 		}
 		catch (JSONException e) {
@@ -201,20 +193,6 @@ public class BootConfig {
 	 */
 	public boolean shouldAuthenticate() {
 		return shouldAuthenticate;
-	}
-
-	/**
-	 * @return true if app should refresh oauth session when foregrounded
-	 */
-	public boolean autoRefreshOnForeground() {
-		return autoRefreshOnForeground;
-	}
-
-	/**
-	 * @return true if app should refresh oauth session periodically
-	 */
-	public boolean autoRefreshPeriodically() {
-		return autoRefreshPeriodically;
 	}
 
 	/**

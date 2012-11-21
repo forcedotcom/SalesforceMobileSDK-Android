@@ -6,7 +6,5 @@
 	startPage: "/apex/BasicVFPage";
     errorPage: "error.html",
 	shouldAuthenticate: true,
-	autoRefreshOnForeground: true,
-	autoRefreshPeriodically: true,
 	attemptOfflineLoad: false
 } 
