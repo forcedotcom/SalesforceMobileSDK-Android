@@ -222,7 +222,7 @@ public class OAuth2 {
             String authToken) throws IOException, URISyntaxException {
 
         Map<String, String> idHeaders = new HashMap<String, String>();
-        idHeaders.put("Authorization", "OAuth " + authToken);
+        idHeaders.put("Authorization", "Bearer " + authToken);
         Execution exec = httpAccessor.doGet(idHeaders, new URI(identityServiceIdUrl));
         return new IdServiceResponse(exec.response);
     }
