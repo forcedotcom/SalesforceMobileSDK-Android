@@ -37,6 +37,7 @@ public class EventsObservable extends Observable<EventsObserver> {
     	AppCreateComplete,
     	AppLocked,
     	AppUnlocked,
+    	LoginActivityCreateComplete,
     	MainActivityCreateComplete,
     	AuthWebViewCreateComplete,
     	AuthWebViewPageFinished,
