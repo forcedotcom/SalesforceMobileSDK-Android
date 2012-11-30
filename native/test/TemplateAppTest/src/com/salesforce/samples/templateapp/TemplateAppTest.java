@@ -26,9 +26,6 @@
  */
 package com.salesforce.samples.templateapp;
 
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.NativeInstrumentationTestCase;
 
 /**

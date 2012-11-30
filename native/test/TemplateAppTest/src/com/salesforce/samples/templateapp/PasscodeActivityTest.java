@@ -28,7 +28,6 @@ package com.salesforce.samples.templateapp;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.util.Log;
 import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
 
