@@ -29,7 +29,7 @@ package com.salesforce.samples.templateapp;
 import com.salesforce.androidsdk.util.NativeInstrumentationTestCase;
 
 /**
- * Tests for SmartStoreExplorer
+ * Tests for TemplateApp
  */
 public class TemplateAppTest extends NativeInstrumentationTestCase {
 
