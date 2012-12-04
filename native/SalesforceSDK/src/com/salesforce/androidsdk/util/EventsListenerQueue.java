@@ -34,6 +34,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import android.util.Log;
+
 import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -64,6 +66,7 @@ public class EventsListenerQueue implements EventsObserver {
     }
 
 	public void onEvent(Event evt) {
+    	Log.i("EventsListenerQueue", "onEvent:" + evt.getType());		
 		List<BlockForEvent> matchingBlocks = new ArrayList<BlockForEvent>();
 		for (BlockForEvent block : blocks) {
 			if (block.getType() == evt.getType()) {
@@ -106,6 +109,7 @@ public class EventsListenerQueue implements EventsObserver {
 
     /** will wait for expected event in the queue, waiting till the timeout specified */
     public Event waitForEvent(EventType expectedType, int timeout) {
+    	Log.i("EventsListenerQueue", "waitForEvent:" + expectedType);
         long end = System.currentTimeMillis() + timeout;
         long remaining = timeout;
         while (remaining > 0) {

@@ -60,15 +60,26 @@ public class PasscodeActivityTest extends
 		passcodeManager.setTimeoutMs(600000);
 		assertTrue("Application should be locked", passcodeManager.isLocked());
 		assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
-		passcodeActivity = getActivity();
-		assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
-		passcodeActivity.enableLogout(false); // logout is async, it creates havoc when running other tests
 	}
-
+	
+	/* (non-Javadoc)
+	 * @see com.salesforce.androidsdk.util.BaseActivityInstrumentationTestCase#tearDown()
+	 */
+	public void tearDown() throws Exception {
+		if (passcodeActivity != null) {
+			passcodeActivity.finish();
+			passcodeActivity = null;
+		}
+		super.tearDown();
+	}
+	
 	/**
 	 * Test passcode creation flow when no mistakes are made by user
 	 */
 	public void testCreateWithNoMistakes() {
+		// Get activity
+		passcodeActivity = getActivity();
+		assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
 
 		// Entering in 123456 and submitting
 		setText(R.id.sf__passcode_text, "123456");
@@ -87,6 +98,9 @@ public class PasscodeActivityTest extends
 	 * Test passcode creation flow when user try to enter a passcode too short
 	 */
 	public void testCreateWithPasscodeTooShort() {
+		// Get activity
+		passcodeActivity = getActivity();
+		assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
 
 		// Entering in 123 and submitting -> expect passcode too short error
 		setText(R.id.sf__passcode_text, "123");
@@ -112,6 +126,9 @@ public class PasscodeActivityTest extends
 	 * Test passcode creation flow when user enter a passcode too short during confirmation
 	 */
 	public void testCreateWithConfirmPasscodeTooShort() {
+		// Get activity
+		passcodeActivity = getActivity();
+		assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
 
 		// Entering in 123456 and submitting
 		setText(R.id.sf__passcode_text, "123456");
@@ -137,6 +154,9 @@ public class PasscodeActivityTest extends
 	 * Test passcode creation flow when user enter a different passcode during confirmation
 	 */
 	public void testCreateWithWrongConfirmPasscode() {
+		// Get activity
+		passcodeActivity = getActivity();
+		assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
 
 		// Entering in 123456 and submitting
 		setText(R.id.sf__passcode_text, "123456");
@@ -162,11 +182,13 @@ public class PasscodeActivityTest extends
 	 * Test passcode verification flow when no mistakes are made by user
 	 */
 	public void testVerificationWithNoMistakes() {
-
 		// Store passcode and set mode to Check
 		passcodeManager.store(targetContext, "123456");
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
-		gotoVerificationMode();
+
+		// Get activity
+		passcodeActivity = getActivity();
+		assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
 
 		// We should still be locked
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
@@ -181,11 +203,13 @@ public class PasscodeActivityTest extends
 	 * Test passcode verification flow when user enters wrong passcode once
 	 */
 	public void testVerificationWithWrongPasscodeOnce() {
-
 		// Store passcode and set mode to Check
 		passcodeManager.store(targetContext, "123456");
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
-		gotoVerificationMode();
+
+		// Get activity
+		passcodeActivity = getActivity();
+		assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
 
 		// We should still be locked
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
@@ -208,12 +232,14 @@ public class PasscodeActivityTest extends
 	 * Test passcode verification flow when user enters wrong passcode twice
 	 */
 	public void testVerificationWithWrongPasscodeTwice() {
-
 		// Store passcode and set mode to Check
 		passcodeManager.store(targetContext, "123456");
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
-		gotoVerificationMode();
 
+		// Get activity
+		passcodeActivity = getActivity();
+		assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
+		
 		// We should still be locked
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
 		
@@ -243,11 +269,13 @@ public class PasscodeActivityTest extends
 	 * Test passcode verification flow when user enters a passcode too short
 	 */
 	public void testVerificationWithPasscodeTooShort() {
-
 		// Store passcode and set mode to Check
 		passcodeManager.store(targetContext, "123456");
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
-		gotoVerificationMode();
+
+		// Get activity
+		passcodeActivity = getActivity();
+		assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
 
 		// We should still be locked
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
@@ -265,12 +293,15 @@ public class PasscodeActivityTest extends
 	 * Test passcode verification flow when user enters wrong passcode too many times
 	 */
 	public void testVerificationWithWrongPasscodeTooManyTimes() {
-
 		// Store passcode and set mode to Check
 		passcodeManager.store(targetContext, "123456");
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
-		gotoVerificationMode();
 
+		// Get activity
+		passcodeActivity = getActivity();
+		assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
+		passcodeActivity.enableLogout(false); // logout is async, it creates havoc when running other tests
+		
 		// We should still be locked
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
 		
@@ -300,12 +331,15 @@ public class PasscodeActivityTest extends
 	 * Test when user clicks on the 'Forgot Passcode' link.
 	 */
 	public void testForgotPasscodeLink() throws Throwable {
-
 		// Store passcode and set mode to Check.
 		passcodeManager.store(targetContext, "123456");
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
-		gotoVerificationMode();
 
+		// Get activity
+		passcodeActivity = getActivity();
+		assertEquals("Activity expected in check mode", PasscodeMode.Check, passcodeActivity.getMode());
+		passcodeActivity.enableLogout(false); // logout is async, it creates havoc when running other tests
+		
 		// We should still be locked.
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
 
@@ -327,17 +361,5 @@ public class PasscodeActivityTest extends
 		clickView(logoutDialog.getButton(AlertDialog.BUTTON_POSITIVE)); 
 		waitSome();
 		assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
-	}
-
-	private void gotoVerificationMode() {
-    	try {
-	        runTestOnUiThread(new Runnable() {
-	            @Override public void run() {
-	            	passcodeActivity.setMode(PasscodeMode.Check);
-	            }
-	        });
-    	} catch (Throwable t) {
-    		fail("Failed to go to check mode");
-    	}
 	}
 }
