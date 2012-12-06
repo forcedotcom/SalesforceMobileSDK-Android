@@ -95,6 +95,11 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 		WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
 		EventsObservable.get().notifyEvent(EventType.AuthWebViewCreateComplete, webView);
 		webviewHelper = getOAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
+		
+		// Let observers know
+		EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);        
+
+		// Load login page
 		webviewHelper.loadLoginPage();
 	}
 

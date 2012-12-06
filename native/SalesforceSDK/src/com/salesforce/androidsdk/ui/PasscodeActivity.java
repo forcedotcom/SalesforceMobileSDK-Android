@@ -89,6 +89,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         entry.setOnEditorActionListener(this);
         passcodeManager = ForceApp.APP.getPasscodeManager();
         setMode(passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create);
+        Log.i("PasscodeActivity:onCreate", "Mode: " + getMode());
         logoutEnabled = true;
         if (savedInstanceState != null) {
             final String inputText = savedInstanceState.getString(EXTRA_KEY);
