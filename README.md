@@ -14,6 +14,27 @@ This pulls submodule dependencies from github.
 
 Introduction
 ==
+__What's New in 1.4__
+
+**Updated SDK to Cordova 2.2  **
+Make sure to change all the older cordova-xx.js references to cordova-2.2.0.js in the sample code
+
+**API Versioning**
+Cordova JavaScript libraries are now versioned to benefit hybrid apps that deploy multiple versions at the same time. 
+See “Versioning and Javascript Library Compatibility” in the “Introduction to Hybrid Development” chapter of the Mobile SDK Developer Guide. 
+
+**Reactive Session Management for Hybrid Apps** 
+Developers get more control over managing web sessions inside the hybrid container. Apps that previously relied on proactive session management will require some modification. Please upgrade with caution. (forcetk.js clients should not be affected.)
+
+**Passcode Reset**
+Added option for users to logout from the passcode screen
+
+**Miscellaneous**
+* Library Project Settings
+* Login host settings externalized to an XML file
+* SQLCipher libraries updated to support the Android x86 Architecture
+* "UpgradeManager" can be used to handle SmartStore schema changes and other artifacts 
+
 __What’s New in 1.3__
 * Updated libraries, notably an upgrade to Cordova 1.8.1 which requires some JavaScript library reference changes in hybrid apps
 * SmartStore databases are now encrypted with a default key when a PIN is not provided
