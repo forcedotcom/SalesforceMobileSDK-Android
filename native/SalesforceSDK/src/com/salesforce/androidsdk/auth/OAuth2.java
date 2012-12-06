@@ -99,9 +99,7 @@ public class OAuth2 {
     private static final String CODE = "code";
     private static final String ACTIVATED_CLIENT_CODE = "activated_client_code";
 
-    // Login URLs / paths
-    public static final String DEFAULT_LOGIN_URL = "https://login.salesforce.com";
-    public static final String SANDBOX_LOGIN_URL = "https://test.salesforce.com";
+    // Login paths
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=mobile";
     private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
 
@@ -224,7 +222,7 @@ public class OAuth2 {
             String authToken) throws IOException, URISyntaxException {
 
         Map<String, String> idHeaders = new HashMap<String, String>();
-        idHeaders.put("Authorization", "OAuth " + authToken);
+        idHeaders.put("Authorization", "Bearer " + authToken);
         Execution exec = httpAccessor.doGet(idHeaders, new URI(identityServiceIdUrl));
         return new IdServiceResponse(exec.response);
     }

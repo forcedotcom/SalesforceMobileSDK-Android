@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,28 +26,15 @@
  */
 package com.salesforce.androidsdk.app;
 
-import info.guardianproject.database.sqlcipher.SQLiteDatabase;
-
-import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
 import android.app.Application;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.os.Build;
-import android.util.Base64;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -55,13 +42,12 @@ import android.webkit.CookieSyncManager;
 import com.salesforce.androidsdk.auth.AccountWatcher;
 import com.salesforce.androidsdk.auth.AccountWatcher.AccountRemoved;
 import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
-import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
-import com.salesforce.androidsdk.store.DBOpenHelper;
-import com.salesforce.androidsdk.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
+import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -72,12 +58,10 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  */
 public abstract class ForceApp extends Application implements AccountRemoved {
 
-    private static final String ADDENDUM = "5cbfed76";
-
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "1.3.1";
+    public static final String SDK_VERSION = "1.4.unstable";
 
     /**
      * Last phone version.
@@ -91,6 +75,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
     private String encryptionKey;
     private AccountWatcher accWatcher;
+    private SalesforceR salesforceR = new SalesforceR();
 
     /**************************************************************************************************
      *
@@ -102,11 +87,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @return The class for the main activity.
      */
     public abstract Class<? extends Activity> getMainActivityClass();
-
-    /**
-     * @return SalesforceR object which allows reference to resources living outside the SDK.
-     */
-    public abstract SalesforceR getSalesforceR();
 
     /**
      * This function must return the same value for name
@@ -132,6 +112,15 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     /**************************************************************************************************/
 
     /**
+     * Before 1.3, SalesforceSDK was packaged as a jar, and project had to provide a subclass of SalesforceR.
+     * Since 1.3, SalesforceSDK is packaged as a library project and we no longer need to to that.
+     * @return SalesforceR object which allows reference to resources living outside the SDK.
+     */
+    public SalesforceR getSalesforceR() {
+        return salesforceR;
+    }
+
+    /**
      * @return the class of the activity used to perform the login process and create the account.
      * You can override this if you want to customize the LoginAcitivty
      */
@@ -141,6 +130,9 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
     // passcode manager
     private PasscodeManager passcodeManager;
+    
+    // login server manager
+    private LoginServerManager loginServerManager;
 
     @Override
     public void onCreate() {
@@ -150,8 +142,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         Encryptor.init(this);
 
         // Initialize the http client
-        String extendedUserAgent = getUserAgent() + " Native";
-        HttpAccess.init(this, extendedUserAgent);
+        HttpAccess.init(this, getUserAgent());
 
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
@@ -159,6 +150,9 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         // Done
         APP = this;
         accWatcher = new AccountWatcher(APP, APP);
+
+        // Upgrade to the latest version.
+        UpgradeManager.getInstance().upgradeAccMgr();
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
 
@@ -172,19 +166,21 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        if (accWatcher != null) {
-            accWatcher.remove();
-            accWatcher = null;
-        }
-    }
-
-    @Override
     public void onAccountRemoved() {
         ForceApp.APP.cleanUp(null);
     }
 
+    /**
+     * @return The login server manager associated with the app.
+     */
+    public synchronized LoginServerManager getLoginServerManager() {
+
+        if (loginServerManager == null) {
+        	loginServerManager = new LoginServerManager(this);
+        }
+        return loginServerManager;
+    }    
+    
     /**
      * @return The passcode manager associated with the app.
      */
@@ -192,46 +188,33 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
         // Only creating passcode manager if used.
         if (passcodeManager == null) {
-            passcodeManager = new PasscodeManager(this,
-                    getVerificationHashConfig(),
-                    getEncryptionHashConfig());
+            passcodeManager = new PasscodeManager(this);
         }
         return passcodeManager;
     }
 
     /**
-     * @return the database used that contains the smart store
-     */
-    public SmartStore getSmartStore() {
-        String passcodeHash = getPasscodeHash();
-        SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(passcodeHash == null ? getEncryptionKeyForPasscode(null) : passcodeHash);
-        return new SmartStore(db);
-    }
-
-    /**
-     * Changes the passcode to a new value and re-encrypts the smartstore with the new passcode.
+     * Changes the passcode to a new value
      *
      * @param oldPass Old passcode.
      * @param newPass New passcode.
      */
-    public static synchronized void changePasscode(String oldPass, String newPass) {
-
-        // Check if the old passcode and the new one are the same.
-        if ((oldPass == null && newPass == null) || (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim()))) {
+    public synchronized void changePasscode(String oldPass, String newPass) {
+        if (!isNewPasscode(oldPass, newPass)) {
             return;
         }
-
-        // Reset cached encryption key, since the passcode has changed.
-        ForceApp.APP.encryptionKey = null;
-        if (ForceApp.APP.hasSmartStore()) {
-
-            // If the old passcode is null, use the default key.
-            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(ForceApp.APP).getWritableDatabase(ForceApp.APP.getEncryptionKeyForPasscode(oldPass));
-
-            // If the new passcode is null, use the default key.
-            SmartStore.changeKey(db, ForceApp.APP.getEncryptionKeyForPasscode(newPass));
-        }
+        encryptionKey = null; // Reset cached encryption key, since the passcode has changed
         ClientManager.changePasscode(oldPass, newPass);
+    }
+
+    /**
+     * @param oldPass
+     * @param newPass
+     * @return true if newPass is truly different from oldPass
+     */
+    protected boolean isNewPasscode(String oldPass, String newPass) {
+        return ((oldPass == null && newPass == null)
+                || (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim())));
     }
 
     /**
@@ -244,32 +227,10 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         if (actualPass != null && !actualPass.trim().equals("")) {
             return actualPass;
         }
-        if (encryptionKey != null) {
-            return encryptionKey;
-        }
-        byte[] secretKey;
-        try {
-            secretKey = ForceApp.APP.getUuId(ADDENDUM).getBytes("UTF_8");
-            final MessageDigest md = MessageDigest.getInstance("SHA-1");
-            secretKey = md.digest(secretKey);
-            byte[] dest = new byte[16];
-            System.arraycopy(secretKey, 0, dest, 0, 16);
-            encryptionKey = Base64.encodeToString(dest, Base64.DEFAULT);
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-            encryptionKey = ForceApp.APP.getUuId(ADDENDUM);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            encryptionKey = ForceApp.APP.getUuId(ADDENDUM);
+        if (encryptionKey == null) {
+            encryptionKey = getPasscodeManager().hashForEncryption("");
         }
         return encryptionKey;
-    }
-
-    /**
-     * @return true if the application has a smartstore database
-     */
-    public boolean hasSmartStore() {
-        return getDatabasePath(DBOpenHelper.DB_NAME).exists();
     }
 
     /**
@@ -287,22 +248,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
-     * @return Hash salts and key to use for creating the hash of the passcode used for encryption.
-     * Unique for installation.
-     */
-    protected HashConfig getEncryptionHashConfig() {
-        return new HashConfig(getUuId("eprefix"), getUuId("esuffix"), getUuId("ekey"));
-    }
-
-    /**
-     * @return The hash salt and key to use for creating the hash of the passcode used for verification.
-     * Unique to the installation.
-     */
-    protected HashConfig getVerificationHashConfig() {
-        return new HashConfig(getUuId("vprefix"), getUuId("vsuffix"), getUuId("vkey"));
-    }
-
-    /**
      * Cleans up cached credentials and data.
      *
      * @param frontActivity Front activity.
@@ -314,27 +259,11 @@ public abstract class ForceApp extends Application implements AccountRemoved {
             frontActivity.finish();
         }
 
-        // Reset smartstore.
-        if (hasSmartStore()) {
-        	DBOpenHelper.deleteDatabase(this);
-        }
-
         // Reset passcode and encryption key, if any.
         getPasscodeManager().reset(this);
         passcodeManager = null;
         encryptionKey = null;
-        resetUuids();
-    }
-
-    /**
-     * Resets the generated UUIDs and wipes out the shared pref file that houses them.
-     */
-    private void resetUuids() {
-        uuids = new HashMap<String, String>();
-        final SharedPreferences sp = getSharedPreferences("uuids2", Context.MODE_PRIVATE);
-        if (sp != null) {
-            sp.edit().clear().commit();
-        }
+        UUIDManager.resetUuids();
     }
 
     /**
@@ -372,18 +301,16 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         // Remove account if any.
         ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
         if (clientMgr.getAccount() == null) {
-        	EventsObservable.get().notifyEvent(EventType.LogoutComplete);                	
-    		        	
+            EventsObservable.get().notifyEvent(EventType.LogoutComplete);
             if (showLoginPage) {
                 startLoginPage();
             }
         } else {
             clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
-            	@Override
+                @Override
                 public void run(AccountManagerFuture<Boolean> arg0) {
-            		EventsObservable.get().notifyEvent(EventType.LogoutComplete);                	
-            		
-            		if (showLoginPage) {
+                    EventsObservable.get().notifyEvent(EventType.LogoutComplete);
+                    if (showLoginPage) {
                         startLoginPage();
                     }
                 }
@@ -393,9 +320,8 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
     /**
      * Set a user agent string based on the mobile SDK version. We are building
-     * a user agent of the form: SalesforceMobileSDK/<salesforceSDK version>
-     * android/<android OS version> appName/appVersion
-     *
+     * a user agent of the form: 
+     *   SalesforceMobileSDK/<salesforceSDK version> android/<android OS version> appName/appVersion <Native|Hybrid>
      * @return The user agent string to use for all requests.
      */
     public final String getUserAgent() {
@@ -408,9 +334,17 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         } catch (NameNotFoundException e) {
             Log.w("ForceApp:getUserAgent", e);
         }
-        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s",
-                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion);
-    }
+	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native");
+	    return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s",
+	            SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, nativeOrHybrid);
+	}
+
+	/**
+	 * @return true if this is an hybrid application
+	 */
+	public boolean isHybrid() {
+		return SalesforceDroidGapActivity.class.isAssignableFrom(getMainActivityClass());
+	}
 
     /**
      * @return The authentication account type (should match authenticator.xml).
@@ -446,24 +380,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         }
         sb.append("}\n");
         return sb.toString();
-    }
-
-    /**
-     * Random keys persisted encrypted in a private preference file
-     * This is provided as an example.
-     * We recommend you provide you own implementation for creating the HashConfig's.
-     */
-    private Map<String, String> uuids = new HashMap<String, String>();
-    private synchronized String getUuId(String name) {
-        if (uuids.get(name) != null) return uuids.get(name);
-        SharedPreferences sp = getSharedPreferences("uuids2", Context.MODE_PRIVATE);
-        if (!sp.contains(name)) {
-            String uuid = UUID.randomUUID().toString();
-            Editor e = sp.edit();
-            e.putString(name, Encryptor.encrypt(uuid, getKey(name)));
-            e.commit();
-        }
-        return Encryptor.decrypt(sp.getString(name, null), getKey(name));
     }
 
     /**

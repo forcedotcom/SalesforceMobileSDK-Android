@@ -28,19 +28,14 @@ package com.salesforce.samples.smartstoreexplorer;
 
 import android.app.Activity;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
-import com.salesforce.androidsdk.ui.SalesforceR;
 
 /**
  * Application class for the SmartStoreExplorer app.
- *
- * @author khawkins
  */
-public class SmartStoreExplorerApp extends ForceApp {
-
-    private SalesforceR salesforceR = new SalesforceRImpl();
+public class SmartStoreExplorerApp extends ForceAppWithSmartStore {
 
     @Override
     public Class<? extends Activity> getMainActivityClass() {
@@ -50,10 +45,5 @@ public class SmartStoreExplorerApp extends ForceApp {
     @Override
     protected String getKey(String name) {
     	return Encryptor.hash(name + "W00h00t!11", name + "G@nd01f");
-    }
-
-    @Override
-    public SalesforceR getSalesforceR() {
-        return salesforceR;
     }
 }

@@ -28,18 +28,15 @@ package com.salesforce.samples.sfdcaccounts;
 
 import android.app.Activity;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
-import com.salesforce.androidsdk.ui.SalesforceR;
 
 /**
  * Application class for the SFDCAccounts app.
  *
  * @author bhariharan
  */
-public class SFDCAccountsApp extends ForceApp {
-
-    private SalesforceR salesforceR = new SalesforceRImpl();
+public class SFDCAccountsApp extends ForceAppWithSmartStore {
 
     @Override
     public Class<? extends Activity> getMainActivityClass() {
@@ -49,10 +46,5 @@ public class SFDCAccountsApp extends ForceApp {
     @Override
     protected String getKey(String name) {
         return null;
-    }
-
-    @Override
-    public SalesforceR getSalesforceR() {
-        return salesforceR;
     }
 }
