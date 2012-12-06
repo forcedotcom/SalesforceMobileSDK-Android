@@ -32,7 +32,6 @@ import java.util.Map;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.AsyncTask;
@@ -244,10 +243,7 @@ public class OAuthWebviewHelper {
      * @return login url
      */
     protected String getLoginUrl() {
-        SharedPreferences settings = webview.getContext().getSharedPreferences(
-                LoginActivity.SERVER_URL_PREFS_SETTINGS, Context.MODE_PRIVATE);
-
-        return settings.getString(LoginActivity.SERVER_URL_CURRENT_SELECTION, OAuth2.DEFAULT_LOGIN_URL);
+    	return ForceApp.APP.getLoginServerManager().getSelectedLoginServer().url;
     }
 
     /**
@@ -265,7 +261,7 @@ public class OAuthWebviewHelper {
 
 		@Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-            boolean isDone = url.startsWith(loginOptions.oauthCallbackUrl);
+			boolean isDone = url.replace("///", "/").contains(loginOptions.oauthCallbackUrl.replace("///", "/"));
             if (isDone) {
                 Uri callbackUri = Uri.parse(url);
                 Map<String, String> params = UriFragmentParser.parse(callbackUri);

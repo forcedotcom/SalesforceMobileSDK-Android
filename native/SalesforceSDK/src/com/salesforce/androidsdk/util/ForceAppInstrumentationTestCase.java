@@ -28,15 +28,13 @@ package com.salesforce.androidsdk.util;
 
 import android.app.Activity;
 import android.app.Instrumentation;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.test.InstrumentationTestCase;
+import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -52,7 +50,7 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 	protected Instrumentation instrumentation;
 
 	protected Activity mainActivity;
-	
+	protected Activity loginActivity;
 	
     @Override
     public void setUp() throws Exception {
@@ -61,25 +59,41 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
         instrumentation = getInstrumentation();
         eq = new EventsListenerQueue();
 
-        waitForStartup();
-    	logout();
-    	useSandbox();
-    	launchMainActivity();
-    	login();    
+        try {
+        	waitForStartup();
+			logout();
+			ForceApp.APP.getLoginServerManager().useSandbox();
+			launchMainActivity();
+			login();
+        }
+        catch (Exception e) {
+        	cleanup();
+        	throw e;
+        }
     }
-    
+
     @Override
     public void tearDown() throws Exception {
+    	cleanup();
+        super.tearDown();
+    }
+
+	private void cleanup() {
+		if (loginActivity != null) {
+    		loginActivity.finish();
+    		loginActivity = null;
+    	}
+    	
     	if (mainActivity != null) {
     		mainActivity.finish();
+    		mainActivity = null;
     	}
     	
         if (eq != null) {
             eq.tearDown();
             eq = null;
         }
-        super.tearDown();
-    }
+	}
 
     protected String getTestUsername() {
     	return "readonly@cs0.mobilesdk.ee.org";
@@ -101,18 +115,9 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 		waitForEvent(EventType.LogoutComplete);
 	}
 
-	protected void useSandbox() {
-		// Our username/password is for a sandbox org
-		SharedPreferences settings = instrumentation.getTargetContext().getSharedPreferences(
-	            LoginActivity.SERVER_URL_PREFS_SETTINGS,
-	            Context.MODE_PRIVATE);
-	    SharedPreferences.Editor editor = settings.edit();
-	    editor.putString(LoginActivity.SERVER_URL_CURRENT_SELECTION, OAuth2.SANDBOX_LOGIN_URL);
-	    editor.commit();
-	}
-
 	protected void login() {
 		WebView loginWebView = (WebView) waitForEvent(EventType.AuthWebViewCreateComplete).getData();
+		loginActivity = (LoginActivity) waitForEvent(EventType.LoginActivityCreateComplete).getData();
 		waitForEvent(EventType.AuthWebViewPageFinished);
 		sendJavaScript(loginWebView, "document.login.un.value='" + getTestUsername() + "';document.login.password.value='" + getTestPassword() + "';document.login.submit();"); // login
 		waitForEvent(EventType.AuthWebViewPageFinished);
@@ -127,11 +132,14 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 	}
 
 	protected Event waitForEvent(EventType type) {
-    	Event evt = eq.waitForEvent(type, getWaitTimeout());
+		Log.i("ForceAppInstrumentationTestCase.waitForEvent", "Waiting for " + type);
+		Event evt = eq.waitForEvent(type, getWaitTimeout());
+		
     	if (type == EventType.AuthWebViewPageFinished || type == EventType.GapWebViewPageFinished) {
     		waitSome();
     		// When page finished is fired, DOM is not ready :-(
     	}
+		Log.i("ForceAppInstrumentationTestCase.waitForEvent", "Got " + evt.getType());
     	return evt;
     }
 
@@ -153,6 +161,7 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 			runTestOnUiThread(new Runnable() {
 				@Override
 				public void run() {
+					Log.i("ForceAppInstrumentationTestCase:sendJavaScript", js);
 					webView.loadUrl("javascript:" + js); // TODO proper escaping
 				}				
 			});

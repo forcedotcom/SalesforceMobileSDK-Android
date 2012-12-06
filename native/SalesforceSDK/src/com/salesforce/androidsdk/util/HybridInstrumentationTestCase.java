@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.util;
 
+import android.util.Log;
 import android.webkit.WebView;
 
 import com.salesforce.androidsdk.util.EventsListenerQueue.BlockForEvent;
@@ -55,6 +56,7 @@ public abstract class HybridInstrumentationTestCase extends ForceAppInstrumentat
 		eq.registerBlock(new BlockForEvent(EventType.GapWebViewCreateComplete) {
 			@Override
 			public void run(Event evt) {
+				Log.i("HybridInstrumentationTestCase.prepareBridge", "addingJavaScriptInterfacce hybridContainer");
 				gapWebView = (WebView) evt.getData();
 				gapWebView.addJavascriptInterface(new Object() {
 					@SuppressWarnings("unused")

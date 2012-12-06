@@ -21,13 +21,22 @@ For the rest of this document, we assume that you have setup three shell variabl
 
 Inside the $NATIVE_DIR, you will find several projects:
 
-1. **SalesforceSDK**: The Salesforce SDK library project which provides support for OAuth2, REST API calls, pin screen (driven by mobile policy) and SmartStore
-2. **SalesforceSDKTest**: Test project for SalesforceSDK
-3. **TemplateApp**: Template used when creating new native application using SalesforceSDK
-4. **TemplateAppTest**: Test project for the TemplateApp project
-5. **RestExplorer**: A app using SalesforceSDK to explore the REST API calls
-6. **RestExplorerTest**: Test project for the RestExplorer project
+1. **SalesforceSDK**: The Salesforce SDK library project which provides support for OAuth2, REST API calls, pin screen (driven by mobile policy)
+2. **TemplateApp**: Template used when creating new native application using SalesforceSDK
+3. **test/SalesforceSDKTest**: Test project for SalesforceSDK
+4. **test/TemplateAppTest**: Test project for the TemplateApp project
+5. **SampleApps/RestExplorer**: A app using SalesforceSDK to explore the REST API calls
+6. **SampleApps/test/RestExplorerTest**: Test project for the RestExplorer project
 7. **SampleApps/CloudTunes**: A sample native application using SalesforceSDK
+
+# Running sample apps from Eclipse
+
+1. Launch Eclipse and select $SALESFORCE_SDK_DIR as your workspace 
+2. Go to Window -> Preferences, choose the Android section, and enter the the Android SDK location.
+3. Go to File -> Import and select General -> Existing Projects into Workspace.
+4. Select $SALESFORCE_SDK_DIR as your root directory and import the projects described above.
+5. Right click on any of the sample apps and choose Run As -> Android Application to run it.
+6. Right click on any of the test project and choose Run As -> Android JUnit Test to run the tests.
 
 # Creating a new native application using SalesforceSDK
 
@@ -41,17 +50,22 @@ It will print out information about available targets.
 
 To create a new native application simply do:
 <pre>
-ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} 
+ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} [-Duse.smartstore=true]
 </pre>
 
 Where:
 * appName: the name for the new application 
 * targetDir: the directory where the code should reside 
 * packageName: the java package for the new application e.g. com.acme.mobileapp
+* only pass -Duse.smartstore=true if you want SmartStore support
+
+If it's your first time build an application with the Salesforce SDK, do the following:
+cd $NATIVE_DIR/SalesforceSDK
+$ANDROID_SDK_DIR/android update project -p .
 
 To build the new application, do the following:
 <pre>
-cd $TARGET_DIR
+CD $TARGET_DIR
 $ANDROID_SDK_DIR/android update project -p .
 ant clean debug
 </pre>
@@ -61,41 +75,15 @@ To deploy the application, start an emulator or plugin your device and run:
 ant installd
 </pre>
 
-
 Before you ship, make sure to plug in your oauth client id and callback url in:
 <pre>
 $TARGET_DIR/res/values/rest.xml
 </pre>
 
-# Setting up projects and building from Eclipse
+# Running your new native application from Eclipse
 
-1. Launch Eclipse and select $NATIVE_DIR as your workspace directory.
-2. Go to Window -> Preferences, choose the Android section, and enter the the Android SDK location.
-3. Go to File -> Import and select General -> Existing Projects into Workspace.
-4. Select $NATIVE_DIR as your root directory and import the five projects above.
-5. Create a gen folder for the SalesforceSDKTest, RestExplorer and RestExplorerTest projects (right-click the project and choose new -> folder).
-6. Create a res folder for the SalesforceSDK project.
-
-If you would like to rebuild everything, we recommend cleaning/rebuilding the Library (SalesforceSDK) project *by itself* first, followed by the cleaning and rebuilding of the dependent projects, to avoid these build errors.
-
-The RestExplorer is a sample app that demonstrates how to use the OAuth and REST API functions of the Salesforce SDK. It is also useful to investigate the various REST API actions from a Honeycomb tablet.
-
-* To run the application, right-click on the RestExplorer project and choose Run As -> Android Application.
-* To run the tests, right-click on the RestExplorerTest project and choose run as -> Android JUnit Test.
-
-# Building the SDK and the sample apps from the command line
-
-Make sure to generate the local.properties file for each project by doing:
-<pre>
-cd $NATIVE_DIR/[project dir]
-android update project --path .
-</pre>
-
-To compile and deploy the RestExplorer app, first plug in a device or start an emulator, then run the follwoing ant targets:
-<pre>
-cd $NATIVE_DIR/RestExplorer
-ant debug 
-ant installd
-</pre>
-
+1. Launch Eclipse
+2. Go to File -> Import and select General -> Existing Projects into Workspace.
+3. Import the $SALESFORCE_SDK_DIR/native/SalesforceSDK library project and your newly created project $TARGET_DIR into the workspace
+4. Right click on the your project and choose Run As -> Android Application
 

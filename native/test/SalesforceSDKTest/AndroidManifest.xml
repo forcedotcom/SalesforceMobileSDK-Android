@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+	package="com.salesforce.androidsdk.tests" 
+	android:versionCode="1"
+	android:versionName="1.0">
+	
+	<application>
+        <uses-library android:name="android.test.runner" />
+
+        <!-- Service required for authentication -->
+		<service android:exported="true" android:process=":auth"
+			android:name="com.salesforce.androidsdk.auth.AuthenticatorService">
+
+			<intent-filter>
+				<action android:name="android.accounts.AccountAuthenticator" />
+			</intent-filter>
+
+			<meta-data android:name="android.accounts.AccountAuthenticator"
+				android:resource="@xml/authenticator" />
+
+		</service>
+	</application>
+
+    <instrumentation android:targetPackage="com.salesforce.androidsdk.tests" 
+                     android:name="com.salesforce.androidsdk.util.JUnitReportTestRunner" 
+                     android:label="Tests for SalesforceSDK" />
+	    
+	    
+    <!-- To use the SDK make sure to have the following perms -->
+	<uses-permission android:name="android.permission.INTERNET" />
+	<uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
+	<uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
+	<uses-permission android:name="android.permission.GET_ACCOUNTS" />
+	<uses-permission android:name="android.permission.USE_CREDENTIALS" />
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+	    
+	<!-- device os versions http://developer.android.com/guide/publishing/versioning.html -->
+	<uses-sdk android:minSdkVersion="8" />
+
+</manifest>

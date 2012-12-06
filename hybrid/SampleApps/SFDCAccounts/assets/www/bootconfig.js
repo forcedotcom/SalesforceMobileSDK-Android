@@ -25,15 +25,6 @@ var oauthScopes = ["api"];
 //classes in SFHybridApp.js to see how you can further customize your options.
 var startData = new SFHybridApp.LocalAppStartData();  // Used for local REST-based "index.html" PhoneGap apps.
 //var startData = new SFHybridApp.RemoteAppStartData("/apex/BasicVFPage"); // Used for Visualforce-based apps.
-
-
-// Whether the container app should automatically refresh our oauth session on app foreground:
-// generally a good idea for Visualforce pages.  For REST-based apps we recommend using
-// onAppResume to refresh if needed.
-var autoRefreshOnForeground = false; //Use true for Visualforce-based apps
-    
-// Whether the container app should automatically refresh our oauth session periodically
-var autoRefreshPeriodically = true; 
     
 //-----------------------------------------------------------------
 // End configuration block

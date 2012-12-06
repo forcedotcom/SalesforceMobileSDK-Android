@@ -30,18 +30,15 @@ import android.app.Activity;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
-import com.salesforce.androidsdk.ui.SalesforceR;
 
 
 /**
  * Application class 
  * All Salesforce mobile apps must extend ForceApp. 
- * ForceApp takes care of intializing the network http clients (among other things).x
+ * ForceApp takes care of intializing the network http clients (among other things).
  */
 public class VFConnectorApp extends ForceApp {
 
-	private SalesforceR salesforceR = new SalesforceRImpl();
-	
 	@Override
 	public Class<? extends Activity> getMainActivityClass() {
 		return SalesforceDroidGapActivity.class;
@@ -50,10 +47,5 @@ public class VFConnectorApp extends ForceApp {
 	@Override
 	protected String getKey(String name) {
 		return null; 
-	}
-
-	@Override
-	public SalesforceR getSalesforceR() {
-		return salesforceR;
 	}
 }
