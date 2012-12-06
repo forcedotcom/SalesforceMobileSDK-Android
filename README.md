@@ -15,6 +15,7 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 __What's New in 1.4__
+
 **Updated SDK to Cordova 2.2**
 Make sure to change all the older cordova-xx.js references to cordova-2.2.0.js in the sample code
 
