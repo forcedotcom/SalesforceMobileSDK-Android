@@ -17,7 +17,7 @@ Introduction
 __What's New in 1.4__
 
 **Updated SDK to Cordova 2.2**
-Make sure to change all the older cordova-xx.js references to cordova-2.2.0.js in the sample code
+Make sure to update to the latest cordova.js and associated SDK JS plugin files when you upgrade. These can either be taken from the repo, or from a newly-generated hybrid template app.
 
 **API Versioning**
 Cordova JavaScript libraries are now versioned to benefit hybrid apps that deploy multiple versions at the same time. 
