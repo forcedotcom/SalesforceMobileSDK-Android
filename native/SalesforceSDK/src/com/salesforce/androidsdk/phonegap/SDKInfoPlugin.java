@@ -137,8 +137,11 @@ public class SDKInfoPlugin extends ForcePlugin {
 	 */
 	public static List<String> getForcePluginsFromXML(Context ctx) {
 		List<String> services = new ArrayList<String>();
-		
-		int id = ctx.getResources().getIdentifier("plugins", "xml", ctx.getPackageName());
+
+        int id = ctx.getResources().getIdentifier("config", "xml", ctx.getPackageName());
+        if (id == 0) {
+            id = ctx.getResources().getIdentifier("plugins", "xml", ctx.getPackageName());
+        }			
 		if (id != 0) {
 			XmlResourceParser xml = ctx.getResources().getXml(id);
 			int eventType = -1;
