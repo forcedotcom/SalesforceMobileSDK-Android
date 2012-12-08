@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 "dist\SalesforceSDK-2.0.unstable.jar" "dist\SalesforceSDK.jar"
 "external\cordova\cordova-2.2.0.jar" "native\SalesforceSDK\libs\cordova-2.2.0.jar"
 "external\cordova\cordova-2.2.0.js" "hybrid\SampleApps\ContactExplorer\assets\www\cordova-2.2.0.js"
@@ -5,6 +6,20 @@
 "external\cordova\cordova-2.2.0.js" "hybrid\SampleApps\SmartStoreExplorer\assets\www\cordova-2.2.0.js"
 "external\cordova\cordova-2.2.0.js" "hybrid\SampleApps\VFConnector\assets\www\cordova-2.2.0.js"
 "external\cordova\cordova-2.2.0.js" "hybrid\test\ForcePluginsTest\assets\www\cordova-2.2.0.js"
+=======
+"dist\SalesforceSDK-1.5.unstable.jar" "dist\SalesforceSDK.jar"
+"external\cordova\cordova-2.3.0.jar" "native\SalesforceSDK\libs\cordova-2.3.0.jar"
+"external\cordova\cordova-2.3.0.js" "hybrid\SampleApps\ContactExplorer\assets\www\cordova-2.3.0.js"
+"external\cordova\cordova-2.3.0.js" "hybrid\SampleApps\SFDCAccounts\assets\www\cordova-2.3.0.js"
+"external\cordova\cordova-2.3.0.js" "hybrid\SampleApps\SmartStoreExplorer\assets\www\cordova-2.3.0.js"
+"external\cordova\cordova-2.3.0.js" "hybrid\SampleApps\VFConnector\assets\www\cordova-2.3.0.js"
+"external\cordova\cordova-2.3.0.js" "hybrid\test\ForcePluginsTest\assets\www\cordova-2.3.0.js"
+"external\shared\PhoneGap\bootstrap.html" "hybrid\SampleApps\ContactExplorer\assets\www\bootstrap.html"
+"external\shared\PhoneGap\bootstrap.html" "hybrid\SampleApps\SFDCAccounts\assets\www\bootstrap.html"
+"external\shared\PhoneGap\bootstrap.html" "hybrid\SampleApps\SmartStoreExplorer\assets\www\bootstrap.html"
+"external\shared\PhoneGap\bootstrap.html" "hybrid\SampleApps\VFConnector\assets\www\bootstrap.html"
+"external\shared\PhoneGap\bootstrap.html" "hybrid\test\ForcePluginsTest\assets\www\bootstrap.html"
+>>>>>>> 0ba3192801fb4955aa54dbd694e25e372aa06b27
 "external\shared\PhoneGap\contactexplorer\index.html" "hybrid\SampleApps\ContactExplorer\assets\www\index.html"
 "external\shared\PhoneGap\contactexplorer\inline.js" "hybrid\SampleApps\ContactExplorer\assets\www\inline.js"
 "external\shared\PhoneGap\error.html" "hybrid\SampleApps\ContactExplorer\assets\www\error.html"
