@@ -87,6 +87,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		pgRemoveFromSoup,
 		pgRemoveSoup,
 		pgRetrieveSoupEntries,
+		pgRunSql,
 		pgSoupExists,
 		pgUpsertSoupEntries
 	}
@@ -106,6 +107,7 @@ public class SmartStorePlugin extends ForcePlugin {
                   case pgRegisterSoup:          registerSoup(args, callbackContext); return true;
                   case pgRemoveFromSoup:        removeFromSoup(args, callbackContext); return true;
                   case pgRemoveSoup:            removeSoup(args, callbackContext); return true;
+                  case pgRunSql:                runSql(args, callbackContext); return true;
                   case pgRetrieveSoupEntries:   retrieveSoupEntries(args, callbackContext); return true;
                   case pgSoupExists:            soupExists(args, callbackContext); return true;
                   case pgUpsertSoupEntries:     upsertSoupEntries(args, callbackContext); return true;
@@ -360,6 +362,25 @@ public class SmartStorePlugin extends ForcePlugin {
 		callbackContext.success();
 	}
 
+	
+	/**
+	 * Native implementation of pgRunSql
+	 * @param args
+	 * @param callbackContext
+	 * @throws JSONException
+	 */
+	private void runSql(JSONArray args, CallbackContext callbackContext) throws JSONException {
+		// Parse args
+		String sql = args.getString(0);
+		
+		// Run sql
+		SmartStore smartStore = getSmartStore();
+		smartStore.runSmartSql(sql);
+		
+		// Done
+		callbackContext.success();
+	}
+	
 	
 	private SmartStore getSmartStore() {
 		return ((ForceAppWithSmartStore) ForceApp.APP).getSmartStore();

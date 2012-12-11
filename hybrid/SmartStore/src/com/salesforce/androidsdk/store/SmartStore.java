@@ -28,6 +28,8 @@ package com.salesforce.androidsdk.store;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
@@ -38,6 +40,7 @@ import org.json.JSONObject;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
+import android.util.Log;
 
 
 /**
@@ -339,8 +342,6 @@ public class SmartStore  {
         return soupNames;
     }
 
-
-
     /**
      * Run a query
      * @param soupName
@@ -365,7 +366,7 @@ public class SmartStore  {
                 cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {SOUP_COL}, null, limit, null);
             }
             else {
-                String columnName = getColumnNameForPath(db, soupName, querySpec.path);
+                String columnName = getColumnNameForPath(soupName, querySpec.path);
                 cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {SOUP_COL}, querySpec.getOrderBy(columnName), limit, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
             }
 
@@ -400,7 +401,7 @@ public class SmartStore  {
                 cursor = DBHelper.INSTANCE.countQuery(db, soupTableName, null, (String[]) null);
             }
             else {
-                String columnName = getColumnNameForPath(db, soupName, querySpec.path);
+                String columnName = getColumnNameForPath(soupName, querySpec.path);
                 cursor = DBHelper.INSTANCE.countQuery(db, soupTableName, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
             }
 
@@ -416,7 +417,89 @@ public class SmartStore  {
         }
     }
 
+    
+	/**
+	 * Run a "smart" sql query
+	 * A "smart" sql query is a query where columns are of the form {soupName:path} and tables are of the form {soupName}
+	 * NB: only select's are allowed
+	 *     only indexed path can be referenced (alternatively you can do {soupName:_soupEntryId} or {soupName:_soupLastModifiedDate}
+	 *     to get an entire soup element back, do {soupName:.}
+	 *     
+	 * @param sql
+	 */
+	public void runSmartSql(String smartSql) {
+		Log.i("SmartStore.runSmartSql", "smart sql = " + smartSql);
+		
+		// Select's only
+		String smartSqlLowerCase = smartSql.toLowerCase();
+		if (smartSqlLowerCase.contains("insert") || smartSqlLowerCase.contains("update") || smartSqlLowerCase.contains("delete")) {
+			throw new SmartSqlException("Only SELECT are supported");
+		}
+		
+		// Replacing {soupName} and {soupName:path}
+		Pattern pattern  = Pattern.compile("{([^}])}");
+		StringBuffer sql = new StringBuffer();
+		Matcher matcher = pattern.matcher(smartSql);
+		while(matcher.find()) {
+			String fullMatch = matcher.group();
+			String match = matcher.group(1);
+			int position = matcher.start();
 
+			// {soupName:path}
+			if (match.contains(":")) {
+				String[] parts = match.split(":");
+				if (parts.length > 2) {
+					reportSmartSqlError("Invalid soup/path reference " + fullMatch, position);
+				}
+				String soupName = parts[0];
+				String path = parts[1];
+				if (path.equals(".")) {
+					matcher.appendReplacement(sql, SOUP_COL);
+				}
+				else if (path.equals(SOUP_ENTRY_ID) || path.equals(SOUP_LAST_MODIFIED_DATE)) {
+					matcher.appendReplacement(sql, path);
+				}
+				else {
+					/* String soupTableName = */ getSoupTableNameForSmartSql(soupName, position); // for validation
+					String columnName = getColumnNameForPathForSmartSql(soupName, path, position);
+					matcher.appendReplacement(sql, columnName);
+				}
+			}
+			// {soupName}
+			else {
+				String soupTableName = getSoupTableNameForSmartSql(match, position);
+				matcher.appendReplacement(sql, soupTableName);
+			}
+		}
+		matcher.appendTail(sql);
+		
+		// Done
+		Log.i("SmartStore.runSmartSql", "sql = " + sql);
+	}
+	
+	private String getColumnNameForPathForSmartSql(String soupName, String path, int position) {
+		String columnName = null;
+		try {
+			columnName = this.getColumnNameForPath(soupName, path);
+		}
+		catch (SmartStoreException e) {
+			reportSmartSqlError(e.getMessage(), position);
+		}
+		return columnName;
+	}
+
+	private String getSoupTableNameForSmartSql(String soupName, int position) {
+		String soupTableName = getSoupTableName(soupName);
+		if (soupTableName == null) {
+			reportSmartSqlError("Unknown soup " + soupName, position);
+		}
+		return soupTableName;
+	}
+	
+	private void reportSmartSqlError(String message, int position) {
+		throw new SmartSqlException(message + " at character " + position);
+	}
+	
     /**
      * Create (and commits)
      * Note: Passed soupElt is modified (last modified date and soup entry id fields)
@@ -663,7 +746,7 @@ public class SmartStore  {
     public long lookupSoupEntryId(String soupName, String fieldPath, String fieldValue) {
         String soupTableName = getSoupTableName(soupName);
         if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
-        String columnName = getColumnNameForPath(db, soupName, fieldPath);
+        String columnName = getColumnNameForPath(soupName, fieldPath);
 
         Cursor cursor = null;
         try {
@@ -721,12 +804,11 @@ public class SmartStore  {
 
     /**
      * Return column name in soup table that holds the soup projection for path
-     * @param db
      * @param soupName
      * @param path
      * @return
      */
-    protected String getColumnNameForPath(SQLiteDatabase db, String soupName, String path) {
+    protected String getColumnNameForPath(String soupName, String path) {
         Cursor cursor = null;
         try {
             cursor = DBHelper.INSTANCE.query(db, SOUP_INDEX_MAP_TABLE, new String[] {COLUMN_NAME_COL}, null,
@@ -1064,5 +1146,18 @@ public class SmartStore  {
 
         private static final long serialVersionUID = -6369452803270075464L;
 
+    }
+    
+    /**
+     * Exception thrown when smart sql failed to be parsed
+     */
+    public static class SmartSqlException extends RuntimeException {
+
+    	public SmartSqlException(String message) {
+    		super(message);
+    	}
+    	
+    	private static final long serialVersionUID = 1L;
+    	
     }
 }
