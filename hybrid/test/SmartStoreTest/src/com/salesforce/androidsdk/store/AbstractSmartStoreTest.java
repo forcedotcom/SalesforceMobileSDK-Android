@@ -37,9 +37,7 @@ import android.database.Cursor;
 import android.os.SystemClock;
 import android.test.InstrumentationTestCase;
 
-import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
-import com.salesforce.androidsdk.store.SmartStore.Order;
-import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
+import com.salesforce.androidsdk.store.QuerySpec.Order;
 import com.salesforce.androidsdk.store.SmartStore.Type;
 
 /**
@@ -67,7 +65,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		assertFalse("Table for test_soup should not exist", hasTable("TABLE_1"));
 		assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
 		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
-		assertEquals("Table for test_soup was expected to be called TABLE_1", "TABLE_1", store.getSoupTableName(TEST_SOUP));
+		assertEquals("Table for test_soup was expected to be called TABLE_1", "TABLE_1", getSoupTableName(TEST_SOUP));
 		assertTrue("Table for test_soup should now exist", hasTable("TABLE_1"));
 		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
 	}
@@ -130,12 +128,12 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	 */
 	public void testRegisterDropSoup() {
 		// Before
-		assertNull("getSoupTableName should have returned null", store.getSoupTableName(THIRD_TEST_SOUP));
+		assertNull("getSoupTableName should have returned null", getSoupTableName(THIRD_TEST_SOUP));
 		assertFalse("Soup third_test_soup should not exist", store.hasSoup(THIRD_TEST_SOUP));
 		
 		// Register
 		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
-		String soupTableName = store.getSoupTableName(THIRD_TEST_SOUP);
+		String soupTableName = getSoupTableName(THIRD_TEST_SOUP);
 		assertEquals("getSoupTableName should have returned TABLE_2", "TABLE_2", soupTableName);
 		assertTrue("Table for soup third_test_soup does exist", hasTable(soupTableName));
 		assertTrue("Register soup call failed", store.hasSoup(THIRD_TEST_SOUP));
@@ -145,7 +143,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		
 		// After
 		assertFalse("Soup third_test_soup should no longer exist", store.hasSoup(THIRD_TEST_SOUP));
-		assertNull("getSoupTableName should have returned null", store.getSoupTableName(THIRD_TEST_SOUP));
+		assertNull("getSoupTableName should have returned null", getSoupTableName(THIRD_TEST_SOUP));
 		assertFalse("Table for soup third_test_soup does exist", hasTable(soupTableName));
 	}
 
@@ -197,7 +195,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = store.getSoupTableName(TEST_SOUP);
+			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.INSTANCE.query(db, soupTableName, null, null, null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected one soup element only", 1, c.getCount());
@@ -234,7 +232,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = store.getSoupTableName(OTHER_TEST_SOUP);
+			String soupTableName = getSoupTableName(OTHER_TEST_SOUP);
 			assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
 			assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
 			
@@ -296,7 +294,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = store.getSoupTableName(TEST_SOUP);			
+			String soupTableName = getSoupTableName(TEST_SOUP);			
 			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
@@ -348,7 +346,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = store.getSoupTableName(TEST_SOUP);			
+			String soupTableName = getSoupTableName(TEST_SOUP);			
 			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
@@ -400,7 +398,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = store.getSoupTableName(TEST_SOUP);			
+			String soupTableName = getSoupTableName(TEST_SOUP);			
 			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
@@ -516,7 +514,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = store.getSoupTableName(TEST_SOUP);
+			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 2, c.getCount());
@@ -530,7 +528,6 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 			safeClose(c);
 		}
 	}
-
 	/**
 	 * Test query when looking for all elements
 	 * @throws JSONException 
@@ -807,5 +804,14 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 			assertSameJSONArray(message, expectedValues, actualValues);
 		}
 	}
+
 	
+
+	/**
+	 * @param soupName
+	 * @return table name for soup
+	 */
+	private String getSoupTableName(String soupName) {
+		return DBHelper.INSTANCE.getSoupTableName(db, soupName);
+	}
 }

@@ -39,11 +39,11 @@ import org.json.JSONObject;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
+import com.salesforce.androidsdk.store.IndexSpec;
+import com.salesforce.androidsdk.store.QuerySpec;
 import com.salesforce.androidsdk.store.SmartStore;
-import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
-import com.salesforce.androidsdk.store.SmartStore.Order;
-import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
-import com.salesforce.androidsdk.store.SmartStore.QueryType;
+import com.salesforce.androidsdk.store.QuerySpec.Order;
+import com.salesforce.androidsdk.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
 
 /**
@@ -87,7 +87,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		pgRemoveFromSoup,
 		pgRemoveSoup,
 		pgRetrieveSoupEntries,
-		pgRunSql,
+		pgRunSmartSql,
 		pgSoupExists,
 		pgUpsertSoupEntries
 	}
@@ -107,7 +107,7 @@ public class SmartStorePlugin extends ForcePlugin {
                   case pgRegisterSoup:          registerSoup(args, callbackContext); return true;
                   case pgRemoveFromSoup:        removeFromSoup(args, callbackContext); return true;
                   case pgRemoveSoup:            removeSoup(args, callbackContext); return true;
-                  case pgRunSql:                runSql(args, callbackContext); return true;
+                  case pgRunSmartSql:           runSmartSql(args, callbackContext); return true;
                   case pgRetrieveSoupEntries:   retrieveSoupEntries(args, callbackContext); return true;
                   case pgSoupExists:            soupExists(args, callbackContext); return true;
                   case pgUpsertSoupEntries:     upsertSoupEntries(args, callbackContext); return true;
@@ -364,12 +364,12 @@ public class SmartStorePlugin extends ForcePlugin {
 
 	
 	/**
-	 * Native implementation of pgRunSql
+	 * Native implementation of pgRunSmartSql
 	 * @param args
 	 * @param callbackContext
 	 * @throws JSONException
 	 */
-	private void runSql(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void runSmartSql(JSONArray args, CallbackContext callbackContext) throws JSONException {
 		// Parse args
 		String sql = args.getString(0);
 		

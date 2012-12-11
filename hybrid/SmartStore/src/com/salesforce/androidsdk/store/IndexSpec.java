@@ -26,48 +26,26 @@
  */
 package com.salesforce.androidsdk.store;
 
-import net.sqlcipher.database.SQLiteDatabase;
-import android.content.Context;
-import android.test.InstrumentationTestCase;
-
 import com.salesforce.androidsdk.store.SmartStore.Type;
 
 /**
- * Tests for "smart" sql
- *
+ * Simple class to represent index spec
  */
-public class SmartSqlTest extends InstrumentationTestCase {
+public class IndexSpec {
+    public final String path;
+    public final Type type;
+    public final String columnName;
 
-	private static final String TEST_SOUP = "test_soup";
-//	private static final String OTHER_TEST_SOUP = "other_test_soup";
-//	private static final String THIRD_TEST_SOUP = "third_test_soup";
-	
-	protected Context targetContext;
-	private SQLiteDatabase db;
-	private SmartStore store;
-	
-	@Override
-	public void setUp() throws Exception {
-		super.setUp();
-		targetContext = getInstrumentation().getTargetContext();
-		DBHelper.INSTANCE.reset(targetContext); // start clean
-		db = DBOpenHelper.getOpenHelper(targetContext).getWritableDatabase("");
-		store = new SmartStore(db);
-		
-		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
-	}
-	
-	@Override
-	protected void tearDown() throws Exception {
-		db.close();
-		// Not cleaning up after the test to make diagnosing issues easier
-		super.tearDown();
-	}
-	
-	/**
-	 * Testing smart sql to sql conversion
-	 */
-	public void testConvertSimpleSql() {
-		assertEquals("select TABLE_1_0 from TABLE_1 order by TABLE_1_0", store.convertSmartSql("select {test_soup:key} from {test_soup} order by {test_soup:key}"));
-	}
+    public IndexSpec(String path, Type type) {
+        this.path = path;
+        this.type = type;
+        this.columnName = null; // undefined
+    }
+
+    public IndexSpec(String path, Type type, String columnName) {
+        this.path = path;
+        this.type = type;
+        this.columnName = columnName;
+    }
+
 }

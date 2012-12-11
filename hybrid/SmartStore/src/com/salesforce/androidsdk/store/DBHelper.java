@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,8 +26,13 @@
  */
 package com.salesforce.androidsdk.store;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+
+import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.store.SmartStore.Type;
 
 import net.sqlcipher.DatabaseUtils.InsertHelper;
 import net.sqlcipher.database.SQLiteDatabase;
@@ -37,7 +42,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 
-import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
 
 
 /**
@@ -58,7 +62,7 @@ public enum DBHelper  {
 	private Map<String, String> soupNameToTableNamesMap = new HashMap<String, String>();
 	
 	// Cache of soup name to index specs
-	private Map<String, IndexSpec[]> soupNameToIndexSpecsMap = new HashMap<String, SmartStore.IndexSpec[]>();
+	private Map<String, IndexSpec[]> soupNameToIndexSpecsMap = new HashMap<String, IndexSpec[]>();
 	
 	// Cache of table name to get-next-id compiled statements
 	private Map<String, SQLiteStatement> tableNameToNextIdStatementsMap = new HashMap<String, SQLiteStatement>();
@@ -81,7 +85,7 @@ public enum DBHelper  {
 	public String getCachedTableName(String soupName) {
 		return soupNameToTableNamesMap.get(soupName);
 	}
-
+	
 	/**
 	 * @param soupName
 	 * @param tableName
@@ -241,4 +245,115 @@ public enum DBHelper  {
 		DBOpenHelper.deleteDatabase(ctx);
 	}
 
+	
+
+    /**
+     * Return column name in soup table that holds the soup projection for path
+     * @param soupName
+     * @param path
+     * @return
+     */
+    public String getColumnNameForPath(SQLiteDatabase db, String soupName, String path) {
+        Cursor cursor = null;
+        try {
+            cursor = query(db, SmartStore.SOUP_INDEX_MAP_TABLE, new String[] {SmartStore.COLUMN_NAME_COL}, null,
+                    null, SmartStore.SOUP_NAME_PREDICATE + " AND " + SmartStore.PATH_PREDICATE, soupName, path);
+
+            if (cursor.moveToFirst()) {
+                return cursor.getString(0);
+            }
+            else {
+                throw new SmartStoreException(String.format("%s does not have an index on %s", soupName, path));
+            }
+        }
+        finally {
+            safeClose(cursor);
+        }
+    }
+
+    /**
+     * Read index specs back from the soup index map table
+     * @param db
+     * @param soupName
+     * @return
+     */
+    public IndexSpec[] getIndexSpecs(SQLiteDatabase db, String soupName) {
+        IndexSpec[] indexSpecs = getCachedIndexSpecs(soupName);
+        if (indexSpecs == null) {
+            indexSpecs = getIndexSpecsFromDb(db, soupName);
+            cacheIndexSpecs(soupName, indexSpecs);
+        }
+
+        return indexSpecs;
+    }
+
+    protected IndexSpec[] getIndexSpecsFromDb(SQLiteDatabase db, String soupName) {
+        Cursor cursor = null;
+        try {
+            cursor = query(db, SmartStore.SOUP_INDEX_MAP_TABLE, new String[] {SmartStore.PATH_COL, SmartStore.COLUMN_NAME_COL, SmartStore.COLUMN_TYPE_COL}, null,
+                    null, SmartStore.SOUP_NAME_PREDICATE, soupName);
+
+            if (!cursor.moveToFirst()) {
+                throw new SmartStoreException(String.format("%s does not have any indices", soupName));
+            }
+
+            List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
+            do {
+                String path = cursor.getString(cursor.getColumnIndex(SmartStore.PATH_COL));
+                String columnName = cursor.getString(cursor.getColumnIndex(SmartStore.COLUMN_NAME_COL));
+                Type columnType = Type.valueOf(cursor.getString(cursor.getColumnIndex(SmartStore.COLUMN_TYPE_COL)));
+                indexSpecs.add(new IndexSpec(path, columnType, columnName));
+            }
+            while (cursor.moveToNext());
+
+            return indexSpecs.toArray(new IndexSpec[0]);
+        }
+        finally {
+            safeClose(cursor);
+        }
+    }
+    
+    /**
+     * Return table name for a given soup or null if the soup doesn't exist
+     * @param db
+     * @param soupName
+     * @return 
+    */
+   public String getSoupTableName(SQLiteDatabase db, String soupName) {
+       String soupTableName = getCachedTableName(soupName);
+       if (soupTableName == null) {
+           soupTableName = getSoupTableNameFromDb(db, soupName);
+           if (soupTableName != null) {
+               cacheTableName(soupName, soupTableName);
+           }
+           // Note: if you ask twice about a non-existing soup, we go to the database both times
+           //       we could optimize for that scenario but it doesn't seem very important
+       }
+
+       return soupTableName;
+   }
+
+   protected String getSoupTableNameFromDb(SQLiteDatabase db, String soupName) {
+       Cursor cursor = null;
+       try {
+           cursor = query(db, SmartStore.SOUP_NAMES_TABLE, new String[] {SmartStore.ID_COL}, null, null, SmartStore.SOUP_NAME_PREDICATE, soupName);
+           if (!cursor.moveToFirst()) {
+               return null;
+           }
+           return SmartStore.getSoupTableName(cursor.getLong(cursor.getColumnIndex(SmartStore.ID_COL)));
+       }
+       finally {
+           safeClose(cursor);
+       }
+   }
+    
+    
+    /**
+     * @param cursor
+     */
+    protected void safeClose(Cursor cursor) {
+        if (cursor != null) {
+            cursor.close();
+        }
+    }
 }

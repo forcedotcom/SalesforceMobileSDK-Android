@@ -39,8 +39,8 @@ import android.content.Context;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 
-import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
-import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
+import com.salesforce.androidsdk.store.IndexSpec;
+import com.salesforce.androidsdk.store.QuerySpec;
 import com.salesforce.androidsdk.store.SmartStore.Type;
 
 /**
