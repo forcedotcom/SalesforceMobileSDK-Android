@@ -37,6 +37,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.util.SparseArray;
+
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.store.IndexSpec;
@@ -52,9 +54,9 @@ import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
 public class SmartStorePlugin extends ForcePlugin {
 	// Keys in json from/to javascript
 	private static final String BEGIN_KEY = "beginKey";
-	private static final String CURRENT_PAGE_INDEX = "currentPageIndex";
-	private static final String CURRENT_PAGE_ORDERED_ENTRIES = "currentPageOrderedEntries";
-	private static final String CURSOR_ID = "cursorId";
+	static final String CURRENT_PAGE_INDEX = "currentPageIndex";
+	static final String CURRENT_PAGE_ORDERED_ENTRIES = "currentPageOrderedEntries";
+	static final String CURSOR_ID = "cursorId";
 	private static final String END_KEY = "endKey";
 	private static final String ENTRIES = "entries";
 	private static final String ENTRY_IDS = "entryIds";
@@ -65,16 +67,16 @@ public class SmartStorePlugin extends ForcePlugin {
 	private static final String MATCH_KEY = "matchKey";
 	private static final String EXTERNAL_ID_PATH = "externalIdPath";
 	private static final String ORDER = "order";
-	private static final String PAGE_SIZE = "pageSize";
+	static final String PAGE_SIZE = "pageSize";
 	private static final String PATH = "path";
 	private static final String QUERY_SPEC = "querySpec";
 	private static final String QUERY_TYPE = "queryType";
 	private static final String SOUP_NAME = "soupName";
-	private static final String TOTAL_PAGES = "totalPages";
+	static final String TOTAL_PAGES = "totalPages";
 	private static final String TYPE = "type";
 
 	// Map of cursor id to StoreCursor
-	private static Map<Integer, StoreCursor> storeCursors = new HashMap<Integer, StoreCursor>();
+	private static SparseArray<StoreCursor> storeCursors = new SparseArray<StoreCursor>();
 
 	/**
 	 * Supported plugin actions that the client can take.
@@ -384,61 +386,5 @@ public class SmartStorePlugin extends ForcePlugin {
 	
 	private SmartStore getSmartStore() {
 		return ((ForceAppWithSmartStore) ForceApp.APP).getSmartStore();
-	}
-	
-	/**
-	 * Store Cursor
-	 * We don't actually keep a cursor opened, instead, we wrap the query spec and page index
-	 */
-	public static class StoreCursor {
-		
-		private static int LAST_ID = 0;
-		
-		// Id / soup / query / totalPages immutable
-		public  final int cursorId;
-		private final String soupName;
-		private final QuerySpec querySpec;
-		private final int totalPages;
-		
-		// Current page can change - by calling moveToPageIndex
-		private int currentPageIndex;
-		
-		/**
-		 * @param soupName
-		 * @param querySpec
-		 * @param totalPages
-		 * @param currentPageIndex
-		 */
-		public StoreCursor(String soupName, QuerySpec querySpec, int totalPages, int currentPageIndex) {
-			this.cursorId = LAST_ID++;
-			this.soupName = soupName;
-			this.querySpec = querySpec;
-			this.totalPages = totalPages;
-			this.currentPageIndex = currentPageIndex;
-		}
-		
-		/**
-		 * @param newPageIndex
-		 */
-		public void moveToPageIndex(int newPageIndex) {
-			// Always between 0 and totalPages-1
-			this.currentPageIndex = (newPageIndex < 0 ? 0 : newPageIndex >= totalPages ? totalPages - 1 : newPageIndex);
-		}
-		
-		/**
-		 * @param smartStore
-		 * @return json containing cursor meta data (page index, size etc) and data (entries in page)
-		 * Note: query is run to build json
-		 * @throws JSONException 
-		 */
-		public JSONObject toJSON(SmartStore smartStore) throws JSONException {
-			JSONObject json = new JSONObject();
-			json.put(CURSOR_ID, cursorId);
-			json.put(CURRENT_PAGE_INDEX, currentPageIndex);
-			json.put(PAGE_SIZE, querySpec.pageSize);
-			json.put(TOTAL_PAGES, totalPages);
-			json.put(CURRENT_PAGE_ORDERED_ENTRIES, smartStore.querySoup(soupName, querySpec, currentPageIndex));
-			return json;
-		}
 	}
 }
