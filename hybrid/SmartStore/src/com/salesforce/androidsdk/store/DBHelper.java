@@ -254,23 +254,15 @@ public enum DBHelper  {
      * @return
      */
     public String getColumnNameForPath(SQLiteDatabase db, String soupName, String path) {
-        Cursor cursor = null;
-        try {
-            cursor = query(db, SmartStore.SOUP_INDEX_MAP_TABLE, new String[] {SmartStore.COLUMN_NAME_COL}, null,
-                    null, SmartStore.SOUP_NAME_PREDICATE + " AND " + SmartStore.PATH_PREDICATE, soupName, path);
-
-            if (cursor.moveToFirst()) {
-                return cursor.getString(0);
-            }
-            else {
-                throw new SmartStoreException(String.format("%s does not have an index on %s", soupName, path));
+        IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
+        for (IndexSpec indexSpec : indexSpecs) {
+            if (indexSpec.path.equals(path)) {
+                return indexSpec.columnName;
             }
         }
-        finally {
-            safeClose(cursor);
-        }
-    }
-
+        throw new SmartStoreException(String.format("%s does not have an index on %s", soupName, path));
+    }	
+	
     /**
      * Read index specs back from the soup index map table
      * @param db
