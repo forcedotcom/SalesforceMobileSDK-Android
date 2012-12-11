@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.store;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -416,28 +417,37 @@ public class SmartStore  {
             safeClose(cursor);
         }
     }
-
+    
     
 	/**
 	 * Run a "smart" sql query
-	 * A "smart" sql query is a query where columns are of the form {soupName:path} and tables are of the form {soupName}
-	 * NB: only select's are allowed
-	 *     only indexed path can be referenced (alternatively you can do {soupName:_soupEntryId} or {soupName:_soupLastModifiedDate}
-	 *     to get an entire soup element back, do {soupName:.}
-	 *     
 	 * @param sql
 	 */
 	public void runSmartSql(String smartSql) {
+		convertSmartSql(smartSql);
+	}
+
+	/**
+	 * Convert "smart" sql query to actual sql
+	 * A "smart" sql query is a query where columns are of the form {soupName:path} and tables are of the form {soupName}
+	 * NB: only select's are allowed
+	 *     only indexed path can be referenced (alternatively you can do {soupName:_soupEntryId} or {soupName:_soupLastModifiedDate}
+	 *     to get an entire soup element back, do {soupName:}
+	 *
+	 * @param smartSql
+	 * @return actual sql     
+	 */
+	protected String convertSmartSql(String smartSql) {
 		Log.i("SmartStore.runSmartSql", "smart sql = " + smartSql);
 		
 		// Select's only
-		String smartSqlLowerCase = smartSql.toLowerCase();
+		String smartSqlLowerCase = smartSql.toLowerCase(Locale.getDefault());
 		if (smartSqlLowerCase.contains("insert") || smartSqlLowerCase.contains("update") || smartSqlLowerCase.contains("delete")) {
 			throw new SmartSqlException("Only SELECT are supported");
 		}
 		
 		// Replacing {soupName} and {soupName:path}
-		Pattern pattern  = Pattern.compile("{([^}])}");
+		Pattern pattern  = Pattern.compile("\\{([^}]+)\\}");
 		StringBuffer sql = new StringBuffer();
 		Matcher matcher = pattern.matcher(smartSql);
 		while(matcher.find()) {
@@ -453,7 +463,7 @@ public class SmartStore  {
 				}
 				String soupName = parts[0];
 				String path = parts[1];
-				if (path.equals(".")) {
+				if (path.equals("")) {
 					matcher.appendReplacement(sql, SOUP_COL);
 				}
 				else if (path.equals(SOUP_ENTRY_ID) || path.equals(SOUP_LAST_MODIFIED_DATE)) {
@@ -475,6 +485,8 @@ public class SmartStore  {
 		
 		// Done
 		Log.i("SmartStore.runSmartSql", "sql = " + sql);
+		
+		return sql.toString();
 	}
 	
 	private String getColumnNameForPathForSmartSql(String soupName, String path, int position) {
