@@ -27,9 +27,7 @@
 package com.salesforce.androidsdk.phonegap;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.cordova.api.CallbackContext;
 import org.apache.cordova.api.PluginResult;
@@ -43,9 +41,9 @@ import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.store.IndexSpec;
 import com.salesforce.androidsdk.store.QuerySpec;
-import com.salesforce.androidsdk.store.SmartStore;
 import com.salesforce.androidsdk.store.QuerySpec.Order;
 import com.salesforce.androidsdk.store.QuerySpec.QueryType;
+import com.salesforce.androidsdk.store.SmartStore;
 import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
 
 /**

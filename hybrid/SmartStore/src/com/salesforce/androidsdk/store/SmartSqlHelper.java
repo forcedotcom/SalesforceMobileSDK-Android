@@ -74,30 +74,37 @@ public enum SmartSqlHelper  {
 			String match = matcher.group(1);
 			int position = matcher.start();
 
+			String[] parts = match.split(":");
+			
+			// {soupName}
+			if (parts.length == 1 && !match.endsWith(":")) {
+				String soupTableName = getSoupTableNameForSmartSql(db, match, position);
+				matcher.appendReplacement(sql, soupTableName);
+			}
+			// {soupName:}
+			else if (parts.length == 1 ) {
+				matcher.appendReplacement(sql, SmartStore.SOUP_COL); // XXX not table qualified
+			}
 			// {soupName:path}
-			if (match.contains(":")) {
-				String[] parts = match.split(":");
-				if (parts.length > 2) {
-					reportSmartSqlError("Invalid soup/path reference " + fullMatch, position);
-				}
+			else if (parts.length == 2) {
 				String soupName = parts[0];
 				String path = parts[1];
-				if (path.equals("")) {
-					matcher.appendReplacement(sql, SmartStore.SOUP_COL);
+				// {soupName:_soupEntryId}
+				if (path.equals(SmartStore.SOUP_ENTRY_ID)) {
+					matcher.appendReplacement(sql, SmartStore.ID_COL);
 				}
-				else if (path.equals(SmartStore.SOUP_ENTRY_ID) || path.equals(SmartStore.SOUP_LAST_MODIFIED_DATE)) {
-					matcher.appendReplacement(sql, path);
+				// {soupName:_soupLastModifiedDate}
+				else if (path.equals(SmartStore.SOUP_LAST_MODIFIED_DATE)) {
+					matcher.appendReplacement(sql, SmartStore.LAST_MODIFIED_COL);
 				}
+				// {soupName:path}
 				else {
-					/* String soupTableName = */ getSoupTableNameForSmartSql(db, soupName, position); // for validation
 					String columnName = getColumnNameForPathForSmartSql(db, soupName, path, position);
 					matcher.appendReplacement(sql, columnName);
 				}
 			}
-			// {soupName}
-			else {
-				String soupTableName = getSoupTableNameForSmartSql(db, match, position);
-				matcher.appendReplacement(sql, soupTableName);
+			else if (parts.length > 2) {
+				reportSmartSqlError("Invalid soup/path reference " + fullMatch, position);
 			}
 		}
 		matcher.appendTail(sql);

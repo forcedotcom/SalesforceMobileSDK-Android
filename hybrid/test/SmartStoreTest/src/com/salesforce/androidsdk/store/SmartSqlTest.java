@@ -30,6 +30,7 @@ import net.sqlcipher.database.SQLiteDatabase;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 
+import com.salesforce.androidsdk.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.store.SmartStore.Type;
 
 /**
@@ -38,9 +39,8 @@ import com.salesforce.androidsdk.store.SmartStore.Type;
  */
 public class SmartSqlTest extends InstrumentationTestCase {
 
-	private static final String TEST_SOUP = "test_soup";
-//	private static final String OTHER_TEST_SOUP = "other_test_soup";
-//	private static final String THIRD_TEST_SOUP = "third_test_soup";
+	private static final String EMPLOYEES_SOUP = "employees";
+	private static final String DEPARTMENTS_SOUP = "departments";
 	
 	protected Context targetContext;
 	private SQLiteDatabase db;
@@ -54,7 +54,16 @@ public class SmartSqlTest extends InstrumentationTestCase {
 		db = DBOpenHelper.getOpenHelper(targetContext).getWritableDatabase("");
 		store = new SmartStore(db);
 		
-		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
+		store.registerSoup(EMPLOYEES_SOUP, new IndexSpec[] {   // should be TABLE_1
+				new IndexSpec("firstName", Type.string),       // should be TABLE_1_0
+				new IndexSpec("lastName", Type.string),        // should be TABLE_1_1
+				new IndexSpec("deptCode", Type.string),        // should be TABLE_1_2
+				new IndexSpec("employeeId", Type.string),      // should be TABLE_1_3
+				new IndexSpec("managerId", Type.string) });    // should be TABLE_1_4
+
+		store.registerSoup(DEPARTMENTS_SOUP, new IndexSpec[] { // should be TABLE_2
+				new IndexSpec("deptCode", Type.string),        // should be TABLE_2_0
+				new IndexSpec("name", Type.string) });         // should be TABLE_2_1
 	}
 	
 	@Override
@@ -65,9 +74,65 @@ public class SmartSqlTest extends InstrumentationTestCase {
 	}
 	
 	/**
-	 * Testing smart sql to sql conversion
+	 * Testing simple smart sql to sql conversion
 	 */
-	public void testConvertSimpleSql() {
-		assertEquals("select TABLE_1_0 from TABLE_1 order by TABLE_1_0", store.convertSmartSql("select {test_soup:key} from {test_soup} order by {test_soup:key}"));
+	public void testSimpleConvertSmartSql() {
+		assertEquals("select TABLE_1_0, TABLE_1_1 from TABLE_1 order by TABLE_1_1", 
+				store.convertSmartSql("select {employees:firstName}, {employees:lastName} from {employees} order by {employees:lastName}"));
+
+		assertEquals("select TABLE_2_1 from TABLE_2 order by TABLE_2_0", 
+				store.convertSmartSql("select {departments:name} from {departments} order by {departments:deptCode}"));
+	
+	}
+
+	/**
+	 * Testing smart sql to sql conversion when there is a join
+	 */
+	public void testConvertSmartSqlWithJoin() {
+		assertEquals("select TABLE_2_1, TABLE_1_0 || ' ' || TABLE_1_1 "
+					+ "from TABLE_1, TABLE_2 "
+				    + "where TABLE_2_0 = TABLE_1_2 "
+					+ "order by TABLE_2_1, TABLE_1_1",
+				store.convertSmartSql("select {departments:name}, {employees:firstName} || ' ' || {employees:lastName} "
+						+ "from {employees}, {departments} "
+						+ "where {departments:deptCode} = {employees:deptCode} "
+						+ "order by {departments:name}, {employees:lastName}"));
+	
+	}
+
+	/**
+	 * Testing smart sql to sql conversion when there is a self join
+	 */
+	public void testConvertSmartSqlWithSelfJoin() {
+		assertEquals("select mgr.TABLE_1_1, e.TABLE_1_1 "
+					+ "from TABLE_1 as mgr, TABLE_1 as e "
+				    + "where mgr.TABLE_1_3 = e.TABLE_1_4",
+				store.convertSmartSql("select mgr.{employees:lastName}, e.{employees:lastName} "
+						+ "from {employees} as mgr, {employees} as e "
+						+ "where mgr.{employees:employeeId} = e.{employees:managerId}"));
+	}
+
+	/**
+	 * Testing smart sql to sql conversion when path is: empty, _soupEntryId or _soupLastModifiedDate
+	 */
+	public void testConvertSmartSqlWithSpecialColumns() {
+		assertEquals("select id, lastModified, soup from TABLE_1", 
+				store.convertSmartSql("select {employees:_soupEntryId}, {employees:_soupLastModifiedDate}, {employee:} from {employees}"));
+	}
+	
+
+	/**
+	 * Test smart sql to sql conversation with insert/update/delete: expect exception
+	 */
+	public void testConvertSmartSqlWithInsertUpdateDelete() {
+		for (String smartSql : new String[] { "insert into {employees}", "update {employees}", "delete from {employees}"}) {
+			try {
+				store.convertSmartSql(smartSql);
+				fail("Should have thrown exception for " + smartSql);
+			}
+			catch (SmartSqlException e) {
+				// Expected
+			}
+		}
 	}
 }
