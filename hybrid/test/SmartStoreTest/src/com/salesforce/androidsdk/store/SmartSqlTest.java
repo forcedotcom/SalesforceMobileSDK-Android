@@ -113,15 +113,15 @@ public class SmartSqlTest extends InstrumentationTestCase {
 	}
 
 	/**
-	 * Testing smart sql to sql conversion when path is: empty, _soupEntryId or _soupLastModifiedDate
+	 * Testing smart sql to sql conversion when path is: _soup, _soupEntryId or _soupLastModifiedDate
 	 */
 	public void testConvertSmartSqlWithSpecialColumns() {
 		assertEquals("select TABLE_1.id, TABLE_1.lastModified, TABLE_1.soup from TABLE_1", 
-				store.convertSmartSql("select {employees:_soupEntryId}, {employees:_soupLastModifiedDate}, {employees:} from {employees}"));
+				store.convertSmartSql("select {employees:_soupEntryId}, {employees:_soupLastModifiedDate}, {employees:_soup} from {employees}"));
 	}
 	
 	/**
-	 * Testing smart sql to sql conversion when path is: empty, _soupEntryId or _soupLastModifiedDate and there is a join
+	 * Testing smart sql to sql conversion when path is: _soup, _soupEntryId or _soupLastModifiedDate and there is a join
 	 */
 	public void testConvertSmartSqlWithSpecialColumnsAndJoin() {
 		assertEquals("select TABLE_1.id, TABLE_2.id from TABLE_1, TABLE_2", 
@@ -129,7 +129,7 @@ public class SmartSqlTest extends InstrumentationTestCase {
 	}
 
 	/**
-	 * Testing smart sql to sql conversion when path is: empty, _soupEntryId or _soupLastModifiedDate and there is a join
+	 * Testing smart sql to sql conversion when path is: _soup, _soupEntryId or _soupLastModifiedDate and there is a join
 	 */
 	public void testConvertSmartSqlWithSpecialColumnsAndSelfJoin() {
 		assertEquals("select mgr.id, e.id from TABLE_1 as mgr, TABLE_1 as e", 
