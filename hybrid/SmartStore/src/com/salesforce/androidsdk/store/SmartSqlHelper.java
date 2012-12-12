@@ -45,12 +45,15 @@ public enum SmartSqlHelper  {
 	
 	INSTANCE;
 
+    public static final String WHOLE_SOUP = "_soup";
+	
 	/**
 	 * Convert "smart" sql query to actual sql
 	 * A "smart" sql query is a query where columns are of the form {soupName:path} and tables are of the form {soupName}
+	 * 
 	 * NB: only select's are allowed
 	 *     only indexed path can be referenced (alternatively you can do {soupName:_soupEntryId} or {soupName:_soupLastModifiedDate}
-	 *     to get an entire soup element back, do {soupName:}
+	 *     to get an entire soup element back, do {soupName:_soup}
 	 *
 	 * @param db
 	 * @param smartSql
@@ -69,33 +72,34 @@ public enum SmartSqlHelper  {
 		Pattern pattern  = Pattern.compile("\\{([^}]+)\\}");
 		StringBuffer sql = new StringBuffer();
 		Matcher matcher = pattern.matcher(smartSql);
-		while(matcher.find()) {
+		while (matcher.find()) {
 			String fullMatch = matcher.group();
 			String match = matcher.group(1);
 			int position = matcher.start();
 
 			String[] parts = match.split(":");
+			String soupName = parts[0];
+			String soupTableName = getSoupTableNameForSmartSql(db, soupName, position);
+			boolean tableQualified = smartSql.charAt(position-1) == '.';
+			String tableQualifier = tableQualified ? "" : soupTableName + ".";
 			
 			// {soupName}
-			if (parts.length == 1 && !match.endsWith(":")) {
-				String soupTableName = getSoupTableNameForSmartSql(db, match, position);
+			if (parts.length == 1) {
 				matcher.appendReplacement(sql, soupTableName);
-			}
-			// {soupName:}
-			else if (parts.length == 1 ) {
-				matcher.appendReplacement(sql, SmartStore.SOUP_COL); // XXX not table qualified
-			}
-			// {soupName:path}
-			else if (parts.length == 2) {
-				String soupName = parts[0];
+			} else if (parts.length == 2) {
 				String path = parts[1];
+
+				// {soupName:_soup}
+				if (path.equals(WHOLE_SOUP)) {
+					matcher.appendReplacement(sql, tableQualifier + SmartStore.SOUP_COL);
+				}
 				// {soupName:_soupEntryId}
-				if (path.equals(SmartStore.SOUP_ENTRY_ID)) {
-					matcher.appendReplacement(sql, SmartStore.ID_COL);
+				else if (path.equals(SmartStore.SOUP_ENTRY_ID)) {
+					matcher.appendReplacement(sql, tableQualifier + SmartStore.ID_COL);
 				}
 				// {soupName:_soupLastModifiedDate}
 				else if (path.equals(SmartStore.SOUP_LAST_MODIFIED_DATE)) {
-					matcher.appendReplacement(sql, SmartStore.LAST_MODIFIED_COL);
+					matcher.appendReplacement(sql, tableQualifier + SmartStore.LAST_MODIFIED_COL);
 				}
 				// {soupName:path}
 				else {
