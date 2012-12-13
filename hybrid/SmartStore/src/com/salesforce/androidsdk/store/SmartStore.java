@@ -35,6 +35,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.salesforce.androidsdk.store.QuerySpec.QueryType;
+
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
@@ -320,6 +322,8 @@ public class SmartStore  {
      * @throws JSONException
      */
     public JSONArray querySoup(String soupName, QuerySpec querySpec, int pageIndex) throws JSONException {
+    	if (querySpec.queryType == QueryType.smart) return runSmartQuery(querySpec, pageIndex);
+    	
         String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
         if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 
@@ -358,9 +362,10 @@ public class SmartStore  {
      * @param soupName
      * @param querySpec
      * @return count for the given querySpec
-     * @throws JSONException
      */
-    public int countQuerySoup(String soupName, QuerySpec querySpec) throws JSONException {
+    public int countQuerySoup(String soupName, QuerySpec querySpec) {
+    	if (querySpec.queryType == QueryType.smart) return countSmartQuery(querySpec);
+    	
         String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
         if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 
@@ -385,16 +390,74 @@ public class SmartStore  {
             safeClose(cursor);
         }
     }
-    
-    
-	/**
-	 * Run a "smart" sql query
-	 * @param sql
+
+    /**
+	 * Run a "smart" query
+	 * @param querySpec
+	 * @param pageIndex
 	 */
-	public void runSmartSql(String smartSql) {
-		// TBD
+	public JSONArray runSmartQuery(QuerySpec querySpec, int pageIndex) {
+    	String sql = convertSmartSql(querySpec.smartSql);
+
+        // Page
+        int offsetRows = querySpec.pageSize * pageIndex;
+        int numberRows = querySpec.pageSize;
+        String limit = offsetRows + "," + numberRows;
+    	
+    	
+    	Cursor cursor = null;
+    	try {
+
+    		cursor = DBHelper.INSTANCE.limitRawQuery(db, sql, limit);
+
+    		int columnCount = cursor.getColumnCount();
+
+            JSONArray results = new JSONArray();
+            if (cursor.moveToFirst()) {
+                do {
+                	JSONArray row = new JSONArray();
+                	for (int i=0; i<columnCount; i++) {
+                		// TBD
+                	}
+                	results.put(row);
+                }
+                while (cursor.moveToNext());
+            }
+
+            return results;
+    	}
+    	finally {
+    		safeClose(cursor);
+    	}
 	}
 	
+	/**
+	 * @param querySpec
+	 * @return count of results for a "smart" query
+	 */
+	public int countSmartQuery(QuerySpec querySpec) {
+		String sql = convertSmartSql(querySpec.smartSql);
+		
+		Cursor cursor = null;
+		try {
+			cursor = DBHelper.INSTANCE.countRawQuery(db, sql);
+			
+			if (cursor.moveToFirst()) {
+				return cursor.getInt(0);
+			}
+			else {
+				return -1;
+			}
+		}
+		finally {
+			safeClose(cursor);
+		}
+	}
+
+	/**
+	 * @param smartSql
+	 * @return
+	 */
 	protected String convertSmartSql(String smartSql) {
 		return SmartSqlHelper.INSTANCE.convertSmartSql(db, smartSql);
 	}

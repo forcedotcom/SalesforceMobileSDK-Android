@@ -7,7 +7,7 @@ import com.salesforce.androidsdk.store.QuerySpec;
 import com.salesforce.androidsdk.store.SmartStore;
 
 /**
- * Store Cursor
+ * Store Cursor 
  * We don't actually keep a cursor opened, instead, we wrap the query spec and page index
  */
 public class StoreCursor {
@@ -24,17 +24,19 @@ public class StoreCursor {
 	private int currentPageIndex;
 	
 	/**
+	 * @param smartStore
 	 * @param soupName
 	 * @param querySpec
-	 * @param totalPages
-	 * @param currentPageIndex
+	 * @throws JSONException 
 	 */
-	public StoreCursor(String soupName, QuerySpec querySpec, int totalPages, int currentPageIndex) {
+	public StoreCursor(SmartStore smartStore, String soupName, QuerySpec querySpec) {
+		int countRows = smartStore.countQuerySoup(soupName, querySpec);
+		
 		this.cursorId = LAST_ID++;
 		this.soupName = soupName;
 		this.querySpec = querySpec;
-		this.totalPages = totalPages;
-		this.currentPageIndex = currentPageIndex;
+		this.totalPages = countRows / querySpec.pageSize + 1;
+		this.currentPageIndex = 0;
 	}
 	
 	/**
@@ -51,7 +53,7 @@ public class StoreCursor {
 	 * Note: query is run to build json
 	 * @throws JSONException 
 	 */
-	public JSONObject toJSON(SmartStore smartStore) throws JSONException {
+	public JSONObject getData(SmartStore smartStore) throws JSONException {
 		JSONObject json = new JSONObject();
 		json.put(SmartStorePlugin.CURSOR_ID, cursorId);
 		json.put(SmartStorePlugin.CURRENT_PAGE_INDEX, currentPageIndex);

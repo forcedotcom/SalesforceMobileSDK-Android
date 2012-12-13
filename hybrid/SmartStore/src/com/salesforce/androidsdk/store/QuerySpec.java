@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.store;
 import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
 
 /**
- * Simple class to represent a query spec
+ * Simple class to represent a query spec (soup query spec or smart query spec)
  */
 public class QuerySpec {
     public final String path;
@@ -42,14 +42,16 @@ public class QuerySpec {
     public final String endKey;
     // Like
     public final String likeKey;
-
+    // Smart
+    public final String smartSql;
+    
     // Order
     public final Order order;
 
     // Page size
     public final int pageSize;
 
-    // Private constructor
+    // Private constructor for soup query spec
     private QuerySpec(String path, QueryType queryType, String matchKey, String beginKey, String endKey, String likeKey, Order order, int pageSize) {
         this.path = path;
         this.queryType = queryType;
@@ -59,8 +61,25 @@ public class QuerySpec {
         this.likeKey = likeKey;
         this.order = order;
         this.pageSize = pageSize;
+        
+        // Not applicable
+        this.smartSql = null;
     }
-
+    
+    // Private constructor for smart query spec
+    private QuerySpec(String smartSql, int pageSize) {
+    	this.smartSql = smartSql;
+    	this.pageSize = pageSize;
+        this.queryType = QueryType.smart;
+    	
+    	// Not applicable
+        this.path = null;
+        this.matchKey = null;
+        this.beginKey = null;
+        this.endKey = null;
+        this.likeKey = null;
+        this.order = null;    	
+    }
 
     /**
      * Return a query spec for returning all entries
@@ -109,6 +128,16 @@ public class QuerySpec {
         return new QuerySpec(path, QueryType.like, null, null, null, likeKey, order, pageSize);
     }
 
+    /**
+     * Return a query spec for a smart query
+     * @param smartSql
+     * @param pageSize
+     * @return
+     */
+    public static QuerySpec buildSmartQuerySpec(String smartSql, int pageSize) {
+    	return new QuerySpec(smartSql, pageSize);
+    }
+    
     /**
      * @param columnName
      * @return string representing sql predicate
@@ -171,7 +200,8 @@ public class QuerySpec {
     public enum QueryType {
         exact,
         range,
-        like;
+        like,
+        smart;
     }
 
 

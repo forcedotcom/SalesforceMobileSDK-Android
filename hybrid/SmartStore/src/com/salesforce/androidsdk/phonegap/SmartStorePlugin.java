@@ -63,6 +63,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	private static final String INDEX_PATH = "indexPath";
 	private static final String LIKE_KEY = "likeKey";
 	private static final String MATCH_KEY = "matchKey";
+	private static final String SMART_SQL = "smartSql";
 	private static final String EXTERNAL_ID_PATH = "externalIdPath";
 	private static final String ORDER = "order";
 	static final String PAGE_SIZE = "pageSize";
@@ -87,7 +88,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		pgRemoveFromSoup,
 		pgRemoveSoup,
 		pgRetrieveSoupEntries,
-		pgRunSmartSql,
+		pgRunSmartQuery,
 		pgSoupExists,
 		pgUpsertSoupEntries
 	}
@@ -107,8 +108,8 @@ public class SmartStorePlugin extends ForcePlugin {
                   case pgRegisterSoup:          registerSoup(args, callbackContext); return true;
                   case pgRemoveFromSoup:        removeFromSoup(args, callbackContext); return true;
                   case pgRemoveSoup:            removeSoup(args, callbackContext); return true;
-                  case pgRunSmartSql:           runSmartSql(args, callbackContext); return true;
                   case pgRetrieveSoupEntries:   retrieveSoupEntries(args, callbackContext); return true;
+                  case pgRunSmartQuery:         runSmartQuery(args, callbackContext); return true;
                   case pgSoupExists:            soupExists(args, callbackContext); return true;
                   case pgUpsertSoupEntries:     upsertSoupEntries(args, callbackContext); return true;
                   default: return false;
@@ -212,7 +213,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		
 		// Build json result
 		SmartStore smartStore = getSmartStore();
-		JSONObject result = storeCursor.toJSON(smartStore);
+		JSONObject result = storeCursor.getData(smartStore);
 		
 		// Done
 		callbackContext.success(result);
@@ -325,25 +326,56 @@ public class SmartStorePlugin extends ForcePlugin {
         case exact:   querySpec = QuerySpec.buildExactQuerySpec(path, matchKey, pageSize); break;
         case range:   querySpec = QuerySpec.buildRangeQuerySpec(path, beginKey, endKey, order, pageSize); break;
         case like:    querySpec = QuerySpec.buildLikeQuerySpec(path, likeKey, order, pageSize); break;
+        case smart: throw new RuntimeException("Smart queries can only be run through runSmartQuery");
         default: throw new RuntimeException("Fell through switch: " + queryType);
 		}
 		
 		// Run query
-		SmartStore smartStore = getSmartStore();
-		int countRows = smartStore.countQuerySoup(soupName, querySpec);
-		int totalPages = countRows / querySpec.pageSize + 1;
+		runQuerySpec(callbackContext, soupName, querySpec);
+	}
+
+	/**
+	 * Native implementation of pgRunSmartSql
+	 * @param args
+	 * @param callbackContext
+	 */
+	private void runSmartQuery(JSONArray args, CallbackContext callbackContext) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		JSONObject querySpecJson = arg0.getJSONObject(QUERY_SPEC);
+		QueryType queryType = QueryType.valueOf(querySpecJson.getString(QUERY_TYPE));
+		String smartSql = querySpecJson.getString(SMART_SQL);
+		int pageSize = querySpecJson.getInt(PAGE_SIZE); 
 		
+		if (queryType != QueryType.smart) throw new RuntimeException("runSmartQuery can only run smart queries");
+		
+		// Building smart query spec
+		QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, pageSize);
+		
+		// Run query
+		runQuerySpec(callbackContext, null, querySpec);
+	}
+
+	/**
+	 * Helper for querySoup and runSmartSql
+	 * @param callbackContext
+	 * @param soupName
+	 * @param querySpec
+	 * @throws JSONException
+	 */
+	private void runQuerySpec(CallbackContext callbackContext, String soupName, QuerySpec querySpec) throws JSONException {
 		// Build store cursor
-		StoreCursor storeCursor = new StoreCursor(soupName, querySpec, totalPages, 0);
+		SmartStore smartStore = getSmartStore();
+		StoreCursor storeCursor = new StoreCursor(smartStore, soupName, querySpec);
 		storeCursors.put(storeCursor.cursorId, storeCursor);
 		
 		// Build json result
-		JSONObject result = storeCursor.toJSON(smartStore);
+		JSONObject result = storeCursor.getData(smartStore);
 		
 		// Done
 		callbackContext.success(result);
 	}
-
+	
 	/**
 	 * Native implementation of pgRemoveSoup
 	 * @param args
@@ -361,27 +393,8 @@ public class SmartStorePlugin extends ForcePlugin {
 		smartStore.dropSoup(soupName);
 		callbackContext.success();
 	}
+	
 
-	
-	/**
-	 * Native implementation of pgRunSmartSql
-	 * @param args
-	 * @param callbackContext
-	 * @throws JSONException
-	 */
-	private void runSmartSql(JSONArray args, CallbackContext callbackContext) throws JSONException {
-		// Parse args
-		String sql = args.getString(0);
-		
-		// Run sql
-		SmartStore smartStore = getSmartStore();
-		smartStore.runSmartSql(sql);
-		
-		// Done
-		callbackContext.success();
-	}
-	
-	
 	private SmartStore getSmartStore() {
 		return ((ForceAppWithSmartStore) ForceApp.APP).getSmartStore();
 	}

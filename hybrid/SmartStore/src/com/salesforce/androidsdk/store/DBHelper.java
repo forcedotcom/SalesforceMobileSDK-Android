@@ -57,6 +57,7 @@ public enum DBHelper  {
 	// Some queries
 	private static final String COUNT_SELECT = "SELECT count(*) FROM %s %s";
 	private static final String SEQ_SELECT = "SELECT seq FROM SQLITE_SEQUENCE WHERE name = ?";
+	private static final String LIMIT_SELECT = "SELECT * FROM (%s) LIMIT %s";
 	
 	// Cache of soup name to soup table names
 	private Map<String, String> soupNameToTableNamesMap = new HashMap<String, String>();
@@ -69,6 +70,7 @@ public enum DBHelper  {
 	
 	// Cache of table name to insert helpers
 	private Map<String, InsertHelper> tableNameToInsertHelpersMap = new HashMap<String, InsertHelper>();
+	
 	
 	/**
 	 * @param soupName
@@ -170,6 +172,31 @@ public enum DBHelper  {
 		String selectionStr = (whereClause == null ? "" : " WHERE " + whereClause);
 		String sql = String.format(COUNT_SELECT, table, selectionStr);
 		return db.rawQuery(sql, whereArgs);
+	}
+	
+	/**
+	 * Does a limit for a raw query
+	 * @param db
+	 * @param sql
+	 * @param limit
+	 * @param whereArgs
+	 * @return
+	 */
+	public Cursor limitRawQuery(SQLiteDatabase db, String sql, String limit, String... whereArgs) {
+		String limitSql = String.format(LIMIT_SELECT, sql, limit);
+		return db.rawQuery(limitSql, whereArgs);
+	}
+
+	/**
+	 * Does a count for a raw query
+	 * @param db
+	 * @param sql
+	 * @param whereArgs
+	 * @return
+	 */
+	public Cursor countRawQuery(SQLiteDatabase db, String sql, String... whereArgs) {
+		String countSql = String.format(COUNT_SELECT, "", "(" + sql + ")");
+		return db.rawQuery(countSql, whereArgs);
 	}
 	
 	/**
