@@ -323,15 +323,15 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Building query spec
 		QuerySpec querySpec = null;
 		switch (queryType) {
-        case exact:   querySpec = QuerySpec.buildExactQuerySpec(path, matchKey, pageSize); break;
-        case range:   querySpec = QuerySpec.buildRangeQuerySpec(path, beginKey, endKey, order, pageSize); break;
-        case like:    querySpec = QuerySpec.buildLikeQuerySpec(path, likeKey, order, pageSize); break;
+        case exact:   querySpec = QuerySpec.buildExactQuerySpec(soupName, path, matchKey, pageSize); break;
+        case range:   querySpec = QuerySpec.buildRangeQuerySpec(soupName, path, beginKey, endKey, order, pageSize); break;
+        case like:    querySpec = QuerySpec.buildLikeQuerySpec(soupName, path, likeKey, order, pageSize); break;
         case smart: throw new RuntimeException("Smart queries can only be run through runSmartQuery");
         default: throw new RuntimeException("Fell through switch: " + queryType);
 		}
 		
 		// Run query
-		runQuerySpec(callbackContext, soupName, querySpec);
+		runQuery(querySpec, callbackContext);
 	}
 
 	/**
@@ -353,20 +353,19 @@ public class SmartStorePlugin extends ForcePlugin {
 		QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, pageSize);
 		
 		// Run query
-		runQuerySpec(callbackContext, null, querySpec);
+		runQuery(querySpec, callbackContext);
 	}
 
 	/**
 	 * Helper for querySoup and runSmartSql
-	 * @param callbackContext
-	 * @param soupName
 	 * @param querySpec
+	 * @param callbackContext
 	 * @throws JSONException
 	 */
-	private void runQuerySpec(CallbackContext callbackContext, String soupName, QuerySpec querySpec) throws JSONException {
+	private void runQuery(QuerySpec querySpec, CallbackContext callbackContext) throws JSONException {
 		// Build store cursor
 		SmartStore smartStore = getSmartStore();
-		StoreCursor storeCursor = new StoreCursor(smartStore, soupName, querySpec);
+		StoreCursor storeCursor = new StoreCursor(smartStore, querySpec);
 		storeCursors.put(storeCursor.cursorId, storeCursor);
 		
 		// Build json result

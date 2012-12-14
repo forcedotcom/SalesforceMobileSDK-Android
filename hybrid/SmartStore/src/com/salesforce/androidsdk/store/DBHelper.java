@@ -71,6 +71,9 @@ public enum DBHelper  {
 	// Cache of table name to insert helpers
 	private Map<String, InsertHelper> tableNameToInsertHelpersMap = new HashMap<String, InsertHelper>();
 	
+	// Cache of raw count sql to compiled statements
+	private Map<String, SQLiteStatement> rawCountSqlToStatementsMap = new HashMap<String, SQLiteStatement>();
+	
 	
 	/**
 	 * @param soupName
@@ -117,6 +120,14 @@ public enum DBHelper  {
 			SQLiteStatement prog = tableNameToNextIdStatementsMap.remove(tableName);
 			if (prog != null) 
 				prog.close();
+			
+			for (String countSql : rawCountSqlToStatementsMap.keySet()) {
+				if (countSql.contains(tableName)) {
+					SQLiteStatement countProg = rawCountSqlToStatementsMap.remove(countSql);
+					if (countProg != null)
+						countProg.close();
+				}
+			}
 		}
 		soupNameToTableNamesMap.remove(soupName);
 		soupNameToIndexSpecsMap.remove(soupName);
@@ -194,9 +205,29 @@ public enum DBHelper  {
 	 * @param whereArgs
 	 * @return
 	 */
-	public Cursor countRawQuery(SQLiteDatabase db, String sql, String... whereArgs) {
+	public int countRawQuery(SQLiteDatabase db, String sql, String... whereArgs) {
 		String countSql = String.format(COUNT_SELECT, "", "(" + sql + ")");
-		return db.rawQuery(countSql, whereArgs);
+
+		SQLiteStatement prog = rawCountSqlToStatementsMap.get(countSql);
+		if (prog == null) {
+			prog = db.compileStatement(countSql);
+			rawCountSqlToStatementsMap.put(countSql, prog);
+		}
+		
+		
+		if (whereArgs != null) {
+			for (int i=0; i<whereArgs.length; i++) {
+				prog.bindString(i, whereArgs[i]);
+			}
+		}
+		
+		try {
+			int count =  (int) prog.simpleQueryForLong();
+			prog.clearBindings();
+			return count;
+		} catch (SQLiteDoneException e) {
+			return -1;
+		}
 	}
 	
 	/**

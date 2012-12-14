@@ -45,7 +45,7 @@ public enum SmartSqlHelper  {
 	
 	INSTANCE;
 
-    public static final String WHOLE_SOUP = "_soup";
+    public static final String SOUP = "_soup";
 	
 	/**
 	 * Convert "smart" sql query to actual sql
@@ -90,7 +90,7 @@ public enum SmartSqlHelper  {
 				String path = parts[1];
 
 				// {soupName:_soup}
-				if (path.equals(WHOLE_SOUP)) {
+				if (path.equals(SOUP)) {
 					matcher.appendReplacement(sql, tableQualifier + SmartStore.SOUP_COL);
 				}
 				// {soupName:_soupEntryId}

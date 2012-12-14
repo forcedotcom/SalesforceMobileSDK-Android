@@ -29,11 +29,24 @@ package com.salesforce.androidsdk.store;
 import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
 
 /**
- * Simple class to represent a query spec (soup query spec or smart query spec)
+ * Simple class to represent a query spec
  */
 public class QuerySpec {
+	// Constants
+	private static final String SELECT = "SELECT  ";
+	private static final String FROM = "FROM ";
+	private static final String WHERE = "WHERE ";
+	private static final String ORDER_BY = "ORDER BY ";
+	
+	// Key members
+	public final QueryType queryType;
+    public final int pageSize;
+    public final String smartSql;
+
+    // Exact/Range/Like
+	public final String soupName;
     public final String path;
-    public final QueryType queryType;
+    public final Order order;
 
     // Exact
     public final String matchKey;
@@ -42,17 +55,10 @@ public class QuerySpec {
     public final String endKey;
     // Like
     public final String likeKey;
-    // Smart
-    public final String smartSql;
-    
-    // Order
-    public final Order order;
-
-    // Page size
-    public final int pageSize;
 
     // Private constructor for soup query spec
-    private QuerySpec(String path, QueryType queryType, String matchKey, String beginKey, String endKey, String likeKey, Order order, int pageSize) {
+    private QuerySpec(String soupName, String path, QueryType queryType, String matchKey, String beginKey, String endKey, String likeKey, Order order, int pageSize) {
+    	this.soupName = soupName;
         this.path = path;
         this.queryType = queryType;
         this.matchKey = matchKey;
@@ -61,11 +67,9 @@ public class QuerySpec {
         this.likeKey = likeKey;
         this.order = order;
         this.pageSize = pageSize;
-        
-        // Not applicable
-        this.smartSql = null;
+        this.smartSql = computeSmartSql();
     }
-    
+
     // Private constructor for smart query spec
     private QuerySpec(String smartSql, int pageSize) {
     	this.smartSql = smartSql;
@@ -73,6 +77,7 @@ public class QuerySpec {
         this.queryType = QueryType.smart;
     	
     	// Not applicable
+        this.soupName = null;
         this.path = null;
         this.matchKey = null;
         this.beginKey = null;
@@ -82,29 +87,32 @@ public class QuerySpec {
     }
 
     /**
-     * Return a query spec for returning all entries
+     * Return q auery spec for an all query
+     * @param soupName
+     * @param path
      * @param order
      * @param pageSize
      * @return
      */
-    public static QuerySpec buildAllQuerySpec(Order order, int pageSize) {
-        return new QuerySpec(null, QueryType.range, null, null, null, null, order, pageSize);
+    public static QuerySpec buildAllQuerySpec(String soupName, String path, Order order, int pageSize) {
+    	return buildRangeQuerySpec(soupName, path, null, null, order, pageSize);
     }
-
-
+    
     /**
      * Return a query spec for an exact match query
+     * @param soupName
      * @param path
      * @param exactMatchKey
      * @param pageSize
      * @return
      */
-    public static QuerySpec buildExactQuerySpec(String path, String exactMatchKey, int pageSize) {
-        return new QuerySpec(path, QueryType.exact, exactMatchKey, null, null, null, Order.ascending /* meaningless - all rows will have the same value in the indexed column*/, pageSize);
+    public static QuerySpec buildExactQuerySpec(String soupName, String path, String exactMatchKey, int pageSize) {
+        return new QuerySpec(soupName, path, QueryType.exact, exactMatchKey, null, null, null, Order.ascending /* meaningless - all rows will have the same value in the indexed column*/, pageSize);
     }
 
     /**
      * Return a query spec for a range query
+     * @param soupName
      * @param path
      * @param beginKey
      * @param endKey
@@ -112,20 +120,21 @@ public class QuerySpec {
      * @param pageSize
      * @return
      */
-    public static QuerySpec buildRangeQuerySpec(String path, String beginKey, String endKey, Order order, int pageSize) {
-        return new QuerySpec(path, QueryType.range, null, beginKey, endKey, null, order, pageSize);
+    public static QuerySpec buildRangeQuerySpec(String soupName, String path, String beginKey, String endKey, Order order, int pageSize) {
+        return new QuerySpec(soupName, path, QueryType.range, null, beginKey, endKey, null, order, pageSize);
     }
 
     /**
      * Return a query spec for a like query
+     * @param soupName
      * @param path
      * @param matchKey
      * @param order
      * @param pageSize
      * @return
      */
-    public static QuerySpec buildLikeQuerySpec(String path, String likeKey, Order order, int pageSize) {
-        return new QuerySpec(path, QueryType.like, null, null, null, likeKey, order, pageSize);
+    public static QuerySpec buildLikeQuerySpec(String soupName, String path, String likeKey, Order order, int pageSize) {
+        return new QuerySpec(soupName, path, QueryType.like, null, null, null, likeKey, order, pageSize);
     }
 
     /**
@@ -137,35 +146,79 @@ public class QuerySpec {
     public static QuerySpec buildSmartQuerySpec(String smartSql, int pageSize) {
     	return new QuerySpec(smartSql, pageSize);
     }
+
+    /**
+     * @return smartSql for exact/like/range queries
+     */
+    private String computeSmartSql() {
+    	return computeSelectClause() + computeFromClause() + computeWhereClause() + computeOrderClause();
+    }
+
+    /**
+     * @return select clause for exact/like/range queries
+     */
+    private String computeSelectClause() {
+    	return SELECT  + computeFieldReference(SmartSqlHelper.SOUP) + " ";
+    }
+
+    /**
+     * @return from clause for exact/like/range queries
+     */
+    private String computeFromClause() {
+    	return FROM  + computeSoupReference() + " ";
+    }
     
     /**
-     * @param columnName
-     * @return string representing sql predicate
+     * @return where clause for exact/like/range queries
      */
-    public String getKeyPredicate(String columnName) {
+    private String computeWhereClause() {
+    	if (path == null) return "";
+    	
+    	String field = computeFieldReference(path);
+    	String pred = "";
         switch(queryType) {
-        case exact:
-            return columnName + " = ?";
-        case like:
-            return columnName + " LIKE ?";
+        case exact: pred =  field + " = ? "; break;
+        case like: pred = field + " LIKE ? "; break;
         case range:
-            if (beginKey == null && endKey == null)
-                return null;
-            else if (endKey == null)
-                return columnName + " >= ? ";
-            else if (beginKey == null)
-                return columnName + " <= ? ";
-            else
-                return columnName + " >= ? AND " + columnName + " <= ?";
+            if (beginKey == null && endKey == null) { break; }
+            if (endKey == null) { pred = field + " >= ? "; break; }
+            if (beginKey == null) { pred = field + " <= ? "; break; }
+            else { pred = field + " >= ?  AND " + field + " <= ? "; break; }
         default:
             throw new SmartStoreException("Fell through switch: " + queryType);
         }
+        return (pred.equals("") ? "" : WHERE + pred);
     }
+
+    /**
+     * @return order clause for exact/like/range queries
+     */
+    private String computeOrderClause() {
+    	if (path == null) return "";
+
+    	return ORDER_BY + computeFieldReference(path) + " " + order.sql + " ";
+    }
+    
+	/**
+	 * @return soup reference for smart sql query
+	 */
+	private String computeSoupReference() {
+		return "{" + soupName + "}";
+	}
+
+    
+    /**
+     * @param field
+	 * @return field reference for smart sql query
+	 */
+	private String computeFieldReference(String field) {
+		return "{" + soupName + ":" + field + "}";
+	}
 
     /**
      * @return args going with the sql predicate returned by getKeyPredicate
      */
-    public String[] getKeyPredicateArgs() {
+    public String[] getArgs() {
         switch(queryType) {
         case exact:
             return new String[] {matchKey};
@@ -180,19 +233,12 @@ public class QuerySpec {
                 return new String[] {endKey};
             else
                 return new String[] {beginKey, endKey};
+        case smart:
+        	return null;
         default:
             throw new SmartStoreException("Fell through switch: " + queryType);
         }
     }
-
-    /**
-     * @param columnName
-     * @return sql for order by
-     */
-    public String getOrderBy(String columnName) {
-        return columnName + " " + order.sql;
-    }
-
 
     /**
      * Query type enum
@@ -206,7 +252,7 @@ public class QuerySpec {
 
 
     /**
-     * Simple class to represent query order (used by QuerySpec)
+     * Simple class to represent query order
      */
     public enum Order {
         ascending("ASC"), descending("DESC");

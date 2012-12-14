@@ -16,7 +16,6 @@ public class StoreCursor {
 	
 	// Id / soup / query / totalPages immutable
 	public  final int cursorId;
-	private final String soupName;
 	private final QuerySpec querySpec;
 	private final int totalPages;
 	
@@ -25,15 +24,13 @@ public class StoreCursor {
 	
 	/**
 	 * @param smartStore
-	 * @param soupName
 	 * @param querySpec
 	 * @throws JSONException 
 	 */
-	public StoreCursor(SmartStore smartStore, String soupName, QuerySpec querySpec) {
-		int countRows = smartStore.countQuerySoup(soupName, querySpec);
+	public StoreCursor(SmartStore smartStore, QuerySpec querySpec) {
+		int countRows = smartStore.countQuery(querySpec);
 		
 		this.cursorId = LAST_ID++;
-		this.soupName = soupName;
 		this.querySpec = querySpec;
 		this.totalPages = countRows / querySpec.pageSize + 1;
 		this.currentPageIndex = 0;
@@ -59,7 +56,7 @@ public class StoreCursor {
 		json.put(SmartStorePlugin.CURRENT_PAGE_INDEX, currentPageIndex);
 		json.put(SmartStorePlugin.PAGE_SIZE, querySpec.pageSize);
 		json.put(SmartStorePlugin.TOTAL_PAGES, totalPages);
-		json.put(SmartStorePlugin.CURRENT_PAGE_ORDERED_ENTRIES, smartStore.querySoup(soupName, querySpec, currentPageIndex));
+		json.put(SmartStorePlugin.CURRENT_PAGE_ORDERED_ENTRIES, smartStore.query(querySpec, currentPageIndex));
 		return json;
 	}
 }

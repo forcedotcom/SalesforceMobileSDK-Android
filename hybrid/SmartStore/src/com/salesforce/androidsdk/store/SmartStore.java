@@ -37,8 +37,10 @@ import org.json.JSONObject;
 
 import com.salesforce.androidsdk.store.QuerySpec.QueryType;
 
+import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.os.Build;
 import android.text.TextUtils;
 
 
@@ -314,89 +316,13 @@ public class SmartStore  {
     }
 
     /**
-     * Run a query
-     * @param soupName
-     * @param querySpec
-     * @param pageIndex
-     * @return
-     * @throws JSONException
-     */
-    public JSONArray querySoup(String soupName, QuerySpec querySpec, int pageIndex) throws JSONException {
-    	if (querySpec.queryType == QueryType.smart) return runSmartQuery(querySpec, pageIndex);
-    	
-        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
-        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
-
-        // Page
-        int offsetRows = querySpec.pageSize * pageIndex;
-        int numberRows = querySpec.pageSize;
-        String limit = offsetRows + "," + numberRows;
-
-        // Get the matching soups
-        Cursor cursor = null;
-        try {
-            if (querySpec.path == null) {
-                cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {SOUP_COL}, null, limit, null);
-            }
-            else {
-                String columnName = DBHelper.INSTANCE.getColumnNameForPath(db, soupName, querySpec.path);
-                cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {SOUP_COL}, querySpec.getOrderBy(columnName), limit, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
-            }
-
-            JSONArray results = new JSONArray();
-            if (cursor.moveToFirst()) {
-                do {
-                    results.put(new JSONObject(cursor.getString(cursor.getColumnIndex(SOUP_COL))));
-                }
-                while (cursor.moveToNext());
-            }
-
-            return results;
-        }
-        finally {
-            safeClose(cursor);
-        }
-    }
-
-    /**
-     * @param soupName
-     * @param querySpec
-     * @return count for the given querySpec
-     */
-    public int countQuerySoup(String soupName, QuerySpec querySpec) {
-    	if (querySpec.queryType == QueryType.smart) return countSmartQuery(querySpec);
-    	
-        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
-        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
-
-        Cursor cursor = null;
-        try {
-            if (querySpec.path == null) {
-                cursor = DBHelper.INSTANCE.countQuery(db, soupTableName, null, (String[]) null);
-            }
-            else {
-                String columnName = DBHelper.INSTANCE.getColumnNameForPath(db, soupName, querySpec.path);
-                cursor = DBHelper.INSTANCE.countQuery(db, soupTableName, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
-            }
-
-            if (cursor.moveToFirst()) {
-                return cursor.getInt(0);
-            }
-            else {
-                return -1;
-            }
-        }
-        finally {
-            safeClose(cursor);
-        }
-    }
-
-    /**
-	 * Run a "smart" query
+	 * Run a query given by its query Spec, only returned results from selected page
 	 * @param querySpec
 	 * @param pageIndex
+     * @throws JSONException 
 	 */
-	public JSONArray runSmartQuery(QuerySpec querySpec, int pageIndex) {
+	public JSONArray query(QuerySpec querySpec, int pageIndex) throws JSONException {
+		QueryType qt = querySpec.queryType;
     	String sql = convertSmartSql(querySpec.smartSql);
 
         // Page
@@ -408,18 +334,19 @@ public class SmartStore  {
     	Cursor cursor = null;
     	try {
 
-    		cursor = DBHelper.INSTANCE.limitRawQuery(db, sql, limit);
-
-    		int columnCount = cursor.getColumnCount();
+    		cursor = DBHelper.INSTANCE.limitRawQuery(db, sql, limit, querySpec.getArgs());
 
             JSONArray results = new JSONArray();
             if (cursor.moveToFirst()) {
                 do {
-                	JSONArray row = new JSONArray();
-                	for (int i=0; i<columnCount; i++) {
-                		// TBD
+                	// Smart queries
+                	if (qt == QueryType.smart) {
+                		results.put(getDataFromRow(cursor));	
                 	}
-                	results.put(row);
+            		// Exact/like/range queries
+                	else {
+                		results.put(new JSONObject(cursor.getString(0)));
+                	}
                 }
                 while (cursor.moveToNext());
             }
@@ -430,28 +357,58 @@ public class SmartStore  {
     		safeClose(cursor);
     	}
 	}
+
+	/**
+	 * Return JSONArray for one row of data from cursor
+	 * @param cursor
+	 * @return
+	 * @throws JSONException
+	 */
+	@SuppressLint("NewApi")
+	private JSONArray getDataFromRow(Cursor cursor) throws JSONException {
+		JSONArray row = new JSONArray();
+		int columnCount = cursor.getColumnCount();
+		for (int i=0; i<columnCount; i++) {
+			String raw = cursor.getString(i);
+
+			// Is this column holding a serialized json object?
+			if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
+				row.put(new JSONObject(raw));
+				// Note: we could end up returning a string if you aliased the column
+			}
+			else {
+		        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
+		    		// Is it holding a integer
+		    		try {
+		    			Integer n = Integer.parseInt(raw);
+		    			row.put(n);
+		    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
+		    		}
+		    		// It must be holding a string then
+		    		catch (NumberFormatException e) {
+		    			row.put(raw);
+		    		}
+		        }
+		        else {
+		        	if (cursor.getType(i) == Cursor.FIELD_TYPE_INTEGER) {
+		        		row.put(cursor.getInt(i));
+		        	}
+		        	else {
+		        		row.put(raw);
+		        	}
+		        }
+			}
+		}
+		return row;
+	}
 	
 	/**
 	 * @param querySpec
 	 * @return count of results for a "smart" query
 	 */
-	public int countSmartQuery(QuerySpec querySpec) {
+	public int countQuery(QuerySpec querySpec) {
 		String sql = convertSmartSql(querySpec.smartSql);
-		
-		Cursor cursor = null;
-		try {
-			cursor = DBHelper.INSTANCE.countRawQuery(db, sql);
-			
-			if (cursor.moveToFirst()) {
-				return cursor.getInt(0);
-			}
-			else {
-				return -1;
-			}
-		}
-		finally {
-			safeClose(cursor);
-		}
+		return DBHelper.INSTANCE.countRawQuery(db, sql, querySpec.getArgs());
 	}
 
 	/**
