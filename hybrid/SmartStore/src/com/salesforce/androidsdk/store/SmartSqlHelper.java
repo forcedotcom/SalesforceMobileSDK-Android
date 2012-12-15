@@ -147,7 +147,7 @@ public enum SmartSqlHelper  {
     /**
      * Exception thrown when smart sql failed to be parsed
      */
-    public static class SmartSqlException extends RuntimeException {
+    public static class SmartSqlException extends SmartStoreException {
 
 		private static final long serialVersionUID = -525130153073212701L;
 

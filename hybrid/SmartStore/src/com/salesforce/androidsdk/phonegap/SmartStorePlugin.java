@@ -45,6 +45,7 @@ import com.salesforce.androidsdk.store.QuerySpec;
 import com.salesforce.androidsdk.store.QuerySpec.Order;
 import com.salesforce.androidsdk.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.store.SmartStore;
+import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
 
 /**
  * PhoneGap plugin for smart store.
@@ -118,10 +119,8 @@ public class SmartStorePlugin extends ForcePlugin {
 	    	catch (IllegalArgumentException e) {
                 return false;
 	    	}
-	    	catch (RuntimeException e) {
-	    		// Catching all exceptions and logging them, so that the error callback gets invoked 
-	    		// Otherwise, you end up with a javascript error and no stack trace for the java exception
-	    		Log.w("SmartStorePlugin.execute", "Exception: " + e.getMessage(), e);
+	    	catch (SmartStoreException e) {
+	    		Log.w("SmartStorePlugin.execute", e.getMessage(), e);
 	    		callbackContext.error(e.getMessage());
 	    		return true;
 	    	}
