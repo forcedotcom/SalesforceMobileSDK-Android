@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.store.SmartStore.Type;
@@ -121,16 +122,26 @@ public enum DBHelper  {
 			if (prog != null) 
 				prog.close();
 			
-			for (String countSql : rawCountSqlToStatementsMap.keySet()) {
-				if (countSql.contains(tableName)) {
-					SQLiteStatement countProg = rawCountSqlToStatementsMap.remove(countSql);
-					if (countProg != null)
-						countProg.close();
-				}
-			}
+			cleanupRawCountSqlToStatementMaps(tableName);
 		}
 		soupNameToTableNamesMap.remove(soupName);
 		soupNameToIndexSpecsMap.remove(soupName);
+	}
+
+	private void cleanupRawCountSqlToStatementMaps(String tableName) {
+		List<String> countSqlToRemove = new ArrayList<String>();
+		for (Entry<String, SQLiteStatement>  entry : rawCountSqlToStatementsMap.entrySet()) {
+			String countSql = entry.getKey();
+			if (countSql.contains(tableName)) {
+				SQLiteStatement countProg = entry.getValue();
+				if (countProg != null)
+					countProg.close();
+				countSqlToRemove.add(countSql);
+			}
+		}
+		for (String countSql : countSqlToRemove) {
+			rawCountSqlToStatementsMap.remove(countSql);
+		}
 	}
 	
 	/**
@@ -217,7 +228,7 @@ public enum DBHelper  {
 		
 		if (whereArgs != null) {
 			for (int i=0; i<whereArgs.length; i++) {
-				prog.bindString(i, whereArgs[i]);
+				prog.bindString(i+1, whereArgs[i]);
 			}
 		}
 		
