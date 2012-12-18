@@ -63,8 +63,8 @@ public enum SmartSqlHelper  {
 		Log.i("SmartSqlHelper.convertSmartSql", "smart sql = " + smartSql);
 		
 		// Select's only
-		String smartSqlLowerCase = smartSql.toLowerCase(Locale.getDefault());
-		if (smartSqlLowerCase.contains("insert") || smartSqlLowerCase.contains("update") || smartSqlLowerCase.contains("delete")) {
+		String smartSqlLowerCase = smartSql.toLowerCase(Locale.getDefault()).trim();
+		if (smartSqlLowerCase.startsWith("insert") || smartSqlLowerCase.startsWith("update") || smartSqlLowerCase.startsWith("delete")) {
 			throw new SmartSqlException("Only SELECT are supported");
 		}
 		
