@@ -32,10 +32,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Context;
 import android.database.Cursor;
 import android.os.SystemClock;
-import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.store.QuerySpec.Order;
 import com.salesforce.androidsdk.store.SmartStore.Type;
@@ -44,24 +42,15 @@ import com.salesforce.androidsdk.store.SmartStore.Type;
  * Abstract super class for plain and encrypted smart store tests
  *
  */
-public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
+public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 
 	private static final String TEST_SOUP = "test_soup";
 	private static final String OTHER_TEST_SOUP = "other_test_soup";
 	private static final String THIRD_TEST_SOUP = "third_test_soup";
 	
-	protected Context targetContext;
-	private SQLiteDatabase db;
-	private SmartStore store;
-	
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		targetContext = getInstrumentation().getTargetContext();
-		DBHelper.INSTANCE.reset(targetContext); // start clean
-		db = getWritableDatabase();
-		store = new SmartStore(db);
-		
 		assertFalse("Table for test_soup should not exist", hasTable("TABLE_1"));
 		assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
 		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
@@ -71,14 +60,6 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	}
 	
 	protected abstract SQLiteDatabase getWritableDatabase();
-
-	@Override
-	protected void tearDown() throws Exception {
-		db.close();
-		// Not cleaning up after the test to make diagnosing issues easier
-		super.tearDown();
-	}
-
 
 	/**
 	 * Testing method with paths to top level string/integer/array/map as well as edge cases (null object/null or empty path)
@@ -680,138 +661,5 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check
 		JSONObject soupElt1Retrieved = store.retrieve(THIRD_TEST_SOUP, idOf(soupElt1Upserted)).getJSONObject(0);		
 		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
-	}
-	
-	
-	/**
-	 * Helper method to check that a table exists in the database
-	 * @param tableName
-	 * @return
-	 */
-	private boolean hasTable(String tableName) {
-		Cursor c = null;
-		try {
-			c = DBHelper.INSTANCE.query(db, "sqlite_master", null, null, null, "type = ? and name = ?", "table", tableName);
-			return c.getCount() == 1;
-		}
-		finally {
-			safeClose(c);
-		}
-	}
-	
-	/**
-	 * Close cursor if not null
-	 * @param c
-	 */
-	private void safeClose(Cursor c) {
-		if (c != null) {
-			c.close();
-		}
-	}
-
-	/**
-	 * @param soupElt
-	 * @return _soupEntryId field value
-	 * @throws JSONException
-	 */
-	private long idOf(JSONObject soupElt) throws JSONException {
-		return soupElt.getLong(SmartStore.SOUP_ENTRY_ID);
-	}
-
-	/**
-	 * Compare two JSON
-	 * @param message
-	 * @param expected
-	 * @param actual
-	 * @throws JSONException
-	 */
-	private void assertSameJSON(String message, Object expected, Object actual) throws JSONException {
-		// At least one null
-		if (expected == null || actual == null) {
-			// Both null
-			if (expected == null && actual == null) {
-				return;
-			}
-			// One null, not the other
-			else {
-				assertTrue(message, false);
-			}
-		}
-		// Both arrays
-		else if (expected instanceof JSONArray && actual instanceof JSONArray) {
-			assertSameJSONArray(message, (JSONArray) expected, (JSONArray) actual); 
-		}
-		// Both maps
-		else if (expected instanceof JSONObject && actual instanceof JSONObject) {
-			assertSameJSONObject(message, (JSONObject) expected, (JSONObject) actual); 
-		}
-		// Atomic types
-		else {
-			// Comparing string representations, to avoid things like new Long(n) != new Integer(n) 
-			assertEquals(message, expected.toString(), actual.toString());
-		}
-	}
-	
-	/**
-	 * Compare two JSON arrays
-	 * @param message
-	 * @param expected
-	 * @param actual
-	 * @throws JSONException
-	 */
-	private void assertSameJSONArray(String message, JSONArray expected, JSONArray actual) throws JSONException {
-		// First compare length
-		assertEquals(message, expected.length(), actual.length());
-		
-		// If string value match we are done
-		if (expected.toString().equals(actual.toString())) {
-			// Done
-			return;
-		}
-		// If string values don't match, it might still be the same object (toString does not sort fields of maps)
-		else {
-			// Compare values
-			for (int i=0; i<expected.length(); i++) {
-				assertSameJSON(message, expected.get(i), actual.get(i));
-			}
-		}
-	}
-	
-	/**
-	 * Compare two JSON maps
-	 * @param message
-	 * @param expected
-	 * @param actual
-	 * @throws JSONException
-	 */
-	private void assertSameJSONObject(String message, JSONObject expected, JSONObject actual) throws JSONException {
-		// First compare length
-		assertEquals(message, expected.length(), actual.length());
-		
-		// If string value match we are done
-		if (expected.toString().equals(actual.toString())) {
-			// Done
-			return;
-		}
-		// If string values don't match, it might still be the same object (toString does not sort fields of maps)
-		else {
-			// Compare keys / values
-			JSONArray expectedNames = expected.names();
-			JSONArray actualNames = actual.names();
-			assertEquals(message, expectedNames.length(), actualNames.length());
-			JSONArray expectedValues = expected.toJSONArray(expectedNames);
-			JSONArray actualValues = actual.toJSONArray(expectedNames);
-			assertSameJSONArray(message, expectedValues, actualValues);
-		}
-	}
-
-	
-
-	/**
-	 * @param soupName
-	 * @return table name for soup
-	 */
-	private String getSoupTableName(String soupName) {
-		return DBHelper.INSTANCE.getSoupTableName(db, soupName);
 	}
 }

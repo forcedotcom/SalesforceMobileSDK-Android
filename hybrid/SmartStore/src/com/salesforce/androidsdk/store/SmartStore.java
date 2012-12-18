@@ -35,13 +35,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.store.QuerySpec.QueryType;
-
 import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.database.Cursor;
-import android.os.Build;
 import android.text.TextUtils;
+
+import com.salesforce.androidsdk.store.QuerySpec.QueryType;
 
 
 /**
@@ -377,26 +376,17 @@ public class SmartStore  {
 				// Note: we could end up returning a string if you aliased the column
 			}
 			else {
-		        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-		    		// Is it holding a integer
-		    		try {
-		    			Integer n = Integer.parseInt(raw);
-		    			row.put(n);
-		    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
-		    		}
-		    		// It must be holding a string then
-		    		catch (NumberFormatException e) {
-		    			row.put(raw);
-		    		}
-		        }
-		        else {
-		        	if (cursor.getType(i) == Cursor.FIELD_TYPE_INTEGER) {
-		        		row.put(cursor.getInt(i));
-		        	}
-		        	else {
-		        		row.put(raw);
-		        	}
-		        }
+	    		// Is it holding a integer
+	    		try {
+	    			Long n = Long.parseLong(raw);
+	    			row.put(n);
+	    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
+	    		}
+	    		// It must be holding a string then
+	    		catch (NumberFormatException e) {
+	    			row.put(raw);
+	    		}
+	    		// cursor.getType is API 11 and above
 			}
 		}
 		return row;
