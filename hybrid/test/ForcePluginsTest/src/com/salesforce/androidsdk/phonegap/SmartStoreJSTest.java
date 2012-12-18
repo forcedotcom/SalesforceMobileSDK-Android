@@ -132,4 +132,12 @@ public class SmartStoreJSTest extends JSTestCase {
     public void testIntegerQuerySpec()  {
         runTest("testIntegerQuerySpec");
     }
+    
+    public void testSmartQueryWithCount() {
+    	runTest("testSmartQueryWithCount");
+    }
+
+    public void testSmartQueryWithSpecialFields() {
+    	runTest("testSmartQueryWithSpecialFields");
+    }
 }
