@@ -1,4 +1,4 @@
-"dist\SalesforceSDK-1.4.jar" "dist\SalesforceSDK.jar"
+"dist\SalesforceSDK-1.4.1.jar" "dist\SalesforceSDK.jar"
 "external\cordova\cordova-2.2.0.jar" "native\SalesforceSDK\libs\cordova-2.2.0.jar"
 "external\cordova\cordova-2.2.0.js" "hybrid\SampleApps\ContactExplorer\assets\www\cordova-2.2.0.js"
 "external\cordova\cordova-2.2.0.js" "hybrid\SampleApps\SFDCAccounts\assets\www\cordova-2.2.0.js"
