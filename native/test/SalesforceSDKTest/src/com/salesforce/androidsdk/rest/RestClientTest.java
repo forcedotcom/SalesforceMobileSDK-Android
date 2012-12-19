@@ -309,6 +309,22 @@ public class RestClientTest extends InstrumentationTestCase {
         checkKeys(matchingRow, "attributes", "Id");
         assertEquals("Wrong row returned", newAccountIdName.id, matchingRow.get("Id"));
     }
+    
+    /**
+     * Testing that calling resume more than once on a RestResponse doesn't throw an exception
+     * @throws Exception 
+     */
+    public void testDoubleConsume() throws Exception {
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"));
+        checkResponse(response, HttpStatus.SC_OK, false);
+        try {
+        	response.consume();
+        	response.consume();
+        }
+        catch (IllegalStateException e) {
+        	fail("Calling consume should not have thrown an exception");
+        }
+    }
 
 
     /**
