@@ -32,55 +32,34 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Context;
 import android.database.Cursor;
 import android.os.SystemClock;
-import android.test.InstrumentationTestCase;
 
-import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
-import com.salesforce.androidsdk.store.SmartStore.Order;
-import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
+import com.salesforce.androidsdk.store.QuerySpec.Order;
 import com.salesforce.androidsdk.store.SmartStore.Type;
 
 /**
  * Abstract super class for plain and encrypted smart store tests
  *
  */
-public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
+public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 
 	private static final String TEST_SOUP = "test_soup";
 	private static final String OTHER_TEST_SOUP = "other_test_soup";
 	private static final String THIRD_TEST_SOUP = "third_test_soup";
 	
-	protected Context targetContext;
-	private SQLiteDatabase db;
-	private SmartStore store;
-	
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		targetContext = getInstrumentation().getTargetContext();
-		DBHelper.INSTANCE.reset(targetContext); // start clean
-		db = getWritableDatabase();
-		store = new SmartStore(db);
-		
 		assertFalse("Table for test_soup should not exist", hasTable("TABLE_1"));
 		assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
 		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
-		assertEquals("Table for test_soup was expected to be called TABLE_1", "TABLE_1", store.getSoupTableName(TEST_SOUP));
+		assertEquals("Table for test_soup was expected to be called TABLE_1", "TABLE_1", getSoupTableName(TEST_SOUP));
 		assertTrue("Table for test_soup should now exist", hasTable("TABLE_1"));
 		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
 	}
 	
 	protected abstract SQLiteDatabase getWritableDatabase();
-
-	@Override
-	protected void tearDown() throws Exception {
-		db.close();
-		// Not cleaning up after the test to make diagnosing issues easier
-		super.tearDown();
-	}
-
 
 	/**
 	 * Testing method with paths to top level string/integer/array/map as well as edge cases (null object/null or empty path)
@@ -130,12 +109,12 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 	 */
 	public void testRegisterDropSoup() {
 		// Before
-		assertNull("getSoupTableName should have returned null", store.getSoupTableName(THIRD_TEST_SOUP));
+		assertNull("getSoupTableName should have returned null", getSoupTableName(THIRD_TEST_SOUP));
 		assertFalse("Soup third_test_soup should not exist", store.hasSoup(THIRD_TEST_SOUP));
 		
 		// Register
 		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
-		String soupTableName = store.getSoupTableName(THIRD_TEST_SOUP);
+		String soupTableName = getSoupTableName(THIRD_TEST_SOUP);
 		assertEquals("getSoupTableName should have returned TABLE_2", "TABLE_2", soupTableName);
 		assertTrue("Table for soup third_test_soup does exist", hasTable(soupTableName));
 		assertTrue("Register soup call failed", store.hasSoup(THIRD_TEST_SOUP));
@@ -145,7 +124,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		
 		// After
 		assertFalse("Soup third_test_soup should no longer exist", store.hasSoup(THIRD_TEST_SOUP));
-		assertNull("getSoupTableName should have returned null", store.getSoupTableName(THIRD_TEST_SOUP));
+		assertNull("getSoupTableName should have returned null", getSoupTableName(THIRD_TEST_SOUP));
 		assertFalse("Table for soup third_test_soup does exist", hasTable(soupTableName));
 	}
 
@@ -197,7 +176,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = store.getSoupTableName(TEST_SOUP);
+			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.INSTANCE.query(db, soupTableName, null, null, null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected one soup element only", 1, c.getCount());
@@ -234,7 +213,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = store.getSoupTableName(OTHER_TEST_SOUP);
+			String soupTableName = getSoupTableName(OTHER_TEST_SOUP);
 			assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
 			assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
 			
@@ -296,7 +275,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = store.getSoupTableName(TEST_SOUP);			
+			String soupTableName = getSoupTableName(TEST_SOUP);			
 			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
@@ -348,7 +327,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = store.getSoupTableName(TEST_SOUP);			
+			String soupTableName = getSoupTableName(TEST_SOUP);			
 			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
@@ -400,7 +379,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = store.getSoupTableName(TEST_SOUP);			
+			String soupTableName = getSoupTableName(TEST_SOUP);			
 			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
@@ -516,7 +495,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = store.getSoupTableName(TEST_SOUP);
+			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 2, c.getCount());
@@ -530,7 +509,6 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 			safeClose(c);
 		}
 	}
-
 	/**
 	 * Test query when looking for all elements
 	 * @throws JSONException 
@@ -545,18 +523,18 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
 
 		// Query all - small page
-		JSONArray result = store.querySoup(TEST_SOUP, QuerySpec.buildAllQuerySpec(Order.ascending, 2), 0);
+		JSONArray result = store.query(QuerySpec.buildAllQuerySpec(TEST_SOUP, "key", Order.ascending, 2), 0);
 		assertEquals("Two elements expected", 2, result.length());
 		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
 
 		// Query all - next small page
-		result = store.querySoup(TEST_SOUP, QuerySpec.buildAllQuerySpec(Order.ascending, 2), 1);
+		result = store.query(QuerySpec.buildAllQuerySpec(TEST_SOUP, "key", Order.ascending, 2), 1);
 		assertEquals("One element expected", 1, result.length());
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
 
 		// Query all - large page
-		result = store.querySoup(TEST_SOUP, QuerySpec.buildAllQuerySpec(Order.ascending, 10), 0);
+		result = store.query(QuerySpec.buildAllQuerySpec(TEST_SOUP, "key", Order.ascending, 10), 0);
 		assertEquals("Three elements expected", 3, result.length());
 		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
@@ -578,7 +556,7 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		store.create(TEST_SOUP, soupElt3);
 
 		// Exact match
-		JSONArray result = store.querySoup(TEST_SOUP, QuerySpec.buildExactQuerySpec("key", "ka2", 10), 0);
+		JSONArray result = store.query(QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "ka2", 10), 0);
 		assertEquals("One result expected", 1, result.length());
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
 
@@ -598,13 +576,13 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
 
 		// Range query
-		JSONArray result = store.querySoup(TEST_SOUP, QuerySpec.buildRangeQuerySpec("key", "ka2", "ka3", Order.ascending, 10), 0);
+		JSONArray result = store.query(QuerySpec.buildRangeQuerySpec(TEST_SOUP, "key", "ka2", "ka3", Order.ascending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(1));
 
 		// Range query - descending order
-		result = store.querySoup(TEST_SOUP, QuerySpec.buildRangeQuerySpec("key", "ka2", "ka3", Order.descending, 10), 0);
+		result = store.query(QuerySpec.buildRangeQuerySpec(TEST_SOUP, "key", "ka2", "ka3", Order.descending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
@@ -626,38 +604,38 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		/*JSONObject soupElt4Created = */ store.create(TEST_SOUP, soupElt4);
 
 		// Like query (starts with)
-		JSONArray result = store.querySoup(TEST_SOUP, QuerySpec.buildLikeQuerySpec("key", "abc%", Order.ascending, 10), 0);
+		JSONArray result = store.query(QuerySpec.buildLikeQuerySpec(TEST_SOUP, "key", "abc%", Order.ascending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
 
 		// Like query (ends with)
-		result = store.querySoup(TEST_SOUP, QuerySpec.buildLikeQuerySpec("key", "%bcd", Order.ascending, 10), 0);
+		result = store.query(QuerySpec.buildLikeQuerySpec(TEST_SOUP, "key", "%bcd", Order.ascending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
 
 		// Like query (starts with) - descending order
-		result = store.querySoup(TEST_SOUP, QuerySpec.buildLikeQuerySpec("key", "abc%", Order.descending, 10), 0);
+		result = store.query(QuerySpec.buildLikeQuerySpec(TEST_SOUP, "key", "abc%", Order.descending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(1));
 
 		// Like query (ends with) - descending order
-		result = store.querySoup(TEST_SOUP, QuerySpec.buildLikeQuerySpec("key", "%bcd", Order.descending, 10), 0);
+		result = store.query(QuerySpec.buildLikeQuerySpec(TEST_SOUP, "key", "%bcd", Order.descending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
 
 		// Like query (contains)
-		result = store.querySoup(TEST_SOUP, QuerySpec.buildLikeQuerySpec("key", "%bc%", Order.ascending, 10), 0);
+		result = store.query(QuerySpec.buildLikeQuerySpec(TEST_SOUP, "key", "%bc%", Order.ascending, 10), 0);
 		assertEquals("Three results expected", 3, result.length());
 		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(2));
 
 		// Like query (contains) - descending order
-		result = store.querySoup(TEST_SOUP, QuerySpec.buildLikeQuerySpec("key", "%bc%", Order.descending, 10), 0);
+		result = store.query(QuerySpec.buildLikeQuerySpec(TEST_SOUP, "key", "%bc%", Order.descending, 10), 0);
 		assertEquals("Three results expected", 3, result.length());
 		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
 		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
@@ -684,128 +662,4 @@ public abstract class AbstractSmartStoreTest extends InstrumentationTestCase {
 		JSONObject soupElt1Retrieved = store.retrieve(THIRD_TEST_SOUP, idOf(soupElt1Upserted)).getJSONObject(0);		
 		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
 	}
-	
-	
-	/**
-	 * Helper method to check that a table exists in the database
-	 * @param tableName
-	 * @return
-	 */
-	private boolean hasTable(String tableName) {
-		Cursor c = null;
-		try {
-			c = DBHelper.INSTANCE.query(db, "sqlite_master", null, null, null, "type = ? and name = ?", "table", tableName);
-			return c.getCount() == 1;
-		}
-		finally {
-			safeClose(c);
-		}
-	}
-	
-	/**
-	 * Close cursor if not null
-	 * @param c
-	 */
-	private void safeClose(Cursor c) {
-		if (c != null) {
-			c.close();
-		}
-	}
-
-	/**
-	 * @param soupElt
-	 * @return _soupEntryId field value
-	 * @throws JSONException
-	 */
-	private long idOf(JSONObject soupElt) throws JSONException {
-		return soupElt.getLong(SmartStore.SOUP_ENTRY_ID);
-	}
-
-	/**
-	 * Compare two JSON
-	 * @param message
-	 * @param expected
-	 * @param actual
-	 * @throws JSONException
-	 */
-	private void assertSameJSON(String message, Object expected, Object actual) throws JSONException {
-		// At least one null
-		if (expected == null || actual == null) {
-			// Both null
-			if (expected == null && actual == null) {
-				return;
-			}
-			// One null, not the other
-			else {
-				assertTrue(message, false);
-			}
-		}
-		// Both arrays
-		else if (expected instanceof JSONArray && actual instanceof JSONArray) {
-			assertSameJSONArray(message, (JSONArray) expected, (JSONArray) actual); 
-		}
-		// Both maps
-		else if (expected instanceof JSONObject && actual instanceof JSONObject) {
-			assertSameJSONObject(message, (JSONObject) expected, (JSONObject) actual); 
-		}
-		// Atomic types
-		else {
-			// Comparing string representations, to avoid things like new Long(n) != new Integer(n) 
-			assertEquals(message, expected.toString(), actual.toString());
-		}
-	}
-	
-	/**
-	 * Compare two JSON arrays
-	 * @param message
-	 * @param expected
-	 * @param actual
-	 * @throws JSONException
-	 */
-	private void assertSameJSONArray(String message, JSONArray expected, JSONArray actual) throws JSONException {
-		// First compare length
-		assertEquals(message, expected.length(), actual.length());
-		
-		// If string value match we are done
-		if (expected.toString().equals(actual.toString())) {
-			// Done
-			return;
-		}
-		// If string values don't match, it might still be the same object (toString does not sort fields of maps)
-		else {
-			// Compare values
-			for (int i=0; i<expected.length(); i++) {
-				assertSameJSON(message, expected.get(i), actual.get(i));
-			}
-		}
-	}
-	
-	/**
-	 * Compare two JSON maps
-	 * @param message
-	 * @param expected
-	 * @param actual
-	 * @throws JSONException
-	 */
-	private void assertSameJSONObject(String message, JSONObject expected, JSONObject actual) throws JSONException {
-		// First compare length
-		assertEquals(message, expected.length(), actual.length());
-		
-		// If string value match we are done
-		if (expected.toString().equals(actual.toString())) {
-			// Done
-			return;
-		}
-		// If string values don't match, it might still be the same object (toString does not sort fields of maps)
-		else {
-			// Compare keys / values
-			JSONArray expectedNames = expected.names();
-			JSONArray actualNames = actual.names();
-			assertEquals(message, expectedNames.length(), actualNames.length());
-			JSONArray expectedValues = expected.toJSONArray(expectedNames);
-			JSONArray actualValues = actual.toJSONArray(expectedNames);
-			assertSameJSONArray(message, expectedValues, actualValues);
-		}
-	}
-	
 }

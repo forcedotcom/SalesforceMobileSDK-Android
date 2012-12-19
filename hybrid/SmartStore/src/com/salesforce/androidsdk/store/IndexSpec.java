@@ -26,52 +26,26 @@
  */
 package com.salesforce.androidsdk.store;
 
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
-import android.content.Context;
-import android.util.Log;
-
+import com.salesforce.androidsdk.store.SmartStore.Type;
 
 /**
- * Helper class to manage SmartStore's database creation and version management.
+ * Simple class to represent index spec
  */
-public class DBOpenHelper extends SQLiteOpenHelper {
-	public static final String DB_NAME = "smartstore.db";
-	public static final int DB_VERSION = 1;
+public class IndexSpec {
+    public final String path;
+    public final Type type;
+    public final String columnName;
 
-	private static DBOpenHelper openHelper;
-	
-	public static synchronized DBOpenHelper getOpenHelper(Context ctx) {
-		if (openHelper == null) {
-			openHelper = new DBOpenHelper(ctx);
-		}
-		return openHelper;
-	}
-	
-	private DBOpenHelper(Context context) {
-		super(context, DB_NAME, null, DB_VERSION);
-		SQLiteDatabase.loadLibs(context);
-		Log.i("DBOpenHelper:DBOpenHelper", DB_NAME + "/" + DB_VERSION);
-	}
+    public IndexSpec(String path, Type type) {
+        this.path = path;
+        this.type = type;
+        this.columnName = null; // undefined
+    }
 
-	@Override
-	public void onCreate(SQLiteDatabase db) {
-		Log.i("DBOpenHelper:onCreate", DB_NAME + "/" + DB_VERSION);
-		SmartStore.createMetaTables(db);
-	}
+    public IndexSpec(String path, Type type, String columnName) {
+        this.path = path;
+        this.type = type;
+        this.columnName = columnName;
+    }
 
-	@Override
-	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		Log.i("DBOpenHelper:onUpgrade", DB_NAME + "/" + DB_VERSION);
-		// do the needful if DB_VERSION has changed 
-	}
-
-	public static void deleteDatabase(Context ctx) {
-		Log.i("DBOpenHelper:deleteDatabase", DB_NAME + "/" + DB_VERSION);
-		if (openHelper != null) {
-			openHelper.close();
-			openHelper =  null;
-		}
-		ctx.deleteDatabase(DB_NAME);
-	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,8 +26,14 @@
  */
 package com.salesforce.androidsdk.store;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+
+import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.store.SmartStore.Type;
 
 import net.sqlcipher.DatabaseUtils.InsertHelper;
 import net.sqlcipher.database.SQLiteDatabase;
@@ -37,7 +43,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 
-import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
 
 
 /**
@@ -53,18 +58,23 @@ public enum DBHelper  {
 	// Some queries
 	private static final String COUNT_SELECT = "SELECT count(*) FROM %s %s";
 	private static final String SEQ_SELECT = "SELECT seq FROM SQLITE_SEQUENCE WHERE name = ?";
+	private static final String LIMIT_SELECT = "SELECT * FROM (%s) LIMIT %s";
 	
 	// Cache of soup name to soup table names
 	private Map<String, String> soupNameToTableNamesMap = new HashMap<String, String>();
 	
 	// Cache of soup name to index specs
-	private Map<String, IndexSpec[]> soupNameToIndexSpecsMap = new HashMap<String, SmartStore.IndexSpec[]>();
+	private Map<String, IndexSpec[]> soupNameToIndexSpecsMap = new HashMap<String, IndexSpec[]>();
 	
 	// Cache of table name to get-next-id compiled statements
 	private Map<String, SQLiteStatement> tableNameToNextIdStatementsMap = new HashMap<String, SQLiteStatement>();
 	
 	// Cache of table name to insert helpers
 	private Map<String, InsertHelper> tableNameToInsertHelpersMap = new HashMap<String, InsertHelper>();
+	
+	// Cache of raw count sql to compiled statements
+	private Map<String, SQLiteStatement> rawCountSqlToStatementsMap = new HashMap<String, SQLiteStatement>();
+	
 	
 	/**
 	 * @param soupName
@@ -81,7 +91,7 @@ public enum DBHelper  {
 	public String getCachedTableName(String soupName) {
 		return soupNameToTableNamesMap.get(soupName);
 	}
-
+	
 	/**
 	 * @param soupName
 	 * @param tableName
@@ -111,9 +121,27 @@ public enum DBHelper  {
 			SQLiteStatement prog = tableNameToNextIdStatementsMap.remove(tableName);
 			if (prog != null) 
 				prog.close();
+			
+			cleanupRawCountSqlToStatementMaps(tableName);
 		}
 		soupNameToTableNamesMap.remove(soupName);
 		soupNameToIndexSpecsMap.remove(soupName);
+	}
+
+	private void cleanupRawCountSqlToStatementMaps(String tableName) {
+		List<String> countSqlToRemove = new ArrayList<String>();
+		for (Entry<String, SQLiteStatement>  entry : rawCountSqlToStatementsMap.entrySet()) {
+			String countSql = entry.getKey();
+			if (countSql.contains(tableName)) {
+				SQLiteStatement countProg = entry.getValue();
+				if (countProg != null)
+					countProg.close();
+				countSqlToRemove.add(countSql);
+			}
+		}
+		for (String countSql : countSqlToRemove) {
+			rawCountSqlToStatementsMap.remove(countSql);
+		}
 	}
 	
 	/**
@@ -166,6 +194,51 @@ public enum DBHelper  {
 		String selectionStr = (whereClause == null ? "" : " WHERE " + whereClause);
 		String sql = String.format(COUNT_SELECT, table, selectionStr);
 		return db.rawQuery(sql, whereArgs);
+	}
+	
+	/**
+	 * Does a limit for a raw query
+	 * @param db
+	 * @param sql
+	 * @param limit
+	 * @param whereArgs
+	 * @return
+	 */
+	public Cursor limitRawQuery(SQLiteDatabase db, String sql, String limit, String... whereArgs) {
+		String limitSql = String.format(LIMIT_SELECT, sql, limit);
+		return db.rawQuery(limitSql, whereArgs);
+	}
+
+	/**
+	 * Does a count for a raw query
+	 * @param db
+	 * @param sql
+	 * @param whereArgs
+	 * @return
+	 */
+	public int countRawQuery(SQLiteDatabase db, String sql, String... whereArgs) {
+		String countSql = String.format(COUNT_SELECT, "", "(" + sql + ")");
+
+		SQLiteStatement prog = rawCountSqlToStatementsMap.get(countSql);
+		if (prog == null) {
+			prog = db.compileStatement(countSql);
+			rawCountSqlToStatementsMap.put(countSql, prog);
+		}
+		
+		
+		if (whereArgs != null) {
+			for (int i=0; i<whereArgs.length; i++) {
+				prog.bindString(i+1, whereArgs[i]);
+			}
+		}
+		
+		try {
+			int count =  (int) prog.simpleQueryForLong();
+			prog.clearBindings();
+			return count;
+		} catch (SQLiteDoneException e) {
+			return -1;
+		}
 	}
 	
 	/**
@@ -241,4 +314,107 @@ public enum DBHelper  {
 		DBOpenHelper.deleteDatabase(ctx);
 	}
 
+	
+
+    /**
+     * Return column name in soup table that holds the soup projection for path
+     * @param soupName
+     * @param path
+     * @return
+     */
+    public String getColumnNameForPath(SQLiteDatabase db, String soupName, String path) {
+        IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
+        for (IndexSpec indexSpec : indexSpecs) {
+            if (indexSpec.path.equals(path)) {
+                return indexSpec.columnName;
+            }
+        }
+        throw new SmartStoreException(String.format("%s does not have an index on %s", soupName, path));
+    }	
+	
+    /**
+     * Read index specs back from the soup index map table
+     * @param db
+     * @param soupName
+     * @return
+     */
+    public IndexSpec[] getIndexSpecs(SQLiteDatabase db, String soupName) {
+        IndexSpec[] indexSpecs = getCachedIndexSpecs(soupName);
+        if (indexSpecs == null) {
+            indexSpecs = getIndexSpecsFromDb(db, soupName);
+            cacheIndexSpecs(soupName, indexSpecs);
+        }
+
+        return indexSpecs;
+    }
+
+    protected IndexSpec[] getIndexSpecsFromDb(SQLiteDatabase db, String soupName) {
+        Cursor cursor = null;
+        try {
+            cursor = query(db, SmartStore.SOUP_INDEX_MAP_TABLE, new String[] {SmartStore.PATH_COL, SmartStore.COLUMN_NAME_COL, SmartStore.COLUMN_TYPE_COL}, null,
+                    null, SmartStore.SOUP_NAME_PREDICATE, soupName);
+
+            if (!cursor.moveToFirst()) {
+                throw new SmartStoreException(String.format("%s does not have any indices", soupName));
+            }
+
+            List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
+            do {
+                String path = cursor.getString(cursor.getColumnIndex(SmartStore.PATH_COL));
+                String columnName = cursor.getString(cursor.getColumnIndex(SmartStore.COLUMN_NAME_COL));
+                Type columnType = Type.valueOf(cursor.getString(cursor.getColumnIndex(SmartStore.COLUMN_TYPE_COL)));
+                indexSpecs.add(new IndexSpec(path, columnType, columnName));
+            }
+            while (cursor.moveToNext());
+
+            return indexSpecs.toArray(new IndexSpec[0]);
+        }
+        finally {
+            safeClose(cursor);
+        }
+    }
+    
+    /**
+     * Return table name for a given soup or null if the soup doesn't exist
+     * @param db
+     * @param soupName
+     * @return 
+    */
+   public String getSoupTableName(SQLiteDatabase db, String soupName) {
+       String soupTableName = getCachedTableName(soupName);
+       if (soupTableName == null) {
+           soupTableName = getSoupTableNameFromDb(db, soupName);
+           if (soupTableName != null) {
+               cacheTableName(soupName, soupTableName);
+           }
+           // Note: if you ask twice about a non-existing soup, we go to the database both times
+           //       we could optimize for that scenario but it doesn't seem very important
+       }
+
+       return soupTableName;
+   }
+
+   protected String getSoupTableNameFromDb(SQLiteDatabase db, String soupName) {
+       Cursor cursor = null;
+       try {
+           cursor = query(db, SmartStore.SOUP_NAMES_TABLE, new String[] {SmartStore.ID_COL}, null, null, SmartStore.SOUP_NAME_PREDICATE, soupName);
+           if (!cursor.moveToFirst()) {
+               return null;
+           }
+           return SmartStore.getSoupTableName(cursor.getLong(cursor.getColumnIndex(SmartStore.ID_COL)));
+       }
+       finally {
+           safeClose(cursor);
+       }
+   }
+    
+    
+    /**
+     * @param cursor
+     */
+    protected void safeClose(Cursor cursor) {
+        if (cursor != null) {
+            cursor.close();
+        }
+    }
 }
