@@ -94,6 +94,11 @@ public class RestResponse {
 	 * @throws IOException 
 	 */
 	public void consume() throws IOException {
+		if (responseAsBytes != null) {
+			// already consumed
+			return;			
+		}
+		
 		HttpEntity entity = response.getEntity();
 		if (entity != null) {
 			responseCharSet = EntityUtils.getContentCharSet(entity);		
