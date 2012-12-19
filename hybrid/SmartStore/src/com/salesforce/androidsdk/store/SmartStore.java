@@ -35,7 +35,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.annotation.SuppressLint;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
@@ -363,7 +362,6 @@ public class SmartStore  {
 	 * @return
 	 * @throws JSONException
 	 */
-	@SuppressLint("NewApi")
 	private JSONArray getDataFromRow(Cursor cursor) throws JSONException {
 		JSONArray row = new JSONArray();
 		int columnCount = cursor.getColumnCount();
