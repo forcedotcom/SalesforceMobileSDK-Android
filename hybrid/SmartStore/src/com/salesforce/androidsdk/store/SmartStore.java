@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -39,6 +39,8 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
 
+import com.salesforce.androidsdk.store.QuerySpec.QueryType;
+
 
 /**
  * Smart store
@@ -63,6 +65,10 @@ public class SmartStore  {
     protected static final String PATH_COL = "path";
     protected static final String COLUMN_NAME_COL = "columnName";
     protected static final String COLUMN_TYPE_COL = "columnType";
+    
+    // Predicates
+    protected static final String SOUP_NAME_PREDICATE = SOUP_NAME_COL + " = ?";
+    protected static final String PATH_PREDICATE = PATH_COL + " = ?";
 
     // Columns of a soup table
     protected static final String ID_COL = "id";
@@ -73,6 +79,7 @@ public class SmartStore  {
     // JSON fields added to soup element on insert/update
     public static final String SOUP_ENTRY_ID = "_soupEntryId";
     public static final String SOUP_LAST_MODIFIED_DATE = "_soupLastModifiedDate";
+	private static final String SOUP_ENTRY_ID_PREDICATE = ID_COL + " = ?";
 
     // Backing database
     protected SQLiteDatabase db;
@@ -246,40 +253,7 @@ public class SmartStore  {
      * @return true if soup exists, false otherwise
      */
     public boolean hasSoup(String soupName) {
-        return getSoupTableName(soupName) != null;
-    }
-
-    /**
-     *
-     * @param soupName
-     * @return table name for a given soup or null if the soup doesn't exist
-     */
-    public String getSoupTableName(String soupName) {
-        String soupTableName = DBHelper.INSTANCE.getCachedTableName(soupName);
-        if (soupTableName == null) {
-            soupTableName = getSoupTableNameFromDb(soupName);
-            if (soupTableName != null) {
-                DBHelper.INSTANCE.cacheTableName(soupName, soupTableName);
-            }
-            // Note: if you ask twice about a non-existing soup, we go to the database both times
-            //       we could optimize for that scenario but it doesn't seem very important
-        }
-
-        return soupTableName;
-    }
-
-    private String getSoupTableNameFromDb(String soupName) {
-        Cursor cursor = null;
-        try {
-            cursor = DBHelper.INSTANCE.query(db, SOUP_NAMES_TABLE, new String[] {ID_COL}, null, null, getSoupNamePredicate(), soupName);
-            if (!cursor.moveToFirst()) {
-                return null;
-            }
-            return getSoupTableName(cursor.getLong(cursor.getColumnIndex(ID_COL)));
-        }
-        finally {
-            safeClose(cursor);
-        }
+        return DBHelper.INSTANCE.getSoupTableName(db, soupName) != null;
     }
 
     /**
@@ -290,13 +264,13 @@ public class SmartStore  {
      * @param soupName
      */
     public void dropSoup(String soupName) {
-        String soupTableName = getSoupTableName(soupName);
+        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
         if (soupTableName != null) {
             db.execSQL("DROP TABLE IF EXISTS " + soupTableName);
             try {
                 db.beginTransaction();
-                DBHelper.INSTANCE.delete(db, SOUP_NAMES_TABLE, getSoupNamePredicate(), soupName);
-                DBHelper.INSTANCE.delete(db, SOUP_INDEX_MAP_TABLE, getSoupNamePredicate(), soupName);
+                DBHelper.INSTANCE.delete(db, SOUP_NAMES_TABLE, SOUP_NAME_PREDICATE, soupName);
+                DBHelper.INSTANCE.delete(db, SOUP_INDEX_MAP_TABLE, SOUP_NAME_PREDICATE, soupName);
                 db.setTransactionSuccessful();
 
                 // Remove from cache
@@ -339,82 +313,99 @@ public class SmartStore  {
         return soupNames;
     }
 
-
-
     /**
-     * Run a query
-     * @param soupName
-     * @param querySpec
-     * @param pageIndex
-     * @return
-     * @throws JSONException
-     */
-    public JSONArray querySoup(String soupName, QuerySpec querySpec, int pageIndex) throws JSONException {
-        String soupTableName = getSoupTableName(soupName);
-        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
+	 * Run a query given by its query Spec, only returned results from selected page
+	 * @param querySpec
+	 * @param pageIndex
+     * @throws JSONException 
+	 */
+	public JSONArray query(QuerySpec querySpec, int pageIndex) throws JSONException {
+		QueryType qt = querySpec.queryType;
+    	String sql = convertSmartSql(querySpec.smartSql);
 
         // Page
         int offsetRows = querySpec.pageSize * pageIndex;
         int numberRows = querySpec.pageSize;
         String limit = offsetRows + "," + numberRows;
+    	
+    	
+    	Cursor cursor = null;
+    	try {
 
-        // Get the matching soups
-        Cursor cursor = null;
-        try {
-            if (querySpec.path == null) {
-                cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {SOUP_COL}, null, limit, null);
-            }
-            else {
-                String columnName = getColumnNameForPath(db, soupName, querySpec.path);
-                cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {SOUP_COL}, querySpec.getOrderBy(columnName), limit, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
-            }
+    		cursor = DBHelper.INSTANCE.limitRawQuery(db, sql, limit, querySpec.getArgs());
 
             JSONArray results = new JSONArray();
             if (cursor.moveToFirst()) {
                 do {
-                    results.put(new JSONObject(cursor.getString(cursor.getColumnIndex(SOUP_COL))));
+                	// Smart queries
+                	if (qt == QueryType.smart) {
+                		results.put(getDataFromRow(cursor));	
+                	}
+            		// Exact/like/range queries
+                	else {
+                		results.put(new JSONObject(cursor.getString(0)));
+                	}
                 }
                 while (cursor.moveToNext());
             }
 
             return results;
-        }
-        finally {
-            safeClose(cursor);
-        }
-    }
+    	}
+    	finally {
+    		safeClose(cursor);
+    	}
+	}
 
-    /**
-     * @param soupName
-     * @param querySpec
-     * @return count for the given querySpec
-     * @throws JSONException
-     */
-    public int countQuerySoup(String soupName, QuerySpec querySpec) throws JSONException {
-        String soupTableName = getSoupTableName(soupName);
-        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
+	/**
+	 * Return JSONArray for one row of data from cursor
+	 * @param cursor
+	 * @return
+	 * @throws JSONException
+	 */
+	private JSONArray getDataFromRow(Cursor cursor) throws JSONException {
+		JSONArray row = new JSONArray();
+		int columnCount = cursor.getColumnCount();
+		for (int i=0; i<columnCount; i++) {
+			String raw = cursor.getString(i);
 
-        Cursor cursor = null;
-        try {
-            if (querySpec.path == null) {
-                cursor = DBHelper.INSTANCE.countQuery(db, soupTableName, null, (String[]) null);
-            }
-            else {
-                String columnName = getColumnNameForPath(db, soupName, querySpec.path);
-                cursor = DBHelper.INSTANCE.countQuery(db, soupTableName, querySpec.getKeyPredicate(columnName), querySpec.getKeyPredicateArgs());
-            }
+			// Is this column holding a serialized json object?
+			if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
+				row.put(new JSONObject(raw));
+				// Note: we could end up returning a string if you aliased the column
+			}
+			else {
+	    		// Is it holding a integer
+	    		try {
+	    			Long n = Long.parseLong(raw);
+	    			row.put(n);
+	    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
+	    		}
+	    		// It must be holding a string then
+	    		catch (NumberFormatException e) {
+	    			row.put(raw);
+	    		}
+	    		// cursor.getType is API 11 and above
+			}
+		}
+		return row;
+	}
+	
+	/**
+	 * @param querySpec
+	 * @return count of results for a "smart" query
+	 */
+	public int countQuery(QuerySpec querySpec) {
+		String sql = convertSmartSql(querySpec.smartSql);
+		return DBHelper.INSTANCE.countRawQuery(db, sql, querySpec.getArgs());
+	}
 
-            if (cursor.moveToFirst()) {
-                return cursor.getInt(0);
-            }
-            else {
-                return -1;
-            }
-        }
-        finally {
-            safeClose(cursor);
-        }
-    }
+	/**
+	 * @param smartSql
+	 * @return
+	 */
+	protected String convertSmartSql(String smartSql) {
+		return SmartSqlHelper.INSTANCE.convertSmartSql(db, smartSql);
+	}
 
 
     /**
@@ -438,9 +429,9 @@ public class SmartStore  {
      * @throws JSONException
      */
     public JSONObject create(String soupName, JSONObject soupElt, boolean handleTx) throws JSONException {
-        String soupTableName = getSoupTableName(soupName);
+        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
         if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
-        IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
+        IndexSpec[] indexSpecs = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
 
         try {
             if (handleTx) {
@@ -507,7 +498,7 @@ public class SmartStore  {
      * @throws JSONException
      */
     public JSONArray retrieve(String soupName, Long... soupEntryIds) throws JSONException {
-        String soupTableName = getSoupTableName(soupName);
+        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
         if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
         Cursor cursor = null;
         try {
@@ -553,9 +544,9 @@ public class SmartStore  {
      * @throws JSONException
      */
     public JSONObject update(String soupName, JSONObject soupElt, long soupEntryId, boolean handleTx) throws JSONException {
-        String soupTableName = getSoupTableName(soupName);
+        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
         if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
-        IndexSpec[] indexSpecs = getIndexSpecs(db, soupName);
+        IndexSpec[] indexSpecs = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
 
         long now = System.currentTimeMillis();
 
@@ -576,7 +567,7 @@ public class SmartStore  {
             if (handleTx) {
                 db.beginTransaction();
             }
-            boolean success = DBHelper.INSTANCE.update(db, soupTableName, contentValues, getSoupEntryIdPredicate(), soupEntryId + "") == 1;
+            boolean success = DBHelper.INSTANCE.update(db, soupTableName, contentValues, SOUP_ENTRY_ID_PREDICATE, soupEntryId + "") == 1;
             if (success) {
                 if (handleTx) {
                     db.setTransactionSuccessful();
@@ -661,9 +652,9 @@ public class SmartStore  {
      * @param fieldValue
      */
     public long lookupSoupEntryId(String soupName, String fieldPath, String fieldValue) {
-        String soupTableName = getSoupTableName(soupName);
+        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
         if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
-        String columnName = getColumnNameForPath(db, soupName, fieldPath);
+        String columnName = DBHelper.INSTANCE.getColumnNameForPath(db, soupName, fieldPath);
 
         Cursor cursor = null;
         try {
@@ -699,7 +690,7 @@ public class SmartStore  {
      * @param handleTx
      */
     public void delete(String soupName, Long[] soupEntryIds, boolean handleTx) {
-        String soupTableName = getSoupTableName(soupName);
+        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
         if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 
         if (handleTx) {
@@ -720,87 +711,6 @@ public class SmartStore  {
     }
 
     /**
-     * Return column name in soup table that holds the soup projection for path
-     * @param db
-     * @param soupName
-     * @param path
-     * @return
-     */
-    protected String getColumnNameForPath(SQLiteDatabase db, String soupName, String path) {
-        Cursor cursor = null;
-        try {
-            cursor = DBHelper.INSTANCE.query(db, SOUP_INDEX_MAP_TABLE, new String[] {COLUMN_NAME_COL}, null,
-                    null, getSoupNamePredicate() + " AND " + getPathPredicate(), soupName, path);
-
-            if (cursor.moveToFirst()) {
-                return cursor.getString(0);
-            }
-            else {
-                throw new SmartStoreException(String.format("%s does not have an index on %s", soupName, path));
-            }
-        }
-        finally {
-            safeClose(cursor);
-        }
-    }
-
-    /**
-     * Read index specs back from the soup index map table
-     * @param db
-     * @param soupName
-     * @return
-     */
-    protected IndexSpec[] getIndexSpecs(SQLiteDatabase db, String soupName) {
-        IndexSpec[] indexSpecs = DBHelper.INSTANCE.getCachedIndexSpecs(soupName);
-        if (indexSpecs == null) {
-            indexSpecs = getIndexSpecsFromDb(db, soupName);
-            DBHelper.INSTANCE.cacheIndexSpecs(soupName, indexSpecs);
-        }
-
-        return indexSpecs;
-    }
-
-    protected IndexSpec[] getIndexSpecsFromDb(SQLiteDatabase db, String soupName) {
-        Cursor cursor = null;
-        try {
-            cursor = DBHelper.INSTANCE.query(db, SOUP_INDEX_MAP_TABLE, new String[] {PATH_COL, COLUMN_NAME_COL, COLUMN_TYPE_COL}, null,
-                    null, getSoupNamePredicate(), soupName);
-
-            if (!cursor.moveToFirst()) {
-                throw new SmartStoreException(String.format("%s does not have any indices", soupName));
-            }
-
-            List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
-            do {
-                String path = cursor.getString(cursor.getColumnIndex(PATH_COL));
-                String columnName = cursor.getString(cursor.getColumnIndex(COLUMN_NAME_COL));
-                Type columnType = Type.valueOf(cursor.getString(cursor.getColumnIndex(COLUMN_TYPE_COL)));
-                indexSpecs.add(new IndexSpec(path, columnType, columnName));
-            }
-            while (cursor.moveToNext());
-
-            return indexSpecs.toArray(new IndexSpec[0]);
-        }
-        finally {
-            safeClose(cursor);
-        }
-    }
-
-    /**
-     * @return predicate to match a soup entry by name
-     */
-    protected String getSoupNamePredicate() {
-        return SOUP_NAME_COL + " = ?";
-    }
-
-    /**
-     * @return predicate to match a soup entry by id
-     */
-    protected String getSoupEntryIdPredicate() {
-        return ID_COL + " = ?";
-    }
-
-    /**
      * @return predicate to match soup entries by id
      */
     protected String getSoupEntryIdsPredicate(Long[] soupEntryIds) {
@@ -809,17 +719,10 @@ public class SmartStore  {
 
 
     /**
-     * @return
-     */
-    protected String getPathPredicate() {
-        return PATH_COL + " = ?";
-    }
-
-    /**
      * @param soupId
      * @return
      */
-    protected String getSoupTableName(long soupId) {
+    public static String getSoupTableName(long soupId) {
         return "TABLE_" + soupId;
     }
 
@@ -867,188 +770,6 @@ public class SmartStore  {
 
         public String getColumnType() {
             return columnType;
-        }
-    }
-
-    /**
-     * Simple class to represent index spec
-     */
-    public static class IndexSpec {
-        public final String path;
-        public final Type type;
-        public final String columnName;
-
-        public IndexSpec(String path, Type type) {
-            this.path = path;
-            this.type = type;
-            this.columnName = null; // undefined
-        }
-
-        public IndexSpec(String path, Type type, String columnName) {
-            this.path = path;
-            this.type = type;
-            this.columnName = columnName;
-        }
-
-    }
-
-    /**
-     * Query type enum
-     */
-    public enum QueryType {
-        exact,
-        range,
-        like;
-    }
-
-
-    /**
-     * Simple class to represent a query spec
-     */
-    public static class QuerySpec {
-        public final String path;
-        public final QueryType queryType;
-
-        // Exact
-        public final String matchKey;
-        // Range
-        public final String beginKey;
-        public final String endKey;
-        // Like
-        public final String likeKey;
-
-        // Order
-        public final Order order;
-
-        // Page size
-        public final int pageSize;
-
-        // Private constructor
-        private QuerySpec(String path, QueryType queryType, String matchKey, String beginKey, String endKey, String likeKey, Order order, int pageSize) {
-            this.path = path;
-            this.queryType = queryType;
-            this.matchKey = matchKey;
-            this.beginKey = beginKey;
-            this.endKey = endKey;
-            this.likeKey = likeKey;
-            this.order = order;
-            this.pageSize = pageSize;
-        }
-
-
-        /**
-         * Return a query spec for returning all entries
-         * @param order
-         * @param pageSize
-         * @return
-         */
-        public static QuerySpec buildAllQuerySpec(Order order, int pageSize) {
-            return new QuerySpec(null, QueryType.range, null, null, null, null, order, pageSize);
-        }
-
-
-        /**
-         * Return a query spec for an exact match query
-         * @param path
-         * @param exactMatchKey
-         * @param pageSize
-         * @return
-         */
-        public static QuerySpec buildExactQuerySpec(String path, String exactMatchKey, int pageSize) {
-            return new QuerySpec(path, QueryType.exact, exactMatchKey, null, null, null, Order.ascending /* meaningless - all rows will have the same value in the indexed column*/, pageSize);
-        }
-
-        /**
-         * Return a query spec for a range query
-         * @param path
-         * @param beginKey
-         * @param endKey
-         * @param order
-         * @param pageSize
-         * @return
-         */
-        public static QuerySpec buildRangeQuerySpec(String path, String beginKey, String endKey, Order order, int pageSize) {
-            return new QuerySpec(path, QueryType.range, null, beginKey, endKey, null, order, pageSize);
-        }
-
-        /**
-         * Return a query spec for a like query
-         * @param path
-         * @param matchKey
-         * @param order
-         * @param pageSize
-         * @return
-         */
-        public static QuerySpec buildLikeQuerySpec(String path, String likeKey, Order order, int pageSize) {
-            return new QuerySpec(path, QueryType.like, null, null, null, likeKey, order, pageSize);
-        }
-
-        /**
-         * @param columnName
-         * @return string representing sql predicate
-         */
-        public String getKeyPredicate(String columnName) {
-            switch(queryType) {
-            case exact:
-                return columnName + " = ?";
-            case like:
-                return columnName + " LIKE ?";
-            case range:
-                if (beginKey == null && endKey == null)
-                    return null;
-                else if (endKey == null)
-                    return columnName + " >= ? ";
-                else if (beginKey == null)
-                    return columnName + " <= ? ";
-                else
-                    return columnName + " >= ? AND " + columnName + " <= ?";
-            default:
-                throw new SmartStoreException("Fell through switch: " + queryType);
-            }
-        }
-
-        /**
-         * @return args going with the sql predicate returned by getKeyPredicate
-         */
-        public String[] getKeyPredicateArgs() {
-            switch(queryType) {
-            case exact:
-                return new String[] {matchKey};
-            case like:
-                return new String[] {likeKey};
-            case range:
-                if (beginKey == null && endKey == null)
-                    return null;
-                else if (endKey == null)
-                    return new String[] {beginKey};
-                else if (beginKey == null)
-                    return new String[] {endKey};
-                else
-                    return new String[] {beginKey, endKey};
-            default:
-                throw new SmartStoreException("Fell through switch: " + queryType);
-            }
-        }
-
-        /**
-         * @param columnName
-         * @return sql for order by
-         */
-        public String getOrderBy(String columnName) {
-            return columnName + " " + order.sql;
-        }
-    }
-
-    /**
-     * Simple class to represent query order (used by QuerySpec)
-     */
-    public enum Order {
-        ascending("ASC"), descending("DESC");
-
-        public final String sql;
-
-        Order(String sqlOrder) {
-            this.sql = sqlOrder;
         }
     }
 
