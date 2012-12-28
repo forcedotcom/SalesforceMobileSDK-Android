@@ -51,8 +51,10 @@ public class UUIDManager {
      * We recommend you provide you own implementation for creating the HashConfig's.
      */
     private static Map<String, String> uuids = new HashMap<String, String>();
+    
     public static synchronized String getUuId(String name) {
-        if (uuids.get(name) != null) return uuids.get(name);
+    	String cached = uuids.get(name);
+    	if (cached != null) return cached;
         SharedPreferences sp = ForceApp.APP.getSharedPreferences(UUID_PREF, Context.MODE_PRIVATE);
         String key = ForceApp.APP.getKey(name);
         if (!sp.contains(name)) {
@@ -61,18 +63,20 @@ public class UUIDManager {
             e.putString(name, Encryptor.encrypt(uuid, key));
             e.commit();
         }
-        return Encryptor.decrypt(sp.getString(name, null), key);
+        cached = Encryptor.decrypt(sp.getString(name, null), key);
+        if (cached != null)
+        	uuids.put(name, cached);
+        return cached;
     }	
     
     /**
      * Resets the generated UUIDs and wipes out the shared pref file that houses them.
      */
-    public static void resetUuids() {
-        uuids = new HashMap<String, String>();
+    public static synchronized void resetUuids() {
+        uuids.clear();
         final SharedPreferences sp = ForceApp.APP.getSharedPreferences(UUID_PREF, Context.MODE_PRIVATE);
         if (sp != null) {
             sp.edit().clear().commit();
         }
-    }
-    
+    }   
 }
