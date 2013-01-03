@@ -100,14 +100,14 @@ public class OAuthWebviewHelper {
     /**
      * Construct a new OAuthWebviewHelper and perform the initial configuration of the Webview.
      */
-    public OAuthWebviewHelper(OAuthWebviewHelperEvents callback, LoginOptions options, WebView webview, Bundle savedInstanceState) {
+	public OAuthWebviewHelper(OAuthWebviewHelperEvents callback, LoginOptions options, WebView webview, Bundle savedInstanceState) {
         assert options != null && callback != null && webview != null;
         this.callback = callback;
         this.loginOptions = options;
         this.webview = webview;
 
         webview.getSettings().setJavaScriptEnabled(true);
-        webview.setWebViewClient(new AuthWebViewClient());
+        webview.setWebViewClient(makeWebViewClient());
         webview.setWebChromeClient(makeWebChromeClient());
 
         // Restore webview's state if available.
@@ -163,6 +163,11 @@ public class OAuthWebviewHelper {
         }
     }
 
+    /** Factory method for the WebViewClient, you can replace this with something else if you need to */
+    protected WebViewClient makeWebViewClient() {
+    	return new AuthWebViewClient();
+    }
+    
     /** Factory method for the WebChromeClient, you can replace this with something else if you need to */
     protected WebChromeClient makeWebChromeClient() {
         return new AuthWebChromeClient();
@@ -230,10 +235,14 @@ public class OAuthWebviewHelper {
         }
     }
 
+    protected String getOAuthClientId() {
+    	return loginOptions.oauthClientId;
+    }
+    
     protected URI getAuthorizationUrl() throws URISyntaxException {
         return OAuth2.getAuthorizationUrl(
                 new URI(loginOptions.loginUrl),
-                loginOptions.oauthClientId,
+                getOAuthClientId(),
                 loginOptions.oauthCallbackUrl,
                 loginOptions.oauthScopes);
     }
@@ -282,25 +291,23 @@ public class OAuthWebviewHelper {
 
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-            final StringBuilder sb = new StringBuilder("SSL Error: ");
             int primError = error.getPrimaryError();
+
+            // Figuring out string resource id
+            SalesforceR r = ForceApp.APP.getSalesforceR();
+            int primErrorStringId = r.stringSSLUnknownError();
             switch (primError) {
-                case SslError.SSL_EXPIRED:
-                    sb.append("Expired Certificate.");
-                    break;
-                case SslError.SSL_IDMISMATCH:
-                    sb.append("Hostname Mismatch.");
-                    break;
-                case SslError.SSL_NOTYETVALID:
-                    sb.append("Certificate Not Yet Valid.");
-                    break;
-                case SslError.SSL_UNTRUSTED:
-                    sb.append("Untrusted Certificate Authority.");
-                    break;
-                default:
-                    sb.append("Unknown Error.");
+            case SslError.SSL_EXPIRED:      primErrorStringId = r.stringSSLExpired(); break;
+            case SslError.SSL_IDMISMATCH:   primErrorStringId = r.stringSSLIdMismatch(); break;
+            case SslError.SSL_NOTYETVALID:  primErrorStringId = r.stringSSLNotYetValid(); break;
+            case SslError.SSL_UNTRUSTED:    primErrorStringId = r.stringSSLUntrusted(); break;
             }
-            Toast.makeText(getContext(), sb.toString(), Toast.LENGTH_LONG).show();
+
+            // Building text message to show
+            String text = getContext().getString(r.stringSSLError(), getContext().getString(primErrorStringId));
+
+            // Bringing up toast
+            Toast.makeText(getContext(), text, Toast.LENGTH_LONG).show();
             handler.cancel();
         }
     }
@@ -412,7 +419,7 @@ public class OAuthWebviewHelper {
                 accountOptions.instanceUrl,
                 loginOptions.loginUrl,
                 accountOptions.identityUrl,
-                loginOptions.oauthClientId,
+                getOAuthClientId(),
                 accountOptions.orgId,
                 accountOptions.userId,
                 loginOptions.passcodeHash,

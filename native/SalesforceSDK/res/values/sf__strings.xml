@@ -6,6 +6,14 @@
 	<string name="sf__generic_error">An error has occurred %s\nPlease try again</string>
 	<string name="sf__invalid_server_url">Please type in a valid URL starting with https://</string>
 
+    <!-- SSL Errors -->
+    <string name="sf__ssl_error">SSL Error: %s.</string>
+    <string name="sf__ssl_expired">Expired Certificate</string>
+    <string name="sf__ssl_id_mismatch">Hostname Mismatch</string>
+    <string name="sf__ssl_not_yet_valid">Certificate Not Yet Valid</string>
+    <string name="sf__ssl_untrusted">Untrusted Certificate Authority</string>
+    <string name="sf__ssl_unknown_error">Unknown Error</string>
+
 	<!-- Login -->
 	<string name="sf__login_title">Login</string>
 	<string name="sf__pick_server">Change Server</string>

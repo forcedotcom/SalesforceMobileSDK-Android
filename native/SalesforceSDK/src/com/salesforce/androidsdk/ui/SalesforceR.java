@@ -98,4 +98,11 @@ public class SalesforceR {
 	public int idMenuClearCustomUrl() {return R.id.sf__menu_clear_custom_url;}
 	public int drawableEditIcon() {return R.drawable.sf__edit_icon; }
 	public int idShowCustomUrlEdit() {return R.id.sf__show_custom_url_edit;}
+	/* SSL errors */
+	public int stringSSLError() {return R.string.sf__ssl_error;}
+	public int stringSSLExpired() {return R.string.sf__ssl_expired;}
+	public int stringSSLIdMismatch() {return R.string.sf__ssl_id_mismatch;}
+	public int stringSSLNotYetValid() {return R.string.sf__ssl_not_yet_valid;}
+	public int stringSSLUntrusted() {return R.string.sf__ssl_untrusted;}
+	public int stringSSLUnknownError() {return R.string.sf__ssl_unknown_error;}
 }
