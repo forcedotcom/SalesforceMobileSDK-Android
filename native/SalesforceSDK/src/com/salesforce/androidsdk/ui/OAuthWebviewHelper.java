@@ -291,25 +291,23 @@ public class OAuthWebviewHelper {
 
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
-            final StringBuilder sb = new StringBuilder("SSL Error: ");
             int primError = error.getPrimaryError();
+
+            // Figuring out string resource id
+            SalesforceR r = ForceApp.APP.getSalesforceR();
+            int primErrorStringId = r.stringSSLUnknownError();
             switch (primError) {
-                case SslError.SSL_EXPIRED:
-                    sb.append("Expired Certificate.");
-                    break;
-                case SslError.SSL_IDMISMATCH:
-                    sb.append("Hostname Mismatch.");
-                    break;
-                case SslError.SSL_NOTYETVALID:
-                    sb.append("Certificate Not Yet Valid.");
-                    break;
-                case SslError.SSL_UNTRUSTED:
-                    sb.append("Untrusted Certificate Authority.");
-                    break;
-                default:
-                    sb.append("Unknown Error.");
+            case SslError.SSL_EXPIRED:      primErrorStringId = r.stringSSLExpired(); break;
+            case SslError.SSL_IDMISMATCH:   primErrorStringId = r.stringSSLIdMismatch(); break;
+            case SslError.SSL_NOTYETVALID:  primErrorStringId = r.stringSSLNotYetValid(); break;
+            case SslError.SSL_UNTRUSTED:    primErrorStringId = r.stringSSLUntrusted(); break;
             }
-            Toast.makeText(getContext(), sb.toString(), Toast.LENGTH_LONG).show();
+
+            // Building text message to show
+            String text = getContext().getString(r.stringSSLError(), getContext().getString(primErrorStringId));
+
+            // Bringing up toast
+            Toast.makeText(getContext(), text, Toast.LENGTH_LONG).show();
             handler.cancel();
         }
     }
