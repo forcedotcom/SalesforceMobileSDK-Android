@@ -210,10 +210,10 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 		onIndeterminateProgress(false);
 		setProgress(totalProgress);
 		if (loadSpinner != null) {
-			loadSpinner.setVisibility(totalProgress < 100 ? View.VISIBLE : View.GONE);
+			loadSpinner.setVisibility(totalProgress < Window.PROGRESS_END ? View.VISIBLE : View.GONE);
 		}
 		if (loadSeparator != null) {
-			loadSeparator.setVisibility(totalProgress < 100 ? View.VISIBLE : View.GONE);
+			loadSeparator.setVisibility(totalProgress < Window.PROGRESS_END ? View.VISIBLE : View.GONE);
 		}
 	}
 
