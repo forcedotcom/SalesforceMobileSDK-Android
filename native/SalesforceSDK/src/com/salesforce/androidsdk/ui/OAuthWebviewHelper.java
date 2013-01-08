@@ -406,7 +406,7 @@ public class OAuthWebviewHelper {
 
     protected void addAccount() {
 
-        ClientManager clientManager = new ClientManager(getContext(), ForceApp.APP.getAccountType(), loginOptions, ForceApp.APP.getShouldLogoutOnAccessToken());
+        ClientManager clientManager = new ClientManager(getContext(), ForceApp.APP.getAccountType(), loginOptions, ForceApp.APP.shouldLogoutWhenTokenRevoked());
 
         // Create account name (shown in Settings -> Accounts & sync)
         String accountName = buildAccountName(accountOptions.username);

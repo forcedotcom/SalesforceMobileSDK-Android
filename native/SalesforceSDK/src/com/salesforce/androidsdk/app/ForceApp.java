@@ -171,7 +171,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      *
      * @return True - if the SDK should automatically logout, False - otherwise.
      */
-    public boolean getShouldLogoutOnAccessToken() {
+    public boolean shouldLogoutWhenTokenRevoked() {
     	return true;
     }
 
@@ -309,7 +309,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         cleanUp(frontActivity);
 
         // Remove account if any.
-        ClientManager clientMgr = new ClientManager(this, getAccountType(), null, getShouldLogoutOnAccessToken());
+        ClientManager clientMgr = new ClientManager(this, getAccountType(), null, shouldLogoutWhenTokenRevoked());
         if (clientMgr.getAccount() == null) {
             EventsObservable.get().notifyEvent(EventType.LogoutComplete);
             if (showLoginPage) {
