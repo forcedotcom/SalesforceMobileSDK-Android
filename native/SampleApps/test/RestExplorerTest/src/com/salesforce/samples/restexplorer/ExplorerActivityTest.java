@@ -110,7 +110,7 @@ public class ExplorerActivityTest extends
         super.setUp();
         setActivityInitialTouchMode(false);
         targetContext = getInstrumentation().getTargetContext();
-        clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null);
+        clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null, ForceApp.APP.shouldLogoutWhenTokenRevoked());
         clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
                 TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, null);
         mockHttpAccessor = new MockHttpAccess(RestExplorerApp.APP);
