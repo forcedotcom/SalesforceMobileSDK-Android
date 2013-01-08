@@ -172,7 +172,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @return True - if the SDK should automatically logout, False - otherwise.
      */
     public boolean getShouldLogoutOnAccessToken() {
-    	return false;
+    	return true;
     }
 
     @Override
