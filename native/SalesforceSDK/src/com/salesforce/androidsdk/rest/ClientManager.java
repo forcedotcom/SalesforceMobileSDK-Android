@@ -440,10 +440,7 @@ public class ClientManager {
             clientManager.invalidateToken(lastNewAuthToken);
             String newAuthToken = null;
             try {
-                Bundle options = clientManager.loginOptions.asBundle();
-                Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, options, null /* activity */, null /* callback */,
-                                null /* handler */).getResult();
-
+                final Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, false, null, null).getResult();
                 if (bundle == null) {
                     Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
                 } else {
