@@ -165,7 +165,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         Log.i("SalesforceOAuthPlugin.authenticate", "authenticate called");
         JSONObject oauthProperties = args.getJSONObject(0).getJSONObject(OAUTH_PROPERTIES);
         LoginOptions loginOptions = parseLoginOptions(oauthProperties);
-        clientManager = new ClientManager(cordova.getActivity(), ForceApp.APP.getAccountType(), loginOptions);
+        clientManager = new ClientManager(cordova.getActivity(), ForceApp.APP.getAccountType(), loginOptions, ForceApp.APP.getShouldLogoutOnAccessToken());
         clientManager.getRestClient(cordova.getActivity(), new RestClientCallback() {
             @Override
             public void authenticatedRestClient(RestClient c) {

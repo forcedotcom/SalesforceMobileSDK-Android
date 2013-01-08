@@ -87,7 +87,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         TestCredentials.init(getInstrumentation().getContext());
         targetContext = getInstrumentation().getTargetContext();
         loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_PASSCODE_HASH, TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES);
-        clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, loginOptions);
+        clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, loginOptions, ForceApp.APP.getShouldLogoutOnAccessToken());
         accountManager = clientManager.getAccountManager();
         eq = new EventsListenerQueue();
 
