@@ -89,7 +89,7 @@ public abstract class NativeMainActivity extends Activity {
 	    	LoginOptions loginOptions = getLoginOptions();
 			
 			// Get a rest client
-			new ClientManager(this, accountType, loginOptions).getRestClient(this, new RestClientCallback() {
+			new ClientManager(this, accountType, loginOptions, ForceApp.APP.shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 				@Override
 				public void authenticatedRestClient(RestClient client) {
 					if (client == null) {
