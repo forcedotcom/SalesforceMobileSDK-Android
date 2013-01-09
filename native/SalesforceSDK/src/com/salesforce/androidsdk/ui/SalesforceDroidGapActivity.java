@@ -31,14 +31,17 @@ import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.DroidGap;
 
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.util.Log;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebSettings;
 
 import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
@@ -52,6 +55,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
     public static final String BOOTSTRAP_START_PAGE = "file:///android_asset/www/bootstrap.html";
 
     private PasscodeManager passcodeManager;
+    private TokenRevocationReceiver tokenRevocatinReceiver;
 
     /** Called when the activity is first created. */
     @Override
@@ -60,19 +64,19 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
         // Passcode manager
         passcodeManager = ForceApp.APP.getPasscodeManager();
+		tokenRevocatinReceiver = new TokenRevocationReceiver(this);
 
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
-
-
+        
 		// Let observers know
-		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);        
+		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
         
         // Load bootstrap
         super.loadUrl(getStartPageUrl());
     }
 
-    /** Returns the start page url for the application. 
+    /** Returns the start page url for the application.
      * Must be overridden if you want a different start page.
      * @return Start page url of the app.
      */
@@ -105,19 +109,19 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
     @Override
     public void onResume() {
-        if (passcodeManager.onResume(this)) {
+        super.onResume();
+    	registerReceiver(tokenRevocatinReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
+    	if (passcodeManager.onResume(this)) {
             CookieSyncManager.getInstance().startSync();
         }
-
-        super.onResume();
     }
 
     @Override
     public void onPause() {
-        passcodeManager.onPause(this);
-
-        CookieSyncManager.getInstance().stopSync();
         super.onPause();
+        passcodeManager.onPause(this);
+        CookieSyncManager.getInstance().stopSync();
+    	unregisterReceiver(tokenRevocatinReceiver);
     }
 
     @Override
