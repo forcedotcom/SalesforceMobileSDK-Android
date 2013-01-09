@@ -113,8 +113,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      */
     protected abstract String getKey(String name);
 
-    /**************************************************************************************************/
-
     /**
      * Before 1.3, SalesforceSDK was packaged as a jar, and project had to provide a subclass of SalesforceR.
      * Since 1.3, SalesforceSDK is packaged as a library project and we no longer need to to that.
@@ -186,6 +184,18 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         }
     }
 
+    /**
+     * Returns whether the SDK should automatically logout when the
+     * access token is revoked. This should be overridden to return
+     * false, if the app wants to handle cleanup by itself when the
+     * access token is revoked.
+     *
+     * @return True - if the SDK should automatically logout, False - otherwise.
+     */
+    public boolean shouldLogoutWhenTokenRevoked() {
+    	return true;
+    }
+
     @Override
     public void onAccountRemoved() {
         ForceApp.APP.cleanUp(null);
@@ -201,7 +211,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         }
         return loginServerManager;
     }    
-    
+
     /**
      * @return The passcode manager associated with the app.
      */
@@ -327,7 +337,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         cleanUp(frontActivity);
 
         // Remove account if any.
-        ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
+        ClientManager clientMgr = new ClientManager(this, getAccountType(), null, shouldLogoutWhenTokenRevoked());
         if (clientMgr.getAccount() == null) {
             EventsObservable.get().notifyEvent(EventType.LogoutComplete);
             if (showLoginPage) {

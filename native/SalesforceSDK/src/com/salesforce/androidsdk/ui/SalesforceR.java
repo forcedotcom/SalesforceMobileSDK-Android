@@ -28,9 +28,6 @@ package com.salesforce.androidsdk.ui;
 
 import com.salesforce.androidsdk.R;
 
-
-
-
 /**
  * Before 1.3, SalesforceSDK was packaged as a jar which can't have resources.
  * All the methods were returning -1 and a project using the SDK had to provide a subclass returning actual resource ids.
@@ -105,4 +102,5 @@ public class SalesforceR {
 	public int stringSSLNotYetValid() {return R.string.sf__ssl_not_yet_valid;}
 	public int stringSSLUntrusted() {return R.string.sf__ssl_untrusted;}
 	public int stringSSLUnknownError() {return R.string.sf__ssl_unknown_error;}
+	public int stringAccessTokenRevoked() {return R.string.sf__access_token_revoked;}
 }

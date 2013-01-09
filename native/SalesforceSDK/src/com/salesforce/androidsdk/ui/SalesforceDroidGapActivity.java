@@ -41,6 +41,7 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
@@ -62,6 +63,7 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 
 /**
  * Class that defines the main activity for a PhoneGap-based application.
@@ -85,12 +87,11 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	// Rest client
     private RestClient client;
 	private ClientManager clientManager;
-
-	// Passcode
-	private PasscodeManager passcodeManager;
     
     // Config
 	private BootConfig bootconfig;
+    private PasscodeManager passcodeManager;
+    private TokenRevocationReceiver tokenRevocatinReceiver;
 
 	// Web app loaded?
 	private boolean webAppLoaded = false;	
@@ -105,7 +106,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		bootconfig = BootConfig.getBootConfig(this);
 
         // Get clientManager
-        clientManager = new ClientManager(this, ForceApp.APP.getAccountType(), ForceApp.APP.getLoginOptions());
+        clientManager = new ClientManager(this, ForceApp.APP.getAccountType(), ForceApp.APP.getLoginOptions(), ForceApp.APP.shouldLogoutWhenTokenRevoked());
 		
         // Get client (if already logged in)
         try {
@@ -116,6 +117,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         
         // Passcode manager
         passcodeManager = ForceApp.APP.getPasscodeManager();
+		tokenRevocatinReceiver = new TokenRevocationReceiver(this);
 
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
@@ -149,8 +151,9 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
     @Override
     public void onResume() {
-    	Log.i("SalesforceDroidGapActivity.onResume", "onResume called");    	
-        if (passcodeManager.onResume(this)) {
+        super.onResume();
+    	registerReceiver(tokenRevocatinReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
+    	if (passcodeManager.onResume(this)) {
         	// Not logged in
         	if (client == null) {
         		onResumeNotLoggedIn();
@@ -169,8 +172,6 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	            CookieSyncManager.getInstance().startSync();
         	}
         }
-
-        super.onResume();
     }
 
 	/**
@@ -239,11 +240,10 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
     @Override
     public void onPause() {
-    	Log.i("SalesforceDroidGapActivity.onPause", "onPause called");
-    	passcodeManager.onPause(this);
-
-    	CookieSyncManager.getInstance().stopSync();
         super.onPause();
+        passcodeManager.onPause(this);
+        CookieSyncManager.getInstance().stopSync();
+    	unregisterReceiver(tokenRevocatinReceiver);
     }
 
     @Override
