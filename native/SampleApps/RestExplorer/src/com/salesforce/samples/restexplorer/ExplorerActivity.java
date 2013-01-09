@@ -49,6 +49,7 @@ import android.app.Dialog;
 import android.app.TabActivity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
 import android.view.View;
@@ -72,11 +73,11 @@ import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * Activity for explorer
- * 
  */
 public class ExplorerActivity extends TabActivity {
 
@@ -89,6 +90,7 @@ public class ExplorerActivity extends TabActivity {
 	private RestClient client;
 	private TextView resultText;
 	AlertDialog logoutConfirmationDialog;
+    private TokenRevocationReceiver tokenRevocatinReceiver;
 
 	// Use for objectId fields auto-complete
 	private TreeSet<String> knownIds = new TreeSet<String>();
@@ -102,7 +104,8 @@ public class ExplorerActivity extends TabActivity {
 		super.onCreate(savedInstanceState);
 
 		// Passcode manager
-		passcodeManager = ForceApp.APP.getPasscodeManager();		
+		passcodeManager = ForceApp.APP.getPasscodeManager();
+		tokenRevocatinReceiver = new TokenRevocationReceiver(this);
 		
 		// ApiVersion
 		apiVersion = getString(R.string.api_version);
@@ -136,6 +139,7 @@ public class ExplorerActivity extends TabActivity {
 	@Override 
 	public void onResume() {
 		super.onResume();
+		registerReceiver(tokenRevocatinReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
 		
 		// Hide everything until we are logged in
 		findViewById(R.id.root).setVisibility(View.INVISIBLE);
@@ -171,8 +175,9 @@ public class ExplorerActivity extends TabActivity {
 	
     @Override
     public void onPause() {
-    	passcodeManager.onPause(this);
     	super.onPause();
+    	passcodeManager.onPause(this);
+    	unregisterReceiver(tokenRevocatinReceiver);
     }
 	
 	@Override

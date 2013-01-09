@@ -31,7 +31,6 @@ import android.app.Activity;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.security.Encryptor;
 
-
 /**
  * Application class for our rest explorer
  */

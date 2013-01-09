@@ -24,16 +24,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.sample;
+package com.salesforce.androidsdk.util;
+
+import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.rest.ClientManager;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.widget.Toast;
-
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.rest.ClientManager;
 
 /**
  * Listens for the access token revocation event, and acts on it.
@@ -51,8 +51,10 @@ public class TokenRevocationReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		if (intent != null && intent.getAction().equals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT)) {
-			Toast.makeText(curActivity, "Your access token has been revoked by the administrator. You will now be logged out.", Toast.LENGTH_LONG).show();
-			ForceApp.APP.logout(curActivity, true);
+			Toast.makeText(curActivity, ForceApp.APP.getSalesforceR().stringAccessTokenRevoked(), Toast.LENGTH_LONG).show();
+			if (ForceApp.APP.shouldLogoutWhenTokenRevoked()) {
+				ForceApp.APP.logout(curActivity, true);
+			}
 		}
 	}
 }
