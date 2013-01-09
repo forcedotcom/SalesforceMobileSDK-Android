@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.ui;
 
 import android.app.Activity;
+import android.content.IntentFilter;
 import android.os.Bundle;
 
 import com.salesforce.androidsdk.app.ForceApp;
@@ -36,6 +37,7 @@ import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
@@ -44,6 +46,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 public abstract class NativeMainActivity extends Activity {
 
 	private PasscodeManager passcodeManager;
+    private TokenRevocationReceiver tokenRevocatinReceiver;
 	
     /**************************************************************************************************
     *
@@ -58,16 +61,14 @@ public abstract class NativeMainActivity extends Activity {
 	 */
 	protected abstract void onResume(RestClient client);
 
-   /**************************************************************************************************/	
-	
-	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
 		// Passcode manager
-		passcodeManager = ForceApp.APP.getPasscodeManager();		
-		
+		passcodeManager = ForceApp.APP.getPasscodeManager();
+		tokenRevocatinReceiver = new TokenRevocationReceiver(this);
+
 		// Let observers know
 		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
 	}
@@ -75,6 +76,7 @@ public abstract class NativeMainActivity extends Activity {
 	@Override 
 	public void onResume() {
 		super.onResume();
+		registerReceiver(tokenRevocatinReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
 
 		// Bring up passcode screen if needed
 		if (passcodeManager.onResume(this)) {
@@ -84,7 +86,8 @@ public abstract class NativeMainActivity extends Activity {
 	    	LoginOptions loginOptions = ForceApp.APP.getLoginOptions();
 			
 			// Get a rest client
-			new ClientManager(this, accountType, loginOptions).getRestClient(this, new RestClientCallback() {
+			new ClientManager(this, accountType, loginOptions, ForceApp.APP.shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+
 				@Override
 				public void authenticatedRestClient(RestClient client) {
 					if (client == null) {
@@ -107,7 +110,8 @@ public abstract class NativeMainActivity extends Activity {
 	
     @Override
     public void onPause() {
-    	passcodeManager.onPause(this);
         super.onPause();
+    	passcodeManager.onPause(this);
+    	unregisterReceiver(tokenRevocatinReceiver);
     }
 }
