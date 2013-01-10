@@ -142,7 +142,7 @@ run_test_project_if_requested ()
     fi
 }
 
-if [ ! -d "dist" ]
+if [ ! -d "external" ]
 then
     wrong_directory_usage
 else
