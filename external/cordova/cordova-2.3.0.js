@@ -1,6 +1,6 @@
-// commit 832eb92dbc908e9544bed202878906fba49667c7
+// commit 4082ee0ba3a8902cba7bd087d0584bb7534e694b
 
-// File generated at :: Fri Nov 30 2012 05:23:45 GMT-0800 (PST)
+// File generated at :: Wed Jan 02 2013 16:43:38 GMT-0800 (PST)
 
 /*
  Licensed to the Apache Software Foundation (ASF) under one
@@ -3322,7 +3322,7 @@ module.exports = GlobalizationError;
 define("cordova/plugin/InAppBrowser", function(require, exports, module) {
 
 var exec = require('cordova/exec');
-       
+
 function InAppBrowser()
 {
    var _channel = require('cordova/channel');
@@ -3339,7 +3339,7 @@ InAppBrowser.prototype._eventHandler = function(event)
         this.channels[event.type].fire(event);
     }
 }
-       
+
 InAppBrowser.open = function(strUrl, strWindowName, strWindowFeatures)
 {
     var iab = new InAppBrowser();
@@ -3357,16 +3357,16 @@ InAppBrowser.prototype.close = function(eventname, f)
 
 InAppBrowser.prototype.addEventListener = function(eventname, f)
 {
-	if (eventname in this.channels) {
-	    this.channels[eventname].subscribe(f);
-	}
+    if (eventname in this.channels) {
+        this.channels[eventname].subscribe(f);
+    }
 }
 
 InAppBrowser.prototype.removeEventListener = function(eventname, f)
 {
-	if (eventname in this.channels) {
-	    this.channels[eventname].unsubscribe(f);
-	}
+    if (eventname in this.channels) {
+        this.channels[eventname].unsubscribe(f);
+    }
 }
 
 module.exports = InAppBrowser.open;
@@ -6420,12 +6420,12 @@ window.cordova = require('cordova');
 
                     // Drop the common globals into the window object, but be nice and don't overwrite anything.
                     builder.buildIntoButDoNotClobber(base.defaults, context);
-                    builder.buildIntoAndMerge(base.merges, context);
                     builder.buildIntoAndClobber(base.clobbers, context);
+                    builder.buildIntoAndMerge(base.merges, context);
 
                     builder.buildIntoButDoNotClobber(platform.defaults, context);
-                    builder.buildIntoAndMerge(platform.merges, context);
                     builder.buildIntoAndClobber(platform.clobbers, context);
+                    builder.buildIntoAndMerge(platform.merges, context);
 
                     // Call the platform-specific initialization
                     platform.initialize();
