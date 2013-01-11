@@ -227,7 +227,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	 */
 	public void testSmartQueryWithPaging() throws JSONException {
 		loadData();
-		QuerySpec query = QuerySpec.buildSmartQuerySpec("select {employees:firstName} {employees:salary} from {employees} order by {employees:firstName}", 1);
+		QuerySpec query = QuerySpec.buildSmartQuerySpec("select {employees:firstName} from {employees} order by {employees:firstName}", 1);
 		assertEquals("Expected 7 employees", 7, store.countQuery(query));
 		
 		String[] expectedResults = new String[] {"Christine", "Eileen", "Eva", "Irving", "John", "Michael", "Sally"};
