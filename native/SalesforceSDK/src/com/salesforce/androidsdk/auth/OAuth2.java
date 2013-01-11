@@ -277,6 +277,7 @@ public class OAuth2 {
     public static class OAuthFailedException extends Exception {
 
         private static final String INVALID_GRANT = "invalid_grant";
+        private static final String WRONG_VERSION = "wrong_version";
 
         OAuthFailedException(TokenErrorResponse err, int httpStatusCode) {
             super(err.toString());
@@ -291,7 +292,9 @@ public class OAuth2 {
             return httpStatusCode == 401
                     || httpStatusCode == 403
                     || (httpStatusCode == 400 && response.error
-                            .equals(INVALID_GRANT));
+                            .equals(INVALID_GRANT)
+                    || (httpStatusCode == 400 && response.error
+                            .equals(WRONG_VERSION)));
         }
 
         private static final long serialVersionUID = 1L;
