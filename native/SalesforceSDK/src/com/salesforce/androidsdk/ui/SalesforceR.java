@@ -105,5 +105,4 @@ public class SalesforceR {
 	public int stringSSLNotYetValid() {return R.string.sf__ssl_not_yet_valid;}
 	public int stringSSLUntrusted() {return R.string.sf__ssl_untrusted;}
 	public int stringSSLUnknownError() {return R.string.sf__ssl_unknown_error;}
-	public int stringOlderVersionInstalled() {return R.string.sf__older_version_installed;}
 }
