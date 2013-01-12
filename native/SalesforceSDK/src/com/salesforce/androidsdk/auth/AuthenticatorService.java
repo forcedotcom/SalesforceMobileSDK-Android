@@ -177,6 +177,7 @@ public class AuthenticatorService extends Service {
                 throw new NetworkErrorException(e);
             } catch (OAuthFailedException e) {
                 if (e.isRefreshTokenInvalid()) {
+                	Log.i("Authenticator:getAuthToken", "Invalid Refresh Token: (Error: " + e.response.error + ", Status Code: " + e.httpStatusCode + ")");
                     // the exception explicitly indicates that the refresh token is no longer valid.
                     return makeAuthIntentBundle(response, options);
                 }
