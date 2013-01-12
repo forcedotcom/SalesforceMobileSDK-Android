@@ -167,17 +167,39 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         LoginOptions loginOptions = parseLoginOptions(oauthProperties);
         clientManager = new ClientManager(cordova.getActivity(), ForceApp.APP.getAccountType(), loginOptions, ForceApp.APP.shouldLogoutWhenTokenRevoked());
         clientManager.getRestClient(cordova.getActivity(), new RestClientCallback() {
-            @Override
+
+        	@Override
             public void authenticatedRestClient(RestClient c) {
                 if (c == null) {
                     Log.w("SalesforceOAuthPlugin.authenticate", "authenticate failed - logging out");
                     logout(cordova.getActivity());
-                }
-                else {
+                } else {
                     Log.i("SalesforceOAuthPlugin.authenticate", "authenticate successful");
                     SalesforceOAuthPlugin.client = c;
-                    setSidCookies(webView, SalesforceOAuthPlugin.client);
-                    callbackContext.success(getJSONCredentials(SalesforceOAuthPlugin.client));
+
+                    /*
+                     * Do a cheap REST call to refresh the access token if needed.
+                     * If the login took place a while back (e.g. the already logged
+                     * in application was restarted), then the returned session ID
+                     * (access token) might be stale. This is not an issue if one
+                     * uses exclusively RestClient for calling the server because
+                     * it takes care of refreshing the access token when needed,
+                     * but a stale session ID will cause the WebView to redirect
+                     * to the web login.
+                     */
+                    SalesforceOAuthPlugin.client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
+
+                    	@Override
+                        public void onSuccess(RestRequest request, RestResponse response) {
+                    		setSidCookies(webView, SalesforceOAuthPlugin.client);
+                            callbackContext.success(getJSONCredentials(SalesforceOAuthPlugin.client));
+                        }
+
+                    	@Override
+                        public void onError(Exception exception) {
+                    		callbackContext.error(exception.getMessage());
+                        }
+                    });
                 }
             }
         });
@@ -198,8 +220,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         if (client == null) {
             Log.w("SalesforceOAuthPlugin.getAuthCredentials", "getAuthCredentials failed - never authenticated");
             callbackContext.error("Never authenticated");
-        }
-        else {
+        } else {
             Log.i("SalesforceOAuthPlugin.getAuthCredentials", "getAuthCredentials successful");
             callbackContext.success(getJSONCredentials(client));
         }
@@ -210,14 +231,10 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
      */
     protected void getAppHomeUrl(CallbackContext callbackContext)  {
         Log.i("SalesforceOAuthPlugin.getAppHomeUrl", "getAppHomeUrl called");
-
         SharedPreferences sp = cordova.getActivity().getSharedPreferences(SalesforceGapViewClient.SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
         String url = sp.getString(SalesforceGapViewClient.APP_HOME_URL_PROP_KEY, null);
-
         callbackContext.success(url);
     }
-
-
 
     /**
      * Native implementation for "logout" action
@@ -228,8 +245,6 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         logout(cordova.getActivity());
         callbackContext.success();
     }
-
-    
 
     /**
      * @param url
@@ -270,7 +285,6 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         return new JSONObject(data);
     }
 
-
     /**************************************************************************************************
      *
      * Helper methods for parsing oauth properties
@@ -280,14 +294,12 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     private LoginOptions parseLoginOptions(JSONObject oauthProperties) throws JSONException {
         JSONArray scopesJson = oauthProperties.getJSONArray(OAUTH_SCOPES);
         String[] scopes = jsonArrayToArray(scopesJson);
-
         LoginOptions loginOptions = new LoginOptions(
                 null, // set by app
                 ForceApp.APP.getPasscodeHash(),
                 oauthProperties.getString(OAUTH_REDIRECT_URI),
                 oauthProperties.getString(REMOTE_ACCESS_CONSUMER_KEY),
                 scopes);
-
         return loginOptions;
     }
 
@@ -299,7 +311,6 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         return list.toArray(new String[0]);
     }
 
-
     /**
      * Logout and reset static fields
      * @param ctx
@@ -308,7 +319,6 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         ForceApp.APP.logout(ctx);
         SalesforceOAuthPlugin.client = null;
     }
-
 
     /**************************************************************************************************
      *
@@ -323,13 +333,10 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     private static void setSidCookies(WebView webView, RestClient client) {
         Log.i("SalesforceOAuthPlugin.setSidCookies", "setting cookies");
         CookieSyncManager cookieSyncMgr = CookieSyncManager.getInstance();
-
         CookieManager cookieMgr = CookieManager.getInstance();
         cookieMgr.setAcceptCookie(true);  // Required to set additional cookies that the auth process will return.
         cookieMgr.removeSessionCookie();
-
         SystemClock.sleep(250); // removeSessionCookies kicks out a thread - let it finish
-
         String accessToken = client.getAuthToken();
 
         // Android 3.0+ clients want to use the standard .[domain] format. Earlier clients will only work
@@ -337,7 +344,6 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         addSidCookieForDomain(cookieMgr,"salesforce.com", accessToken);
         addSidCookieForDomain(cookieMgr,".salesforce.com", accessToken);
         // Log.i("SalesforceOAuthPlugin.setSidCookies", "accessToken=" + accessToken);
-
         cookieSyncMgr.sync();
     }
 
@@ -345,5 +351,4 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         String cookieStr = "sid=" + sid;
         cookieMgr.setCookie(domain, cookieStr);
     }
-
 }
