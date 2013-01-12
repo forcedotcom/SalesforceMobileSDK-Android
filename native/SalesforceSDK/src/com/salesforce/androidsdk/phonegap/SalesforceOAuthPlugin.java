@@ -42,6 +42,7 @@ import com.salesforce.androidsdk.ui.SalesforceGapViewClient;
  * PhoneGap plugin for Salesforce OAuth.
  */
 public class SalesforceOAuthPlugin extends ForcePlugin {
+
     /**
      * Supported plugin actions that the client can take.
      */
@@ -54,7 +55,8 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        // Figure out action
+
+        // Figure out action.
         Action action = null;
         try {
             action = Action.valueOf(actionStr);
@@ -65,8 +67,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
                 case getAppHomeUrl:			getAppHomeUrl(callbackContext); return true;
                 default: return false;
             }
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return false;
         }
     }
@@ -81,7 +82,8 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     protected void authenticate(JSONArray args, final CallbackContext callbackContext) throws JSONException {
         Log.i("SalesforceOAuthPlugin.authenticate", "authenticate called");
         ((SalesforceDroidGapActivity) cordova.getActivity()).authenticate(callbackContext);
-        // Done
+
+        // Done.
         PluginResult noop = new PluginResult(PluginResult.Status.NO_RESULT);
         noop.setKeepCallback(true);
         callbackContext.sendPluginResult(noop);
@@ -95,12 +97,10 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     protected void getAuthCredentials(CallbackContext callbackContext) throws JSONException {
         Log.i("SalesforceOAuthPlugin.getAuthCredentials", "getAuthCredentials called");
     	JSONObject credentials = ((SalesforceDroidGapActivity) cordova.getActivity()).getJSONCredentials();
-    	
         if (credentials == null) {
             Log.w("SalesforceOAuthPlugin.getAuthCredentials", "getAuthCredentials failed - never authenticated");
             callbackContext.error("Never authenticated");
-        }
-        else {
+        } else {
             Log.i("SalesforceOAuthPlugin.getAuthCredentials", "getAuthCredentials successful");
             callbackContext.success(credentials);
         }    
@@ -115,7 +115,6 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         callbackContext.success(SalesforceGapViewClient.getAppHomeUrl(cordova.getActivity()));
     }
 
-
     /**
      * Native implementation for "logout" action
      * @param callbackContext Used when calling back into Javascript.
@@ -125,5 +124,4 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     	ForceApp.APP.logout(cordova.getActivity());
         callbackContext.success();
     }
-
 }

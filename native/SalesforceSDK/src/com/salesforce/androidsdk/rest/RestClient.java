@@ -203,7 +203,7 @@ public class RestClient {
 			headers.putAll(additionalHttpHeaders);
 		}
 		if (getAuthToken() != null) {
-			headers.put("Authorization", "OAuth " + authToken);
+			headers.put("Authorization", "Bearer " + authToken);
 		}
 
 		// Do the actual call
@@ -229,7 +229,7 @@ public class RestClient {
 
 		// 401 bad access token *
 		if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
-			// If we haven't retried already and we have an accessTokeProvider
+			// If we haven't retried already and we have an accessTokenProvider
 			// Then let's try to get a new authToken
 			if (retryInvalidToken && authTokenProvider != null) {
 				// remember to consume this response so the connection can get re-used
