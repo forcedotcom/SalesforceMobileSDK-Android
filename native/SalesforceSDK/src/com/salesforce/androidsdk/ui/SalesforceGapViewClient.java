@@ -24,7 +24,6 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 package com.salesforce.androidsdk.ui;
 
 import java.util.Arrays;
@@ -34,6 +33,7 @@ import java.util.Map;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
 import org.apache.cordova.api.CordovaInterface;
+import org.apache.http.HttpStatus;
 
 import android.app.Activity;
 import android.content.Context;
@@ -81,8 +81,7 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
         if (startURL != null) {
         	SalesforceOAuthPlugin.refresh(ctx, view, startURL);
         	return true;
-        }
-        else {
+        } else {
         	return super.shouldOverrideUrlLoading(view,  url);
         }
     }
@@ -98,16 +97,14 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
     	String ec = params.get("ec");
         String startURL = params.get("startURL");
     	if (uri.getPath().equals("/")
-    			&& ec != null && (ec.equals("301") || ec.equals("302"))
+    			&& ec != null && (ec.equals(HttpStatus.SC_MOVED_PERMANENTLY) || ec.equals(HttpStatus.SC_MOVED_TEMPORARILY))
     			&& startURL != null) {
     		return startURL;
-    	}
-    	else {
+    	} else {
     		return null;
     	}
     }
     
-
     /**
      * Notify the host application that a page has finished loading.
      *
@@ -133,7 +130,6 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
         super.onPageFinished(view, url);
     }
 
-
     /**
      * Whether the given URL is one of the expected URLs used in the bootstrapping process
      * of the app.  Used for determining the app's "home page" URL.
@@ -147,7 +143,6 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
             if (url.toLowerCase().contains(reservedUrlPattern.toLowerCase()))
                 return true;
         }
-
         return false;
     }
 }
