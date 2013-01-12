@@ -154,21 +154,24 @@ public class SalesforceDroidGapActivity extends DroidGap {
         super.onResume();
     	registerReceiver(tokenRevocatinReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
     	if (passcodeManager.onResume(this)) {
-        	// Not logged in
+
+    		// Not logged in
         	if (client == null) {
         		onResumeNotLoggedIn();
         	}
+
         	// Logged in
         	else {
+
         		// Web app never loaded
         		if (!webAppLoaded) {
         			onResumeLoggedInNotLoaded();
         		}
+
         		// Web app already loaded
         		else {
                 	Log.i("SalesforceDroidGapActivity.onResume", "Already logged in / web app already loaded");
         		}
-
 	            CookieSyncManager.getInstance().startSync();
         	}
         }
@@ -178,26 +181,32 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	 * Called when resuming activity and user is not authenticated
 	 */
 	private void onResumeNotLoggedIn() {
+
 		// Need to be authenticated
 		if (bootconfig.shouldAuthenticate()) {
+
 			// Online
 			if (ForceApp.APP.hasNetwork()) {
 		    	Log.i("SalesforceDroidGapActivity.onResumeNotLoggedIn", "Should authenticate / online - authenticating");
 				authenticate(null);
 			}
+
 			// Offline
 			else {
 				Log.w("SalesforceDroidGapActivity.onResumeNotLoggedIn", "Should authenticate / offline - cannot proceed");
 				loadErrorPage();
 			}
 		}
+
 		// Does not need to be authenticated
 		else {
+
 			// Local
 			if (bootconfig.isLocal()) {
 				Log.i("SalesforceDroidGapActivity.onResumeNotLoggedIn", "Should not authenticate / local start page - loading web app");
 				loadLocalStartPage();
 			}
+
 			// Remote
 			else {
 				Log.w("SalesforceDroidGapActivity.onResumeNotLoggedIn", "Should not authenticate / remote start page - cannot proceed");
@@ -210,18 +219,22 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	 * Called when resuming activity and user is authenticated but webview has not been loaded yet
 	 */
 	private void onResumeLoggedInNotLoaded() {
+
 		// Local
 		if (bootconfig.isLocal()) {
 			Log.i("SalesforceDroidGapActivity.onResumeLoggedInNotLoaded", "Local start page - loading web app");
 			loadLocalStartPage();
 		}
+
 		// Remote
 		else {
+
 			// Online
 			if (ForceApp.APP.hasNetwork()) {
 		    	Log.i("SalesforceDroidGapActivity.onResumeLoggedInNotLoaded", "Remote start page / online - loading web app");
 		    	loadRemoteStartPage();
 			}
+
 			// Offline
 			else {
 				// Has cached version
@@ -229,6 +242,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		        	Log.i("SalesforceDroidGapActivity.onResumeLoggedInNotLoaded", "Remote start page / offline / cached - loading cached web app");
 					loadCachedStartPage();
 				}
+
 				// No cached version
 				else {
 		        	Log.w("SalesforceDroidGapActivity.onResumeLoggedInNotLoaded", "Remote start page / offline / not cached - cannot proceed");
@@ -262,15 +276,39 @@ public class SalesforceDroidGapActivity extends DroidGap {
     public void authenticate(final CallbackContext callbackContext) {
     	Log.i("SalesforceDroidGapActivity.authenticate", "authenticate called");
     	clientManager.getRestClient(this, new RestClientCallback() {
+
 			@Override
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
 			    	Log.i("SalesforceDroidGapActivity.authenticate", "authenticatedRestClient called with null client");
 					ForceApp.APP.logout(SalesforceDroidGapActivity.this);
-	            }
-	            else {
+	            } else {
 			    	Log.i("SalesforceDroidGapActivity.authenticate", "authenticatedRestClient called with actual client");
 	                SalesforceDroidGapActivity.this.client = client;
+
+	                /*
+                     * Do a cheap REST call to refresh the access token if needed.
+                     * If the login took place a while back (e.g. the already logged
+                     * in application was restarted), then the returned session ID
+                     * (access token) might be stale. This is not an issue if one
+                     * uses exclusively RestClient for calling the server because
+                     * it takes care of refreshing the access token when needed,
+                     * but a stale session ID will cause the WebView to redirect
+                     * to the web login.
+                     */
+	                SalesforceDroidGapActivity.this.client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
+
+                        @Override
+                        public void onSuccess(RestRequest request, RestResponse response) {
+                            setSidCookies();
+                            callbackContext.success(getJSONCredentials());
+                        }
+
+                        @Override
+                        public void onError(Exception exception) {
+                        	callbackContext.error(exception.getMessage());
+                        }
+                    });
 	            }
 			}
     	});
@@ -284,7 +322,8 @@ public class SalesforceDroidGapActivity extends DroidGap {
     public void refresh(final String url) {
         Log.i("SalesforceDroidGapActivity.refresh", "refresh called");
         client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
-                @Override
+    
+        	@Override
                 public void onSuccess(RestRequest request, RestResponse response) {
                     Log.i("SalesforceOAuthPlugin.refresh", "Refresh succeeded");
                     setSidCookies();
@@ -370,7 +409,6 @@ public class SalesforceDroidGapActivity extends DroidGap {
        CookieManager cookieMgr = CookieManager.getInstance();
        cookieMgr.setAcceptCookie(true);  // Required to set additional cookies that the auth process will return.
        cookieMgr.removeSessionCookie();
-
        SystemClock.sleep(250); // removeSessionCookies kicks out a thread - let it finish
        String accessToken = client.getAuthToken();
 
@@ -378,8 +416,8 @@ public class SalesforceDroidGapActivity extends DroidGap {
        // with the [domain] format.  Set them both; each platform will leverage its respective format.
        addSidCookieForDomain(cookieMgr,"salesforce.com", accessToken);
        addSidCookieForDomain(cookieMgr,".salesforce.com", accessToken);
-       // Log.i("SalesforceOAuthPlugin.setSidCookies", "accessToken=" + accessToken);
 
+       // Log.i("SalesforceOAuthPlugin.setSidCookies", "accessToken=" + accessToken);
        cookieSyncMgr.sync();
    }
 
@@ -405,8 +443,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	       data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
 	       data.put(USER_AGENT, ForceApp.APP.getUserAgent());
 	       return new JSONObject(data);
-	   }
-	   else {
+	   } else {
 		   return null;
 	   }
    }
@@ -422,7 +459,6 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		}
 
 		private static final long serialVersionUID = 1L;
-    	
+	
     }
-
 }
