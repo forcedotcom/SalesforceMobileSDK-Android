@@ -96,7 +96,7 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
         Map<String, String> params = UriFragmentParser.parse(uri);
     	String ec = params.get("ec");
         String startURL = params.get("startURL");
-    	if (uri.getPath().equals("/")
+    	if (uri != null && uri.getPath() != null && uri.getPath().equals("/")
     			&& ec != null && (ec.equals(HttpStatus.SC_MOVED_PERMANENTLY) || ec.equals(HttpStatus.SC_MOVED_TEMPORARILY))
     			&& startURL != null) {
     		return startURL;
