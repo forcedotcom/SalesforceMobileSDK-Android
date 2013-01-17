@@ -506,7 +506,7 @@ public class ClientManager {
      * Exception thrown when no account could be found (during a
      * {@link ClientManager#peekRestClient() peekRestClient} call)
      */
-    public static class AccountInfoNotFoundException extends Exception {
+    public static class AccountInfoNotFoundException extends RuntimeException {
         private static final long serialVersionUID = 1L;
 
         AccountInfoNotFoundException(String msg) {
