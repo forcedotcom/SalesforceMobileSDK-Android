@@ -133,11 +133,8 @@ public class ClientManager {
      * If there is no account, it will throw an exception.
      *
      * @return
-     * @throws AccountInfoNotFoundException
      */
-    public RestClient peekRestClient()
-            throws AccountInfoNotFoundException {
-
+    public RestClient peekRestClient() {
         Account acc = getAccount();
         if (acc == null) {
             AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
@@ -171,8 +168,7 @@ public class ClientManager {
             AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, authToken, refreshToken);
             ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer), new URI(loginServer), new URI(idUrl), accountName, username, userId, orgId);
             return new RestClient(clientInfo, authToken, HttpAccess.DEFAULT, authTokenProvider);
-        }
-        catch (URISyntaxException e) {
+        } catch (URISyntaxException e) {
             Log.w("ClientManager:peekRestClient", "Invalid server URL", e);
             throw new AccountInfoNotFoundException("invalid server url", e);
         }
@@ -506,8 +502,9 @@ public class ClientManager {
      * Exception thrown when no account could be found (during a
      * {@link ClientManager#peekRestClient() peekRestClient} call)
      */
-    public static class AccountInfoNotFoundException extends Exception {
-        private static final long serialVersionUID = 1L;
+    public static class AccountInfoNotFoundException extends RuntimeException {
+
+    	private static final long serialVersionUID = 1L;
 
         AccountInfoNotFoundException(String msg) {
             super(msg);
