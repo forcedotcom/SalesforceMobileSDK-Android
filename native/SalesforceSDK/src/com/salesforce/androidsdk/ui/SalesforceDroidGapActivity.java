@@ -55,7 +55,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
     public static final String BOOTSTRAP_START_PAGE = "file:///android_asset/www/bootstrap.html";
 
     private PasscodeManager passcodeManager;
-    private TokenRevocationReceiver tokenRevocatinReceiver;
+    private TokenRevocationReceiver tokenRevocationReceiver;
 
     /** Called when the activity is first created. */
     @Override
@@ -64,7 +64,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
         // Passcode manager
         passcodeManager = ForceApp.APP.getPasscodeManager();
-		tokenRevocatinReceiver = new TokenRevocationReceiver(this);
+        tokenRevocationReceiver = new TokenRevocationReceiver(this);
 
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
@@ -102,6 +102,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
             webSettings.setAppCacheEnabled(true);
             webSettings.setAppCacheMaxSize(1024 * 1024 * 8);
             webSettings.setAllowFileAccess(true);
+            webSettings.setSavePassword(false);
             webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
             EventsObservable.get().notifyEvent(EventType.GapWebViewCreateComplete, appView);
         }
@@ -110,7 +111,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
     @Override
     public void onResume() {
         super.onResume();
-    	registerReceiver(tokenRevocatinReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
+    	registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
     	if (passcodeManager.onResume(this)) {
             CookieSyncManager.getInstance().startSync();
         }
@@ -121,7 +122,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         super.onPause();
         passcodeManager.onPause(this);
         CookieSyncManager.getInstance().stopSync();
-    	unregisterReceiver(tokenRevocatinReceiver);
+    	unregisterReceiver(tokenRevocationReceiver);
     }
 
     @Override
