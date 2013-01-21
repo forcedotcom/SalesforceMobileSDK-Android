@@ -107,6 +107,7 @@ public class OAuthWebviewHelper {
         this.webview = webview;
 
         webview.getSettings().setJavaScriptEnabled(true);
+        webview.getSettings().setSavePassword(false);
         webview.setWebViewClient(makeWebViewClient());
         webview.setWebChromeClient(makeWebChromeClient());
 

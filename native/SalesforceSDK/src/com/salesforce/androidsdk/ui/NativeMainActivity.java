@@ -46,7 +46,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 public abstract class NativeMainActivity extends Activity {
 
 	private PasscodeManager passcodeManager;
-    private TokenRevocationReceiver tokenRevocatinReceiver;
+    private TokenRevocationReceiver tokenRevocationReceiver;
 	
     /**************************************************************************************************
     *
@@ -72,7 +72,7 @@ public abstract class NativeMainActivity extends Activity {
 
 		// Passcode manager
 		passcodeManager = ForceApp.APP.getPasscodeManager();
-		tokenRevocatinReceiver = new TokenRevocationReceiver(this);
+		tokenRevocationReceiver = new TokenRevocationReceiver(this);
 
 		// Let observers know
 		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
@@ -81,7 +81,7 @@ public abstract class NativeMainActivity extends Activity {
 	@Override 
 	public void onResume() {
 		super.onResume();
-		registerReceiver(tokenRevocatinReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
+		registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
 
 		// Bring up passcode screen if needed
 		if (passcodeManager.onResume(this)) {
@@ -117,6 +117,6 @@ public abstract class NativeMainActivity extends Activity {
     public void onPause() {
         super.onPause();
     	passcodeManager.onPause(this);
-    	unregisterReceiver(tokenRevocatinReceiver);
+    	unregisterReceiver(tokenRevocationReceiver);
     }
 }
