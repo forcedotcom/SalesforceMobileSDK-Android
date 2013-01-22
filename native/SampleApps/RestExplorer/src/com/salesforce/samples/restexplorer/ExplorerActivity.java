@@ -90,7 +90,7 @@ public class ExplorerActivity extends TabActivity {
 	private RestClient client;
 	private TextView resultText;
 	AlertDialog logoutConfirmationDialog;
-    private TokenRevocationReceiver tokenRevocatinReceiver;
+    private TokenRevocationReceiver tokenRevocationReceiver;
 
 	// Use for objectId fields auto-complete
 	private TreeSet<String> knownIds = new TreeSet<String>();
@@ -105,7 +105,7 @@ public class ExplorerActivity extends TabActivity {
 
 		// Passcode manager
 		passcodeManager = ForceApp.APP.getPasscodeManager();
-		tokenRevocatinReceiver = new TokenRevocationReceiver(this);
+		tokenRevocationReceiver = new TokenRevocationReceiver(this);
 		
 		// ApiVersion
 		apiVersion = getString(R.string.api_version);
@@ -139,7 +139,7 @@ public class ExplorerActivity extends TabActivity {
 	@Override 
 	public void onResume() {
 		super.onResume();
-		registerReceiver(tokenRevocatinReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
+		registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
 		
 		// Hide everything until we are logged in
 		findViewById(R.id.root).setVisibility(View.INVISIBLE);
@@ -177,7 +177,7 @@ public class ExplorerActivity extends TabActivity {
     public void onPause() {
     	super.onPause();
     	passcodeManager.onPause(this);
-    	unregisterReceiver(tokenRevocatinReceiver);
+    	unregisterReceiver(tokenRevocationReceiver);
     }
 	
 	@Override
