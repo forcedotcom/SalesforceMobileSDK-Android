@@ -54,7 +54,7 @@ public class TrackListActivity  extends Activity {
     private ListView lv;
     private RestClient client;
     private String apiVersion;
-    private TokenRevocationReceiver tokenRevocatinReceiver;
+    private TokenRevocationReceiver tokenRevocationReceiver;
 
 	public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -93,15 +93,15 @@ public class TrackListActivity  extends Activity {
 				getTracks();
 			}
 		});
-		tokenRevocatinReceiver = new TokenRevocationReceiver(this);
-		registerReceiver(tokenRevocatinReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
+		tokenRevocationReceiver = new TokenRevocationReceiver(this);
+		registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
 	}
 
 	@Override
 	public void onPause() {
 		super.onPause();
-		unregisterReceiver(tokenRevocatinReceiver);
-		tokenRevocatinReceiver = null;
+		unregisterReceiver(tokenRevocationReceiver);
+		tokenRevocationReceiver = null;
 	}
 
 	private void getTracks() {
