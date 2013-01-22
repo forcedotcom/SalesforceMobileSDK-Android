@@ -59,7 +59,7 @@ public class AlbumListActivity extends ListActivity {
     private String[] albumIds;
     private RestClient client;
     private String apiVersion;
-    private TokenRevocationReceiver tokenRevocatinReceiver;
+    private TokenRevocationReceiver tokenRevocationReceiver;
     
 	public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -103,15 +103,15 @@ public class AlbumListActivity extends ListActivity {
 				getAlbums();
 			}
 		});
-		tokenRevocatinReceiver = new TokenRevocationReceiver(this);
-		registerReceiver(tokenRevocatinReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
+		tokenRevocationReceiver = new TokenRevocationReceiver(this);
+		registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
 	}	
 
 	@Override
 	public void onPause() {
 		super.onPause();
-		unregisterReceiver(tokenRevocatinReceiver);
-		tokenRevocatinReceiver = null;
+		unregisterReceiver(tokenRevocationReceiver);
+		tokenRevocationReceiver = null;
 	}
 
 	private void getAlbums() {
