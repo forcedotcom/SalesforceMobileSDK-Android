@@ -71,6 +71,11 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     private static final int GINGERBREAD_MR1 = 10;
 
     /**
+     * Default app name.
+     */
+    private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
+
+    /**
      * Instance of the ForceApp to use for this process.
      */
     public static ForceApp APP;
@@ -262,6 +267,15 @@ public abstract class ForceApp extends Application implements AccountRemoved {
             encryptionKey = getPasscodeManager().hashForEncryption("");
         }
         return encryptionKey;
+    }
+
+    /**
+     * Returns the app display name used by the passcode dialog.
+     *
+     * @return App display string.
+     */
+    public String getAppDisplayString() {
+    	return DEFAULT_APP_DISPLAY_NAME;
     }
 
     /**
