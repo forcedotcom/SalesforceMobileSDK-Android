@@ -248,19 +248,19 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     }
 
     protected String getCreateTitle() {
-        return getString(salesforceR.stringPasscodeCreateTitle());
+    	return String.format(getString(salesforceR.stringPasscodeCreateTitle()), ForceApp.APP.getAppDisplayString());
     }
 
     protected String getEnterTitle() {
-        return getString(salesforceR.stringPasscodeEnterTitle());
+    	return String.format(getString(salesforceR.stringPasscodeEnterTitle()), ForceApp.APP.getAppDisplayString());
     }
 
     protected String getConfirmTitle() {
-        return getString(salesforceR.stringPasscodeConfirmTitle());
+    	return String.format(getString(salesforceR.stringPasscodeConfirmTitle()), ForceApp.APP.getAppDisplayString());
     }
 
     protected String getEnterInstructions() {
-        return getString(salesforceR.stringPasscodeEnterInstructions());
+    	return String.format(getString(salesforceR.stringPasscodeEnterInstructions()), ForceApp.APP.getAppDisplayString());
     }
 
     protected String getForgotPasscodeString() {
@@ -280,11 +280,11 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     }
 
     protected String getCreateInstructions() {
-        return getString(salesforceR.stringPasscodeCreateInstructions());
+    	return String.format(getString(salesforceR.stringPasscodeCreateInstructions()), ForceApp.APP.getAppDisplayString());
     }
 
     protected String getConfirmInstructions() {
-        return getString(salesforceR.stringPasscodeConfirmInstructions());
+    	return String.format(getString(salesforceR.stringPasscodeConfirmInstructions()), ForceApp.APP.getAppDisplayString());
     }
 
     protected String getMinLengthInstructions(int minPasscodeLength) {
