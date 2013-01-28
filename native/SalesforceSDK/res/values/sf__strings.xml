@@ -35,12 +35,12 @@
 	<string name="sf__server_url_reset">Reset</string>
 	
 	<!-- Passcode entry screen -->
-	<string name="sf__passcode_create_title">Create Salesforce passcode</string>
-	<string name="sf__passcode_create_instructions">For increased security, please create a passcode that you will use to access Salesforce when the session has timed out due to inactivity.</string>
-	<string name="sf__passcode_confirm_title">Re-enter your Salesforce passcode</string>
-	<string name="sf__passcode_confirm_instructions">Confirm your mobile passcode for Salesforce</string>
-	<string name="sf__passcode_enter_title">Enter Salesforce Passcode</string>
-	<string name="sf__passcode_enter_instructions">Enter your mobile passcode for Salesforce</string>
+	<string name="sf__passcode_create_title">Create %s passcode</string>
+	<string name="sf__passcode_create_instructions">For increased security, please create a passcode that you will use to access %s when the session has timed out due to inactivity.</string>
+	<string name="sf__passcode_confirm_title">Re-enter your %s passcode</string>
+	<string name="sf__passcode_confirm_instructions">Confirm your mobile passcode for %s</string>
+	<string name="sf__passcode_enter_title">Enter %s Passcode</string>
+	<string name="sf__passcode_enter_instructions">Enter your mobile passcode for %s</string>
 	<string name="sf__passcodes_dont_match">Passcodes don\'t match!</string>
 	<string name="sf__passcode_try_again">The passcode you entered is incorrect. Please try again. You have %d attempts remaining.</string>
 	<string name="sf__passcode_final">Final passcode attempt</string>
