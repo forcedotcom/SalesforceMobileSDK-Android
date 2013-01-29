@@ -44,6 +44,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -245,9 +246,22 @@ public class OAuthWebviewHelper {
                 new URI(loginOptions.loginUrl),
                 getOAuthClientId(),
                 loginOptions.oauthCallbackUrl,
-                loginOptions.oauthScopes);
+                loginOptions.oauthScopes,
+                null,
+                getAuthorizationDisplayType());
     }
 
+   	/** 
+   	 * If you're only supporting recent versions of Android (e.g. 3.x and up), you can override this to be touch and get a better looking login UI
+   	 * You can override this by either subclass this class, or adding <string name="sf__oauth_display_type">touch</string> to your app's value
+   	 * resource so that it overrides the default value in the SDK library.
+   	 * 
+   	 * @return the OAuth login display type, e.g. mobile, touch, see the OAuth docs for the complete list of valid values.
+   	 */
+    protected String getAuthorizationDisplayType() {
+    	return this.getContext().getString(R.string.sf__oauth_display_type);
+    }
+    
     /**
      * Override this method to customize the login url.
      * @return login url
