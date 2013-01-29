@@ -343,7 +343,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
-     * Set a user agent string based on the mobile SDK version. We are building
+     * Get a user agent string based on the mobile SDK version. We are building
      * a user agent of the form: 
      *   SalesforceMobileSDK/<salesforceSDK version> android/<android OS version> appName/appVersion <Native|Hybrid>
      * @return The user agent string to use for all requests.
