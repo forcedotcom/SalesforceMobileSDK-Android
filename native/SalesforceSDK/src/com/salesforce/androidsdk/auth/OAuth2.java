@@ -101,9 +101,9 @@ public class OAuth2 {
     private static final String ACTIVATED_CLIENT_CODE = "activated_client_code";
 
     // Login paths
-    private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=mobile";
+    private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
     private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
-
+    
     /**
      * Build the URL to the authorization web page for this login server.
      * You need not provide refresh_token, as it is provided automatically.
@@ -123,13 +123,20 @@ public class OAuth2 {
      */
     public static URI getAuthorizationUrl(URI loginServer, String clientId,
             String callbackUrl, String[] scopes) {
-       return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, null);
+       return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, null, null);
     }
 
     public static URI getAuthorizationUrl(URI loginServer, String clientId,
             String callbackUrl, String[] scopes, String clientSecret) {
+    	return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret, null);
+    }
+    
+    public static URI getAuthorizationUrl(URI loginServer, String clientId,
+            String callbackUrl, String[] scopes, String clientSecret, String displayType) {
+        if (displayType == null) displayType = "mobile";
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_AUTH_PATH);
+        sb.append(displayType);
         if (clientSecret != null) {
             sb.append("&").append(RESPONSE_TYPE).append("=").append(ACTIVATED_CLIENT_CODE);
         } else {
