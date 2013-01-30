@@ -133,7 +133,7 @@ public class OAuth2 {
     
     public static URI getAuthorizationUrl(URI loginServer, String clientId,
             String callbackUrl, String[] scopes, String clientSecret, String displayType) {
-        if (displayType == null) displayType = "mobile";
+        if (displayType == null) displayType = "touch";
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_AUTH_PATH);
         sb.append(displayType);
