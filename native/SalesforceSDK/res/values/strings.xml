@@ -5,8 +5,8 @@
       Strings of the SDK that are used by SDK-based applications live in sf__strings.xml
     -->
 	<string name="app_name">SalesforceSDK</string>
-   	<string name="account_type">com.salesforce.androisdk</string>
+   	<string name="account_type">com.salesforce.androidsdk</string>
    	
    	<!-- If you're only supporting recent versions of Android (e.g. 3.x and up), you can override this to be touch and get a better looking login UI  -->
-   	<string name="sf__oauth_display_type">mobile</string>
+   	<string name="oauth_display_type">touch</string>
 </resources>

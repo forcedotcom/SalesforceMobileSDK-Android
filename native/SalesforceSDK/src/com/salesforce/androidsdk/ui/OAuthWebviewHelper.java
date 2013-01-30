@@ -259,7 +259,7 @@ public class OAuthWebviewHelper {
    	 * @return the OAuth login display type, e.g. mobile, touch, see the OAuth docs for the complete list of valid values.
    	 */
     protected String getAuthorizationDisplayType() {
-    	return this.getContext().getString(R.string.sf__oauth_display_type);
+    	return this.getContext().getString(R.string.oauth_display_type);
     }
     
     /**
