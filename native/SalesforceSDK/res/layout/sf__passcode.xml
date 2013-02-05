@@ -3,7 +3,7 @@
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="#000000">
+    android:background="@color/sf__passcode_layout_bg">
 
     <LinearLayout android:orientation="vertical"
         android:padding="10dp"
@@ -12,7 +12,7 @@
         android:layout_centerVertical="true"
         android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:background="#888888">
+        android:background="@color/sf__passcode_bg">
 
 	    <TextView android:id="@+id/sf__passcode_title"
             android:layout_width="fill_parent"
@@ -36,7 +36,7 @@
             android:layout_height="wrap_content" 
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="10dp"
-            android:textColor="#000"
+            android:textColor="@color/sf__forgot_passcode_text"
             android:gravity="center"
             android:clickable="true" />
 
@@ -45,7 +45,7 @@
 	    	android:layout_height="wrap_content" 
 	    	android:layout_gravity="center_horizontal"
 	    	android:layout_marginTop="10dp"
-	    	android:textColor="#F00"
+	    	android:textColor="@color/sf__passcode_error_text"
 	    	android:gravity="center" />
 
         <TextView android:id="@+id/sf__passcode_instructions"
