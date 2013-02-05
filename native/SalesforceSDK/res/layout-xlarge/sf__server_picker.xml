@@ -18,7 +18,7 @@
         android:orientation="vertical"
         android:layout_width="408dp"
 		android:layout_height="470dp"
-		android:background="#FFFFFF"
+		android:background="@color/sf__server_picker_bg"
 		android:layout_centerInParent="true">
      
 	    <TextView
@@ -26,7 +26,7 @@
 			android:layout_width="408dp"
 			android:layout_height="51dp"
 			android:textSize="20sp"
-			android:textColor="#ffffff"
+			android:textColor="@color/sf__server_picker_text"
 			android:textStyle="bold"
 			android:gravity="center_horizontal|center_vertical"
 			android:background="@drawable/sf__login_content_header"/>
@@ -34,7 +34,7 @@
 		 <View
 			android:layout_width="fill_parent"
 			android:layout_height="1dp"
-			android:background="#215F84"/>
+			android:background="@color/sf__server_picker_text_bg"/>
 			
 		<RadioGroup android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
