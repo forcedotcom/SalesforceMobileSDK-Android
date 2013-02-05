@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="sf__passcode_layout_bg">#000000</color>
+    <color name="sf__passcode_bg">#888888</color>
+    <color name="sf__forgot_passcode_text">#000</color>
+    <color name="sf__passcode_error_text">#F00</color>
+    <color name="sf__login_header_bg">#74777F</color>
+    <color name="sf__login_bg">#215F84</color>
+    <color name="sf__login_text">#ffffff</color>
+    <color name="sf__server_header_bg">#74777F</color>
+    <color name="sf__server_picker_bg">#FFFFFF</color>
+    <color name="sf__server_picker_text">#ffffff</color>
+    <color name="sf__server_picker_text_bg">#215F84</color>
+</resources>
