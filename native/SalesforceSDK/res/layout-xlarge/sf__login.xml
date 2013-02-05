@@ -32,14 +32,14 @@
                     android:background="@drawable/sf__login_content_header"
                     android:gravity="center_horizontal|center_vertical"
                     android:text="@string/sf__login_title"
-                    android:textColor="#ffffff"
+                    android:textColor="@color/sf__login_text"
                     android:textSize="20sp"
                     android:textStyle="bold" />
 
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#215F84" />
+                    android:background="@color/sf__login_bg" />
 
                 <WebView
                     android:id="@+id/sf__oauth_webview"
