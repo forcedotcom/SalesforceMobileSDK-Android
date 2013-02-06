@@ -18,32 +18,32 @@
             android:layout_weight="1">
 
             <LinearLayout
-                android:layout_width="412dp"
-                android:layout_height="550dp"
+                android:layout_width="@dimen/sf__login_layout_width"
+                android:layout_height="@dimen/sf__login_layout_height"
                 android:layout_centerInParent="true"
                 android:layout_gravity="center"
                 android:background="@drawable/sf__oauth_container_dropshadow"
                 android:orientation="vertical"
-                android:padding="2dp" >
+                android:padding="@dimen/sf__login_padding" >
 
                 <TextView
-                    android:layout_width="408dp"
-                    android:layout_height="51dp"
+                    android:layout_width="@dimen/sf__login_text_view_width"
+                    android:layout_height="@dimen/sf__login_text_view_height"
                     android:background="@drawable/sf__login_content_header"
                     android:gravity="center_horizontal|center_vertical"
                     android:text="@string/sf__login_title"
                     android:textColor="@color/sf__login_text"
-                    android:textSize="20sp"
+                    android:textSize="@dimen/sf__login_text_size"
                     android:textStyle="bold" />
 
                 <View
                     android:layout_width="match_parent"
-                    android:layout_height="1dp"
+                    android:layout_height="@dimen/sf__login_separator_height"
                     android:background="@color/sf__login_bg" />
 
                 <WebView
                     android:id="@+id/sf__oauth_webview"
-                    android:layout_width="408dp"
+                    android:layout_width="@dimen/sf__login_webview_width"
                     android:layout_height="match_parent"
                     android:scrollbars="none" />
             </LinearLayout>
