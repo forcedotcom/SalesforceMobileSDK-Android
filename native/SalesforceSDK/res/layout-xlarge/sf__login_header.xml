@@ -3,13 +3,13 @@
 		xmlns:android="http://schemas.android.com/apk/res/android"
 		android:orientation="vertical"
 		android:layout_width="fill_parent"
-		android:layout_height="60dp">		
+		android:layout_height="@dimen/sf__login_header_layout_height">		
 
 	<LinearLayout
 			xmlns:android="http://schemas.android.com/apk/res/android"
 			android:orientation="horizontal"
 			android:layout_width="fill_parent"
-			android:layout_height="50dp"
+			android:layout_height="@dimen/sf__login_header_height"
 			android:background="@drawable/sf__toolbar_background">
 			
 
@@ -22,12 +22,12 @@
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				style="@style/Text.HeaderOptions" 
-				android:layout_marginLeft="9dp"
+				android:layout_marginLeft="@dimen/sf__text_view_margin_left"
 				android:layout_centerVertical="true"
 				android:layout_alignParentLeft="true"/>
 					
 				<ImageView android:id="@+id/sf__reload_page" android:src="@drawable/sf__header_refresh_states"
-					android:layout_width="60dp" android:layout_height="fill_parent"
+					android:layout_width="@dimen/sf__image_view_width" android:layout_height="fill_parent"
 					android:scaleType="fitCenter" android:layout_alignParentRight="true"
 					android:clickable="true" android:onClick="onReloadClick" />
 					
@@ -36,17 +36,17 @@
 					xmlns:android="http://schemas.android.com/apk/res/android"
 					android:layout_toLeftOf="@id/sf__reload_page"
 					android:orientation="horizontal"
-					android:layout_marginRight="9dp"
-					android:layout_width="2dp"
+					android:layout_marginRight="@dimen/sf__separator_margin"
+					android:layout_width="@dimen/sf__separator_width"
 					android:layout_height="fill_parent">
 					
 					<View
-				   		android:layout_width="1dp"
+				   		android:layout_width="@dimen/sf__left_border_width"
 				    	android:layout_height="fill_parent"
 				    	android:background="@drawable/sf__header_left_border"/>
 				    	
 					<View
-						android:layout_width="1dp"
+						android:layout_width="@dimen/sf__right_border_width"
 						android:layout_height="fill_parent"
 						android:background="@drawable/sf__header_right_border"/>
 				</LinearLayout> 
@@ -57,7 +57,7 @@
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					style="@style/Text.HeaderOptions" 
-					android:layout_marginRight="9dp"
+					android:layout_marginRight="@dimen/sf__text_view_margin_right"
 					android:layout_centerVertical="true"
 					android:layout_toLeftOf="@id/sf__seperator"
 					android:clickable="true"
@@ -66,19 +66,19 @@
 				<LinearLayout 
 					xmlns:android="http://schemas.android.com/apk/res/android"
 					android:id="@+id/sf__seperator2"
-					android:layout_marginRight="9dp"
+					android:layout_marginRight="@dimen/sf__text_view_margin_right"
 					android:layout_toLeftOf="@id/sf__clear_cookies"
 					android:orientation="horizontal"
-					android:layout_width="2dp"
+					android:layout_width="@dimen/sf__separator_width"
 					android:layout_height="fill_parent">
 					
 					<View
-				   		android:layout_width="1dp"
+				   		android:layout_width="@dimen/sf__left_border_width"
 				    	android:layout_height="fill_parent"
 				    	android:background="@drawable/sf__header_left_border"/>
 				    	
 					<View
-						android:layout_width="1dp"
+						android:layout_width="@dimen/sf__right_border_width"
 						android:layout_height="fill_parent"
 						android:background="@drawable/sf__header_right_border"/>
 				</LinearLayout> 
@@ -89,7 +89,7 @@
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					style="@style/Text.HeaderOptions" 
-					android:layout_marginRight="9dp"
+					android:layout_marginRight="@dimen/sf__text_view_margin_right"
 					android:layout_centerVertical="true"
 					android:layout_toLeftOf="@id/sf__seperator2"
 					android:clickable="true"
@@ -100,17 +100,17 @@
 					xmlns:android="http://schemas.android.com/apk/res/android"
 					android:layout_toLeftOf="@id/sf__change_server"
 					android:orientation="horizontal"
-					android:layout_marginRight="9dp"
-					android:layout_width="2dp"
+					android:layout_marginRight="@dimen/sf__text_view_margin_right"
+					android:layout_width="@dimen/sf__separator_width"
 					android:layout_height="fill_parent">
 					
 					<View
-				   		android:layout_width="1dp"
+				   		android:layout_width="@dimen/sf__left_border_width"
 				    	android:layout_height="fill_parent"
 				    	android:background="@drawable/sf__header_left_border"/>
 				    	
 					<View
-						android:layout_width="1dp"
+						android:layout_width="@dimen/sf__right_border_width"
 						android:layout_height="fill_parent"
 						android:background="@drawable/sf__header_right_border"/>
 				</LinearLayout> 
@@ -118,7 +118,7 @@
 				<ProgressBar android:id="@+id/sf__load_spinner"
 					android:layout_width="wrap_content" android:layout_height="wrap_content"
 					android:layout_toLeftOf="@id/sf__seperator3"
-					android:layout_centerVertical="true" android:layout_marginRight="8dp"
+					android:layout_centerVertical="true" android:layout_marginRight="@dimen/sf__progress_bar_margin_right"
 					android:indeterminateDrawable="@drawable/sf__progress_spinner"
 					android:visibility="gone" />
 					
@@ -127,18 +127,18 @@
 					xmlns:android="http://schemas.android.com/apk/res/android"
 					android:layout_toLeftOf="@id/sf__load_spinner"
 					android:orientation="horizontal"
-					android:layout_marginRight="9dp"
-					android:layout_width="2dp"
+					android:layout_marginRight="@dimen/sf__text_view_margin_right"
+					android:layout_width="@dimen/sf__separator_width"
 					android:layout_height="fill_parent"
 					android:visibility="gone" >
 					
 					<View
-				   		android:layout_width="1dp"
+				   		android:layout_width="@dimen/sf__left_border_width"
 				    	android:layout_height="fill_parent"
 				    	android:background="@drawable/sf__header_left_border"/>
 				    	
 					<View
-						android:layout_width="1dp"
+						android:layout_width="@dimen/sf__right_border_width"
 						android:layout_height="fill_parent"
 						android:background="@drawable/sf__header_right_border"/>
 				</LinearLayout> 
@@ -148,7 +148,7 @@
 	
 	<View
 		android:layout_width="fill_parent"
-		android:layout_height="1dp"
+		android:layout_height="@dimen/sf__left_border_width"
 		android:background="@color/sf__login_header_bg"/>
 		
 	<View
