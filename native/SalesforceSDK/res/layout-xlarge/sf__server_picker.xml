@@ -8,24 +8,24 @@
 	
 	<include layout="@layout/sf__server_picker_header"/>
 	
-	<View android:layout_width="412dp"
-		android:layout_height="474dp"
+	<View android:layout_width="@dimen/sf__server_picker_layout_width"
+		android:layout_height="@dimen/sf__server_picker_layout_height"
 		android:background="@drawable/sf__oauth_container_dropshadow"
 		android:layout_centerInParent="true"/>
 	
 	 <LinearLayout
 	 	android:id="@+id/sf__auth_container"
         android:orientation="vertical"
-        android:layout_width="408dp"
-		android:layout_height="470dp"
+        android:layout_width="@dimen/sf__server_picker_bg_width"
+		android:layout_height="@dimen/sf__server_picker_bg_height"
 		android:background="@color/sf__server_picker_bg"
 		android:layout_centerInParent="true">
      
 	    <TextView
 	    	android:text="@string/sf__login_title" 
-			android:layout_width="408dp"
-			android:layout_height="51dp"
-			android:textSize="20sp"
+			android:layout_width="@dimen/sf__server_picker_text_view_width"
+			android:layout_height="@dimen/sf__server_picker_text_view_height"
+			android:textSize="@dimen/sf__server_picker_text_size"
 			android:textColor="@color/sf__server_picker_text"
 			android:textStyle="bold"
 			android:gravity="center_horizontal|center_vertical"
@@ -33,7 +33,7 @@
 			
 		 <View
 			android:layout_width="fill_parent"
-			android:layout_height="1dp"
+			android:layout_height="@dimen/sf__server_picker_separator_height"
 			android:background="@color/sf__server_picker_text_bg"/>
 			
 		<RadioGroup android:layout_width="fill_parent"
@@ -45,7 +45,7 @@
 	<Button 
 		android:id="@+id/sf__show_custom_url_edit"		
 		android:text="@string/sf__custom_url_button"
-		android:layout_marginTop="7dp"
+		android:layout_marginTop="@dimen/sf__server_picker_custom_url_margin_top"
 		android:layout_width="fill_parent"
 		android:layout_height="wrap_content"
 		android:onClick="showCustomUrlDialog"
@@ -55,14 +55,14 @@
 				android:orientation="horizontal"
 				android:layout_width="fill_parent"
 				android:layout_height="wrap_content"
-				android:padding="0dp"
+				android:padding="@dimen/sf__server_picker_layout_padding"
 				  >
 
 			<Button 
 				android:id="@+id/sf__apply_button"
 				android:text="@string/sf__server_url_default_apply"
 				android:layout_weight="1"			
-				android:layout_margin="2dp"
+				android:layout_margin="@dimen/sf__server_picker_button_margin"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:onClick="setPositiveReturnValue"
@@ -72,7 +72,7 @@
 				android:id="@+id/sf__cancel_button"
 				android:text="@string/sf__server_url_default_cancel"
 				android:layout_weight="1"			
-				android:layout_margin="2dp"
+				android:layout_margin="@dimen/sf__server_picker_button_margin"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
 				android:onClick="setCancelReturnValue"

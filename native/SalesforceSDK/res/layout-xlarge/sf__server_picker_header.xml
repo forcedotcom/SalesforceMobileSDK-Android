@@ -10,13 +10,13 @@
 		xmlns:android="http://schemas.android.com/apk/res/android"
 		android:orientation="vertical"
 		android:layout_width="fill_parent"
-		android:layout_height="60dp">		
+		android:layout_height="@dimen/sf__server_picker_header_layout_height">		
 
 	<LinearLayout
 			xmlns:android="http://schemas.android.com/apk/res/android"
 			android:orientation="horizontal"
 			android:layout_width="fill_parent"
-			android:layout_height="50dp"
+			android:layout_height="@dimen/sf__server_picker_header_height"
 			android:background="@drawable/sf__toolbar_background">
 
 			<RelativeLayout 
@@ -29,7 +29,7 @@
 					android:layout_width="wrap_content"
 					android:layout_height="wrap_content"
 					style="@style/Text.HeaderOptions" 
-					android:layout_marginRight="9dp"
+					android:layout_marginRight="@dimen/sf__server_picker_header_text_view_margin_right"
 					android:layout_centerVertical="true"
 					android:layout_alignParentRight="true"
 					android:clickable="true"
@@ -38,19 +38,19 @@
 				<LinearLayout 
 					xmlns:android="http://schemas.android.com/apk/res/android"
 					android:id="@+id/sf__seperator"
-					android:layout_marginRight="9dp"
+					android:layout_marginRight="@dimen/sf__server_picker_header_text_view_margin_right"
 					android:layout_toLeftOf="@id/sf__clear_server_url"
 					android:orientation="horizontal"
-					android:layout_width="2dp"
+					android:layout_width="@dimen/sf__server_picker_header_separator_layout_width"
 					android:layout_height="fill_parent">
 					
 					<View
-				   		android:layout_width="1dp"
+				   		android:layout_width="@dimen/sf__server_picker_header_separator_width"
 				    	android:layout_height="fill_parent"
 				    	android:background="@drawable/sf__header_left_border"/>
 				    	
 					<View
-						android:layout_width="1dp"
+						android:layout_width="@dimen/sf__server_picker_header_separator_width"
 						android:layout_height="fill_parent"
 						android:background="@drawable/sf__header_right_border"/>
 				</LinearLayout> 
@@ -59,7 +59,7 @@
 	
 	<View
 		android:layout_width="fill_parent"
-		android:layout_height="1dp"
+		android:layout_height="@dimen/sf__server_picker_header_separator_height"
 		android:background="@color/sf__server_header_bg"/>
 		
 	<View
