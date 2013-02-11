@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<include xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
-    layout="@layout/sf__server_picker_list"
-/>
+	android:orientation="vertical"
+>
+	
+	<include layout="@layout/sf__server_picker_list" />
+	
+</LinearLayout>
