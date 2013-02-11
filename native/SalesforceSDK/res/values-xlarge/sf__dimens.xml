@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <!-- server picker -->
+    <dimen name="sf__custom_url_margin_top">7dp</dimen>
+    
+    <!-- dimensions used in the fake actionbar header -->
+    <dimen name="sf__header_layout_height">60dp</dimen>
+    <dimen name="sf__header_height">50dp</dimen>
+
+    <dimen name="sf__text_view_margin_left">9dp</dimen>
+    <dimen name="sf__header_separator_margin_right">9dp</dimen>
+    <dimen name="sf__header_separator_layout_width">2dp</dimen>
+    <dimen name="sf__header_separator_width">1dp</dimen>
+    
+    <dimen name="sf__header_bottom_gap_height">1dp</dimen>
+    
+    <!-- Dimensions used in the inner title bar -->
+    <dimen name="sf__title_text_width">408dp</dimen>
+    <dimen name="sf__title_text_height">51dp</dimen>
+    <dimen name="sf__title_text_size">20sp</dimen>
+    
+    <!-- Dimensions used in sf__login_header.xml (xlarge) -->
+    <dimen name="sf__image_view_width">60dp</dimen>
+    <dimen name="sf__progress_bar_margin_right">8dp</dimen>
+
+    <!-- Dimensions used in sf__login.xml (xlarge) -->
+    <dimen name="sf__login_layout_width">412dp</dimen>
+    <dimen name="sf__login_layout_height">550dp</dimen>
+    <dimen name="sf__login_padding">2dp</dimen>
+    <dimen name="sf__login_webview_width">408dp</dimen>
+    
+    <!-- Dimensions used in sf__server_picker.xml (xlarge) -->
+    <dimen name="sf__server_picker_layout_width">412dp</dimen>
+    <dimen name="sf__server_picker_layout_height">474dp</dimen>
+    <dimen name="sf__server_picker_bg_width">408dp</dimen>
+    <dimen name="sf__server_picker_bg_height">470dp</dimen>
+    
+    <dimen name="sf__server_picker_separator_height">1dp</dimen>
+    
+</resources>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="sf__header_gap_bg">#74777F</color>
+    <color name="sf__title_bg">#215F84</color>
+    <color name="sf__title_text">#ffffff</color>
+    <color name="sf__server_picker_bg">#FFFFFF</color>
+</resources>
