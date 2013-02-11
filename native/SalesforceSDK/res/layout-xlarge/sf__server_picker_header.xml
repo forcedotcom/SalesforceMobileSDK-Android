@@ -1,69 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <!-- 
  Copyright 2011 Salesforce.com.
  All Rights Reserved.
  Company Confidential.
  -->
-
 <LinearLayout
 		xmlns:android="http://schemas.android.com/apk/res/android"
 		android:orientation="vertical"
 		android:layout_width="fill_parent"
-		android:layout_height="@dimen/sf__server_picker_header_layout_height">		
+		android:layout_height="@dimen/sf__header_layout_height">		
 
-	<LinearLayout
-			xmlns:android="http://schemas.android.com/apk/res/android"
-			android:orientation="horizontal"
-			android:layout_width="fill_parent"
-			android:layout_height="@dimen/sf__server_picker_header_height"
-			android:background="@drawable/sf__toolbar_background">
-
-			<RelativeLayout 
-				android:layout_width="wrap_content"
-				android:layout_height="fill_parent">
-				
+	<LinearLayout style="@style/SalesforceSDK.Header.Container">
+	    
+		<RelativeLayout 
+			android:layout_width="wrap_content"
+			android:layout_height="fill_parent">
+			
 				<TextView 
 					android:id="@+id/sf__clear_server_url"
 					android:text="@string/sf__server_url_reset"
-					android:layout_width="wrap_content"
-					android:layout_height="wrap_content"
-					style="@style/Text.HeaderOptions" 
-					android:layout_marginRight="@dimen/sf__server_picker_header_text_view_margin_right"
-					android:layout_centerVertical="true"
+					style="@style/SalesforceSDK.Header.Text.RightMargin"
+					android:onClick="onResetClick"
 					android:layout_alignParentRight="true"
-					android:clickable="true"
-					android:onClick="onResetClick"/>
-					
-				<LinearLayout 
-					xmlns:android="http://schemas.android.com/apk/res/android"
-					android:id="@+id/sf__seperator"
-					android:layout_marginRight="@dimen/sf__server_picker_header_text_view_margin_right"
+				/>
+				
+				<include layout="@layout/sf__header_separator"
+					style="@style/SalesforceSDK.Header.Separator"
+				    android:id="@+id/sf__seperator"
 					android:layout_toLeftOf="@id/sf__clear_server_url"
-					android:orientation="horizontal"
-					android:layout_width="@dimen/sf__server_picker_header_separator_layout_width"
-					android:layout_height="fill_parent">
-					
-					<View
-				   		android:layout_width="@dimen/sf__server_picker_header_separator_width"
-				    	android:layout_height="fill_parent"
-				    	android:background="@drawable/sf__header_left_border"/>
-				    	
-					<View
-						android:layout_width="@dimen/sf__server_picker_header_separator_width"
-						android:layout_height="fill_parent"
-						android:background="@drawable/sf__header_right_border"/>
-				</LinearLayout> 
+				/>
+				
 		</RelativeLayout>
 	</LinearLayout>
 	
-	<View
-		android:layout_width="fill_parent"
-		android:layout_height="@dimen/sf__server_picker_header_separator_height"
-		android:background="@color/sf__server_header_bg"/>
-		
-	<View
-		android:layout_width="fill_parent"
-		android:layout_height="wrap_content"
-		android:background="@drawable/sf__header_drop_shadow"/>
+	<include layout="@layout/sf__header_bottom" />
+	
 </LinearLayout>
