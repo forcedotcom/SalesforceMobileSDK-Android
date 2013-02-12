@@ -108,6 +108,7 @@ public class OAuthWebviewHelper {
         this.webview = webview;
 
         webview.getSettings().setJavaScriptEnabled(true);
+        webview.getSettings().setSavePassword(false);
         webview.setWebViewClient(makeWebViewClient());
         webview.setWebChromeClient(makeWebChromeClient());
 
@@ -258,7 +259,7 @@ public class OAuthWebviewHelper {
    	 * @return the OAuth login display type, e.g. mobile, touch, see the OAuth docs for the complete list of valid values.
    	 */
     protected String getAuthorizationDisplayType() {
-    	return this.getContext().getString(R.string.sf__oauth_display_type);
+    	return this.getContext().getString(R.string.oauth_display_type);
     }
     
     /**
@@ -420,7 +421,7 @@ public class OAuthWebviewHelper {
 
     protected void addAccount() {
 
-        ClientManager clientManager = new ClientManager(getContext(), ForceApp.APP.getAccountType(), loginOptions);
+        ClientManager clientManager = new ClientManager(getContext(), ForceApp.APP.getAccountType(), loginOptions, ForceApp.APP.shouldLogoutWhenTokenRevoked());
 
         // Create account name (shown in Settings -> Accounts & sync)
         String accountName = buildAccountName(accountOptions.username);

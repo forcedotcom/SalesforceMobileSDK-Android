@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2013, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,25 +24,37 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.restexplorer;
-
-import android.app.Activity;
+package com.salesforce.androidsdk.util;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.rest.ClientManager;
+
+import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.widget.Toast;
 
 /**
- * Application class for our rest explorer
+ * Listens for the access token revocation event, and acts on it.
+ *
+ * @author bhariharan
  */
-public class RestExplorerApp extends ForceApp {
+public class TokenRevocationReceiver extends BroadcastReceiver {
+
+	private Activity curActivity;
+
+	public TokenRevocationReceiver(Activity currentActivity) {
+		curActivity = currentActivity;
+	}
 
 	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return ExplorerActivity.class;
-	}
-	
-	@Override
-	protected String getKey(String name) {
-		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
+	public void onReceive(Context context, Intent intent) {
+		if (intent != null && intent.getAction().equals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT)) {
+			Toast.makeText(curActivity, ForceApp.APP.getSalesforceR().stringAccessTokenRevoked(), Toast.LENGTH_LONG).show();
+			if (ForceApp.APP.shouldLogoutWhenTokenRevoked()) {
+				ForceApp.APP.logout(curActivity, true);
+			}
+		}
 	}
 }

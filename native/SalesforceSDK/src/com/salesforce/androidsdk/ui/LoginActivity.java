@@ -93,6 +93,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
 		// Setup the WebView.
 		WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
+		webView.getSettings().setSavePassword(false);
 		EventsObservable.get().notifyEvent(EventType.AuthWebViewCreateComplete, webView);
 		webviewHelper = getOAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
 		
@@ -150,6 +151,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
+
         /*
          * The only way to customize the title of a menu item is to do
          * it through code. While this is a dirty hack, there appears to
@@ -162,7 +164,9 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
                 for (int i = 0; i < menu.size(); i++) {
                 final MenuItem item = menu.getItem(i);
                 final String fullTitle = item.getTitle().toString();
-                item.setTitle(fullTitle.substring(0, 8) + "...");
+                if (fullTitle != null && fullTitle.length() > 8) {
+                    item.setTitle(fullTitle.substring(0, 8) + "...");
+                }
             }
         }
         return true;

@@ -383,10 +383,13 @@ public class PasscodeManager  {
     }
 
     public void showLockActivity(Context ctx) {
-        if (ctx == null) return;
+        if (ctx == null) {
+        	return;
+        }
         Intent i = new Intent(ctx, PasscodeActivity.class);
         i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        i.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         if (ctx == ForceApp.APP) {
             i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }

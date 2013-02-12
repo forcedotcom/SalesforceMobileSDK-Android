@@ -56,20 +56,38 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
  */
 public class ClientManager {
 
+	public static final String ACCESS_TOKEN_REVOKE_INTENT = "access_token_revoked";
+
     private final AccountManager accountManager;
     private final String accountType;
     private final LoginOptions loginOptions;
+    private final boolean revokedTokenShouldLogout;
 
     /**
-     * Construct a ClientManager using a custom account type
-     * @param ctx
-     * @param accountType
-     * @param loginOptions
+     * Construct a ClientManager using a custom account type.
+     *
+     * @param ctx Context.
+     * @param accountType Account type.
+     * @param loginOptions Login options.
      */
+    @Deprecated
     public ClientManager(Context ctx, String accountType, LoginOptions loginOptions) {
-        this.accountManager = AccountManager.get(ctx);
+        this(ctx, accountType, loginOptions, true);
+    }
+
+    /**
+     * Construct a ClientManager using a custom account type.
+     *
+     * @param ctx Context.
+     * @param accountType Account type.
+     * @param loginOptions Login options.
+     * @param revokedTokenShouldLogout True - if the SDK should logout when the access token is revoked, False - otherwise.
+     */
+    public ClientManager(Context ctx, String accountType, LoginOptions loginOptions, boolean revokedTokenShouldLogout) {
+    	this.accountManager = AccountManager.get(ctx);
         this.accountType = accountType;
         this.loginOptions = loginOptions;
+        this.revokedTokenShouldLogout = revokedTokenShouldLogout;
     }
 
     /**
@@ -115,11 +133,8 @@ public class ClientManager {
      * If there is no account, it will throw an exception.
      *
      * @return
-     * @throws AccountInfoNotFoundException
      */
-    public RestClient peekRestClient()
-            throws AccountInfoNotFoundException {
-
+    public RestClient peekRestClient() {
         Account acc = getAccount();
         if (acc == null) {
             AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
@@ -153,8 +168,7 @@ public class ClientManager {
             AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, authToken, refreshToken);
             ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer), new URI(loginServer), new URI(idUrl), accountName, username, userId, orgId);
             return new RestClient(clientInfo, authToken, HttpAccess.DEFAULT, authTokenProvider);
-        }
-        catch (URISyntaxException e) {
+        } catch (URISyntaxException e) {
             Log.w("ClientManager:peekRestClient", "Invalid server URL", e);
             throw new AccountInfoNotFoundException("invalid server url", e);
         }
@@ -440,10 +454,7 @@ public class ClientManager {
             clientManager.invalidateToken(lastNewAuthToken);
             String newAuthToken = null;
             try {
-                Bundle options = clientManager.loginOptions.asBundle();
-                Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, options, null /* activity */, null /* callback */,
-                                null /* handler */).getResult();
-
+                final Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, false, null, null).getResult();
                 if (bundle == null) {
                     Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
                 } else {
@@ -451,8 +462,14 @@ public class ClientManager {
                     if (newAuthToken == null) {
                         final Intent loginFlowIntent = bundle.getParcelable(AccountManager.KEY_INTENT);
                         if (loginFlowIntent != null) {
-                            Looper.prepare();
-                            ForceApp.APP.logout(null, false);
+                            if (clientManager.revokedTokenShouldLogout) {
+                                Looper.prepare();
+                                ForceApp.APP.logout(null, false);
+                            }
+
+                            // Broadcasts an intent that the access token has been revoked.
+                            final Intent revokeIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
+                            ForceApp.APP.sendBroadcast(revokeIntent);
                         }
                     }
                 }
@@ -485,8 +502,9 @@ public class ClientManager {
      * Exception thrown when no account could be found (during a
      * {@link ClientManager#peekRestClient() peekRestClient} call)
      */
-    public static class AccountInfoNotFoundException extends Exception {
-        private static final long serialVersionUID = 1L;
+    public static class AccountInfoNotFoundException extends RuntimeException {
+
+    	private static final long serialVersionUID = 1L;
 
         AccountInfoNotFoundException(String msg) {
             super(msg);

@@ -24,6 +24,7 @@
             style="@style/SalesforceSDK.Passcode.Text.Error" />
 
         <TextView android:id="@+id/sf__passcode_instructions"
-            style="@style/SalesforceSDK.Passcode.Text.Instructions" />
+            style="@style/SalesforceSDK.Passcode.Text.Instructions"
+            android:visibility="invisible" />
     </LinearLayout>
 </RelativeLayout>
