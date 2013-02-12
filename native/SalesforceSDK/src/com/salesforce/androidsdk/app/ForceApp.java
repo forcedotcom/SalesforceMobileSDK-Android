@@ -61,12 +61,17 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "1.4.7";
+    public static final String SDK_VERSION = "1.5";
 
     /**
      * Last phone version.
      */
     private static final int GINGERBREAD_MR1 = 10;
+
+    /**
+     * Default app name.
+     */
+    private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
 
     /**
      * Instance of the ForceApp to use for this process.
@@ -108,8 +113,6 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @return The key used for encrypting salts and keys.
      */
     protected abstract String getKey(String name);
-
-    /**************************************************************************************************/
 
     /**
      * Before 1.3, SalesforceSDK was packaged as a jar, and project had to provide a subclass of SalesforceR.
@@ -165,6 +168,18 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         }
     }
 
+    /**
+     * Returns whether the SDK should automatically logout when the
+     * access token is revoked. This should be overridden to return
+     * false, if the app wants to handle cleanup by itself when the
+     * access token is revoked.
+     *
+     * @return True - if the SDK should automatically logout, False - otherwise.
+     */
+    public boolean shouldLogoutWhenTokenRevoked() {
+    	return true;
+    }
+
     @Override
     public void onAccountRemoved() {
         ForceApp.APP.cleanUp(null);
@@ -180,7 +195,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         }
         return loginServerManager;
     }    
-    
+
     /**
      * @return The passcode manager associated with the app.
      */
@@ -231,6 +246,15 @@ public abstract class ForceApp extends Application implements AccountRemoved {
             encryptionKey = getPasscodeManager().hashForEncryption("");
         }
         return encryptionKey;
+    }
+
+    /**
+     * Returns the app display name used by the passcode dialog.
+     *
+     * @return App display string.
+     */
+    public String getAppDisplayString() {
+    	return DEFAULT_APP_DISPLAY_NAME;
     }
 
     /**
@@ -299,7 +323,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         cleanUp(frontActivity);
 
         // Remove account if any.
-        ClientManager clientMgr = new ClientManager(this, getAccountType(), null/* we are not doing any login*/);
+        ClientManager clientMgr = new ClientManager(this, getAccountType(), null, shouldLogoutWhenTokenRevoked());
         if (clientMgr.getAccount() == null) {
             EventsObservable.get().notifyEvent(EventType.LogoutComplete);
             if (showLoginPage) {
