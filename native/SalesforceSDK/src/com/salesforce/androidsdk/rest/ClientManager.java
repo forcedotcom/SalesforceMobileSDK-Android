@@ -463,7 +463,11 @@ public class ClientManager {
                         final Intent loginFlowIntent = bundle.getParcelable(AccountManager.KEY_INTENT);
                         if (loginFlowIntent != null) {
                             if (clientManager.revokedTokenShouldLogout) {
-                                Looper.prepare();
+
+                            	// Check if a looper exists before trying to prepare another one.
+                            	if (Looper.myLooper() == null) {
+                                    Looper.prepare();	
+                            	}
                                 ForceApp.APP.logout(null, false);
                             }
 
