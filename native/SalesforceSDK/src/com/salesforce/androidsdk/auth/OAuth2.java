@@ -103,7 +103,8 @@ public class OAuth2 {
     // Login paths
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
     private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
-    
+    private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke";
+
     /**
      * Build the URL to the authorization web page for this login server.
      * You need not provide refresh_token, as it is provided automatically.
@@ -146,7 +147,6 @@ public class OAuth2 {
         if ((null != scopes) && (scopes.length > 0)) {
             //need to always have the refresh_token scope to reuse our refresh token
             sb.append("&").append(SCOPE).append("=").append(REFRESH_TOKEN);
-
             StringBuilder scopeStr = new StringBuilder();
             for (String scope : scopes) {
                 if (!scope.equalsIgnoreCase(REFRESH_TOKEN)) {
@@ -178,6 +178,18 @@ public class OAuth2 {
         return refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, null);
     }
 
+    /**
+     * Get a new auth token using the refresh token.
+     *
+     * @param httpAccessor
+     * @param loginServer
+     * @param clientId
+     * @param refreshToken
+     * @param clientSecret
+     * @return
+     * @throws OAuthFailedException
+     * @throws IOException
+     */
     public static TokenEndpointResponse refreshAuthToken(
             HttpAccess httpAccessor, URI loginServer, String clientId,
             String refreshToken, String clientSecret) throws OAuthFailedException, IOException {
@@ -188,6 +200,32 @@ public class OAuth2 {
         TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor,
                 loginServer, params);
         return tr;
+    }
+
+    /**
+     * Revokes the existing refresh token.
+     *
+     * @param httpAccessor
+     * @param loginServer
+     * @param clientId
+     * @param refreshToken
+     * @throws OAuthFailedException
+     * @throws IOException
+     */
+    public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String clientId, String refreshToken) {
+        try {
+        	final List<NameValuePair> params = new ArrayList<NameValuePair>();
+            params.add(new BasicNameValuePair(CLIENT_ID, clientId));
+            params.add(new BasicNameValuePair(TOKEN, refreshToken));
+            params.add(new BasicNameValuePair(REFRESH_TOKEN, refreshToken));
+            final UrlEncodedFormEntity req = new UrlEncodedFormEntity(params, "UTF-8");
+            final Execution ex = httpAccessor.doPost(null, loginServer.resolve(OAUTH_REVOKE_PATH), req);
+            int statusCode = ex.response.getStatusLine().getStatusCode();
+            Log.e("******", "Response: " + ex.response.getStatusLine());
+            Log.e("******", "Code: " + statusCode);
+        } catch (IOException e) {
+        	Log.w("OAuth2:revokeRefreshToken", e);
+        }
     }
 
      /** @returns a TokenEndointResponse from the give authorization code, this is typically the first step after
@@ -209,7 +247,6 @@ public class OAuth2 {
         List<NameValuePair> params = makeTokenEndpointParams("authorization_code", clientId, clientSecret);
         params.add(new BasicNameValuePair("code", authCode));
         params.add(new BasicNameValuePair("redirect_uri", callbackUrl));
-
         TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServerUrl, params);
         return tr;
     }
@@ -228,7 +265,6 @@ public class OAuth2 {
     public static final IdServiceResponse callIdentityService(
             HttpAccess httpAccessor, String identityServiceIdUrl,
             String authToken) throws IOException, URISyntaxException {
-
         Map<String, String> idHeaders = new HashMap<String, String>();
         idHeaders.put("Authorization", "Bearer " + authToken);
         Execution exec = httpAccessor.doGet(idHeaders, new URI(identityServiceIdUrl));
@@ -317,7 +353,6 @@ public class OAuth2 {
             JSONObject parsedResponse = new JSONObject(responseAsString);
             return parsedResponse;
         }
-
     }
 
     /**
@@ -338,7 +373,6 @@ public class OAuth2 {
                     pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
                     screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
                 }
-
             } catch (Exception e) {
                 Log.w("IdServiceResponse:contructor", "", e);
             }
@@ -413,12 +447,10 @@ public class OAuth2 {
                 if (parsedResponse.has(REFRESH_TOKEN)) {
                     refreshToken = parsedResponse.getString(REFRESH_TOKEN);
                 }
-
             } catch (Exception e) {
                 Log.w("TokenEndpointResponse:contructor", "", e);
             }
         }
-
 
         private void computeOtherFields() throws URISyntaxException {
             idUrlWithInstance = idUrl.replace(new URI(idUrl).getHost(), new URI(instanceUrl).getHost());

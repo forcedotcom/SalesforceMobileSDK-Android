@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.app;
 
+import java.net.URI;
+
+import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
@@ -34,6 +37,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
 import android.webkit.CookieManager;
@@ -41,8 +45,10 @@ import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.auth.AccountWatcher;
 import com.salesforce.androidsdk.auth.AccountWatcher.AccountRemoved;
+import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.LoginServerManager;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.phonegap.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -344,30 +350,42 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * Wipe out the stored authentication credentials (remove account) and restart the app, if specified.
      */
     public void logout(Activity frontActivity, final boolean showLoginPage) {
-        if (accWatcher != null) {
-            accWatcher.remove();
-            accWatcher = null;
+        final ClientManager clientMgr = new ClientManager(this, getAccountType(), null, shouldLogoutWhenTokenRevoked());
+        if (shouldLogoutWhenTokenRevoked()) {
+        	new RevokeTokenTask(frontActivity, showLoginPage).execute(clientMgr);
         }
-        cleanUp(frontActivity);
+    }
 
-        // Remove account if any.
-        ClientManager clientMgr = new ClientManager(this, getAccountType(), null, shouldLogoutWhenTokenRevoked());
-        if (clientMgr.getAccount() == null) {
-            EventsObservable.get().notifyEvent(EventType.LogoutComplete);
-            if (showLoginPage) {
-                startLoginPage();
-            }
-        } else {
-            clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
-                @Override
-                public void run(AccountManagerFuture<Boolean> arg0) {
-                    EventsObservable.get().notifyEvent(EventType.LogoutComplete);
-                    if (showLoginPage) {
-                        startLoginPage();
-                    }
-                }
-            });
-        }
+    /**
+     * Resumes the login flow after the refresh token has been revoked.
+     *
+     * @param frontActivity Front activity.
+     * @param showLoginPage True - if the login page should be shown, False - otherwise.
+     */
+    public void resumeLogout(Activity frontActivity, boolean showLoginPage) {
+//    	if (accWatcher != null) {
+//      accWatcher.remove();
+//      accWatcher = null;
+//  }
+//  cleanUp(frontActivity);
+//
+//  // Remove account, if any.
+//  if (clientMgr.getAccount() == null) {
+//      EventsObservable.get().notifyEvent(EventType.LogoutComplete);
+//      if (showLoginPage) {
+//          startLoginPage();
+//      }
+//  } else {
+//      clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
+//          @Override
+//          public void run(AccountManagerFuture<Boolean> arg0) {
+//              EventsObservable.get().notifyEvent(EventType.LogoutComplete);
+//              if (showLoginPage) {
+//                  startLoginPage();
+//              }
+//          }
+//      });
+//  }	
     }
 
     /**
@@ -454,5 +472,40 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      */
     public static String decryptWithPasscode(String data, String passcode) {
         return Encryptor.decrypt(data, ForceApp.APP.getEncryptionKeyForPasscode(passcode));
+    }
+
+    /**
+     * Simple AsyncTask to handle revocation of refresh token upon logout.
+     *
+     * @author bhariharan
+     */
+    private class RevokeTokenTask extends AsyncTask<ClientManager, Void, Void> {
+
+    	private Activity frontActivity;
+    	private boolean showLoginPage;
+
+    	public RevokeTokenTask(Activity frontActivity, boolean showLoginPage) {
+    		this.frontActivity = frontActivity;
+    		this.showLoginPage = showLoginPage;
+    	}
+
+		@Override
+		protected Void doInBackground(ClientManager... managers) {
+			final AccountManager mgr = AccountManager.get(ForceApp.APP);
+	        final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(managers[0].getAccount()), getPasscodeHash());
+	        final String clientId = ForceApp.decryptWithPasscode(mgr.getUserData(managers[0].getAccount(), AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
+	        final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(managers[0].getAccount(), AuthenticatorService.KEY_LOGIN_URL), getPasscodeHash());
+	        try {
+	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken);
+	        } catch (Exception e) {
+	        	Log.w("ForceApp:revokeToken", e);
+	        }
+	        return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result) {
+			ForceApp.APP.resumeLogout(frontActivity, showLoginPage);
+		}
     }
 }
