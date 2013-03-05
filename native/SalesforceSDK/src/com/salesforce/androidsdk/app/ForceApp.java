@@ -361,31 +361,33 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      *
      * @param frontActivity Front activity.
      * @param showLoginPage True - if the login page should be shown, False - otherwise.
+     * @param clientMgr ClientManager instance.
      */
-    public void resumeLogout(Activity frontActivity, boolean showLoginPage) {
-//    	if (accWatcher != null) {
-//      accWatcher.remove();
-//      accWatcher = null;
-//  }
-//  cleanUp(frontActivity);
-//
-//  // Remove account, if any.
-//  if (clientMgr.getAccount() == null) {
-//      EventsObservable.get().notifyEvent(EventType.LogoutComplete);
-//      if (showLoginPage) {
-//          startLoginPage();
-//      }
-//  } else {
-//      clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
-//          @Override
-//          public void run(AccountManagerFuture<Boolean> arg0) {
-//              EventsObservable.get().notifyEvent(EventType.LogoutComplete);
-//              if (showLoginPage) {
-//                  startLoginPage();
-//              }
-//          }
-//      });
-//  }	
+    public void resumeLogout(Activity frontActivity, final boolean showLoginPage, ClientManager clientMgr) {
+    	if (accWatcher != null) {
+    		accWatcher.remove();
+    		accWatcher = null;
+    	}
+    	cleanUp(frontActivity);
+
+    	// Remove account, if any.
+    	if (clientMgr.getAccount() == null) {
+    		EventsObservable.get().notifyEvent(EventType.LogoutComplete);
+    		if (showLoginPage) {
+    			startLoginPage();
+    		}
+    	} else {
+    		clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
+
+    			@Override
+    			public void run(AccountManagerFuture<Boolean> arg0) {
+    				EventsObservable.get().notifyEvent(EventType.LogoutComplete);
+    				if (showLoginPage) {
+    					startLoginPage();
+    				}
+    			}
+    		});
+    	}
     }
 
     /**
@@ -483,6 +485,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
     	private Activity frontActivity;
     	private boolean showLoginPage;
+    	private ClientManager clientMgr;
 
     	public RevokeTokenTask(Activity frontActivity, boolean showLoginPage) {
     		this.frontActivity = frontActivity;
@@ -491,10 +494,11 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
 		@Override
 		protected Void doInBackground(ClientManager... managers) {
+			clientMgr = managers[0];
 			final AccountManager mgr = AccountManager.get(ForceApp.APP);
-	        final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(managers[0].getAccount()), getPasscodeHash());
-	        final String clientId = ForceApp.decryptWithPasscode(mgr.getUserData(managers[0].getAccount(), AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
-	        final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(managers[0].getAccount(), AuthenticatorService.KEY_LOGIN_URL), getPasscodeHash());
+	        final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(clientMgr.getAccount()), getPasscodeHash());
+	        final String clientId = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
+	        final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_LOGIN_URL), getPasscodeHash());
 	        try {
 	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken);
 	        } catch (Exception e) {
@@ -505,7 +509,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
 		@Override
 		protected void onPostExecute(Void result) {
-			ForceApp.APP.resumeLogout(frontActivity, showLoginPage);
+			ForceApp.APP.resumeLogout(frontActivity, showLoginPage, clientMgr);
 		}
     }
 }

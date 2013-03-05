@@ -103,7 +103,7 @@ public class OAuth2 {
     // Login paths
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
     private static final String OAUTH_TOKEN_PATH = "/services/oauth2/token";
-    private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke";
+    private static final String OAUTH_REVOKE_PATH = "/services/oauth2/revoke?token=";
 
     /**
      * Build the URL to the authorization web page for this login server.
@@ -214,15 +214,10 @@ public class OAuth2 {
      */
     public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String clientId, String refreshToken) {
         try {
-        	final List<NameValuePair> params = new ArrayList<NameValuePair>();
-            params.add(new BasicNameValuePair(CLIENT_ID, clientId));
-            params.add(new BasicNameValuePair(TOKEN, refreshToken));
-            params.add(new BasicNameValuePair(REFRESH_TOKEN, refreshToken));
-            final UrlEncodedFormEntity req = new UrlEncodedFormEntity(params, "UTF-8");
-            final Execution ex = httpAccessor.doPost(null, loginServer.resolve(OAUTH_REVOKE_PATH), req);
-            int statusCode = ex.response.getStatusLine().getStatusCode();
-            Log.e("******", "Response: " + ex.response.getStatusLine());
-            Log.e("******", "Code: " + statusCode);
+            final StringBuilder sb = new StringBuilder(loginServer.toString());
+            sb.append(OAUTH_REVOKE_PATH);
+            sb.append(Uri.encode(refreshToken));
+            httpAccessor.doGet(null, URI.create(sb.toString()));
         } catch (IOException e) {
         	Log.w("OAuth2:revokeRefreshToken", e);
         }
