@@ -351,20 +351,11 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      */
     public void logout(Activity frontActivity, final boolean showLoginPage) {
         final ClientManager clientMgr = new ClientManager(this, getAccountType(), null, shouldLogoutWhenTokenRevoked());
-        if (shouldLogoutWhenTokenRevoked()) {
-        	new RevokeTokenTask(frontActivity, showLoginPage).execute(clientMgr);
-        }
-    }
-
-    /**
-     * Resumes the login flow after the refresh token has been revoked.
-     *
-     * @param frontActivity Front activity.
-     * @param showLoginPage True - if the login page should be shown, False - otherwise.
-     * @param clientMgr ClientManager instance.
-     */
-    public void resumeLogout(Activity frontActivity, final boolean showLoginPage, ClientManager clientMgr) {
-    	if (accWatcher != null) {
+		final AccountManager mgr = AccountManager.get(ForceApp.APP);
+        final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(clientMgr.getAccount()), getPasscodeHash());
+        final String clientId = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
+        final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_LOGIN_URL), getPasscodeHash());
+        if (accWatcher != null) {
     		accWatcher.remove();
     		accWatcher = null;
     	}
@@ -388,6 +379,11 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     			}
     		});
     	}
+
+    	// Revokes the existing refresh token.
+        if (shouldLogoutWhenTokenRevoked()) {
+        	new RevokeTokenTask(refreshToken, clientId, loginServer).execute();
+        }
     }
 
     /**
@@ -481,35 +477,26 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      *
      * @author bhariharan
      */
-    private class RevokeTokenTask extends AsyncTask<ClientManager, Void, Void> {
+    private class RevokeTokenTask extends AsyncTask<Void, Void, Void> {
 
-    	private Activity frontActivity;
-    	private boolean showLoginPage;
-    	private ClientManager clientMgr;
+    	private String refreshToken;
+    	private String clientId;
+    	private String loginServer;
 
-    	public RevokeTokenTask(Activity frontActivity, boolean showLoginPage) {
-    		this.frontActivity = frontActivity;
-    		this.showLoginPage = showLoginPage;
+    	public RevokeTokenTask(String refreshToken, String clientId, String loginServer) {
+    		this.refreshToken = refreshToken;
+    		this.clientId = clientId;
+    		this.loginServer = loginServer;
     	}
 
 		@Override
-		protected Void doInBackground(ClientManager... managers) {
-			clientMgr = managers[0];
-			final AccountManager mgr = AccountManager.get(ForceApp.APP);
-	        final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(clientMgr.getAccount()), getPasscodeHash());
-	        final String clientId = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
-	        final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_LOGIN_URL), getPasscodeHash());
+		protected Void doInBackground(Void... nothings) {
 	        try {
 	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken);
 	        } catch (Exception e) {
 	        	Log.w("ForceApp:revokeToken", e);
 	        }
 	        return null;
-		}
-
-		@Override
-		protected void onPostExecute(Void result) {
-			ForceApp.APP.resumeLogout(frontActivity, showLoginPage, clientMgr);
 		}
     }
 }
