@@ -354,7 +354,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 		final AccountManager mgr = AccountManager.get(ForceApp.APP);
         final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(clientMgr.getAccount()), getPasscodeHash());
         final String clientId = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
-        final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_LOGIN_URL), getPasscodeHash());
+        final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());
         if (accWatcher != null) {
     		accWatcher.remove();
     		accWatcher = null;
