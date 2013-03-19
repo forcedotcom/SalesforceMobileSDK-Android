@@ -307,12 +307,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
                         public void onSuccess(RestRequest request, RestResponse response) {
                             setSidCookies();
                             if (!bootconfig.isLocal()) {
-                                final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
-                                URI instanceUrl = null;
-                                if (clientInfo != null) {
-                                	instanceUrl = clientInfo.instanceUrl;
-                                }
-                        		setVFCookies(instanceUrl);	
+                        		setVFCookies(getInstanceUrl());	
                             }
                             callbackContext.success(getJSONCredentials());
                         }
@@ -341,12 +336,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
                     Log.i("SalesforceOAuthPlugin.refresh", "Refresh succeeded");
                     setSidCookies();
                     if (!bootconfig.isLocal()) {
-                        final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
-                        URI instanceUrl = null;
-                        if (clientInfo != null) {
-                        	instanceUrl = clientInfo.instanceUrl;
-                        }
-                		setVFCookies(instanceUrl);	
+                		setVFCookies(getInstanceUrl());
                     }
                     String frontDoorUrl = getFrontDoorUrl(url);
                     loadUrl(frontDoorUrl);
@@ -363,6 +353,20 @@ public class SalesforceDroidGapActivity extends DroidGap {
                 }
             });
     }        
+
+    /**
+     * Returns the instance URL.
+     *
+     * @return Instance URL.
+     */
+    private URI getInstanceUrl() {
+    	final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
+        URI instanceUrl = null;
+        if (clientInfo != null) {
+        	instanceUrl = clientInfo.instanceUrl;
+        }
+        return instanceUrl;
+    }
 
     /**
      * Sets VF domain cookies by loading the VF ping page on an invisible WebView.
