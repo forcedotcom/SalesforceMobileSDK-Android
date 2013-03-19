@@ -306,9 +306,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
                         @Override
                         public void onSuccess(RestRequest request, RestResponse response) {
                             setSidCookies();
-                            if (!bootconfig.isLocal()) {
-                        		setVFCookies(getInstanceUrl());	
-                            }
+                            loadVFPingPage();
                             callbackContext.success(getJSONCredentials());
                         }
 
@@ -335,9 +333,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
                 public void onSuccess(RestRequest request, RestResponse response) {
                     Log.i("SalesforceOAuthPlugin.refresh", "Refresh succeeded");
                     setSidCookies();
-                    if (!bootconfig.isLocal()) {
-                		setVFCookies(getInstanceUrl());
-                    }
+                    loadVFPingPage();
                     String frontDoorUrl = getFrontDoorUrl(url);
                     loadUrl(frontDoorUrl);
                 }
@@ -355,17 +351,17 @@ public class SalesforceDroidGapActivity extends DroidGap {
     }        
 
     /**
-     * Returns the instance URL.
-     *
-     * @return Instance URL.
+     * Loads the VF ping page and sets cookies.
      */
-    private URI getInstanceUrl() {
-    	final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
-        URI instanceUrl = null;
-        if (clientInfo != null) {
-        	instanceUrl = clientInfo.instanceUrl;
-        }
-        return instanceUrl;
+    private void loadVFPingPage() {
+    	if (!bootconfig.isLocal()) {
+        	final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
+            URI instanceUrl = null;
+            if (clientInfo != null) {
+            	instanceUrl = clientInfo.instanceUrl;
+            }
+            setVFCookies(instanceUrl);
+    	}
     }
 
     /**
