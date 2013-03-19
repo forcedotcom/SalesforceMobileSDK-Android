@@ -21,7 +21,7 @@
     <plugin name="Temperature" value="org.apache.cordova.TempListener"/>
     <plugin name="FileTransfer" value="org.apache.cordova.FileTransfer"/>
     <plugin name="Capture" value="org.apache.cordova.Capture"/>
-    <plugin name="com.salesforce.oauth" value="com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin"/>
-    <plugin name="com.salesforce.sdkinfo" value="com.salesforce.androidsdk.phonegap.SDKInfoPlugin"/>
-    <plugin name="com.salesforce.smartstore" value="com.salesforce.androidsdk.phonegap.SmartStorePlugin"/>
+    <plugin name="com.salesforce.oauth" value="com.salesforce.androidsdk.smartstore.phonegap.SalesforceOAuthPlugin"/>
+    <plugin name="com.salesforce.sdkinfo" value="com.salesforce.androidsdk.smartstore.phonegap.SDKInfoPlugin"/>
+    <plugin name="com.salesforce.smartstore" value="com.salesforce.androidsdk.smartstore.phonegap.SmartStorePlugin"/>
 </plugins>

@@ -36,6 +36,9 @@ import android.content.Context;
 import android.database.Cursor;
 import android.test.InstrumentationTestCase;
 
+import com.salesforce.androidsdk.smartstore.store.DBHelper;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+
 /**
  * Abstract super class for smart store tests
  *
@@ -64,9 +67,6 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 		super.tearDown();
 	}
 
-
-	
-	
 	/**
 	 * Helper method to check that a table exists in the database
 	 * @param tableName
@@ -188,8 +188,6 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 			assertSameJSONArray(message, expectedValues, actualValues);
 		}
 	}
-
-	
 
 	/**
 	 * @param soupName

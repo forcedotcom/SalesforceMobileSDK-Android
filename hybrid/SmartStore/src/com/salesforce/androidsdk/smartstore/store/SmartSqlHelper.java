@@ -24,17 +24,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import net.sqlcipher.database.SQLiteDatabase;
-
 import android.util.Log;
 
-import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 
 /**
  * SmartSqlHelper "smart" sql Helper

@@ -32,8 +32,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.store.SmartSqlHelper.SmartSqlException;
-import com.salesforce.androidsdk.store.SmartStore.Type;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
 /**
  * Tests for "smart" sql

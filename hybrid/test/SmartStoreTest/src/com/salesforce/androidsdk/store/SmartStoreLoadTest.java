@@ -39,9 +39,12 @@ import android.content.Context;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 
-import com.salesforce.androidsdk.store.IndexSpec;
-import com.salesforce.androidsdk.store.QuerySpec;
-import com.salesforce.androidsdk.store.SmartStore.Type;
+import com.salesforce.androidsdk.smartstore.store.DBHelper;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
 /**
  * Set of tests for the smart store loading numerous and/or large entries and querying them back

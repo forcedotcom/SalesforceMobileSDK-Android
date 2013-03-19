@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +39,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.store.QuerySpec.QueryType;
-
+import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 
 /**
  * Smart store
@@ -403,7 +402,7 @@ public class SmartStore  {
 	 * @param smartSql
 	 * @return
 	 */
-	protected String convertSmartSql(String smartSql) {
+	public String convertSmartSql(String smartSql) {
 		return SmartSqlHelper.INSTANCE.convertSmartSql(db, smartSql);
 	}
 
