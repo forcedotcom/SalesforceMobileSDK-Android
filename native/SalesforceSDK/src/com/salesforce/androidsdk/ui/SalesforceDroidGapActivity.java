@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,9 +46,12 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
@@ -302,6 +306,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
                         @Override
                         public void onSuccess(RestRequest request, RestResponse response) {
                             setSidCookies();
+                            loadVFPingPage();
                             callbackContext.success(getJSONCredentials());
                         }
 
@@ -328,6 +333,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
                 public void onSuccess(RestRequest request, RestResponse response) {
                     Log.i("SalesforceOAuthPlugin.refresh", "Refresh succeeded");
                     setSidCookies();
+                    loadVFPingPage();
                     String frontDoorUrl = getFrontDoorUrl(url);
                     loadUrl(frontDoorUrl);
                 }
@@ -343,7 +349,45 @@ public class SalesforceDroidGapActivity extends DroidGap {
                 }
             });
     }        
-    
+
+    /**
+     * Loads the VF ping page and sets cookies.
+     */
+    private void loadVFPingPage() {
+    	if (!bootconfig.isLocal()) {
+        	final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
+            URI instanceUrl = null;
+            if (clientInfo != null) {
+            	instanceUrl = clientInfo.instanceUrl;
+            }
+            setVFCookies(instanceUrl);
+    	}
+    }
+
+    /**
+     * Sets VF domain cookies by loading the VF ping page on an invisible WebView.
+     *
+     * @param instanceUrl Instance URL.
+     */
+    private static void setVFCookies(URI instanceUrl) {
+    	if (instanceUrl != null) {
+        	final WebView view = new WebView(ForceApp.APP);
+        	view.setVisibility(View.GONE);
+        	view.setWebViewClient(new WebViewClient() {
+
+        		@Override
+        		public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                	final CookieSyncManager cookieSyncMgr = CookieSyncManager.getInstance();
+                    final CookieManager cookieMgr = CookieManager.getInstance();
+                    cookieMgr.setAcceptCookie(true);
+                    cookieSyncMgr.sync();
+        			return true;
+        		}
+        	});
+        	view.loadUrl(instanceUrl.toString() + "/visualforce/session?url=/apexpages/utils/ping.apexp&autoPrefixVFDomain=true");	
+    	}
+    }
+
     /**
      * Load local start page
      */
