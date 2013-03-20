@@ -1,10 +1,10 @@
-package com.salesforce.androidsdk.phonegap;
+package com.salesforce.androidsdk.smartstore.phonegap;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.store.QuerySpec;
-import com.salesforce.androidsdk.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 
 /**
  * Store Cursor 

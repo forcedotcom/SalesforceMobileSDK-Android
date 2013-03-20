@@ -28,8 +28,8 @@ package com.salesforce.samples.smartstoreexplorer;
 
 import android.app.Activity;
 
-import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.smartstore.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 
 /**

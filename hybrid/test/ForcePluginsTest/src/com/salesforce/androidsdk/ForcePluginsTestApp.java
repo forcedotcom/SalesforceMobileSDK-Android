@@ -28,9 +28,8 @@ package com.salesforce.androidsdk;
 
 import android.app.Activity;
 
-import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
+import com.salesforce.androidsdk.smartstore.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
-
 
 /**
  * Test application for smart store plugin
