@@ -24,9 +24,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
-import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 
 /**
  * Simple class to represent a query spec

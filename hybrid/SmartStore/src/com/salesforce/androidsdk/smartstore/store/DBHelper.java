@@ -24,16 +24,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.store;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
-import com.salesforce.androidsdk.store.SmartStore.Type;
 
 import net.sqlcipher.DatabaseUtils.InsertHelper;
 import net.sqlcipher.database.SQLiteDatabase;
@@ -43,7 +40,8 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 
-
+import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
 /**
  * SmartStore Database Helper

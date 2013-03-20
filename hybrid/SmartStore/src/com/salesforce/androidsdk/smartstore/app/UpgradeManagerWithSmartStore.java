@@ -24,54 +24,56 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.smartstore.app;
 
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
-import android.content.Context;
-import android.util.Log;
-
+import com.salesforce.androidsdk.app.UpgradeManager;
 
 /**
- * Helper class to manage SmartStore's database creation and version management.
+ * This class handles upgrades from one version to another.
+ *
+ * @author bhariharan
  */
-public class DBOpenHelper extends SQLiteOpenHelper {
-	public static final String DB_NAME = "smartstore.db";
-	public static final int DB_VERSION = 1;
+public class UpgradeManagerWithSmartStore extends UpgradeManager {
 
-	private static DBOpenHelper openHelper;
-	
-	public static synchronized DBOpenHelper getOpenHelper(Context ctx) {
-		if (openHelper == null) {
-			openHelper = new DBOpenHelper(ctx);
-		}
-		return openHelper;
-	}
-	
-	private DBOpenHelper(Context context) {
-		super(context, DB_NAME, null, DB_VERSION);
-		SQLiteDatabase.loadLibs(context);
-		Log.i("DBOpenHelper:DBOpenHelper", DB_NAME + "/" + DB_VERSION);
-	}
+    /**
+     * Key in shared preference file for smart store version.
+     */
+    private static final String SMART_STORE_KEY = "smart_store_version";
 
-	@Override
-	public void onCreate(SQLiteDatabase db) {
-		Log.i("DBOpenHelper:onCreate", DB_NAME + "/" + DB_VERSION);
-		SmartStore.createMetaTables(db);
-	}
+    private static UpgradeManagerWithSmartStore instance = null;
 
-	@Override
-	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		Log.i("DBOpenHelper:onUpgrade", DB_NAME + "/" + DB_VERSION);
-		// do the needful if DB_VERSION has changed 
-	}
+    /**
+     * Returns an instance of this class.
+     *
+     * @return Instance of this class.
+     */
+    public static synchronized UpgradeManagerWithSmartStore getInstance() {
+        if (instance == null) {
+            instance = new UpgradeManagerWithSmartStore();
+        }
+        return instance;
+    }
 
-	public static void deleteDatabase(Context ctx) {
-		Log.i("DBOpenHelper:deleteDatabase", DB_NAME + "/" + DB_VERSION);
-		if (openHelper != null) {
-			openHelper.close();
-			openHelper =  null;
-		}
-		ctx.deleteDatabase(DB_NAME);
-	}
+    /**
+     * Upgrades smartstore data from existing client
+     * version to the current version.
+     */
+    public synchronized void upgradeSmartStore() {
+        final String installedVersion = getInstalledSmartStoreVersion();
+        if (installedVersion.equals(ForceAppWithSmartStore.SDK_VERSION)) {
+            return;
+        }
+
+        // Update shared preference file to reflect the latest version.
+        writeCurVersion(SMART_STORE_KEY, ForceAppWithSmartStore.SDK_VERSION);
+    }
+
+    /**
+     * Returns the currently installed version of smartstore.
+     *
+     * @return Currently installed version of smartstore.
+     */
+    public String getInstalledSmartStoreVersion() {
+        return getInstalledVersion(SMART_STORE_KEY);
+    }
 }

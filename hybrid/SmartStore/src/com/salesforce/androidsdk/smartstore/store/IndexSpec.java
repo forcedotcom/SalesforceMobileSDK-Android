@@ -24,54 +24,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.app;
+package com.salesforce.androidsdk.smartstore.store;
+
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
 /**
- * This class handles upgrades from one version to another.
- *
- * @author bhariharan
+ * Simple class to represent index spec
  */
-public class UpgradeManagerWithSmartStore extends UpgradeManager {
+public class IndexSpec {
+    public final String path;
+    public final Type type;
+    public final String columnName;
 
-    /**
-     * Key in shared preference file for smart store version.
-     */
-    private static final String SMART_STORE_KEY = "smart_store_version";
-
-    private static UpgradeManagerWithSmartStore instance = null;
-
-    /**
-     * Returns an instance of this class.
-     *
-     * @return Instance of this class.
-     */
-    public static synchronized UpgradeManagerWithSmartStore getInstance() {
-        if (instance == null) {
-            instance = new UpgradeManagerWithSmartStore();
-        }
-        return instance;
+    public IndexSpec(String path, Type type) {
+        this.path = path;
+        this.type = type;
+        this.columnName = null; // undefined
     }
 
-    /**
-     * Upgrades smartstore data from existing client
-     * version to the current version.
-     */
-    public synchronized void upgradeSmartStore() {
-        final String installedVersion = getInstalledSmartStoreVersion();
-        if (installedVersion.equals(ForceAppWithSmartStore.SDK_VERSION)) {
-            return;
-        }
-
-        // Update shared preference file to reflect the latest version.
-        writeCurVersion(SMART_STORE_KEY, ForceAppWithSmartStore.SDK_VERSION);
+    public IndexSpec(String path, Type type, String columnName) {
+        this.path = path;
+        this.type = type;
+        this.columnName = columnName;
     }
 
-    /**
-     * Returns the currently installed version of smartstore.
-     *
-     * @return Currently installed version of smartstore.
-     */
-    public String getInstalledSmartStoreVersion() {
-        return getInstalledVersion(SMART_STORE_KEY);
-    }
 }
