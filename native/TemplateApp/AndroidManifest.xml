@@ -3,24 +3,21 @@
 	package="com.salesforce.samples.templateapp" android:versionCode="1"
 	android:versionName="1.0"
 	android:installLocation="internalOnly" >
-    
 
-	<application android:icon="@drawable/sf__icon" android:label="@string/app_name"
-		android:name=".TemplateApp">
+	<application android:icon="@drawable/sf__icon"
+	    android:label="@string/app_name"
+		android:name=".TemplateApp"
+		android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
 
 		<!-- Service required for authentication -->
 		<service android:exported="true" android:process=":auth"
 			android:name="com.salesforce.androidsdk.auth.AuthenticatorService">
-
 			<intent-filter>
 				<action android:name="android.accounts.AccountAuthenticator" />
 			</intent-filter>
-
 			<meta-data android:name="android.accounts.AccountAuthenticator"
 				android:resource="@xml/authenticator" />
-
 		</service>
-
 
 		<!-- Launcher screen -->
 		<activity android:name=".MainActivity" android:label="@string/app_name"
@@ -32,13 +29,22 @@
 		</activity>
 
 		<!-- Login activity -->
-		<activity android:name="com.salesforce.androidsdk.ui.LoginActivity" android:theme="@android:style/Theme.NoTitleBar"/>
+		<activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
+		    android:theme="@android:style/Theme.NoTitleBar" />
+
+		<!-- Manage space activity -->
+        <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoTitleBar" />
 
 		<!-- Passcode activity -->
-		<activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity" android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
-		
+		<activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"
+		    android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
 		<!-- Choose server activity -->
-		<activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity" android:excludeFromRecents="true" android:theme="@android:style/Theme.NoTitleBar" />
+		<activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity"
+		    android:excludeFromRecents="true"
+		    android:theme="@android:style/Theme.NoTitleBar" />
 	</application>
 
 	<uses-permission android:name="android.permission.INTERNET" />
@@ -50,5 +56,4 @@
 
 	<!-- device os versions http://developer.android.com/guide/publishing/versioning.html -->
 	<uses-sdk android:minSdkVersion="8" />
-
 </manifest>
