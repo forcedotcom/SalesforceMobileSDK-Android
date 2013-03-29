@@ -49,4 +49,7 @@
 	<string name="sf__passcode_logout_confirmation">Are you sure you want to logout?</string>
 	<string name="sf__passcode_logout_yes">Yes</string>
 	<string name="sf__passcode_logout_no">No</string>
+
+	<!-- Manage space activity -->
+	<string name="sf__manage_space_confirmation">Clearing user data will log the current user out. Are you sure you want to perform this action?</string>
 </resources>
