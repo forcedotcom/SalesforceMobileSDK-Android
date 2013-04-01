@@ -308,14 +308,14 @@ public class SalesforceDroidGapActivity extends DroidGap {
                             setSidCookies();
                             loadVFPingPage();
                             if (callbackContext != null) {
-                                callbackContext.success(getJSONCredentials());	
+                                callbackContext.success(getJSONCredentials());
                             }
                         }
 
                         @Override
                         public void onError(Exception exception) {
                         	if (callbackContext != null) {
-                            	callbackContext.error(exception.getMessage());	
+                            	callbackContext.error(exception.getMessage());
                         	}
                         }
                     });
