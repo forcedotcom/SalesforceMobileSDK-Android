@@ -1,1 +1,1 @@
-../../../../../external/shared/PhoneGap/test/qunit.js
+../../../../../external/shared/external/qunit/qunit.js

@@ -1,1 +1,1 @@
-../../../../../external/shared/PhoneGap/sfdcaccounts/sfdcsmartstore.js
+../../../../../external/shared/SampleApps/sfdcaccounts/sfdcsmartstore.js

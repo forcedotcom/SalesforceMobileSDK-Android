@@ -1,1 +1,1 @@
-../../../../../external/shared/PhoneGap/test/SFTestRunnerPlugin.js
+../../../../../external/shared/test/SFTestRunnerPlugin.js
