@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.phonegap;
+package com.salesforce.androidsdk.smartstore.phonegap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,13 +39,15 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
-import com.salesforce.androidsdk.store.IndexSpec;
-import com.salesforce.androidsdk.store.QuerySpec;
-import com.salesforce.androidsdk.store.QuerySpec.Order;
-import com.salesforce.androidsdk.store.QuerySpec.QueryType;
-import com.salesforce.androidsdk.store.SmartStore;
-import com.salesforce.androidsdk.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.phonegap.ForcePlugin;
+import com.salesforce.androidsdk.phonegap.JavaScriptPluginVersion;
+import com.salesforce.androidsdk.smartstore.app.ForceAppWithSmartStore;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 
 /**
  * PhoneGap plugin for smart store.

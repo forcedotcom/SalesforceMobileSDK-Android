@@ -35,8 +35,12 @@ import org.json.JSONObject;
 import android.database.Cursor;
 import android.os.SystemClock;
 
-import com.salesforce.androidsdk.store.QuerySpec.Order;
-import com.salesforce.androidsdk.store.SmartStore.Type;
+import com.salesforce.androidsdk.smartstore.store.DBHelper;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
 /**
  * Abstract super class for plain and encrypted smart store tests

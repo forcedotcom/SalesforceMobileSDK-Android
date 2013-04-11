@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="sf__passcode_layout_bg">#000000</color>
+    <color name="sf__passcode_bg">#888888</color>
+    <color name="sf__forgot_passcode_text">#000</color>
+    <color name="sf__passcode_error_text">#F00</color>
+    
+</resources>

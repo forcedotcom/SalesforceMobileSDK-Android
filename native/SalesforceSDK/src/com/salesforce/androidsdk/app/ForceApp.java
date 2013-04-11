@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.app;
 
+import java.net.URI;
+
+import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
@@ -34,6 +37,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.util.Log;
 import android.webkit.CookieManager;
@@ -41,8 +45,10 @@ import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.auth.AccountWatcher;
 import com.salesforce.androidsdk.auth.AccountWatcher.AccountRemoved;
+import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.LoginServerManager;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.phonegap.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -63,12 +69,17 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "2.0.unstable";
+    public static final String SDK_VERSION = "2.0unstable";
 
     /**
      * Last phone version.
      */
     private static final int GINGERBREAD_MR1 = 10;
+
+    /**
+     * Default app name.
+     */
+    private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
 
     /**
      * Instance of the ForceApp to use for this process.
@@ -265,6 +276,15 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
+     * Returns the app display name used by the passcode dialog.
+     *
+     * @return App display string.
+     */
+    public String getAppDisplayString() {
+    	return DEFAULT_APP_DISPLAY_NAME;
+    }
+
+    /**
      * @return The hashed passcode, or null if it's not required.
      */
     public String getPasscodeHash() {
@@ -330,34 +350,44 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * Wipe out the stored authentication credentials (remove account) and restart the app, if specified.
      */
     public void logout(Activity frontActivity, final boolean showLoginPage) {
+        final ClientManager clientMgr = new ClientManager(this, getAccountType(), null, shouldLogoutWhenTokenRevoked());
+		final AccountManager mgr = AccountManager.get(ForceApp.APP);
+        final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(clientMgr.getAccount()), getPasscodeHash());
+        final String clientId = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
+        final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());
         if (accWatcher != null) {
-            accWatcher.remove();
-            accWatcher = null;
-        }
-        cleanUp(frontActivity);
+    		accWatcher.remove();
+    		accWatcher = null;
+    	}
+    	cleanUp(frontActivity);
 
-        // Remove account if any.
-        ClientManager clientMgr = new ClientManager(this, getAccountType(), null, shouldLogoutWhenTokenRevoked());
-        if (clientMgr.getAccount() == null) {
-            EventsObservable.get().notifyEvent(EventType.LogoutComplete);
-            if (showLoginPage) {
-                startLoginPage();
-            }
-        } else {
-            clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
-                @Override
-                public void run(AccountManagerFuture<Boolean> arg0) {
-                    EventsObservable.get().notifyEvent(EventType.LogoutComplete);
-                    if (showLoginPage) {
-                        startLoginPage();
-                    }
-                }
-            });
+    	// Remove account, if any.
+    	if (clientMgr.getAccount() == null) {
+    		EventsObservable.get().notifyEvent(EventType.LogoutComplete);
+    		if (showLoginPage) {
+    			startLoginPage();
+    		}
+    	} else {
+    		clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
+
+    			@Override
+    			public void run(AccountManagerFuture<Boolean> arg0) {
+    				EventsObservable.get().notifyEvent(EventType.LogoutComplete);
+    				if (showLoginPage) {
+    					startLoginPage();
+    				}
+    			}
+    		});
+    	}
+
+    	// Revokes the existing refresh token.
+        if (shouldLogoutWhenTokenRevoked()) {
+        	new RevokeTokenTask(refreshToken, clientId, loginServer).execute();
         }
     }
 
     /**
-     * Set a user agent string based on the mobile SDK version. We are building
+     * Get a user agent string based on the mobile SDK version. We are building
      * a user agent of the form: 
      *   SalesforceMobileSDK/<salesforceSDK version> android/<android OS version> appName/appVersion <Native|Hybrid>
      * @return The user agent string to use for all requests.
@@ -440,5 +470,33 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      */
     public static String decryptWithPasscode(String data, String passcode) {
         return Encryptor.decrypt(data, ForceApp.APP.getEncryptionKeyForPasscode(passcode));
+    }
+
+    /**
+     * Simple AsyncTask to handle revocation of refresh token upon logout.
+     *
+     * @author bhariharan
+     */
+    private class RevokeTokenTask extends AsyncTask<Void, Void, Void> {
+
+    	private String refreshToken;
+    	private String clientId;
+    	private String loginServer;
+
+    	public RevokeTokenTask(String refreshToken, String clientId, String loginServer) {
+    		this.refreshToken = refreshToken;
+    		this.clientId = clientId;
+    		this.loginServer = loginServer;
+    	}
+
+		@Override
+		protected Void doInBackground(Void... nothings) {
+	        try {
+	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken);
+	        } catch (Exception e) {
+	        	Log.w("ForceApp:revokeToken", e);
+	        }
+	        return null;
+		}
     }
 }

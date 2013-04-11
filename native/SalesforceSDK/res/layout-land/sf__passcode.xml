@@ -1,61 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/SalesforceSDK.Passcode.Background"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="#000000">
+    android:orientation="vertical"
+    tools:context=".ui.PasscodeActivity">
 
-    <LinearLayout android:orientation="vertical"
-        android:padding="10dp"
-        android:layout_marginTop="100dp"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:background="#888888">
+    <LinearLayout style="@style/SalesforceSDK.Passcode.Box"
+        android:orientation="vertical">
 
-	    <TextView android:id="@+id/sf__passcode_title"
-            android:layout_width="fill_parent"
-	    	android:layout_height="wrap_content"
-	    	android:gravity="center"
-	    	android:layout_marginTop="10dp"
-	    	android:layout_marginBottom="10dp" />
+        <TextView android:id="@+id/sf__passcode_title"
+            style="@style/SalesforceSDK.Passcode.Text.Title" />
 
         <EditText android:id="@+id/sf__passcode_text"
-	        android:layout_width="wrap_content"
-	    	android:layout_height="wrap_content"
-	    	android:layout_gravity="center_horizontal"
-	    	android:lines="1"
-	    	android:maxLength="10"
-	    	android:minWidth="160dp"
-	    	android:imeOptions="actionGo"
-	    	android:inputType="textPassword" />
+            style="@style/SalesforceSDK.Passcode.Text.Entry"
+            android:inputType="textPassword" />
 
         <TextView android:id="@+id/sf__passcode_forgot"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" 
-            android:layout_gravity="center_horizontal"
-            android:layout_marginTop="10dp"
-            android:textColor="#000"
-            android:gravity="center"
-            android:clickable="true" />
+            style="@style/SalesforceSDK.Passcode.Text.ForgotPassword" />
 
         <TextView android:id="@+id/sf__passcode_error"
-	        android:layout_width="wrap_content"
-	    	android:layout_height="wrap_content" 
-	    	android:layout_gravity="center_horizontal"
-	    	android:layout_marginTop="10dp"
-	    	android:textColor="#F00"
-	    	android:gravity="center" />
+            style="@style/SalesforceSDK.Passcode.Text.Error" />
 
         <TextView android:id="@+id/sf__passcode_instructions"
-            android:visibility="invisible"
-	        android:layout_width="wrap_content"
-	    	android:layout_height="wrap_content" 
-	    	android:layout_gravity="center_horizontal"
-	    	android:gravity="center"
-	    	android:layout_marginTop="10dp"
-	    	android:layout_marginLeft="30dp"
-	    	android:layout_marginRight="30dp" />
-	</LinearLayout>
+            style="@style/SalesforceSDK.Passcode.Text.Instructions"
+            android:visibility="invisible" />
+    </LinearLayout>
 </RelativeLayout>

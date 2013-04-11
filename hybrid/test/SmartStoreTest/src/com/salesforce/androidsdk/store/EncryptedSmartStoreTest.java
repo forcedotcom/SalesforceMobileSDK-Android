@@ -28,6 +28,8 @@ package com.salesforce.androidsdk.store;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
+
 /**
  * Tests for encrypted smart store
  *
