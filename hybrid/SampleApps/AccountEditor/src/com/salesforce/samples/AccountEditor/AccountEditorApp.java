@@ -28,7 +28,7 @@ package com.salesforce.samples.AccountEditor;
 
 import android.app.Activity;
 
-import com.salesforce.androidsdk.app.ForceAppWithSmartStore;
+import com.salesforce.androidsdk.smartstore.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 
 
