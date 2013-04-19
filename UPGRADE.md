@@ -1,3 +1,9 @@
+## Hybrid 1.5 to 2.0 upgrade
+- Update your Mobile SDK plugins and artifacts:
+    - `SFHybridApp.js`, `SFSmartStorePlugin.js` and `SalesforceOAuthPlugin.js` are now combined in `cordova.force.js`
+    - `bootstrap.html` is no longer needed
+    - `bootconfig.js` is now replaced by `bootconfig.json`
+
 ## Hybrid 1.4.7 to 1.5 upgrade
 - Update your Mobile SDK plugins and artifacts:
     - `SFHybridApp.js`
