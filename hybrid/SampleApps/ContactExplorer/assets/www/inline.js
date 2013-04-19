@@ -1,1 +1,1 @@
-../../../../../external/shared/PhoneGap/contactexplorer/inline.js
+../../../../../external/shared/SampleApps/contactexplorer/inline.js

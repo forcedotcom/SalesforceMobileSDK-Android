@@ -48,6 +48,7 @@ usage ()
     echo "        RestExplorer"
     echo "        TemplateApp"
     echo "        CloudTunes"
+    echo "        AccountEditor"
     echo "        ContactExplorer"
     echo "        VFConnector"
     echo "        SFDCAccounts"
@@ -153,6 +154,7 @@ else
     build_project_if_requested "CloudTunes" $NATIVE_TOP/SampleApps/CloudTunes
     build_project_if_requested "RestExplorer" $NATIVE_TOP/SampleApps/RestExplorer
     build_project_if_requested "SmartStore" $HYBRID_TOP/SmartStore
+    build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor
     build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer
     build_project_if_requested "SFDCAccounts" $HYBRID_TOP/SampleApps/SFDCAccounts
     build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer
