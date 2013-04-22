@@ -77,7 +77,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 		super.onCreate(savedInstanceState);
 
 		// Object which allows reference to resources living outside the SDK
-		salesforceR = ForceApp.APP.getSalesforceR();
+		salesforceR = ForceApp.getInstance().getSalesforceR();
 
 		// Getting login options from intent's extras
 		LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());

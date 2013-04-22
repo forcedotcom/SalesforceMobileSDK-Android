@@ -110,7 +110,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		bootconfig = BootConfig.getBootConfig(this);
 
         // Get clientManager
-        clientManager = new ClientManager(this, ForceApp.APP.getAccountType(), ForceApp.APP.getLoginOptions(), ForceApp.APP.shouldLogoutWhenTokenRevoked());
+        clientManager = new ClientManager(this, ForceApp.getInstance().getAccountType(), ForceApp.getInstance().getLoginOptions(), ForceApp.getInstance().shouldLogoutWhenTokenRevoked());
 		
         // Get client (if already logged in)
         try {
@@ -120,7 +120,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		}
         
         // Passcode manager
-        passcodeManager = ForceApp.APP.getPasscodeManager();
+        passcodeManager = ForceApp.getInstance().getPasscodeManager();
         tokenRevocationReceiver = new TokenRevocationReceiver(this);
 
         // Ensure we have a CookieSyncManager
@@ -134,7 +134,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
     public void init(CordovaWebView webView, CordovaWebViewClient webViewClient, CordovaChromeClient webChromeClient) {
     	Log.i("SalesforceDroidGapActivity.init", "init called");
         super.init(webView, new SalesforceGapViewClient(this, webView), webChromeClient);
-        final String uaStr = ForceApp.APP.getUserAgent();
+        final String uaStr = ForceApp.getInstance().getUserAgent();
         if (null != this.appView) {
             WebSettings webSettings = this.appView.getSettings();
             String origUserAgent = webSettings.getUserAgentString();
@@ -191,7 +191,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		if (bootconfig.shouldAuthenticate()) {
 
 			// Online
-			if (ForceApp.APP.hasNetwork()) {
+			if (ForceApp.getInstance().hasNetwork()) {
 		    	Log.i("SalesforceDroidGapActivity.onResumeNotLoggedIn", "Should authenticate / online - authenticating");
 				authenticate(null);
 			}
@@ -235,7 +235,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		else {
 
 			// Online
-			if (ForceApp.APP.hasNetwork()) {
+			if (ForceApp.getInstance().hasNetwork()) {
 		    	Log.i("SalesforceDroidGapActivity.onResumeLoggedInNotLoaded", "Remote start page / online - loading web app");
 		    	loadRemoteStartPage();
 			}
@@ -286,7 +286,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
 			    	Log.i("SalesforceDroidGapActivity.authenticate", "authenticatedRestClient called with null client");
-					ForceApp.APP.logout(SalesforceDroidGapActivity.this);
+					ForceApp.getInstance().logout(SalesforceDroidGapActivity.this);
 	            } else {
 			    	Log.i("SalesforceDroidGapActivity.authenticate", "authenticatedRestClient called with actual client");
 	                SalesforceDroidGapActivity.this.client = client;
@@ -348,7 +348,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
                     // Only logout if we are NOT offline
                     if (!(exception instanceof NoNetworkException)) {
-                        ForceApp.APP.logout(SalesforceDroidGapActivity.this);
+                        ForceApp.getInstance().logout(SalesforceDroidGapActivity.this);
                     }
                 }
             });
@@ -375,7 +375,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
      */
     private static void setVFCookies(URI instanceUrl) {
     	if (instanceUrl != null) {
-        	final WebView view = new WebView(ForceApp.APP);
+        	final WebView view = new WebView(ForceApp.getInstance().getAppContext());
         	view.setVisibility(View.GONE);
         	view.setWebViewClient(new WebViewClient() {
 
@@ -490,7 +490,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	       data.put(LOGIN_URL, clientInfo.loginUrl.toString());
 	       data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
 	       data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
-	       data.put(USER_AGENT, ForceApp.APP.getUserAgent());
+	       data.put(USER_AGENT, ForceApp.getInstance().getUserAgent());
 	       return new JSONObject(data);
 	   } else {
 		   return null;

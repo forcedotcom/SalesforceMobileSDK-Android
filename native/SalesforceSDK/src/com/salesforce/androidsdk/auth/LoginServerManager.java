@@ -211,7 +211,7 @@ public class LoginServerManager {
 	 * Return production and sandbox as the login servers (only called when servers.xml is missing)
 	 */
 	List<LoginServer> getLegacyLoginServers() {
-		SalesforceR salesforceR = ForceApp.APP.getSalesforceR();
+		SalesforceR salesforceR = ForceApp.getInstance().getSalesforceR();
 		List<LoginServer> loginServers = new ArrayList<LoginServer>();
 
 		int index = 0;

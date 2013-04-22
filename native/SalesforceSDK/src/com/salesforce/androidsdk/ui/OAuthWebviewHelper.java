@@ -159,7 +159,7 @@ public class OAuthWebviewHelper {
      */
     public void onNewPasscode() {
         if (accountOptions != null) {
-            loginOptions.passcodeHash = ForceApp.APP.getPasscodeHash();
+            loginOptions.passcodeHash = ForceApp.getInstance().getPasscodeHash();
             addAccount();
             callback.finish();
         }
@@ -215,7 +215,7 @@ public class OAuthWebviewHelper {
 
     protected void showError(Exception exception) {
         Toast.makeText(getContext(),
-                getContext().getString(ForceApp.APP.getSalesforceR().stringGenericError(), exception.toString()),
+                getContext().getString(ForceApp.getInstance().getSalesforceR().stringGenericError(), exception.toString()),
                 Toast.LENGTH_LONG).show();
     }
 
@@ -267,7 +267,7 @@ public class OAuthWebviewHelper {
      * @return login url
      */
     protected String getLoginUrl() {
-    	return ForceApp.APP.getLoginServerManager().getSelectedLoginServer().url;
+    	return ForceApp.getInstance().getLoginServerManager().getSelectedLoginServer().url;
     }
 
     /**
@@ -309,7 +309,7 @@ public class OAuthWebviewHelper {
             int primError = error.getPrimaryError();
 
             // Figuring out string resource id
-            SalesforceR r = ForceApp.APP.getSalesforceR();
+            SalesforceR r = ForceApp.getInstance().getSalesforceR();
             int primErrorStringId = r.stringSSLUnknownError();
             switch (primError) {
             case SslError.SSL_EXPIRED:      primErrorStringId = r.stringSSLExpired(); break;
@@ -364,8 +364,8 @@ public class OAuthWebviewHelper {
             if (backgroundException != null) {
                 Log.w("LoginActiviy.onAuthFlowComplete", backgroundException);
                 // Error
-                onAuthFlowError(getContext().getString(ForceApp.APP.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                        getContext().getString(ForceApp.APP.getSalesforceR().stringGenericAuthenticationErrorBody()));
+                onAuthFlowError(getContext().getString(ForceApp.getInstance().getSalesforceR().stringGenericAuthenticationErrorTitle()),
+                        getContext().getString(ForceApp.getInstance().getSalesforceR().stringGenericAuthenticationErrorBody()));
                 callback.finish();
             } else {
                 // Putting together all the information needed to create the new account
@@ -373,14 +373,14 @@ public class OAuthWebviewHelper {
 
                 // Screen lock required by mobile policy
                 if (id.screenLockTimeout > 0) {
-                    PasscodeManager passcodeManager = ForceApp.APP.getPasscodeManager();
+                    PasscodeManager passcodeManager = ForceApp.getInstance().getPasscodeManager();
                     passcodeManager.reset(getContext()); // get rid of existing passcode if any
                     passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60 /* converting minutes to milliseconds*/);
                     passcodeManager.setMinPasscodeLength(id.pinLength);
 
                     // This will bring up the create passcode screen - we will create the account in onResume
-                    ForceApp.APP.getPasscodeManager().setEnabled(true);
-                    ForceApp.APP.getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
+                    ForceApp.getInstance().getPasscodeManager().setEnabled(true);
+                    ForceApp.getInstance().getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
                 }
                 // No screen lock required or no mobile policy specified
                 else {
@@ -421,7 +421,7 @@ public class OAuthWebviewHelper {
 
     protected void addAccount() {
 
-        ClientManager clientManager = new ClientManager(getContext(), ForceApp.APP.getAccountType(), loginOptions, ForceApp.APP.shouldLogoutWhenTokenRevoked());
+        ClientManager clientManager = new ClientManager(getContext(), ForceApp.getInstance().getAccountType(), loginOptions, ForceApp.getInstance().shouldLogoutWhenTokenRevoked());
 
         // Create account name (shown in Settings -> Accounts & sync)
         String accountName = buildAccountName(accountOptions.username);
@@ -447,7 +447,7 @@ public class OAuthWebviewHelper {
      * @return name to be shown for account in Settings -> Accounts & Sync
      */
     protected String buildAccountName(String username) {
-        return String.format("%s (%s)", username, ForceApp.APP.getApplicationName());
+        return String.format("%s (%s)", username, ForceApp.getInstance().getApplicationName());
     }
 
     /**

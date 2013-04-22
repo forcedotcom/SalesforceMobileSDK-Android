@@ -62,10 +62,10 @@ public class CustomServerUrlEditor extends Dialog {
 		super(context);
 		
 		// Object which allows reference to resources living outside the SDK
-		salesforceR = ForceApp.APP.getSalesforceR();
+		salesforceR = ForceApp.getInstance().getSalesforceR();
 		
 		// Login server manager
-		loginServerManager = ForceApp.APP.getLoginServerManager();
+		loginServerManager = ForceApp.getInstance().getLoginServerManager();
 		
 		// Width
 		this.width = width;

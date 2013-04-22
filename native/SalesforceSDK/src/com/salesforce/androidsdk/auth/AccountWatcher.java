@@ -60,7 +60,7 @@ public class AccountWatcher implements OnAccountsUpdateListener {
 
         // Check if there's an entry for our account type, if not fire the callback.
         for (final Account a : accounts) {
-            if (ForceApp.APP.getAccountType().equals(a.type)) {
+            if (ForceApp.getInstance().getAccountType().equals(a.type)) {
                 return;
             }
         }

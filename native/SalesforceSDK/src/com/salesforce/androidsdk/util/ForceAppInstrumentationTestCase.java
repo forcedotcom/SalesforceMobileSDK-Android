@@ -62,7 +62,7 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
         try {
         	waitForStartup();
 			logout();
-			ForceApp.APP.getLoginServerManager().useSandbox();
+			ForceApp.getInstance().getLoginServerManager().useSandbox();
 			launchMainActivity();
 			login();
         }
@@ -105,13 +105,13 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
     
 	protected void waitForStartup() {
 		// Wait for app initialization to complete
-	    if (ForceApp.APP == null) {
+	    if (ForceApp.getInstance() == null) {
 	    	waitForEvent(EventType.AppCreateComplete);
 	    }
 	}
 
 	protected void logout() {
-		ForceApp.APP.logout(null, false);
+		ForceApp.getInstance().logout(null, false);
 		waitForEvent(EventType.LogoutComplete);
 	}
 
@@ -127,7 +127,7 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 	protected void launchMainActivity() {
 		final Intent intent = new Intent(Intent.ACTION_MAIN);
 		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		intent.setClassName(instrumentation.getTargetContext(), ForceApp.APP.getMainActivityClass().getName());
+		intent.setClassName(instrumentation.getTargetContext(), ForceApp.getInstance().getMainActivityClass().getName());
 		mainActivity = instrumentation.startActivitySync(intent);
 	}
 

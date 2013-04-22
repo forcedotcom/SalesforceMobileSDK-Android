@@ -56,7 +56,7 @@ public class BaseActivityInstrumentationTestCase<T extends Activity> extends Act
 
         eq = new EventsListenerQueue();
         // Wait for app initialization to complete
-        if (ForceApp.APP == null) {
+        if (ForceApp.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
     }

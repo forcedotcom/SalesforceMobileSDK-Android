@@ -51,9 +51,9 @@ public class TokenRevocationReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		if (intent != null && intent.getAction().equals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT)) {
-			Toast.makeText(curActivity, ForceApp.APP.getSalesforceR().stringAccessTokenRevoked(), Toast.LENGTH_LONG).show();
-			if (ForceApp.APP.shouldLogoutWhenTokenRevoked()) {
-				ForceApp.APP.logout(curActivity, true);
+			Toast.makeText(curActivity, ForceApp.getInstance().getSalesforceR().stringAccessTokenRevoked(), Toast.LENGTH_LONG).show();
+			if (ForceApp.getInstance().shouldLogoutWhenTokenRevoked()) {
+				ForceApp.getInstance().logout(curActivity, true);
 			}
 		}
 	}

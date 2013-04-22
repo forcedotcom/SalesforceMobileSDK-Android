@@ -141,7 +141,7 @@ public class ClientManager {
             Log.i("ClientManager:peekRestClient", "No user account found", e);
             throw e;
         }
-        String passcodeHash = (ForceApp.APP == null /* only in tests */ ? loginOptions.passcodeHash : ForceApp.APP.getPasscodeHash());
+        String passcodeHash = (ForceApp.getInstance() == null /* only in tests */ ? loginOptions.passcodeHash : ForceApp.getInstance().getPasscodeHash());
         String authToken = ForceApp.decryptWithPasscode(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
         String refreshToken = ForceApp.decryptWithPasscode(accountManager.getPassword(acc), passcodeHash);
 
@@ -293,9 +293,9 @@ public class ClientManager {
     public static synchronized void changePasscode(String oldPass, String newPass) {
 
         // Update data stored in AccountManager with new encryption key.
-        final AccountManager acctManager = AccountManager.get(ForceApp.APP);
+        final AccountManager acctManager = AccountManager.get(ForceApp.getInstance().getAppContext());
         if (acctManager != null) {
-            final Account[] accounts = acctManager.getAccountsByType(ForceApp.APP.getAccountType());
+            final Account[] accounts = acctManager.getAccountsByType(ForceApp.getInstance().getAccountType());
             if (accounts != null && accounts.length > 0) {
                 final Account account = accounts[0];
 
@@ -468,12 +468,12 @@ public class ClientManager {
                             	if (Looper.myLooper() == null) {
                                     Looper.prepare();	
                             	}
-                                ForceApp.APP.logout(null, false);
+                                ForceApp.getInstance().logout(null, false);
                             }
 
                             // Broadcasts an intent that the access token has been revoked.
                             final Intent revokeIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
-                            ForceApp.APP.sendBroadcast(revokeIntent);
+                            ForceApp.getInstance().getAppContext().sendBroadcast(revokeIntent);
                         }
                     }
                 }

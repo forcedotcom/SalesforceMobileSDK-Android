@@ -175,9 +175,9 @@ public class ServerPickerActivity extends Activity implements
         super.onCreate(savedInstanceState);
 
         // Object which allows reference to resources living outside the SDK
-        salesforceR = ForceApp.APP.getSalesforceR();
+        salesforceR = ForceApp.getInstance().getSalesforceR();
         
-        loginServerManager = ForceApp.APP.getLoginServerManager();
+        loginServerManager = ForceApp.getInstance().getLoginServerManager();
 
         setContentView(salesforceR.layoutServerPicker());
 

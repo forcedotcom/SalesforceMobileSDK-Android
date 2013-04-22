@@ -66,7 +66,7 @@ public abstract class NativeMainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 
 		// Passcode manager
-		passcodeManager = ForceApp.APP.getPasscodeManager();
+		passcodeManager = ForceApp.getInstance().getPasscodeManager();
 		tokenRevocationReceiver = new TokenRevocationReceiver(this);
 
 		// Let observers know
@@ -82,16 +82,16 @@ public abstract class NativeMainActivity extends Activity {
 		if (passcodeManager.onResume(this)) {
 		
 			// Login options
-			String accountType = ForceApp.APP.getAccountType();
-	    	LoginOptions loginOptions = ForceApp.APP.getLoginOptions();
+			String accountType = ForceApp.getInstance().getAccountType();
+	    	LoginOptions loginOptions = ForceApp.getInstance().getLoginOptions();
 			
 			// Get a rest client
-			new ClientManager(this, accountType, loginOptions, ForceApp.APP.shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+			new ClientManager(this, accountType, loginOptions, ForceApp.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 
 				@Override
 				public void authenticatedRestClient(RestClient client) {
 					if (client == null) {
-						ForceApp.APP.logout(NativeMainActivity.this);
+						ForceApp.getInstance().logout(NativeMainActivity.this);
 						return;
 					}
 

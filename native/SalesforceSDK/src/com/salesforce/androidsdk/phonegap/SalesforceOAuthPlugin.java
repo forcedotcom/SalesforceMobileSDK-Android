@@ -121,7 +121,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
      */
     protected void logoutCurrentUser(CallbackContext callbackContext) {
         Log.i("SalesforceOAuthPlugin.logoutCurrentUser", "logoutCurrentUser called");
-    	ForceApp.APP.logout(cordova.getActivity());
+    	ForceApp.getInstance().logout(cordova.getActivity());
         callbackContext.success();
     }
 }

@@ -47,7 +47,7 @@ public class ManageSpaceActivity extends Activity {
 	@Override
 	public void onCreate(Bundle savedState) {
 		super.onCreate(savedState);
-		salesforceR = ForceApp.APP.getSalesforceR();
+		salesforceR = ForceApp.getInstance().getSalesforceR();
 		setContentView(salesforceR.layoutManageSpace());
 		manageSpaceDialog = buildManageSpaceDialog();
 		manageSpaceDialog.show();
@@ -72,7 +72,7 @@ public class ManageSpaceActivity extends Activity {
 
         	@Override
         	public void onClick(DialogInterface dialog, int which) {
-        		ForceApp.APP.logout(ManageSpaceActivity.this, false);
+        		ForceApp.getInstance().logout(ManageSpaceActivity.this, false);
         	}
         }).setNegativeButton(getString(salesforceR.stringPasscodeLogoutNo()),
         new DialogInterface.OnClickListener() {

@@ -104,7 +104,7 @@ public class AuthenticatorService extends Service {
                 throws NetworkErrorException {
             // Log.i("Authenticator:addAccount", "Options: " + options);
         	if (isAddFromSettings(options)) {
-        		options.putAll(ForceApp.APP.getLoginOptions().asBundle());
+        		options.putAll(ForceApp.getInstance().getLoginOptions().asBundle());
         	}
         	return makeAuthIntentBundle(response, options);
         }
@@ -197,7 +197,7 @@ public class AuthenticatorService extends Service {
          */
         private Bundle makeAuthIntentBundle(AccountAuthenticatorResponse response, Bundle options) {
             Bundle reply = new Bundle();
-            Intent i = new Intent(context, ForceApp.APP.getLoginActivityClass());
+            Intent i = new Intent(context, ForceApp.getInstance().getLoginActivityClass());
             i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             i.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
             if (options != null)
