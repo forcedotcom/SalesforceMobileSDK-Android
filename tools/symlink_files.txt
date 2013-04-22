@@ -24,6 +24,7 @@
 "external\shared\external\jquery" "hybrid\test\ForcePluginsTest\assets\www\jquery"
 "external\shared\external\qunit\qunit.css" "hybrid\test\ForcePluginsTest\assets\www\qunit.css"
 "external\shared\external\qunit\qunit.js" "hybrid\test\ForcePluginsTest\assets\www\qunit.js"
+"external\shared\libs\cordova.force.js" "hybrid\SampleApps\AccountEditor\assets\www\cordova.force.js"
 "external\shared\libs\cordova.force.js" "hybrid\SampleApps\ContactExplorer\assets\www\cordova.force.js"
 "external\shared\libs\cordova.force.js" "hybrid\SampleApps\SFDCAccounts\assets\www\cordova.force.js"
 "external\shared\libs\cordova.force.js" "hybrid\SampleApps\SmartStoreExplorer\assets\www\cordova.force.js"
