@@ -32,7 +32,6 @@ import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
-import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -86,11 +85,11 @@ public class ForceApp implements AccountRemoved {
     /**
      * Instance of the ForceApp to use for this process.
      */
-    public static ForceApp INSTANCE;
+    protected static ForceApp INSTANCE;
 
-    private Context context;
-    private String appEncryptionKey;
-    private LoginOptions loginOptions;
+    protected Context context;
+    protected String appEncryptionKey;
+    protected LoginOptions loginOptions;
     private String encryptionKey;
     private AccountWatcher accWatcher;
     private SalesforceR salesforceR = new SalesforceR();
@@ -112,7 +111,7 @@ public class ForceApp implements AccountRemoved {
     }
 
     /**
-     * Private constructor.
+     * Protected constructor.
      *
      * @param context Application context.
      * @param key Key used for encryption - must be Base64 encoded.
@@ -130,7 +129,7 @@ public class ForceApp implements AccountRemoved {
      *
      * @param loginOptions Login options used - must be non null for a native app, can be null for a hybrid app.
      */
-    private ForceApp(Context context, String key, LoginOptions loginOptions) {
+    protected ForceApp(Context context, String key, LoginOptions loginOptions) {
     	this.context = context;
     	this.appEncryptionKey = key;
     	this.loginOptions = loginOptions;
@@ -139,7 +138,9 @@ public class ForceApp implements AccountRemoved {
     /**
      * @return The class for the main activity.
      */
-    public abstract Class<? extends Activity> getMainActivityClass();
+    public Class<? extends Activity> getMainActivityClass() {
+    	return null;
+    }
 
     /**
      * This function must return the same value for name
@@ -160,7 +161,9 @@ public class ForceApp implements AccountRemoved {
      * @param name The name associated with the key.
      * @return The key used for encrypting salts and keys.
      */
-    public String getKey(String name);
+    public String getKey(String name) {
+    	return null;
+    }
 
     /**
      * Before 1.3, SalesforceSDK was packaged as a jar, and project had to provide a subclass of SalesforceR.

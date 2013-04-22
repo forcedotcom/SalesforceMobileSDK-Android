@@ -38,7 +38,6 @@ import org.json.JSONObject;
 import android.util.Log;
 import android.util.SparseArray;
 
-import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.phonegap.ForcePlugin;
 import com.salesforce.androidsdk.phonegap.JavaScriptPluginVersion;
 import com.salesforce.androidsdk.smartstore.app.ForceAppWithSmartStore;
@@ -399,6 +398,6 @@ public class SmartStorePlugin extends ForcePlugin {
 	
 
 	private SmartStore getSmartStore() {
-		return ((ForceAppWithSmartStore) ForceApp.APP).getSmartStore();
+		return (ForceAppWithSmartStore.getInstance()).getSmartStore();
 	}
 }

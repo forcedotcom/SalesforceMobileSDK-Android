@@ -28,64 +28,114 @@ package com.salesforce.androidsdk.smartstore.app;
 
 import net.sqlcipher.database.SQLiteDatabase;
 import android.app.Activity;
+import android.content.Context;
 
 import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 
 /**
  * Super class for all force applications that use the smartstore.
  */
-public abstract class ForceAppWithSmartStore extends ForceApp {
+public class ForceAppWithSmartStore extends ForceApp {
 
-	@Override
-	public void onCreate() {
-		super.onCreate();
+    /**
+     * Protected constructor.
+     *
+     * @param context Application context.
+     * @param key Key used for encryption - must be Base64 encoded.
+     *
+     * 			  {@link Encryptor#isBase64Encoded(String)} can be used to
+     * 		      determine whether the generated key is Base64 encoded.
+     *
+     * 		      {@link Encryptor#hash(String, String)} can be used to
+     * 		      generate a Base64 encoded string.
+     *
+     * 		      For example:
+     * 			  <code>
+     * 			  Encryptor.hash(name + "12s9adfgret=6235inkasd=012", name + "12kl0dsakj4-cuygsdf625wkjasdol8");
+     * 			  </code>
+     *
+     * @param loginOptions Login options used - must be non null for a native app, can be null for a hybrid app.
+     */
+    protected ForceAppWithSmartStore(Context context, String key, LoginOptions loginOptions) {
+    	super(context, key, loginOptions);
+    }
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by apps using the Salesforce Mobile SDK.
+	 *
+	 * @param context Application context.
+     * @param key Key used for encryption.
+     * @param loginOptions Login options used - must be non null for a native app, can be null for a hybrid app.
+	 */
+	public static void init(Context context, String key, LoginOptions loginOptions) {
+		ForceApp.init(context, key, loginOptions);
 
         // Upgrade to the latest version.
         UpgradeManagerWithSmartStore.getInstance().upgradeSmartStore();
 	}
-	
+
+    /**
+     * Returns a singleton instance of this class.
+     *
+     * @param context Application context.
+     * @return Singleton instance of ForceApp.
+     */
+    public static ForceAppWithSmartStore getInstance() {
+    	if (INSTANCE != null) {
+    		return (ForceAppWithSmartStore) INSTANCE;
+    	} else {
+            throw new RuntimeException("Applications need to call ForceAppWithSmartStore.init() first.");
+    	}
+    }
+
     @Override
     protected void cleanUp(Activity frontActivity) {
 
         // Reset smartstore.
         if (hasSmartStore()) {
-        	DBOpenHelper.deleteDatabase(this);
+        	DBOpenHelper.deleteDatabase(INSTANCE.getAppContext());
         }
-        
         super.cleanUp(frontActivity);
     }
-	
+
     @Override
     public synchronized void changePasscode(String oldPass, String newPass) {
     	if (isNewPasscode(oldPass, newPass)) {
 	        if (hasSmartStore()) {
-	
+
 	            // If the old passcode is null, use the default key.
-	            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(ForceApp.APP).getWritableDatabase(ForceApp.APP.getEncryptionKeyForPasscode(oldPass));
-	
+	            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context).getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
+
 	            // If the new passcode is null, use the default key.
-	            SmartStore.changeKey(db, ForceApp.APP.getEncryptionKeyForPasscode(newPass));
+	            SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
 	        }
 	        super.changePasscode(oldPass, newPass);
 		}
     }
 
     /**
-     * @return the database used that contains the smart store
+     * Returns the database used for smart store.
+     *
+     * @return SmartStore instance.
      */
     public SmartStore getSmartStore() {
-        String passcodeHash = getPasscodeHash();
-        SQLiteDatabase db = DBOpenHelper.getOpenHelper(this).getWritableDatabase(passcodeHash == null ? getEncryptionKeyForPasscode(null) : passcodeHash);
+        final String passcodeHash = getPasscodeHash();
+        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context).getWritableDatabase(passcodeHash == null ? getEncryptionKeyForPasscode(null) : passcodeHash);
         return new SmartStore(db);
     }
-    
+
     /**
-     * @return true if the application has a smartstore database
+     * Returns whether smart store is enabled.
+     *
+     * @return True - if the application has a smart store database, False - otherwise.
      */
     public boolean hasSmartStore() {
-        return getDatabasePath(DBOpenHelper.DB_NAME).exists();
+        return context.getDatabasePath(DBOpenHelper.DB_NAME).exists();
     }
-
 }
