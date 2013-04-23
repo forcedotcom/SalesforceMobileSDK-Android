@@ -44,7 +44,6 @@ import org.apache.http.util.EntityUtils;
 
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Application;
 import android.app.Instrumentation.ActivityMonitor;
 import android.content.Context;
 import android.content.IntentFilter;
@@ -110,11 +109,11 @@ public class ExplorerActivityTest extends
         super.setUp();
         setActivityInitialTouchMode(false);
         targetContext = getInstrumentation().getTargetContext();
-        clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null, ForceApp.APP.shouldLogoutWhenTokenRevoked());
+        clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null, ForceApp.getInstance().shouldLogoutWhenTokenRevoked());
         clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
                 TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, null);
-        mockHttpAccessor = new MockHttpAccess(RestExplorerApp.APP);
-        ForceApp.APP.getPasscodeManager().setTimeoutMs(0 /* disabled */);
+        mockHttpAccessor = new MockHttpAccess(ForceApp.getInstance().getAppContext());
+        ForceApp.getInstance().getPasscodeManager().setTimeoutMs(0 /* disabled */);
     }
 
     /**
@@ -397,7 +396,7 @@ public class ExplorerActivityTest extends
      * Mock http access
      */
     private static class MockHttpAccess extends HttpAccess {
-        protected MockHttpAccess(Application app) {
+        protected MockHttpAccess(Context app) {
             super(app, null);
         }
 

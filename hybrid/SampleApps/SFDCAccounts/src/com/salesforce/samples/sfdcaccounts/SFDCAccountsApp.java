@@ -26,7 +26,7 @@
  */
 package com.salesforce.samples.sfdcaccounts;
 
-import android.app.Activity;
+import android.app.Application;
 
 import com.salesforce.androidsdk.smartstore.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
@@ -36,15 +36,11 @@ import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
  *
  * @author bhariharan
  */
-public class SFDCAccountsApp extends ForceAppWithSmartStore {
+public class SFDCAccountsApp extends Application {
 
-    @Override
-    public Class<? extends Activity> getMainActivityClass() {
-        return SalesforceDroidGapActivity.class;
-    }
-
-    @Override
-    protected String getKey(String name) {
-        return null;
-    }
+	@Override
+	public void onCreate() {
+		super.onCreate();
+		ForceAppWithSmartStore.init(getApplicationContext(), null, null, SalesforceDroidGapActivity.class, null);
+	}
 }

@@ -74,15 +74,15 @@ public class TrackListActivity  extends Activity {
 		super.onResume();
 		
 		// Login options
-		String accountType = ForceApp.APP.getAccountType();
-		LoginOptions loginOptions = ForceApp.APP.getLoginOptions();
+		String accountType = ForceApp.getInstance().getAccountType();
+		LoginOptions loginOptions = ForceApp.getInstance().getLoginOptions();
 		
-		new ClientManager(this, accountType, loginOptions, ForceApp.APP.shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+		new ClientManager(this, accountType, loginOptions, ForceApp.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 
 			@Override
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
-					ForceApp.APP.logout(TrackListActivity.this);
+					ForceApp.getInstance().logout(TrackListActivity.this);
 					return;
 				}
 				TrackListActivity.this.client = client;

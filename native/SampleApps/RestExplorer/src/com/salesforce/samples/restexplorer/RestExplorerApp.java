@@ -26,35 +26,22 @@
  */
 package com.salesforce.samples.restexplorer;
 
-import android.app.Activity;
+import android.app.Application;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.security.Encryptor;
 
 /**
- * Application class for our rest explorer
+ * Application class for the rest explorer app.
  */
-public class RestExplorerApp extends ForceApp {
+public class RestExplorerApp extends Application {
 
 	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return ExplorerActivity.class;
-	}
-
-	@Override
-	public LoginOptions getLoginOptions() {
-    	LoginOptions loginOptions = new LoginOptions(
-    			null, // login host is chosen by user through the server picker 
-    			ForceApp.APP.getPasscodeHash(),
-    			getString(R.string.oauth_callback_url),
-    			getString(R.string.oauth_client_id),
+	public void onCreate() {
+		super.onCreate();
+		final LoginOptions loginOptions = new LoginOptions(null, null,
+    			getString(R.string.oauth_callback_url), getString(R.string.oauth_client_id),
     			new String[] {"api"});
-    	return loginOptions;
-	}
-	
-	@Override
-	protected String getKey(String name) {
-		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
+		ForceApp.init(getApplicationContext(), null, loginOptions, ExplorerActivity.class, null);
 	}
 }

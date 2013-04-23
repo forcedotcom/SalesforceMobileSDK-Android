@@ -55,7 +55,7 @@ public class PasscodeActivityTest extends
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		passcodeManager = ForceApp.APP.getPasscodeManager();
+		passcodeManager = ForceApp.getInstance().getPasscodeManager();
 		passcodeManager.reset(targetContext);
 		passcodeManager.setTimeoutMs(600000);
 		assertTrue("Application should be locked", passcodeManager.isLocked());

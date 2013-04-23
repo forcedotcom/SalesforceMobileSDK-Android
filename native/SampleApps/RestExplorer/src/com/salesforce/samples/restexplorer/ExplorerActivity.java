@@ -104,7 +104,7 @@ public class ExplorerActivity extends TabActivity {
 		super.onCreate(savedInstanceState);
 
 		// Passcode manager
-		passcodeManager = ForceApp.APP.getPasscodeManager();
+		passcodeManager = ForceApp.getInstance().getPasscodeManager();
 		tokenRevocationReceiver = new TokenRevocationReceiver(this);
 		
 		// ApiVersion
@@ -147,20 +147,20 @@ public class ExplorerActivity extends TabActivity {
 		// Bring up passcode screen if needed
 		if (passcodeManager.onResume(this)) {
 			// Login options
-			String accountType = ForceApp.APP.getAccountType();
+			String accountType = ForceApp.getInstance().getAccountType();
 	    	LoginOptions loginOptions = new LoginOptions(
 	    			null, // gets overridden by LoginActivity based on server picked by uuser 
-	    			ForceApp.APP.getPasscodeHash(),
+	    			ForceApp.getInstance().getPasscodeHash(),
 	    			getString(R.string.oauth_callback_url),
 	    			getString(R.string.oauth_client_id),
 	    			new String[] {"api"});
 			
 			// Get a rest client
-			new ClientManager(this, accountType, loginOptions, ForceApp.APP.shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+			new ClientManager(this, accountType, loginOptions, ForceApp.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 				@Override
 				public void authenticatedRestClient(RestClient client) {
 					if (client == null) {
-						ForceApp.APP.logout(ExplorerActivity.this);
+						ForceApp.getInstance().logout(ExplorerActivity.this);
 						return;
 					}
 					ExplorerActivity.this.client = client;
@@ -195,7 +195,7 @@ public class ExplorerActivity extends TabActivity {
 							@Override
 							public void onClick(DialogInterface dialog,
 									int which) {
-								ForceApp.APP.logout(ExplorerActivity.this);
+								ForceApp.getInstance().logout(ExplorerActivity.this);
 							}
 						})
 				.setNegativeButton(R.string.logout_cancel, null)
@@ -656,7 +656,7 @@ public class ExplorerActivity extends TabActivity {
 	 */
 	private void printInfo() {
 		printHeader("Info");
-		println(ForceApp.APP);
+		println(ForceApp.getInstance());
 		println(client);
 	}
 

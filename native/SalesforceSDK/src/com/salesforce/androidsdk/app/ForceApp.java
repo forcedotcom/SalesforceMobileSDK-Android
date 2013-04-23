@@ -90,6 +90,8 @@ public class ForceApp implements AccountRemoved {
     protected Context context;
     protected String appEncryptionKey;
     protected LoginOptions loginOptions;
+    protected Class<? extends Activity> mainActivityClass;
+    protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
     private String encryptionKey;
     private AccountWatcher accWatcher;
     private SalesforceR salesforceR = new SalesforceR();
@@ -128,18 +130,26 @@ public class ForceApp implements AccountRemoved {
      * 			  </code>
      *
      * @param loginOptions Login options used - must be non null for a native app, can be null for a hybrid app.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
      */
-    protected ForceApp(Context context, String key, LoginOptions loginOptions) {
+    protected ForceApp(Context context, String key, LoginOptions loginOptions, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	this.context = context;
     	this.appEncryptionKey = key;
     	this.loginOptions = loginOptions;
+    	this.mainActivityClass = mainActivity;
+    	if (loginActivity != null) {
+        	this.loginActivityClass = loginActivity;	
+    	}
     }
 
     /**
+     * Returns the class for the main activity.
+     *
      * @return The class for the main activity.
      */
     public Class<? extends Activity> getMainActivityClass() {
-    	return null;
+    	return mainActivityClass;
     }
 
     /**
@@ -175,11 +185,12 @@ public class ForceApp implements AccountRemoved {
     }
 
     /**
+     * Returns the class of the activity used to perform the login process and create the account.
+     *
      * @return the class of the activity used to perform the login process and create the account.
-     * You can override this if you want to customize the LoginAcitivty
      */
     public Class<? extends Activity> getLoginActivityClass() {
-        return LoginActivity.class;
+    	return loginActivityClass;
     }
 
 	/**
@@ -209,10 +220,12 @@ public class ForceApp implements AccountRemoved {
 	 * @param context Application context.
      * @param key Key used for encryption.
      * @param loginOptions Login options used - must be non null for a native app, can be null for a hybrid app.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
 	 */
-    public static void init(Context context, String key, LoginOptions loginOptions) {
+    public static void init(Context context, String key, LoginOptions loginOptions, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	if (INSTANCE == null) {
-    		INSTANCE = new ForceApp(context, key, loginOptions);
+    		INSTANCE = new ForceApp(context, key, loginOptions, mainActivity, loginActivity);
     	}
 
         // Initializes the encryption module.

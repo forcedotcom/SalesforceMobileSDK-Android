@@ -26,25 +26,19 @@
  */
 package com.salesforce.androidsdk;
 
-import android.app.Activity;
+import android.app.Application;
 
 import com.salesforce.androidsdk.smartstore.app.ForceAppWithSmartStore;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 
 /**
- * Test application for smart store plugin
- * All Salesforce mobile app must extend ForceApp. 
- * ForceApp takes care of intializing the network http clients (among other things).
+ * Test application for smart store plugin.
  */
-public class ForcePluginsTestApp extends ForceAppWithSmartStore {
+public class ForcePluginsTestApp extends Application {
 
 	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return SalesforceDroidGapActivity.class;
-	}
-	
-	@Override
-	protected String getKey(String name) {
-		return null;
+	public void onCreate() {
+		super.onCreate();
+		ForceAppWithSmartStore.init(getApplicationContext(), null, null, SalesforceDroidGapActivity.class, null);
 	}
 }

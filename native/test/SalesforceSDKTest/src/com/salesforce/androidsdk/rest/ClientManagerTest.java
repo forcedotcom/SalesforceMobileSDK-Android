@@ -93,7 +93,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Wait for app initialization to complete.
         Instrumentation.newApplication(TestForceApp.class, targetContext);
-        if (ForceApp.APP == null) {
+        if (ForceApp.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
     }
@@ -106,7 +106,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
             eq.tearDown();
             eq = null;
         }
-        ForceApp.APP = null;
         super.tearDown();
     }
 

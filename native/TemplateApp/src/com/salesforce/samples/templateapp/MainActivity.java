@@ -87,7 +87,7 @@ public class MainActivity extends NativeMainActivity {
 	 * @param v
 	 */
 	public void onLogoutClick(View v) {
-		ForceApp.APP.logout(this);
+		ForceApp.getInstance().logout(this);
 	}
 	
 	/**
@@ -139,7 +139,7 @@ public class MainActivity extends NativeMainActivity {
 			@Override
 			public void onError(Exception exception) {
                 Toast.makeText(MainActivity.this,
-                               MainActivity.this.getString(ForceApp.APP.getSalesforceR().stringGenericError(), exception.toString()),
+                               MainActivity.this.getString(ForceApp.getInstance().getSalesforceR().stringGenericError(), exception.toString()),
                                Toast.LENGTH_LONG).show();
 			}
 		});

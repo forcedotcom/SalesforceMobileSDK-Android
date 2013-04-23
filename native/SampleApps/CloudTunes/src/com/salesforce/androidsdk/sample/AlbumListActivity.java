@@ -87,16 +87,16 @@ public class AlbumListActivity extends ListActivity {
 		String accountType = getString(R.string.account_type);
 		LoginOptions loginOptions = new LoginOptions(
 				null, // gets overridden by LoginActivity based on server picked by uuser 
-				ForceApp.APP.getPasscodeHash(),
+				ForceApp.getInstance().getPasscodeHash(),
 				getString(R.string.oauth_callback_url),
 				getString(R.string.oauth_client_id),
 				new String[] {"api"});
-		new ClientManager(this, accountType, loginOptions, ForceApp.APP.shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+		new ClientManager(this, accountType, loginOptions, ForceApp.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 
 			@Override
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
-					ForceApp.APP.logout(AlbumListActivity.this);
+					ForceApp.getInstance().logout(AlbumListActivity.this);
 					return;
 				}
 				AlbumListActivity.this.client = client;
