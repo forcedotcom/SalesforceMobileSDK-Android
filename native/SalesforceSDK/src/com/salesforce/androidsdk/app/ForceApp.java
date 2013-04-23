@@ -190,14 +190,9 @@ public class ForceApp implements AccountRemoved {
 	public LoginOptions getLoginOptions() {
 		if (isHybrid()) {
             final BootConfig config = BootConfig.getBootConfig(context);
-
-            // Get clientManager
-            final LoginOptions loginOptions = new LoginOptions(null, // set by app
-                                                         getPasscodeHash(),
-                                                         config.getOauthRedirectURI(),
-                                                         config.getRemoteAccessConsumerKey(),
-                                                         config.getOauthScopes());
-        
+            final LoginOptions loginOptions = new LoginOptions(null,
+            		getPasscodeHash(), config.getOauthRedirectURI(),
+            		config.getRemoteAccessConsumerKey(), config.getOauthScopes());
             return loginOptions;
 		} else if (loginOptions != null) {
 			return loginOptions;
