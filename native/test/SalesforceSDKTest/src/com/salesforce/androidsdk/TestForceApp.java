@@ -38,6 +38,6 @@ import com.salesforce.androidsdk.app.ForceApp;
 public class TestForceApp extends Application {
 
     public TestForceApp() {
-    	ForceApp.init(getApplicationContext(), null, null, null, null);
+    	ForceApp.init(getApplicationContext(), null, null, null);
     }
 }

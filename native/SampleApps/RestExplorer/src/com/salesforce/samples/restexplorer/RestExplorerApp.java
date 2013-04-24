@@ -29,7 +29,6 @@ package com.salesforce.samples.restexplorer;
 import android.app.Application;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 
 /**
  * Application class for the rest explorer app.
@@ -39,9 +38,6 @@ public class RestExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		final LoginOptions loginOptions = new LoginOptions(null, null,
-    			getString(R.string.oauth_callback_url), getString(R.string.oauth_client_id),
-    			new String[] {"api"});
-		ForceApp.init(getApplicationContext(), null, loginOptions, ExplorerActivity.class, null);
+		ForceApp.init(getApplicationContext(), null, ExplorerActivity.class, null);
 	}
 }

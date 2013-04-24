@@ -39,6 +39,6 @@ public class VFConnectorApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		ForceApp.init(getApplicationContext(), null, null, SalesforceDroidGapActivity.class, null);
+		ForceApp.init(getApplicationContext(), null, SalesforceDroidGapActivity.class, null);
 	}
 }

@@ -64,7 +64,6 @@ import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.ForceApp;
 import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
@@ -73,8 +72,8 @@ import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 
 /**
  * Activity for explorer
@@ -148,15 +147,9 @@ public class ExplorerActivity extends TabActivity {
 		if (passcodeManager.onResume(this)) {
 			// Login options
 			String accountType = ForceApp.getInstance().getAccountType();
-	    	LoginOptions loginOptions = new LoginOptions(
-	    			null, // gets overridden by LoginActivity based on server picked by uuser 
-	    			ForceApp.getInstance().getPasscodeHash(),
-	    			getString(R.string.oauth_callback_url),
-	    			getString(R.string.oauth_client_id),
-	    			new String[] {"api"});
-			
+
 			// Get a rest client
-			new ClientManager(this, accountType, loginOptions, ForceApp.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+			new ClientManager(this, accountType, ForceApp.getInstance().getLoginOptions(), ForceApp.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 				@Override
 				public void authenticatedRestClient(RestClient client) {
 					if (client == null) {

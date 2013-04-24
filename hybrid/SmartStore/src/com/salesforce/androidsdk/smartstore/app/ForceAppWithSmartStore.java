@@ -31,7 +31,6 @@ import android.app.Activity;
 import android.content.Context;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -58,12 +57,11 @@ public class ForceAppWithSmartStore extends ForceApp {
      * 			  Encryptor.hash(name + "12s9adfgret=6235inkasd=012", name + "12kl0dsakj4-cuygsdf625wkjasdol8");
      * 			  </code>
      *
-     * @param loginOptions Login options used - must be non null for a native app, can be null for a hybrid app.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
      */
-    protected ForceAppWithSmartStore(Context context, String key, LoginOptions loginOptions, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-    	super(context, key, loginOptions, mainActivity, loginActivity);
+    protected ForceAppWithSmartStore(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    	super(context, key, mainActivity, loginActivity);
     }
 
 	/**
@@ -73,12 +71,11 @@ public class ForceAppWithSmartStore extends ForceApp {
 	 *
 	 * @param context Application context.
      * @param key Key used for encryption.
-     * @param loginOptions Login options used - must be non null for a native app, can be null for a hybrid app.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
 	 */
-	public static void init(Context context, String key, LoginOptions loginOptions, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-		ForceApp.init(context, key, loginOptions, mainActivity, loginActivity);
+	public static void init(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+		ForceApp.init(context, key, mainActivity, loginActivity);
 
         // Upgrade to the latest version.
         UpgradeManagerWithSmartStore.getInstance().upgradeSmartStore();

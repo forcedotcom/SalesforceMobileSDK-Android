@@ -38,6 +38,6 @@ import com.salesforce.androidsdk.smartstore.app.ForceAppWithSmartStore;
 public class TestForceApp extends Application {
 
     public TestForceApp() {
-    	ForceAppWithSmartStore.init(getApplicationContext(), null, null, null, null);
+    	ForceAppWithSmartStore.init(getApplicationContext(), null, null, null);
     }
 }

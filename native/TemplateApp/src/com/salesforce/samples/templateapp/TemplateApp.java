@@ -29,7 +29,6 @@ package com.salesforce.samples.templateapp;
 import android.app.Application;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 
 /**
  * Application class for our application.
@@ -39,9 +38,6 @@ public class TemplateApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		final LoginOptions loginOptions = new LoginOptions(null, null,
-    			getString(R.string.oauth_callback_url), getString(R.string.oauth_client_id),
-    			new String[] {"api"});
-		ForceApp.init(getApplicationContext(), null, loginOptions, MainActivity.class, null);
+		ForceApp.init(getApplicationContext(), null, MainActivity.class, null);
 	}
 }

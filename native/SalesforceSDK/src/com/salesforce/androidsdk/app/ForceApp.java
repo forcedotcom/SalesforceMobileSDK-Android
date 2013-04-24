@@ -129,14 +129,12 @@ public class ForceApp implements AccountRemoved {
      * 			  Encryptor.hash(name + "12s9adfgret=6235inkasd=012", name + "12kl0dsakj4-cuygsdf625wkjasdol8");
      * 			  </code>
      *
-     * @param loginOptions Login options used - must be non null for a native app, can be null for a hybrid app.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
      */
-    protected ForceApp(Context context, String key, LoginOptions loginOptions, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    protected ForceApp(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	this.context = context;
     	this.appEncryptionKey = key;
-    	this.loginOptions = loginOptions;
     	this.mainActivityClass = mainActivity;
     	if (loginActivity != null) {
         	this.loginActivityClass = loginActivity;	
@@ -199,17 +197,12 @@ public class ForceApp implements AccountRemoved {
 	 * @return LoginOptions instance.
 	 */
 	public LoginOptions getLoginOptions() {
-		if (isHybrid()) {
-            final BootConfig config = BootConfig.getBootConfig(context);
-            final LoginOptions loginOptions = new LoginOptions(null,
-            		getPasscodeHash(), config.getOauthRedirectURI(),
-            		config.getRemoteAccessConsumerKey(), config.getOauthScopes());
-            return loginOptions;
-		} else if (loginOptions != null) {
-			return loginOptions;
-		} else {
-            throw new RuntimeException("Native applications need to pass in a valid set of login options while initializing ForceApp.");
+		if (loginOptions == null) {
+			final BootConfig config = BootConfig.getBootConfig(context);
+			loginOptions = new LoginOptions(null, getPasscodeHash(), config.getOauthRedirectURI(),
+	        		config.getRemoteAccessConsumerKey(), config.getOauthScopes());
 		}
+		return loginOptions;
 	}
 
 	/**
@@ -219,13 +212,12 @@ public class ForceApp implements AccountRemoved {
 	 *
 	 * @param context Application context.
      * @param key Key used for encryption.
-     * @param loginOptions Login options used - must be non null for a native app, can be null for a hybrid app.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
 	 */
-    public static void init(Context context, String key, LoginOptions loginOptions, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    public static void init(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	if (INSTANCE == null) {
-    		INSTANCE = new ForceApp(context, key, loginOptions, mainActivity, loginActivity);
+    		INSTANCE = new ForceApp(context, key, mainActivity, loginActivity);
     	}
 
         // Initializes the encryption module.

@@ -33,20 +33,21 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.salesforce.androidsdk.R;
+import com.salesforce.androidsdk.app.ForceApp;
+
 import android.content.Context;
-import android.util.Log;
+import android.content.res.Resources;
 
 /**
- * Class encapsulating the application configuration (consumer key, oauth scopes, refresh behavior)
+ * Class encapsulating the application configuration (consumer key, oauth scopes, refresh behavior).
  */
 public class BootConfig {
 
+	// We expect a assets/www/bootconfig.json file to be provided by hybrid apps.
+	private static final String HYBRID_BOOTCONFIG_PATH = "www/bootconfig.json";
 
-
-	// We expect a assets/www/bootconfig.json
-	private static final String BOOTCONFIG_PATH = "www/bootconfig.json";
-		
-	// bootconfig.json should contain a map with the following keys
+	// bootconfig.json should contain a map with the following keys.
 	private static final String REMOTE_ACCESS_CONSUMER_KEY = "remoteAccessConsumerKey";
 	private static final String OAUTH_REDIRECT_URI = "oauthRedirectURI";
 	private static final String OAUTH_SCOPES = "oauthScopes";
@@ -56,11 +57,10 @@ public class BootConfig {
 	private static final String SHOULD_AUTHENTICATE = "shouldAuthenticate";
 	private static final String ATTEMPT_OFFLINE_LOAD = "attemptOfflineLoad";
 
-	// Default for optional configs
+	// Default for optional configs.
 	private static final boolean DEFAULT_SHOULD_AUTHENTICATE = true;
 	private static final boolean DEFAULT_ATTEMPT_OFFLINE_LOAD = true;
 
-	
 	private String remoteAccessConsumerKey;
 	private String oauthRedirectURI;
 	private String[] oauthScopes;
@@ -69,46 +69,65 @@ public class BootConfig {
 	private String errorPage;
 	private boolean shouldAuthenticate;
 	private boolean attemptOfflineLoad;
-	
-	
+
 	private static BootConfig INSTANCE = null;
-	
+
 	/**
-     * Method to (build and) get the singleton instance
-	 * @param ctx
-	 * @return
+     * Method to (build and) get the singleton instance.
+     *
+	 * @param ctx Context.
+	 * @return BootConfig instance.
 	 */
 	public static BootConfig getBootConfig(Context ctx) {
 		if (INSTANCE == null) {
 			INSTANCE = new BootConfig();
-			INSTANCE.readFromJSON(ctx);
+			if (ForceApp.getInstance().isHybrid()) {
+				INSTANCE.readFromJSON(ctx);
+			} else {
+				INSTANCE.readFromXML(ctx);
+			}
 		}
 		return INSTANCE;
 	}
-	
+
 	/**
-	 * Initialize thie BootConfig object by reading the content of bootconfig.json
+	 * Initializes this BootConfig object by reading the content of bootconfig.json.
+	 *
+	 * @param ctx Context.
 	 */
-	private void readFromJSON(Context ctx)
-	{
-		String jsonStr = readBootConfigFile(ctx);
+	private void readFromJSON(Context ctx) {
+		final String jsonStr = readBootConfigFile(ctx);
 		parseBootConfigStr(jsonStr);
 	}
 
 	/**
-	 * @param ctx
-	 * @return string content of bootconfig.json
+	 * Initializes this BootConfig object by reading the config from XML.
+	 *
+	 * @param ctx Context.
+	 */
+	private void readFromXML(Context ctx) {
+		final Resources res = ctx.getResources();
+		remoteAccessConsumerKey = res.getString(R.string.remoteAccessConsumerKey);
+		oauthRedirectURI = res.getString(R.string.oauthRedirectURI);
+		oauthScopes = res.getStringArray(R.array.oauthScopes);
+	}
+
+	/**
+	 * Reads the contents of the boot config file.
+	 *
+	 * @param ctx Context.
+	 * @return String content of bootconfig.json.
 	 */
 	private String readBootConfigFile(Context ctx) {
 		Scanner scanner = null;
 		try {
-			scanner = new Scanner(ctx.getAssets().open(BOOTCONFIG_PATH));
-			return scanner.useDelimiter("\\A").next(); // good trick to get a string from a stream see http://weblogs.java.net/blog/pat/archive/2004/10/stupid_scanner_1.html
-		}
-		catch (IOException e) {
-			throw new BootConfigException("Failed to open " + BOOTCONFIG_PATH, e);
-		}
-		finally {
+			scanner = new Scanner(ctx.getAssets().open(HYBRID_BOOTCONFIG_PATH));
+
+			// Good trick to get a string from a stream (http://weblogs.java.net/blog/pat/archive/2004/10/stupid_scanner_1.html).
+			return scanner.useDelimiter("\\A").next();
+		} catch (IOException e) {
+			throw new BootConfigException("Failed to open " + HYBRID_BOOTCONFIG_PATH, e);
+		} finally {
 			if (scanner != null) {
 				scanner.close();
 			}
@@ -116,16 +135,15 @@ public class BootConfig {
 	}
 
 	/**
-	 * Initialize this BootConfig object by parsing jsonStr
-	 * @param jsonStr
+	 * Initializes this BootConfig object by parsing a JSON string.
+	 *
+	 * @param jsonStr JSON string.
 	 */
 	private void parseBootConfigStr(String jsonStr) {
 		try {
-			JSONObject config = new JSONObject(jsonStr);
-			
-			Log.i("BootConfig.parseBootConfigStr", "config: " + config.toString(2));
+			final JSONObject config = new JSONObject(jsonStr);
 
-			// Required
+			// Required fields.
 			remoteAccessConsumerKey = config.getString(REMOTE_ACCESS_CONSUMER_KEY);
 			oauthRedirectURI = config.getString(OAUTH_REDIRECT_URI);
 			JSONArray jsonScopes = config.getJSONArray(OAUTH_SCOPES);
@@ -136,77 +154,92 @@ public class BootConfig {
 			isLocal = config.getBoolean(IS_LOCAL);
 			startPage = config.getString(START_PAGE);
 			errorPage = config.getString(ERROR_PAGE);
-			
-			// Optional
+
+			// Optional fields.
 			shouldAuthenticate = config.optBoolean(SHOULD_AUTHENTICATE, DEFAULT_SHOULD_AUTHENTICATE);
 			attemptOfflineLoad = config.optBoolean(ATTEMPT_OFFLINE_LOAD, DEFAULT_ATTEMPT_OFFLINE_LOAD);
-		}
-		catch (JSONException e) {
-			throw new BootConfigException("Failed to parse " + BOOTCONFIG_PATH, e);
+		} catch (JSONException e) {
+			throw new BootConfigException("Failed to parse " + HYBRID_BOOTCONFIG_PATH, e);
 		}
 	}
 
 	/**
-	 * @return consumer key value specified for your remote access object or connected app
+	 * Returns the consumer key value specified for your remote access object or connected app.
+	 *
+	 * @return Consumer key value specified for your remote access object or connected app.
 	 */
 	public String getRemoteAccessConsumerKey() {
 		return remoteAccessConsumerKey;
 	}
-	
+
 	/**
-	 * @return redirect URI value specified for your remote access object or connected app
+	 * Returns the redirect URI value specified for your remote access object or connected app.
+	 *
+	 * @return Redirect URI value specified for your remote access object or connected app.
 	 */
 	public String getOauthRedirectURI() {
 		return oauthRedirectURI;
 	}
-	
+
 	/**
-	 * @return  authorization/access scope(s) that the application needs to ask for at login
+	 * Returns the authorization/access scope(s) that the application needs to ask for at login.
+	 * @return Authorization/access scope(s) that the application needs to ask for at login.
 	 */
 	public String[] getOauthScopes() {
 		return oauthScopes;
 	}
 
 	/**
-	 * @return true if start page is www/assets and false if it's a VF page
+	 * Returns if the start page is local or a VF page.
+	 *
+	 * @return True - if start page is in assets/www, False - if it's a VF page.
 	 */
 	public boolean isLocal() {
 		return isLocal;
 	}
-	
+
 	/**
-	 * @return path to start page local or remote (e.g. index.html or /apex/basicpage)
+	 * Returns the path to the start page (local or remote).
+	 * Example: index.html or /apex/basicpage.
+	 *
+	 * @return Path to start page (local or remote).
 	 */
 	public String getStartPage() {
 		return startPage;
 	}
 
 	/**
-	 * @return path to local error page 
+	 * Returns the path to the local error page.
+	 *
+	 * @return Path to local error page.
 	 */
 	public String getErrorPage() {
 		return errorPage;
 	}
-	
+
 	/**
-	 * @return true if app should go through login flow the first time it's started
+	 * Returns whether the app should go through login flow the first time or not.
+	 *
+	 * @return True - if the app should go through login flow, False - otherwise.
 	 */
 	public boolean shouldAuthenticate() {
 		return shouldAuthenticate;
 	}
 
 	/**
-	 * @return true, if app should attempt to load previously cached content when offline
+	 * Returns whether the app should attempt to load cached content when offline.
+	 *
+	 * @return True - if the app should attempt to load cached content, False - otherwise.
 	 */
 	public boolean attemptOfflineLoad() {
 		return attemptOfflineLoad;
 	}
 
 	/**
-	 * Exception thrown for all bootconfig parsing errors
-	 *
+	 * Exception thrown for all bootconfig parsing errors.
 	 */
 	static public class BootConfigException extends RuntimeException {
+
 		private static final long serialVersionUID = 1L;
 
 		public BootConfigException(String msg, Throwable cause) {

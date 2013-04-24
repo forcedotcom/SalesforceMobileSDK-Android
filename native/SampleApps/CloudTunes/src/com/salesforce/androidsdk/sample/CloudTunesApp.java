@@ -29,16 +29,12 @@ package com.salesforce.androidsdk.sample;
 import android.app.Application;
 
 import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 
 public class CloudTunesApp extends Application {
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		final LoginOptions loginOptions = new LoginOptions(null, null,
-    			getString(R.string.oauth_callback_url), getString(R.string.oauth_client_id),
-    			new String[] {"api"});
-		ForceApp.init(getApplicationContext(), null, loginOptions, AlbumListActivity.class, null);
+		ForceApp.init(getApplicationContext(), null, AlbumListActivity.class, null);
 	}
 }
