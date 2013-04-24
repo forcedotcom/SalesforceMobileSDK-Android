@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.phonegap;
+package com.salesforce.androidsdk.rest;
 
 import java.io.IOException;
 import java.util.Scanner;
@@ -146,7 +146,7 @@ public class BootConfig {
 			// Required fields.
 			remoteAccessConsumerKey = config.getString(REMOTE_ACCESS_CONSUMER_KEY);
 			oauthRedirectURI = config.getString(OAUTH_REDIRECT_URI);
-			JSONArray jsonScopes = config.getJSONArray(OAUTH_SCOPES);
+			final JSONArray jsonScopes = config.getJSONArray(OAUTH_SCOPES);
 			oauthScopes = new String[jsonScopes.length()];
 			for (int i=0; i<oauthScopes.length; i++) {
 				oauthScopes[i] = jsonScopes.getString(i);
