@@ -42,12 +42,12 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.ui.NativeMainActivity;
+import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 
 /**
  * Main activity
  */
-public class MainActivity extends NativeMainActivity {
+public class MainActivity extends SalesforceActivity {
 
     private RestClient client;
     private ArrayAdapter<String> listAdapter;

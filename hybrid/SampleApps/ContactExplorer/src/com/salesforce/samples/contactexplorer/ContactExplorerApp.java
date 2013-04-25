@@ -29,7 +29,7 @@ package com.salesforce.samples.contactexplorer;
 import android.app.Application;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
 
 /**
  * Application class for the contact explorer app.

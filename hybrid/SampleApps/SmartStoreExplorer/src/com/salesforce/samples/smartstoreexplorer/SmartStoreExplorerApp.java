@@ -29,7 +29,7 @@ package com.salesforce.samples.smartstoreexplorer;
 import android.app.Application;
 
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
-import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
 
 /**
  * Application class for the SmartStoreExplorer app.

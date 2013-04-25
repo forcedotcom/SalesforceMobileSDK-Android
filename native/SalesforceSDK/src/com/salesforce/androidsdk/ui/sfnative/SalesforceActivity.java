@@ -43,7 +43,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 /**
  * Native application main activity should extend this activity or duplicate its functionality
  */
-public abstract class NativeMainActivity extends Activity {
+public abstract class SalesforceActivity extends Activity {
 
 	private PasscodeManager passcodeManager;
     private TokenRevocationReceiver tokenRevocationReceiver;
@@ -91,7 +91,7 @@ public abstract class NativeMainActivity extends Activity {
 				@Override
 				public void authenticatedRestClient(RestClient client) {
 					if (client == null) {
-						SalesforceSDKManager.getInstance().logout(NativeMainActivity.this);
+						SalesforceSDKManager.getInstance().logout(SalesforceActivity.this);
 						return;
 					}
 
