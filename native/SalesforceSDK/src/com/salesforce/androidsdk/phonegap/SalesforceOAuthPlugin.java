@@ -35,8 +35,8 @@ import org.json.JSONObject;
 import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
-import com.salesforce.androidsdk.ui.SalesforceGapViewClient;
+import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceGapViewClient;
 
 /**
  * PhoneGap plugin for Salesforce OAuth.
