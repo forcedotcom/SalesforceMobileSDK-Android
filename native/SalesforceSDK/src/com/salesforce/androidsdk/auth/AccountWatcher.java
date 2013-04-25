@@ -31,7 +31,7 @@ import android.accounts.AccountManager;
 import android.accounts.OnAccountsUpdateListener;
 import android.content.Context;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * This class acts as a listener for the account removal event.
@@ -60,7 +60,7 @@ public class AccountWatcher implements OnAccountsUpdateListener {
 
         // Check if there's an entry for our account type, if not fire the callback.
         for (final Account a : accounts) {
-            if (ForceApp.getInstance().getAccountType().equals(a.type)) {
+            if (SalesforceSDKManager.getInstance().getAccountType().equals(a.type)) {
                 return;
             }
         }

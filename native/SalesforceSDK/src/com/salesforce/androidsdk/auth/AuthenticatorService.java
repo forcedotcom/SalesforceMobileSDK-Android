@@ -44,7 +44,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -104,7 +104,7 @@ public class AuthenticatorService extends Service {
                 throws NetworkErrorException {
             // Log.i("Authenticator:addAccount", "Options: " + options);
         	if (isAddFromSettings(options)) {
-        		options.putAll(ForceApp.getInstance().getLoginOptions().asBundle());
+        		options.putAll(SalesforceSDKManager.getInstance().getLoginOptions().asBundle());
         	}
         	return makeAuthIntentBundle(response, options);
         }
@@ -128,17 +128,17 @@ public class AuthenticatorService extends Service {
             // Log.i("Authenticator:getAuthToken", "Get auth token for " + account.name);
             final AccountManager mgr = AccountManager.get(context);
             final String passcodeHash = LoginOptions.fromBundle(options).passcodeHash;
-            final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(account), passcodeHash);
-            final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), passcodeHash);
-            final String clientId = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
-            final String instServer = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
-            final String userId = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_USER_ID), passcodeHash);
-            final String orgId = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_ORG_ID), passcodeHash);
-            final String username = ForceApp.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_USERNAME), passcodeHash);
+            final String refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), passcodeHash);
+            final String loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), passcodeHash);
+            final String clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
+            final String instServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
+            final String userId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_USER_ID), passcodeHash);
+            final String orgId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_ORG_ID), passcodeHash);
+            final String username = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_USERNAME), passcodeHash);
             final String encClientSecret = mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET);
             String clientSecret = null;
             if (encClientSecret != null) {
-                clientSecret = ForceApp.decryptWithPasscode(encClientSecret, passcodeHash);
+                clientSecret = SalesforceSDKManager.decryptWithPasscode(encClientSecret, passcodeHash);
             }
             final Bundle resBundle = new Bundle();
             try {
@@ -146,23 +146,23 @@ public class AuthenticatorService extends Service {
 
                 // Handle the case where the org has been migrated to a new instance, or has turned on my domains.
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
-                    mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, ForceApp.encryptWithPasscode(tr.instanceUrl, passcodeHash));
+                    mgr.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encryptWithPasscode(tr.instanceUrl, passcodeHash));
                 }
 
                 // Update auth token in account.
-                mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, ForceApp.encryptWithPasscode(tr.authToken, passcodeHash));
+                mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(tr.authToken, passcodeHash));
                 resBundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
                 resBundle.putString(AccountManager.KEY_ACCOUNT_TYPE, account.type);
                 resBundle.putString(AccountManager.KEY_AUTHTOKEN, tr.authToken);
-                resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, ForceApp.encryptWithPasscode(loginServer, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, ForceApp.encryptWithPasscode(instServer, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, ForceApp.encryptWithPasscode(clientId, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_USERNAME, ForceApp.encryptWithPasscode(username, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_USER_ID, ForceApp.encryptWithPasscode(userId, passcodeHash));
-                resBundle.putString(AuthenticatorService.KEY_ORG_ID, ForceApp.encryptWithPasscode(orgId, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encryptWithPasscode(loginServer, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encryptWithPasscode(instServer, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encryptWithPasscode(clientId, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_USERNAME, SalesforceSDKManager.encryptWithPasscode(username, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encryptWithPasscode(userId, passcodeHash));
+                resBundle.putString(AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encryptWithPasscode(orgId, passcodeHash));
                 String encrClientSecret = null;
                 if (clientSecret != null) {
-                    encrClientSecret = ForceApp.encryptWithPasscode(clientSecret, passcodeHash);
+                    encrClientSecret = SalesforceSDKManager.encryptWithPasscode(clientSecret, passcodeHash);
                 }
                 resBundle.putString(AuthenticatorService.KEY_CLIENT_SECRET, encrClientSecret);
                 // Log.i("Authenticator:getAuthToken", "Returning auth bundle for " + account.name);
@@ -197,7 +197,7 @@ public class AuthenticatorService extends Service {
          */
         private Bundle makeAuthIntentBundle(AccountAuthenticatorResponse response, Bundle options) {
             Bundle reply = new Bundle();
-            Intent i = new Intent(context, ForceApp.getInstance().getLoginActivityClass());
+            Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
             i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             i.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
             if (options != null)

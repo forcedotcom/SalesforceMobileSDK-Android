@@ -28,7 +28,7 @@ package com.salesforce.samples.contactexplorer;
 
 import android.app.Application;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 
 /**
@@ -39,6 +39,6 @@ public class ContactExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		ForceApp.init(getApplicationContext(), null, SalesforceDroidGapActivity.class, null);
+		SalesforceSDKManager.init(getApplicationContext(), null, SalesforceDroidGapActivity.class, null);
 	}
 }

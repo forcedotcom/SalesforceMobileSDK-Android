@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.util;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 
 import android.app.Activity;
@@ -51,9 +51,9 @@ public class TokenRevocationReceiver extends BroadcastReceiver {
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		if (intent != null && intent.getAction().equals(ClientManager.ACCESS_TOKEN_REVOKE_INTENT)) {
-			Toast.makeText(curActivity, ForceApp.getInstance().getSalesforceR().stringAccessTokenRevoked(), Toast.LENGTH_LONG).show();
-			if (ForceApp.getInstance().shouldLogoutWhenTokenRevoked()) {
-				ForceApp.getInstance().logout(curActivity, true);
+			Toast.makeText(curActivity, SalesforceSDKManager.getInstance().getSalesforceR().stringAccessTokenRevoked(), Toast.LENGTH_LONG).show();
+			if (SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()) {
+				SalesforceSDKManager.getInstance().logout(curActivity, true);
 			}
 		}
 	}

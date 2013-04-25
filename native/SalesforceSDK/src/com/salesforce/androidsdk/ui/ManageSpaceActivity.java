@@ -31,7 +31,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * Displays an activity that gives the user the option to clear app data
@@ -47,7 +47,7 @@ public class ManageSpaceActivity extends Activity {
 	@Override
 	public void onCreate(Bundle savedState) {
 		super.onCreate(savedState);
-		salesforceR = ForceApp.getInstance().getSalesforceR();
+		salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
 		setContentView(salesforceR.layoutManageSpace());
 		manageSpaceDialog = buildManageSpaceDialog();
 		manageSpaceDialog.show();
@@ -72,7 +72,7 @@ public class ManageSpaceActivity extends Activity {
 
         	@Override
         	public void onClick(DialogInterface dialog, int which) {
-        		ForceApp.getInstance().logout(ManageSpaceActivity.this, false);
+        		SalesforceSDKManager.getInstance().logout(ManageSpaceActivity.this, false);
         	}
         }).setNegativeButton(getString(salesforceR.stringPasscodeLogoutNo()),
         new DialogInterface.OnClickListener() {

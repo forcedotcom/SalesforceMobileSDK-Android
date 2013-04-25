@@ -36,7 +36,7 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -74,15 +74,15 @@ public class TrackListActivity  extends Activity {
 		super.onResume();
 		
 		// Login options
-		String accountType = ForceApp.getInstance().getAccountType();
-		LoginOptions loginOptions = ForceApp.getInstance().getLoginOptions();
+		String accountType = SalesforceSDKManager.getInstance().getAccountType();
+		LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
 		
-		new ClientManager(this, accountType, loginOptions, ForceApp.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+		new ClientManager(this, accountType, loginOptions, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 
 			@Override
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
-					ForceApp.getInstance().logout(TrackListActivity.this);
+					SalesforceSDKManager.getInstance().logout(TrackListActivity.this);
 					return;
 				}
 				TrackListActivity.this.client = client;

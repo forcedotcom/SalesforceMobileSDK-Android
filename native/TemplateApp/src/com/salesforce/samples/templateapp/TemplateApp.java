@@ -28,7 +28,7 @@ package com.salesforce.samples.templateapp;
 
 import android.app.Application;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * Application class for our application.
@@ -38,6 +38,6 @@ public class TemplateApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		ForceApp.init(getApplicationContext(), null, MainActivity.class, null);
+		SalesforceSDKManager.init(getApplicationContext(), null, MainActivity.class, null);
 	}
 }

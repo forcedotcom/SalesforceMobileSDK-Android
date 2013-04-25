@@ -28,13 +28,13 @@ package com.salesforce.androidsdk.sample;
 
 import android.app.Application;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 public class CloudTunesApp extends Application {
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		ForceApp.init(getApplicationContext(), null, AlbumListActivity.class, null);
+		SalesforceSDKManager.init(getApplicationContext(), null, AlbumListActivity.class, null);
 	}
 }

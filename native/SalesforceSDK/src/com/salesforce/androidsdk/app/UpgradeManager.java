@@ -66,12 +66,12 @@ public class UpgradeManager {
      */
     public synchronized void upgradeAccMgr() {
         final String installedVersion = getInstalledAccMgrVersion();
-        if (installedVersion.equals(ForceApp.SDK_VERSION)) {
+        if (installedVersion.equals(SalesforceSDKManager.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
-        writeCurVersion(ACC_MGR_KEY, ForceApp.SDK_VERSION);
+        writeCurVersion(ACC_MGR_KEY, SalesforceSDKManager.SDK_VERSION);
     }
 
     /**
@@ -81,7 +81,7 @@ public class UpgradeManager {
      * @param value New version number.
      */
     protected synchronized void writeCurVersion(String key, String value) {
-        final SharedPreferences sp = ForceApp.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
         if (sp == null || !sp.contains(key)) {
             sp.edit().putString(key, value).commit();
         }
@@ -102,7 +102,7 @@ public class UpgradeManager {
      * @return Currently installed version of the specified key.
      */
     protected String getInstalledVersion(String key) {
-        final SharedPreferences sp = ForceApp.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
         if (sp == null || !sp.contains(key)) {
             return "";
         }

@@ -30,7 +30,7 @@ import android.app.Activity;
 import android.content.IntentFilter;
 import android.os.Bundle;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -66,7 +66,7 @@ public abstract class NativeMainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 
 		// Passcode manager
-		passcodeManager = ForceApp.getInstance().getPasscodeManager();
+		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
 		tokenRevocationReceiver = new TokenRevocationReceiver(this);
 
 		// Let observers know
@@ -82,16 +82,16 @@ public abstract class NativeMainActivity extends Activity {
 		if (passcodeManager.onResume(this)) {
 		
 			// Login options
-			String accountType = ForceApp.getInstance().getAccountType();
-	    	LoginOptions loginOptions = ForceApp.getInstance().getLoginOptions();
+			String accountType = SalesforceSDKManager.getInstance().getAccountType();
+	    	LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
 			
 			// Get a rest client
-			new ClientManager(this, accountType, loginOptions, ForceApp.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+			new ClientManager(this, accountType, loginOptions, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 
 				@Override
 				public void authenticatedRestClient(RestClient client) {
 					if (client == null) {
-						ForceApp.getInstance().logout(NativeMainActivity.this);
+						SalesforceSDKManager.getInstance().logout(NativeMainActivity.this);
 						return;
 					}
 

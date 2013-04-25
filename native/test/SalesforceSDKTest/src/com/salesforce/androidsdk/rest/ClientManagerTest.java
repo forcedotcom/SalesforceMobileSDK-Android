@@ -46,7 +46,7 @@ import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.TestForceApp;
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
@@ -93,7 +93,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Wait for app initialization to complete.
         Instrumentation.newApplication(TestForceApp.class, targetContext);
-        if (ForceApp.getInstance() == null) {
+        if (SalesforceSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
     }
@@ -150,21 +150,20 @@ public class ClientManagerTest extends InstrumentationTestCase {
         assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
 
         String encryptedAuthToken = accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN);
-        String decryptedAuthToken = ForceApp.decryptWithPasscode(encryptedAuthToken, TEST_PASSCODE_HASH);
+        String decryptedAuthToken = SalesforceSDKManager.decryptWithPasscode(encryptedAuthToken, TEST_PASSCODE_HASH);
         assertEquals("Wrong auth token", TEST_AUTH_TOKEN, decryptedAuthToken);
 
         String encryptedRefreshToken = accountManager.getPassword(account);
-        String decryptedRefreshToken = ForceApp.decryptWithPasscode(encryptedRefreshToken, TEST_PASSCODE_HASH);
+        String decryptedRefreshToken = SalesforceSDKManager.decryptWithPasscode(encryptedRefreshToken, TEST_PASSCODE_HASH);
         assertEquals("Wrong refresh token", TEST_REFRESH_TOKEN, decryptedRefreshToken);
 
-        assertEquals("Wrong instance url", TEST_INSTANCE_URL, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), TEST_PASSCODE_HASH));
-        assertEquals("Wrong login url", TEST_LOGIN_URL, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), TEST_PASSCODE_HASH));
-        assertEquals("Wrong client id", TEST_CLIENT_ID, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), TEST_PASSCODE_HASH));
-        assertEquals("Wrong user id", TEST_USER_ID, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID), TEST_PASSCODE_HASH));
-        assertEquals("Wrong org id", TEST_ORG_ID, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), TEST_PASSCODE_HASH));
-        assertEquals("Wrong username", TEST_USERNAME, ForceApp.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), TEST_PASSCODE_HASH));
+        assertEquals("Wrong instance url", TEST_INSTANCE_URL, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), TEST_PASSCODE_HASH));
+        assertEquals("Wrong login url", TEST_LOGIN_URL, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), TEST_PASSCODE_HASH));
+        assertEquals("Wrong client id", TEST_CLIENT_ID, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), TEST_PASSCODE_HASH));
+        assertEquals("Wrong user id", TEST_USER_ID, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID), TEST_PASSCODE_HASH));
+        assertEquals("Wrong org id", TEST_ORG_ID, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), TEST_PASSCODE_HASH));
+        assertEquals("Wrong username", TEST_USERNAME, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), TEST_PASSCODE_HASH));
     }
-
 
     /**
      * Test getAccounts - when there is only one

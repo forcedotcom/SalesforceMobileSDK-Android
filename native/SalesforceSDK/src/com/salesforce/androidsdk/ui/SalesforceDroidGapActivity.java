@@ -53,7 +53,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
@@ -110,7 +110,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		bootconfig = BootConfig.getBootConfig(this);
 
         // Get clientManager
-        clientManager = new ClientManager(this, ForceApp.getInstance().getAccountType(), ForceApp.getInstance().getLoginOptions(), ForceApp.getInstance().shouldLogoutWhenTokenRevoked());
+        clientManager = new ClientManager(this, SalesforceSDKManager.getInstance().getAccountType(), SalesforceSDKManager.getInstance().getLoginOptions(), SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
 		
         // Get client (if already logged in)
         try {
@@ -120,7 +120,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		}
         
         // Passcode manager
-        passcodeManager = ForceApp.getInstance().getPasscodeManager();
+        passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         tokenRevocationReceiver = new TokenRevocationReceiver(this);
 
         // Ensure we have a CookieSyncManager
@@ -134,7 +134,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
     public void init(CordovaWebView webView, CordovaWebViewClient webViewClient, CordovaChromeClient webChromeClient) {
     	Log.i("SalesforceDroidGapActivity.init", "init called");
         super.init(webView, new SalesforceGapViewClient(this, webView), webChromeClient);
-        final String uaStr = ForceApp.getInstance().getUserAgent();
+        final String uaStr = SalesforceSDKManager.getInstance().getUserAgent();
         if (null != this.appView) {
             WebSettings webSettings = this.appView.getSettings();
             String origUserAgent = webSettings.getUserAgentString();
@@ -191,7 +191,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		if (bootconfig.shouldAuthenticate()) {
 
 			// Online
-			if (ForceApp.getInstance().hasNetwork()) {
+			if (SalesforceSDKManager.getInstance().hasNetwork()) {
 		    	Log.i("SalesforceDroidGapActivity.onResumeNotLoggedIn", "Should authenticate / online - authenticating");
 				authenticate(null);
 			}
@@ -235,7 +235,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		else {
 
 			// Online
-			if (ForceApp.getInstance().hasNetwork()) {
+			if (SalesforceSDKManager.getInstance().hasNetwork()) {
 		    	Log.i("SalesforceDroidGapActivity.onResumeLoggedInNotLoaded", "Remote start page / online - loading web app");
 		    	loadRemoteStartPage();
 			}
@@ -286,7 +286,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
 			    	Log.i("SalesforceDroidGapActivity.authenticate", "authenticatedRestClient called with null client");
-					ForceApp.getInstance().logout(SalesforceDroidGapActivity.this);
+					SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
 	            } else {
 			    	Log.i("SalesforceDroidGapActivity.authenticate", "authenticatedRestClient called with actual client");
 	                SalesforceDroidGapActivity.this.client = client;
@@ -348,7 +348,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
                     // Only logout if we are NOT offline
                     if (!(exception instanceof NoNetworkException)) {
-                        ForceApp.getInstance().logout(SalesforceDroidGapActivity.this);
+                        SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
                     }
                 }
             });
@@ -375,7 +375,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
      */
     private static void setVFCookies(URI instanceUrl) {
     	if (instanceUrl != null) {
-        	final WebView view = new WebView(ForceApp.getInstance().getAppContext());
+        	final WebView view = new WebView(SalesforceSDKManager.getInstance().getAppContext());
         	view.setVisibility(View.GONE);
         	view.setWebViewClient(new WebViewClient() {
 
@@ -490,7 +490,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	       data.put(LOGIN_URL, clientInfo.loginUrl.toString());
 	       data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
 	       data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
-	       data.put(USER_AGENT, ForceApp.getInstance().getUserAgent());
+	       data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent());
 	       return new JSONObject(data);
 	   } else {
 		   return null;

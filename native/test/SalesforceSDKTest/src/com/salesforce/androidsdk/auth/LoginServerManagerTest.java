@@ -34,7 +34,7 @@ import android.content.SharedPreferences;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestForceApp;
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.util.EventsListenerQueue;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -65,10 +65,10 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 
         // Wait for app initialization to complete.
         Instrumentation.newApplication(TestForceApp.class, targetContext);
-        if (ForceApp.getInstance() == null) {
+        if (SalesforceSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
-        loginServerManager = ForceApp.getInstance().getLoginServerManager();
+        loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
     }
 
     @Override

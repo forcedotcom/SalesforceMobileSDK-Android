@@ -33,7 +33,7 @@ import org.json.JSONException;
 
 import android.util.Log;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * Abstract super class for all Salesforce plugins
@@ -69,10 +69,10 @@ public abstract class ForcePlugin extends CordovaPlugin {
     	Log.i(getClass().getSimpleName() + ".execute", "action: " + action + ", jsVersion: " + jsVersion);
 
     	if (jsVersion.isOlder()) {
-	    	Log.w(getClass().getSimpleName() + ".execute", "is being called by js from older sdk, jsVersion: " + jsVersion + ", nativeVersion: " + ForceApp.SDK_VERSION);
+	    	Log.w(getClass().getSimpleName() + ".execute", "is being called by js from older sdk, jsVersion: " + jsVersion + ", nativeVersion: " + SalesforceSDKManager.SDK_VERSION);
     	}
     	else if (jsVersion.isNewer()) {
-	    	Log.w(getClass().getSimpleName() + ".execute", "is being called by js from newer sdk, jsVersion: " + jsVersion + ", nativeVersion: " + ForceApp.SDK_VERSION);
+	    	Log.w(getClass().getSimpleName() + ".execute", "is being called by js from newer sdk, jsVersion: " + jsVersion + ", nativeVersion: " + SalesforceSDKManager.SDK_VERSION);
     	}
     	
         return execute(action, jsVersion, args, callbackContext);

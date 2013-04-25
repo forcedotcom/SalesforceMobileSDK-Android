@@ -34,7 +34,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.salesforce.androidsdk.R;
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 import android.content.Context;
 import android.content.res.Resources;
@@ -81,7 +81,7 @@ public class BootConfig {
 	public static BootConfig getBootConfig(Context ctx) {
 		if (INSTANCE == null) {
 			INSTANCE = new BootConfig();
-			if (ForceApp.getInstance().isHybrid()) {
+			if (SalesforceSDKManager.getInstance().isHybrid()) {
 				INSTANCE.readFromJSON(ctx);
 			} else {
 				INSTANCE.readFromXML(ctx);

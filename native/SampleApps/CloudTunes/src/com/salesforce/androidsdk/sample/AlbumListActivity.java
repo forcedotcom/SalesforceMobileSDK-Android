@@ -41,7 +41,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -83,12 +83,12 @@ public class AlbumListActivity extends ListActivity {
 		
 		// Login options
 		String accountType = getString(R.string.account_type);
-		new ClientManager(this, accountType, ForceApp.getInstance().getLoginOptions(), ForceApp.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+		new ClientManager(this, accountType, SalesforceSDKManager.getInstance().getLoginOptions(), SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 
 			@Override
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
-					ForceApp.getInstance().logout(AlbumListActivity.this);
+					SalesforceSDKManager.getInstance().logout(AlbumListActivity.this);
 					return;
 				}
 				AlbumListActivity.this.client = client;

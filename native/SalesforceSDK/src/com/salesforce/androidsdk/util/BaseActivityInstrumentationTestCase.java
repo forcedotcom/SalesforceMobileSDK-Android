@@ -34,7 +34,7 @@ import android.widget.RadioButton;
 import android.widget.TabHost;
 import android.widget.TextView;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.EventsListenerQueue;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -56,7 +56,7 @@ public class BaseActivityInstrumentationTestCase<T extends Activity> extends Act
 
         eq = new EventsListenerQueue();
         // Wait for app initialization to complete
-        if (ForceApp.getInstance() == null) {
+        if (SalesforceSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
     }

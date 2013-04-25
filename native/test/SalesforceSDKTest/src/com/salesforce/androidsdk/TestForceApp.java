@@ -28,7 +28,7 @@ package com.salesforce.androidsdk;
 
 import android.app.Application;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * Test implementation of Application class that uses ForceApp.
@@ -38,6 +38,6 @@ import com.salesforce.androidsdk.app.ForceApp;
 public class TestForceApp extends Application {
 
     public TestForceApp() {
-    	ForceApp.init(getApplicationContext(), null, null, null);
+    	SalesforceSDKManager.init(getApplicationContext(), null, null, null);
     }
 }

@@ -51,7 +51,7 @@ import android.widget.Button;
 import android.widget.TabHost;
 import android.widget.TextView;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -109,11 +109,11 @@ public class ExplorerActivityTest extends
         super.setUp();
         setActivityInitialTouchMode(false);
         targetContext = getInstrumentation().getTargetContext();
-        clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null, ForceApp.getInstance().shouldLogoutWhenTokenRevoked());
+        clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
         clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
                 TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, null);
-        mockHttpAccessor = new MockHttpAccess(ForceApp.getInstance().getAppContext());
-        ForceApp.getInstance().getPasscodeManager().setTimeoutMs(0 /* disabled */);
+        mockHttpAccessor = new MockHttpAccess(SalesforceSDKManager.getInstance().getAppContext());
+        SalesforceSDKManager.getInstance().getPasscodeManager().setTimeoutMs(0 /* disabled */);
     }
 
     /**

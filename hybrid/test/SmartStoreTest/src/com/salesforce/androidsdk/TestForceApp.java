@@ -28,7 +28,7 @@ package com.salesforce.androidsdk;
 
 import android.app.Application;
 
-import com.salesforce.androidsdk.smartstore.app.ForceAppWithSmartStore;
+import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 
 /**
  * Test implementation of Application class that uses ForceAppWithSmartStore.
@@ -38,6 +38,6 @@ import com.salesforce.androidsdk.smartstore.app.ForceAppWithSmartStore;
 public class TestForceApp extends Application {
 
     public TestForceApp() {
-    	ForceAppWithSmartStore.init(getApplicationContext(), null, null, null);
+    	SalesforceSDKManagerWithSmartStore.init(getApplicationContext(), null, null, null);
     }
 }

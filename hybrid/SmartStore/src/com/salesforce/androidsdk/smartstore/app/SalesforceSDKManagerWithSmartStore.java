@@ -30,7 +30,7 @@ import net.sqlcipher.database.SQLiteDatabase;
 import android.app.Activity;
 import android.content.Context;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -38,7 +38,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 /**
  * Super class for all force applications that use the smartstore.
  */
-public class ForceAppWithSmartStore extends ForceApp {
+public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
 
     /**
      * Protected constructor.
@@ -60,7 +60,7 @@ public class ForceAppWithSmartStore extends ForceApp {
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
      */
-    protected ForceAppWithSmartStore(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    protected SalesforceSDKManagerWithSmartStore(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	super(context, key, mainActivity, loginActivity);
     }
 
@@ -75,7 +75,7 @@ public class ForceAppWithSmartStore extends ForceApp {
      * @param loginActivity Login activity.
 	 */
 	public static void init(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-		ForceApp.init(context, key, mainActivity, loginActivity);
+		SalesforceSDKManager.init(context, key, mainActivity, loginActivity);
 
         // Upgrade to the latest version.
         UpgradeManagerWithSmartStore.getInstance().upgradeSmartStore();
@@ -87,11 +87,11 @@ public class ForceAppWithSmartStore extends ForceApp {
      * @param context Application context.
      * @return Singleton instance of ForceApp.
      */
-    public static ForceAppWithSmartStore getInstance() {
+    public static SalesforceSDKManagerWithSmartStore getInstance() {
     	if (INSTANCE != null) {
-    		return (ForceAppWithSmartStore) INSTANCE;
+    		return (SalesforceSDKManagerWithSmartStore) INSTANCE;
     	} else {
-            throw new RuntimeException("Applications need to call ForceAppWithSmartStore.init() first.");
+            throw new RuntimeException("Applications need to call SalesforceSDKManagerWithSmartStore.init() first.");
     	}
     }
 

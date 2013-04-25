@@ -62,7 +62,7 @@ import android.widget.RadioGroup;
 import android.widget.TabHost;
 import android.widget.TextView;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -103,7 +103,7 @@ public class ExplorerActivity extends TabActivity {
 		super.onCreate(savedInstanceState);
 
 		// Passcode manager
-		passcodeManager = ForceApp.getInstance().getPasscodeManager();
+		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
 		tokenRevocationReceiver = new TokenRevocationReceiver(this);
 		
 		// ApiVersion
@@ -146,14 +146,14 @@ public class ExplorerActivity extends TabActivity {
 		// Bring up passcode screen if needed
 		if (passcodeManager.onResume(this)) {
 			// Login options
-			String accountType = ForceApp.getInstance().getAccountType();
+			String accountType = SalesforceSDKManager.getInstance().getAccountType();
 
 			// Get a rest client
-			new ClientManager(this, accountType, ForceApp.getInstance().getLoginOptions(), ForceApp.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+			new ClientManager(this, accountType, SalesforceSDKManager.getInstance().getLoginOptions(), SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 				@Override
 				public void authenticatedRestClient(RestClient client) {
 					if (client == null) {
-						ForceApp.getInstance().logout(ExplorerActivity.this);
+						SalesforceSDKManager.getInstance().logout(ExplorerActivity.this);
 						return;
 					}
 					ExplorerActivity.this.client = client;
@@ -188,7 +188,7 @@ public class ExplorerActivity extends TabActivity {
 							@Override
 							public void onClick(DialogInterface dialog,
 									int which) {
-								ForceApp.getInstance().logout(ExplorerActivity.this);
+								SalesforceSDKManager.getInstance().logout(ExplorerActivity.this);
 							}
 						})
 				.setNegativeButton(R.string.logout_cancel, null)
@@ -649,7 +649,7 @@ public class ExplorerActivity extends TabActivity {
 	 */
 	private void printInfo() {
 		printHeader("Info");
-		println(ForceApp.getInstance());
+		println(SalesforceSDKManager.getInstance());
 		println(client);
 	}
 

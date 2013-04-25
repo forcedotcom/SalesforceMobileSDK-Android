@@ -65,7 +65,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  * functions provided by the Salesforce SDK. This class
  * should be instantiated in order to use the Salesforce SDK.
  */
-public class ForceApp implements AccountRemoved {
+public class SalesforceSDKManager implements AccountRemoved {
 
     /**
      * Current version of this SDK.
@@ -83,9 +83,9 @@ public class ForceApp implements AccountRemoved {
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
 
     /**
-     * Instance of the ForceApp to use for this process.
+     * Instance of the SalesforceSDKManager to use for this process.
      */
-    protected static ForceApp INSTANCE;
+    protected static SalesforceSDKManager INSTANCE;
 
     protected Context context;
     protected String appEncryptionKey;
@@ -102,13 +102,13 @@ public class ForceApp implements AccountRemoved {
      * Returns a singleton instance of this class.
      *
      * @param context Application context.
-     * @return Singleton instance of ForceApp.
+     * @return Singleton instance of SalesforceSDKManager.
      */
-    public static ForceApp getInstance() {
+    public static SalesforceSDKManager getInstance() {
     	if (INSTANCE != null) {
     		return INSTANCE;
     	} else {
-            throw new RuntimeException("Applications need to call ForceApp.init() first.");
+            throw new RuntimeException("Applications need to call SalesforceSDKManager.init() first.");
     	}
     }
 
@@ -132,7 +132,7 @@ public class ForceApp implements AccountRemoved {
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
      */
-    protected ForceApp(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    protected SalesforceSDKManager(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	this.context = context;
     	this.appEncryptionKey = key;
     	this.mainActivityClass = mainActivity;
@@ -217,7 +217,7 @@ public class ForceApp implements AccountRemoved {
 	 */
     public static void init(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	if (INSTANCE == null) {
-    		INSTANCE = new ForceApp(context, key, mainActivity, loginActivity);
+    		INSTANCE = new SalesforceSDKManager(context, key, mainActivity, loginActivity);
     	}
 
         // Initializes the encryption module.
@@ -264,7 +264,7 @@ public class ForceApp implements AccountRemoved {
     }
 
     /**
-     * Returns the login server manager associated with ForceApp.
+     * Returns the login server manager associated with SalesforceSDKManager.
      *
      * @return LoginServerManager instance.
      */
@@ -276,7 +276,7 @@ public class ForceApp implements AccountRemoved {
     }    
 
     /**
-     * Returns the passcode manager associated with ForceApp.
+     * Returns the passcode manager associated with SalesforceSDKManager.
      *
      * @return PasscodeManager instance.
      */
@@ -421,9 +421,9 @@ public class ForceApp implements AccountRemoved {
     public void logout(Activity frontActivity, final boolean showLoginPage) {
         final ClientManager clientMgr = new ClientManager(context, getAccountType(), null, shouldLogoutWhenTokenRevoked());
 		final AccountManager mgr = AccountManager.get(context);
-        final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(clientMgr.getAccount()), getPasscodeHash());
-        final String clientId = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
-        final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());
+        final String refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(clientMgr.getAccount()), getPasscodeHash());
+        final String clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
+        final String loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());
         if (accWatcher != null) {
     		accWatcher.remove();
     		accWatcher = null;
@@ -470,7 +470,7 @@ public class ForceApp implements AccountRemoved {
             appName = context.getString(packageInfo.applicationInfo.labelRes);
             appVersion = packageInfo.versionName;
         } catch (NameNotFoundException e) {
-            Log.w("ForceApp:getUserAgent", e);
+            Log.w("SalesforceSDKManager:getUserAgent", e);
         }
 	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native");
 	    return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s",
@@ -534,7 +534,7 @@ public class ForceApp implements AccountRemoved {
      * @return Encrypted data.
      */
     public static String encryptWithPasscode(String data, String passcode) {
-        return Encryptor.encrypt(data, ForceApp.INSTANCE.getEncryptionKeyForPasscode(passcode));
+        return Encryptor.encrypt(data, SalesforceSDKManager.INSTANCE.getEncryptionKeyForPasscode(passcode));
     }
 
     /**
@@ -545,7 +545,7 @@ public class ForceApp implements AccountRemoved {
      * @return Decrypted data.
      */
     public static String decryptWithPasscode(String data, String passcode) {
-        return Encryptor.decrypt(data, ForceApp.INSTANCE.getEncryptionKeyForPasscode(passcode));
+        return Encryptor.decrypt(data, SalesforceSDKManager.INSTANCE.getEncryptionKeyForPasscode(passcode));
     }
 
     /**
@@ -570,7 +570,7 @@ public class ForceApp implements AccountRemoved {
 	        try {
 	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken);
 	        } catch (Exception e) {
-	        	Log.w("ForceApp:revokeToken", e);
+	        	Log.w("SalesforceSDKManager:revokeToken", e);
 	        }
 	        return null;
 		}

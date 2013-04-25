@@ -39,7 +39,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
 
@@ -62,10 +62,10 @@ public class CustomServerUrlEditor extends Dialog {
 		super(context);
 		
 		// Object which allows reference to resources living outside the SDK
-		salesforceR = ForceApp.getInstance().getSalesforceR();
+		salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
 		
 		// Login server manager
-		loginServerManager = ForceApp.getInstance().getLoginServerManager();
+		loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
 		
 		// Width
 		this.width = width;

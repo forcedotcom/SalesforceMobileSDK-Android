@@ -31,7 +31,7 @@ import android.content.Context;
 import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity.PasscodeMode;
@@ -55,7 +55,7 @@ public class PasscodeActivityTest extends
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		passcodeManager = ForceApp.getInstance().getPasscodeManager();
+		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
 		passcodeManager.reset(targetContext);
 		passcodeManager.setTimeoutMs(600000);
 		assertTrue("Application should be locked", passcodeManager.isLocked());

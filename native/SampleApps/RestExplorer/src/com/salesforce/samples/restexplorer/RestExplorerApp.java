@@ -28,7 +28,7 @@ package com.salesforce.samples.restexplorer;
 
 import android.app.Application;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * Application class for the rest explorer app.
@@ -38,6 +38,6 @@ public class RestExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		ForceApp.init(getApplicationContext(), null, ExplorerActivity.class, null);
+		SalesforceSDKManager.init(getApplicationContext(), null, ExplorerActivity.class, null);
 	}
 }
