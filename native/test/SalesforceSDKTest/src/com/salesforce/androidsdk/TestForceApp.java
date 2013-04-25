@@ -31,7 +31,7 @@ import android.app.Application;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
- * Test implementation of Application class that uses ForceApp.
+ * Test implementation of Application class that uses SalesforceSDKManager.
  *
  * @author bhariharan
  */

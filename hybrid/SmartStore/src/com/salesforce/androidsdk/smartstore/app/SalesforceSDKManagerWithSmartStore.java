@@ -85,7 +85,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * Returns a singleton instance of this class.
      *
      * @param context Application context.
-     * @return Singleton instance of ForceApp.
+     * @return Singleton instance of SalesforceSDKManagerWithSmartStore.
      */
     public static SalesforceSDKManagerWithSmartStore getInstance() {
     	if (INSTANCE != null) {

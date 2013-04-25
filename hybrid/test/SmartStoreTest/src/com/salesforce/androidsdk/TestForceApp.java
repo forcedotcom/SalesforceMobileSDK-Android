@@ -31,7 +31,7 @@ import android.app.Application;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 
 /**
- * Test implementation of Application class that uses ForceAppWithSmartStore.
+ * Test implementation of Application class that uses SalesforceSDKManagerWithSmartStore.
  *
  * @author bhariharan
  */
