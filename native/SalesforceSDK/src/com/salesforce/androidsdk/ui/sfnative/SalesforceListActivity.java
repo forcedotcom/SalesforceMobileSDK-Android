@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2013, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,22 +26,24 @@
  */
 package com.salesforce.androidsdk.ui.sfnative;
 
-import android.app.Activity;
-import android.content.IntentFilter;
-import android.os.Bundle;
-
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.TokenRevocationReceiver;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
+
+import android.app.ListActivity;
+import android.content.IntentFilter;
+import android.os.Bundle;
 
 /**
- * Abstract base class for all Salesforce activities.
+ * Abstract base class for all Salesforce list activities.
+ *
+ * @author bhariharan
  */
-public abstract class SalesforceActivity extends Activity {
+public abstract class SalesforceListActivity extends ListActivity {
 
 	private PasscodeManager passcodeManager;
     private TokenRevocationReceiver tokenRevocationReceiver;

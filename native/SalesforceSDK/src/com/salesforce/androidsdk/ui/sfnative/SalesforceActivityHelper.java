@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2013, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,64 +27,48 @@
 package com.salesforce.androidsdk.ui.sfnative;
 
 import android.app.Activity;
-import android.content.IntentFilter;
-import android.os.Bundle;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 
 /**
- * Abstract base class for all Salesforce activities.
+ * Helper class for common functions performed by Salesforce activities.
+ *
+ * @author bhariharan
  */
-public abstract class SalesforceActivity extends Activity {
-
-	private PasscodeManager passcodeManager;
-    private TokenRevocationReceiver tokenRevocationReceiver;
+public class SalesforceActivityHelper {
 
 	/**
-	 * Method that is called after the activity resumes once we have a RestClient.
+	 * Initializes rest client and calls the activity's onResume() method
+	 * upon successful completion.
 	 *
-	 * @param client RestClient instance.
+	 * @param activity Activity.
 	 */
-	public abstract void onResume(RestClient client);
+	public static void initializeRestClient(final Activity activity) {
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+		// Gets login options.
+		final String accountType = SalesforceSDKManager.getInstance().getAccountType();
+    	final LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
 
-		// Gets an instance of the passcode manager.
-		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-		tokenRevocationReceiver = new TokenRevocationReceiver(this);
+		// Gets a rest client.
+		new ClientManager(activity, accountType, loginOptions, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(activity, new RestClientCallback() {
 
-		// Lets observers know that activity creation is complete.
-		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
+			@Override
+			public void authenticatedRestClient(RestClient client) {
+				if (client == null) {
+					SalesforceSDKManager.getInstance().logout(activity);
+					return;
+				}
+				activity.onResume(client);
+
+				// Lets observers know that rendition is complete.
+				EventsObservable.get().notifyEvent(EventType.RenditionComplete);
+			}
+		});
 	}
-
-	@Override 
-	public void onResume() {
-		super.onResume();
-		registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
-
-		// Brings up the passcode screen if needed.
-		if (passcodeManager.onResume(this)) {
-			SalesforceActivityHelper.initializeRestClient(this);
-		}
-	}
-
-	@Override
-	public void onUserInteraction() {
-		passcodeManager.recordUserInteraction();
-	}
-
-    @Override
-    public void onPause() {
-        super.onPause();
-    	passcodeManager.onPause(this);
-    	unregisterReceiver(tokenRevocationReceiver);
-    }
 }
