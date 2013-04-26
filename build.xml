@@ -78,9 +78,9 @@
   </target>
 
   <target name="-post_hybrid_vf">
-    <echo message="Changing vf reference in bootconfig.js" />
+    <echo message="Changing vf reference in bootconfig.json" />
     <replaceregexp match="/apex/BasicVFPage" flags="g" replace="${apex.page}"
-                   file="${target.dir}/assets/www/bootconfig.js" />
+                   file="${target.dir}/assets/www/bootconfig.json" />
   </target>
 
   <!-- Target to create a hybrid local application -->
@@ -112,7 +112,7 @@
       <fileset dir="${template.dir}" />
     </copy>
 
-    <echo message="Adjustring SalesforceSDK library project reference" />
+    <echo message="Adjusting SalesforceSDK library project reference" />
     <replaceregexp match="=.*SalesforceSDK" flags="g" replace="=${sdk.dir.from.target}/native/SalesforceSDK">
       <fileset file="${target.dir}/project.properties" />
     </replaceregexp>
@@ -195,7 +195,7 @@
   <target name="-oauth_info_hybrid">
     <echo>
       Before you ship, make sure to plug in your oauth client id and callback url in:
-        ${target.dir}/assets/www/bootconfig.js
+        ${target.dir}/assets/www/bootconfig.json
     </echo>
   </target>
 

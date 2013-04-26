@@ -34,25 +34,23 @@
     <uses-sdk android:minSdkVersion="8" />
 
     <application android:label="@string/app_name"
-        android:name=".SmartStoreExplorerApp">
+        android:name=".SmartStoreExplorerApp"
+        android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
 
         <!-- Service required for authentication -->
         <service android:exported="true" android:process=":auth"
             android:name="com.salesforce.androidsdk.auth.AuthenticatorService">
-
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator" />
             </intent-filter>
-
             <meta-data android:name="android.accounts.AccountAuthenticator"
                 android:resource="@xml/authenticator" />
         </service>
 
         <!--  Main activity -->
         <activity android:label="@string/app_name"
-            android:name="com.salesforce.androidsdk.ui.SalesforceDroidGapActivity"
-            android:configChanges="orientation|keyboardHidden" >
-
+            android:name="com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity"
+            android:configChanges="orientation|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -66,6 +64,11 @@
         <!-- Passcode activity -->
         <activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <!-- Manage space activity -->
+        <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoTitleBar" />
 
         <!-- Choose server activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity"

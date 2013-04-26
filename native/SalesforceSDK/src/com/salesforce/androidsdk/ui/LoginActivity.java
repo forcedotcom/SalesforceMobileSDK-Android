@@ -40,7 +40,7 @@ import android.view.Window;
 import android.webkit.WebView;
 import android.widget.TextView;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
@@ -77,7 +77,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 		super.onCreate(savedInstanceState);
 
 		// Object which allows reference to resources living outside the SDK
-		salesforceR = ForceApp.APP.getSalesforceR();
+		salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
 
 		// Getting login options from intent's extras
 		LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());

@@ -23,11 +23,12 @@ Inside the HYBRID_DIR, you will find several projects:
 4. **SampleApps/ContactExplorer**: The ContactExplorer sample app uses PhoneGap (aka "cordova") to retrieve local device contacts.  It also uses the forcetk.js toolkit to implement REST transactions with the Salesforce REST API.  The app uses the OAuth2 support in Salesforce SDK to obtain OAuth credentials, then propagates those credentials to forcetk by sending a javascript event
 5. **SampleApps/VFConnector**: The VFConnector sample app demonstrates how to wrap a VisualForce page in a native container.  This example assumes that your org has a VisualForce page called "BasicVFTest".  The app first obtains OAuth login credentials using the Salesforce SDK OAuth2 support, then uses those credentials to set appropriate webview cookies for accessing VisualForce pages
 6. **SampleApps/SFDCAccounts**: The SFDCAccounts sample app demonstrates how to take accounts and opportunities offline using SmartStore and forcetk
-7. **SampleApps/SmartStoreExplorer**: The SmartStoreExplorer sample app let you explore SmartStore APIs
-8. **SampleApps/test/ContactExplorerTest**: Test project for ContactExplorer
-9. **SampleApps/test/VFConnectorTest**: Test project for VFConnector
-10. **SampleApps/test/SFDCAccountsTest**: Test project for SFDCAccounts
-11. **SampleApps/test/SmartStoreExplorerTest**: Test project for SmartStoreExplorer
+7. **SampleApps/AccountEditor**: The AccountEditor sample app allows you to search / create / edit / delete accounts online and offline using the new entity framework library (force.entity.js)
+8. **SampleApps/SmartStoreExplorer**: The SmartStoreExplorer sample app let you explore SmartStore APIs
+9. **SampleApps/test/ContactExplorerTest**: Test project for ContactExplorer
+10. **SampleApps/test/VFConnectorTest**: Test project for VFConnector
+11. **SampleApps/test/SFDCAccountsTest**: Test project for SFDCAccounts
+12. **SampleApps/test/SmartStoreExplorerTest**: Test project for SmartStoreExplorer
 
 # Running sample apps from Eclipse
 
@@ -95,7 +96,7 @@ ant installd
 
 Before you ship, make sure to plug in your oauth client id and callback url in:
 <pre>
-$TARGET_DIR/assets/www/bootconfig.js
+$TARGET_DIR/assets/www/bootconfig.json
 </pre>
 
 # Running your new native application from Eclipse

@@ -30,19 +30,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.Encryptor;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
-
 /**
  * Helper class for UUID generation
  */
 public class UUIDManager {
-	
+
 	private static final String UUID_PREF = "uuids2";
 
     /**
@@ -55,8 +54,8 @@ public class UUIDManager {
     public static synchronized String getUuId(String name) {
     	String cached = uuids.get(name);
     	if (cached != null) return cached;
-        SharedPreferences sp = ForceApp.APP.getSharedPreferences(UUID_PREF, Context.MODE_PRIVATE);
-        String key = ForceApp.APP.getKey(name);
+        SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(UUID_PREF, Context.MODE_PRIVATE);
+        String key = SalesforceSDKManager.getInstance().getKey(name);
         if (!sp.contains(name)) {
             String uuid = UUID.randomUUID().toString();
             Editor e = sp.edit();
@@ -74,7 +73,7 @@ public class UUIDManager {
      */
     public static synchronized void resetUuids() {
         uuids.clear();
-        final SharedPreferences sp = ForceApp.APP.getSharedPreferences(UUID_PREF, Context.MODE_PRIVATE);
+        final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(UUID_PREF, Context.MODE_PRIVATE);
         if (sp != null) {
             sp.edit().clear().commit();
         }

@@ -1,1 +1,1 @@
-../../../../../external/shared/forcetk.js
+../../../../../external/shared/libs/forcetk.js

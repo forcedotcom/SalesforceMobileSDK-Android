@@ -1,1 +1,1 @@
-../../../../../external/shared/PhoneGap/sfdcaccounts/sfdcaccounts.js
+../../../../../external/shared/SampleApps/sfdcaccounts/sfdcaccounts.js

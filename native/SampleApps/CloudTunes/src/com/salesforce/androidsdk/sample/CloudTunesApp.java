@@ -26,19 +26,15 @@
  */
 package com.salesforce.androidsdk.sample;
 
-import android.app.Activity;
+import android.app.Application;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
-public class CloudTunesApp extends ForceApp {
+public class CloudTunesApp extends Application {
 
 	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return AlbumListActivity.class;
-	}
-	
-	@Override
-	protected String getKey(String name) {
-		return null;
+	public void onCreate() {
+		super.onCreate();
+		SalesforceSDKManager.init(getApplicationContext(), new KeyImpl(), AlbumListActivity.class, null);
 	}
 }
