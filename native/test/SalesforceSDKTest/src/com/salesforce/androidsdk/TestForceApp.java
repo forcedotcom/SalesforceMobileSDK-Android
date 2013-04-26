@@ -38,6 +38,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 public class TestForceApp extends Application {
 
     public TestForceApp() {
-    	SalesforceSDKManager.init(getApplicationContext(), null, null, null);
+    	SalesforceSDKManager.init(getApplicationContext(), new KeyImpl(), null, null);
     }
 }

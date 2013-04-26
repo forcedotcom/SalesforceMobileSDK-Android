@@ -39,6 +39,6 @@ public class VFConnectorApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.init(getApplicationContext(), null, SalesforceDroidGapActivity.class, null);
+		SalesforceSDKManager.init(getApplicationContext(), new KeyImpl(), SalesforceDroidGapActivity.class, null);
 	}
 }

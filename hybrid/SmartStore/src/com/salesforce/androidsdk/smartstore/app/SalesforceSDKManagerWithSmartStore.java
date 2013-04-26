@@ -31,7 +31,6 @@ import android.app.Activity;
 import android.content.Context;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 
@@ -44,24 +43,12 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * Protected constructor.
      *
      * @param context Application context.
-     * @param key Key used for encryption - must be Base64 encoded.
-     *
-     * 			  {@link Encryptor#isBase64Encoded(String)} can be used to
-     * 		      determine whether the generated key is Base64 encoded.
-     *
-     * 		      {@link Encryptor#hash(String, String)} can be used to
-     * 		      generate a Base64 encoded string.
-     *
-     * 		      For example:
-     * 			  <code>
-     * 			  Encryptor.hash(name + "12s9adfgret=6235inkasd=012", name + "12kl0dsakj4-cuygsdf625wkjasdol8");
-     * 			  </code>
-     *
+     * @param keyImpl Implementation of KeyInterface. 
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
      */
-    protected SalesforceSDKManagerWithSmartStore(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-    	super(context, key, mainActivity, loginActivity);
+    protected SalesforceSDKManagerWithSmartStore(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    	super(context, keyImpl, mainActivity, loginActivity);
     }
 
 	/**
@@ -70,12 +57,12 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
 	 * by apps using the Salesforce Mobile SDK.
 	 *
 	 * @param context Application context.
-     * @param key Key used for encryption.
+     * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
 	 */
-	public static void init(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-		SalesforceSDKManager.init(context, key, mainActivity, loginActivity);
+	public static void init(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+		SalesforceSDKManager.init(context, keyImpl, mainActivity, loginActivity);
 
         // Upgrade to the latest version.
         UpgradeManagerWithSmartStore.getInstance().upgradeSmartStore();

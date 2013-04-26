@@ -88,7 +88,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     protected static SalesforceSDKManager INSTANCE;
 
     protected Context context;
-    protected String appEncryptionKey;
+    protected KeyInterface keyImpl;
     protected LoginOptions loginOptions;
     protected Class<? extends Activity> mainActivityClass;
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
@@ -116,25 +116,13 @@ public class SalesforceSDKManager implements AccountRemoved {
      * Protected constructor.
      *
      * @param context Application context.
-     * @param key Key used for encryption - must be Base64 encoded.
-     *
-     * 			  {@link Encryptor#isBase64Encoded(String)} can be used to
-     * 		      determine whether the generated key is Base64 encoded.
-     *
-     * 		      {@link Encryptor#hash(String, String)} can be used to
-     * 		      generate a Base64 encoded string.
-     *
-     * 		      For example:
-     * 			  <code>
-     * 			  Encryptor.hash(name + "12s9adfgret=6235inkasd=012", name + "12kl0dsakj4-cuygsdf625wkjasdol8");
-     * 			  </code>
-     *
+     * @param keyImpl Implementation for KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
      */
-    protected SalesforceSDKManager(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    protected SalesforceSDKManager(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	this.context = context;
-    	this.appEncryptionKey = key;
+    	this.keyImpl = keyImpl;
     	this.mainActivityClass = mainActivity;
     	if (loginActivity != null) {
         	this.loginActivityClass = loginActivity;	
@@ -148,6 +136,30 @@ public class SalesforceSDKManager implements AccountRemoved {
      */
     public Class<? extends Activity> getMainActivityClass() {
     	return mainActivityClass;
+    }
+
+    public interface KeyInterface {
+
+        /**
+         * This function must return the same value for name
+         * even when the application is restarted. The value this
+         * function returns must be Base64 encoded.
+         *
+         * {@link Encryptor#isBase64Encoded(String)} can be used to
+         * determine whether the generated key is Base64 encoded.
+         *
+         * {@link Encryptor#hash(String, String)} can be used to
+         * generate a Base64 encoded string.
+         *
+         * For example:
+         * <code>
+         * Encryptor.hash(name + "12s9adfgret=6235inkasd=012", name + "12kl0dsakj4-cuygsdf625wkjasdol8");
+         * </code>
+         *
+         * @param name The name associated with the key.
+         * @return The key used for encrypting salts and keys.
+         */
+        public String getKey(String name);
     }
 
     /**
@@ -170,7 +182,11 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @return The key used for encrypting salts and keys.
      */
     public String getKey(String name) {
-    	return null;
+    	String key = null;
+    	if (keyImpl != null) {
+    		key = keyImpl.getKey(name);
+    	}
+    	return key;
     }
 
     /**
@@ -211,13 +227,13 @@ public class SalesforceSDKManager implements AccountRemoved {
 	 * by apps using the Salesforce Mobile SDK.
 	 *
 	 * @param context Application context.
-     * @param key Key used for encryption.
+     * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
 	 */
-    public static void init(Context context, String key, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    public static void init(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	if (INSTANCE == null) {
-    		INSTANCE = new SalesforceSDKManager(context, key, mainActivity, loginActivity);
+    		INSTANCE = new SalesforceSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
 
         // Initializes the encryption module.

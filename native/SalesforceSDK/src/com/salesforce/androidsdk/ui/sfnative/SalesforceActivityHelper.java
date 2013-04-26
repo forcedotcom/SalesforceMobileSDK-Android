@@ -64,7 +64,7 @@ public class SalesforceActivityHelper {
 					SalesforceSDKManager.getInstance().logout(activity);
 					return;
 				}
-				activity.onResume(client);
+				//activity.onResume(client);
 
 				// Lets observers know that rendition is complete.
 				EventsObservable.get().notifyEvent(EventType.RenditionComplete);

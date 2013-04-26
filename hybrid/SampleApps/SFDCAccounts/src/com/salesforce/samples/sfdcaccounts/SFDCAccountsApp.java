@@ -41,6 +41,6 @@ public class SFDCAccountsApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManagerWithSmartStore.init(getApplicationContext(), null, SalesforceDroidGapActivity.class, null);
+		SalesforceSDKManagerWithSmartStore.init(getApplicationContext(), new KeyImpl(), SalesforceDroidGapActivity.class, null);
 	}
 }

@@ -38,6 +38,6 @@ public class TemplateApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.init(getApplicationContext(), null, MainActivity.class, null);
+		SalesforceSDKManager.init(getApplicationContext(), new KeyImpl(), MainActivity.class, null);
 	}
 }

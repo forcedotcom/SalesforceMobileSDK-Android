@@ -35,6 +35,6 @@ public class CloudTunesApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.init(getApplicationContext(), null, AlbumListActivity.class, null);
+		SalesforceSDKManager.init(getApplicationContext(), new KeyImpl(), AlbumListActivity.class, null);
 	}
 }

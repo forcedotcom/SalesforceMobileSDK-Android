@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2013, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,21 +24,19 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk;
+package com.salesforce.samples.sfdcaccounts;
 
-import android.app.Application;
-
-import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
-import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
 
 /**
- * Test application for smart store plugin.
+ * This class provides an implementation of KeyInterface.
+ *
+ * @author bhariharan
  */
-public class ForcePluginsTestApp extends Application {
+public class KeyImpl implements KeyInterface {
 
 	@Override
-	public void onCreate() {
-		super.onCreate();
-		SalesforceSDKManagerWithSmartStore.init(getApplicationContext(), new KeyImpl(), SalesforceDroidGapActivity.class, null);
+	public String getKey(String name) {
+		return null;
 	}
 }
