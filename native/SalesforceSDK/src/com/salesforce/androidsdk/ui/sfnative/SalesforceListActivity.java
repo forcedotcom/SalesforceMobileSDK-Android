@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.ui.sfnative;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.TokenRevocationReceiver;
@@ -74,7 +76,26 @@ public abstract class SalesforceListActivity extends ListActivity {
 
 		// Brings up the passcode screen if needed.
 		if (passcodeManager.onResume(this)) {
-			SalesforceActivityHelper.initializeRestClient(this);
+
+			// Gets login options.
+			final String accountType = SalesforceSDKManager.getInstance().getAccountType();
+	    	final LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
+
+			// Gets a rest client.
+			new ClientManager(this, accountType, loginOptions, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+
+				@Override
+				public void authenticatedRestClient(RestClient client) {
+					if (client == null) {
+						SalesforceSDKManager.getInstance().logout(SalesforceListActivity.this);
+						return;
+					}
+					onResume(client);
+
+					// Lets observers know that rendition is complete.
+					EventsObservable.get().notifyEvent(EventType.RenditionComplete);
+				}
+			});
 		}
 	}
 
