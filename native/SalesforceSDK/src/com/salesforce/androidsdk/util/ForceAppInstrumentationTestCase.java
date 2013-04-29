@@ -34,7 +34,7 @@ import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -62,7 +62,7 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
         try {
         	waitForStartup();
 			logout();
-			ForceApp.APP.getLoginServerManager().useSandbox();
+			SalesforceSDKManager.getInstance().getLoginServerManager().useSandbox();
 			launchMainActivity();
 			login();
         }
@@ -105,13 +105,13 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
     
 	protected void waitForStartup() {
 		// Wait for app initialization to complete
-	    if (ForceApp.APP == null) {
+	    if (SalesforceSDKManager.getInstance() == null) {
 	    	waitForEvent(EventType.AppCreateComplete);
 	    }
 	}
 
 	protected void logout() {
-		ForceApp.APP.logout(null, false);
+		SalesforceSDKManager.getInstance().logout(null, false);
 		waitForEvent(EventType.LogoutComplete);
 	}
 
@@ -127,7 +127,7 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 	protected void launchMainActivity() {
 		final Intent intent = new Intent(Intent.ACTION_MAIN);
 		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-		intent.setClassName(instrumentation.getTargetContext(), ForceApp.APP.getMainActivityClass().getName());
+		intent.setClassName(instrumentation.getTargetContext(), SalesforceSDKManager.getInstance().getMainActivityClass().getName());
 		mainActivity = instrumentation.startActivitySync(intent);
 	}
 

@@ -26,26 +26,19 @@
  */
 package com.salesforce.samples.contactexplorer;
 
-import android.app.Activity;
+import android.app.Application;
 
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
-
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
 
 /**
- * Application class for the contact explorer.
- * All Salesforce mobile app must extend ForceApp. 
- * ForceApp takes care of intializing the network http clients (among other things).
+ * Application class for the contact explorer app.
  */
-public class ContactExplorerApp extends ForceApp {
+public class ContactExplorerApp extends Application {
 
 	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return SalesforceDroidGapActivity.class;
-	}
-	
-	@Override
-	protected String getKey(String name) {
-		return null;
+	public void onCreate() {
+		super.onCreate();
+		SalesforceSDKManager.init(getApplicationContext(), new KeyImpl(), SalesforceDroidGapActivity.class, null);
 	}
 }

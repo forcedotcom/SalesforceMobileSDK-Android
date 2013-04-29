@@ -26,26 +26,19 @@
  */
 package com.salesforce.samples.AccountEditor;
 
-import android.app.Activity;
+import android.app.Application;
 
-import com.salesforce.androidsdk.smartstore.app.ForceAppWithSmartStore;
-import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
-
+import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
+import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
 
 /**
- * Application class for the contact explorer.
- * All Salesforce mobile app must extend ForceAppWithSmartStore. 
- * ForceAppWithSmartStore takes care of intializing the network http clients (among other things).
+ * Application class for the contact explorer app.
  */
-public class AccountEditorApp extends ForceAppWithSmartStore {
+public class AccountEditorApp extends Application {
 
 	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return SalesforceDroidGapActivity.class;
-	}
-	
-	@Override
-	protected String getKey(String name) {
-		return null;
+	public void onCreate() {
+		super.onCreate();
+		SalesforceSDKManagerWithSmartStore.init(getApplicationContext(), new KeyImpl(), SalesforceDroidGapActivity.class, null);
 	}
 }

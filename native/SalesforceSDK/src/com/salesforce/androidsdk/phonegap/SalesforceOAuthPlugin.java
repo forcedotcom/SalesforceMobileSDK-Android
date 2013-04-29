@@ -34,9 +34,9 @@ import org.json.JSONObject;
 
 import android.util.Log;
 
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
-import com.salesforce.androidsdk.ui.SalesforceGapViewClient;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceGapViewClient;
 
 /**
  * PhoneGap plugin for Salesforce OAuth.
@@ -121,7 +121,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
      */
     protected void logoutCurrentUser(CallbackContext callbackContext) {
         Log.i("SalesforceOAuthPlugin.logoutCurrentUser", "logoutCurrentUser called");
-    	ForceApp.APP.logout(cordova.getActivity());
+    	SalesforceSDKManager.getInstance().logout(cordova.getActivity());
         callbackContext.success();
     }
 }

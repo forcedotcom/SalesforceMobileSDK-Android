@@ -26,40 +26,18 @@
  */
 package com.salesforce.androidsdk;
 
-import android.app.Activity;
+import android.app.Application;
 
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.rest.ClientManagerTest;
-import com.salesforce.androidsdk.ui.SalesforceR;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
- * Test implementation of ForceApp.
+ * Test implementation of Application class that uses SalesforceSDKManager.
  *
  * @author bhariharan
  */
-public class TestForceApp extends ForceApp {
+public class TestForceApp extends Application {
 
     public TestForceApp() {
-        APP = this;
-    }
-
-    @Override
-    public Class<? extends Activity> getMainActivityClass() {
-        return null;
-    }
-
-    @Override
-    public SalesforceR getSalesforceR() {
-        return null;
-    }
-
-    @Override
-    protected String getKey(String name) {
-        return null;
-    }
-
-    @Override
-    public String getPasscodeHash() {
-        return ClientManagerTest.TEST_PASSCODE_HASH;
+    	SalesforceSDKManager.init(getApplicationContext(), new KeyImpl(), null, null);
     }
 }

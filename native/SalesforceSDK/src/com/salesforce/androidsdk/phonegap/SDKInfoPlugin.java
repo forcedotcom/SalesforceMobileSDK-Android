@@ -42,7 +42,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * PhoneGap plugin for SDK info.
@@ -112,7 +112,7 @@ public class SDKInfoPlugin extends ForcePlugin {
        String appVersion = packageInfo.versionName;
         
        JSONObject data = new JSONObject();
-       data.put(SDK_VERSION, ForceApp.SDK_VERSION);
+       data.put(SDK_VERSION, SalesforceSDKManager.SDK_VERSION);
        data.put(APP_NAME, appName);
        data.put(APP_VERSION, appVersion);
        data.put(FORCE_PLUGINS_AVAILABLE, new JSONArray(getForcePlugins(ctx)));

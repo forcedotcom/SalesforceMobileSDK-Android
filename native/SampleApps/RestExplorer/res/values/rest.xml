@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-	<string name="account_type">com.salesforce.samples.restexplorer.login</string>
-	<string name="oauth_callback_url">sfdc:///axm/detect/oauth/done</string>
-	<string name="oauth_client_id">3MVG92.uWdyphVj4bnolD7yuIpCQsNgddWtqRND3faxrv9uKnbj47H4RkwheHA2lKY4cBusvDVp0M6gdGE8hp</string>
-	<string name="api_version">v23.0</string>
-	<string name="encoding">UTF-8</string>
-</resources>

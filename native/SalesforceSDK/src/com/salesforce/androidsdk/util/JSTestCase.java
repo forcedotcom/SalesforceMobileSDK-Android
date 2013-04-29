@@ -31,7 +31,7 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin;
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin.TestResult;
-import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
 
 /**
  * Extend this class to run tests written in JavaScript
