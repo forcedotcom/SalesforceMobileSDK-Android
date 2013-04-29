@@ -26,43 +26,18 @@
  */
 package com.salesforce.androidsdk;
 
-import android.app.Activity;
+import android.app.Application;
 
-import com.salesforce.androidsdk.security.Encryptor;
-import com.salesforce.androidsdk.smartstore.app.ForceAppWithSmartStore;
-import com.salesforce.androidsdk.ui.SalesforceR;
+import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 
 /**
- * Test implementation of ForceAppWithSmartStore.
+ * Test implementation of Application class that uses SalesforceSDKManagerWithSmartStore.
  *
  * @author bhariharan
  */
-public class TestForceApp extends ForceAppWithSmartStore {
+public class TestForceApp extends Application {
 
-    public static final String TEST_PASSCODE_HASH = Encryptor.hash("passcode", "hash-key");
-    
-	
     public TestForceApp() {
-        APP = this;
-    }
-
-    @Override
-    public Class<? extends Activity> getMainActivityClass() {
-        return null;
-    }
-
-    @Override
-    public SalesforceR getSalesforceR() {
-        return null;
-    }
-
-    @Override
-    protected String getKey(String name) {
-        return null;
-    }
-
-    @Override
-    public String getPasscodeHash() {
-        return TEST_PASSCODE_HASH;
+    	SalesforceSDKManagerWithSmartStore.init(getApplicationContext(), new KeyImpl(), null, null);
     }
 }

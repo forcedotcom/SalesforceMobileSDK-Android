@@ -50,7 +50,7 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView.BufferType;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
 
@@ -175,9 +175,9 @@ public class ServerPickerActivity extends Activity implements
         super.onCreate(savedInstanceState);
 
         // Object which allows reference to resources living outside the SDK
-        salesforceR = ForceApp.APP.getSalesforceR();
+        salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
         
-        loginServerManager = ForceApp.APP.getLoginServerManager();
+        loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
 
         setContentView(salesforceR.layoutServerPicker());
 
@@ -197,7 +197,7 @@ public class ServerPickerActivity extends Activity implements
     protected Dialog onCreateDialog(int id) {
 
         if (id == SERVER_DIALOG_ID) {
-            if (ForceApp.isTablet()) {
+            if (SalesforceSDKManager.isTablet()) {
                 urlEditDialog = new CustomServerUrlEditor(this, findViewById(
                         salesforceR.idAuthContainer()).getLayoutParams().width);
             } else {
@@ -352,12 +352,12 @@ public class ServerPickerActivity extends Activity implements
 
         SpannableString titleSpan = new SpannableString(titleText);
         titleSpan.setSpan(new TextAppearanceSpan(this,
-                ForceApp.isTablet() ? salesforceR.styleTextHostName() : android.R.style.TextAppearance_Medium), 0, titleText.length(),
+                SalesforceSDKManager.isTablet() ? salesforceR.styleTextHostName() : android.R.style.TextAppearance_Medium), 0, titleText.length(),
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         SpannableString urlSpan = new SpannableString(urlText);
         urlSpan.setSpan(new TextAppearanceSpan(this,
-                ForceApp.isTablet() ? salesforceR.styleTextHostUrl() : android.R.style.TextAppearance_Small), 0, urlText.length(),
+                SalesforceSDKManager.isTablet() ? salesforceR.styleTextHostUrl() : android.R.style.TextAppearance_Small), 0, urlText.length(),
                 Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 
         result.append(titleSpan);

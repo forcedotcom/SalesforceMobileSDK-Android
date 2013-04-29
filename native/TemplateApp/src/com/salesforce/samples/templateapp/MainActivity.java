@@ -37,17 +37,17 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.ui.NativeMainActivity;
+import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 
 /**
  * Main activity
  */
-public class MainActivity extends NativeMainActivity {
+public class MainActivity extends SalesforceActivity {
 
     private RestClient client;
     private ArrayAdapter<String> listAdapter;
@@ -87,7 +87,7 @@ public class MainActivity extends NativeMainActivity {
 	 * @param v
 	 */
 	public void onLogoutClick(View v) {
-		ForceApp.APP.logout(this);
+		SalesforceSDKManager.getInstance().logout(this);
 	}
 	
 	/**
@@ -139,7 +139,7 @@ public class MainActivity extends NativeMainActivity {
 			@Override
 			public void onError(Exception exception) {
                 Toast.makeText(MainActivity.this,
-                               MainActivity.this.getString(ForceApp.APP.getSalesforceR().stringGenericError(), exception.toString()),
+                               MainActivity.this.getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericError(), exception.toString()),
                                Toast.LENGTH_LONG).show();
 			}
 		});

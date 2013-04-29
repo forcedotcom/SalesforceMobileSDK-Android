@@ -41,9 +41,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
@@ -69,7 +68,6 @@ public class AlbumListActivity extends ListActivity {
 		lv.setOnItemClickListener(new OnItemClickListener() {
 		    public void onItemClick(AdapterView<?> parent, View view,
 		        int position, long id) {
-	
 		      Toast.makeText(getApplicationContext(), ((TextView) view).getText(),
 		          Toast.LENGTH_SHORT).show();
 			  Intent i = new Intent(AlbumListActivity.this, TrackListActivity.class);
@@ -85,18 +83,12 @@ public class AlbumListActivity extends ListActivity {
 		
 		// Login options
 		String accountType = getString(R.string.account_type);
-		LoginOptions loginOptions = new LoginOptions(
-				null, // gets overridden by LoginActivity based on server picked by uuser 
-				ForceApp.APP.getPasscodeHash(),
-				getString(R.string.oauth_callback_url),
-				getString(R.string.oauth_client_id),
-				new String[] {"api"});
-		new ClientManager(this, accountType, loginOptions, ForceApp.APP.shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+		new ClientManager(this, accountType, SalesforceSDKManager.getInstance().getLoginOptions(), SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 
 			@Override
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
-					ForceApp.APP.logout(AlbumListActivity.this);
+					SalesforceSDKManager.getInstance().logout(AlbumListActivity.this);
 					return;
 				}
 				AlbumListActivity.this.client = client;

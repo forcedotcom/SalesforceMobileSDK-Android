@@ -32,7 +32,7 @@ import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
-import android.app.Application;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -49,22 +49,23 @@ import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.auth.OAuth2;
-import com.salesforce.androidsdk.phonegap.BootConfig;
+import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
-import com.salesforce.androidsdk.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
+import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
- * Super class for all force applications.
- * You should extend this class or make sure to initialize HttpAccess in your application's onCreate method.
+ * Singleton class used as an interface to the various
+ * functions provided by the Salesforce SDK. This class
+ * should be instantiated in order to use the Salesforce SDK.
  */
-public abstract class ForceApp extends Application implements AccountRemoved {
+public class SalesforceSDKManager implements AccountRemoved {
 
     /**
      * Current version of this SDK.
@@ -82,26 +83,84 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
 
     /**
-     * Instance of the ForceApp to use for this process.
+     * Instance of the SalesforceSDKManager to use for this process.
      */
-    public static ForceApp APP;
+    protected static SalesforceSDKManager INSTANCE;
 
+    protected Context context;
+    protected KeyInterface keyImpl;
+    protected LoginOptions loginOptions;
+    protected Class<? extends Activity> mainActivityClass;
+    protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
+    protected AccountWatcher accWatcher;
     private String encryptionKey;
-    private AccountWatcher accWatcher;
     private SalesforceR salesforceR = new SalesforceR();
     private PasscodeManager passcodeManager;
     private LoginServerManager loginServerManager;
 
-    /**************************************************************************************************
+    /**
+     * Returns a singleton instance of this class.
      *
-     * Abstract methods: to be implemented by subclass
-     *
-     **************************************************************************************************/
+     * @param context Application context.
+     * @return Singleton instance of SalesforceSDKManager.
+     */
+    public static SalesforceSDKManager getInstance() {
+    	if (INSTANCE != null) {
+    		return INSTANCE;
+    	} else {
+            throw new RuntimeException("Applications need to call SalesforceSDKManager.init() first.");
+    	}
+    }
 
     /**
+     * Protected constructor.
+     *
+     * @param context Application context.
+     * @param keyImpl Implementation for KeyInterface.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+     */
+    protected SalesforceSDKManager(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    	this.context = context;
+    	this.keyImpl = keyImpl;
+    	this.mainActivityClass = mainActivity;
+    	if (loginActivity != null) {
+        	this.loginActivityClass = loginActivity;	
+    	}
+    }
+
+    /**
+     * Returns the class for the main activity.
+     *
      * @return The class for the main activity.
      */
-    public abstract Class<? extends Activity> getMainActivityClass();
+    public Class<? extends Activity> getMainActivityClass() {
+    	return mainActivityClass;
+    }
+
+    public interface KeyInterface {
+
+        /**
+         * This function must return the same value for name
+         * even when the application is restarted. The value this
+         * function returns must be Base64 encoded.
+         *
+         * {@link Encryptor#isBase64Encoded(String)} can be used to
+         * determine whether the generated key is Base64 encoded.
+         *
+         * {@link Encryptor#hash(String, String)} can be used to
+         * generate a Base64 encoded string.
+         *
+         * For example:
+         * <code>
+         * Encryptor.hash(name + "12s9adfgret=6235inkasd=012", name + "12kl0dsakj4-cuygsdf625wkjasdol8");
+         * </code>
+         *
+         * @param name The name associated with the key.
+         * @return The key used for encrypting salts and keys.
+         */
+        public String getKey(String name);
+    }
 
     /**
      * This function must return the same value for name
@@ -122,7 +181,13 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @param name The name associated with the key.
      * @return The key used for encrypting salts and keys.
      */
-    protected abstract String getKey(String name);
+    public String getKey(String name) {
+    	String key = null;
+    	if (keyImpl != null) {
+    		key = keyImpl.getKey(name);
+    	}
+    	return key;
+    }
 
     /**
      * Before 1.3, SalesforceSDK was packaged as a jar, and project had to provide a subclass of SalesforceR.
@@ -134,65 +199,58 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
+     * Returns the class of the activity used to perform the login process and create the account.
+     *
      * @return the class of the activity used to perform the login process and create the account.
-     * You can override this if you want to customize the LoginAcitivty
      */
     public Class<? extends Activity> getLoginActivityClass() {
-        return LoginActivity.class;
+    	return loginActivityClass;
     }
 
 	/**
-     * Note: Native applications need to override getLoginOptions in their subclass of ForceApp
-	 * @return login options for the app
+     * Returns login options associated with the app.
+     *
+	 * @return LoginOptions instance.
 	 */
 	public LoginOptions getLoginOptions() {
-		if (isHybrid()) {
-            BootConfig config = BootConfig.getBootConfig(this);		
-		
-            // Get clientManager
-            LoginOptions loginOptions = new LoginOptions(
-                                                         null, // set by app
-                                                         getPasscodeHash(),
-                                                         config.getOauthRedirectURI(),
-                                                         config.getRemoteAccessConsumerKey(),
-                                                         config.getOauthScopes());
-        
-            return loginOptions;
+		if (loginOptions == null) {
+			final BootConfig config = BootConfig.getBootConfig(context);
+			loginOptions = new LoginOptions(null, getPasscodeHash(), config.getOauthRedirectURI(),
+	        		config.getRemoteAccessConsumerKey(), config.getOauthScopes());
 		}
-		else {
-            throw new RuntimeException("Native applications need to override getLoginOptions in their subclass of ForceApp");
-		}
+		return loginOptions;
 	}
 
-    @Override
-    public void onCreate() {
-        super.onCreate();
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by apps using the Salesforce Mobile SDK.
+	 *
+	 * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+	 */
+    public static void init(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    	if (INSTANCE == null) {
+    		INSTANCE = new SalesforceSDKManager(context, keyImpl, mainActivity, loginActivity);
+    	}
 
-        // Initialize encryption module
-        Encryptor.init(this);
+        // Initializes the encryption module.
+        Encryptor.init(context);
 
-        // Initialize the http client
-        HttpAccess.init(this, getUserAgent());
+        // Initializes the HTTP client.
+        HttpAccess.init(context, INSTANCE.getUserAgent());
 
-        // Ensure we have a CookieSyncManager
-        CookieSyncManager.createInstance(this);
+        // Ensures that we have a CookieSyncManager instance.
+        CookieSyncManager.createInstance(context);
 
-        // Done
-        APP = this;
-        accWatcher = new AccountWatcher(APP, APP);
+        // Initializes an AccountWatcher instance.
+        INSTANCE.accWatcher = new AccountWatcher(context, INSTANCE);
 
-        // Upgrade to the latest version.
+        // Upgrades to the latest version.
         UpgradeManager.getInstance().upgradeAccMgr();
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
-    }
-
-    @Override
-    public void onTerminate() {
-        super.onTerminate();
-        if (accWatcher != null) {
-            accWatcher.remove();
-            accWatcher = null;
-        }
     }
 
     /**
@@ -207,36 +265,46 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     	return true;
     }
 
+    /**
+     * Returns the application context.
+     *
+     * @return Application context.
+     */
+    public Context getAppContext() {
+    	return context;
+    }
+
     @Override
     public void onAccountRemoved() {
-        ForceApp.APP.cleanUp(null);
+        INSTANCE.cleanUp(null);
     }
 
     /**
-     * @return The login server manager associated with the app.
+     * Returns the login server manager associated with SalesforceSDKManager.
+     *
+     * @return LoginServerManager instance.
      */
     public synchronized LoginServerManager getLoginServerManager() {
-
         if (loginServerManager == null) {
-        	loginServerManager = new LoginServerManager(this);
+        	loginServerManager = new LoginServerManager(context);
         }
         return loginServerManager;
     }    
 
     /**
-     * @return The passcode manager associated with the app.
+     * Returns the passcode manager associated with SalesforceSDKManager.
+     *
+     * @return PasscodeManager instance.
      */
     public synchronized PasscodeManager getPasscodeManager() {
-
-        // Only creating passcode manager if used.
         if (passcodeManager == null) {
-            passcodeManager = new PasscodeManager(this);
+            passcodeManager = new PasscodeManager(context);
         }
         return passcodeManager;
     }
 
     /**
-     * Changes the passcode to a new value
+     * Changes the passcode to a new value.
      *
      * @param oldPass Old passcode.
      * @param newPass New passcode.
@@ -245,14 +313,18 @@ public abstract class ForceApp extends Application implements AccountRemoved {
         if (!isNewPasscode(oldPass, newPass)) {
             return;
         }
-        encryptionKey = null; // Reset cached encryption key, since the passcode has changed
+
+        // Resets the cached encryption key, since the passcode has changed.
+        encryptionKey = null;
         ClientManager.changePasscode(oldPass, newPass);
     }
 
     /**
-     * @param oldPass
-     * @param newPass
-     * @return true if newPass is truly different from oldPass
+     * Checks if the new passcode is different from the old passcode.
+     *
+     * @param oldPass Old passcode.
+     * @param newPass New passcode.
+     * @return True - if the new passcode is different from the old passcode, False - otherwise.
      */
     protected boolean isNewPasscode(String oldPass, String newPass) {
         return ((oldPass == null && newPass == null)
@@ -285,6 +357,8 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
+     * Returns the passcode hash being used.
+     *
      * @return The hashed passcode, or null if it's not required.
      */
     public String getPasscodeHash() {
@@ -292,19 +366,23 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
-     * @return The name of the application (as defined in AndroidManifest.xml).
+     * Returns the name of the application (as defined in AndroidManifest.xml).
+     *
+     * @return The name of the application.
      */
     public String getApplicationName() {
-        return getPackageManager().getApplicationLabel(getApplicationInfo()).toString();
+        return context.getPackageManager().getApplicationLabel(context.getApplicationInfo()).toString();
     }
 
     /**
-     * @return true if network is available (NB doesn't mean all servers are reachable though)
+     * Checks if network connectivity exists.
+     *
+     * @return True - if network is available, False - otherwise.
      */
     public boolean hasNetwork() {
     	return HttpAccess.DEFAULT.hasNetwork();
     }
-    
+
     /**
      * Cleans up cached credentials and data.
      *
@@ -312,13 +390,13 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      */
     protected void cleanUp(Activity frontActivity) {
 
-        // Finish front activity if specified.
+        // Finishes front activity if specified.
         if (frontActivity != null) {
             frontActivity.finish();
         }
 
-        // Reset passcode and encryption key, if any.
-        getPasscodeManager().reset(this);
+        // Resets passcode and encryption key, if any.
+        getPasscodeManager().reset(context);
         passcodeManager = null;
         encryptionKey = null;
         UUIDManager.resetUuids();
@@ -329,39 +407,46 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      */
     protected void startLoginPage() {
 
-        // Clear cookies.
-        CookieSyncManager.createInstance(ForceApp.this);
+        // Clears cookies.
+        CookieSyncManager.createInstance(context);
         CookieManager.getInstance().removeAllCookie();
 
-        // Restart application.
-        final Intent i = new Intent(ForceApp.this, getMainActivityClass());
+        // Restarts the application.
+        final Intent i = new Intent(context, getMainActivityClass());
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(i);
+        context.startActivity(i);
     }
 
     /**
-     * Wipe out the stored authentication credentials (remove account) and restart the app, if specified.
+     * Wipes out the stored authentication credentials (removes the account)
+     * and restarts the app, if specified.
+     *
+     * @param frontActivity Front activity.
      */
     public void logout(Activity frontActivity) {
         logout(frontActivity, true);
     }
 
     /**
-     * Wipe out the stored authentication credentials (remove account) and restart the app, if specified.
+     * Wipes out the stored authentication credentials (removes the account)
+     * and restarts the app, if specified.
+     *
+     * @param frontActivity Front activity.
+     * @param showLoginPage True - if the login page should be shown, False - otherwise.
      */
     public void logout(Activity frontActivity, final boolean showLoginPage) {
-        final ClientManager clientMgr = new ClientManager(this, getAccountType(), null, shouldLogoutWhenTokenRevoked());
-		final AccountManager mgr = AccountManager.get(ForceApp.APP);
-        final String refreshToken = ForceApp.decryptWithPasscode(mgr.getPassword(clientMgr.getAccount()), getPasscodeHash());
-        final String clientId = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
-        final String loginServer = ForceApp.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());
+        final ClientManager clientMgr = new ClientManager(context, getAccountType(), null, shouldLogoutWhenTokenRevoked());
+		final AccountManager mgr = AccountManager.get(context);
+        final String refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(clientMgr.getAccount()), getPasscodeHash());
+        final String clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
+        final String loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());
         if (accWatcher != null) {
     		accWatcher.remove();
     		accWatcher = null;
     	}
     	cleanUp(frontActivity);
 
-    	// Remove account, if any.
+    	// Removes the exisiting account, if any.
     	if (clientMgr.getAccount() == null) {
     		EventsObservable.get().notifyEvent(EventType.LogoutComplete);
     		if (showLoginPage) {
@@ -387,20 +472,21 @@ public abstract class ForceApp extends Application implements AccountRemoved {
     }
 
     /**
-     * Get a user agent string based on the mobile SDK version. We are building
-     * a user agent of the form: 
+     * Returns a user agent string based on the mobile SDK version. We are building
+     * a user agent of the form:
      *   SalesforceMobileSDK/<salesforceSDK version> android/<android OS version> appName/appVersion <Native|Hybrid>
+     *
      * @return The user agent string to use for all requests.
      */
     public final String getUserAgent() {
         String appName = "";
         String appVersion = "";
         try {
-            PackageInfo packageInfo = getPackageManager().getPackageInfo(getPackageName(), 0);
-            appName = getString(packageInfo.applicationInfo.labelRes);
+            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+            appName = context.getString(packageInfo.applicationInfo.labelRes);
             appVersion = packageInfo.versionName;
         } catch (NameNotFoundException e) {
-            Log.w("ForceApp:getUserAgent", e);
+            Log.w("SalesforceSDKManager:getUserAgent", e);
         }
 	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native");
 	    return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s",
@@ -408,27 +494,32 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 	}
 
 	/**
-	 * @return true if this is an hybrid application
+	 * Returns whether the application is a hybrid application or not.
+	 *
+	 * @return True - if this is an hybrid application, False - otherwise.
 	 */
 	public boolean isHybrid() {
 		return SalesforceDroidGapActivity.class.isAssignableFrom(getMainActivityClass());
 	}
 
     /**
-     * @return The authentication account type (should match authenticator.xml).
+     * Returns the authentication account type (should match authenticator.xml).
+     *
+     * @return Account type string.
      */
     public String getAccountType() {
-        return getString(getSalesforceR().stringAccountType());
+        return context.getString(getSalesforceR().stringAccountType());
     }
 
     /**
-     * Helper function
-     * @return true if application is running on a tablet
+     * Returns whether the app is running on a tablet or not.
+     *
+     * @return True - if application is running on a tablet, False - otherwise.
      */
     public static boolean isTablet() {
         if (Build.VERSION.SDK_INT <= GINGERBREAD_MR1) {
             return false;
-        } else if ((APP.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
+        } else if ((INSTANCE.context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
             return true;
         }
         return false;
@@ -436,15 +527,16 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder();
+        final StringBuilder sb = new StringBuilder();
         sb.append(this.getClass()).append(": {\n")
           .append("   accountType: ").append(getAccountType()).append("\n")
           .append("   userAgent: ").append(getUserAgent()).append("\n")
           .append("   mainActivityClass: ").append(getMainActivityClass()).append("\n")
           .append("   isFileSystemEncrypted: ").append(Encryptor.isFileSystemEncrypted()).append("\n");
-        if (null != passcodeManager) {
-            //passcodeManager may be null at startup if the app is running in debug mode
-            sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(this)).append("\n");
+        if (passcodeManager != null) {
+
+            // passcodeManager may be null at startup if the app is running in debug mode.
+            sb.append("   hasStoredPasscode: ").append(passcodeManager.hasStoredPasscode(context)).append("\n");
         }
         sb.append("}\n");
         return sb.toString();
@@ -458,7 +550,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @return Encrypted data.
      */
     public static String encryptWithPasscode(String data, String passcode) {
-        return Encryptor.encrypt(data, ForceApp.APP.getEncryptionKeyForPasscode(passcode));
+        return Encryptor.encrypt(data, SalesforceSDKManager.INSTANCE.getEncryptionKeyForPasscode(passcode));
     }
 
     /**
@@ -469,7 +561,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
      * @return Decrypted data.
      */
     public static String decryptWithPasscode(String data, String passcode) {
-        return Encryptor.decrypt(data, ForceApp.APP.getEncryptionKeyForPasscode(passcode));
+        return Encryptor.decrypt(data, SalesforceSDKManager.INSTANCE.getEncryptionKeyForPasscode(passcode));
     }
 
     /**
@@ -494,7 +586,7 @@ public abstract class ForceApp extends Application implements AccountRemoved {
 	        try {
 	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken);
 	        } catch (Exception e) {
-	        	Log.w("ForceApp:revokeToken", e);
+	        	Log.w("SalesforceSDKManager:revokeToken", e);
 	        }
 	        return null;
 		}

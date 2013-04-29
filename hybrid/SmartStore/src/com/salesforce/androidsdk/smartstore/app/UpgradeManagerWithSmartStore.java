@@ -60,12 +60,12 @@ public class UpgradeManagerWithSmartStore extends UpgradeManager {
      */
     public synchronized void upgradeSmartStore() {
         final String installedVersion = getInstalledSmartStoreVersion();
-        if (installedVersion.equals(ForceAppWithSmartStore.SDK_VERSION)) {
+        if (installedVersion.equals(SalesforceSDKManagerWithSmartStore.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
-        writeCurVersion(SMART_STORE_KEY, ForceAppWithSmartStore.SDK_VERSION);
+        writeCurVersion(SMART_STORE_KEY, SalesforceSDKManagerWithSmartStore.SDK_VERSION);
     }
 
     /**

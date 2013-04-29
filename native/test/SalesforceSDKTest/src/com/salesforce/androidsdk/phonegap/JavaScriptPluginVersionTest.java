@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
-import com.salesforce.androidsdk.app.ForceApp;
-
 import android.test.InstrumentationTestCase;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 
 /**
@@ -120,9 +120,9 @@ public class JavaScriptPluginVersionTest extends InstrumentationTestCase {
 	 * Create JavaScriptPluginVersion for current version and make sure isCurrent/isOlder/isNewer returns the value expected
 	 */
 	public void testJavaScriptPluginVersionsWithCurrentVersion() {
-		assertFalse((new JavaScriptPluginVersion(ForceApp.SDK_VERSION)).isOlder());
-		assertTrue((new JavaScriptPluginVersion(ForceApp.SDK_VERSION)).isCurrent());
-		assertFalse((new JavaScriptPluginVersion(ForceApp.SDK_VERSION)).isNewer());
+		assertFalse((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isOlder());
+		assertTrue((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isCurrent());
+		assertFalse((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isNewer());
 	}
 
 	
