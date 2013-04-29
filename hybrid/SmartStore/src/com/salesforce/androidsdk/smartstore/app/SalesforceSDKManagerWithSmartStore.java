@@ -29,10 +29,17 @@ package com.salesforce.androidsdk.smartstore.app;
 import net.sqlcipher.database.SQLiteDatabase;
 import android.app.Activity;
 import android.content.Context;
+import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.app.UpgradeManager;
+import com.salesforce.androidsdk.auth.AccountWatcher;
+import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * Super class for all force applications that use the smartstore.
@@ -62,10 +69,28 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param loginActivity Login activity.
 	 */
 	public static void init(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-		SalesforceSDKManager.init(context, keyImpl, mainActivity, loginActivity);
+		if (INSTANCE == null) {
+    		INSTANCE = new SalesforceSDKManagerWithSmartStore(context, keyImpl, mainActivity, loginActivity);
+    	}
+
+        // Initializes the encryption module.
+        Encryptor.init(context);
+
+        // Initializes the HTTP client.
+        HttpAccess.init(context, INSTANCE.getUserAgent());
+
+        // Ensures that we have a CookieSyncManager instance.
+        CookieSyncManager.createInstance(context);
+
+        // Initializes an AccountWatcher instance.
+        ((SalesforceSDKManagerWithSmartStore) INSTANCE).accWatcher = new AccountWatcher(context, INSTANCE);
+
+        // Upgrades to the latest version.
+        UpgradeManager.getInstance().upgradeAccMgr();
 
         // Upgrade to the latest version.
         UpgradeManagerWithSmartStore.getInstance().upgradeSmartStore();
+        EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
 
     /**

@@ -92,8 +92,8 @@ public class SalesforceSDKManager implements AccountRemoved {
     protected LoginOptions loginOptions;
     protected Class<? extends Activity> mainActivityClass;
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
+    protected AccountWatcher accWatcher;
     private String encryptionKey;
-    private AccountWatcher accWatcher;
     private SalesforceR salesforceR = new SalesforceR();
     private PasscodeManager passcodeManager;
     private LoginServerManager loginServerManager;
