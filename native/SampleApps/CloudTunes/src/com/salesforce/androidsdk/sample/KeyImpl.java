@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.sample;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
+import com.salesforce.androidsdk.security.Encryptor;
 
 /**
  * This class provides an implementation of KeyInterface.
@@ -37,6 +38,6 @@ public class KeyImpl implements KeyInterface {
 
 	@Override
 	public String getKey(String name) {
-		return null;
+		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
 	}
 }
