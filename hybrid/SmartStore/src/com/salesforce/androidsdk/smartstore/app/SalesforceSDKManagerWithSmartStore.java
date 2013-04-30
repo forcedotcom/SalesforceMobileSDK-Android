@@ -38,6 +38,8 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.ui.LoginActivity;
+import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -68,7 +70,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
 	 */
-	public static void init(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+	private static void init(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
 		if (INSTANCE == null) {
     		INSTANCE = new SalesforceSDKManagerWithSmartStore(context, keyImpl, mainActivity, loginActivity);
     	}
@@ -92,6 +94,58 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
         UpgradeManagerWithSmartStore.getInstance().upgradeSmartStore();
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by hybrid apps using the Salesforce Mobile SDK.
+	 *
+	 * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+	 */
+    public static void initHybrid(Context context, KeyInterface keyImpl) {
+    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, SalesforceDroidGapActivity.class, LoginActivity.class);
+    }
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by hybrid apps using the Salesforce Mobile SDK.
+	 *
+	 * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param loginActivity Login activity.
+	 */
+    public static void initHybrid(Context context, KeyInterface keyImpl, Class<? extends Activity> loginActivity) {
+    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, SalesforceDroidGapActivity.class, loginActivity);
+    }
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by native apps using the Salesforce Mobile SDK.
+	 *
+	 * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param mainActivity Activity that should be launched after the login flow.
+	 */
+    public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity) {
+    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity, LoginActivity.class);
+    }
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by native apps using the Salesforce Mobile SDK.
+	 *
+	 * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+	 */
+    public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity, loginActivity);
+    }
 
     /**
      * Returns a singleton instance of this class.

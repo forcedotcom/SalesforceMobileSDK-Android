@@ -29,7 +29,6 @@ package com.salesforce.samples.sfdcaccounts;
 import android.app.Application;
 
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
-import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
 
 /**
  * Application class for the SFDCAccounts app.
@@ -41,6 +40,6 @@ public class SFDCAccountsApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManagerWithSmartStore.init(getApplicationContext(), new KeyImpl(), SalesforceDroidGapActivity.class, null);
+		SalesforceSDKManagerWithSmartStore.initHybrid(getApplicationContext(), new KeyImpl());
 	}
 }

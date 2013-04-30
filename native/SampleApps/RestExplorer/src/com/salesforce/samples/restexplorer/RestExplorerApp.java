@@ -38,6 +38,6 @@ public class RestExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.init(getApplicationContext(), new KeyImpl(), ExplorerActivity.class, null);
+		SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(), ExplorerActivity.class);
 	}
 }

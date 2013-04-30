@@ -124,9 +124,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     	this.context = context;
     	this.keyImpl = keyImpl;
     	this.mainActivityClass = mainActivity;
-    	if (loginActivity != null) {
-        	this.loginActivityClass = loginActivity;	
-    	}
+        this.loginActivityClass = loginActivity;
     }
 
     /**
@@ -231,7 +229,7 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
 	 */
-    public static void init(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    private static void init(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	if (INSTANCE == null) {
     		INSTANCE = new SalesforceSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
@@ -251,6 +249,58 @@ public class SalesforceSDKManager implements AccountRemoved {
         // Upgrades to the latest version.
         UpgradeManager.getInstance().upgradeAccMgr();
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
+    }
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by hybrid apps using the Salesforce Mobile SDK.
+	 *
+	 * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+	 */
+    public static void initHybrid(Context context, KeyInterface keyImpl) {
+    	SalesforceSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class, LoginActivity.class);
+    }
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by hybrid apps using the Salesforce Mobile SDK.
+	 *
+	 * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param loginActivity Login activity.
+	 */
+    public static void initHybrid(Context context, KeyInterface keyImpl, Class<? extends Activity> loginActivity) {
+    	SalesforceSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class, loginActivity);
+    }
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by native apps using the Salesforce Mobile SDK.
+	 *
+	 * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param mainActivity Activity that should be launched after the login flow.
+	 */
+    public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity) {
+    	SalesforceSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class);
+    }
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by native apps using the Salesforce Mobile SDK.
+	 *
+	 * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+	 */
+    public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    	SalesforceSDKManager.init(context, keyImpl, mainActivity, loginActivity);
     }
 
     /**
