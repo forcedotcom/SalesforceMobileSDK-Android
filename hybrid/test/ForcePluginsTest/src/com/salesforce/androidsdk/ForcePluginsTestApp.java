@@ -29,7 +29,6 @@ package com.salesforce.androidsdk;
 import android.app.Application;
 
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
-import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
 
 /**
  * Test application for smart store plugin.
@@ -39,6 +38,6 @@ public class ForcePluginsTestApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManagerWithSmartStore.init(getApplicationContext(), new KeyImpl(), SalesforceDroidGapActivity.class, null);
+		SalesforceSDKManagerWithSmartStore.initHybrid(getApplicationContext(), new KeyImpl());
 	}
 }
