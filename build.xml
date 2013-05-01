@@ -48,7 +48,7 @@
       <globmapper from="${basedirunpackaged}/*" to="*" handledirsep="true" />
     </pathconvert>
 
-    <!-- Application ForceApp's subclass will be called ${app.name}App" -->
+    <!-- Application's subclass will be called ${app.name}App" -->
     <property name="app.classname" value="${app.name}App" />
   </target>
 
@@ -102,7 +102,7 @@
       <include name=".project" />
       <include name="build.xml" />
       <include name="res/values/strings.xml" />
-      <include name="res/values/rest.xml" />
+      <include name="res/values/bootconfig.xml" />
       <include name="src/${template.package.dir}/*.java" />
     </fileset>
 
@@ -154,8 +154,11 @@
     <echo message="Adding SmartStore library reference in project.properties" />
     <concat destfile="${target.dir}/project.properties" append="true">android.library.reference.2=${sdk.dir.from.target}/hybrid/SmartStore</concat>
 
-    <echo message="Extending ForceAppWithSmartStore instead of ForceApp" />
-    <replaceregexp match="ForceApp" flags="g" replace="ForceAppWithSmartStore">
+    <echo message="Extending SalesforceSDKManagerWithSmartStore instead of SalesforceSDKManager" />
+    <replaceregexp match="SalesforceSDKManager" flags="g" replace="SalesforceSDKManagerWithSmartStore">
+      <fileset file="${target.dir}/src/${package.dir}/${app.classname}.java" />
+    </replaceregexp>
+    <replaceregexp match="com.salesforce.androidsdk.app.SalesforceSDKManagerWithSmartStore" flags="g" replace="com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore">
       <fileset file="${target.dir}/src/${package.dir}/${app.classname}.java" />
     </replaceregexp>
   </target>
@@ -187,8 +190,8 @@
 
   <target name="-oauth_info_native">
     <echo>
-      Before you ship, make sure to plug in your oauth client id and callback url in:
-        ${target.dir}/res/values/rest.xml
+      Before you ship, make sure to plug in your oauth client id, callback url and oauth scopes in:
+        ${target.dir}/res/values/bootconfig.xml
     </echo>
   </target>
 

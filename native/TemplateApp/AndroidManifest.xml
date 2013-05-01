@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.salesforce.samples.templateapp" android:versionCode="1"
+	package="com.salesforce.samples.templateapp"
+	android:versionCode="1"
 	android:versionName="1.0"
-	android:installLocation="internalOnly" >
+	android:installLocation="internalOnly">
 
 	<application android:icon="@drawable/sf__icon"
 	    android:label="@string/app_name"
@@ -10,7 +12,8 @@
 		android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
 
 		<!-- Service required for authentication -->
-		<service android:exported="true" android:process=":auth"
+		<service android:exported="true"
+		    android:process=":auth"
 			android:name="com.salesforce.androidsdk.auth.AuthenticatorService">
 			<intent-filter>
 				<action android:name="android.accounts.AccountAuthenticator" />
@@ -20,7 +23,8 @@
 		</service>
 
 		<!-- Launcher screen -->
-		<activity android:name=".MainActivity" android:label="@string/app_name"
+		<activity android:name=".MainActivity"
+		    android:label="@string/app_name"
 			android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />

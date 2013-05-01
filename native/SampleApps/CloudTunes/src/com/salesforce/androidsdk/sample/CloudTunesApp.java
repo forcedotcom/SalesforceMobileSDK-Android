@@ -26,31 +26,15 @@
  */
 package com.salesforce.androidsdk.sample;
 
-import android.app.Activity;
+import android.app.Application;
 
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
-public class CloudTunesApp extends ForceApp {
-
-	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return AlbumListActivity.class;
-	}
+public class CloudTunesApp extends Application {
 
 	@Override
-	public LoginOptions getLoginOptions() {
-    	LoginOptions loginOptions = new LoginOptions(
-    			null, // login host is chosen by user through the server picker 
-    			ForceApp.APP.getPasscodeHash(),
-    			getString(R.string.oauth_callback_url),
-    			getString(R.string.oauth_client_id),
-    			new String[] {"api"});
-    	return loginOptions;
-	}
-	
-	@Override
-	protected String getKey(String name) {
-		return null;
+	public void onCreate() {
+		super.onCreate();
+		SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(), AlbumListActivity.class);
 	}
 }

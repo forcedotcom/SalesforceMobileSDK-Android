@@ -62,9 +62,8 @@ import android.widget.RadioGroup;
 import android.widget.TabHost;
 import android.widget.TextView;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
@@ -73,8 +72,8 @@ import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 
 /**
  * Activity for explorer
@@ -104,7 +103,7 @@ public class ExplorerActivity extends TabActivity {
 		super.onCreate(savedInstanceState);
 
 		// Passcode manager
-		passcodeManager = ForceApp.APP.getPasscodeManager();
+		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
 		tokenRevocationReceiver = new TokenRevocationReceiver(this);
 		
 		// ApiVersion
@@ -147,20 +146,14 @@ public class ExplorerActivity extends TabActivity {
 		// Bring up passcode screen if needed
 		if (passcodeManager.onResume(this)) {
 			// Login options
-			String accountType = ForceApp.APP.getAccountType();
-	    	LoginOptions loginOptions = new LoginOptions(
-	    			null, // gets overridden by LoginActivity based on server picked by uuser 
-	    			ForceApp.APP.getPasscodeHash(),
-	    			getString(R.string.oauth_callback_url),
-	    			getString(R.string.oauth_client_id),
-	    			new String[] {"api"});
-			
+			String accountType = SalesforceSDKManager.getInstance().getAccountType();
+
 			// Get a rest client
-			new ClientManager(this, accountType, loginOptions, ForceApp.APP.shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+			new ClientManager(this, accountType, SalesforceSDKManager.getInstance().getLoginOptions(), SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 				@Override
 				public void authenticatedRestClient(RestClient client) {
 					if (client == null) {
-						ForceApp.APP.logout(ExplorerActivity.this);
+						SalesforceSDKManager.getInstance().logout(ExplorerActivity.this);
 						return;
 					}
 					ExplorerActivity.this.client = client;
@@ -195,7 +188,7 @@ public class ExplorerActivity extends TabActivity {
 							@Override
 							public void onClick(DialogInterface dialog,
 									int which) {
-								ForceApp.APP.logout(ExplorerActivity.this);
+								SalesforceSDKManager.getInstance().logout(ExplorerActivity.this);
 							}
 						})
 				.setNegativeButton(R.string.logout_cancel, null)
@@ -656,7 +649,7 @@ public class ExplorerActivity extends TabActivity {
 	 */
 	private void printInfo() {
 		printHeader("Info");
-		println(ForceApp.APP);
+		println(SalesforceSDKManager.getInstance());
 		println(client);
 	}
 

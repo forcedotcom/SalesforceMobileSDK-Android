@@ -31,7 +31,7 @@ import org.json.JSONObject;
 
 import android.webkit.WebView;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -68,7 +68,7 @@ public class ContactExplorerTest extends HybridInstrumentationTestCase {
 	 */
 	public void testUserAgentOfWebView() throws Exception {
 		String userAgent = gapWebView.getSettings().getUserAgentString();
-		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + ForceApp.SDK_VERSION));
+		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + SalesforceSDKManager.SDK_VERSION));
 		assertTrue("User agent should contain ContactExplorer/1.0 Hybrid", userAgent.contains("ContactExplorer/1.0 Hybrid"));
 	}
 	
@@ -77,7 +77,7 @@ public class ContactExplorerTest extends HybridInstrumentationTestCase {
 	 */
 	public void testUserAgentOfHttpAccess() {
 		String userAgent = HttpAccess.DEFAULT.getUserAgent();
-		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + ForceApp.SDK_VERSION));
+		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + SalesforceSDKManager.SDK_VERSION));
 		assertTrue("User agent should contain ContactExplorer/1.0 Hybrid", userAgent.contains("ContactExplorer/1.0 Hybrid"));
 	}	
 

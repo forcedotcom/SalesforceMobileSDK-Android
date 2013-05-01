@@ -37,7 +37,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.app.UUIDManager;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -356,14 +356,14 @@ public class PasscodeManager  {
          */
         if (timeoutMs == 0 || (timeoutMs > 0 && newTimeout > 0)) {
             timeoutMs = newTimeout;
-            storeMobilePolicy(ForceApp.APP);
+            storeMobilePolicy(SalesforceSDKManager.getInstance().getAppContext());
             return;
         }
 
         // Passcode to no passcode.
         timeoutMs = newTimeout;
-        ForceApp.APP.changePasscode(passcodeHash, null);
-        reset(ForceApp.APP);
+        SalesforceSDKManager.getInstance().changePasscode(passcodeHash, null);
+        reset(SalesforceSDKManager.getInstance().getAppContext());
     }
 
     public int getTimeoutMs() {
@@ -390,7 +390,7 @@ public class PasscodeManager  {
         i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         i.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        if (ctx == ForceApp.APP) {
+        if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
             i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
         if (ctx instanceof Activity) {
@@ -482,7 +482,7 @@ public class PasscodeManager  {
                 if (extras != null) {
                     final String oldPass = extras.getString(OLD_PASSCODE_EXTRA);
                     final String newPass = extras.getString(NEW_PASSCODE_EXTRA);
-                    ForceApp.APP.changePasscode(oldPass, newPass);
+                    SalesforceSDKManager.getInstance().changePasscode(oldPass, newPass);
                 }
             }
         }

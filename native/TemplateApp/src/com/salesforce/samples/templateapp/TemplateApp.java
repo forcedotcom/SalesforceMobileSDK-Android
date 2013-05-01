@@ -26,36 +26,18 @@
  */
 package com.salesforce.samples.templateapp;
 
-import android.app.Activity;
+import android.app.Application;
 
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.security.Encryptor;
-
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
- * Application class for our application
+ * Application class for our application.
  */
-public class TemplateApp extends ForceApp {
+public class TemplateApp extends Application {
 
 	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return MainActivity.class;
-	}
-	
-	@Override
-	public LoginOptions getLoginOptions() {
-    	LoginOptions loginOptions = new LoginOptions(
-    			null, // login host is chosen by user through the server picker 
-    			ForceApp.APP.getPasscodeHash(),
-    			getString(R.string.oauth_callback_url),
-    			getString(R.string.oauth_client_id),
-    			new String[] {"api"});
-    	return loginOptions;
-	}
-	
-	@Override
-	protected String getKey(String name) {
-		return Encryptor.hash(name + "x;lksalk1jsadihh23lia;lsdhasd2", name + "112;kaslkxs0-12;skcxn1203ph");
+	public void onCreate() {
+		super.onCreate();
+		SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(), MainActivity.class);
 	}
 }
