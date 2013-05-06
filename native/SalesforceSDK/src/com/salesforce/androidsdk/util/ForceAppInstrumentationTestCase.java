@@ -96,7 +96,7 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
 	}
 
     protected String getTestUsername() {
-    	return "readonly@cs0.mobilesdk.ee.org";
+    	return "readonly@cs1.mobilesdk.ee.org";
     }
     
     protected String getTestPassword() {

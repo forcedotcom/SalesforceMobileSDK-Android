@@ -5,8 +5,16 @@
 	android:versionCode="1"
 	android:versionName="1.0">
 
-	<application>
+	<application android:label="@string/app_name"
+        android:name="com.salesforce.androidsdk.TestForceApp"
+        android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
+
         <uses-library android:name="android.test.runner" />
+
+        <!-- Manage space activity -->
+        <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoTitleBar" />
 
         <!-- Service required for authentication -->
 		<service android:exported="true"
