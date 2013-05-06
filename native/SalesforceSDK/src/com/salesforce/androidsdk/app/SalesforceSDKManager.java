@@ -97,6 +97,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     private SalesforceR salesforceR = new SalesforceR();
     private PasscodeManager passcodeManager;
     private LoginServerManager loginServerManager;
+    private boolean isTestRun = false;
 
     /**
      * Returns a singleton instance of this class.
@@ -642,5 +643,23 @@ public class SalesforceSDKManager implements AccountRemoved {
 	        }
 	        return null;
 		}
+    }
+
+    /**
+     * Returns whether the current run is a test run.
+     *
+     * @return True - if it is a test run, False - otherwise.
+     */
+    public boolean getIsTestRun() {
+    	return INSTANCE.isTestRun;
+    }
+
+    /**
+     * Specifies if the current run is a test run.
+     *
+     * @param isTestRun True - if it is a test run, False - otherwise.
+     */
+    public void setIsTestRun(boolean isTestRun) {
+    	INSTANCE.isTestRun = isTestRun;
     }
 }

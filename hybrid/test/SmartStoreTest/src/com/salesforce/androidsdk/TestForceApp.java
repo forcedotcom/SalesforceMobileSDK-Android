@@ -28,6 +28,7 @@ package com.salesforce.androidsdk;
 
 import android.app.Application;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 
 /**
@@ -41,5 +42,6 @@ public class TestForceApp extends Application {
     public void onCreate() {
     	SalesforceSDKManagerWithSmartStore.initHybrid(getApplicationContext(), new KeyImpl());
     	super.onCreate();
+    	SalesforceSDKManager.getInstance().setIsTestRun(true);
     }
 }

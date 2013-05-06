@@ -85,19 +85,18 @@ public class ClientManagerTest extends InstrumentationTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        TestCredentials.init(getInstrumentation().getContext());
         targetContext = getInstrumentation().getTargetContext();
+        final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
+        getInstrumentation().callApplicationOnCreate(app);
+        TestCredentials.init(getInstrumentation().getContext());
         loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_PASSCODE_HASH, TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES);
         clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, loginOptions, true);
         accountManager = clientManager.getAccountManager();
         eq = new EventsListenerQueue();
-
-        // Wait for app initialization to complete.
-        final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
-        getInstrumentation().callApplicationOnCreate(app);
         if (SalesforceSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
+        cleanupAccounts();
     }
 
     @Override
