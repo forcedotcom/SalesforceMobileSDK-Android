@@ -141,7 +141,7 @@ public class ClientManager {
             Log.i("ClientManager:peekRestClient", "No user account found", e);
             throw e;
         }
-        String passcodeHash = (SalesforceSDKManager.getInstance() == null /* only in tests */ ? loginOptions.passcodeHash : SalesforceSDKManager.getInstance().getPasscodeHash());
+        String passcodeHash = (SalesforceSDKManager.getInstance().getIsTestRun() ? loginOptions.passcodeHash : SalesforceSDKManager.getInstance().getPasscodeHash());
         String authToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
         String refreshToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getPassword(acc), passcodeHash);
 
