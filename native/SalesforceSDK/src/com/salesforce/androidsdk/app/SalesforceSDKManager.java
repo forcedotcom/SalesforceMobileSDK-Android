@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.app;
 
 import java.net.URI;
 
+import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
@@ -490,9 +491,15 @@ public class SalesforceSDKManager implements AccountRemoved {
     public void logout(Activity frontActivity, final boolean showLoginPage) {
         final ClientManager clientMgr = new ClientManager(context, getAccountType(), null, shouldLogoutWhenTokenRevoked());
 		final AccountManager mgr = AccountManager.get(context);
-        final String refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(clientMgr.getAccount()), getPasscodeHash());
-        final String clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
-        final String loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(clientMgr.getAccount(), AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());
+		String refreshToken = null;
+		String clientId = null;
+		String loginServer = null;
+		final Account account = clientMgr.getAccount();
+		if (account != null) {
+	        refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), getPasscodeHash());
+	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
+	        loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());	
+		}
         if (accWatcher != null) {
     		accWatcher.remove();
     		accWatcher = null;
@@ -519,7 +526,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     	}
 
     	// Revokes the existing refresh token.
-        if (shouldLogoutWhenTokenRevoked()) {
+        if (shouldLogoutWhenTokenRevoked() && account != null) {
         	new RevokeTokenTask(refreshToken, clientId, loginServer).execute();
         }
     }
