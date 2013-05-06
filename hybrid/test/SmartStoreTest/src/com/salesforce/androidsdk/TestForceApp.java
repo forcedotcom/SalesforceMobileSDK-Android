@@ -37,7 +37,9 @@ import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartSto
  */
 public class TestForceApp extends Application {
 
-    public TestForceApp() {
-    	SalesforceSDKManagerWithSmartStore.initNative(getApplicationContext(), new KeyImpl(), null, null);
+    @Override
+    public void onCreate() {
+    	SalesforceSDKManagerWithSmartStore.initHybrid(getApplicationContext(), new KeyImpl());
+    	super.onCreate();
     }
 }

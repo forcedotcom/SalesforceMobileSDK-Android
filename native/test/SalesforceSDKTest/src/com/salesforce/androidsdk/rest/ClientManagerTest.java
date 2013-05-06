@@ -39,6 +39,7 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
+import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
@@ -92,7 +93,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
         eq = new EventsListenerQueue();
 
         // Wait for app initialization to complete.
-        Instrumentation.newApplication(TestForceApp.class, targetContext);
+        final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
+        getInstrumentation().callApplicationOnCreate(app);
         if (SalesforceSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
