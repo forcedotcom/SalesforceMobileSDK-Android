@@ -39,6 +39,7 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
+import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.os.Bundle;
@@ -65,7 +66,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private static final String TEST_USERNAME = "test_username";
     private static final String TEST_CLIENT_ID = "test_client_d";
     private static final String TEST_LOGIN_URL = "https://test.salesforce.com";
-    private static final String TEST_INSTANCE_URL = "https://tapp0.salesforce.com";
+    private static final String TEST_INSTANCE_URL = "https://cs1.salesforce.com";
     private static final String TEST_IDENTITY_URL = "https://test.salesforce.com";
     private static final String TEST_AUTH_TOKEN = "test_auth_token";
     private static final String TEST_REFRESH_TOKEN = "test_refresh_token";
@@ -92,7 +93,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
         eq = new EventsListenerQueue();
 
         // Wait for app initialization to complete.
-        Instrumentation.newApplication(TestForceApp.class, targetContext);
+        final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
+        getInstrumentation().callApplicationOnCreate(app);
         if (SalesforceSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }

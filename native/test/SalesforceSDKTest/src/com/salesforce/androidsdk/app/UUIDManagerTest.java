@@ -26,10 +26,11 @@
  */
 package com.salesforce.androidsdk.app;
 
-import com.salesforce.androidsdk.TestForceApp;
-
+import android.app.Application;
 import android.app.Instrumentation;
 import android.test.InstrumentationTestCase;
+
+import com.salesforce.androidsdk.TestForceApp;
 
 /**
  *
@@ -39,7 +40,8 @@ public class UUIDManagerTest extends InstrumentationTestCase {
 	@Override
 	protected void setUp() throws Exception {
 		super.setUp();
-		Instrumentation.newApplication(TestForceApp.class, getInstrumentation().getContext());
+		final Application app = Instrumentation.newApplication(TestForceApp.class, getInstrumentation().getTargetContext());
+		getInstrumentation().callApplicationOnCreate(app);
 	}
 
 	public void testGetUUID() {

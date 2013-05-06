@@ -124,7 +124,9 @@ public class SalesforceSDKManager implements AccountRemoved {
     	this.context = context;
     	this.keyImpl = keyImpl;
     	this.mainActivityClass = mainActivity;
-        this.loginActivityClass = loginActivity;
+    	if (loginActivity != null) {
+            this.loginActivityClass = loginActivity;	
+    	}
     }
 
     /**
