@@ -1,0 +1,1 @@
+../../../../../external/shared/SampleApps/entity/fastclick.js
