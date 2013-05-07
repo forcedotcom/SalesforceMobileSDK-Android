@@ -28,13 +28,20 @@ package com.salesforce.samples.smartstoreexplorer;
 
 import android.webkit.WebView;
 
+import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
 
 /**
- * Tests for SmartStoreExplorer
+ * Tests for SmartStoreExplorer.
  */
 public class SmartStoreExplorerTest extends HybridInstrumentationTestCase {
+
+	@Override
+	public void setUp() throws Exception {
+		SalesforceSDKManagerWithSmartStore.initHybrid(getInstrumentation().getTargetContext(), null);
+		super.setUp();
+	}
 
 	public void testLogout() throws Exception {
 		sendClick(gapWebView, "#link_logout");
@@ -45,5 +52,4 @@ public class SmartStoreExplorerTest extends HybridInstrumentationTestCase {
     private void sendClick(WebView webView, String target) {
 		sendJavaScript(webView, "jQuery('" + target + "').trigger('click')");
 	}
-
 }

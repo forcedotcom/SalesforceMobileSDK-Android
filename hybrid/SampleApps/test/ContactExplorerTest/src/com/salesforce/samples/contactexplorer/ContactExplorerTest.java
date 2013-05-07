@@ -42,6 +42,12 @@ import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
  */
 public class ContactExplorerTest extends HybridInstrumentationTestCase {
 
+	@Override
+	public void setUp() throws Exception {
+		SalesforceSDKManager.initHybrid(getInstrumentation().getTargetContext(), null);
+		super.setUp();
+	}
+
 	public void testFetchSfdcAccounts() throws Exception {
 		interceptExistingJavaScriptFunction(gapWebView, "onSuccessSfdcAccounts");
 		sendClick(gapWebView, "#link_fetch_sfdc_accounts");
