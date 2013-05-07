@@ -35,6 +35,12 @@ import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
  */
 public class VFConnectorTest extends HybridInstrumentationTestCase {
 
+	@Override
+	public void setUp() throws Exception {
+		SalesforceSDKManager.initHybrid(getInstrumentation().getTargetContext(), null);
+		super.setUp();
+	}
+
 	/**
 	 * Load app and check the body of the webview
 	 * @throws Exception
