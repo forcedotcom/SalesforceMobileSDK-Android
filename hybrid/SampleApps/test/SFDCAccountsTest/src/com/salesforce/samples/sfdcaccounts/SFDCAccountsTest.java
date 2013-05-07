@@ -31,22 +31,21 @@ import org.json.JSONObject;
 
 import android.webkit.WebView;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
 
 /**
- * Tests for ContactExplorer
+ * Tests for SFDCAccounts.
  */
 public class SFDCAccountsTest extends HybridInstrumentationTestCase {
-	
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        // XXX because we wait a bit after loading the page, we end up installing the "interceptor" too late
-        // interceptExistingJavaScriptFunction(gapWebView, "salesforceSessionRefreshed");
-        // waitForEvent(EventType.Other); // It's only after salesforceSessionRefreshed gets called that forcetk is initialized
-    }
+
+	@Override
+	public void setUp() throws Exception {
+		SalesforceSDKManager.initHybrid(getInstrumentation().getTargetContext(), null);
+		super.setUp();
+	}
 
 	public void testFetchSfdcAccounts() throws Exception {
 		interceptExistingJavaScriptFunction(gapWebView, "onSuccessSfdcAccounts");
@@ -78,5 +77,4 @@ public class SFDCAccountsTest extends HybridInstrumentationTestCase {
     private void sendClick(WebView webView, String target) {
 		sendJavaScript(webView, "jQuery('" + target + "').trigger('click')");
 	}
-
 }

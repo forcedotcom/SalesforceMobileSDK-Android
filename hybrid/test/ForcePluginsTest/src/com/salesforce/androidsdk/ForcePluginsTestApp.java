@@ -38,6 +38,6 @@ public class ForcePluginsTestApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManagerWithSmartStore.initHybrid(getApplicationContext(), new KeyImpl());
+		SalesforceSDKManagerWithSmartStore.initHybrid(getApplicationContext(), null);
 	}
 }
