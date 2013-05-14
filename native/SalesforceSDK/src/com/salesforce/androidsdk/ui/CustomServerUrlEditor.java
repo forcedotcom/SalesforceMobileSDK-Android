@@ -45,7 +45,6 @@ import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
 
 /**
  * Custom dialog to allow the user to set a label and url to use for the login.
- * 
  */
 public class CustomServerUrlEditor extends Dialog {
 
@@ -74,8 +73,7 @@ public class CustomServerUrlEditor extends Dialog {
 	private String getEditDefaultValue(int editId) {
 		if (editId == salesforceR.idPickerCustomLabel()) {
 			return getString(salesforceR.stringServerUrlDefaultCustomLabel());
-		}
-		else { 
+		} else { 
 			return getString(salesforceR.stringServerUrlDefaultCustomUrl());
 		}
 	}
@@ -96,14 +94,11 @@ public class CustomServerUrlEditor extends Dialog {
 	 */
 	@Override
 	public void onRestoreInstanceState(Bundle savedInstanceState) {
-
 		super.onRestoreInstanceState(savedInstanceState);
-
 		setEditText(salesforceR.idPickerCustomLabel(), savedInstanceState
 				.getString(PERSISTED_LABEL));
 		setEditText(salesforceR.idPickerCustomUrl(), savedInstanceState
 				.getString(PERSISTED_URL_VALUE));
-
 		if (savedInstanceState.getInt(PERSISTED_CTRL_FOCUS) > 0) {
 			EditText et = (EditText) findViewById(savedInstanceState
 					.getInt(PERSISTED_CTRL_FOCUS));
@@ -116,16 +111,13 @@ public class CustomServerUrlEditor extends Dialog {
 	@Override
 	public Bundle onSaveInstanceState() {
 		Bundle superBundle = super.onSaveInstanceState();
-
 		persistEditCtrlInfo(superBundle, PERSISTED_LABEL, salesforceR.idPickerCustomLabel());
 		persistEditCtrlInfo(superBundle, PERSISTED_URL_VALUE, salesforceR.idPickerCustomUrl());
-
 		return superBundle;
 	}
 
 	@Override
-	protected void onStart() {
-
+	protected void onCreate(Bundle savedInstance) {
 		LoginServer customServer = loginServerManager.getCustomLoginServer();
 		String label = (customServer != null ? customServer.name : 
 				getEditDefaultValue((salesforceR.idPickerCustomLabel())));
@@ -133,15 +125,12 @@ public class CustomServerUrlEditor extends Dialog {
 				getEditDefaultValue((salesforceR.idPickerCustomUrl())));
 		isDefault = urlValue
 				.equals(getString(salesforceR.stringServerUrlDefaultCustomUrl()));
-
 		if (isDefault) {
 			setTitle(salesforceR.stringServerUrlAddTitle());
 		} else {
 			setTitle(salesforceR.stringServerUrlEditTitle());
 		}
-
 		setContentView(salesforceR.layoutCustomServerUrl());
-
 		setEditText(salesforceR.idPickerCustomLabel(), label);
 		setEditText(salesforceR.idPickerCustomUrl(), urlValue);
 
@@ -158,7 +147,6 @@ public class CustomServerUrlEditor extends Dialog {
 				if (null == lbl) {
 					return;
 				}
-
 				String val = validateInput(salesforceR.idPickerCustomUrl());
 				if (null == val) {
 					return;
@@ -169,9 +157,9 @@ public class CustomServerUrlEditor extends Dialog {
 				dismiss();
 			}
 		});
-
 		Button cancelBtn = (Button) findViewById(salesforceR.idCancelButton());
 		cancelBtn.setOnClickListener(new View.OnClickListener() {
+
 			@Override
 			public void onClick(View v) {
 				cancel();
@@ -187,7 +175,6 @@ public class CustomServerUrlEditor extends Dialog {
 
 	private void persistEditCtrlInfo(Bundle superBundle, String keyName,
 			int ctrlId) {
-
 		EditText et = (EditText) findViewById(ctrlId);
 		superBundle.putString(keyName, et.getText().toString());
 		if (et.hasFocus()) {
@@ -196,38 +183,26 @@ public class CustomServerUrlEditor extends Dialog {
 	}
 
 	private void setEditText(int editId, String value) {
-
 		if (null == value) {
 			throw new RuntimeException("Value cannot be null");
 		}
-
 		EditText et = (EditText) findViewById(editId);
 		SpannableString labelSpan = new SpannableString(value);
-
 		et.setText(labelSpan);
-
 		if (et.getOnFocusChangeListener() == null) {
-
 			et.setOnFocusChangeListener(new OnFocusChangeListener() {
 
 				@Override
 				public void onFocusChange(View v, boolean hasFocus) {
-
 					EditText et = (EditText) v;
-
 					boolean isDefaultValue = et.getText().toString().equals(
 							getEditDefaultValue(et.getId()));
-
 					if (hasFocus && isDefaultValue) {
-
 						et.getText().clear();
-
 					} else if (!hasFocus && et.getText().toString().equals("")) {
-
 						if (et.getId() == salesforceR.idPickerCustomLabel()) {
 							setEditText(salesforceR.idPickerCustomLabel(), getEditDefaultValue(et.getId()));
-						}
-						else {
+						} else {
 							setEditText(salesforceR.idPickerCustomUrl(), getEditDefaultValue(et.getId()));
 						}
 					}
@@ -237,10 +212,8 @@ public class CustomServerUrlEditor extends Dialog {
 	}
 
 	private String validateInput(int editId) {
-
 		EditText et = (EditText) findViewById(editId);
 		Editable etVal = et.getText();
-
 		boolean isInvalidValue = etVal.toString().equals(
 				getEditDefaultValue(editId))
 				|| etVal.toString().equals("");
@@ -254,13 +227,11 @@ public class CustomServerUrlEditor extends Dialog {
 						Toast.LENGTH_SHORT).show();
 			}
 		}
-
 		if (isInvalidValue) {
 			et.selectAll();
 			et.requestFocus();
 			return null;
 		}
-
 		return etVal.toString();
 	}
 }
