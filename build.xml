@@ -29,6 +29,10 @@
 
   <!-- Location of SalesforceMobileSDK relative to the target app-->
   <property name="sdk.dir.from.target" location="" relative="true" basedir="${target.dir}"/>
+    
+  <!-- Relative location of native and hybrid apps' bootconfig files. -->
+  <property name="hybrid.bootconfig.path" value="assets/www/bootconfig.json" />
+  <property name="native.bootconfig.path" value="res/values/bootconfig.xml" />
 
   <!-- Target to compute package directory path and other properties -->
   <target name="-pre">
@@ -62,6 +66,7 @@
     <property name="template.app.classname" value="TemplateApp" />
     <property name="template.package.name" value="com.salesforce.samples.templateapp" />
     <property name="template.package.dir" value="com/salesforce/samples/templateapp" />
+    <property name="bootconfig.path" value="${native.bootconfig.path}" />
   </target>
 
   <!-- Target to create a hybrid vf application -->
@@ -75,12 +80,13 @@
     <property name="template.app.classname" value="VFConnectorApp" />
     <property name="template.package.name" value="com.salesforce.samples.vfconnector" />
     <property name="template.package.dir" value="com/salesforce/samples/vfconnector" />
+    <property name="bootconfig.path" value="${hybrid.bootconfig.path}" />
   </target>
 
   <target name="-post_hybrid_vf">
-    <echo message="Changing vf reference in bootconfig.json" />
+    <echo message="Changing vf reference in ${hybrid.bootconfig.path}" />
     <replaceregexp match="/apex/BasicVFPage" flags="g" replace="${apex.page}"
-                   file="${target.dir}/assets/www/bootconfig.json" />
+                   file="${target.dir}/${hybrid.bootconfig.path}" />
   </target>
 
   <!-- Target to create a hybrid local application -->
@@ -93,6 +99,7 @@
     <property name="template.app.classname" value="ContactExplorerApp" />
     <property name="template.package.name" value="com.salesforce.samples.contactexplorer" />
     <property name="template.package.dir" value="com/salesforce/samples/contactexplorer" />
+    <property name="bootconfig.path" value="${hybrid.bootconfig.path}" />
   </target>
 
   <!-- Internal target, called by create_* targets -->
@@ -102,7 +109,7 @@
       <include name=".project" />
       <include name="build.xml" />
       <include name="res/values/strings.xml" />
-      <include name="res/values/bootconfig.xml" />
+      <include name="${bootconfig.path}" />
       <include name="src/${template.package.dir}/*.java" />
     </fileset>
 
@@ -191,14 +198,14 @@
   <target name="-oauth_info_native">
     <echo>
       Before you ship, make sure to plug in your oauth client id, callback url and oauth scopes in:
-        ${target.dir}/res/values/bootconfig.xml
+        ${target.dir}/${native.bootconfig.path}
     </echo>
   </target>
 
   <target name="-oauth_info_hybrid">
     <echo>
       Before you ship, make sure to plug in your oauth client id and callback url in:
-        ${target.dir}/assets/www/bootconfig.json
+        ${target.dir}/${hybrid.bootconfig.path}
     </echo>
   </target>
 

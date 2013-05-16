@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 
 var exec = require('child_process').exec;
-var commandLineUtils = require('./commandLineUtils');
 var path = require('path');
+var shellJs = require('shelljs');
+var fs = require('fs');
+var commandLineUtils = require('./commandLineUtils');
+
+var sdkDir = path.resolve(__dirname, '..');
 
 var commandLineArgs = process.argv.slice(2, process.argv.length);
 var command = commandLineArgs.shift();
@@ -46,57 +50,70 @@ function createApp() {
         usage();
         process.exit(3);
     }
-    
-    // Start the ant app build process chain.
-    exec('ant -version', postAntVersion);
-}
 
-function postAntVersion(error, stdout, stderr) {
-    if (error !== null) {
-        console.log('Could not validate access to ant.  You must have ant installed to use this app.');
+    var appInputProperties = configureInputAppProperties();
+
+    // Copy the template files to the destination directory.
+    shellJs.mkdir('-p', commandLineArgsMap.targetdir);
+    shellJs.cp('-R', path.join(appInputProperties.templateDir, '*'), commandLineArgsMap.targetdir);
+    shellJs.cp(path.join(appInputProperties.templateDir, '.project'), commandLineArgsMap.targetdir);  // No clean way to glob .project in.
+    if (shellJs.error()) {
+        console.log('There was an error copying the template files from \'' + appInputProperties.templateDir + '\' to \'' + commandLineArgsMap.targetdir + '\': ' + shellJs.error());
         process.exit(4);
-    } else {
-        // Ant install is validated.  Proceed with app creation.
-        var transposedArgArray = convertCommandLineArgs();
-        var buildFilePath = path.join(__dirname, '..', 'build.xml');
-        exec('ant -buildfile ' + buildFilePath + ' ' + transposedArgArray.join(' '), postCreateApp);
     }
-}
 
-function postCreateApp(error, stdout, stderr) {
-    if (stdout) console.log(stdout);
-    if (stderr) console.log(stderr);
-    if (error !== null) {
-        console.log('There was an error creating the app.');
-        usage();
+    // Copy the SDK into the app folder as well.
+    shellJs.cp('-R', sdkDir, commandLineArgsMap.targetdir);
+    if (shellJs.error()) {
+        console.log('There was an error copying the SDK directory from \'' + sdkDir + '\' to \'' + commandLineArgsMap.targetdir + '\': ' + shellJs.error());
         process.exit(5);
-    } else {
-        console.log('Congratulations!  You have successfully created your app.');
     }
-}
+    var newSdkDir = path.join(commandLineArgsMap.targetdir, path.basename(sdkDir));
 
-function convertCommandLineArgs() {
-    var antCommandLineArgs = [];
-    switch (commandLineArgsMap.apptype) {
-        case 'native':
-            antCommandLineArgs.push('create_native');
-            break;
-        case 'hybrid_remote':
-            antCommandLineArgs.push('create_hybrid_vf');
-            break;
-        case 'hybrid_local':
-            antCommandLineArgs.push('create_hybrid_local');
-            break;
-    }
-    antCommandLineArgs.push('-Dapp.name=' + commandLineArgsMap.appname);
-    antCommandLineArgs.push('-Dtarget.dir=' + commandLineArgsMap.targetdir);
-    antCommandLineArgs.push('-Dpackage.name=' + commandLineArgsMap.packagename);
-    if (typeof commandLineArgsMap.usesmartstore !== 'undefined')
-        antCommandLineArgs.push('-Duse.smartstore=' + commandLineArgsMap.usesmartstore);
-    if (typeof commandLineArgsMap.apexpage !== 'undefined')
-        antCommandLineArgs.push('-Dapex.page=' + commandLineArgsMap.apexpage);
+    var contentFilesWithReplacements = makeContentReplacementPathsArray(appInputProperties);
 
-    return antCommandLineArgs;
+    // Library project reference
+    console.log('Adjusting SalesforceSDK library project reference.');
+    var absNativeSdkPath = path.join(newSdkDir, 'native', 'SalesforceSDK');
+    var nativeSdkPathRelativeToProject = path.relative(commandLineArgsMap.targetdir, absNativeSdkPath);
+    shellJs.sed('-i', /=.*SalesforceSDK/g, '=' + nativeSdkPathRelativeToProject, path.join(commandLineArgsMap.targetdir, 'project.properties'));
+
+    // Substitute app class name
+    var appClassName = commandLineArgsMap.appname + 'App';
+    console.log('Renaming application class to ' + appClassName + '.');
+    contentFilesWithReplacements.forEach(function(file) {
+        shellJs.sed('-i', appInputProperties.templateAppClassName, appClassName, file);
+    });
+
+    // Substitute app name
+    console.log('Renaming application to ' + commandLineArgsMap.appname + '.');
+    contentFilesWithReplacements.forEach(function(file) {
+        shellJs.sed('-i', appInputProperties.templateAppName, commandLineArgsMap.appname, file);
+    });
+
+    // Substitute package name.
+    console.log('Renaming package name to ' + commandLineArgsMap.packagename + '.');
+    contentFilesWithReplacements.forEach(function(file) {
+        shellJs.sed('-i', appInputProperties.templatePackageName, commandLineArgsMap.packagename, file);
+    });
+
+    // Rename source package folders.
+    console.log('Moving source files.')
+    var srcFilePaths = getTemplateSourceFilePaths(appInputProperties);
+    srcFilePaths.forEach(function(srcFile) {
+        fs.renameSync(srcFile.path, path.join(commandLineArgsMap.targetdir, 'src', srcFile.name));
+    });
+    shellJs.rm('-rf', path.join(commandLineArgsMap.targetdir, 'src', 'com'));
+    var packageDir = commandLineArgsMap.packagename.replace(/\./g, path.sep);
+    shellJs.mkdir('-p', path.resolve(commandLineArgsMap.targetdir, 'src', packageDir));
+    srcFilePaths.forEach(function(srcFile) {
+        fs.renameSync(path.join(commandLineArgsMap.targetdir, 'src', srcFile.name), path.resolve(commandLineArgsMap.targetdir, 'src', packageDir, srcFile.name));
+    });
+
+    // Rename the app class name.
+    console.log('Renaming the app class filename to ' + appClassName + '.java.');
+    var templateAppClassNamePath = path.join(commandLineArgsMap.targetdir, 'src', packageDir);
+    fs.renameSync(path.join(templateAppClassNamePath, appInputProperties.templateAppClassName) + '.java', path.join(templateAppClassNamePath, appClassName) + '.java');
 }
 
 function validateCreateAppArgs() {
@@ -129,5 +146,63 @@ function validateCreateAppArgs() {
         commandLineArgsMap.usesmartstore = (trimmedVal === 'true');
     }
 
+    // Full path for targetdir.
+    commandLineArgsMap.targetdir = path.resolve(commandLineArgsMap.targetdir);
+
     return true;
+}
+
+function configureInputAppProperties() {
+    var inputProperties = {};
+    switch (commandLineArgsMap.apptype) {
+        case 'native':
+            inputProperties.templateDir = path.join(sdkDir, 'native/TemplateApp');
+            inputProperties.templateAppName = 'Template';
+            inputProperties.templatePackageName = 'com.salesforce.samples.templateapp';
+            inputProperties.bootConfigPath = path.join(commandLineArgsMap.targetdir, 'res', 'values', 'bootconfig.xml');
+            break;
+        case 'hybrid_local':
+            inputProperties.templateDir = path.join(sdkDir, 'hybrid/SampleApps/ContactExplorer');
+            inputProperties.templateAppName = 'ContactExplorer';
+            inputProperties.templatePackageName = 'com.salesforce.samples.contactexplorer';
+            inputProperties.bootConfigPath = path.join(commandLineArgsMap.targetdir, 'assets', 'www', 'bootconfig.json');
+            break;
+        case 'hybrid_remote':
+            inputProperties.templateDir = path.join(sdkDir, 'hybrid/SampleApps/VFConnector');
+            inputProperties.templateAppName = 'VFConnector';
+            inputProperties.templatePackageName = 'com.salesforce.samples.vfconnector';
+            inputProperties.bootConfigPath = path.join(commandLineArgsMap.targetdir, 'assets', 'www', 'bootconfig.json');
+            break;
+    }
+
+    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
+    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
+
+    return inputProperties;
+}
+
+function makeContentReplacementPathsArray(appInputProperties) {
+    var returnArray = [];
+    returnArray.push(path.join(commandLineArgsMap.targetdir, 'AndroidManifest.xml'));
+    returnArray.push(path.join(commandLineArgsMap.targetdir, '.project'));
+    returnArray.push(path.join(commandLineArgsMap.targetdir, 'build.xml'));
+    returnArray.push(path.join(commandLineArgsMap.targetdir, 'res', 'values', 'strings.xml'));
+    returnArray.push(appInputProperties.bootConfigPath);
+    var srcFilePaths = getTemplateSourceFilePaths(appInputProperties);
+    srcFilePaths.forEach(function(srcFile) {
+        returnArray.push(srcFile.path);
+    });
+
+    return returnArray;
+}
+
+function getTemplateSourceFilePaths(appInputProperties) {
+    var srcFilesArray = [];
+    var srcDir = path.join(commandLineArgsMap.targetdir, 'src', appInputProperties.templatePackageDir);
+    fs.readdirSync(srcDir).forEach(function(srcFile) {
+        if (/\.java$/.test(srcFile))
+            srcFilesArray.push({ 'name': srcFile, 'path': path.join(srcDir, srcFile) });
+    });
+
+    return srcFilesArray;
 }

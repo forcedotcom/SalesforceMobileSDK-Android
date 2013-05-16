@@ -9,6 +9,13 @@
         { "type": "Salesforce.com Mobile SDK License", "url": "https://raw.github.com/forcedotcom/SalesforceMobileSDK-Android/master/LICENSE.md" }
     ],
     "bin" : { "forcedroid" : "node/forcedroid.js" },
+    "dependencies": {
+        "shelljs": ">=0.1.4"     
+    },
+    "scripts": {
+        "prepublish": "./node/prepublish.js",
+        "postpublish": "./node/postpublish.js"
+    },
     "repository": {
         "type" : "git",
         "url" : "https://github.com/forcedotcom/SalesforceMobileSDK-Android.git"
