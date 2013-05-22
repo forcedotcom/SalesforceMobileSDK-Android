@@ -105,6 +105,7 @@ public class MainActivity extends SalesforceActivity {
 		listAdapter.clear();
 		smartStoreIntf.deleteAccountsSoup();
 		smartStoreIntf.deleteOpportunitiesSoup();
+		Toast.makeText(this, "SmartStore Reset Successful!", Toast.LENGTH_LONG).show();
 	}
 
 	/**
@@ -136,8 +137,14 @@ public class MainActivity extends SalesforceActivity {
 					final JSONArray records = result.asJSONObject().getJSONArray("records");
 					if (obj.equals("Account")) {
 						smartStoreIntf.insertAccounts(records);
+						Toast.makeText(MainActivity.this,
+								"Successfully Saved Accounts in SmartStore!",
+								Toast.LENGTH_LONG).show();
 					} else if (obj.equals("Opportunity")) {
 						smartStoreIntf.insertOpportunities(records);
+						Toast.makeText(MainActivity.this,
+								"Successfully Saved Opportunities in SmartStore!",
+								Toast.LENGTH_LONG).show();
 					} else {
 
 						/*
