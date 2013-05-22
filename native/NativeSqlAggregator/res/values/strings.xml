@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="account_type">com.salesforce.samples.nativesqlaggregator.login</string>
+	<string name="app_name"><b>NativeSqlAggregator</b></string>
+    <string name="welcome">Welcome %s</string>
+	<string name="logout_button">Logout</string>
+	<string name="fetch_opportunities_button">Fetch Opportunities (Save in SmartStore)</string>
+	<string name="fetch_accounts_button">Fetch Accounts (Save in SmartStore)</string>
+	<string name="clear_button">Clear (Reset SmartStore)</string>
+	<string name="api_version">v27.0</string>
+</resources>
