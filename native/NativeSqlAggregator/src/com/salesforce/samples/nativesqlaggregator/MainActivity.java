@@ -105,6 +105,8 @@ public class MainActivity extends SalesforceActivity {
 		listAdapter.clear();
 		smartStoreIntf.deleteAccountsSoup();
 		smartStoreIntf.deleteOpportunitiesSoup();
+		smartStoreIntf.createAccountsSoup();
+		smartStoreIntf.createOpportunitiesSoup();
 		Toast.makeText(this, "SmartStore Reset Successful!", Toast.LENGTH_LONG).show();
 	}
 
@@ -114,7 +116,7 @@ public class MainActivity extends SalesforceActivity {
 	 * @param v View that was clicked.
 	 */
 	public void onFetchOpportunitiesClick(View v) throws UnsupportedEncodingException {
-        sendRequest("SELECT Name, Id, AccountId, Amount, OwnerId FROM Opportunity", "Opportunity");
+        sendRequest("SELECT Name, Id, AccountId, OwnerId, Amount FROM Opportunity", "Opportunity");
 	}
 
 	/**
@@ -123,9 +125,33 @@ public class MainActivity extends SalesforceActivity {
 	 * @param v View that was clicked.
 	 */
 	public void onFetchAccountsClick(View v) throws UnsupportedEncodingException {
-		sendRequest("SELECT Name, Id, OwnerId, Type FROM Account", "Account");
+		sendRequest("SELECT Name, Id, OwnerId, AnnualRevenue FROM Account", "Account");
 	}
 
+	/**
+	 * Called when the "Show Saved Opportunities" button is clicked.
+	 *
+	 * @param v View that was clicked.
+	 */
+	public void onDisplayOpportunitiesClick(View v) {
+		final JSONArray opportunities = smartStoreIntf.getOpportunities();
+	}
+
+	/**
+	 * Called when the "Show Saved Accounts" button is clicked.
+	 *
+	 * @param v View that was clicked.
+	 */
+	public void onDisplayAccountsClick(View v) {
+		final JSONArray accounts = smartStoreIntf.getAccounts();
+	}
+
+	/**
+	 * Sends a REST request.
+	 *
+	 * @param soql SOQL query.
+	 * @param obj Object being queried.
+	 */
 	private void sendRequest(String soql, final String obj) throws UnsupportedEncodingException {
 		final RestRequest restRequest = RestRequest.getRequestForQuery(getString(R.string.api_version), soql);
 		client.sendAsync(restRequest, new AsyncRequestCallback() {
@@ -153,7 +179,7 @@ public class MainActivity extends SalesforceActivity {
 						 */
 						for (int i = 0; i < records.length(); i++) {
 							listAdapter.add(records.getJSONObject(i).getString("Name"));
-						}	
+						}
 					}				
 				} catch (Exception e) {
 					onError(e);

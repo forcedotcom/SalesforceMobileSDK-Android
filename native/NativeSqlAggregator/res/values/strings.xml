@@ -7,6 +7,8 @@
 	<string name="logout_button">Logout</string>
 	<string name="fetch_opportunities_button">Fetch Opportunities (Save in SmartStore)</string>
 	<string name="fetch_accounts_button">Fetch Accounts (Save in SmartStore)</string>
+    <string name="display_opportunities_button">Show Saved Opportunities</string>
+    <string name="display_accounts_button">Show Saved Accounts</string>
 	<string name="clear_button">Clear (Reset SmartStore)</string>
 	<string name="api_version">v27.0</string>
 </resources>

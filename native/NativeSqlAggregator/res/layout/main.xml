@@ -13,7 +13,7 @@
 	    android:layout_width="fill_parent"
 	    android:layout_height="wrap_content">
 
-        <Button android:id="@+id/fetch_contacts"
+        <Button android:id="@+id/fetch_opportunities"
             android:layout_width="wrap_content"
 		    android:layout_height="wrap_content"
 		    android:onClick="onFetchOpportunitiesClick"
@@ -24,6 +24,18 @@
 		    android:layout_height="wrap_content"
 		    android:onClick="onFetchAccountsClick"
 		    android:text="@string/fetch_accounts_button" />
+
+        <Button android:id="@+id/display_opportunities"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onDisplayOpportunitiesClick"
+            android:text="@string/display_opportunities_button" />
+
+        <Button android:id="@+id/display_accounts"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onDisplayAccountsClick"
+            android:text="@string/display_accounts_button" />
 
 	    <Button android:id="@+id/clear"
 	        android:layout_width="wrap_content"

@@ -51,7 +51,7 @@ public class SmartStoreInterface {
 		new IndexSpec("Name", Type.string),
 		new IndexSpec("Id", Type.string),
 		new IndexSpec("OwnerId", Type.string),
-		new IndexSpec("Type", Type.string)
+		new IndexSpec("AnnualRevenue", Type.integer)
 	};
 
 	// Index spec for opportunities.
@@ -125,12 +125,40 @@ public class SmartStoreInterface {
 	 * @param account Account.
 	 */
 	public void insertAccount(JSONObject account) {
-		try {
-			if (account != null) {
-				smartStore.upsert(ACCOUNTS_SOUP, account);
+		if (account != null) {
+
+			/*
+			 * Since SmartStore currently supports only 'string'
+			 * and 'integer', we need to check if null values exist
+			 * for integer fields. Furthermore, since 'AnnualRevenue'
+			 * is a double, we need to typecast it to 'integer'
+			 * to store it in SmartStore as an 'integer'. Since
+			 * the purpose of this app is to demonstrate aggregate
+			 * SQL queries such as 'sum', 'avg', etc., conversions
+			 * are required. The ideal approach would be to store
+			 * these double values as strings and convert them to
+			 * double when and if required (for non-null values).
+			 */
+			double revenue = 0;
+			try {
+				final Object revenueObj = account.get("AnnualRevenue");
+				if (revenueObj != null) {
+					revenue = account.getDouble("AnnualRevenue");
+				}
+			} catch (JSONException e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					account.put("AnnualRevenue", (int) revenue);	
+				} catch (JSONException ex) {
+					ex.printStackTrace();
+				}
 			}
-		} catch (JSONException e) {
-			e.printStackTrace();
+			try {
+				smartStore.upsert(ACCOUNTS_SOUP, account);	
+			} catch (JSONException exc) {
+				exc.printStackTrace();
+			}
 		}
 	}
 
@@ -157,13 +185,79 @@ public class SmartStoreInterface {
 	 * @param opportunity Opportunity.
 	 */
 	public void insertOpportunity(JSONObject opportunity) {
-		try {
-			if (opportunity != null) {
-				smartStore.upsert(OPPORTUNITIES_SOUP, opportunity);
+		if (opportunity != null) {
+
+			/*
+			 * Since SmartStore currently supports only 'string'
+			 * and 'integer', we need to check if null values exist
+			 * for integer fields. Furthermore, since 'Amount'
+			 * is a double, we need to typecast it to 'integer'
+			 * to store it in SmartStore as an 'integer'. Since
+			 * the purpose of this app is to demonstrate aggregate
+			 * SQL queries such as 'sum', 'avg', etc., conversions
+			 * are required. The ideal approach would be to store
+			 * these double values as strings and convert them to
+			 * double when and if required (for non-null values).
+			 */
+			double amount = 0;
+			try {
+				final Object amountObj = opportunity.get("Amount");
+				if (amountObj != null) {
+					amount = opportunity.getDouble("Amount");
+				}
+			} catch (JSONException e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					opportunity.put("Amount", (int) amount);	
+				} catch (JSONException ex) {
+					ex.printStackTrace();
+				}
 			}
+			try {
+				smartStore.upsert(OPPORTUNITIES_SOUP, opportunity);	
+			} catch (JSONException exc) {
+				exc.printStackTrace();
+			}
+		}
+	}
+
+	/**
+	 * Returns saved opportunities.
+	 *
+	 * @return Saved opportunities.
+	 */
+	public JSONArray getOpportunities() {
+		JSONArray result = null;
+		final String query = "SELECT {Opportunity:Name}, {Opportunity:Id}, {Opportunity:AccountId}, {Opportunity:OwnerId}, {Opportunity:Amount} FROM {Opportunity}";
+		QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(query, 10);
+		int count = smartStore.countQuery(querySpec);
+		querySpec = QuerySpec.buildSmartQuerySpec(query, count);
+		try {
+			result = smartStore.query(querySpec, 0);	
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
+		return result;
+	}
+
+	/**
+	 * Returns saved accounts.
+	 *
+	 * @return Saved accounts.
+	 */
+	public JSONArray getAccounts() {
+		JSONArray result = null;
+		final String query = "SELECT {Account:Name}, {Account:Id}, {Account:OwnerId}, {Account:AnnualRevenue} FROM {Account}";
+		QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(query, 10);
+		int count = smartStore.countQuery(querySpec);
+		querySpec = QuerySpec.buildSmartQuerySpec(query, count);
+		try {
+			result = smartStore.query(querySpec, 0);	
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+		return result;
 	}
 
 	/**
@@ -189,7 +283,7 @@ public class SmartStoreInterface {
 		try {
 //			final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec("SELECT {Opportunity:Name} FROM {Opportunity}", 10);
 //			final QuerySpec querySpec = QuerySpec.buildAllQuerySpec(OPPORTUNITIES_SOUP, "Name", Order.ascending, 5);
-			final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec("SELECT {Account:Type}, {Account:Name}, {Account:OwnerId} FROM {Account} GROUP BY {Account:OwnerId}, {Account:Name}, {Account:Type}", 10);
+			final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec("SELECT SUM({Opportunity:Amount}) FROM {Opportunity} GROUP BY {Opportunity:Name}", 10);
 			result = smartStore.query(querySpec, 0);
 		} catch (JSONException e) {
 			e.printStackTrace();
