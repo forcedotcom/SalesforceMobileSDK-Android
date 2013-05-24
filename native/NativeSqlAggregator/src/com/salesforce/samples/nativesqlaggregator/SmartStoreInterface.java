@@ -176,6 +176,8 @@ public class SmartStoreInterface {
 			 * are required. The ideal approach would be to store
 			 * these double values as strings and convert them to
 			 * double when and if required (for non-null values).
+			 *
+			 * TODO: Fix this when SmartStore supports 'double'.
 			 */
 			double amount = 0;
 			try {
@@ -206,17 +208,7 @@ public class SmartStoreInterface {
 	 * @return Saved opportunities.
 	 */
 	public JSONArray getOpportunities() {
-		JSONArray result = null;
-		final String query = "SELECT {Opportunity:Name}, {Opportunity:Id}, {Opportunity:AccountId}, {Opportunity:OwnerId}, {Opportunity:Amount} FROM {Opportunity}";
-		QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(query, 10);
-		int count = smartStore.countQuery(querySpec);
-		querySpec = QuerySpec.buildSmartQuerySpec(query, count);
-		try {
-			result = smartStore.query(querySpec, 0);	
-		} catch (JSONException e) {
-			Log.e(TAG, "Error occurred while attempting to retrieve opportunities. Please verify validity of the query.");
-		}
-		return result;
+		return query("SELECT {Opportunity:Name}, {Opportunity:Id}, {Opportunity:AccountId}, {Opportunity:OwnerId}, {Opportunity:Amount} FROM {Opportunity}");
 	}
 
 	/**
@@ -225,17 +217,7 @@ public class SmartStoreInterface {
 	 * @return Saved accounts.
 	 */
 	public JSONArray getAccounts() {
-		JSONArray result = null;
-		final String query = "SELECT {Account:Name}, {Account:Id}, {Account:OwnerId} FROM {Account}";
-		QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(query, 10);
-		int count = smartStore.countQuery(querySpec);
-		querySpec = QuerySpec.buildSmartQuerySpec(query, count);
-		try {
-			result = smartStore.query(querySpec, 0);	
-		} catch (JSONException e) {
-			Log.e(TAG, "Error occurred while attempting to retrieve accounts. Please verify validity of the query.");
-		}
-		return result;
+		return query("SELECT {Account:Name}, {Account:Id}, {Account:OwnerId} FROM {Account}");
 	}
 
 	/**
