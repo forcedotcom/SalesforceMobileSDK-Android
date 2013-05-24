@@ -3,12 +3,12 @@
 <resources>
     <string name="account_type">com.salesforce.samples.nativesqlaggregator.login</string>
 	<string name="app_name"><b>NativeSqlAggregator</b></string>
-    <string name="welcome">Welcome %s</string>
 	<string name="logout_button">Logout</string>
-	<string name="fetch_opportunities_button">Fetch Opportunities (Save in SmartStore)</string>
-	<string name="fetch_accounts_button">Fetch Accounts (Save in SmartStore)</string>
-    <string name="display_opportunities_button">Show Saved Opportunities</string>
-    <string name="display_accounts_button">Show Saved Accounts</string>
-	<string name="clear_button">Clear (Reset SmartStore)</string>
+	<string name="save_offline_button">Save Records Offline</string>
+	<string name="clear_button">Clear Offline Store</string>
 	<string name="api_version">v27.0</string>
+	<string name="join_button">Run Report</string>
+
+	<!-- Query strings -->
+    <string name="join_button_query">"SELECT {Account:Name}, COUNT({Opportunity:Name}), SUM({Opportunity:Amount}), AVG({Opportunity:Amount}), {Account:Id}, {Opportunity:AccountId} FROM {Account}, {Opportunity} WHERE {Account:Id} = {Opportunity:AccountId} GROUP BY {Account:Name}"</string>
 </resources>

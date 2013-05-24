@@ -27,14 +27,12 @@
 package com.salesforce.samples.nativesqlaggregator;
 
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 
 import org.json.JSONArray;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.ListView;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -53,7 +51,6 @@ import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 public class MainActivity extends SalesforceActivity {
 
     private RestClient client;
-    private ArrayAdapter<String> listAdapter;
     private SmartStoreInterface smartStoreIntf;
 
 	@Override
@@ -71,11 +68,7 @@ public class MainActivity extends SalesforceActivity {
 	public void onResume() {
 
 		// Hide the view until we are logged in.
-		findViewById(R.id.root).setVisibility(View.INVISIBLE);
-
-		// Create list adapter.
-		listAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, new ArrayList<String>());
-		((ListView) findViewById(R.id.contacts_list)).setAdapter(listAdapter);			
+		findViewById(R.id.root).setVisibility(View.INVISIBLE);		
 		super.onResume();
 	}		
 
@@ -85,6 +78,18 @@ public class MainActivity extends SalesforceActivity {
 
 		// Show the view.
 		findViewById(R.id.root).setVisibility(View.VISIBLE);
+	}
+
+	/**
+	 * Launches the activity to show results.
+	 *
+	 * @param results Results to be shown.
+	 */
+	private void launchResultActivity(String results) {
+		final Intent intent = new Intent(ResultActivity.RESULT_INTENT_ACTION);
+		intent.addCategory(Intent.CATEGORY_DEFAULT);
+		intent.putExtra(ResultActivity.DATA_EXTRA, results);
+		this.startActivity(intent);
 	}
 
 	/**
@@ -102,48 +107,35 @@ public class MainActivity extends SalesforceActivity {
 	 * @param v View that was clicked.
 	 */
 	public void onClearClick(View v) {
-		listAdapter.clear();
 		smartStoreIntf.deleteAccountsSoup();
 		smartStoreIntf.deleteOpportunitiesSoup();
 		smartStoreIntf.createAccountsSoup();
 		smartStoreIntf.createOpportunitiesSoup();
-		Toast.makeText(this, "SmartStore Reset Successful!", Toast.LENGTH_LONG).show();
+		Toast.makeText(this, "Offline data has been cleared.", Toast.LENGTH_SHORT).show();
 	}
 
 	/**
-	 * Called when the "Fetch Opportunities" button is clicked.
+	 * Called when the "Save Records Offline" button is clicked.
 	 *
 	 * @param v View that was clicked.
+	 * @throws UnsupportedEncodingException
 	 */
-	public void onFetchOpportunitiesClick(View v) throws UnsupportedEncodingException {
+	public void onSaveOfflineClick(View v) throws UnsupportedEncodingException {
         sendRequest("SELECT Name, Id, AccountId, OwnerId, Amount FROM Opportunity", "Opportunity");
-	}
-
-	/**
-	 * Called when the "Fetch Accounts" button is clicked.
-	 *
-	 * @param v View that was clicked.
-	 */
-	public void onFetchAccountsClick(View v) throws UnsupportedEncodingException {
 		sendRequest("SELECT Name, Id, OwnerId, AnnualRevenue FROM Account", "Account");
 	}
 
 	/**
-	 * Called when the "Show Saved Opportunities" button is clicked.
+	 * Called when the join query button is clicked.
 	 *
 	 * @param v View that was clicked.
 	 */
-	public void onDisplayOpportunitiesClick(View v) {
-		final JSONArray opportunities = smartStoreIntf.getOpportunities();
-	}
-
-	/**
-	 * Called when the "Show Saved Accounts" button is clicked.
-	 *
-	 * @param v View that was clicked.
-	 */
-	public void onDisplayAccountsClick(View v) {
-		final JSONArray accounts = smartStoreIntf.getAccounts();
+	public void onJoinQueryClick(View v) {
+		final String smartSql = getString(R.string.join_button_query);
+		final JSONArray opportunities = smartStoreIntf.query(smartSql);
+		if (opportunities != null) {
+			launchResultActivity(opportunities.toString());	
+		}
 	}
 
 	/**
@@ -159,27 +151,24 @@ public class MainActivity extends SalesforceActivity {
 			@Override
 			public void onSuccess(RestRequest request, RestResponse result) {
 				try {
-					listAdapter.clear();
 					final JSONArray records = result.asJSONObject().getJSONArray("records");
 					if (obj.equals("Account")) {
 						smartStoreIntf.insertAccounts(records);
 						Toast.makeText(MainActivity.this,
-								"Successfully Saved Accounts in SmartStore!",
-								Toast.LENGTH_LONG).show();
+								"Accounts ready for offline access.",
+								Toast.LENGTH_SHORT).show();
 					} else if (obj.equals("Opportunity")) {
 						smartStoreIntf.insertOpportunities(records);
 						Toast.makeText(MainActivity.this,
-								"Successfully Saved Opportunities in SmartStore!",
-								Toast.LENGTH_LONG).show();
+								"Opportunities ready for offline access.",
+								Toast.LENGTH_SHORT).show();
 					} else {
 
 						/*
 						 * If the object is not an account or opportunity,
-						 * we simply display the names of the records.
+						 * we do nothing. This block can be used to save
+						 * other types of records.
 						 */
-						for (int i = 0; i < records.length(); i++) {
-							listAdapter.add(records.getJSONObject(i).getString("Name"));
-						}
 					}				
 				} catch (Exception e) {
 					onError(e);

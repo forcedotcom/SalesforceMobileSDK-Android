@@ -30,6 +30,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.util.Log;
+
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
@@ -43,6 +45,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
  */
 public class SmartStoreInterface {
 
+	private static String TAG = "NativeSqlAggregator: SmartStoreInterface";
 	private static String ACCOUNTS_SOUP = "Account";
 	private static String OPPORTUNITIES_SOUP = "Opportunity";
 
@@ -115,7 +118,7 @@ public class SmartStoreInterface {
 				}
 			}
 		} catch (JSONException e) {
-			e.printStackTrace();
+			Log.e(TAG, "Error occurred while attempting to insert accounts. Please verify validity of JSON data set.");
 		}
 	}
 
@@ -146,18 +149,18 @@ public class SmartStoreInterface {
 					revenue = account.getDouble("AnnualRevenue");
 				}
 			} catch (JSONException e) {
-				e.printStackTrace();
+				Log.e(TAG, "Error occurred while attempting to insert account. Please verify validity of JSON data set.");
 			} finally {
 				try {
 					account.put("AnnualRevenue", (int) revenue);	
 				} catch (JSONException ex) {
-					ex.printStackTrace();
+					Log.e(TAG, "Error occurred while attempting to insert account. Please verify validity of JSON data set.");
 				}
 			}
 			try {
 				smartStore.upsert(ACCOUNTS_SOUP, account);	
 			} catch (JSONException exc) {
-				exc.printStackTrace();
+				Log.e(TAG, "Error occurred while attempting to insert account. Please verify validity of JSON data set.");
 			}
 		}
 	}
@@ -175,7 +178,7 @@ public class SmartStoreInterface {
 				}
 			}
 		} catch (JSONException e) {
-			e.printStackTrace();
+			Log.e(TAG, "Error occurred while attempting to insert opportunities. Please verify validity of JSON data set.");
 		}
 	}
 
@@ -206,18 +209,18 @@ public class SmartStoreInterface {
 					amount = opportunity.getDouble("Amount");
 				}
 			} catch (JSONException e) {
-				e.printStackTrace();
+				Log.e(TAG, "Error occurred while attempting to insert opportunity. Please verify validity of JSON data set.");
 			} finally {
 				try {
 					opportunity.put("Amount", (int) amount);	
 				} catch (JSONException ex) {
-					ex.printStackTrace();
+					Log.e(TAG, "Error occurred while attempting to insert opportunity. Please verify validity of JSON data set.");
 				}
 			}
 			try {
 				smartStore.upsert(OPPORTUNITIES_SOUP, opportunity);	
 			} catch (JSONException exc) {
-				exc.printStackTrace();
+				Log.e(TAG, "Error occurred while attempting to insert opportunity. Please verify validity of JSON data set.");
 			}
 		}
 	}
@@ -236,7 +239,7 @@ public class SmartStoreInterface {
 		try {
 			result = smartStore.query(querySpec, 0);	
 		} catch (JSONException e) {
-			e.printStackTrace();
+			Log.e(TAG, "Error occurred while attempting to retrieve opportunities. Please verify validity of the query.");
 		}
 		return result;
 	}
@@ -255,7 +258,7 @@ public class SmartStoreInterface {
 		try {
 			result = smartStore.query(querySpec, 0);	
 		} catch (JSONException e) {
-			e.printStackTrace();
+			Log.e(TAG, "Error occurred while attempting to retrieve accounts. Please verify validity of the query.");
 		}
 		return result;
 	}
@@ -264,29 +267,17 @@ public class SmartStoreInterface {
 	 * Runs a smart SQL query against the smartstore and returns results.
 	 *
 	 * @param smartSql Smart SQL query string.
-	 * @param pageSize Page size.
 	 * @return Results of the query.
 	 */
-	public JSONArray query(String smartSql, int pageSize) {
+	public JSONArray query(String smartSql) {
 		JSONArray result = null;
-		final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, pageSize);
+		QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 10);
+		int count = smartStore.countQuery(querySpec);
+		querySpec = QuerySpec.buildSmartQuerySpec(smartSql, count);
 		try {
-			result = smartStore.query(querySpec, pageSize);	
+			result = smartStore.query(querySpec, 0);	
 		} catch (JSONException e) {
-			e.printStackTrace();
-		}
-		return result;
-	}
-
-	public JSONArray query() {
-		JSONArray result = null;
-		try {
-//			final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec("SELECT {Opportunity:Name} FROM {Opportunity}", 10);
-//			final QuerySpec querySpec = QuerySpec.buildAllQuerySpec(OPPORTUNITIES_SOUP, "Name", Order.ascending, 5);
-			final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec("SELECT SUM({Opportunity:Amount}) FROM {Opportunity} GROUP BY {Opportunity:Name}", 10);
-			result = smartStore.query(querySpec, 0);
-		} catch (JSONException e) {
-			e.printStackTrace();
+			Log.e(TAG, "Error occurred while attempting to run query. Please verify validity of the query.");
 		}
 		return result;
 	}

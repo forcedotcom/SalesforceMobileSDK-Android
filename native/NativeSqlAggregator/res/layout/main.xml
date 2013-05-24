@@ -13,38 +13,31 @@
 	    android:layout_width="fill_parent"
 	    android:layout_height="wrap_content">
 
-        <Button android:id="@+id/fetch_opportunities"
+        <Button android:id="@+id/save_offline"
             android:layout_width="wrap_content"
 		    android:layout_height="wrap_content"
-		    android:onClick="onFetchOpportunitiesClick"
-		    android:text="@string/fetch_opportunities_button" />
-
-        <Button android:id="@+id/fetch_accounts"
-            android:layout_width="wrap_content"
-		    android:layout_height="wrap_content"
-		    android:onClick="onFetchAccountsClick"
-		    android:text="@string/fetch_accounts_button" />
-
-        <Button android:id="@+id/display_opportunities"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="onDisplayOpportunitiesClick"
-            android:text="@string/display_opportunities_button" />
-
-        <Button android:id="@+id/display_accounts"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:onClick="onDisplayAccountsClick"
-            android:text="@string/display_accounts_button" />
+		    android:layout_marginTop="40dp"
+		    android:layout_marginBottom="20dp"
+		    android:onClick="onSaveOfflineClick"
+		    android:layout_gravity="center"
+		    android:text="@string/save_offline_button" />
 
 	    <Button android:id="@+id/clear"
 	        android:layout_width="wrap_content"
-		      android:layout_height="wrap_content"
-		      android:onClick="onClearClick"
-		      android:text="@string/clear_button" />
-	</LinearLayout>
+		    android:layout_height="wrap_content"
+		    android:layout_marginTop="20dp"
+		    android:layout_marginBottom="20dp"
+		    android:onClick="onClearClick"
+		    android:layout_gravity="center"
+		    android:text="@string/clear_button" />
 
-	<ListView android:id="@+id/contacts_list"
-	    android:layout_width="fill_parent"
-	    android:layout_height="fill_parent" />
+        <Button android:id="@+id/join"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="40dp"
+            android:onClick="onJoinQueryClick"
+            android:layout_gravity="center"
+            android:text="@string/join_button" />
+	</LinearLayout>
 </LinearLayout>
