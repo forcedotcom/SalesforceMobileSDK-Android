@@ -50,11 +50,14 @@ public class JSTestCase extends
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		activity = getActivity();
-		// Block until the javascript has notified the container that it's ready
-		TestRunnerPlugin.readyForTests.take(); 
+		if (activity == null) {
+			// Once per suite
+			activity = getActivity();
+			// Block until the javascript has notified the container that it's ready
+			TestRunnerPlugin.readyForTests.take();
+		}
 	}
-
+	
 	/**
 	 * Helper method: runs javascript test and wait for it to complete
 	 * @param testName the name of the test method in the test suite
