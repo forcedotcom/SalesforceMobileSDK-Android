@@ -13,6 +13,7 @@ hybrid/test/SmartStoreTest/bin/
 native/SalesforceSDK/bin/
 native/SampleApps/CloudTunes/bin/
 native/SampleApps/RestExplorer/bin/
+native/SampleApps/NativeSqlAggregator/bin/
 native/SampleApps/test/RestExplorerTest/bin/
 native/TemplateApp/bin/
 native/test/SalesforceSDKTest/bin/
@@ -33,6 +34,7 @@ hybrid/test/SmartStoreTest/gen/
 native/SalesforceSDK/gen/
 native/SampleApps/CloudTunes/gen/
 native/SampleApps/RestExplorer/gen/
+native/SampleApps/NativeSqlAggregator/gen/
 native/SampleApps/test/RestExplorerTest/gen/
 native/TemplateApp/gen/
 native/test/SalesforceSDKTest/gen/
