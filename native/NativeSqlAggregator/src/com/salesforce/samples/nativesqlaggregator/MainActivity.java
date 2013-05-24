@@ -30,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 
 import org.json.JSONArray;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -52,6 +53,7 @@ public class MainActivity extends SalesforceActivity {
 
     private RestClient client;
     private SmartStoreInterface smartStoreIntf;
+    private ProgressDialog progressDialog;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +64,13 @@ public class MainActivity extends SalesforceActivity {
 		// Creates soups, if they don't exist already.
 		smartStoreIntf.createAccountsSoup();
 		smartStoreIntf.createOpportunitiesSoup();
+
+		// Configures options for the progress indicator.
+		progressDialog = new ProgressDialog(this);
+		progressDialog.setTitle("Fetching records...");
+        progressDialog.setMessage("Please wait...");
+        progressDialog.setCancelable(true);
+        progressDialog.setIndeterminate(true);
 	}
 
 	@Override
@@ -70,7 +79,7 @@ public class MainActivity extends SalesforceActivity {
 		// Hide the view until we are logged in.
 		findViewById(R.id.root).setVisibility(View.INVISIBLE);		
 		super.onResume();
-	}		
+	}
 
 	@Override
 	public void onResume(RestClient client) {
@@ -121,8 +130,9 @@ public class MainActivity extends SalesforceActivity {
 	 * @throws UnsupportedEncodingException
 	 */
 	public void onSaveOfflineClick(View v) throws UnsupportedEncodingException {
-        sendRequest("SELECT Name, Id, AccountId, OwnerId, Amount FROM Opportunity", "Opportunity");
-		sendRequest("SELECT Name, Id, OwnerId, AnnualRevenue FROM Account", "Account");
+		progressDialog.show();
+		sendRequest("SELECT Name, Id, OwnerId FROM Account", "Account");
+		sendRequest("SELECT Name, Id, AccountId, OwnerId, Amount FROM Opportunity", "Opportunity");
 	}
 
 	/**
@@ -154,14 +164,8 @@ public class MainActivity extends SalesforceActivity {
 					final JSONArray records = result.asJSONObject().getJSONArray("records");
 					if (obj.equals("Account")) {
 						smartStoreIntf.insertAccounts(records);
-						Toast.makeText(MainActivity.this,
-								"Accounts ready for offline access.",
-								Toast.LENGTH_SHORT).show();
 					} else if (obj.equals("Opportunity")) {
 						smartStoreIntf.insertOpportunities(records);
-						Toast.makeText(MainActivity.this,
-								"Opportunities ready for offline access.",
-								Toast.LENGTH_SHORT).show();
 					} else {
 
 						/*
@@ -169,9 +173,13 @@ public class MainActivity extends SalesforceActivity {
 						 * we do nothing. This block can be used to save
 						 * other types of records.
 						 */
-					}				
+					}
 				} catch (Exception e) {
 					onError(e);
+				} finally {
+					progressDialog.dismiss();
+					Toast.makeText(MainActivity.this, "Records ready for offline access.",
+							Toast.LENGTH_SHORT).show();
 				}
 			}
 

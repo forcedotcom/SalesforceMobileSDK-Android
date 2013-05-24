@@ -53,8 +53,7 @@ public class SmartStoreInterface {
 	private static IndexSpec[] ACCOUNTS_INDEX_SPEC = {
 		new IndexSpec("Name", Type.string),
 		new IndexSpec("Id", Type.string),
-		new IndexSpec("OwnerId", Type.string),
-		new IndexSpec("AnnualRevenue", Type.integer)
+		new IndexSpec("OwnerId", Type.string)
 	};
 
 	// Index spec for opportunities.
@@ -95,14 +94,18 @@ public class SmartStoreInterface {
 	 * Deletes the existing soup for accounts.
 	 */
 	public void deleteAccountsSoup() {
-		smartStore.dropSoup(ACCOUNTS_SOUP);
+		if (smartStore.hasSoup(ACCOUNTS_SOUP)) {
+			smartStore.dropSoup(ACCOUNTS_SOUP);	
+		}
 	}
 
 	/**
 	 * Deletes the existing soup for opportunities.
 	 */
 	public void deleteOpportunitiesSoup() {
-		smartStore.dropSoup(OPPORTUNITIES_SOUP);
+		if (smartStore.hasSoup(OPPORTUNITIES_SOUP)) {
+			smartStore.dropSoup(OPPORTUNITIES_SOUP);	
+		}
 	}
 
 	/**
@@ -129,34 +132,6 @@ public class SmartStoreInterface {
 	 */
 	public void insertAccount(JSONObject account) {
 		if (account != null) {
-
-			/*
-			 * Since SmartStore currently supports only 'string'
-			 * and 'integer', we need to check if null values exist
-			 * for integer fields. Furthermore, since 'AnnualRevenue'
-			 * is a double, we need to typecast it to 'integer'
-			 * to store it in SmartStore as an 'integer'. Since
-			 * the purpose of this app is to demonstrate aggregate
-			 * SQL queries such as 'sum', 'avg', etc., conversions
-			 * are required. The ideal approach would be to store
-			 * these double values as strings and convert them to
-			 * double when and if required (for non-null values).
-			 */
-			double revenue = 0;
-			try {
-				final Object revenueObj = account.get("AnnualRevenue");
-				if (revenueObj != null) {
-					revenue = account.getDouble("AnnualRevenue");
-				}
-			} catch (JSONException e) {
-				Log.e(TAG, "Error occurred while attempting to insert account. Please verify validity of JSON data set.");
-			} finally {
-				try {
-					account.put("AnnualRevenue", (int) revenue);	
-				} catch (JSONException ex) {
-					Log.e(TAG, "Error occurred while attempting to insert account. Please verify validity of JSON data set.");
-				}
-			}
 			try {
 				smartStore.upsert(ACCOUNTS_SOUP, account);	
 			} catch (JSONException exc) {
@@ -251,7 +226,7 @@ public class SmartStoreInterface {
 	 */
 	public JSONArray getAccounts() {
 		JSONArray result = null;
-		final String query = "SELECT {Account:Name}, {Account:Id}, {Account:OwnerId}, {Account:AnnualRevenue} FROM {Account}";
+		final String query = "SELECT {Account:Name}, {Account:Id}, {Account:OwnerId} FROM {Account}";
 		QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(query, 10);
 		int count = smartStore.countQuery(querySpec);
 		querySpec = QuerySpec.buildSmartQuerySpec(query, count);

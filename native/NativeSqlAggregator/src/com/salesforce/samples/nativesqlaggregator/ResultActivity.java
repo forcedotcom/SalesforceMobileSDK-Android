@@ -32,6 +32,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 
 import android.content.Intent;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
@@ -74,17 +76,8 @@ public class ResultActivity extends SalesforceActivity {
 							final JSONArray jsonObj = resultJsonArray.getJSONArray(i);
 							if (jsonObj != null) {
 								double col3 = Double.parseDouble(jsonObj.get(2).toString());
-								final NumberFormat baseFormat = NumberFormat.getCurrencyInstance();
-								baseFormat.setMinimumFractionDigits(0);
-								final String col3String = baseFormat.format(col3);
 								double col4 = Double.parseDouble(jsonObj.get(3).toString());
-								final String col4String = baseFormat.format(col4);
-
-								/*
-								 * A little hack to show just the fields
-								 * we care about, with adequate spacing.
-								 */
-								addRow(jsonObj.get(0).toString(), jsonObj.get(1).toString(), col3String, col4String);
+								addRow(jsonObj.get(0).toString(), jsonObj.get(1).toString(), col3, col4);
 							}
 						} catch (JSONException e) {
 							Log.e(TAG, "Error occurred while parsing JSON.");
@@ -119,34 +112,32 @@ public class ResultActivity extends SalesforceActivity {
 	 * Adds the row to the table.
 	 */
 	private void addHeaderRow() {
-		final TextView textView1 = new TextView(this);
-		textView1.setText("Account Name");
-		textView1.setTextSize(16f);
-		textView1.setGravity(Gravity.LEFT);
-		textView1.setPadding(20, 20, 20, 20);
-		final TextView textView2 = new TextView(this);
-		textView2.setText("Opps");
-		textView2.setTextSize(16f);
-		textView2.setGravity(Gravity.RIGHT);
-		textView2.setPadding(20, 20, 20, 20);
-		final TextView textView3 = new TextView(this);
-		textView3.setText("Total");
-		textView3.setTextSize(16f);
-		textView3.setGravity(Gravity.RIGHT);
-		textView3.setPadding(20, 20, 20, 20);
-		final TextView textView4 = new TextView(this);
-		textView4.setText("Average");
-		textView4.setTextSize(16f);
-		textView4.setGravity(Gravity.RIGHT);
-		textView4.setPadding(20, 20, 20, 20);
 		final TableRow tableRow = new TableRow(this);
 		tableRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT,
 				TableRow.LayoutParams.WRAP_CONTENT));
-		tableRow.addView(textView1);
-		tableRow.addView(textView2);
-		tableRow.addView(textView3);
-		tableRow.addView(textView4);
+		tableRow.addView(styleHeaderRowElement("Account Name", Gravity.LEFT));
+		tableRow.addView(styleHeaderRowElement("Opps", Gravity.RIGHT));
+		tableRow.addView(styleHeaderRowElement("Total", Gravity.RIGHT));
+		tableRow.addView(styleHeaderRowElement("Average", Gravity.RIGHT));
 		tableLayout.addView(tableRow);
+	}
+
+	/**
+	 * Adds style to a header row element.
+	 *
+	 * @param text Text displayed in the TextView.
+	 * @param gravity Gravity for the text.
+	 * @return TextView instance.
+	 */
+	private TextView styleHeaderRowElement(String text, int gravity) {
+		final TextView textView = new TextView(this);
+		textView.setText(text);
+		textView.setTextColor(Color.GREEN);
+		textView.setTypeface(null, Typeface.BOLD);
+		textView.setTextSize(16f);
+		textView.setGravity(gravity);
+		textView.setPadding(20, 20, 20, 20);
+		return textView;
 	}
 
 	/**
@@ -157,30 +148,50 @@ public class ResultActivity extends SalesforceActivity {
 	 * @param column3 Data contained in the third column.
 	 * @param column4 Data contained in the fourth column.
 	 */
-	private void addRow(String column1, String column2, String column3, String column4) {
-		final TextView textView1 = new TextView(this);
-		textView1.setText(column1);
-		textView1.setGravity(Gravity.LEFT);
-		textView1.setPadding(20, 10, 20, 10);
-		final TextView textView2 = new TextView(this);
-		textView2.setText(column2);
-		textView2.setGravity(Gravity.RIGHT);
-		textView2.setPadding(20, 10, 20, 10);
-		final TextView textView3 = new TextView(this);
-		textView3.setText(column3);
-		textView3.setGravity(Gravity.RIGHT);
-		textView3.setPadding(20, 10, 20, 10);
-		final TextView textView4 = new TextView(this);
-		textView4.setText(column4);
-		textView4.setGravity(Gravity.RIGHT);
-		textView4.setPadding(20, 10, 20, 10);
+	private void addRow(String column1, String column2, double column3, double column4) {
 		final TableRow tableRow = new TableRow(this);
 		tableRow.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT,
 				TableRow.LayoutParams.WRAP_CONTENT));
-		tableRow.addView(textView1);
-		tableRow.addView(textView2);
-		tableRow.addView(textView3);
-		tableRow.addView(textView4);
+		tableRow.addView(styleDataRowElement(column1, Gravity.LEFT));
+		tableRow.addView(styleDataRowElement(column2, Gravity.RIGHT));
+		tableRow.addView(styleDataRowElement(column3, Gravity.RIGHT));
+		tableRow.addView(styleDataRowElement(column4, Gravity.RIGHT));
 		tableLayout.addView(tableRow);
+	}
+
+	/**
+	 * Adds style to a data row element.
+	 *
+	 * @param text Text displayed in the TextView.
+	 * @param gravity Gravity for the text.
+	 * @return TextView instance.
+	 */
+	private TextView styleDataRowElement(String text, int gravity) {
+		final TextView textView = new TextView(this);
+		textView.setText(text);
+		textView.setGravity(gravity);
+		textView.setPadding(20, 10, 20, 10);
+		return textView;
+	}
+
+	/**
+	 * Adds style to a data row element.
+	 *
+	 * @param text Text displayed in the TextView.
+	 * @param gravity Gravity for the text.
+	 * @return TextView instance.
+	 */
+	private TextView styleDataRowElement(double text, int gravity) {
+		final TextView textView = new TextView(this);
+		final NumberFormat baseFormat = NumberFormat.getCurrencyInstance();
+		double col = text/1000;
+		final String colString = baseFormat.format(col) + "k";
+		textView.setText(colString);
+		if (col > 1000) {
+			textView.setTextColor(Color.RED);
+		}
+		textView.setGravity(gravity);
+		textView.setPadding(20, 10, 20, 10);
+		return textView;
 	}
 }
