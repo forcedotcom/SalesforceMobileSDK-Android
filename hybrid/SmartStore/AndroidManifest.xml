@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk" 
-	android:versionCode="22"
-	android:versionName="1.5.1">
+	android:versionCode="23"
+	android:versionName="1.5.2">
     <application />
     <uses-sdk android:minSdkVersion="8" />
 </manifest>
