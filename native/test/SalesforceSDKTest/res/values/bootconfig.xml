@@ -6,15 +6,15 @@
     <string-array name="oauthScopes">
         <item>api</item>
     </string-array>
-    <string name="account_name">sdktest@cs0.com (test)</string>
-    <string name="account_type">com.salesforce.androisdk.test</string>
-    <string name="api_version">v23.0</string>
+    <string name="account_name">sdktest@cs1.com (test)</string>
+    <string name="account_type">com.salesforce.androisdk.smartstore.test</string>
+    <string name="api_version">v27.0</string>
     <string name="encoding">UTF-8</string>
-    <string name="instance_url">https://tapp0.salesforce.com</string>
+    <string name="instance_url">https://cs1.salesforce.com</string>
     <string name="identity_url">https://test.salesforce.com</string>
     <string name="login_url">https://test.salesforce.com</string>
-    <string name="oauth_refresh_token">5Aep861_OKMvio5gy9sGt9Z9mdt62xXK.9ugif6nZJYknXeANTICBf4ityN9j6YDgHjFvbzu6FTUQ==</string>
-    <string name="org_id">00DT0000000FPl2MAG</string>
-    <string name="user_id">005T0000000sTGcIAM</string>
-    <string name="username">sdktest@cs0.com</string>
+    <string name="oauth_refresh_token">5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5JcfpNWBDH78nqNg99EwyuUHRJctA==</string>
+    <string name="org_id">00DS0000000HDptMAG</string>
+    <string name="user_id">005S0000003yO7jIAE</string>
+    <string name="username">sdktest@cs1.com</string>
 </resources>
