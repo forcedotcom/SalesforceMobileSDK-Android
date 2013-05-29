@@ -37,10 +37,6 @@ public class ForceEntityJSTest extends JSTestCase {
     public ForceEntityJSTest() {
         super("ForceEntityTestSuite");
     }
-
-    //
-    // TODO ForceEntityTestSuite.js requires authentication
-    // 
     
     public void testStoreCacheInit() {
         runTest("testStoreCacheInit");
