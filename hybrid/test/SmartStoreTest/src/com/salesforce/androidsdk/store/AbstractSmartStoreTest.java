@@ -51,7 +51,8 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 	private static final String TEST_SOUP = "test_soup";
 	private static final String OTHER_TEST_SOUP = "other_test_soup";
 	private static final String THIRD_TEST_SOUP = "third_test_soup";
-	
+	private static final String FOURTH_TEST_SOUP = "fourth_test_soup";
+
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
@@ -203,17 +204,15 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
 		store.registerSoup(OTHER_TEST_SOUP, new IndexSpec[] {new IndexSpec("lastName", Type.string), new IndexSpec("address.city", Type.string)});
 		assertTrue("Register soup call failed", store.hasSoup(OTHER_TEST_SOUP));
-		
-		
-		
+
 		JSONObject soupElt1 = new JSONObject("{'lastName':'Doe', 'address':{'city':'San Francisco','street':'1 market'}}");
 		JSONObject soupElt2 = new JSONObject("{'lastName':'Jackson', 'address':{'city':'Los Angeles','street':'100 mission'}}");
 		JSONObject soupElt3 = new JSONObject("{'lastName':'Watson', 'address':{'city':'London','street':'50 market'}}");
-		
+
 		JSONObject soupElt1Created = store.create(OTHER_TEST_SOUP, soupElt1);
 		JSONObject soupElt2Created = store.create(OTHER_TEST_SOUP, soupElt2);
 		JSONObject soupElt3Created = store.create(OTHER_TEST_SOUP, soupElt3);
-		
+
 		// Check DB
 		Cursor c = null;
 		try {
@@ -250,7 +249,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			safeClose(c);
 		}
 	}
-	
+
 	/**
 	 * Testing update: create multiple soup elements and update one of them, check them all
 	 * @throws JSONException 
@@ -665,5 +664,28 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Check
 		JSONObject soupElt1Retrieved = store.retrieve(THIRD_TEST_SOUP, idOf(soupElt1Upserted)).getJSONObject(0);		
 		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
+	}
+
+	/**
+	 * Test to verify an aggregate query on floating point values.
+	 *
+	 * @throws JSONException
+	 */
+	public void testAggregateQueryOnIndexedField() throws JSONException {
+		final JSONObject soupElt1 = new JSONObject("{'amount':10.2}");
+		final JSONObject soupElt2 = new JSONObject("{'amount':9.9}");
+		final IndexSpec[] indexSpecs = { new IndexSpec("amount", Type.floating) };
+		store.registerSoup(FOURTH_TEST_SOUP, indexSpecs);
+		assertTrue("Soup " + FOURTH_TEST_SOUP + " should have been created", store.hasSoup(FOURTH_TEST_SOUP));
+		store.upsert(FOURTH_TEST_SOUP, soupElt1);
+		store.upsert(FOURTH_TEST_SOUP, soupElt2);
+		final String smartSql = "SELECT SUM({" + FOURTH_TEST_SOUP + ":amount}) FROM {" + FOURTH_TEST_SOUP + "}";
+		final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
+		final JSONArray result = store.query(querySpec, 0);
+		assertNotNull("Result should not be null", result);
+		assertEquals("One result expected", 1, result.length());
+		assertEquals("Incorrect result received", 20.1, result.getJSONArray(0).getDouble(0));
+		store.dropSoup(FOURTH_TEST_SOUP);
+		assertFalse("Soup " + FOURTH_TEST_SOUP + " should have been deleted", store.hasSoup(FOURTH_TEST_SOUP));
 	}
 }
