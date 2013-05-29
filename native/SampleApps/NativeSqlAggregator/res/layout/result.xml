@@ -4,9 +4,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TableLayout android:id="@+id/table_layout"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
-    </TableLayout>
+    <HorizontalScrollView android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TableLayout android:id="@+id/table_layout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+        </TableLayout>
+    </HorizontalScrollView>
 </ScrollView>
