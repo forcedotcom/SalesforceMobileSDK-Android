@@ -62,7 +62,7 @@ public class SmartStoreInterface {
 		new IndexSpec("Id", Type.string),
 		new IndexSpec("AccountId", Type.string),
 		new IndexSpec("OwnerId", Type.string),
-		new IndexSpec("Amount", Type.integer)
+		new IndexSpec("Amount", Type.floating)
 	};
 
 	private SalesforceSDKManagerWithSmartStore sdkManager;
@@ -166,18 +166,12 @@ public class SmartStoreInterface {
 		if (opportunity != null) {
 
 			/*
-			 * Since SmartStore currently supports only 'string'
-			 * and 'integer', we need to check if null values exist
-			 * for integer fields. Furthermore, since 'Amount'
-			 * is a double, we need to typecast it to 'integer'
-			 * to store it in SmartStore as an 'integer'. Since
-			 * the purpose of this app is to demonstrate aggregate
-			 * SQL queries such as 'sum', 'avg', etc., conversions
-			 * are required. The ideal approach would be to store
-			 * these double values as strings and convert them to
-			 * double when and if required (for non-null values).
-			 *
-			 * TODO: Fix this when SmartStore supports 'double'.
+			 * SmartStore doesn't currently support default values
+			 * for indexed columns (0 for 'integer' or 'floating',
+			 * for instance. It stores the data as is. Hence, we need
+			 * to check the values for 'Amount' and replace 'null'
+			 * with '0', for aggregate queries such as 'sum' and
+			 * 'avg' to work properly.
 			 */
 			double amount = 0;
 			try {
@@ -189,7 +183,7 @@ public class SmartStoreInterface {
 				Log.e(TAG, "Error occurred while attempting to insert opportunity. Please verify validity of JSON data set.");
 			} finally {
 				try {
-					opportunity.put("Amount", (int) amount);	
+					opportunity.put("Amount", amount);
 				} catch (JSONException ex) {
 					Log.e(TAG, "Error occurred while attempting to insert opportunity. Please verify validity of JSON data set.");
 				}

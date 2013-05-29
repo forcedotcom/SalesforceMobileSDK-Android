@@ -486,6 +486,8 @@ public class SmartStore  {
             contentValues.put(indexSpec.columnName, (Integer) value); break;
         case string:
             contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
+        case floating:
+        	contentValues.put(indexSpec.columnName, (Double) value); break;
         }
     }
 
@@ -759,7 +761,7 @@ public class SmartStore  {
      * Enum for column type
      */
     public enum Type {
-        string("TEXT"), integer("INTEGER");
+        string("TEXT"), integer("INTEGER"), floating("REAL");
 
         private String columnType;
 
