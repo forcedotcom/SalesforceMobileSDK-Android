@@ -29,25 +29,21 @@ package com.salesforce.androidsdk.util;
 import android.test.ActivityInstrumentationTestCase2;
 import android.util.Log;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin;
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin.TestResult;
-import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.ui.OAuthWebviewHelper.AccountOptions;
 import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
 
 /**
  * Extend this class to run tests written in JavaScript
  */
-public class JSTestCase extends
-		ActivityInstrumentationTestCase2<SalesforceDroidGapActivity> {
+public class JSTestCase<T extends SalesforceDroidGapActivity> extends
+		ActivityInstrumentationTestCase2<T> {
 
-	private SalesforceDroidGapActivity activity;
+	private T activity;
     private String jsSuite;
 	
-	public JSTestCase(String jsSuite) {
-		super("com.salesforce.androidsdk.tests", SalesforceDroidGapActivity.class);
+	public JSTestCase(String jsSuite, Class<T> c) {
+		super("com.salesforce.androidsdk.tests", c);
         this.jsSuite = jsSuite;
 	}
 	
@@ -55,9 +51,6 @@ public class JSTestCase extends
 	public void setUp() throws Exception {
 		super.setUp();
 		if (activity == null) {
-			// Authenticate first
-			authenticate();
-			
 			// Once per suite
 			activity = getActivity();
 			
@@ -66,36 +59,6 @@ public class JSTestCase extends
 		}
 	}
 	
-	private void authenticate() {
-		LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
-		AccountOptions accountOptions = getAccountOptions();
-		ClientManager clientManager = new ClientManager(getInstrumentation().getTargetContext(),
-				SalesforceSDKManager.getInstance().getAccountType(),
-				loginOptions, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
-		String username = accountOptions.username;
-		String accountName = String.format("%s (%s)", username, SalesforceSDKManager.getInstance().getApplicationName());
-		
-		clientManager.createNewAccount(accountName, username,
-				accountOptions.refreshToken, accountOptions.authToken,
-				accountOptions.instanceUrl, loginOptions.loginUrl,
-				accountOptions.identityUrl, loginOptions.oauthClientId,
-				accountOptions.orgId, accountOptions.userId,
-				loginOptions.passcodeHash, null);
-
-	}
-
-	private AccountOptions getAccountOptions() {
-		String username = "sdktest@cs1.com";
-		String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5JcfpNWBDH78nqNg99EwyuUHRJctA==";
-		String authToken = "";
-		String identityUrl = "https://test.salesforce.com";
-		String instanceUrl = "https://cs1.salesforce.com";
-		String orgId = "00DS0000000HDptMAG";
-		String userId = "005S0000003yO7jIAE";
-		
-		return new AccountOptions(username, refreshToken, authToken, identityUrl, instanceUrl, orgId, userId);
-	}
-
 	/**
 	 * Helper method: runs javascript test and wait for it to complete
 	 * @param testName the name of the test method in the test suite

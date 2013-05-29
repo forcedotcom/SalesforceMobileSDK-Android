@@ -26,16 +26,17 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import com.salesforce.androidsdk.ForcePluginsTestActivity;
 import com.salesforce.androidsdk.util.JSTestCase;
 
 
 /**
  * Running javascript tests for SDKInfo plugin
  */
-public class SDKInfoJSTest extends JSTestCase {
+public class SDKInfoJSTest extends JSTestCase<ForcePluginsTestActivity> {
 
     public SDKInfoJSTest() {
-        super("SDKInfoTestSuite");
+        super("SDKInfoTestSuite", ForcePluginsTestActivity.class);
     }
 
     public void testGetInfo()  {

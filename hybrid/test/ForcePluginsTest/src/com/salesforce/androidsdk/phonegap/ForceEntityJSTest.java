@@ -26,16 +26,17 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import com.salesforce.androidsdk.ForcePluginsTestActivity;
 import com.salesforce.androidsdk.util.JSTestCase;
 
 
 /**
  * Running javascript tests for entity framework
  */
-public class ForceEntityJSTest extends JSTestCase {
+public class ForceEntityJSTest extends JSTestCase<ForcePluginsTestActivity> {
 
     public ForceEntityJSTest() {
-        super("ForceEntityTestSuite");
+        super("ForceEntityTestSuite", ForcePluginsTestActivity.class);
     }
     
     public void testStoreCacheInit() {

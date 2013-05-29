@@ -28,7 +28,7 @@
         <!--  Main activity -->
         <activity
             android:label="@string/app_name"
-            android:name="com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity"
+            android:name="com.salesforce.androidsdk.ForcePluginsTestActivity"
             android:configChanges="orientation|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

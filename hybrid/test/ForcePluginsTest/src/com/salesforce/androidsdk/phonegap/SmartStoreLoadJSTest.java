@@ -26,15 +26,16 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import com.salesforce.androidsdk.ForcePluginsTestActivity;
 import com.salesforce.androidsdk.util.JSTestCase;
 
 /**
  * Running javascript tests for SmartStore plugin
  */
-public class SmartStoreLoadJSTest extends JSTestCase {
+public class SmartStoreLoadJSTest extends JSTestCase<ForcePluginsTestActivity> {
 
     public SmartStoreLoadJSTest() {
-        super("SmartStoreLoadTestSuite");
+        super("SmartStoreLoadTestSuite", ForcePluginsTestActivity.class);
     }
 
     public void testNumerousFields()  {
