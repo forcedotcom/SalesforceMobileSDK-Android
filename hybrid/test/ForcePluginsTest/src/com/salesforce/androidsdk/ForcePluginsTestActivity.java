@@ -65,7 +65,7 @@ public class ForcePluginsTestActivity extends SalesforceDroidGapActivity {
 		public RestClient peekRestClient() {
 			String username = "sdktest@cs1.com";
 			String accountName = username + " (ForcePluginsTest)";
-			String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5JcfpNWBDH78nqNg99EwyuUHRJctA==";
+			String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5LuEc0OGFQRIHGNkCvWU1XiK0TI7w==";
 			String authToken = "";
 			String identityUrl = "https://test.salesforce.com";
 			String instanceUrl = "https://cs1.salesforce.com";

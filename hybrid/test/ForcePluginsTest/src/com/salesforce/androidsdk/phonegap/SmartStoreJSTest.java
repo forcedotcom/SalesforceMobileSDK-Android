@@ -26,16 +26,15 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
-import com.salesforce.androidsdk.ForcePluginsTestActivity;
 import com.salesforce.androidsdk.util.JSTestCase;
 
 /**
  * Running javascript tests for SmartStore plugin
  */
-public class SmartStoreJSTest extends JSTestCase<ForcePluginsTestActivity> {
+public class SmartStoreJSTest extends JSTestCase {
 
     public SmartStoreJSTest() {
-        super("SmartStoreTestSuite", ForcePluginsTestActivity.class);
+        super("SmartStoreTestSuite");
     }
 
     public void testRegisterRemoveSoup()  {

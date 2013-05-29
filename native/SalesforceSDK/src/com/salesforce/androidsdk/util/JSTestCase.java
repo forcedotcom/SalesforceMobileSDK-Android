@@ -26,9 +26,12 @@
  */
 package com.salesforce.androidsdk.util;
 
-import android.test.ActivityInstrumentationTestCase2;
+import android.app.Instrumentation;
+import android.content.Intent;
+import android.test.InstrumentationTestCase;
 import android.util.Log;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin;
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin.TestResult;
 import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
@@ -36,29 +39,36 @@ import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
 /**
  * Extend this class to run tests written in JavaScript
  */
-public class JSTestCase<T extends SalesforceDroidGapActivity> extends
-		ActivityInstrumentationTestCase2<T> {
+public class JSTestCase extends InstrumentationTestCase {
 
-	private T activity;
     private String jsSuite;
-	
-	public JSTestCase(String jsSuite, Class<T> c) {
-		super("com.salesforce.androidsdk.tests", c);
-        this.jsSuite = jsSuite;
-	}
-	
-	@Override
-	public void setUp() throws Exception {
-		super.setUp();
-		if (activity == null) {
-			// Once per suite
-			activity = getActivity();
-			
-			// Block until the javascript has notified the container that it's ready
-			TestRunnerPlugin.readyForTests.take();
-		}
-	}
-	
+    private SalesforceDroidGapActivity activity; 
+    
+    public JSTestCase(String jsSuite) {
+    	this.jsSuite = jsSuite;
+    }
+    
+    @Override
+    public void setUp() throws Exception {
+    	
+        super.setUp();
+
+        Instrumentation instrumentation = getInstrumentation();
+		final Intent intent = new Intent(Intent.ACTION_MAIN);
+		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		intent.setClassName(instrumentation.getTargetContext(), SalesforceSDKManager.getInstance().getMainActivityClass().getName());
+		activity = (SalesforceDroidGapActivity) instrumentation.startActivitySync(intent);
+
+		// Block until the javascript has notified the container that it's ready
+		TestRunnerPlugin.readyForTests.take();
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+    	activity.finish();
+    	super.tearDown();
+    }
+    
 	/**
 	 * Helper method: runs javascript test and wait for it to complete
 	 * @param testName the name of the test method in the test suite
@@ -77,7 +87,7 @@ public class JSTestCase<T extends SalesforceDroidGapActivity> extends
             result = TestRunnerPlugin.testResults.take();
         }
         catch (InterruptedException intEx) {
-				
+        	Log.e(getClass().getSimpleName(), "Test interrupted", intEx);
         }
 			
         assertNotNull("No test result",result);
