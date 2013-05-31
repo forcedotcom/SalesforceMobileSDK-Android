@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import java.util.Arrays;
+import java.util.List;
+
 import com.salesforce.androidsdk.util.JSTestCase;
 
 
@@ -36,6 +39,11 @@ public class SmartStoreLoadJSTest extends JSTestCase {
 
     public SmartStoreLoadJSTest() {
         super("SmartStoreLoadTestSuite");
+    }
+    
+    @Override
+    public List<String> getTestNames() {
+    	return Arrays.asList(new String[] {"testNumerousFields", "testIncreasingFieldLength", "testAddAndRetrieveManyEntries", "testUpsertManyEntries"});
     }
     
     public void testNumerousFields()  {
