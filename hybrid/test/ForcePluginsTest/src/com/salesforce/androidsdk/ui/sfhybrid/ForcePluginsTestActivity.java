@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.androidsdk;
+package com.salesforce.androidsdk.ui.sfhybrid;
 
 import java.net.URI;
 import java.net.URISyntaxException;

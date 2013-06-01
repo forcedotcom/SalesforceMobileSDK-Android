@@ -30,6 +30,7 @@ import android.app.Application;
 
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
+import com.salesforce.androidsdk.ui.sfhybrid.ForcePluginsTestActivity;
 
 /**
  * Test application for smart store plugin.
