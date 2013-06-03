@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import java.util.Arrays;
+import java.util.List;
+
 import com.salesforce.androidsdk.util.JSTestCase;
 
 
@@ -38,6 +41,11 @@ public class SDKInfoJSTest extends JSTestCase {
         super("SDKInfoTestSuite");
     }
 
+    @Override
+    public List<String> getTestNames() {
+    	return Arrays.asList(new String[] {"testGetInfo"});
+    }
+    
     public void testGetInfo()  {
     	runTest("testGetInfo");
     }

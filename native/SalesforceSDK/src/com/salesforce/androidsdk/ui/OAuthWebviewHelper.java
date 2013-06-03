@@ -464,7 +464,7 @@ public class OAuthWebviewHelper {
     /**
      * Class encapsulating the parameters required to create a new account
      */
-    protected static class AccountOptions {
+    public static class AccountOptions {
         private static final String USER_ID = "userId";
         private static final String ORG_ID = "orgId";
         private static final String IDENTITY_URL = "identityUrl";
