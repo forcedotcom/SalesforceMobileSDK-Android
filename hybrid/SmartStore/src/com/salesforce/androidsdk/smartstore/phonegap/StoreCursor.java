@@ -32,7 +32,7 @@ public class StoreCursor {
 		
 		this.cursorId = LAST_ID++;
 		this.querySpec = querySpec;
-		this.totalPages = countRows / querySpec.pageSize + 1;
+		this.totalPages = (int) Math.ceil( (double) countRows / querySpec.pageSize);
 		this.currentPageIndex = 0;
 	}
 	

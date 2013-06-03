@@ -123,6 +123,20 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
 	/**
 	 * Initializes components required for this class
 	 * to properly function. This method should be called
+	 * by hybrid apps that use a subclass of SalesforceDroidGapActivity.
+	 *
+	 * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param mainActivity Main activity.
+     * @param loginActivity Login activity.
+	 */
+    public static void initHybrid(Context context, KeyInterface keyImpl, Class<? extends SalesforceDroidGapActivity> mainActivity, Class<? extends Activity> loginActivity) {
+    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity, loginActivity);
+    }
+    
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
 	 * by native apps using the Salesforce Mobile SDK.
 	 *
 	 * @param context Application context.

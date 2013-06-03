@@ -110,7 +110,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		bootconfig = BootConfig.getBootConfig(this);
 
         // Get clientManager
-        clientManager = new ClientManager(this, SalesforceSDKManager.getInstance().getAccountType(), SalesforceSDKManager.getInstance().getLoginOptions(), SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
+        clientManager = buildClientManager();
 		
         // Get client (if already logged in)
         try {
@@ -129,6 +129,10 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		// Let observers know
 		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
     }
+
+	protected ClientManager buildClientManager() {
+		return new ClientManager(this, SalesforceSDKManager.getInstance().getAccountType(), SalesforceSDKManager.getInstance().getLoginOptions(), SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
+	}
 
     @Override
     public void init(CordovaWebView webView, CordovaWebViewClient webViewClient, CordovaChromeClient webChromeClient) {
