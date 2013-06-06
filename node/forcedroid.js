@@ -35,7 +35,7 @@ var exec = require('child_process').exec;
 var path = require('path');
 var shellJs = require('shelljs');
 var fs = require('fs');
-var commandLineUtils = require('./commandLineUtils');
+var commandLineUtils = require('../external/shared/node/commandLineUtils');
 
 var outputColors = {
     'green': '\x1b[32;1m',
@@ -54,41 +54,34 @@ if (typeof command !== 'string') {
     process.exit(1);
 }
 
-var commandLineArgsMap = commandLineUtils.parseArgs(commandLineArgs);
-if (commandLineArgsMap === null) {
-    console.log('Command line args could not be processed.');
-    usage();
-    process.exit(2);
-}
-
-switch  (command) {
-    case 'create':
-      createApp();
-      break;
-    default:
-      console.log('Unknown option: \'' + command + '\'.');
-      usage();
-      process.exit(2);
-}
+// Set up the input argument processing / validation.
+var argProcessorList = createArgProcessorList();
+var commandLineArgsMap;
+commandLineUtils.processArgsInteractive(commandLineArgs, argProcessorList, function (outputArgsMap) {
+    commandLineArgsMap = outputArgsMap;
+    switch  (command) {
+        case 'create':
+            createApp();
+            break;
+        default:
+            console.log('Unknown option: \'' + command + '\'.');
+            usage();
+            process.exit(2);
+    }
+});
 
 function usage() {
-    console.log('Usage:');
-    console.log('forcedroid create');
+    console.log(outputColors.cyan + 'Usage:');
+    console.log(outputColors.magenta + 'forcedroid create');
     console.log('    --apptype=<Application Type> (native, hybrid_remote, hybrid_local)');
     console.log('    --appname=<Application Name>');
     console.log('    --targetdir=<Target App Folder>');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
-    console.log('    --apexpage=<Path to Apex start page> (/apex/MyPage — Only required/used for \'hybrid_remote\'');
-    console.log('    [--usesmartstore=<Whether or not to use SmartStore> (--usesmartstore=true — false by default)]');
+    console.log('    --apexpage=<Path to Apex start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
+    console.log('    [--usesmartstore=<Whether or not to use SmartStore> (\'true\' or \'false\'. false by default)]' + outputColors.reset);
 }
 
 function createApp() {
-    var argsAreValid = validateCreateAppArgs();
-    if (!argsAreValid) {
-        console.log('Args for creating an app are not valid.');
-        usage();
-        process.exit(3);
-    }
 
     // The destination project directory, in the target directory.
     var projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
@@ -224,42 +217,6 @@ function createApp() {
         + outputColors.magenta + relativeBootConfigPath + '.' + outputColors.reset);
 }
 
-function validateCreateAppArgs() {
-    // Check required args.
-    var allRequiredArgs = commandLineUtils.requiredArgsPresent(commandLineArgsMap, [ 'apptype', 'appname', 'targetdir', 'packagename' ]);
-    if (!allRequiredArgs) return false;
-
-    // App type
-    var appType = commandLineArgsMap.apptype;
-    if (appType !== 'native' && appType !== 'hybrid_remote' && appType !== 'hybrid_local') {
-        console.log('Unrecognized app type: ' + appType);
-        return false;
-    }
-    if (appType === 'hybrid_remote') {
-        var apexPagePresent = commandLineUtils.requiredArgsPresent(commandLineArgsMap, [ 'apexpage' ]);
-        if (!apexPagePresent)
-            return false;
-    }
-
-    // Package name
-    var validPackageRegExp = /^[a-z]+[a-z0-9_]*(\.[a-z]+[a-z0-9_]*)*$/;
-    if (!validPackageRegExp.test(commandLineArgsMap.packagename)) {
-        console.log('\'' + commandLineArgsMap.packagename + '\' is not a valid package name.');
-        return false;
-    }
-
-    // Convert usesmartstore, if present.
-    if (typeof commandLineArgsMap.usesmartstore !== 'undefined') {
-        var trimmedVal = commandLineArgsMap.usesmartstore.trim();
-        commandLineArgsMap.usesmartstore = (trimmedVal === 'true');
-    }
-
-    // Full path for targetdir.
-    commandLineArgsMap.targetdir = path.resolve(commandLineArgsMap.targetdir);
-
-    return true;
-}
-
 function configureInputAppProperties(projectDir) {
     var inputProperties = {};
     switch (commandLineArgsMap.apptype) {
@@ -313,4 +270,79 @@ function getTemplateSourceFilePaths(appInputProperties, projectDir) {
     });
 
     return srcFilesArray;
+}
+
+// -----
+// Input argument validation / processing.
+// -----
+
+function createArgProcessorList() {
+    var argProcessorList = new commandLineUtils.ArgProcessorList();
+
+    // App type
+    argProcessorList.addArgProcessor('apptype', 'Enter your application type (native, hybrid_remote, or hybrid_local):', function(appType) {
+        appType = appType.trim();
+        if (appType !== 'native' && appType !== 'hybrid_remote' && appType !== 'hybrid_local')
+            return new commandLineUtils.ArgProcessorOutput(false, 'App type must be native, hybrid_remote, or hybrid_local.');
+
+        return new commandLineUtils.ArgProcessorOutput(true, appType);
+    });
+
+    // App name
+    argProcessorList.addArgProcessor('appname', 'Enter your application name:', function(appName) {
+        if (appName.trim() === '')
+            return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for app name: \'' + appName + '\'');
+        
+        return new commandLineUtils.ArgProcessorOutput(true, appName.trim());
+    });
+
+    // Target dir
+    argProcessorList.addArgProcessor('targetdir', 'Enter the target directory of your app:', function(targetDir) {
+        if (targetDir.trim() === '')
+            return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for target dir: \'' + targetDir + '\'');
+        
+        return new commandLineUtils.ArgProcessorOutput(true, targetDir.trim());
+    });
+
+    // Package name
+    argProcessorList.addArgProcessor('packagename', 'Enter the package name for your app (com.mycompany.my_app):', function(packageName) {
+        if (packageName.trim() === '')
+            return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for package name: \'' + packageName + '\'');
+
+        packageName = packageName.trim();
+        var validPackageRegExp = /^[a-z]+[a-z0-9_]*(\.[a-z]+[a-z0-9_]*)*$/;
+        if (!validPackageRegExp.test(packageName)) {
+            return new commandLineUtils.ArgProcessorOutput(false, '\'' + packageName + '\' is not a valid Java package name.');
+        }
+        
+        return new commandLineUtils.ArgProcessorOutput(true, packageName);
+    });
+
+    // Apex page
+    argProcessorList.addArgProcessor(
+        'apexpage',
+        'Enter the Apex page for your app (only applicable for hybrid_remote apps):',
+        function(apexPage, argsMap) {
+            if (argsMap && argsMap.apptype === 'hybrid_remote') {
+                if (apexPage.trim() === '')
+                    return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for Apex page: \'' + apexPage + '\'');
+
+                return new commandLineUtils.ArgProcessorOutput(true, apexPage.trim());
+            }
+
+            // Unset any value here, as it doesn't apply for non-remote apps.
+            return new commandLineUtils.ArgProcessorOutput(true, undefined);
+        },
+        function (argsMap) {
+            return (argsMap['apptype'] === 'hybrid_remote');
+        }
+    );
+
+    // Use SmartStore
+    argProcessorList.addArgProcessor('usesmartstore', 'Do you want to use SmartStore in your app? [yes/NO] (\'No\' by default)', function(useSmartStore) {
+        var boolUseSmartStore = (useSmartStore.trim().toLowerCase() === 'yes');
+        return new commandLineUtils.ArgProcessorOutput(true, boolUseSmartStore);
+    });
+
+    return argProcessorList;
 }
