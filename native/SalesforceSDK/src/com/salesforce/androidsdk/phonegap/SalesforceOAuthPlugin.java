@@ -61,7 +61,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
         try {
             action = Action.valueOf(actionStr);
             switch(action) {
-                case authenticate:       	authenticate(args, callbackContext); return true;
+                case authenticate:       	authenticate(callbackContext); return true;
                 case getAuthCredentials: 	getAuthCredentials(callbackContext); return true;
                 case logoutCurrentUser:		logoutCurrentUser(callbackContext); return true;
                 case getAppHomeUrl:			getAppHomeUrl(callbackContext); return true;
@@ -74,12 +74,11 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
 
     /**
      * Native implementation for "authenticate" action
-     * @param args The arguments used for authentication.
      * @param callbackContext Used when calling back into Javascript.
      * @return NO_RESULT since authentication is asynchronous.
      * @throws JSONException
      */
-    protected void authenticate(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+    protected void authenticate(final CallbackContext callbackContext) throws JSONException {
         Log.i("SalesforceOAuthPlugin.authenticate", "authenticate called");
         ((SalesforceDroidGapActivity) cordova.getActivity()).authenticate(callbackContext);
 

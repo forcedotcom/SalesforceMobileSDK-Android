@@ -418,7 +418,7 @@ public class ClientManager {
          * @param clientManager
          * @param refreshToken
          */
-        AccMgrAuthTokenProvider(ClientManager clientManager, String authToken, String refreshToken) {
+        public AccMgrAuthTokenProvider(ClientManager clientManager, String authToken, String refreshToken) {
             this.clientManager = clientManager;
             this.refreshToken = refreshToken;
             lastNewAuthToken = authToken;
@@ -514,7 +514,7 @@ public class ClientManager {
             super(msg);
         }
 
-        AccountInfoNotFoundException(String msg, Throwable cause) {
+        public AccountInfoNotFoundException(String msg, Throwable cause) {
             super(msg, cause);
         }
     }

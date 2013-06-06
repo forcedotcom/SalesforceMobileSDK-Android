@@ -367,7 +367,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Wait for getRestClient to complete
         try {
-            RestClient restClient = q.poll(5L, TimeUnit.SECONDS);
+            RestClient restClient = q.poll(10L, TimeUnit.SECONDS);
             assertNotNull("RestClient expected", restClient);
             assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
             assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
@@ -402,7 +402,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Wait for removeAccountAsync to complete
         try {
-            AccountManagerFuture<Boolean> f = q.poll(5L, TimeUnit.SECONDS);
+            AccountManagerFuture<Boolean> f = q.poll(10L, TimeUnit.SECONDS);
             assertNotNull("AccountManagerFuture expected", f);
             assertTrue("Removal should have returned true", f.getResult());
 
