@@ -48,7 +48,6 @@ usage ()
     echo "        RestExplorer"
     echo "        NativeSqlAggregator"
     echo "        TemplateApp"
-    echo "        CloudTunes"
     echo "        AccountEditor"
     echo "        ContactExplorer"
     echo "        VFConnector"
@@ -152,7 +151,6 @@ else
 
     build_project_if_requested "SalesforceSDK" $NATIVE_TOP/SalesforceSDK
     build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp
-    build_project_if_requested "CloudTunes" $NATIVE_TOP/SampleApps/CloudTunes
     build_project_if_requested "RestExplorer" $NATIVE_TOP/SampleApps/RestExplorer
     build_project_if_requested "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator
     build_project_if_requested "SmartStore" $HYBRID_TOP/SmartStore
