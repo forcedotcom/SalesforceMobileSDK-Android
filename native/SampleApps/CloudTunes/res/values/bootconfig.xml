@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-
-<resources>
-    <string name="remoteAccessConsumerKey">3MVG99OxTyEMCQ3jIW9bdxrL5aJlXdyvLAP19dMkZdjNoxbM8s5GkcRHWMTcVYsxqRiBc0K1won7l_.oE4oNA</string>
-    <string name="oauthRedirectURI">sfdc:///axm/detect/oauth/done</string>
-    <string-array name="oauthScopes">
-        <item>api</item>
-    </string-array>
-</resources>
