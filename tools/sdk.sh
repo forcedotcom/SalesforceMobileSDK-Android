@@ -51,7 +51,6 @@ usage ()
     echo "        AccountEditor"
     echo "        ContactExplorer"
     echo "        VFConnector"
-    echo "        SFDCAccounts"
     echo "        SmartStoreExplorer"
     echo "        SalesforceSDKTest"
     echo "        RestExplorerTest"
@@ -59,7 +58,6 @@ usage ()
     echo "        ContactExplorerTest"
     echo "        ForcePluginsTest"
     echo "        VFConnectorTest"
-    echo "        SFDCAccountsTest"
     echo "        SmartStoreExplorerTest"
     echo "    <test_target> can be "
     echo "        all"
@@ -70,7 +68,6 @@ usage ()
     echo "        ContactExplorerTest"
     echo "        ForcePluginsTest"
     echo "        VFConnectorTest"
-    echo "        SFDCAccountsTest"
     echo "        SmartStoreExplorerTest"
 }
 
@@ -156,7 +153,6 @@ else
     build_project_if_requested "SmartStore" $HYBRID_TOP/SmartStore
     build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor
     build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer
-    build_project_if_requested "SFDCAccounts" $HYBRID_TOP/SampleApps/SFDCAccounts
     build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer
     build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector
 
@@ -166,7 +162,6 @@ else
     build_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest .
     build_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest .
     build_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/test/ContactExplorerTest ../../ContactExplorer
-    build_test_project_if_requested "SFDCAccountsTest" $HYBRID_TOP/SampleApps/test/SFDCAccountsTest ../../SFDCAccounts
     build_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/test/SmartStoreExplorerTest ../../SmartStoreExplorer
     build_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/test/VFConnectorTest ../../VFConnector
 
@@ -176,7 +171,6 @@ else
     run_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest
     run_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest
     run_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/test/ContactExplorerTest
-    run_test_project_if_requested "SFDCAccountsTest" $HYBRID_TOP/SampleApps/test/SFDCAccountsTest
     run_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/test/SmartStoreExplorerTest
     run_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/test/VFConnectorTest
 fi
