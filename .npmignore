@@ -1,9 +1,7 @@
 hybrid/SampleApps/AccountEditor/bin/
 hybrid/SampleApps/ContactExplorer/bin/
-hybrid/SampleApps/SFDCAccounts/bin/
 hybrid/SampleApps/SmartStoreExplorer/bin/
 hybrid/SampleApps/test/ContactExplorerTest/bin/
-hybrid/SampleApps/test/SFDCAccountsTest/bin/
 hybrid/SampleApps/test/SmartStoreExplorerTest/bin/
 hybrid/SampleApps/test/VFConnectorTest/bin/
 hybrid/SampleApps/VFConnector/bin/
@@ -20,10 +18,8 @@ native/test/TemplateAppTest/bin/
 
 hybrid/SampleApps/AccountEditor/gen/
 hybrid/SampleApps/ContactExplorer/gen/
-hybrid/SampleApps/SFDCAccounts/gen/
 hybrid/SampleApps/SmartStoreExplorer/gen/
 hybrid/SampleApps/test/ContactExplorerTest/gen/
-hybrid/SampleApps/test/SFDCAccountsTest/gen/
 hybrid/SampleApps/test/SmartStoreExplorerTest/gen/
 hybrid/SampleApps/test/VFConnectorTest/gen/
 hybrid/SampleApps/VFConnector/gen/
