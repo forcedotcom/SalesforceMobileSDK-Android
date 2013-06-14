@@ -36,14 +36,7 @@ var path = require('path');
 var shellJs = require('shelljs');
 var fs = require('fs');
 var commandLineUtils = require('../external/shared/node/commandLineUtils');
-
-var outputColors = {
-    'green': '\x1b[32;1m',
-    'yellow': '\x1b[33;1m',
-    'magenta': '\x1b[35;1m',
-    'cyan': '\x1b[36;1m',
-    'reset': '\x1b[0m'
-}
+var outputColors = require('../external/shared/node/outputColors');
 
 var packageSdkRootDir = path.resolve(__dirname, '..');
 
@@ -85,6 +78,10 @@ function createApp() {
 
     // The destination project directory, in the target directory.
     var projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
+    if (fs.existsSync(projectDir)) {
+        console.log('App folder path \'' + projectDir + '\' already exists.  Cannot continue.');
+        process.exit(3);
+    }
 
     var appInputProperties = configureInputAppProperties(projectDir);
 
@@ -98,13 +95,17 @@ function createApp() {
         process.exit(4);
     }
 
-    // Copy the SDK into the app folder as well.
-    shellJs.cp('-R', packageSdkRootDir, commandLineArgsMap.targetdir);
-    if (shellJs.error()) {
-        console.log('There was an error copying the SDK directory from \'' + packageSdkRootDir + '\' to \'' + commandLineArgsMap.targetdir + '\': ' + shellJs.error());
-        process.exit(5);
-    }
+    // Copy the SDK into the app folder as well, if it's not already there.
     var destSdkDir = path.join(commandLineArgsMap.targetdir, path.basename(packageSdkRootDir));
+    if (!fs.existsSync(destSdkDir)) {
+        shellJs.cp('-R', packageSdkRootDir, commandLineArgsMap.targetdir);
+        if (shellJs.error()) {
+            console.log('There was an error copying the SDK directory from \'' + packageSdkRootDir + '\' to \'' + commandLineArgsMap.targetdir + '\': ' + shellJs.error());
+            process.exit(5);
+        }
+    } else {
+        console.log(outputColors.cyan + 'INFO:' + outputColors.reset + ' SDK directory \'' + destSdkDir + '\' already exists.  Skipping copy.');
+    }
 
     var contentFilesWithReplacements = makeContentReplacementPathsArray(appInputProperties, projectDir);
 
