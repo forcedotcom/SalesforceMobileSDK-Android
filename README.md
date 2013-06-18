@@ -1,5 +1,7 @@
 # Salesforce.com Mobile SDK for Android
 
+**Note:** For npm package details, see the [npm.md doc](https://github.com/forcedotcom/SalesforceMobileSDK-Android/blob/master/npm.md).
+
 Installation (do this first - really)
 ==
 After cloning the SalesforceMobileSDK-Android project from github, run the install script from the command line:
