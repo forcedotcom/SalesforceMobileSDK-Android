@@ -27,6 +27,8 @@
  
 var fs = require('fs');
 var path = require('path');
+var isWindows = (process.platform === "win32");
+var pathSep = path.sep || (isWindows ? '\\' : '/');
 
 module.exports.getSymLinkFiles = function() {
 	var symlinkFilesPath = path.resolve(path.join(__dirname, '..', 'tools', 'symlink_files.txt'));
@@ -44,9 +46,9 @@ module.exports.getSymLinkFiles = function() {
 		filesLine = filesLine.trim();
 		if (filesLine !== '') {
 			var sourceDestRegExp = /"([^"]+)"\s+"([^"]+)"/;
-			var sourceFile = filesLine.replace(sourceDestRegExp, '$1').replace(/\\/g, path.sep);
+			var sourceFile = filesLine.replace(sourceDestRegExp, '$1').replace(/\\/g, pathSep);
 			sourceFile = path.resolve(path.join(__dirname, '..', sourceFile));
-			var destFile = filesLine.replace(sourceDestRegExp, '$2').replace(/\\/g, path.sep);
+			var destFile = filesLine.replace(sourceDestRegExp, '$2').replace(/\\/g, pathSep);
 			destFile = path.resolve(path.join(__dirname, '..', destFile));
 			outLines.push({ 'sourceFile': sourceFile, 'destFile': destFile });
 		}
