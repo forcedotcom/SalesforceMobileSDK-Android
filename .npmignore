@@ -1,0 +1,10 @@
+.metadata/
+external/
+hybrid/
+native/
+tools/
+.gitmodules
+UPGRADE.md
+build.xml
+install.sh
+install.vbs
