@@ -39,7 +39,7 @@ Introduction
 - Changed the package name of the SmartStore library, so that it can coexist with other library projects.
 - Added support for community users to login.
 - Consolidated our Cordova JS plugins and utility code into one file (cordova.force.js).
-- Updated forcetk.js and renamed to forcetk.mobilesdk.js, to pull in the latest functionality from ForceTK and enhance its ability to work with the Mobile SDK authentication process.
+- Updated `forcetk.js` and renamed to `forcetk.mobilesdk.js`, to pull in the latest functionality from ForceTK and enhance its ability to work with the Mobile SDK authentication process.
 - Fixed session state rehydration for Visualforce apps, in the event of session timeouts during JavaScript Remoting calls in Visualforce.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials
