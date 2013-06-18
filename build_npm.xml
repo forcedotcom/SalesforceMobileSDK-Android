@@ -1,0 +1,17 @@
+<project name="SalesforceMobileSDK-Android-Package" basedir="." default="makeNpm">
+    
+    <target name="makeNpm">
+        <!-- Make the npm package -->
+        <echo>--- Creating the npm package ---</echo>
+        <exec executable="npm" failonerror="true" logError="true">
+            <arg value="pack" />
+            <arg file="." />
+        </exec>
+        
+        <!-- Reset the repo (post-publish) -->
+        <echo>--- Reverting the symbolic links ---</echo>
+        <exec executable="node" failonerror="true" logError="true">
+            <arg file="node/postpublish.js" />
+        </exec>
+    </target>
+</project>
