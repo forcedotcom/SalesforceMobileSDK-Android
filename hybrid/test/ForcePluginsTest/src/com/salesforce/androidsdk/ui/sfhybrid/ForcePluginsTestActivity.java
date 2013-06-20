@@ -38,7 +38,7 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
-import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 
 /**
  * Sub-class of SalesforceDroidGapActivity that authenticates using hard-coded credentials

@@ -38,7 +38,7 @@ import android.util.Log;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin;
 import com.salesforce.androidsdk.phonegap.TestRunnerPlugin.TestResult;
-import com.salesforce.androidsdk.ui.sfhyrbid.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
