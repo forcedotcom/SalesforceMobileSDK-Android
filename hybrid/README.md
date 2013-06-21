@@ -63,14 +63,14 @@ Put your html/js in ${target.dir}/assets/www/.
 
 To create a new hybrid application with remote html/js simply do:
 <pre>
-ant create_hybrid_vf -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} -Dapex.page={apexPage} [-Duse.smartstore=true]
+ant create_hybrid_remote -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} -Dstart.page={startPage} [-Duse.smartstore=true]
 </pre>
 
 Where:
 * appName: the name for the new application 
 * targetDir: the directory where the code should reside 
 * packageName: the java package for the new application e.g. com.acme.mobileapp
-* apexPage: the apex page for the application e.g. /apex/MyFirstApp
+* startPage: the remote start page for the application e.g. /apex/MyFirstApp
 * only pass -Duse.smartstore=true if you want SmartStore support
 
 

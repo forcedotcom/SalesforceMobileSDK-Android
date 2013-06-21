@@ -70,7 +70,7 @@ function usage() {
     console.log('    --appname=<Application Name>');
     console.log('    --targetdir=<Target App Folder>');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
-    console.log('    --apexpage=<Path to Apex start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
+    console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
     console.log('    [--usesmartstore=<Whether or not to use SmartStore> (\'true\' or \'false\'. false by default)]' + outputColors.reset);
 }
 
@@ -180,11 +180,11 @@ function createApp() {
             appClassPath);
     }
 
-    // If it's a hybrid remote app, replace the Apex page.
+    // If it's a hybrid remote app, replace the start page.
     if (commandLineArgsMap.apptype === 'hybrid_remote') {
-        console.log('Changing Visualforce page reference in ' + appInputProperties.bootConfigPath + '.');
-        var templateVfPageRegExp = /\/apex\/BasicVFPage/g;
-        shellJs.sed('-i', templateVfPageRegExp, commandLineArgsMap.apexpage, appInputProperties.bootConfigPath);
+        console.log('Changing remote page reference in ' + appInputProperties.bootConfigPath + '.');
+        var templateRemotePageRegExp = /\/apex\/BasicVFPage/g;
+        shellJs.sed('-i', templateRemotePageRegExp, commandLineArgsMap.startpage, appInputProperties.bootConfigPath);
     }
 
     // Inform the user of next steps.
@@ -319,16 +319,16 @@ function createArgProcessorList() {
         return new commandLineUtils.ArgProcessorOutput(true, packageName);
     });
 
-    // Apex page
+    // Start page
     argProcessorList.addArgProcessor(
-        'apexpage',
-        'Enter the Apex page for your app (only applicable for hybrid_remote apps):',
-        function(apexPage, argsMap) {
+        'startpage',
+        'Enter the start page for your app (only applicable for hybrid_remote apps):',
+        function(startPage, argsMap) {
             if (argsMap && argsMap.apptype === 'hybrid_remote') {
-                if (apexPage.trim() === '')
-                    return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for Apex page: \'' + apexPage + '\'');
+                if (startPage.trim() === '')
+                    return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for start page: \'' + startPage + '\'');
 
-                return new commandLineUtils.ArgProcessorOutput(true, apexPage.trim());
+                return new commandLineUtils.ArgProcessorOutput(true, startPage.trim());
             }
 
             // Unset any value here, as it doesn't apply for non-remote apps.
