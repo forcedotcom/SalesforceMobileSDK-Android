@@ -3,6 +3,10 @@ com.salesforce.androidsdk.auth
 com.salesforce.androidsdk.phonegap
 com.salesforce.androidsdk.rest
 com.salesforce.androidsdk.security
-com.salesforce.androidsdk.store
+com.salesforce.androidsdk.smartstore.app
+com.salesforce.androidsdk.smartstore.phonegap
+com.salesforce.androidsdk.smartstore.store
 com.salesforce.androidsdk.ui
+com.salesforce.androidsdk.ui.sfhybrid
+com.salesforce.androidsdk.ui.sfnative
 com.salesforce.androidsdk.util
