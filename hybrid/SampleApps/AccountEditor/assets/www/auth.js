@@ -1,1 +1,1 @@
-../../../../../external/shared/SampleApps/entity/auth.js
+../../../../../external/shared/SampleApps/smartsync/auth.js
