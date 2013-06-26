@@ -33,17 +33,17 @@ import com.salesforce.androidsdk.util.JSTestCase;
 
 
 /**
- * Running javascript tests for entity framework
+ * Running javascript tests for smart sync library
  */
-public class ForceEntityJSTest extends JSTestCase {
+public class SmartSyncJSTest extends JSTestCase {
 
-    public ForceEntityJSTest() {
-        super("ForceEntityTestSuite");
+    public SmartSyncJSTest() {
+        super("SmartSyncTestSuite");
     }
     
     @Override
     public List<String> getTestNames() {
-    	return Arrays.asList(new String[] {"testCollectionFetch", "testFetchSObjects", "testFetchSObjectsFromCache", "testFetchSObjectsFromServer", "testSObjectDestroy", "testSObjectFetch", "testSObjectSave", "testSObjectTypeDescribe", "testSObjectTypeGetMetadata", "testSObjectTypeRest", "testStoreCacheAddLocalFields", "testStoreCacheFind", "testStoreCacheInit", "testStoreCacheRemove", "testStoreCacheRetrieve", "testStoreCacheSave", "testStoreCacheSaveAll", "testSyncSObjectCreate", "testSyncSObjectDelete", "testSyncSObjectDetectConflictCreate", "testSyncSObjectDetectConflictDelete", "testSyncSObjectDetectConflictRetrieve", "testSyncSObjectDetectConflictUpdate", "testSyncSObjectRetrieve", "testSyncSObjectUpdate", "testSyncSObjectWithCacheCreate", "testSyncSObjectWithCacheDelete", "testSyncSObjectWithCacheRead", "testSyncSObjectWithCacheUpdate", "testSyncSObjectWithServerCreate", "testSyncSObjectWithServerDelete", "testSyncSObjectWithServerRead", "testSyncSObjectWithServerUpdate"});
+    	return Arrays.asList(new String[] {"testCollectionFetch", "testFetchSObjects", "testFetchSObjectsFromCache", "testFetchSObjectsFromServer", "testSObjectDestroy", "testSObjectFetch", "testSObjectSave", "testSObjectTypeDescribe", "testSObjectTypeGetMetadata", "testSObjectTypeDescribeLayout", "testSObjectTypeCacheMerge", "testMultiSObjectTypes", "testSObjectTypeReset", "testStoreCacheAddLocalFields", "testStoreCacheFind", "testStoreCacheInit", "testStoreCacheRemove", "testStoreCacheRetrieve", "testStoreCacheSave", "testStoreCacheSaveAll", "testSyncSObjectCreate", "testSyncSObjectDelete", "testSyncSObjectDetectConflictCreate", "testSyncSObjectDetectConflictDelete", "testSyncSObjectDetectConflictRetrieve", "testSyncSObjectDetectConflictUpdate", "testSyncSObjectRetrieve", "testSyncSObjectUpdate", "testSyncSObjectWithCacheCreate", "testSyncSObjectWithCacheDelete", "testSyncSObjectWithCacheRead", "testSyncSObjectWithCacheUpdate", "testSyncSObjectWithServerCreate", "testSyncSObjectWithServerDelete", "testSyncSObjectWithServerRead", "testSyncSObjectWithServerUpdate"});
     }
     
     public void testStoreCacheInit() {
@@ -82,8 +82,17 @@ public class ForceEntityJSTest extends JSTestCase {
         runTest("testSObjectTypeGetMetadata");
     }
 
-    public void testSObjectTypeRest() {
-        runTest("testSObjectTypeRest");
+    public void testSObjectTypeDescribeLayout() {
+        runTest("testSObjectTypeDescribeLayout");
+    }
+    public void testSObjectTypeCacheMerge() {
+        runTest("testSObjectTypeCacheMerge");
+    }
+    public void testMultiSObjectTypes() {
+        runTest("testMultiSObjectTypes");
+    }
+    public void testSObjectTypeReset() {
+        runTest("testSObjectTypeReset");
     }
 
     public void testSyncSObjectWithCacheCreate() {

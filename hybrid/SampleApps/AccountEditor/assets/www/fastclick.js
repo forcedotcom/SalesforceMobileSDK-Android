@@ -1,1 +1,1 @@
-../../../../../external/shared/SampleApps/entity/fastclick.js
+../../../../../external/shared/SampleApps/smartsync/fastclick.js
