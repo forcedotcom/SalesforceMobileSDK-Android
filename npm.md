@@ -38,7 +38,7 @@ Typing `forcedroid` with no arguments gives you a breakdown of the usage:
 
 **Note:** You can specify any or all of the arguments as command line options as specified in the usage.  If you run `forcedroid create` with missing arguments, it prompts you for each missing option interactively.
 
-Once the creation script completes, you'll have a fully functioning basic application of the type you specified.  The new application will be configured as an Eclipse project, in your target directory alongside the Mobile SDK libraries it consumes.
+Once the creation script completes, you'll have a fully functioning basic application of the type you specified.  The new application will be configured as an Eclipse project in your target directory, alongside the Mobile SDK libraries it consumes.
 
 ### forcedroid create options
 
@@ -56,11 +56,11 @@ Once the creation script completes, you'll have a fully functioning basic applic
 
 **Start Page:** \( *Required for hybrid\_remote apps only* \) The starting page of your application on salesforce.com.  This is the entry point of your remote application, though it's only the path, not the server portion of the URL.  For instance, `/apex/MyVisualforceStartPage`.
 
-**Use SmartStore:** \( *optional* \) Whether or not to use SmartStore in your app.  The value is `false` by default.  Set this value to `true` if you intend to use SmartStore in your app.
+**Use SmartStore:** \( *optional* \) Whether to use SmartStore in your app.  The value is `false` by default.  Set this value to `true` if you intend to use SmartStore in your app.
 
 ## More information
 
-- After your app has been created, you will see some on-screen instructions for next steps, such as building and running your app, importing the project into an Eclipse workspace, and changing the default Connected App (sample) configuration values to match your own Connected App.  Note that if you intend to work with your app inside of Eclipse, you are not required to go through the steps to build and run your app from the command line, and vice versa.
+- After your app has been created, you will see some on-screen instructions for next steps, such as building and running your app, importing the project into an Eclipse workspace, and changing the default Connected App (sample) configuration values to match your own Connected App.  Note that if you intend to work with your app in Eclipse, you are not required to go through the steps to build and run your app from the command line, and vice versa.
 
 - You can find the `forceios` npm package [here](https://npmjs.org/package/forceios), to develop Mobile SDK apps for iOS.
 
