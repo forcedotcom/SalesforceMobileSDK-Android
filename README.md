@@ -1,6 +1,6 @@
 # Salesforce.com Mobile SDK for Android
 
-**Note:** For npm package details, see the [npm.md doc](https://github.com/forcedotcom/SalesforceMobileSDK-Android/blob/master/npm.md).
+**Note:** For npm package details, see the [npm.md doc](https://github.com/forcedotcom/SalesforceMobileSDK-Android/blob/unstable20/npm.md).
 
 Installation (do this first - really)
 ==
