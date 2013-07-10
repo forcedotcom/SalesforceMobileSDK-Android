@@ -48,7 +48,7 @@ public class TemplateAppTest extends NativeInstrumentationTestCase {
 	 */
 //	public void testUserAgentOfHttpAccess() {
 //		String userAgent = HttpAccess.DEFAULT.getUserAgent();
-//		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + ForceApp.SDK_VERSION));
+//		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + SalesforceSDKManager.SDK_VERSION));
 //		assertTrue("User agent should contain Template/1.0 Native", userAgent.contains("Template/1.0 Native"));
 //	}
 	

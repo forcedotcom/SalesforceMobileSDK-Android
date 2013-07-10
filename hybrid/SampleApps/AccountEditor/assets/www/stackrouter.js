@@ -1,0 +1,1 @@
+../../../../../external/shared/SampleApps/smartsync/stackrouter.js

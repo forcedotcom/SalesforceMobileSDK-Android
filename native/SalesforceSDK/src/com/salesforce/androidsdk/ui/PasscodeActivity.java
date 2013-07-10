@@ -40,7 +40,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.security.PasscodeManager.PasscodeChangeReceiver;
 
@@ -74,7 +74,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         super.onCreate(savedInstanceState);
 
         // Object which allows reference to resources living outside the SDK.
-        salesforceR = ForceApp.APP.getSalesforceR();
+        salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
         setContentView(getLayoutId());
         final TextView forgotPasscodeView = getForgotPasscodeView();
         if (forgotPasscodeView != null) {
@@ -87,7 +87,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         instr = getInstructionsView();
         entry = getEntryView();
         entry.setOnEditorActionListener(this);
-        passcodeManager = ForceApp.APP.getPasscodeManager();
+        passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         setMode(passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create);
         Log.i("PasscodeActivity:onCreate", "Mode: " + getMode());
         logoutEnabled = true;
@@ -209,7 +209,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
                 } else {
                     passcodeManager.reset(this);
                     if (logoutEnabled) {
-                        ForceApp.APP.logout(this);
+                        SalesforceSDKManager.getInstance().logout(this);
                     }
                 }
             }
@@ -248,19 +248,19 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     }
 
     protected String getCreateTitle() {
-    	return String.format(getString(salesforceR.stringPasscodeCreateTitle()), ForceApp.APP.getAppDisplayString());
+    	return String.format(getString(salesforceR.stringPasscodeCreateTitle()), SalesforceSDKManager.getInstance().getAppDisplayString());
     }
 
     protected String getEnterTitle() {
-    	return String.format(getString(salesforceR.stringPasscodeEnterTitle()), ForceApp.APP.getAppDisplayString());
+    	return String.format(getString(salesforceR.stringPasscodeEnterTitle()), SalesforceSDKManager.getInstance().getAppDisplayString());
     }
 
     protected String getConfirmTitle() {
-    	return String.format(getString(salesforceR.stringPasscodeConfirmTitle()), ForceApp.APP.getAppDisplayString());
+    	return String.format(getString(salesforceR.stringPasscodeConfirmTitle()), SalesforceSDKManager.getInstance().getAppDisplayString());
     }
 
     protected String getEnterInstructions() {
-    	return String.format(getString(salesforceR.stringPasscodeEnterInstructions()), ForceApp.APP.getAppDisplayString());
+    	return String.format(getString(salesforceR.stringPasscodeEnterInstructions()), SalesforceSDKManager.getInstance().getAppDisplayString());
     }
 
     protected String getForgotPasscodeString() {
@@ -280,11 +280,11 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     }
 
     protected String getCreateInstructions() {
-    	return String.format(getString(salesforceR.stringPasscodeCreateInstructions()), ForceApp.APP.getAppDisplayString());
+    	return String.format(getString(salesforceR.stringPasscodeCreateInstructions()), SalesforceSDKManager.getInstance().getAppDisplayString());
     }
 
     protected String getConfirmInstructions() {
-    	return String.format(getString(salesforceR.stringPasscodeConfirmInstructions()), ForceApp.APP.getAppDisplayString());
+    	return String.format(getString(salesforceR.stringPasscodeConfirmInstructions()), SalesforceSDKManager.getInstance().getAppDisplayString());
     }
 
     protected String getMinLengthInstructions(int minPasscodeLength) {
@@ -352,7 +352,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             @Override
             public void onClick(DialogInterface dialog,
                     int which) {
-            	ForceApp.APP.logout(PasscodeActivity.this);
+            	SalesforceSDKManager.getInstance().logout(PasscodeActivity.this);
             }
         }).setNegativeButton(getLogoutNoString(),
         		new DialogInterface.OnClickListener() {

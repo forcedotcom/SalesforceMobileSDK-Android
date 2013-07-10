@@ -29,7 +29,6 @@ package com.salesforce.androidsdk;
 import android.content.Context;
 import com.salesforce.androidsdk.tests.R;
 
-
 /**
  * Authentication credentials used to make live server calls in tests
  *
@@ -62,8 +61,7 @@ public class TestCredentials {
         LOGIN_URL = ctx.getString(R.string.login_url);
         INSTANCE_URL = ctx.getString(R.string.instance_url);
         IDENTITY_URL = ctx.getString(R.string.identity_url);
-        CLIENT_ID = ctx.getString(R.string.oauth_client_id);
+        CLIENT_ID = ctx.getString(R.string.remoteAccessConsumerKey);
         REFRESH_TOKEN = ctx.getString(R.string.oauth_refresh_token);
     }
-
 }

@@ -26,23 +26,18 @@
  */
 package com.salesforce.samples.restexplorer;
 
-import android.app.Activity;
+import android.app.Application;
 
-import com.salesforce.androidsdk.app.ForceApp;
-import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
- * Application class for our rest explorer
+ * Application class for the rest explorer app.
  */
-public class RestExplorerApp extends ForceApp {
+public class RestExplorerApp extends Application {
 
 	@Override
-	public Class<? extends Activity> getMainActivityClass() {
-		return ExplorerActivity.class;
-	}
-	
-	@Override
-	protected String getKey(String name) {
-		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
+	public void onCreate() {
+		super.onCreate();
+		SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(), ExplorerActivity.class);
 	}
 }

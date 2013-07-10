@@ -103,4 +103,7 @@ public class SalesforceR {
 	public int stringSSLUntrusted() {return R.string.sf__ssl_untrusted;}
 	public int stringSSLUnknownError() {return R.string.sf__ssl_unknown_error;}
 	public int stringAccessTokenRevoked() {return R.string.sf__access_token_revoked;}
+	/* Manage space activity */
+	public int layoutManageSpace() {return R.layout.sf__manage_space;}
+	public int stringManageSpaceConfirmation() {return R.string.sf__manage_space_confirmation;}
 }

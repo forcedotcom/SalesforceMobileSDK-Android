@@ -39,7 +39,7 @@ import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.SalesforceR;
 
 /**
@@ -211,7 +211,7 @@ public class LoginServerManager {
 	 * Return production and sandbox as the login servers (only called when servers.xml is missing)
 	 */
 	List<LoginServer> getLegacyLoginServers() {
-		SalesforceR salesforceR = ForceApp.APP.getSalesforceR();
+		SalesforceR salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
 		List<LoginServer> loginServers = new ArrayList<LoginServer>();
 
 		int index = 0;
