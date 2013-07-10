@@ -31,13 +31,23 @@ var exec = require('child_process').exec;
 var path = require('path');
 var publishUtils = require('./publishutils');
 
-// Do this from the root of the git repo.
-var absGitRepoPath = path.resolve(__dirname, '..');
-process.chdir(absGitRepoPath);
+// Move the original README back into place.
+var readmePath = path.resolve(path.join(__dirname, '..', 'README.md'));
+var readmeBackupPath = readmePath + '.orig';
+console.log('Moving original repo README file back into place.');
+exec('mv "' + readmeBackupPath + '" "' + readmePath + '"', function (error, stdout, stderr) {
+	if (error) {
+		console.log('WARNING: Could not move ' + read + ' to ' + readmePath + '.');
+	}
 
-var symLinkEntries = publishUtils.getSymLinkFiles();
-gitRevertSymLinks(symLinkEntries, function() {
-	console.log('Finished reverting symlink files in git.');
+	// Revert symlinks from the root of the git repo.
+	var absGitRepoPath = path.resolve(__dirname, '..');
+	process.chdir(absGitRepoPath);
+
+	var symLinkEntries = publishUtils.getSymLinkFiles();
+	gitRevertSymLinks(symLinkEntries, function() {
+		console.log('Finished reverting symlink files in git.');
+	});
 });
 
 function gitRevertSymLinks(symLinkEntries, callback) {
