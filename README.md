@@ -1,9 +1,13 @@
 # Salesforce.com Mobile SDK for Android
 
-**Note:** For npm package details, see the [npm.md doc](https://github.com/forcedotcom/SalesforceMobileSDK-Android/blob/master/npm.md).
+You have arrived at the source repository for the Salesforce Mobile SDK for Android. Welcome! Starting with our 2.0 release, there are now two ways you can choose to work with the Mobile SDK:
+
+- If you'd like to work with the source code of the SDK itself, you've come to the right place! You can browse sample app source code and debug down through the layers to get a feel for how everything works under the covers. Read on for instructions on how to get started with the SDK in your development environment.
+- If you're just eager to start developing your own application, the quickest way is to use our npm binary distribution package, called [forcedroid](https://npmjs.org/package/forcedroid), which is hosted on [npmjs.org](https://npmjs.org/). Getting started is as simple as installing the npm package and launching your template app. You'll find more details on the forcedroid package page.
 
 Installation (do this first - really)
 ==
+
 After cloning the SalesforceMobileSDK-Android project from github, run the install script from the command line:
 
 `./install.sh`
