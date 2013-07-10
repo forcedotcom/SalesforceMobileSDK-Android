@@ -40,13 +40,32 @@ var path = require('path');
 var exec = require('child_process').exec;
 var publishUtils = require('./publishutils');
 
-// Make hard copies of symlink files.  npm does not pack symlinks.
-var symLinkFileEntries = publishUtils.getSymLinkFiles();
-resolveSymLinks(symLinkFileEntries, function(success, msg) {
-	if (msg) console.log(msg);
-	if (!success) {
-		process.exit(2);
+// Use npm.md as the README for the package.
+var readmePath = path.resolve(path.join(__dirname, '..', 'README.md'));
+var readmeBackupPath = readmePath + '.orig';
+var npmMdPath = path.resolve(path.join(__dirname, '..', 'npm.md'));
+console.log('Using ' + npmMdPath + ' as the README.md file for the package.');
+exec('mv "' + readmePath + '" "' + readmeBackupPath + '"', function (error, stdout, stderr) {
+	if (error) {
+		console.log('FATAL: Could not move ' + readmePath + ' to ' + readmeBackupPath + '.');
+		process.exit(3);
 	}
+
+	exec('cp "' + npmMdPath + '" "' + readmePath + '"', function (error, stdout, stderr) {
+		if (error) {
+			console.log('FATAL: Could not copy ' + npmMdPath + ' to ' + readmePath + '.');
+			process.exit(4);
+		}
+
+		// Make hard copies of symlink files.  npm does not pack symlinks.
+		var symLinkFileEntries = publishUtils.getSymLinkFiles();
+		resolveSymLinks(symLinkFileEntries, function(success, msg) {
+			if (msg) console.log(msg);
+			if (!success) {
+				process.exit(2);
+			}
+		});
+	});
 });
 
 function resolveSymLinks(symLinkFileEntries, callback) {
