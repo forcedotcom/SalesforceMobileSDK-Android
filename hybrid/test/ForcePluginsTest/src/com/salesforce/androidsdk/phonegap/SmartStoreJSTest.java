@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
+import java.util.Arrays;
+import java.util.List;
+
 import com.salesforce.androidsdk.util.JSTestCase;
 
 /**
@@ -37,6 +40,11 @@ public class SmartStoreJSTest extends JSTestCase {
         super("SmartStoreTestSuite");
     }
 
+    @Override
+    public List<String> getTestNames() {
+    	return Arrays.asList(new String[] {"testSmartQueryWithCount", "testSmartQueryWithSpecialFields", "testArbitrarySoupNames", "testCompoundQueryPath", "testEmptyQuerySpec", "testIntegerQuerySpec", "testLikeQueryInnerText", "testLikeQuerySpecEndsWith", "testLikeQuerySpecStartsWith", "testManipulateCursor", "testMoveCursorToNextPageFromLastPage", "testMoveCursorToPreviousPageFromFirstPage", "testQuerySoup", "testQuerySoupBadQuerySpec", "testQuerySoupBeginKeyNoEndKey", "testQuerySoupDescending", "testQuerySoupEndKeyNoBeginKey", "testQuerySpecFactories", "testRegisterBogusSoup", "testRegisterRemoveSoup", "testRegisterSoupNoIndices", "testRemoveFromSoup", "testRetrieveSoupEntries", "testUpsertSoupEntries", "testUpsertSoupEntriesWithExternalId", "testUpsertToNonexistentSoup"});
+    }
+    
     public void testRegisterRemoveSoup()  {
         runTest("testRegisterRemoveSoup");
     }
@@ -131,5 +139,13 @@ public class SmartStoreJSTest extends JSTestCase {
 
     public void testIntegerQuerySpec()  {
         runTest("testIntegerQuerySpec");
+    }
+    
+    public void testSmartQueryWithCount() {
+    	runTest("testSmartQueryWithCount");
+    }
+
+    public void testSmartQueryWithSpecialFields() {
+    	runTest("testSmartQueryWithSpecialFields");
     }
 }

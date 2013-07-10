@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
-import com.salesforce.androidsdk.app.ForceApp;
-
 import android.test.InstrumentationTestCase;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 
 /**
@@ -98,7 +98,7 @@ public class JavaScriptPluginVersionTest extends InstrumentationTestCase {
 	/**
 	 * Create JavaScriptPluginVersion for empty version (always considered older)
 	 */
-	public void testJavaScriptPluginVersionsWitNoVersion() {
+	public void testJavaScriptPluginVersionsWithNoVersion() {
 		assertEquals(-1, JavaScriptPluginVersion.compareVersions("", "2.0"));
 		assertEquals(0, JavaScriptPluginVersion.compareVersions("", ""));
 		assertEquals(1, JavaScriptPluginVersion.compareVersions("2.0", ""));
@@ -120,9 +120,9 @@ public class JavaScriptPluginVersionTest extends InstrumentationTestCase {
 	 * Create JavaScriptPluginVersion for current version and make sure isCurrent/isOlder/isNewer returns the value expected
 	 */
 	public void testJavaScriptPluginVersionsWithCurrentVersion() {
-		assertFalse((new JavaScriptPluginVersion(ForceApp.SDK_VERSION)).isOlder());
-		assertTrue((new JavaScriptPluginVersion(ForceApp.SDK_VERSION)).isCurrent());
-		assertFalse((new JavaScriptPluginVersion(ForceApp.SDK_VERSION)).isNewer());
+		assertFalse((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isOlder());
+		assertTrue((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isCurrent());
+		assertFalse((new JavaScriptPluginVersion(SalesforceSDKManager.SDK_VERSION)).isNewer());
 	}
 
 	
@@ -130,11 +130,10 @@ public class JavaScriptPluginVersionTest extends InstrumentationTestCase {
 	 * Create JavaScriptPluginVersion for future versions and make sure isCurrent/isOlder/isNewer returns the value expected
 	 */
 	public void testJavaScriptPluginVersionsWithNewVersion() {
-		for (String version : new String[] {"2.0", "2.1", "3.0"}) {
+		for (String version : new String[] {"2.0.0", "2.1.0", "3.0.0"}) {
 			assertFalse((new JavaScriptPluginVersion(version)).isOlder());
 			assertFalse((new JavaScriptPluginVersion(version)).isCurrent());
 			assertTrue((new JavaScriptPluginVersion(version)).isNewer());
 		}
 	}
-	
 }

@@ -26,7 +26,7 @@
  */
 package com.salesforce.samples.vfconnector;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
 
@@ -34,6 +34,12 @@ import com.salesforce.androidsdk.util.HybridInstrumentationTestCase;
  * Tests for VFConnector
  */
 public class VFConnectorTest extends HybridInstrumentationTestCase {
+
+	@Override
+	public void setUp() throws Exception {
+		SalesforceSDKManager.initHybrid(getInstrumentation().getTargetContext(), null);
+		super.setUp();
+	}
 
 	/**
 	 * Load app and check the body of the webview
@@ -50,7 +56,7 @@ public class VFConnectorTest extends HybridInstrumentationTestCase {
 	 */
 	public void testUserAgentOfWebView() throws Exception {
 		String userAgent = gapWebView.getSettings().getUserAgentString();
-		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + ForceApp.SDK_VERSION));
+		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + SalesforceSDKManager.SDK_VERSION));
 		assertTrue("User agent should contain VFConnector/1.0 Hybrid", userAgent.contains("VFConnector/1.0 Hybrid"));
 	}
 	
@@ -59,7 +65,7 @@ public class VFConnectorTest extends HybridInstrumentationTestCase {
 	 */
 	public void testUserAgentOfHttpAccess() {
 		String userAgent = HttpAccess.DEFAULT.getUserAgent();
-		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + ForceApp.SDK_VERSION));
+		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + SalesforceSDKManager.SDK_VERSION));
 		assertTrue("User agent should contain VFConnector/1.0 Hybrid", userAgent.contains("VFConnector/1.0 Hybrid"));
 	}
 }

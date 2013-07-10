@@ -39,9 +39,12 @@ import android.content.Context;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 
-import com.salesforce.androidsdk.store.SmartStore.IndexSpec;
-import com.salesforce.androidsdk.store.SmartStore.QuerySpec;
-import com.salesforce.androidsdk.store.SmartStore.Type;
+import com.salesforce.androidsdk.smartstore.store.DBHelper;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
 /**
  * Set of tests for the smart store loading numerous and/or large entries and querying them back
@@ -115,9 +118,9 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 			
 			
 			// Query one of them
-			QuerySpec query = QuerySpec.buildExactQuerySpec("key", "k" + ((n/2 + n) / 2), 1);
+			QuerySpec query = QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "k" + ((n/2 + n) / 2), 1);
 			long start = System.currentTimeMillis();
-			JSONArray resultSet = store.querySoup(TEST_SOUP, query, 0);
+			JSONArray resultSet = store.query(query, 0);
 			long end = System.currentTimeMillis();
 			assertEquals("Should have returned one entry", 1, resultSet.length());
 			Log.i("SmartStoreLoadTest", "querying entry out of " + n + ","
@@ -152,9 +155,9 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 		n = 1;
 		for (int k=0; k < LOG2_MAX_NUMBER_FIELDS; k++) {
 			n *= 2;
-			QuerySpec query = QuerySpec.buildExactQuerySpec("key", "k" + n, 1);
+			QuerySpec query = QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "k" + n, 1);
 			long start = System.currentTimeMillis();
-			JSONArray resultSet = store.querySoup(TEST_SOUP, query, 0);
+			JSONArray resultSet = store.query(query, 0);
 			long end = System.currentTimeMillis();
 			assertEquals("Should have returned one entry", 1, resultSet.length());
 			JSONObject entry = resultSet.getJSONObject(0);
@@ -197,9 +200,9 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 		// Validation
 		n = 1;
 		for (int k=0; k <= LOG2_MAX_LENGTH_FIELD; k++) {
-			QuerySpec query = QuerySpec.buildExactQuerySpec("key", "k" + n, 1);
+			QuerySpec query = QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "k" + n, 1);
 			long start = System.currentTimeMillis();
-			JSONArray resultSet = store.querySoup(TEST_SOUP, query, 0);
+			JSONArray resultSet = store.query(query, 0);
 			long end = System.currentTimeMillis();
 			assertEquals("Should have returned one entry", 1, resultSet.length());
 			JSONObject entry = resultSet.getJSONObject(0);

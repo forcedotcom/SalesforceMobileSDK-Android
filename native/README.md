@@ -25,9 +25,9 @@ Inside the $NATIVE_DIR, you will find several projects:
 2. **TemplateApp**: Template used when creating new native application using SalesforceSDK
 3. **test/SalesforceSDKTest**: Test project for SalesforceSDK
 4. **test/TemplateAppTest**: Test project for the TemplateApp project
-5. **SampleApps/RestExplorer**: A app using SalesforceSDK to explore the REST API calls
+5. **SampleApps/RestExplorer**: An app using SalesforceSDK to explore the REST API calls
 6. **SampleApps/test/RestExplorerTest**: Test project for the RestExplorer project
-7. **SampleApps/CloudTunes**: A sample native application using SalesforceSDK
+7. **SampleApps/NativeSqlAggregator**: An app using SalesforceSDK and SmartStore to demonstrate complex aggregate smart SQL queries
 
 # Running sample apps from Eclipse
 

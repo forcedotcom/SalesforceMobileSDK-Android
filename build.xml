@@ -11,15 +11,15 @@
       Creates a local hybrid application, for instance:
       ant create_hybrid_local -Dapp.name=MyFirstHybridLocal -Dtarget.dir=./firsthybridlocal -Dpackage.name=com.acme.firsthybridlocal 
 
-      ant create_hybrid_vf -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} -Dapex.page={apexPage} [-Duse.smartstore=true]
-      Creates a visualforce hybrid application, for instance:
-      ant create_hybrid_vf -Dapp.name=MyFirstHybridVF -Dtarget.dir=./firsthybridvf -Dpackage.name=com.acme.firsthybridvf -Dapex.page=/apex/TestPageA
+      ant create_hybrid_remote -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} -Dstart.page={startPage} [-Duse.smartstore=true]
+      Creates a remote hybrid application, for instance:
+      ant create_hybrid_remote -Dapp.name=MyFirstHybridRemote -Dtarget.dir=./firsthybridremote -Dpackage.name=com.acme.firsthybridremote -Dstart.page=/apex/TestPageA
 
       Arguments:
       * appName: the name for the new application 
       * targetDir: the directory where the code should reside 
       * packageName: the java package for the new application e.g. com.acme.mobileapp
-      * apexPage: the apex page for the application e.g. /apex/MyFirstApp
+      * startPage: the start page for the remote application e.g. /apex/MyFirstApp
       * only pass -Duse.smartstore=true if you want SmartStore support
     </echo>
   </target>
@@ -29,6 +29,10 @@
 
   <!-- Location of SalesforceMobileSDK relative to the target app-->
   <property name="sdk.dir.from.target" location="" relative="true" basedir="${target.dir}"/>
+    
+  <!-- Relative location of native and hybrid apps' bootconfig files. -->
+  <property name="hybrid.bootconfig.path" value="assets/www/bootconfig.json" />
+  <property name="native.bootconfig.path" value="res/values/bootconfig.xml" />
 
   <!-- Target to compute package directory path and other properties -->
   <target name="-pre">
@@ -48,7 +52,7 @@
       <globmapper from="${basedirunpackaged}/*" to="*" handledirsep="true" />
     </pathconvert>
 
-    <!-- Application ForceApp's subclass will be called ${app.name}App" -->
+    <!-- Application's subclass will be called ${app.name}App" -->
     <property name="app.classname" value="${app.name}App" />
   </target>
 
@@ -62,25 +66,27 @@
     <property name="template.app.classname" value="TemplateApp" />
     <property name="template.package.name" value="com.salesforce.samples.templateapp" />
     <property name="template.package.dir" value="com/salesforce/samples/templateapp" />
+    <property name="bootconfig.path" value="${native.bootconfig.path}" />
   </target>
 
-  <!-- Target to create a hybrid vf application -->
-  <target name="create_hybrid_vf" description="Create visualforce hybrid application" 
-          depends="-pre_hybrid_vf,-create,-use_smartstore,-post_hybrid_vf,-next_steps_info,-oauth_info_hybrid">
+  <!-- Target to create a hybrid remote application -->
+  <target name="create_hybrid_remote" description="Create remote hybrid application" 
+          depends="-pre_hybrid_remote,-create,-use_smartstore,-post_hybrid_remote,-next_steps_info,-oauth_info_hybrid">
   </target>
 
-  <target name="-pre_hybrid_vf" depends="-pre">
+  <target name="-pre_hybrid_remote" depends="-pre">
     <property name="template.dir" value="${sdk.dir}/hybrid/SampleApps/VFConnector" />
     <property name="template.app.name" value="VFConnector" />
     <property name="template.app.classname" value="VFConnectorApp" />
     <property name="template.package.name" value="com.salesforce.samples.vfconnector" />
     <property name="template.package.dir" value="com/salesforce/samples/vfconnector" />
+    <property name="bootconfig.path" value="${hybrid.bootconfig.path}" />
   </target>
 
-  <target name="-post_hybrid_vf">
-    <echo message="Changing vf reference in bootconfig.js" />
-    <replaceregexp match="/apex/BasicVFPage" flags="g" replace="${apex.page}"
-                   file="${target.dir}/assets/www/bootconfig.js" />
+  <target name="-post_hybrid_remote">
+    <echo message="Changing remote page reference in ${hybrid.bootconfig.path}" />
+    <replaceregexp match="/apex/BasicVFPage" flags="g" replace="${start.page}"
+                   file="${target.dir}/${hybrid.bootconfig.path}" />
   </target>
 
   <!-- Target to create a hybrid local application -->
@@ -93,6 +99,7 @@
     <property name="template.app.classname" value="ContactExplorerApp" />
     <property name="template.package.name" value="com.salesforce.samples.contactexplorer" />
     <property name="template.package.dir" value="com/salesforce/samples/contactexplorer" />
+    <property name="bootconfig.path" value="${hybrid.bootconfig.path}" />
   </target>
 
   <!-- Internal target, called by create_* targets -->
@@ -102,7 +109,7 @@
       <include name=".project" />
       <include name="build.xml" />
       <include name="res/values/strings.xml" />
-      <include name="res/values/rest.xml" />
+      <include name="${bootconfig.path}" />
       <include name="src/${template.package.dir}/*.java" />
     </fileset>
 
@@ -112,7 +119,7 @@
       <fileset dir="${template.dir}" />
     </copy>
 
-    <echo message="Adjustring SalesforceSDK library project reference" />
+    <echo message="Adjusting SalesforceSDK library project reference" />
     <replaceregexp match="=.*SalesforceSDK" flags="g" replace="=${sdk.dir.from.target}/native/SalesforceSDK">
       <fileset file="${target.dir}/project.properties" />
     </replaceregexp>
@@ -154,8 +161,11 @@
     <echo message="Adding SmartStore library reference in project.properties" />
     <concat destfile="${target.dir}/project.properties" append="true">android.library.reference.2=${sdk.dir.from.target}/hybrid/SmartStore</concat>
 
-    <echo message="Extending ForceAppWithSmartStore instead of ForceApp" />
-    <replaceregexp match="ForceApp" flags="g" replace="ForceAppWithSmartStore">
+    <echo message="Extending SalesforceSDKManagerWithSmartStore instead of SalesforceSDKManager" />
+    <replaceregexp match="SalesforceSDKManager" flags="g" replace="SalesforceSDKManagerWithSmartStore">
+      <fileset file="${target.dir}/src/${package.dir}/${app.classname}.java" />
+    </replaceregexp>
+    <replaceregexp match="com.salesforce.androidsdk.app.SalesforceSDKManagerWithSmartStore" flags="g" replace="com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore">
       <fileset file="${target.dir}/src/${package.dir}/${app.classname}.java" />
     </replaceregexp>
   </target>
@@ -187,15 +197,15 @@
 
   <target name="-oauth_info_native">
     <echo>
-      Before you ship, make sure to plug in your oauth client id and callback url in:
-        ${target.dir}/res/values/rest.xml
+      Before you ship, make sure to plug in your oauth client id, callback url and oauth scopes in:
+        ${target.dir}/${native.bootconfig.path}
     </echo>
   </target>
 
   <target name="-oauth_info_hybrid">
     <echo>
       Before you ship, make sure to plug in your oauth client id and callback url in:
-        ${target.dir}/assets/www/bootconfig.js
+        ${target.dir}/${hybrid.bootconfig.path}
     </echo>
   </target>
 

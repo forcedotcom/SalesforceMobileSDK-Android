@@ -42,7 +42,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * PhoneGap plugin for SDK info.
@@ -112,7 +112,7 @@ public class SDKInfoPlugin extends ForcePlugin {
        String appVersion = packageInfo.versionName;
         
        JSONObject data = new JSONObject();
-       data.put(SDK_VERSION, ForceApp.SDK_VERSION);
+       data.put(SDK_VERSION, SalesforceSDKManager.SDK_VERSION);
        data.put(APP_NAME, appName);
        data.put(APP_VERSION, appVersion);
        data.put(FORCE_PLUGINS_AVAILABLE, new JSONArray(getForcePlugins(ctx)));
@@ -137,11 +137,11 @@ public class SDKInfoPlugin extends ForcePlugin {
 	 */
 	public static List<String> getForcePluginsFromXML(Context ctx) {
 		List<String> services = new ArrayList<String>();
-
+		
         int id = ctx.getResources().getIdentifier("config", "xml", ctx.getPackageName());
         if (id == 0) {
             id = ctx.getResources().getIdentifier("plugins", "xml", ctx.getPackageName());
-        }			
+        }		
 		if (id != 0) {
 			XmlResourceParser xml = ctx.getResources().getXml(id);
 			int eventType = -1;

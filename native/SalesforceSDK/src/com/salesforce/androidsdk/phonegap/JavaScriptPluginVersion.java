@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
-import com.salesforce.androidsdk.app.ForceApp;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * Object that encapsulate the version reported by the javascript side
@@ -40,7 +40,7 @@ public class JavaScriptPluginVersion {
 	 */
 	public JavaScriptPluginVersion(String version) {
 		this.version = version;
-		this.comparedToNative = compareVersions(version, ForceApp.SDK_VERSION);
+		this.comparedToNative = compareVersions(version, SalesforceSDKManager.SDK_VERSION);
 	}
 	
 	/**

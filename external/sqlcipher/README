@@ -1,61 +1,17 @@
+SQLCipher for Android 2.1.1
 
-SQLCipher for Android 2.0.9
-2012/11/12
+12/07/2012
 
-CHANGELOG
-- includes x86 support
-
-CURRENT TESTED PLATFORM SUPPORT
-
-Android 2.1 (SDK Level 7)
-Android 2.2 (SDK Level 8)
-Android 2.3 (SDK Level 9)
-Android 2.3.3 (SDK Level 10)
-Android 3.0 (SDK Level 11)
-Android 3.1 (SDK Level 12)
-Android 3.2 (SDK Level 13)
-Android 4.0   (SDK Level 14)
-Android 4.0.3 (SDK Level 15)
-
-HOW TO
-
-1) copy the libs folder into your project. If you are targeting below 4.0, include the 'icudt46l.zip' in the assets folder as well.
-
-2) Update your import path from android.database to info.guardianproject.database and you are almost there!
-
-3) then when you open your database, just pass a variable argument to the open database method with your password:
-	
-	SQLiteDatabase.loadLibs(this); //first init the db libraries with the context
-	SQLiteOpenHelper.getWritableDatabase("thisismysecret"):
-
-4) run your app to ensure all the libraries are being loaded correctly, and that your app runs.
-
-5) You will need to implement a passcode entry user interface to your application, as well. 
-The longer the passcode, the better.
-
-ABOUT
-
-More info and source code at:
-https://guardianproject.info/code/sqlcipher/
-http://sqlcipher.net
-
-Or contact us:
-https://groups.google.com/forum/#!forum/sqlcipher
-root@guardianproject.info
-#guardianproject on freenode
-
-EXPORT CONTROL
-
-This distribution includes cryptographic software. The country in which you currently reside may have restrictions 
-on the import, possession, use, and/or re-export to another country, of encryption software. BEFORE using any 
-encryption software, please check your country's laws, regulations and policies concerning the import, possession, 
-or use, and re-export of encryption software, to see if this is permitted. See <http://www.wassenaar.org/> for more
-information.
-
-The U.S. Government Department of Commerce, Bureau of Industry and Security (BIS), has classified this software as 
-Export Commodity Control Number (ECCN) 5D002.C.1, which includes information security software using or performing 
-cryptographic functions with asymmetric algorithms. The form and manner of this Apache Software Foundation distribution 
-makes it eligible for export under the License Exception ENC Technology Software Unrestricted (TSU) exception 
-(see the BIS Export Administration Regulations, Section 740.13) for both object code and source code.
-
-More information is available here: https://guardianproject.info/home/export-information/
+* Added support for x86 Android devices (hat tip to littlesavage)
+* Update to SQLCipher core 2.1.1
+** New PRAGMAs to query the current values for all SQLCipher settings (for example, "PRAGMA cipher" will now return "AES-256-CBC" by default, with similar behavior for other SQLCipher PRAGMAs)
+** Tracking of activation calls and OpenSSL initialization, automatically executing EVP_cleanup to free associated memory on behalf of applications
+** Fixing issue where the page number was included in HMAC calculation using native byte order. SQLCipher now converts to LE by default (for backwards compatibility on popular LE platforms) to allow interoperability between BE and LE platforms.
+** New PRAGMA (cipher_hmac_salt_mask) to change the value used to permute the database salt before HMAC key derivation. This allows upgrading databases from old SQLCipher 2.0 beta settings to the latests defaults). With this change all key derivation settings are changeable via PRAGMA.
+** New PRAGMA cipher_hmac_pgno = ( be | le | native ) to set behavior for page number byte ordering, and to convert older databases on big-endian platforms.
+** Improvements to memory wiping to avoid compiler optimizations
+** Improvements to constant time memory comparison routines
+** Improved detection of context initialization problems (i.e. out of memory errors)
+** A fix for compilation errors during non-amalgamation builds of SQLCipher
+** Code refactoring to move custom PRAGMA handling out of pragma.c into crypo.c to minimize differences with SQLite upstream releases
+** Use of the latest SQLite 3.7.14.1 as a baseline

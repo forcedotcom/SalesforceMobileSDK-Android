@@ -20,14 +20,13 @@ Inside the HYBRID_DIR, you will find several projects:
 1. **SmartStore**: Library project which provides the SmartStore functionality
 2. **test/SmartStoreTest**: Test project for SmartStore
 3. **test/SmartStorePluginTest**: Test project for the SmartStore phonegap plugin
-4. **SampleApps/ContactExplorer**: The ContactExplorer sample app uses PhoneGap (aka "cordova") to retrieve local device contacts.  It also uses the forcetk.js toolkit to implement REST transactions with the Salesforce REST API.  The app uses the OAuth2 support in Salesforce SDK to obtain OAuth credentials, then propagates those credentials to forcetk by sending a javascript event
+4. **SampleApps/ContactExplorer**: The ContactExplorer sample app uses PhoneGap (aka "cordova") to retrieve local device contacts.  It also uses the forcetk.mobilesdk.js toolkit to implement REST transactions with the Salesforce REST API.  The app uses the OAuth2 support in Salesforce SDK to obtain OAuth credentials, then propagates those credentials to forcetk by sending a javascript event
 5. **SampleApps/VFConnector**: The VFConnector sample app demonstrates how to wrap a VisualForce page in a native container.  This example assumes that your org has a VisualForce page called "BasicVFTest".  The app first obtains OAuth login credentials using the Salesforce SDK OAuth2 support, then uses those credentials to set appropriate webview cookies for accessing VisualForce pages
-6. **SampleApps/SFDCAccounts**: The SFDCAccounts sample app demonstrates how to take accounts and opportunities offline using SmartStore and forcetk
+6. **SampleApps/AccountEditor**: The AccountEditor sample app allows you to search / create / edit / delete accounts online and offline using the new SmartSync library (smartsync.js)
 7. **SampleApps/SmartStoreExplorer**: The SmartStoreExplorer sample app let you explore SmartStore APIs
 8. **SampleApps/test/ContactExplorerTest**: Test project for ContactExplorer
 9. **SampleApps/test/VFConnectorTest**: Test project for VFConnector
-10. **SampleApps/test/SFDCAccountsTest**: Test project for SFDCAccounts
-11. **SampleApps/test/SmartStoreExplorerTest**: Test project for SmartStoreExplorer
+10. **SampleApps/test/SmartStoreExplorerTest**: Test project for SmartStoreExplorer
 
 # Running sample apps from Eclipse
 
@@ -64,14 +63,14 @@ Put your html/js in ${target.dir}/assets/www/.
 
 To create a new hybrid application with remote html/js simply do:
 <pre>
-ant create_hybrid_vf -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} -Dapex.page={apexPage} [-Duse.smartstore=true]
+ant create_hybrid_remote -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} -Dstart.page={startPage} [-Duse.smartstore=true]
 </pre>
 
 Where:
 * appName: the name for the new application 
 * targetDir: the directory where the code should reside 
 * packageName: the java package for the new application e.g. com.acme.mobileapp
-* apexPage: the apex page for the application e.g. /apex/MyFirstApp
+* startPage: the remote start page for the application e.g. /apex/MyFirstApp
 * only pass -Duse.smartstore=true if you want SmartStore support
 
 
@@ -95,7 +94,7 @@ ant installd
 
 Before you ship, make sure to plug in your oauth client id and callback url in:
 <pre>
-$TARGET_DIR/assets/www/bootconfig.js
+$TARGET_DIR/assets/www/bootconfig.json
 </pre>
 
 # Running your new native application from Eclipse

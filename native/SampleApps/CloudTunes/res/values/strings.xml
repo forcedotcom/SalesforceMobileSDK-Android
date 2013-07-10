@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">Cloud Tunes</string>
-    <string name="oauth_client_id">3MVG99OxTyEMCQ3jIW9bdxrL5aJlXdyvLAP19dMkZdjNoxbM8s5GkcRHWMTcVYsxqRiBc0K1won7l_.oE4oNA</string>
-    <string name="oauth_callback_url">sfdc:///axm/detect/oauth/done</string>
-    <string name="api_version">v23.0</string>
-    <string name="account_type">com.salesforce.androidsdk.sample</string>
-</resources>
