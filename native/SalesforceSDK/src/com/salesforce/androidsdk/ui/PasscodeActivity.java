@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.ui;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
@@ -42,7 +41,6 @@ import android.widget.TextView.OnEditorActionListener;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
-import com.salesforce.androidsdk.security.PasscodeManager.PasscodeChangeReceiver;
 
 /**
  * Passcode activity: takes care of creating/verifying a user passcode.
@@ -183,11 +181,9 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             if (enteredPasscode.equals(firstPasscode)) {
                 final String oldPass = passcodeManager.getPasscodeHash();
                 passcodeManager.store(this, enteredPasscode);
+                SalesforceSDKManager.getInstance().changePasscode(oldPass,
+                		passcodeManager.hashForEncryption(enteredPasscode));
                 passcodeManager.unlock(enteredPasscode);
-                final Intent intent = new Intent(PasscodeChangeReceiver.PASSCODE_FLOW_INTENT);
-                intent.putExtra(PasscodeChangeReceiver.OLD_PASSCODE_EXTRA, oldPass);
-                intent.putExtra(PasscodeChangeReceiver.NEW_PASSCODE_EXTRA, passcodeManager.getPasscodeHash());
-                sendBroadcast(intent);
                 done();
             } else {
                 error.setText(getPasscodesDontMatchError());
