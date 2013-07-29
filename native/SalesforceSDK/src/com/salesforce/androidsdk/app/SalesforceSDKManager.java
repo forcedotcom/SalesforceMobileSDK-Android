@@ -71,7 +71,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "2.0.0";
+    public static final String SDK_VERSION = "2.0.1";
 
     /**
      * Last phone version.
@@ -225,18 +225,31 @@ public class SalesforceSDKManager implements AccountRemoved {
 
 	/**
 	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by apps using the Salesforce Mobile SDK.
+	 * to properly function. This method is for internal
+	 * usage by the Salesforce Mobile SDK.
 	 *
 	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
 	 */
-    private static void init(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    private static void init(Context context, KeyInterface keyImpl,
+    		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	if (INSTANCE == null) {
     		INSTANCE = new SalesforceSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
+    	initInternal(context);
+    }
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method is for internal
+	 * usage by the Salesforce Mobile SDK or by subclasses
+	 * of SalesforceSDKManager.
+	 *
+	 * @param context Application context.
+	 */
+    public static void initInternal(Context context) {
 
         // Initializes the encryption module.
         Encryptor.init(context);
@@ -381,7 +394,7 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @return True - if the new passcode is different from the old passcode, False - otherwise.
      */
     protected boolean isNewPasscode(String oldPass, String newPass) {
-        return ((oldPass == null && newPass == null)
+        return !((oldPass == null && newPass == null)
                 || (oldPass != null && newPass != null && oldPass.trim().equals(newPass.trim())));
     }
 
