@@ -31,6 +31,7 @@ import android.app.Activity;
 import android.content.Context;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -163,7 +164,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
 
         // Reset smartstore.
         if (hasSmartStore()) {
-        	DBOpenHelper.deleteDatabase(INSTANCE.getAppContext());
+        	DBHelper.INSTANCE.reset(INSTANCE.getAppContext());
         }
         super.cleanUp(frontActivity);
     }
