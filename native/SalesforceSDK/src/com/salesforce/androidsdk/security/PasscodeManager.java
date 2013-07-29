@@ -27,13 +27,10 @@
 package com.salesforce.androidsdk.security;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 
@@ -83,7 +80,6 @@ public class PasscodeManager  {
     // this is a hash of the passcode to be used as part of the key to encrypt/decrypt oauth tokens
     // It's using a different salt/key than the one used to verify the entry
     private String passcodeHash;
-    private PasscodeChangeReceiver passcodeReceiver;
 
     // Misc
     private HashConfig verificationHashConfig;
@@ -105,19 +101,17 @@ public class PasscodeManager  {
      * @param encryptionHashConfig Encryption HashConfig.
      */
    public PasscodeManager(Context ctx) {
-	   this(ctx, 
+	   this(ctx,
 		   new HashConfig(UUIDManager.getUuId(VPREFIX), UUIDManager.getUuId(VSUFFIX), UUIDManager.getUuId(VKEY)),
 		   new HashConfig(UUIDManager.getUuId(EPREFIX), UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY)));
    }
+
    public PasscodeManager(Context ctx, HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
         this.minPasscodeLength = MIN_PASSCODE_LENGTH;
         this.lastActivity = now();
         this.verificationHashConfig = verificationHashConfig;
         this.encryptionHashConfig = encryptionHashConfig;
         readMobilePolicy(ctx);
-        passcodeReceiver = new PasscodeChangeReceiver();
-        final IntentFilter filter = new IntentFilter(PasscodeChangeReceiver.PASSCODE_FLOW_INTENT);
-        ctx.registerReceiver(passcodeReceiver, filter);
 
         // Locked at app startup if you're authenticated.
         this.locked = true;
@@ -459,32 +453,6 @@ public class PasscodeManager  {
             this.prefix = prefix;
             this.suffix = suffix;
             this.key = key;
-        }
-    }
-
-    /**
-     * Receives events when the passcode flow is complete. This helps the manager
-     * perform post-processing when the org settings change from passcode to
-     * no passcode or vice versa.
-     *
-     * @author bhariharan
-     */
-    public static class PasscodeChangeReceiver extends BroadcastReceiver {
-
-        public static final String PASSCODE_FLOW_INTENT = "com.salesforce.androidsdk.security.passcodeflowcomplete";
-        public static final String OLD_PASSCODE_EXTRA = "old_passcode";
-        public static final String NEW_PASSCODE_EXTRA = "new_passcode";
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (intent != null && intent.getAction().equals(PASSCODE_FLOW_INTENT)) {
-                final Bundle extras = intent.getExtras();
-                if (extras != null) {
-                    final String oldPass = extras.getString(OLD_PASSCODE_EXTRA);
-                    final String newPass = extras.getString(NEW_PASSCODE_EXTRA);
-                    SalesforceSDKManager.getInstance().changePasscode(oldPass, newPass);
-                }
-            }
         }
     }
 }
