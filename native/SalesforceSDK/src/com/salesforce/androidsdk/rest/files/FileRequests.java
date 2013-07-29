@@ -37,6 +37,7 @@ import org.apache.http.protocol.HTTP;
 
 import android.text.TextUtils;
 
+import com.google.common.collect.Maps;
 import com.salesforce.androidsdk.rest.*;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
@@ -234,7 +235,7 @@ public class FileRequests extends ApiRequests {
     }
 
     private static HttpEntity makeFileShare(String fileId, String entityId, String shareType) {
-        Map<String, String> share = new HashMap<String, String>();
+        Map<String, String> share = Maps.newHashMap();
         share.put("ContentDocumentId", fileId);
         share.put("LinkedEntityId", entityId);
         share.put("ShareType", shareType);
