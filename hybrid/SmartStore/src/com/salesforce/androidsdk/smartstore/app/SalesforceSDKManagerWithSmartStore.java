@@ -29,13 +29,9 @@ package com.salesforce.androidsdk.smartstore.app;
 import net.sqlcipher.database.SQLiteDatabase;
 import android.app.Activity;
 import android.content.Context;
-import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.app.UpgradeManager;
-import com.salesforce.androidsdk.auth.AccountWatcher;
-import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -56,7 +52,8 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
      */
-    protected SalesforceSDKManagerWithSmartStore(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    protected SalesforceSDKManagerWithSmartStore(Context context, KeyInterface keyImpl,
+    		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	super(context, keyImpl, mainActivity, loginActivity);
     }
 
@@ -70,25 +67,12 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
 	 */
-	private static void init(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+	private static void init(Context context, KeyInterface keyImpl,
+			Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
 		if (INSTANCE == null) {
     		INSTANCE = new SalesforceSDKManagerWithSmartStore(context, keyImpl, mainActivity, loginActivity);
     	}
-
-        // Initializes the encryption module.
-        Encryptor.init(context);
-
-        // Initializes the HTTP client.
-        HttpAccess.init(context, INSTANCE.getUserAgent());
-
-        // Ensures that we have a CookieSyncManager instance.
-        CookieSyncManager.createInstance(context);
-
-        // Initializes an AccountWatcher instance.
-        ((SalesforceSDKManagerWithSmartStore) INSTANCE).accWatcher = new AccountWatcher(context, INSTANCE);
-
-        // Upgrades to the latest version.
-        UpgradeManager.getInstance().upgradeAccMgr();
+		initInternal(context);
 
         // Upgrade to the latest version.
         UpgradeManagerWithSmartStore.getInstance().upgradeSmartStore();
@@ -180,7 +164,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
 
         // Reset smartstore.
         if (hasSmartStore()) {
-        	DBOpenHelper.deleteDatabase(INSTANCE.getAppContext());
+        	DBHelper.INSTANCE.reset(INSTANCE.getAppContext());
         }
         super.cleanUp(frontActivity);
     }
