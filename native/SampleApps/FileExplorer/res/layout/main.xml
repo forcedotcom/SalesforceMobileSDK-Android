@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="fill_parent"
+	android:layout_height="fill_parent" android:background="#454545"
+	android:id="@+id/root">
+
+	<include layout="@layout/header" />
+
+	<LinearLayout android:orientation="horizontal" android:layout_width="fill_parent"
+	    android:layout_height="wrap_content">
+		<Button android:id="@+id/fetch_files" android:layout_width="wrap_content"
+		      android:layout_height="wrap_content"
+		      android:onClick="onFetchFilesClick"
+		      android:text="@string/fetch_files_button" />
+		
+	    <Button android:id="@+id/clear" android:layout_width="wrap_content"
+		      android:layout_height="wrap_content"
+		      android:onClick="onClearClick"
+		      android:text="@string/clear_button" />
+	</LinearLayout>
+	
+	<ListView android:id="@+id/files_list" android:layout_width="fill_parent"
+	          android:layout_height="fill_parent" />
+</LinearLayout>

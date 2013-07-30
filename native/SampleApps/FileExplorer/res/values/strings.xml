@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_type">com.salesforce.samples.filexplorer.login</string>
+	<string name="app_name"><b>File Explorer</b></string>
+    <string name="welcome">Welcome %s</string>
+	<string name="logout_button">Logout</string>
+	<string name="fetch_files_button">Fetch Files</string>
+	<string name="clear_button">Clear</string>
+	<string name="api_version">v28.0</string>
+</resources>

@@ -47,6 +47,7 @@ usage ()
     echo "        SmartStore"
     echo "        RestExplorer"
     echo "        NativeSqlAggregator"
+    echo "        FileExplorer"
     echo "        TemplateApp"
     echo "        AccountEditor"
     echo "        ContactExplorer"
@@ -150,6 +151,7 @@ else
     build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp
     build_project_if_requested "RestExplorer" $NATIVE_TOP/SampleApps/RestExplorer
     build_project_if_requested "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator
+    build_project_if_requested "FileExplorer" $NATIVE_TOP/SampleApps/FileExplorer
     build_project_if_requested "SmartStore" $HYBRID_TOP/SmartStore
     build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor
     build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer
