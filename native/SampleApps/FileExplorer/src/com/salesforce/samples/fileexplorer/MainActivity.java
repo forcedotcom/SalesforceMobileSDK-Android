@@ -30,11 +30,17 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
+import android.content.Context;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -42,6 +48,7 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.rest.files.FileRequests;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 
 /**
@@ -50,7 +57,7 @@ import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 public class MainActivity extends SalesforceActivity {
 
     private RestClient client;
-    private ArrayAdapter<String> listAdapter;
+    private ListItemAdapter listAdapter;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +73,7 @@ public class MainActivity extends SalesforceActivity {
 		findViewById(R.id.root).setVisibility(View.INVISIBLE);
 
 		// Create list adapter
-		listAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, new ArrayList<String>());
+		listAdapter = new ListItemAdapter(this, new ArrayList<FileInfo>());
 		((ListView) findViewById(R.id.files_list)).setAdapter(listAdapter);				
 		
 		super.onResume();
@@ -100,26 +107,22 @@ public class MainActivity extends SalesforceActivity {
 	}	
 
 	/**
-	 * Called when "Fetch Contacts" button is clicked
+	 * Called when "Fetch Files" button is clicked
 	 * 
 	 * @param v
 	 * @throws UnsupportedEncodingException 
 	 */
 	public void onFetchFilesClick(View v) throws UnsupportedEncodingException {
-        sendRequest("SELECT Name FROM Contact");
-	}
-
-	private void sendRequest(String soql) throws UnsupportedEncodingException {
-		RestRequest restRequest = RestRequest.getRequestForQuery(getString(R.string.api_version), soql);
+		RestRequest restRequest = FileRequests.filesInUsersGroups(null, 0);
 
 		client.sendAsync(restRequest, new AsyncRequestCallback() {
 			@Override
 			public void onSuccess(RestRequest request, RestResponse result) {
 				try {
 					listAdapter.clear();
-					JSONArray records = result.asJSONObject().getJSONArray("records");
+					JSONArray records = result.asJSONObject().getJSONArray("files");
 					for (int i = 0; i < records.length(); i++) {
-						listAdapter.add(records.getJSONObject(i).getString("Name"));
+						listAdapter.add(new FileInfo(records.getJSONObject(i)));
 					}					
 				} catch (Exception e) {
 					onError(e);
@@ -133,5 +136,58 @@ public class MainActivity extends SalesforceActivity {
                                Toast.LENGTH_LONG).show();
 			}
 		});
+	}
+	
+	static class FileInfo {
+		private JSONObject rawData;
+
+		public FileInfo(JSONObject rawData) {
+			this.rawData = rawData;
+		}
+		
+		public String getTitle() { 
+			try {
+				return rawData.getString("title");
+			} catch (JSONException e) {
+				e.printStackTrace();
+				return "Unknown File Name"; // should never happen
+			}
+		}
+		
+		public String getOwnerName() {
+			try {
+				return rawData.getJSONObject("owner").getString("name");
+			} catch (JSONException e) {
+				e.printStackTrace();
+				return "Unknown Owner"; // should never happen
+			}
+		}
+	}
+	
+	static class ListItemAdapter extends ArrayAdapter<FileInfo> {
+
+		private ArrayList<FileInfo> items;
+
+		public ListItemAdapter(Context context, ArrayList<FileInfo> items) {
+			super(context, R.layout.file_list_item, items);
+			this.items = items;
+		}
+
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			View v = convertView;
+			if (v == null) {
+				LayoutInflater vi = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+				v = vi.inflate(R.layout.file_list_item, null);
+			}
+			FileInfo fileInfo = items.get(position);
+			if (fileInfo != null) {
+				TextView tt = (TextView) v.findViewById(R.id.toptext);
+				TextView bt = (TextView) v.findViewById(R.id.bottomtext);
+				tt.setText(fileInfo.getTitle());
+				bt.setText(fileInfo.getOwnerName());
+			}
+			return v;
+		}
 	}
 }
