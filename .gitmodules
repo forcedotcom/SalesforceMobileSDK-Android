@@ -3,4 +3,4 @@
     url = https://github.com/forcedotcom/SalesforceMobileSDK-Shared.git
 [submodule "external/volley"]
 	path = external/volley
-	url = https://android.googlesource.com/platform/frameworks/volley
+    url = https://github.com/wmathurin/volley.git
