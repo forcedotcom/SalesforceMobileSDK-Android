@@ -33,6 +33,7 @@ import java.util.Map;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpClient;
 
 import android.os.AsyncTask;
 
@@ -128,6 +129,13 @@ public class RestClient {
 	 */
 	public ClientInfo getClientInfo() {
 		return clientInfo;
+	}
+	
+	/**
+	 * @return underlying HttpClient
+	 */
+	public HttpClient getHttpClient() {
+		return httpAccessor.getHttpclient();
 	}
 	
 	/**
