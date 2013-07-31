@@ -34,7 +34,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.util.LruCache;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,12 +45,18 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.ImageLoader;
+import com.android.volley.toolbox.ImageLoader.ImageCache;
+import com.android.volley.toolbox.NetworkImageView;
+import com.android.volley.toolbox.Volley;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.rest.files.FileRequests;
+import com.salesforce.androidsdk.rest.files.RenditionType;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 
 /**
@@ -58,10 +66,16 @@ public class MainActivity extends SalesforceActivity {
 
     private RestClient client;
     private ListItemAdapter listAdapter;
+	private RequestQueue requestQueue;
+	private ImageLoader imageLoader;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		// Would be better at the application level
+		requestQueue = Volley.newRequestQueue(this);
+		imageLoader = new ImageLoader(requestQueue, new BitmapCache(16));
 
 		// Setup view
 		setContentView(R.layout.main);
@@ -162,9 +176,19 @@ public class MainActivity extends SalesforceActivity {
 				return "Unknown Owner"; // should never happen
 			}
 		}
+		
+		public String getThumbnailUrl() {
+			try {
+				String url = rawData.getString("renditionUrl") + "?type=" + RenditionType.THUMB120BY90;
+				return null; // FIXME
+			} catch (JSONException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
 	}
 	
-	static class ListItemAdapter extends ArrayAdapter<FileInfo> {
+	class ListItemAdapter extends ArrayAdapter<FileInfo> {
 
 		private ArrayList<FileInfo> items;
 
@@ -182,12 +206,27 @@ public class MainActivity extends SalesforceActivity {
 			}
 			FileInfo fileInfo = items.get(position);
 			if (fileInfo != null) {
-				TextView tt = (TextView) v.findViewById(R.id.toptext);
-				TextView bt = (TextView) v.findViewById(R.id.bottomtext);
-				tt.setText(fileInfo.getTitle());
-				bt.setText(fileInfo.getOwnerName());
+				((TextView) v.findViewById(R.id.toptext)).setText(fileInfo.getTitle());
+				((TextView) v.findViewById(R.id.bottomtext)).setText(fileInfo.getOwnerName());
+				((NetworkImageView) v.findViewById(R.id.thumbnail)).setImageUrl(fileInfo.getThumbnailUrl(), imageLoader);
 			}
 			return v;
 		}
+	}
+	
+	class BitmapCache extends LruCache<String, Bitmap> implements ImageCache {
+	    public BitmapCache(int maxSize) {
+	        super(maxSize);
+	    }
+	 
+	    @Override
+	    public Bitmap getBitmap(String url) {
+	        return get(url);
+	    }
+	 
+	    @Override
+	    public void putBitmap(String url, Bitmap bitmap) {
+	        put(url, bitmap);
+	    }
 	}
 }

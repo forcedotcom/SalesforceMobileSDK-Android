@@ -3,7 +3,8 @@
     android:layout_width="fill_parent"
     android:layout_height="?android:attr/listPreferredItemHeight"
     android:padding="6dip">
-    <ImageView
+    
+	<com.android.volley.toolbox.NetworkImageView
         android:id="@+id/thumbnail"
         android:layout_width="wrap_content"
         android:layout_height="fill_parent"
