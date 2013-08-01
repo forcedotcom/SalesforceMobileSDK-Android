@@ -4,7 +4,9 @@
 	<string name="app_name"><b>File Explorer</b></string>
     <string name="welcome">Welcome %s</string>
 	<string name="logout_button">Logout</string>
-	<string name="fetch_files_button">Fetch Files</string>
+	<string name="files_in_groups_button">Files In My Groups</string>
+	<string name="files_owned_button">Files Owned By Me</string>
+	<string name="files_shared_button">Files Shared With Me</string>
 	<string name="clear_button">Clear</string>
 	<string name="api_version">v28.0</string>
 </resources>

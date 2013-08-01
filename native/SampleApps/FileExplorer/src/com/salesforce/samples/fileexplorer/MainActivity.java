@@ -63,7 +63,7 @@ import com.salesforce.androidsdk.rest.files.RenditionType;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 
 /**
- * Main activity
+ * Main activity for the FileExplorer application
  */
 public class MainActivity extends SalesforceActivity {
 
@@ -124,15 +124,38 @@ public class MainActivity extends SalesforceActivity {
 	}	
 
 	/**
-	 * Called when "Fetch Files" button is clicked
+	 * Called when "Files In My Groups" button is clicked
 	 * 
 	 * @param v
-	 * @throws UnsupportedEncodingException 
 	 */
-	public void onFetchFilesClick(View v) throws UnsupportedEncodingException {
-		RestRequest restRequest = FileRequests.ownedFilesList(null, 0);
+	public void onFilesInGroupsClick(View v) {
+		performRequest(FileRequests.filesInUsersGroups(null, null));
+	}
 
-		client.sendAsync(restRequest, new AsyncRequestCallback() {
+	/**
+	 * Called when "Files Owned By Me" button is clicked
+	 * 
+	 * @param v
+	 */
+	public void onFilesOwnedClick(View v) {
+		performRequest(FileRequests.ownedFilesList(null, null));
+	}
+	
+	/**
+	 * Called when "Files Shared With Me" button is clicked
+	 * 
+	 * @param v
+	 */
+	public void onFilesSharedClick(View v) {
+		performRequest(FileRequests.filesSharedWithUser(null, null));
+	}
+
+	/**
+	 * Perform the given request
+	 * @param request
+	 */
+	protected void performRequest(RestRequest request) {
+		client.sendAsync(request, new AsyncRequestCallback() {
 			@Override
 			public void onSuccess(RestRequest request, RestResponse result) {
 				try {
@@ -155,6 +178,10 @@ public class MainActivity extends SalesforceActivity {
 		});
 	}
 	
+	/**
+	 * Simple class to hold file details
+	 *
+	 */
 	class FileInfo {
 		private JSONObject rawData;
 
@@ -183,7 +210,7 @@ public class MainActivity extends SalesforceActivity {
 		public String getThumbnailUrl() {
 			try {
 				RestRequest request = FileRequests.fileRendition(rawData.getString("id"), null, RenditionType.THUMB120BY90, 0);
-				return client.getClientInfo().instanceUrl.resolve("/" /* why? */ + request.getPath()).toString();
+				return client.getClientInfo().instanceUrl.resolve("/" + request.getPath()).toString();
 			} catch (JSONException e) {
 				e.printStackTrace();
 				return null;
@@ -191,6 +218,9 @@ public class MainActivity extends SalesforceActivity {
 		}
 	}
 	
+	/**
+	 * Adapter between FileInfo's and R.layout.list_item
+	 */
 	class ListItemAdapter extends ArrayAdapter<FileInfo> {
 
 		private ArrayList<FileInfo> items;
@@ -217,6 +247,9 @@ public class MainActivity extends SalesforceActivity {
 		}
 	}
 	
+	/**
+	 * Basic thumbnail cache (memory only)
+	 */
 	class BitmapCache extends LruCache<String, Bitmap> implements ImageCache {
 	    public BitmapCache(int maxSize) {
 	        super(maxSize);
@@ -233,6 +266,9 @@ public class MainActivity extends SalesforceActivity {
 	    }
 	}
 	
+	/**
+	 * HttpStack subclass that set the authorization oauth header on outgoing requests
+	 */
 	class HttpClientStackWithAuth extends HttpClientStack {
 		
 		private RestClient client;

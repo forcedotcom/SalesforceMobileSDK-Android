@@ -1,24 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:orientation="vertical" android:layout_width="fill_parent"
-	android:layout_height="fill_parent" android:background="#454545"
-	android:id="@+id/root">
+    android:id="@+id/root"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:background="#454545"
+    android:orientation="vertical" >
 
-	<include layout="@layout/header" />
+    <include layout="@layout/header" />
 
-	<LinearLayout android:orientation="horizontal" android:layout_width="fill_parent"
-	    android:layout_height="wrap_content">
-		<Button android:id="@+id/fetch_files" android:layout_width="wrap_content"
-		      android:layout_height="wrap_content"
-		      android:onClick="onFetchFilesClick"
-		      android:text="@string/fetch_files_button" />
-		
-	    <Button android:id="@+id/clear" android:layout_width="wrap_content"
-		      android:layout_height="wrap_content"
-		      android:onClick="onClearClick"
-		      android:text="@string/clear_button" />
-	</LinearLayout>
-	
-	<ListView android:id="@+id/files_list" android:layout_width="fill_parent"
-	          android:layout_height="fill_parent" />
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/files_owned"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onFilesOwnedClick"
+            android:text="@string/files_owned_button" />
+
+        <Button
+            android:id="@+id/files_in_groups"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onFilesInGroupsClick"
+            android:text="@string/files_in_groups_button" />
+
+        <Button
+            android:id="@+id/files_shared"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onFilesSharedClick"
+            android:text="@string/files_shared_button" />
+
+        <Button
+            android:id="@+id/clear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onClearClick"
+            android:text="@string/clear_button" />
+    </LinearLayout>
+
+    <ListView
+        android:id="@+id/files_list"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" />
+
 </LinearLayout>
