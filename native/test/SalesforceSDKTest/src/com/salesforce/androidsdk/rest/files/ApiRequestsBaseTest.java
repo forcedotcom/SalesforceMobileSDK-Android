@@ -34,9 +34,13 @@ import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 public class ApiRequestsBaseTest extends TestCase {
 
     protected void doAdditionalVerifications(RestRequest req) {
-        assertEquals(RestMethod.GET, req.getMethod());
+        doAdditionalVerifications(RestMethod.GET, req);
+    }
+
+    protected void doAdditionalVerifications(RestMethod method, RestRequest req) {
+        assertEquals(method, req.getMethod());
         assertEquals("false", req.getAdditionalHttpHeaders().get("X-Chatter-Entity-Encoding"));
     }
 
-    protected final String connectPath = "services/data/v28.0/chatter/";
+    protected final String connectPath = "services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/";
 }

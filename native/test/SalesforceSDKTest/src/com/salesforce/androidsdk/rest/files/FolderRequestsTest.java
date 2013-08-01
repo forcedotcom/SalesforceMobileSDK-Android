@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
+import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
+
 public class FolderRequestsTest extends ApiRequestsBaseTest {
 
     public void testOwnedFilesAndFoldersList() {
@@ -64,6 +66,14 @@ public class FolderRequestsTest extends ApiRequestsBaseTest {
     }
 
     public void testCreateNewFolder() {
+        assertEquals(connectPath + "folders/Root/items?folderPath=FOOBAR&type=Folder",
+                FolderRequests.createNewFolder("FOOBAR", null).getPath());
+        assertEquals(connectPath + "folders/BAR/items?folderPath=FOO&type=Folder",
+                FolderRequests.createNewFolder("FOO", "BAR").getPath());
+        assertEquals(connectPath + "folders/Root/items?folderPath=FOO+BAR&type=Folder",
+                FolderRequests.createNewFolder("FOO BAR", null).getPath());
+
+        doAdditionalVerifications(RestMethod.POST, FolderRequests.createNewFolder("FOOBAR", null));
     }
 
     public void testRenameFolder() {

@@ -52,6 +52,8 @@ public class FolderRequests extends ApiRequests {
     private static final String UPLOAD_TYPE = "type";
     private static final String UPLOAD_FILE_DATA = "fileData";
     private static final String UPLOAD_FILE = "File";
+    private static final String NEW_FOLDER = "Folder";
+    private static final String FOLDER_PATH = "folderPath";
 
     /**
      * Build a Request that can fetch the given page of files and folders that
@@ -99,16 +101,22 @@ public class FolderRequests extends ApiRequests {
      * @param parentFolderId
      *            id of parent folder. If null, root is used
      * @param newFolderName
-     *            Name of the new folder
+     *            Name of the new folder (cannot contain '/' character) (non
+     *            null)
      * @return A new RestRequest that can be used to make this post
      */
     public static RestRequest createNewFolder(String newFolderName, String parentFolderId) {
-        // TODO use the following call
-        // post to /chatter/folders/root/items?folderPath=new+folder&type=folder
         if (parentFolderId == null) {
             parentFolderId = ROOT;
         }
-        return null;
+        return new RestRequest(RestMethod.POST,
+                base(FOLDERS).appendFolderId(parentFolderId).appendPath(ITEMS)
+                        .appendQueryParam(FOLDER_PATH, newFolderName)
+                        .appendQueryParam(UPLOAD_TYPE, NEW_FOLDER)
+                        .toString()
+                        //spaces in the folder name should be turned into "+" post-encoding
+                        .replace("%20", "+"),
+                null, HTTP_HEADERS);
     }
 
     /**
