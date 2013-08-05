@@ -1,6 +1,3 @@
 [submodule "external/shared"]
 	path = external/shared
     url = https://github.com/forcedotcom/SalesforceMobileSDK-Shared.git
-[submodule "external/volley"]
-	path = external/volley
-    url = https://github.com/wmathurin/volley.git
