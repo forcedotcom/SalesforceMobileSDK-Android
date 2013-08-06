@@ -38,6 +38,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.android.volley.NetworkResponse;
+
 
 /**
  * RestResponse: Class to represent any REST response.
@@ -67,6 +69,17 @@ public class RestResponse {
 	}
 	
 	/**
+	 * Constructor
+	 * @param response
+	 */
+	public RestResponse(NetworkResponse response) {
+		this.response = null;
+		this.statusCode = response.statusCode;
+		this.responseAsBytes = response.data;
+				
+	}
+	
+	/**
 	 * @return HTTP status code of the response
 	 */
 	public int getStatusCode() {
@@ -76,10 +89,6 @@ public class RestResponse {
 	/**
 	 * @return the base HTTP response of the response. The can be useful for response that are not JSON, such as binary payloads.
 	 */
-	public HttpResponse getHttpResponse() {
-		return response;
-	}
-	
 	/**
 	 * @return true for response with 2xx status codes
 	 */

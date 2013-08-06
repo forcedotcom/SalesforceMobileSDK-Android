@@ -26,11 +26,8 @@
  */
 package com.salesforce.samples.fileexplorer;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 
-import org.apache.http.client.methods.HttpUriRequest;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -47,12 +44,9 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.android.volley.RequestQueue;
-import com.android.volley.toolbox.HttpClientStack;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.ImageLoader.ImageCache;
 import com.android.volley.toolbox.NetworkImageView;
-import com.android.volley.toolbox.Volley;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
@@ -69,7 +63,6 @@ public class MainActivity extends SalesforceActivity {
 
     private RestClient client;
     private ListItemAdapter listAdapter;
-	private RequestQueue requestQueue;
 	private ImageLoader imageLoader;
 	
 	@Override
@@ -97,9 +90,7 @@ public class MainActivity extends SalesforceActivity {
         // Keeping reference to rest client
         this.client = client; 
 
-        // Doesn't belong in onResume - the volley stuff should really move into the SDK
-		requestQueue = Volley.newRequestQueue(this, new HttpClientStackWithAuth(client));
-		imageLoader = new ImageLoader(requestQueue, new BitmapCache(16));
+		imageLoader = new ImageLoader(client.getRequestQueue(), new BitmapCache(16));
         
 		// Show everything
 		findViewById(R.id.root).setVisibility(View.VISIBLE);
@@ -264,23 +255,5 @@ public class MainActivity extends SalesforceActivity {
 	    public void putBitmap(String url, Bitmap bitmap) {
 	        put(url, bitmap);
 	    }
-	}
-	
-	/**
-	 * HttpStack subclass that set the authorization oauth header on outgoing requests
-	 */
-	class HttpClientStackWithAuth extends HttpClientStack {
-		
-		private RestClient client;
-
-		public HttpClientStackWithAuth(RestClient client) {
-			super(client.getHttpClient());
-			this.client = client;
-		}
-
-		@Override
-		protected void onPrepareRequest(HttpUriRequest request) throws IOException {
-			request.setHeader("Authorization", "Bearer " + client.getAuthToken());
-		}
 	}
 }
