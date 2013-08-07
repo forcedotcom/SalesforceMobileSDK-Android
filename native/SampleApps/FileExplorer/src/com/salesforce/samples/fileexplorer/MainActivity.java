@@ -44,6 +44,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue.RequestFilter;
 import com.android.volley.toolbox.ImageLoader;
 import com.android.volley.toolbox.ImageLoader.ImageCache;
 import com.android.volley.toolbox.NetworkImageView;
@@ -115,6 +117,20 @@ public class MainActivity extends SalesforceActivity {
 	}	
 
 	/**
+	 * Called when "Cancel" button is clicked. 
+	 * 
+	 * @param v
+	 */
+	public void onCancelClick(View v) {
+		CountingFilter countingFilter = new CountingFilter();
+		client.getRequestQueue().cancelAll(countingFilter);
+		int count = countingFilter.getCancelCount();
+		if (count > 0) {
+			Toast.makeText(MainActivity.this, count + " request" + (count > 1 ? "s" : "") + " cancelled", Toast.LENGTH_LONG).show();
+		}
+	}		
+	
+	/**
 	 * Called when "Files In My Groups" button is clicked
 	 * 
 	 * @param v
@@ -152,9 +168,14 @@ public class MainActivity extends SalesforceActivity {
 				try {
 					listAdapter.clear();
 					JSONArray records = result.asJSONObject().getJSONArray("files");
-					for (int i = 0; i < records.length(); i++) {
-						listAdapter.add(new FileInfo(records.getJSONObject(i)));
-					}					
+					if (records.length() == 0) {
+						Toast.makeText(MainActivity.this, "No files found", Toast.LENGTH_LONG).show();
+					}
+					else {
+						for (int i = 0; i < records.length(); i++) {
+							listAdapter.add(new FileInfo(records.getJSONObject(i)));
+						}
+					}
 				} catch (Exception e) {
 					onError(e);
 				}
@@ -201,7 +222,7 @@ public class MainActivity extends SalesforceActivity {
 		public String getThumbnailUrl() {
 			try {
 				RestRequest request = FileRequests.fileRendition(rawData.getString("id"), null, RenditionType.THUMB120BY90, 0);
-				return client.getClientInfo().instanceUrl.resolve("/" + request.getPath()).toString();
+				return client.getClientInfo().resolveUrl(request.getPath()).toString();
 			} catch (JSONException e) {
 				e.printStackTrace();
 				return null;
@@ -255,5 +276,25 @@ public class MainActivity extends SalesforceActivity {
 	    public void putBitmap(String url, Bitmap bitmap) {
 	        put(url, bitmap);
 	    }
+	}
+	
+	/**
+	 * Request filter that cancels all requests and also counts the number of requests cancelled
+	 *
+	 */
+	class CountingFilter implements RequestFilter {
+
+		private int count = 0;
+		
+		public int getCancelCount() {
+			return count;
+		}
+		
+		@Override
+		public boolean apply(Request<?> request) {
+			count++;
+			return true;
+		}
+		
 	}
 }

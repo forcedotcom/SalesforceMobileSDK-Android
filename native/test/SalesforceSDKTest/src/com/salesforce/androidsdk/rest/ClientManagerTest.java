@@ -356,7 +356,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         // Create account
         createTestAccount();
 
-        // Call getkRestClient - expect restClient
+        // Call getRestClient - expect restClient
         final BlockingQueue<RestClient> q = new ArrayBlockingQueue<RestClient>(1);
         clientManager.getRestClient(null, new RestClientCallback() {
             @Override

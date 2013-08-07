@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.rest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,6 +37,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
+
+import android.util.Log;
 
 import com.android.volley.AuthFailureError;
 import com.android.volley.NetworkResponse;
@@ -49,6 +50,7 @@ import com.android.volley.toolbox.BasicNetwork;
 import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.HttpStack;
 import com.android.volley.toolbox.NoCache;
+import com.google.common.collect.Maps;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.HttpAccess.Execution;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
@@ -153,7 +155,8 @@ public class RestClient {
 	 * @return volley.Request object wrapped around the restRequest (to allow cancellation etc)
 	 */
 	public Request<?> sendAsync(RestRequest restRequest, AsyncRequestCallback callback) {
-		return requestQueue.add(new WrappedRestRequest(getClientInfo(), restRequest, callback));
+		WrappedRestRequest wrappedRestRequest = new WrappedRestRequest(clientInfo, restRequest, callback);
+		return requestQueue.add(wrappedRestRequest);
 	}
 
 	/**
@@ -164,12 +167,40 @@ public class RestClient {
 	 * @throws IOException 
 	 */
 	public RestResponse sendSync(RestRequest restRequest) throws IOException {
-		int method = WrappedRestRequest.getMethodFromRestMethod(restRequest.getMethod());
-		URI url = clientInfo.resolveUrl(restRequest.getPath());
-		HttpEntity requestEntity = restRequest.getRequestEntity();
-		return new RestResponse(httpStack.performRequest(method, url, requestEntity, null, true));
+		return sendSync(restRequest.getMethod(), restRequest.getPath(), restRequest.getRequestEntity(), restRequest.getAdditionalHttpHeaders());
 	}
 
+	/**
+	 * Send an arbitrary HTTP request synchronously, using the given method, path and httpEntity.
+	 * Note: Cannot be used by code on the UI thread (use sendAsync instead).
+	 * 
+	 * @param method				the HTTP method for the request (GET/POST/DELETE etc)
+	 * @param path					the URI path, this will automatically be resolved against the users current instance host.
+	 * @param httpEntity			the request body if there is one, can be null.
+	 * @param additionalHttpHeaders additional HTTP headers to add the generated HTTP request, can be null.
+	 * @return 						a RestResponse instance that has information about the HTTP response returned by the server. 
+	 */
+	public RestResponse sendSync(RestMethod method, String path, HttpEntity httpEntity) throws IOException {
+		return sendSync(method, path, httpEntity, null);
+	}
+
+	/**
+	 * Send an arbitrary HTTP request synchronously, using the given method, path, httpEntity and additionalHttpHeaders.
+	 * Note: Cannot be used by code on the UI thread (use sendAsync instead).
+	 * 
+	 * @param method				the HTTP method for the request (GET/POST/DELETE etc)
+	 * @param path					the URI path, this will automatically be resolved against the users current instance host.
+	 * @param httpEntity			the request body if there is one, can be null.
+	 * @param additionalHttpHeaders additional HTTP headers to add the generated HTTP request, can be null.
+	 * @return 						a RestResponse instance that has information about the HTTP response returned by the server. 
+	 * 
+	 * @throws IOException
+	 */
+	public RestResponse sendSync(RestMethod method, String path, HttpEntity httpEntity, Map<String, String> additionalHttpHeaders) throws IOException {
+		return new RestResponse(httpStack.performRequest(method.asVolleyMethod(), clientInfo.resolveUrl(path), httpEntity, additionalHttpHeaders, true));
+	}
+	
+	
 	/**
 	 * Only used in tests
 	 * @param httpAccessor
@@ -253,17 +284,25 @@ public class RestClient {
 				throws IOException, AuthFailureError {
 
 			int method = request.getMethod();
-			
-			URI url;
-			try {
-				url = new URI(request.getUrl());
-			} catch (URISyntaxException e) {
-				throw new RuntimeException(e);
-			} 
-			
-			HttpEntity requestEntity = request instanceof WrappedRestRequest 
-					? ((WrappedRestRequest) request).getRequestEntity() 
-					: new ByteArrayEntity(request.getBody());
+			URI url = URI.create(request.getUrl());
+			HttpEntity requestEntity = null;
+					
+			if (request instanceof WrappedRestRequest) {
+				RestRequest restRequest = ((WrappedRestRequest) request).getRestRequest();
+				
+				// To avoid httpEntity -> bytes -> httpEntity conversion
+				requestEntity = restRequest.getRequestEntity();
+				
+				if (!restRequest.getAdditionalHttpHeaders().isEmpty()) {
+					additionalHeaders = Maps.newHashMap(additionalHeaders);
+					additionalHeaders.putAll(restRequest.getAdditionalHttpHeaders());
+				}
+			}
+			else {
+				if (request.getBody() != null) {
+					requestEntity = new ByteArrayEntity(request.getBody());
+				}
+			}
 			
 			return performRequest(method, url, requestEntity, additionalHeaders, true);
 		}
@@ -338,9 +377,9 @@ public class RestClient {
 				exec = httpAccessor.doDelete(headers, url); break;
 			case Request.Method.GET:
 				exec = httpAccessor.doGet(headers, url); break;
-			case WrappedRestRequest.MethodHEAD:
+			case RestMethod.MethodHEAD:
 				exec = httpAccessor.doHead(headers, url); break;
-			case WrappedRestRequest.MethodPATCH:
+			case RestMethod.MethodPATCH:
 				exec = httpAccessor.doPatch(headers, url, httpEntity); break;
 			case Request.Method.POST:
 				exec = httpAccessor.doPost(headers, url, httpEntity); break;
@@ -380,38 +419,26 @@ public class RestClient {
 	
 	/**
 	 * A RestRequest wrapped in a Request<?>
-	 *
 	 */
 	public static class WrappedRestRequest extends Request<RestResponse> {
 
 		private RestRequest restRequest;
 		private AsyncRequestCallback callback;
 
-		// Methods missing from Request.Method
-		public static final int MethodPATCH = 4;
-		public static final int MethodHEAD = 5;
-		
-		public static int getMethodFromRestMethod(RestMethod restMethod) {
-			switch (restMethod) {
-			case DELETE: return Request.Method.DELETE;
-			case GET:    return Request.Method.GET;
-			case POST:   return Request.Method.POST;
-			case PUT:    return Request.Method.PUT;
-			case HEAD:   return MethodHEAD; // not in Request.Method
-			case PATCH:  return MethodPATCH; // not in Request.Method 
-			default: return -2; // should never happen
-			}
-		}
-		
+		/**
+		 * Constructor
+		 * @param restRequest
+		 * @param callback
+		 */
 		public WrappedRestRequest(ClientInfo clientInfo, RestRequest restRequest, final AsyncRequestCallback callback) {
-			super(getMethodFromRestMethod(restRequest.getMethod()),
-				clientInfo.instanceUrl.resolve(restRequest.getPath()).toString(), 
-				new Response.ErrorListener() {
+			super(restRequest.getMethod().asVolleyMethod(), 
+				  clientInfo.resolveUrl(restRequest.getPath()).toString(), 
+				  new Response.ErrorListener() {
 					@Override
 					public void onErrorResponse(VolleyError error) {
 						callback.onError(error);
 					}
-			});
+				});
 			this.restRequest = restRequest;
 			this.callback = callback;
 		}
@@ -427,9 +454,11 @@ public class RestClient {
 		@Override
 		public byte[] getBody() throws AuthFailureError {
 			try {
-				return EntityUtils.toByteArray(restRequest.getRequestEntity());
+				HttpEntity requestEntity = restRequest.getRequestEntity();
+				return requestEntity == null ? null : EntityUtils.toByteArray(requestEntity);
 			}
 			catch (IOException e) {
+				Log.e("WrappedRestRequest.getBody", "Could not read request entity", e);
 				return null;
 			}
 		}

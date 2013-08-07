@@ -32,7 +32,7 @@ package com.salesforce.androidsdk.rest;
  */
 public class ApiVersionStrings {
     public static final String VERSION_NUMBER = "v28.0";
-    public static final String API_PREFIX = "services/data/";
+    public static final String API_PREFIX = "/services/data/";
     public static final String BASE_PATH = API_PREFIX + VERSION_NUMBER;
     public static final String BASE_CHATTER_PATH = BASE_PATH + "/chatter/";
     public static final String BASE_CONNECT_PATH = BASE_PATH + "/connect/";

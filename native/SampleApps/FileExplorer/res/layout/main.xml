@@ -40,6 +40,14 @@
             android:layout_height="wrap_content"
             android:onClick="onClearClick"
             android:text="@string/clear_button" />
+
+        <Button
+            android:id="@+id/cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="onCancelClick"
+            android:text="@string/cancel_button" />
+        
     </LinearLayout>
 
     <ListView
