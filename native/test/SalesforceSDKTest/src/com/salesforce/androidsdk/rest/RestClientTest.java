@@ -40,12 +40,14 @@ import org.json.JSONObject;
 
 import android.test.InstrumentationTestCase;
 
+import com.android.volley.Request;
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
+import com.salesforce.androidsdk.rest.RestClient.WrappedRestRequest;
 
 /**
  * Tests for RestClient
@@ -325,8 +327,58 @@ public class RestClientTest extends InstrumentationTestCase {
         	fail("Calling consume should not have thrown an exception");
         }
     }
+    
+    /**
+     * Testing that WrappedRestRequest's url field is correct with various RestRequest objects
+     * @throws Exception
+     */
+    public void testWrappedRestRequestUrl() throws Exception {
+    	RestRequest restRequest = RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account");
+		WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
+		assertEquals("Wrong url", clientInfo.instanceUrl.toString() + restRequest.getPath(), request.getUrl());
+		
+		// TODO more RestRequest's
+    }
+
+    /**
+     * Testing that WrappedRestRequest's method field is correct with various RestRequest objects
+     * @throws Exception
+     */
+    public void testWrappedRestRequestMethod() throws Exception {
+    	RestRequest restRequest = RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account");
+		WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
+		assertEquals("Method should be GET", Request.Method.GET, request.getMethod());
+		
+		// TODO more RestRequest's
+    }
+
+    
+    /**
+     * Testing that WrappedRestRequest's body field is correct with various RestRequest objects
+     * @throws Exception
+     */
+    public void testWrappedRestRequestBody() throws Exception {
+    	RestRequest restRequest = RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account");
+		WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
+		assertNull("Body should be null", request.getBody());
+
+		// TODO more RestRequest's (requests that have post data and request that have multi-part post data)
+    }
 
 
+    /**
+     * Testing that WrappedRestRequest's body field is correct with various RestRequest objects
+     * @throws Exception
+     */
+    public void testWrappedRestRequestBodyContentType() throws Exception {
+    	RestRequest restRequest = RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account");
+		WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
+		// FIXME assertEquals("Wrong body content type", request.getBodyContentType());
+
+		// TODO more RestRequest's (requests that have post data and request that have multi-part post data)
+    }
+
+    
     /**
      * Helper method to create a account with a unique name and returns its name and id
      */
