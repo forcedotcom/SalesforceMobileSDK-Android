@@ -32,10 +32,12 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
 
 import android.util.Log;
@@ -463,6 +465,13 @@ public class RestClient {
 			}
 		}
 
+		@Override
+	    public String getBodyContentType() {
+			HttpEntity requestEntity = restRequest.getRequestEntity();
+			Header contentType = requestEntity == null ? null : requestEntity.getContentType();
+			return (contentType == null ? "application/x-www-form-urlencoded" : contentType.getValue()) + "; charset=" + HTTP.UTF_8;
+	    }		
+		
 		@Override
 		protected void deliverResponse(RestResponse restResponse) {
 			callback.onSuccess(restRequest, restResponse);
