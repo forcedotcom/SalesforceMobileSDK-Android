@@ -28,7 +28,10 @@ package com.salesforce.androidsdk.rest;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -230,7 +233,7 @@ public class RestClient {
 			this.loginUrl = loginUrl;
 			this.identityUrl = identityUrl;
 			this.accountName = accountName;
-			this.username = username;
+			this.username = username;	
 			this.userId = userId;
 			this.orgId = orgId;
 		}
@@ -250,6 +253,8 @@ public class RestClient {
 		}
 		
 		public URI resolveUrl(String path) {
+			// uri toString gives surprising answer, see http://stackoverflow.com/questions/2534124/java-uri-resolve
+			path = (instanceUrl.toString().endsWith("/") || path.startsWith("/") ? path : "/" + path); 
 			return instanceUrl.resolve(path);
 		}
 		

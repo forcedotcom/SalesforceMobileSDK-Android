@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -48,6 +49,8 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestClient.WrappedRestRequest;
+import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
+import com.salesforce.androidsdk.rest.files.FileRequests;
 
 /**
  * Tests for RestClient
@@ -95,6 +98,10 @@ public class RestClientTest extends InstrumentationTestCase {
         assertEquals("Wrong orgId", TestCredentials.ORG_ID, restClient.getClientInfo().orgId);
     }
 
+    public void testClientInfoResolveUrl() {
+    	assertEquals("Wrong url", TestCredentials.INSTANCE_URL + "/a/b/", clientInfo.resolveUrl("a/b/").toString());
+    	assertEquals("Wrong url", TestCredentials.INSTANCE_URL + "/a/b/", clientInfo.resolveUrl("/a/b/").toString());
+    }
 
     /**
      * Testing getAuthToken
@@ -337,12 +344,13 @@ public class RestClientTest extends InstrumentationTestCase {
 		Map<String, Object> fields = new HashMap<String, Object>();
         fields.put("name", "NewAccount");
 		checkWrappedRestRequestUrl(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), clientInfo.instanceUrl + "/services/data/" + TestCredentials.API_VERSION + "/sobjects/account");
-		// TODO more RestRequest's
+		checkWrappedRestRequestUrl(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), clientInfo.instanceUrl + "/services/data/" + TestCredentials.API_VERSION + "/sobjects/account/fakeId");
+		checkWrappedRestRequestUrl(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png", false), clientInfo.instanceUrl + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/users/me/files");
     }
 
     private void checkWrappedRestRequestUrl(RestRequest restRequest, String expectedUrl) throws Exception {
     	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
-		assertEquals("Wrong method", expectedUrl, request.getUrl());
+		assertEquals("Wrong url", expectedUrl, request.getUrl());
     }      
     
     /**
@@ -351,10 +359,11 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testWrappedRestRequestMethod() throws Exception {
     	checkWrappedRestRequestMethod(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"), Request.Method.GET);
-		Map<String, Object> fields = new HashMap<String, Object>();
+    	Map<String, Object> fields = new HashMap<String, Object>();
         fields.put("name", "NewAccount");
 		checkWrappedRestRequestMethod(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), Request.Method.POST);
-		// TODO more RestRequest's
+		checkWrappedRestRequestMethod(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), RestMethod.MethodPATCH);
+		checkWrappedRestRequestMethod(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png", false), Request.Method.POST);
     }
     
     private void checkWrappedRestRequestMethod(RestRequest restRequest, int expectedMethod) throws Exception {
@@ -372,7 +381,7 @@ public class RestClientTest extends InstrumentationTestCase {
 		Map<String, Object> fields = new HashMap<String, Object>();
         fields.put("name", "NewAccount");
 		checkWrappedRestRequestBody(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), "{\"name\":\"NewAccount\"}".getBytes());
-		// TODO more RestRequest's (request with multi-part post data)
+		checkWrappedRestRequestBody(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), "{\"name\":\"NewAccount\"}".getBytes());
     }
 
     private void checkWrappedRestRequestBody(RestRequest restRequest, byte[] expectedBody) throws Exception {
@@ -394,12 +403,13 @@ public class RestClientTest extends InstrumentationTestCase {
 		Map<String, Object> fields = new HashMap<String, Object>();
         fields.put("name", "NewAccount");
 		checkWrappedRestRequestBodyContentType(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), "application/json; charset=UTF-8");    	
- 		// TODO more RestRequest's (request with multi-part post data)
+		checkWrappedRestRequestBodyContentType(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields),  "application/json; charset=UTF-8");
+		checkWrappedRestRequestBodyContentType(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png", false),  "multipart/form-data");
     }
 
     private void checkWrappedRestRequestBodyContentType(RestRequest restRequest, String expectedBodyContentType) throws Exception {
     	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
-		assertEquals("Wrong body content type", expectedBodyContentType, request.getBodyContentType());
+		assertTrue("Wrong body content type", request.getBodyContentType().startsWith(expectedBodyContentType));
     }    
     
     /**
