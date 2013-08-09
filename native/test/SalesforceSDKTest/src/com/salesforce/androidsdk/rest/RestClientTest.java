@@ -40,12 +40,14 @@ import org.json.JSONObject;
 
 import android.test.InstrumentationTestCase;
 
+import com.android.volley.Request;
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
+import com.salesforce.androidsdk.rest.RestClient.WrappedRestRequest;
 
 /**
  * Tests for RestClient
@@ -325,8 +327,81 @@ public class RestClientTest extends InstrumentationTestCase {
         	fail("Calling consume should not have thrown an exception");
         }
     }
+    
+    /**
+     * Testing that WrappedRestRequest's url field is correct with various RestRequest objects
+     * @throws Exception
+     */
+    public void testWrappedRestRequestUrl() throws Exception {
+    	checkWrappedRestRequestUrl(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"), clientInfo.instanceUrl + "/services/data/" + TestCredentials.API_VERSION + "/sobjects/account/");
+		Map<String, Object> fields = new HashMap<String, Object>();
+        fields.put("name", "NewAccount");
+		checkWrappedRestRequestUrl(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), clientInfo.instanceUrl + "/services/data/" + TestCredentials.API_VERSION + "/sobjects/account");
+		// TODO more RestRequest's
+    }
 
+    private void checkWrappedRestRequestUrl(RestRequest restRequest, String expectedUrl) throws Exception {
+    	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
+		assertEquals("Wrong method", expectedUrl, request.getUrl());
+    }      
+    
+    /**
+     * Testing that WrappedRestRequest's method field is correct with various RestRequest objects
+     * @throws Exception
+     */
+    public void testWrappedRestRequestMethod() throws Exception {
+    	checkWrappedRestRequestMethod(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"), Request.Method.GET);
+		Map<String, Object> fields = new HashMap<String, Object>();
+        fields.put("name", "NewAccount");
+		checkWrappedRestRequestMethod(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), Request.Method.POST);
+		// TODO more RestRequest's
+    }
+    
+    private void checkWrappedRestRequestMethod(RestRequest restRequest, int expectedMethod) throws Exception {
+    	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
+		assertEquals("Wrong method", expectedMethod, request.getMethod());
+    }        
 
+    
+    /**
+     * Testing that WrappedRestRequest's body field is correct with various RestRequest objects
+     * @throws Exception
+     */
+    public void testWrappedRestRequestBody() throws Exception {
+		checkWrappedRestRequestBody(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"), null);
+		Map<String, Object> fields = new HashMap<String, Object>();
+        fields.put("name", "NewAccount");
+		checkWrappedRestRequestBody(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), "{\"name\":\"NewAccount\"}".getBytes());
+		// TODO more RestRequest's (request with multi-part post data)
+    }
+
+    private void checkWrappedRestRequestBody(RestRequest restRequest, byte[] expectedBody) throws Exception {
+    	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
+    	if (expectedBody == null) {
+    		assertNull("Body should be null", request.getBody());
+    	}
+    	else {
+    		assertEquals("Wrong body", new String(expectedBody), new String(request.getBody()));
+    	}
+    }
+
+    /**
+     * Testing that WrappedRestRequest's body content type field is correct with various RestRequest objects
+     * @throws Exception
+     */
+    public void testWrappedRestRequestBodyContentType() throws Exception {
+    	checkWrappedRestRequestBodyContentType(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"), "application/x-www-form-urlencoded; charset=UTF-8");
+		Map<String, Object> fields = new HashMap<String, Object>();
+        fields.put("name", "NewAccount");
+		checkWrappedRestRequestBodyContentType(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), "application/json; charset=UTF-8");    	
+ 		// TODO more RestRequest's (request with multi-part post data)
+    }
+
+    private void checkWrappedRestRequestBodyContentType(RestRequest restRequest, String expectedBodyContentType) throws Exception {
+    	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
+		assertEquals("Wrong body content type", expectedBodyContentType, request.getBodyContentType());
+    }    
+    
     /**
      * Helper method to create a account with a unique name and returns its name and id
      */

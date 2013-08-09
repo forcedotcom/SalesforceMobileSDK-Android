@@ -34,6 +34,7 @@ import java.util.Map;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
@@ -101,7 +102,7 @@ public class HttpAccess extends BroadcastReceiver {
         Log.d("HttpAccess:constructor", "User-Agent string: " + userAgent);
 
         // Using android http client
-        http = getHttpClient();
+        http = newHttpClient();
         ((AndroidHttpClient) http).enableCurlLogging("HttpAccess", Log.DEBUG);
 
         // Only null in tests
@@ -131,8 +132,15 @@ public class HttpAccess extends BroadcastReceiver {
      * Build the AndroidHttpClient.
      * @return A configured instance of AndroidHttpClient.
      */
-    private AndroidHttpClient getHttpClient() {
+    private AndroidHttpClient newHttpClient() {
         return AndroidHttpClient.newInstance(userAgent, app);
+    }
+    
+    /**
+     * @return underlying HttpClient 
+     */
+    public HttpClient getHttpclient() {
+    	return http;
     }
 
     /**
@@ -204,7 +212,7 @@ public class HttpAccess extends BroadcastReceiver {
             @Override
             public void run() {
                 http.close();
-                http = getHttpClient();
+                http = newHttpClient();
             }
         })).start();
     }

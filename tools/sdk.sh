@@ -27,7 +27,7 @@ process_args()
     done
 }
 
-wrong_directory_usage ()
+wrong_directory_usage()
 {
     echo "You must run this tool from the root directory of your repo clone"
 }
@@ -47,6 +47,7 @@ usage ()
     echo "        SmartStore"
     echo "        RestExplorer"
     echo "        NativeSqlAggregator"
+    echo "        FileExplorer"
     echo "        TemplateApp"
     echo "        AccountEditor"
     echo "        ContactExplorer"
@@ -109,7 +110,16 @@ build_project_if_requested ()
     then
         header "Building project $1"
         cd $2
-        android update project -p . | grep "$BUILD_OUTPUT_FILTER"
+        if [ -z $3 ]
+        then
+            API_VERSION=`cat AndroidManifest.xml | grep minSdkVersion | cut -d"\"" -f2`
+        else
+            API_VERSION=$3
+        fi
+        ANDROID_TARGET=`android list target | grep "android-$API_VERSION" | cut -d" "  -f2`
+        # echo "API_VERSION=$API_VERSION"
+        # echo "ANDROID_TARGET=$ANDROID_TARGET"
+        android update project -p . -t "$ANDROID_TARGET" | grep "$BUILD_OUTPUT_FILTER"
         ant clean debug | grep "$BUILD_OUTPUT_FILTER"
         cd $TOP
     fi
@@ -146,11 +156,12 @@ then
 else
     process_args $@
 
-    build_project_if_requested "SalesforceSDK" $NATIVE_TOP/SalesforceSDK
+    build_project_if_requested "SalesforceSDK" $NATIVE_TOP/SalesforceSDK 11
+    build_project_if_requested "SmartStore" $HYBRID_TOP/SmartStore
     build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp
     build_project_if_requested "RestExplorer" $NATIVE_TOP/SampleApps/RestExplorer
     build_project_if_requested "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator
-    build_project_if_requested "SmartStore" $HYBRID_TOP/SmartStore
+    build_project_if_requested "FileExplorer" $NATIVE_TOP/SampleApps/FileExplorer
     build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor
     build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer
     build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer
