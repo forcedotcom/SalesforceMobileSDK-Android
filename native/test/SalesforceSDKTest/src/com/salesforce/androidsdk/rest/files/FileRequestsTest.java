@@ -51,21 +51,6 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
         }
     }
 
-    public void testChatterboxFilesList() {
-        assertEquals(connectPath + "users/me/files/filesync", FileRequests
-                .chatterboxFilesList(null, null).getPath());
-        assertEquals(connectPath + "users/me/files/filesync?page=0",
-                FileRequests.chatterboxFilesList(null, 0).getPath());
-        assertEquals(connectPath + "users/" + userId + "/files/filesync?page=1", FileRequests
-                .chatterboxFilesList(userId, 1).getPath());
-        try {
-            FileRequests.chatterboxFilesList("", 1);
-            fail("empty user id didn't raise exception as expected");
-        } catch (IllegalArgumentException e) { /* expected */
-        }
-        doAdditionalVerifications(FileRequests.chatterboxFilesList(userId, 1));
-    }
-
     public void testFileContents() {
         assertEquals(connectPath + "files/" + sfdcId + "/content?versionNumber=1",
                 FileRequests.fileContents(sfdcId, "1").getPath());

@@ -68,24 +68,6 @@ public class FileRequests extends ApiRequests {
     }
 
     /**
-     * Build a Request that can fetch a page from the files in the specified
-     * users chatterbox
-     * 
-     * @param userId
-     *            if null the context user is used, otherwise it should be an Id
-     *            of a user.
-     * @param pageNum
-     *            if null fetches the first page, otherwise fetches the
-     *            specified page.
-     * 
-     * @return A new RestRequest that can be used to fetch this data
-     */
-    public static RestRequest chatterboxFilesList(String userId, Integer pageNum) {
-        return make(base("users").appendUserId(userId).appendPath("files").appendPath("filesync")
-                .appendPageNum(pageNum));
-    }
-
-    /**
      * Build a Request that can fetch a page from the list of files from groups
      * that the user is a member of.
      * 
@@ -265,16 +247,13 @@ public class FileRequests extends ApiRequests {
      * 
      * @throws UnsupportedEncodingException
      */
-    public static RestRequest uploadFile(File theFile, String name, String description, String mimeType,
-            boolean chatterboxEnabled) throws UnsupportedEncodingException {
+    public static RestRequest uploadFile(File theFile, String name, String description, String mimeType) throws UnsupportedEncodingException {
         MultipartEntity mpe = new MultipartEntity(HttpMultipartMode.STRICT);
         FileBody bin = mimeType == null ? new FileBody(theFile) : new FileBody(theFile, mimeType);
         if (name != null)
             mpe.addPart("title", new StringBody(name));
         if (description != null)
             mpe.addPart("desc", new StringBody(description));
-        if (chatterboxEnabled)
-            mpe.addPart("isInMyFileSync", new StringBody("true"));
         mpe.addPart("fileData", bin);
         return new RestRequest(RestMethod.POST, base("users").appendPath("me/files").toString(), mpe, HTTP_HEADERS);
     }
