@@ -37,7 +37,7 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
 
     public void testBatchFileInfo() {
         RestRequest r = FileRequests.batchFileDetails(Lists.newArrayList("06930000001LkwtAAC", "06930000001LkwtAAD"));
-        assertEquals("services/data/v28.0/chatter/files/batch/06930000001LkwtAAC,06930000001LkwtAAD", r.getPath());
+        assertEquals("/services/data/v28.0/chatter/files/batch/06930000001LkwtAAC,06930000001LkwtAAD", r.getPath());
         doAdditionalVerifications(r);
         try {
             FileRequests.batchFileDetails(Lists.newArrayList("06930000001LkwtAAC", null));
@@ -52,11 +52,11 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
     }
 
     public void testChatterboxFilesList() {
-        assertEquals("services/data/v28.0/chatter/users/me/files/filesync", FileRequests
+        assertEquals("/services/data/v28.0/chatter/users/me/files/filesync", FileRequests
                 .chatterboxFilesList(null, null).getPath());
-        assertEquals("services/data/v28.0/chatter/users/me/files/filesync?page=0",
+        assertEquals("/services/data/v28.0/chatter/users/me/files/filesync?page=0",
                 FileRequests.chatterboxFilesList(null, 0).getPath());
-        assertEquals("services/data/v28.0/chatter/users/" + userId + "/files/filesync?page=1", FileRequests
+        assertEquals("/services/data/v28.0/chatter/users/" + userId + "/files/filesync?page=1", FileRequests
                 .chatterboxFilesList(userId, 1).getPath());
         try {
             FileRequests.chatterboxFilesList("", 1);

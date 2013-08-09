@@ -42,5 +42,5 @@ public class ApiRequestsBaseTest extends TestCase {
         assertEquals("false", req.getAdditionalHttpHeaders().get("X-Chatter-Entity-Encoding"));
     }
 
-    protected final String connectPath = "services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/";
+    protected final String connectPath = "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/";
 }

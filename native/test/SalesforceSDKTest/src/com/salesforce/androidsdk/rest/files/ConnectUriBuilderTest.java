@@ -36,10 +36,10 @@ public class ConnectUriBuilderTest extends TestCase {
     }
 
     public void testAppendPath() {
-        assertEquals("services/data/v28.0/chatter/foo", new ConnectUriBuilder().appendPath("foo").toString());
-        assertEquals("services/data/v28.0/chatter/foo/bar", new ConnectUriBuilder().appendPath("foo").appendPath("bar")
+        assertEquals("/services/data/v28.0/chatter/foo", new ConnectUriBuilder().appendPath("foo").toString());
+        assertEquals("/services/data/v28.0/chatter/foo/bar", new ConnectUriBuilder().appendPath("foo").appendPath("bar")
                 .toString());
-        assertEquals("services/data/v28.0/chatter/foo/bar", new ConnectUriBuilder().appendPath("foo/bar").toString());
+        assertEquals("/services/data/v28.0/chatter/foo/bar", new ConnectUriBuilder().appendPath("foo/bar").toString());
     }
 
     public void testAppendUserId() {
@@ -113,5 +113,5 @@ public class ConnectUriBuilderTest extends TestCase {
 
     }
 
-    private final String connectPath = "services/data/v28.0/chatter/";
+    private final String connectPath = "/services/data/v28.0/chatter/";
 }
