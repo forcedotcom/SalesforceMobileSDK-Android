@@ -295,9 +295,16 @@ public class RestClient {
 				// To avoid httpEntity -> bytes -> httpEntity conversion
 				requestEntity = restRequest.getRequestEntity();
 				
-				if (!restRequest.getAdditionalHttpHeaders().isEmpty()) {
-					additionalHeaders = Maps.newHashMap(additionalHeaders);
-					additionalHeaders.putAll(restRequest.getAdditionalHttpHeaders());
+				// Combine headers
+				if (restRequest.getAdditionalHttpHeaders() != null) {
+					if (additionalHeaders == null) {
+						additionalHeaders = restRequest.getAdditionalHttpHeaders(); 
+					}
+					else {
+						additionalHeaders = Maps.newHashMap(additionalHeaders);
+						additionalHeaders.putAll(restRequest.getAdditionalHttpHeaders());
+						
+					}
 				}
 			}
 			else {
