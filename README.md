@@ -73,7 +73,7 @@ Downloading the Salesforce SDK
 
 To pull down the SDK from github, create a new directory and git clone the salesforce SDK repo.
 <pre>
-git clone git@github.com:forcedotcom/SalesforceMobileSDK-Android.git
+git clone https://github.com/forcedotcom/SalesforceMobileSDK-Android.git
 </pre>
 
 Documentation
