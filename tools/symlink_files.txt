@@ -53,6 +53,5 @@
 "external\sqlcipher\assets\icudt46l.zip" "hybrid\test\SmartStoreTest\assets\icudt46l.zip"
 "external\sqlcipher\libs\armeabi" "hybrid\SmartStore\libs\armeabi"
 "external\sqlcipher\libs\commons-codec.jar" "hybrid\SmartStore\libs\commons-codec.jar"
-"external\sqlcipher\libs\guava-r09.jar" "hybrid\SmartStore\libs\guava-r09.jar"
 "external\sqlcipher\libs\sqlcipher.jar" "hybrid\SmartStore\libs\sqlcipher.jar"
 "external\sqlcipher\libs\x86" "hybrid\SmartStore\libs\x86"
