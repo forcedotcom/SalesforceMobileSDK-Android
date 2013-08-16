@@ -75,16 +75,4 @@ public class FolderRequestsTest extends ApiRequestsBaseTest {
 
         doAdditionalVerifications(RestMethod.POST, FolderRequests.createNewFolder("FOOBAR", null));
     }
-
-    public void testRenameFolder() {
-    }
-
-    public void testMoveFolder() {
-    }
-
-    public void testMoveAndRenameFolder() {
-    }
-
-    public void testDeleteFolder() {
-    }
 }
