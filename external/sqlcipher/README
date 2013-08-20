@@ -1,17 +1,4 @@
-SQLCipher for Android 2.1.1
+Changes included in the v2.2.1 release:
 
-12/07/2012
-
-* Added support for x86 Android devices (hat tip to littlesavage)
-* Update to SQLCipher core 2.1.1
-** New PRAGMAs to query the current values for all SQLCipher settings (for example, "PRAGMA cipher" will now return "AES-256-CBC" by default, with similar behavior for other SQLCipher PRAGMAs)
-** Tracking of activation calls and OpenSSL initialization, automatically executing EVP_cleanup to free associated memory on behalf of applications
-** Fixing issue where the page number was included in HMAC calculation using native byte order. SQLCipher now converts to LE by default (for backwards compatibility on popular LE platforms) to allow interoperability between BE and LE platforms.
-** New PRAGMA (cipher_hmac_salt_mask) to change the value used to permute the database salt before HMAC key derivation. This allows upgrading databases from old SQLCipher 2.0 beta settings to the latests defaults). With this change all key derivation settings are changeable via PRAGMA.
-** New PRAGMA cipher_hmac_pgno = ( be | le | native ) to set behavior for page number byte ordering, and to convert older databases on big-endian platforms.
-** Improvements to memory wiping to avoid compiler optimizations
-** Improvements to constant time memory comparison routines
-** Improved detection of context initialization problems (i.e. out of memory errors)
-** A fix for compilation errors during non-amalgamation builds of SQLCipher
-** Code refactoring to move custom PRAGMA handling out of pragma.c into crypo.c to minimize differences with SQLite upstream releases
-** Use of the latest SQLite 3.7.14.1 as a baseline
+ * Use SQLCipher core v2.2.1
+ * Switch scheme from git to https
