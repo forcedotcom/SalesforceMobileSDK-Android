@@ -95,20 +95,20 @@ public class SmartSyncJSTest extends JSTestCase {
         runTest("testSObjectTypeReset");
     }
 
-    public void testSyncSObjectWithCacheCreate() {
-        runTest("testSyncSObjectWithCacheCreate");
+    public void testSyncRemoteObjectWithCacheCreate() {
+        runTest("testSyncRemoteObjectWithCacheCreate");
     }
 
-    public void testSyncSObjectWithCacheRead() {
-        runTest("testSyncSObjectWithCacheRead");
+    public void testSyncRemoteObjectWithCacheRead() {
+        runTest("testSyncRemoteObjectWithCacheRead");
     }
 
-    public void testSyncSObjectWithCacheUpdate() {
-        runTest("testSyncSObjectWithCacheUpdate");
+    public void testSyncRemoteObjectWithCacheUpdate() {
+        runTest("testSyncRemoteObjectWithCacheUpdate");
     }
 
-    public void testSyncSObjectWithCacheDelete() {
-        runTest("testSyncSObjectWithCacheDelete");
+    public void testSyncRemoteObjectWithCacheDelete() {
+        runTest("testSyncRemoteObjectWithCacheDelete");
     }
 
     public void testSyncSObjectWithServerCreate() {
@@ -169,10 +169,6 @@ public class SmartSyncJSTest extends JSTestCase {
 
     public void testSObjectDestroy() {
         runTest("testSObjectDestroy");
-    }
-
-    public void testFetchSObjectsFromCache() {
-        runTest("testFetchSObjectsFromCache");
     }
 
     public void testFetchSObjectsFromServer() {
