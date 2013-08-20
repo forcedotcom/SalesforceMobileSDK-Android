@@ -43,8 +43,30 @@ public class SmartSyncJSTest extends JSTestCase {
     
     @Override
     public List<String> getTestNames() {
-    	return Arrays.asList(new String[] {"testCollectionFetch", "testFetchSObjects", "testFetchSObjectsFromCache", "testFetchSObjectsFromServer", "testSObjectDestroy", "testSObjectFetch", "testSObjectSave", "testSObjectTypeDescribe", "testSObjectTypeGetMetadata", "testSObjectTypeDescribeLayout", "testSObjectTypeCacheMerge", "testMultiSObjectTypes", "testSObjectTypeReset", "testStoreCacheAddLocalFields", "testStoreCacheFind", "testStoreCacheInit", "testStoreCacheRemove", "testStoreCacheRetrieve", "testStoreCacheSave", "testStoreCacheSaveAll", "testSyncSObjectCreate", "testSyncSObjectDelete", "testSyncSObjectDetectConflictCreate", "testSyncSObjectDetectConflictDelete", "testSyncSObjectDetectConflictRetrieve", "testSyncSObjectDetectConflictUpdate", "testSyncSObjectRetrieve", "testSyncSObjectUpdate", "testSyncSObjectWithCacheCreate", "testSyncSObjectWithCacheDelete", "testSyncSObjectWithCacheRead", "testSyncSObjectWithCacheUpdate", "testSyncSObjectWithServerCreate", "testSyncSObjectWithServerDelete", "testSyncSObjectWithServerRead", "testSyncSObjectWithServerUpdate"});
-    }
+		return Arrays.asList(new String[] { "testCollectionFetch",
+				"testFetchSObjects", "testFetchSObjectsFromServer",
+				"testSObjectDestroy", "testSObjectFetch", "testSObjectSave",
+				"testSObjectTypeDescribe", "testSObjectTypeGetMetadata",
+				"testSObjectTypeDescribeLayout", "testSObjectTypeCacheMerge",
+				"testMultiSObjectTypes", "testSObjectTypeReset",
+				"testStoreCacheAddLocalFields", "testStoreCacheFind",
+				"testStoreCacheInit", "testStoreCacheRemove",
+				"testStoreCacheRetrieve", "testStoreCacheSave",
+				"testStoreCacheSaveAll", "testSyncSObjectCreate",
+				"testSyncSObjectDelete", "testSyncSObjectDetectConflictCreate",
+				"testSyncSObjectDetectConflictDelete",
+				"testSyncSObjectDetectConflictRetrieve",
+				"testSyncSObjectDetectConflictUpdate",
+				"testSyncSObjectRetrieve", "testSyncSObjectUpdate",
+				"testSyncRemoteObjectWithCacheCreate",
+				"testSyncRemoteObjectWithCacheDelete",
+				"testSyncRemoteObjectWithCacheRead",
+				"testSyncRemoteObjectWithCacheUpdate",
+				"testSyncSObjectWithServerCreate",
+				"testSyncSObjectWithServerDelete",
+				"testSyncSObjectWithServerRead",
+				"testSyncSObjectWithServerUpdate" });
+	}
     
     public void testStoreCacheInit() {
         runTest("testStoreCacheInit");
