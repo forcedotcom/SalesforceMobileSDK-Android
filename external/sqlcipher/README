@@ -1,4 +1,4 @@
 Changes included in the v2.2.1 release:
 
- * Use SQLCiphre core v2.2.1
+ * Use SQLCipher core v2.2.1
  * Switch scheme from git to https
