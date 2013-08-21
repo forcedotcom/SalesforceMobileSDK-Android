@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.salesforce.samples.accounteditor"
+    package="com.salesforce.samples.hybridfileexplorer"
     android:versionCode="1"
     android:versionName="1.0"
 	android:installLocation="internalOnly">
@@ -22,7 +22,7 @@
     <uses-sdk android:minSdkVersion="8" />
 
     <application android:label="@string/app_name"
-        android:name=".AccountEditorApp"
+        android:name=".HybridFileExplorerApp"
         android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
 
 		<!-- Service required for authentication -->
