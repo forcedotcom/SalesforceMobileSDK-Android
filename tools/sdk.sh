@@ -50,6 +50,7 @@ usage ()
     echo "        FileExplorer"
     echo "        TemplateApp"
     echo "        AccountEditor"
+    echo "        HybridFileExplorer"
     echo "        ContactExplorer"
     echo "        VFConnector"
     echo "        SmartStoreExplorer"
@@ -163,6 +164,7 @@ else
     build_project_if_requested "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator
     build_project_if_requested "FileExplorer" $NATIVE_TOP/SampleApps/FileExplorer
     build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor
+    build_project_if_requested "HybridFileExplorer" $HYBRID_TOP/SampleApps/HybridFileExplorer
     build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer
     build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer
     build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector

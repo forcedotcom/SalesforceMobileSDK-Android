@@ -24,16 +24,16 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.AccountEditor;
+package com.salesforce.samples.hybridfileexplorer;
 
 import android.app.Application;
 
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 
 /**
- * Application class for the contact explorer app.
+ * Application class for the hybrid file explorer app.
  */
-public class AccountEditorApp extends Application {
+public class HybridFileExplorerApp extends Application {
 
 	@Override
 	public void onCreate() {
