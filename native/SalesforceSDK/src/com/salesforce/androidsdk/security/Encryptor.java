@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.security;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 
 import javax.crypto.BadPaddingException;
@@ -84,7 +85,7 @@ public class Encryptor {
             return false;
         }
         try {
-            Mac.getInstance(MAC_TRANSFORMATION);
+            Mac.getInstance(MAC_TRANSFORMATION, "BC");
         } catch (GeneralSecurityException e) {
             Log.e(TAG, "No mac transformation available");
             return false;
@@ -95,10 +96,10 @@ public class Encryptor {
     public static Cipher getBestCipher() throws GeneralSecurityException {
         Cipher cipher = null;
         if (null != bestCipherAvailable) {
-            return Cipher.getInstance(bestCipherAvailable);
+            return Cipher.getInstance(bestCipherAvailable, "BC");
         }
         try {
-            cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION);
+            cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION, "BC");
             if (null != cipher)
                 bestCipherAvailable = PREFER_CIPHER_TRANSFORMATION;
         } catch (GeneralSecurityException gex1) {
@@ -194,7 +195,7 @@ public class Encryptor {
             byte [] keyBytes = key.getBytes(UTF8);
             byte [] dataBytes = data.getBytes(UTF8);
 
-            Mac sha = Mac.getInstance(MAC_TRANSFORMATION);
+            Mac sha = Mac.getInstance(MAC_TRANSFORMATION, "BC");
             SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());
             sha.init(keySpec);
             byte [] sig = sha.doFinal(dataBytes);
@@ -209,8 +210,8 @@ public class Encryptor {
     }
 
 
-    private static byte[] generateInitVector() throws NoSuchAlgorithmException {
-        SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+    private static byte[] generateInitVector() throws NoSuchAlgorithmException, NoSuchProviderException {
+        SecureRandom random = SecureRandom.getInstance("SHA1PRNG", "BC");
         byte[] iv = new byte[16];
         random.nextBytes(iv);
         return iv;
