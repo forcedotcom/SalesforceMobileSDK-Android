@@ -71,7 +71,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "2.0.1";
+    public static final String SDK_VERSION = "2.0.2";
 
     /**
      * Last phone version.
@@ -291,6 +291,21 @@ public class SalesforceSDKManager implements AccountRemoved {
 	 */
     public static void initHybrid(Context context, KeyInterface keyImpl, Class<? extends Activity> loginActivity) {
     	SalesforceSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class, loginActivity);
+    }
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by hybrid apps that use a subclass of SalesforceDroidGapActivity.
+	 *
+	 * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param mainActivity Main activity.
+     * @param loginActivity Login activity.
+	 */
+    public static void initHybrid(Context context, KeyInterface keyImpl,
+    		Class<? extends SalesforceDroidGapActivity> mainActivity, Class<? extends Activity> loginActivity) {
+    	SalesforceSDKManager.init(context, keyImpl, mainActivity, loginActivity);
     }
 
 	/**
