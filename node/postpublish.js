@@ -29,7 +29,6 @@
 
 var exec = require('child_process').exec;
 var path = require('path');
-var publishUtils = require('./publishutils');
 
 // Move the original README back into place.
 var readmePath = path.resolve(path.join(__dirname, '..', 'README.md'));
@@ -44,23 +43,19 @@ exec('mv "' + readmeBackupPath + '" "' + readmePath + '"', function (error, stdo
 	var absGitRepoPath = path.resolve(__dirname, '..');
 	process.chdir(absGitRepoPath);
 
-	var symLinkEntries = publishUtils.getSymLinkFiles();
-	gitRevertSymLinks(symLinkEntries, function() {
-		console.log('Finished reverting symlink files in git.');
+	// Main repo first.
+	exec('git reset --hard HEAD', function (error, stdout, stderr) {
+		if (error) {
+			console.log('WARNING: Could not hard reset the main repository.')
+		}
+
+		// Submodules next.
+		exec('git submodule foreach \'git reset --hard HEAD\'', function (error, stdout, stderr) {
+			if (error) {
+				console.log('WARNING: Could not hard reset one or more of the submodules.');
+			}
+
+			console.log('Finished reverting symlink files in git.');
+		});
 	});
 });
-
-function gitRevertSymLinks(symLinkEntries, callback) {
-	if (symLinkEntries.length === 0) {  // We're done.
-		return callback();
-	}
-
-	var destFilePath = symLinkEntries.shift().destFile;
-	destFilePath = path.relative(process.cwd(), destFilePath);
-	exec('git checkout -- "' + destFilePath + '"', function (error, stdout, stderr) {
-		if (error) {
-			console.log('WARNING: Could not revert file \'' + destFilePath + '\' in git: ' + error);
-		}
-		gitRevertSymLinks(symLinkEntries, callback);
-	});
-}
