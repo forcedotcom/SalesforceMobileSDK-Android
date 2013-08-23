@@ -211,7 +211,7 @@ public class Encryptor {
 
 
     private static byte[] generateInitVector() throws NoSuchAlgorithmException, NoSuchProviderException {
-        SecureRandom random = SecureRandom.getInstance("SHA1PRNG", "BC");
+        SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
         byte[] iv = new byte[16];
         random.nextBytes(iv);
         return iv;
