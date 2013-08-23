@@ -1,5 +1,6 @@
 hybrid/SampleApps/AccountEditor/bin/
 hybrid/SampleApps/ContactExplorer/bin/
+hybrid/SampleApps/HybridFileExplorer/bin/
 hybrid/SampleApps/SmartStoreExplorer/bin/
 hybrid/SampleApps/VFConnector/bin/
 hybrid/SampleApps/test/ContactExplorerTest/bin/
@@ -19,6 +20,7 @@ native/test/TemplateAppTest/bin/
 
 hybrid/SampleApps/AccountEditor/gen/
 hybrid/SampleApps/ContactExplorer/gen/
+hybrid/SampleApps/HybridFileExplorer/gen/
 hybrid/SampleApps/SmartStoreExplorer/gen/
 hybrid/SampleApps/VFConnector/gen/
 hybrid/SampleApps/test/ContactExplorerTest/gen/
@@ -38,6 +40,7 @@ native/test/TemplateAppTest/gen/
 
 hybrid/SampleApps/AccountEditor/proguard-project.txt
 hybrid/SampleApps/ContactExplorer/proguard-project.txt
+hybrid/SampleApps/HybridFileExplorer/proguard-project.txt
 hybrid/SampleApps/SmartStoreExplorer/proguard-project.txt
 hybrid/SampleApps/VFConnector/proguard-project.txt
 hybrid/SampleApps/test/ContactExplorerTest/proguard-project.txt
@@ -57,6 +60,7 @@ native/test/TemplateAppTest/proguard-project.txt
 
 hybrid/SampleApps/AccountEditor/local.properties
 hybrid/SampleApps/ContactExplorer/local.properties
+hybrid/SampleApps/HybridFileExplorer/local.properties
 hybrid/SampleApps/SmartStoreExplorer/local.properties
 hybrid/SampleApps/VFConnector/local.properties
 hybrid/SampleApps/test/ContactExplorerTest/local.properties
