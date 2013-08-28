@@ -54,6 +54,7 @@ import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.security.PRNGFixes;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
@@ -71,7 +72,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "2.0.3";
+    public static final String SDK_VERSION = "2.0.4";
 
     /**
      * Last phone version.
@@ -122,7 +123,8 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
      */
-    protected SalesforceSDKManager(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    protected SalesforceSDKManager(Context context, KeyInterface keyImpl, 
+    		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	this.context = context;
     	this.keyImpl = keyImpl;
     	this.mainActivityClass = mainActivity;
@@ -250,6 +252,9 @@ public class SalesforceSDKManager implements AccountRemoved {
 	 * @param context Application context.
 	 */
     public static void initInternal(Context context) {
+
+    	// Applies PRNG fixes for certain older versions of Android.
+    	PRNGFixes.apply();
 
         // Initializes the encryption module.
         Encryptor.init(context);
