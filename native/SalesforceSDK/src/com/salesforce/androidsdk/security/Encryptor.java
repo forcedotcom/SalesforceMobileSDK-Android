@@ -194,21 +194,40 @@ public class Encryptor {
             // Sign with sha256
             byte [] keyBytes = key.getBytes(UTF8);
             byte [] dataBytes = data.getBytes(UTF8);
-
             Mac sha = Mac.getInstance(MAC_TRANSFORMATION, "BC");
             SecretKeySpec keySpec = new SecretKeySpec(keyBytes, sha.getAlgorithm());
             sha.init(keySpec);
             byte [] sig = sha.doFinal(dataBytes);
 
-            // Encode with bas64
-            return Base64.encodeToString(sig, Base64.DEFAULT);
+            // Encode with base64.
+            String hash = Base64.encodeToString(sig, Base64.DEFAULT);
 
+            /*
+             * Android 4.3 has a bug where a newline character is appended
+             * at the end of the base64 encoded string. We remove this newline
+             * character to prevent a mismatch between the stored hash
+             * and computed hash.
+             */
+            hash = removeNewLine(hash);
+            return hash;
         } catch (Exception ex) {
             Log.w("Encryptor:hash", "error during hashing", ex);
             return null;
         }
     }
 
+    /**
+     * Removes a trailing newline character from the hash.
+     *
+     * @param hash Hash.
+     * @return Hash with trailing newline character removed.
+     */
+    public static String removeNewLine(String hash) {
+        if (hash != null && hash.contains("\n")) {
+            return hash.substring(0, hash.lastIndexOf("\n"));
+        }
+        return hash;
+    }
 
     private static byte[] generateInitVector() throws NoSuchAlgorithmException, NoSuchProviderException {
         SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
@@ -216,7 +235,6 @@ public class Encryptor {
         random.nextBytes(iv);
         return iv;
     }
-
 
     /**
      * Encrypt data bytes using key
