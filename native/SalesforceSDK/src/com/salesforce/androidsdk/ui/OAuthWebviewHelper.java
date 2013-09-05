@@ -285,7 +285,7 @@ public class OAuthWebviewHelper {
 
 		@Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-			boolean isDone = url.replace("///", "/").contains(loginOptions.oauthCallbackUrl.replace("///", "/"));
+			boolean isDone = url.replace("///", "/").startsWith(loginOptions.oauthCallbackUrl.replace("///", "/"));
             if (isDone) {
                 Uri callbackUri = Uri.parse(url);
                 Map<String, String> params = UriFragmentParser.parse(callbackUri);
