@@ -223,7 +223,7 @@ public class Encryptor {
      * @return Hash with trailing newline character removed.
      */
     public static String removeNewLine(String hash) {
-        if (hash != null && hash.contains("\n")) {
+        if (hash != null && hash.endsWith("\n")) {
             return hash.substring(0, hash.lastIndexOf("\n"));
         }
         return hash;
