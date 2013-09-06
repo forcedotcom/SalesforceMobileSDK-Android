@@ -60,11 +60,13 @@ public class ManageSpaceActivity extends Activity {
 	}
 
 	/**
-	 * Builds the manage space alert dialog.
+	 * Builds the manage space alert dialog. Subclasses can
+	 * override this method to provide their own implementation
+	 * or a custom dialog.
 	 *
 	 * @return Manage space alert dialog.
 	 */
-    private AlertDialog buildManageSpaceDialog() {
+    protected AlertDialog buildManageSpaceDialog() {
         return new AlertDialog.Builder(this)
         .setMessage(salesforceR.stringManageSpaceConfirmation())
         .setPositiveButton(getString(salesforceR.stringPasscodeLogoutYes()),
