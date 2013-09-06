@@ -211,6 +211,7 @@ public class PasscodeManager  {
     public boolean check(Context ctx, String passcode) {
         SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         String hashedPasscode = sp.getString(KEY_PASSCODE, null);
+        hashedPasscode = Encryptor.removeNewLine(hashedPasscode);
         if (hashedPasscode != null) {
             return hashedPasscode.equals(hashForVerification(passcode));
         }
