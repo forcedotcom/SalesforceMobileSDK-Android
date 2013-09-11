@@ -382,11 +382,11 @@ public class PasscodeManager  {
         	return;
         }
         Intent i = new Intent(ctx, PasscodeActivity.class);
-        i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-        i.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
-            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
         if (ctx instanceof Activity) {
             ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
