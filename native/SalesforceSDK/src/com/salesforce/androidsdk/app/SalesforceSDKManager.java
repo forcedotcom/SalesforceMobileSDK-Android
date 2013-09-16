@@ -50,6 +50,7 @@ import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.rest.AdminPrefsManager;
 import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -100,6 +101,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     private PasscodeManager passcodeManager;
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
+    private AdminPrefsManager adminPrefsManager;
 
     /**
      * Returns a singleton instance of this class.
@@ -392,6 +394,18 @@ public class SalesforceSDKManager implements AccountRemoved {
             passcodeManager = new PasscodeManager(context);
         }
         return passcodeManager;
+    }
+
+    /**
+     * Returns the admin prefs manager associated with SalesforceSDKManager.
+     *
+     * @return AdminPrefsManager instance.
+     */
+    public synchronized AdminPrefsManager getAdminPrefsManager() {
+    	if (adminPrefsManager == null) {
+    		adminPrefsManager = new AdminPrefsManager();
+    	}
+    	return adminPrefsManager;
     }
 
     /**

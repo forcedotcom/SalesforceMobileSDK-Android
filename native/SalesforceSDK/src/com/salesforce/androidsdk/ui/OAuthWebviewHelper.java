@@ -50,6 +50,7 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.rest.AdminPrefsManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
@@ -370,6 +371,12 @@ public class OAuthWebviewHelper {
             } else {
                 // Putting together all the information needed to create the new account
                 accountOptions = new AccountOptions(id.username, tr.refreshToken, tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId);
+
+                // Sets additional admin prefs, if they exist.
+                if (id.adminPrefs != null) {
+                    final AdminPrefsManager prefManager = SalesforceSDKManager.getInstance().getAdminPrefsManager();
+                    prefManager.setPrefs(id.adminPrefs);
+                }
 
                 // Screen lock required by mobile policy
                 if (id.screenLockTimeout > 0) {
