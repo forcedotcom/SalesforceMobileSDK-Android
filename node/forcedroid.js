@@ -29,7 +29,7 @@
 
  // node.js application for working with projects that use the Salesforce Mobile
  // SDK for Android.  Currently supports the creation of new apps from different
- // app templates.
+ // app templates and running sample apps.
 
 var exec = require('child_process').exec;
 var path = require('path');
@@ -45,6 +45,11 @@ var command = commandLineArgs.shift();
 if (typeof command !== 'string') {
     usage();
     process.exit(1);
+}
+
+if (command === 'samples') {
+    fetchSamples();
+    process.exit(6);
 }
 
 // Set up the input argument processing / validation.
@@ -63,15 +68,55 @@ commandLineUtils.processArgsInteractive(commandLineArgs, argProcessorList, funct
     }
 });
 
+function fetchSamples() {
+    var echoSamples =
+        ['',
+        outputColors.green + 'Hybrid sample apps are available in ' + outputColors.magenta + path.join(packageSdkRootDir, 'hybrid/SampleApps'),
+        '',
+        outputColors.green + 'Native sample apps are available in ' + outputColors.magenta + path.join(packageSdkRootDir, 'native/SampleApps'),
+        '',
+        outputColors.cyan + 'To build the sample application, do the following:' + outputColors.reset,
+        '   - cd ' + path.join(packageSdkRootDir, 'native/SalesforceSDK'),
+        '   - $ANDROID_SDK_DIR/android update project -p .',
+        '   - ant clean debug',
+        '',
+        '   - cd ' + path.join(packageSdkRootDir, 'hybrid/SmartStore'),
+        '   - $ANDROID_SDK_DIR/android update project -p .',
+        '   - ant clean debug',
+        '',
+        '   - cd ' + path.join(packageSdkRootDir, 'native/SampleApps/' + outputColors.magenta + '<Native sample app to build>' + outputColors.reset),
+        '   - $ANDROID_SDK_DIR/android update project -p .',
+        '   - ant clean debug',
+        '',
+        '   - cd ' + path.join(packageSdkRootDir, 'hybrid/SampleApps/' + outputColors.magenta + '<Hybrid sample app to build>' + outputColors.reset),
+        '   - $ANDROID_SDK_DIR/android update project -p .',
+        '   - ant clean debug',
+        '',
+        outputColors.cyan + 'To run the application, start an emulator or plug in your device and run:' + outputColors.reset,
+        '   - ant installd',
+        '',
+        outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
+        '   - Import ' + outputColors.magenta + path.join(packageSdkRootDir, 'native/SalesforceSDK') + ', ',
+        '   ' + outputColors.magenta + path.join(packageSdkRootDir, 'hybrid/SmartStore') + ', ',      
+        '     and the ' + outputColors.magenta + '<sample app>' + outputColors.reset + ' projects into your workspace',
+        '   - Choose \'Build All\' from the Project menu',
+        '   - Run your application by choosing "Run as Android application"',
+        ''].join('\n');
+    console.log(echoSamples);
+}
+
 function usage() {
     console.log(outputColors.cyan + 'Usage:');
+    console.log('\n');
     console.log(outputColors.magenta + 'forcedroid create');
     console.log('    --apptype=<Application Type> (native, hybrid_remote, hybrid_local)');
     console.log('    --appname=<Application Name>');
     console.log('    --targetdir=<Target App Folder>');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
-    console.log('    [--usesmartstore=<Whether or not to use SmartStore> (\'true\' or \'false\'. false by default)]' + outputColors.reset);
+    console.log('    [--usesmartstore=<Whether or not to use SmartStore> (\'true\' or \'false\'. false by default)]');
+    console.log(outputColors.cyan + '\nOR\n');
+    console.log(outputColors.magenta + 'forcedroid samples' + outputColors.reset);
 }
 
 function createApp() {
