@@ -500,6 +500,10 @@ public class SalesforceSDKManager implements AccountRemoved {
             frontActivity.finish();
         }
 
+        // Resets admin prefs manager.
+        getAdminPrefsManager().reset();
+        adminPrefsManager = null;
+
         // Resets passcode and encryption key, if any.
         getPasscodeManager().reset(context);
         passcodeManager = null;
