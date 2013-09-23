@@ -46,63 +46,155 @@ if (typeof command !== 'string') {
     usage();
     process.exit(1);
 }
-
+var commandLineArgsMap = {};
 if (command === 'samples') {
-    fetchSamples();
-    process.exit(6);
+    var argProcessorList = samplesArgProcessorList();
+    commandLineUtils.processArgsInteractive(commandLineArgs, argProcessorList, function (outputArgsMap) {
+        var outputDir = outputArgsMap.targetdir;
+        fetchSamples(outputDir);
+    });
+} else {
+
+    // Set up the input argument processing / validation.
+    var argProcessorList = createArgProcessorList();
+    commandLineUtils.processArgsInteractive(commandLineArgs, argProcessorList, function (outputArgsMap) {
+        commandLineArgsMap = outputArgsMap;
+        switch  (command) {
+            case 'create':
+                create();
+                break;
+            default:
+                console.log('Unknown option: \'' + command + '\'.');
+                usage();
+                process.exit(2);
+        }
+    });
 }
 
-// Set up the input argument processing / validation.
-var argProcessorList = createArgProcessorList();
-var commandLineArgsMap;
-commandLineUtils.processArgsInteractive(commandLineArgs, argProcessorList, function (outputArgsMap) {
-    commandLineArgsMap = outputArgsMap;
-    switch  (command) {
-        case 'create':
-            createApp();
-            break;
-        default:
-            console.log('Unknown option: \'' + command + '\'.');
-            usage();
-            process.exit(2);
-    }
-});
+function fetchSamples(outputDir) {
+    var inputProperties = {};
+    var projectDir;
 
-function fetchSamples() {
-    var echoSamples =
-        ['',
-        outputColors.green + 'Hybrid sample apps are available in ' + outputColors.magenta + path.join(packageSdkRootDir, 'hybrid/SampleApps'),
-        '',
-        outputColors.green + 'Native sample apps are available in ' + outputColors.magenta + path.join(packageSdkRootDir, 'native/SampleApps'),
-        '',
-        outputColors.cyan + 'To build the sample application, do the following:' + outputColors.reset,
-        '   - cd ' + path.join(packageSdkRootDir, 'native/SalesforceSDK'),
-        '   - $ANDROID_SDK_DIR/android update project -p .',
-        '   - ant clean debug',
-        '',
-        '   - cd ' + path.join(packageSdkRootDir, 'hybrid/SmartStore'),
-        '   - $ANDROID_SDK_DIR/android update project -p .',
-        '   - ant clean debug',
-        '',
-        '   - cd ' + path.join(packageSdkRootDir, 'native/SampleApps/' + outputColors.magenta + '<Native sample app to build>' + outputColors.reset),
-        '   - $ANDROID_SDK_DIR/android update project -p .',
-        '   - ant clean debug',
-        '',
-        '   - cd ' + path.join(packageSdkRootDir, 'hybrid/SampleApps/' + outputColors.magenta + '<Hybrid sample app to build>' + outputColors.reset),
-        '   - $ANDROID_SDK_DIR/android update project -p .',
-        '   - ant clean debug',
-        '',
-        outputColors.cyan + 'To run the application, start an emulator or plug in your device and run:' + outputColors.reset,
-        '   - ant installd',
-        '',
-        outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
-        '   - Import ' + outputColors.magenta + path.join(packageSdkRootDir, 'native/SalesforceSDK') + ', ',
-        '   ' + outputColors.magenta + path.join(packageSdkRootDir, 'hybrid/SmartStore') + ', ',      
-        '     and the ' + outputColors.magenta + '<sample app>' + outputColors.reset + ' projects into your workspace',
-        '   - Choose \'Build All\' from the Project menu',
-        '   - Run your application by choosing "Run as Android application"',
-        ''].join('\n');
-    console.log(echoSamples);
+    // Sets properties and copies over the 'FileExplorer' app.
+    commandLineArgsMap.apptype = 'native';
+    commandLineArgsMap.appname = 'FileExplorer';
+    commandLineArgsMap.targetdir = outputDir;
+    commandLineArgsMap.packagename = 'com.salesforce.samples.fileexplorer';
+    commandLineArgsMap.boolusesmartstore = false;
+    inputProperties.templateDir = path.join(packageSdkRootDir, 'native/SampleApps/FileExplorer');
+    inputProperties.templateAppName = 'FileExplorer';
+    inputProperties.templatePackageName = 'com.salesforce.samples.fileexplorer';
+    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
+    inputProperties.bootConfigPath = path.join(projectDir, 'res', 'values', 'bootconfig.xml');
+    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
+    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
+    create(inputProperties);
+
+    // Sets properties and copies over the 'NativeSqlAggregator' app.
+    commandLineArgsMap.apptype = 'native';
+    commandLineArgsMap.appname = 'NativeSqlAggregator';
+    commandLineArgsMap.targetdir = outputDir;
+    commandLineArgsMap.packagename = 'com.salesforce.samples.nativesqlaggregator';
+    commandLineArgsMap.boolusesmartstore = true;
+    inputProperties.templateDir = path.join(packageSdkRootDir, 'native/SampleApps/NativeSqlAggregator');
+    inputProperties.templateAppName = 'NativeSqlAggregator';
+    inputProperties.templatePackageName = 'com.salesforce.samples.nativesqlaggregator';
+    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
+    inputProperties.bootConfigPath = path.join(projectDir, 'res', 'values', 'bootconfig.xml');
+    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
+    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
+    create(inputProperties);
+
+    // Sets properties and copies over the 'RestExplorer' app.
+    commandLineArgsMap.apptype = 'native';
+    commandLineArgsMap.appname = 'RestExplorer';
+    commandLineArgsMap.targetdir = outputDir;
+    commandLineArgsMap.packagename = 'com.salesforce.samples.restexplorer';
+    commandLineArgsMap.boolusesmartstore = true;
+    inputProperties.templateDir = path.join(packageSdkRootDir, 'native/SampleApps/RestExplorer');
+    inputProperties.templateAppName = 'RestExplorer';
+    inputProperties.templatePackageName = 'com.salesforce.samples.restexplorer';
+    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
+    inputProperties.bootConfigPath = path.join(projectDir, 'res', 'values', 'bootconfig.xml');
+    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
+    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
+    create(inputProperties);
+
+    // Sets properties and copies over the 'AccountEditor' app.
+    commandLineArgsMap.apptype = 'hybrid_local';
+    commandLineArgsMap.appname = 'AccountEditor';
+    commandLineArgsMap.targetdir = outputDir;
+    commandLineArgsMap.packagename = 'com.salesforce.samples.accounteditor';
+    commandLineArgsMap.boolusesmartstore = true;
+    inputProperties.templateDir = path.join(packageSdkRootDir, 'hybrid/SampleApps/AccountEditor');
+    inputProperties.templateAppName = 'AccountEditor';
+    inputProperties.templatePackageName = 'com.salesforce.samples.accounteditor';
+    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
+    inputProperties.bootConfigPath = path.join(projectDir, 'assets', 'www', 'bootconfig.json');
+    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
+    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
+    create(inputProperties);
+
+    // Sets properties and copies over the 'ContactExplorer' app.
+    commandLineArgsMap.apptype = 'hybrid_local';
+    commandLineArgsMap.appname = 'ContactExplorer';
+    commandLineArgsMap.targetdir = outputDir;
+    commandLineArgsMap.packagename = 'com.salesforce.samples.contactexplorer';
+    commandLineArgsMap.boolusesmartstore = false;
+    inputProperties.templateDir = path.join(packageSdkRootDir, 'hybrid/SampleApps/ContactExplorer');
+    inputProperties.templateAppName = 'ContactExplorer';
+    inputProperties.templatePackageName = 'com.salesforce.samples.contactexplorer';
+    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
+    inputProperties.bootConfigPath = path.join(projectDir, 'assets', 'www', 'bootconfig.json');
+    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
+    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
+    create(inputProperties);
+
+    // Sets properties and copies over the 'HybridFileExplorer' app.
+    commandLineArgsMap.apptype = 'hybrid_local';
+    commandLineArgsMap.appname = 'HybridFileExplorer';
+    commandLineArgsMap.targetdir = outputDir;
+    commandLineArgsMap.packagename = 'com.salesforce.samples.hybridfileexplorer';
+    commandLineArgsMap.boolusesmartstore = true;
+    inputProperties.templateDir = path.join(packageSdkRootDir, 'hybrid/SampleApps/HybridFileExplorer');
+    inputProperties.templateAppName = 'HybridFileExplorer';
+    inputProperties.templatePackageName = 'com.salesforce.samples.hybridfileexplorer';
+    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
+    inputProperties.bootConfigPath = path.join(projectDir, 'assets', 'www', 'bootconfig.json');
+    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
+    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
+    create(inputProperties);
+
+    // Sets properties and copies over the 'SmartStoreExplorer' app.
+    commandLineArgsMap.apptype = 'hybrid_local';
+    commandLineArgsMap.appname = 'SmartStoreExplorer';
+    commandLineArgsMap.targetdir = outputDir;
+    commandLineArgsMap.packagename = 'com.salesforce.samples.smartstoreexplorer';
+    commandLineArgsMap.boolusesmartstore = true;
+    inputProperties.templateDir = path.join(packageSdkRootDir, 'hybrid/SampleApps/SmartStoreExplorer');
+    inputProperties.templateAppName = 'SmartStoreExplorer';
+    inputProperties.templatePackageName = 'com.salesforce.samples.smartstoreexplorer';
+    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
+    inputProperties.bootConfigPath = path.join(projectDir, 'assets', 'www', 'bootconfig.json');
+    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
+    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
+    create(inputProperties);
+
+    // Sets properties and copies over the 'VFConnector' app.
+    commandLineArgsMap.apptype = 'hybrid_remote';
+    commandLineArgsMap.appname = 'VFConnector';
+    commandLineArgsMap.targetdir = outputDir;
+    commandLineArgsMap.packagename = 'com.salesforce.samples.vfconnector';
+    commandLineArgsMap.startpage = '/apex/BasicVFPage';
+    commandLineArgsMap.boolusesmartstore = true;
+    inputProperties.templateDir = path.join(packageSdkRootDir, 'hybrid/SampleApps/VFConnector');
+    inputProperties.templateAppName = 'VFConnector';
+    inputProperties.templatePackageName = 'com.salesforce.samples.vfconnector';
+    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
+    inputProperties.bootConfigPath = path.join(projectDir, 'assets', 'www', 'bootconfig.json');
+    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
+    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
+    create(inputProperties);
 }
 
 function usage() {
@@ -116,19 +208,28 @@ function usage() {
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
     console.log('    [--usesmartstore=<Whether or not to use SmartStore> (\'true\' or \'false\'. false by default)]');
     console.log(outputColors.cyan + '\nOR\n');
-    console.log(outputColors.magenta + 'forcedroid samples' + outputColors.reset);
+    console.log(outputColors.magenta + 'forcedroid samples');
+    console.log('    --targetdir=<Target Samples Folder>' + outputColors.reset);
 }
 
-function createApp() {
-
+function create(sampleAppInputProperties) {
+    
     // The destination project directory, in the target directory.
     var projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
     if (fs.existsSync(projectDir)) {
         console.log('App folder path \'' + projectDir + '\' already exists.  Cannot continue.');
         process.exit(3);
     }
+    var appInputProperties;
+    if (sampleAppInputProperties === undefined) {
+        appInputProperties = configureInputAppProperties(projectDir);
+    } else {
+        appInputProperties = sampleAppInputProperties;
+    }
+    createApp(appInputProperties, projectDir);
+}
 
-    var appInputProperties = configureInputAppProperties(projectDir);
+function createApp(appInputProperties, projectDir) {
 
     // Copy the template files to the destination directory.
     shellJs.mkdir('-p', projectDir);
@@ -388,6 +489,20 @@ function createArgProcessorList() {
     argProcessorList.addArgProcessor('usesmartstore', 'Do you want to use SmartStore in your app? [yes/NO] (\'No\' by default)', function(useSmartStore) {
         var boolUseSmartStore = (useSmartStore.trim().toLowerCase() === 'yes');
         return new commandLineUtils.ArgProcessorOutput(true, boolUseSmartStore);
+    });
+
+    return argProcessorList;
+}
+
+function samplesArgProcessorList() {
+    var argProcessorList = new commandLineUtils.ArgProcessorList();
+
+    // Target dir
+    argProcessorList.addArgProcessor('targetdir', 'Enter the target directory of samples:', function(targetDir) {
+        if (targetDir.trim() === '')
+            return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for target dir: \'' + targetDir + '\'');
+        
+        return new commandLineUtils.ArgProcessorOutput(true, targetDir.trim());
     });
 
     return argProcessorList;
