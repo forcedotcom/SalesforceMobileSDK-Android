@@ -57,7 +57,7 @@ public class PasscodeManager  {
 	private static final String EPREFIX = "eprefix";
 	
     // Default min passcode length
-    protected static final int MIN_PASSCODE_LENGTH = 6;
+    protected static final int MIN_PASSCODE_LENGTH = 4;
 
     // Key in preference for the passcode
     private static final String KEY_PASSCODE ="passcode";
