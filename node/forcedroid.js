@@ -314,8 +314,8 @@ function createApp(appInputProperties, projectDir) {
         var projectPropertiesContent = shellJs.cat(projectPropertiesFilePath);
         var smartStoreAbsPath = path.join(destSdkDir, 'hybrid', 'SmartStore');
         var smartStorePathRelativeToProject = path.relative(projectDir, smartStoreAbsPath);
-        var smartStoreProjectPropertyContent = 'android.library.reference.2=' + smartStorePathRelativeToProject + '\n';
-        projectPropertiesContent = projectPropertiesContent + smartStoreProjectPropertyContent;
+        var smartStoreProjectPropertyContent = 'android.library.reference.1=' + smartStorePathRelativeToProject + '\n';
+        projectPropertiesContent = smartStoreProjectPropertyContent;
         projectPropertiesContent.to(projectPropertiesFilePath);
 
         console.log('Extending SalesforceSDKManagerWithSmartStore instead of SalesforceSDKManager.');
