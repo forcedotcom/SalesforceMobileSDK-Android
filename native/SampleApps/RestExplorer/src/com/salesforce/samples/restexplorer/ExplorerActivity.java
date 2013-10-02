@@ -436,8 +436,11 @@ public class ExplorerActivity extends TabActivity {
 	public void onManualRequestClick(View v) {
 		RestRequest request = null;
 		try {
-			String path = ((EditText) findViewById(R.id.manual_request_path_text))
-					.getText().toString();
+			final EditText editText = (EditText) findViewById(R.id.manual_request_path_text);
+			final String hintText = String.format(getResources().getString(R.string.path_hint),
+					getResources().getString(R.string.api_version));
+			editText.setHint(hintText);
+			final String path = editText.getText().toString();
 			HttpEntity paramsEntity = getParamsEntity(R.id.manual_request_params_text);
 			RestMethod method = getMethod(R.id.manual_request_method_radiogroup);
 			request = new RestRequest(method, path, paramsEntity);
