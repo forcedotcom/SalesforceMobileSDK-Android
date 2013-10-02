@@ -7,5 +7,4 @@
 	<string name="fetch_contacts_button">Fetch Contacts</string>
 	<string name="fetch_accounts_button">Fetch Accounts</string>
 	<string name="clear_button">Clear</string>
-	<string name="api_version">v23.0</string>
 </resources>

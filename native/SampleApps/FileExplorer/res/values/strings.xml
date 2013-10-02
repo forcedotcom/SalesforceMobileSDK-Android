@@ -9,5 +9,4 @@
 	<string name="files_shared_button">Files Shared With Me</string>
 	<string name="clear_button">Clear</string>
 	<string name="cancel_button">Cancel</string>
-	<string name="api_version">v28.0</string>
 </resources>

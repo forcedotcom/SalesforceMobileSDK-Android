@@ -53,6 +53,7 @@ import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.BaseActivityInstrumentationTestCase;
@@ -188,14 +189,14 @@ public class ExplorerActivityTest extends
      * Test going to resources tab - check UI and click get resources.
      */
     public void testGetResources() {
-        gotoTabAndRunAction(RESOURCES_TAB, R.id.resources_button, "Get Resources", null, "[GET " + TEST_INSTANCE_URL + "/services/data/v23.0/]");
+        gotoTabAndRunAction(RESOURCES_TAB, R.id.resources_button, "Get Resources", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/]");
     }
 
     /**
      * Test going to describe global tab - check UI and click describe global.
      */
     public void testDescribeGlobal() {
-        gotoTabAndRunAction(DESCRIBE_GLOBAL_TAB, R.id.describe_global_button, "Describe Global", null, "[GET " + TEST_INSTANCE_URL + "/services/data/v23.0/sobjects/]");
+        gotoTabAndRunAction(DESCRIBE_GLOBAL_TAB, R.id.describe_global_button, "Describe Global", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/]");
     }
 
     /**
@@ -208,7 +209,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.metadata_object_type_text, "objTypeMetadata");
             }
         };
-        gotoTabAndRunAction(METADATA_TAB, R.id.metadata_button, "Get Metadata", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/v23.0/sobjects/objTypeMetadata/]");
+        gotoTabAndRunAction(METADATA_TAB, R.id.metadata_button, "Get Metadata", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeMetadata/]");
     }
 
     /**
@@ -221,7 +222,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.describe_object_type_text, "objTypeDescribe");
             }
         };
-        gotoTabAndRunAction(DESCRIBE_TAB, R.id.describe_button, "Describe", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/v23.0/sobjects/objTypeDescribe/describe/]");
+        gotoTabAndRunAction(DESCRIBE_TAB, R.id.describe_button, "Describe", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeDescribe/describe/]");
     }
 
     /**
@@ -235,7 +236,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.create_fields_text, "{\"field1\":\"create1\",\"field2\":\"create2\"}");
             }
         };
-        gotoTabAndRunAction(CREATE_TAB, R.id.create_button, "Create", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/v23.0/sobjects/objTypeCreate {\"field1\":\"create1\",\"field2\":\"create2\"}]");
+        gotoTabAndRunAction(CREATE_TAB, R.id.create_button, "Create", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeCreate {\"field1\":\"create1\",\"field2\":\"create2\"}]");
     }
 
     /**
@@ -250,7 +251,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.retrieve_field_list_text, "field1,field2");
             }
         };
-        gotoTabAndRunAction(RETRIEVE_TAB, R.id.retrieve_button, "Retrieve", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/v23.0/sobjects/objTypeRetrieve/objIdRetrieve?fields=field1%2Cfield2]");
+        gotoTabAndRunAction(RETRIEVE_TAB, R.id.retrieve_button, "Retrieve", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeRetrieve/objIdRetrieve?fields=field1%2Cfield2]");
     }
 
 
@@ -266,7 +267,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.update_fields_text, "{\"field1\":\"update1\",\"field2\":\"update2\"}");
             }
         };
-        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Update", extraSetup, "[PATCH " + TEST_INSTANCE_URL + "/services/data/v23.0/sobjects/objTypeUpdate/objIdUpdate {\"field1\":\"update1\",\"field2\":\"update2\"}]");
+        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Update", extraSetup, "[PATCH " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpdate/objIdUpdate {\"field1\":\"update1\",\"field2\":\"update2\"}]");
     }
 
     /**
@@ -282,7 +283,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.upsert_fields_text, "{\"field1\":\"upsert1\",\"field2\":\"upsert2\"}");
             }
         };
-        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Upsert", extraSetup, "[PATCH " + TEST_INSTANCE_URL + "/services/data/v23.0/sobjects/objTypeUpsert/extIdField/extId {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
+        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Upsert", extraSetup, "[PATCH " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpsert/extIdField/extId {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
     }
 
     /**
@@ -296,7 +297,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.delete_object_id_text, "objIdDelete");
             }
         };
-        gotoTabAndRunAction(DELETE_TAB, R.id.delete_button, "Delete", extraSetup, "[DELETE " + TEST_INSTANCE_URL + "/services/data/v23.0/sobjects/objTypeDelete/objIdDelete]");
+        gotoTabAndRunAction(DELETE_TAB, R.id.delete_button, "Delete", extraSetup, "[DELETE " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeDelete/objIdDelete]");
     }
 
 
@@ -310,7 +311,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.query_soql_text, "fake query");
             }
         };
-        gotoTabAndRunAction(QUERY_TAB, R.id.query_button, "Query", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/v23.0/query?q=fake+query]");
+        gotoTabAndRunAction(QUERY_TAB, R.id.query_button, "Query", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/query?q=fake+query]");
     }
 
 
@@ -324,7 +325,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.search_sosl_text, "fake search");
             }
         };
-        gotoTabAndRunAction(SEARCH_TAB, R.id.search_button, "Search", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/v23.0/search?q=fake+search]");
+        gotoTabAndRunAction(SEARCH_TAB, R.id.search_button, "Search", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/search?q=fake+search]");
     }
 
 

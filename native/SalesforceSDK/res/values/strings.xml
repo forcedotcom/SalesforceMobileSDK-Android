@@ -9,4 +9,7 @@
    	
    	<!-- If you're only supporting recent versions of Android (e.g. 3.x and up), you can override this to be touch and get a better looking login UI  -->
    	<string name="oauth_display_type">touch</string>
+
+   	<!-- Default API version used by the SDK and sample apps -->
+   	<string name="api_version">v28.0</string>
 </resources>

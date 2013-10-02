@@ -8,7 +8,6 @@
     </string-array>
     <string name="account_name">sdktest@cs1.com (test)</string>
     <string name="account_type">com.salesforce.androisdk.smartstore.test</string>
-    <string name="api_version">v27.0</string>
     <string name="encoding">UTF-8</string>
     <string name="instance_url">https://cs1.salesforce.com</string>
     <string name="identity_url">https://test.salesforce.com</string>
