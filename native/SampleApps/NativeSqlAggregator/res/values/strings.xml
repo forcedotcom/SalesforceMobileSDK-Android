@@ -6,7 +6,6 @@
 	<string name="logout_button">Logout</string>
 	<string name="save_offline_button">Save Records Offline</string>
 	<string name="clear_button">Clear Offline Store</string>
-	<string name="api_version">v27.0</string>
 	<string name="join_button">Run Report</string>
 
 	<!-- Query strings -->

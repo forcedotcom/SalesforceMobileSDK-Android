@@ -17,7 +17,7 @@
 
 	<EditText android:id="@+id/manual_request_path_text"
 		android:layout_width="fill_parent" android:layout_height="wrap_content"
-		android:textColor="#000000" android:hint="@string/path_hint"
+		android:textColor="#000000"
 		android:maxLines="1" android:imeOptions="actionNext" />
 
 	<EditText android:id="@+id/manual_request_params_text"
