@@ -256,11 +256,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     public static void initInternal(Context context) {
 
     	// Applies PRNG fixes for certain older versions of Android.
-    	try {
-        	PRNGFixes.apply();
-    	} catch (SecurityException e) {
-            Log.w("SalesforceSDKManager:initInternal", e);
-    	}
+        PRNGFixes.apply();
 
         // Initializes the encryption module.
         Encryptor.init(context);
