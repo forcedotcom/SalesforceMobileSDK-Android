@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.salesforce.samples.restexplorer" android:versionCode="1"
+	package="com.salesforce.samples.restexplorer"
+	android:versionCode="1"
 	android:versionName="1.0"
 	android:installLocation="internalOnly">
 
@@ -9,17 +10,6 @@
 	    android:label="@string/app_name"
 		android:name=".RestExplorerApp"
 		android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
-
-		<!-- Service required for authentication -->
-		<service android:exported="true"
-		    android:process=":auth"
-			android:name="com.salesforce.androidsdk.auth.AuthenticatorService">
-			<intent-filter>
-				<action android:name="android.accounts.AccountAuthenticator" />
-			</intent-filter>
-			<meta-data android:name="android.accounts.AccountAuthenticator"
-				android:resource="@xml/authenticator" />
-		</service>
 
 		<!-- Launcher screen -->
 		<activity android:name=".ExplorerActivity" android:label="@string/app_name"
@@ -29,33 +19,7 @@
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
 		</activity>
-
-		<!-- Login activity -->
-		<activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
-		    android:theme="@android:style/Theme.NoTitleBar" />
-
-		<!-- Passcode activity -->
-		<activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity" 
-		    android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-
-		<!-- Manage space activity -->
-        <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"
-            android:excludeFromRecents="true"
-            android:theme="@android:style/Theme.NoTitleBar" />
-
-		<!-- Choose server activity -->
-		<activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity"
-		    android:excludeFromRecents="true"
-		    android:theme="@android:style/Theme.NoTitleBar" />
 	</application>
 
-	<uses-permission android:name="android.permission.INTERNET" />
-	<uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
-	<uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
-	<uses-permission android:name="android.permission.GET_ACCOUNTS" />
-	<uses-permission android:name="android.permission.USE_CREDENTIALS" />
-	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-	<!-- device os versions http://developer.android.com/guide/publishing/versioning.html -->
 	<uses-sdk android:minSdkVersion="8" />
 </manifest>
