@@ -2,6 +2,7 @@
 <resources>
     <string name="account_type">com.salesforce.samples.templateapp.login</string>
 	<string name="app_name"><b>Template</b></string>
+	<string name="app_package">com.salesforce.samples.templateapp</string>
     <string name="welcome">Welcome %s</string>
 	<string name="logout_button">Logout</string>
 	<string name="fetch_contacts_button">Fetch Contacts</string>

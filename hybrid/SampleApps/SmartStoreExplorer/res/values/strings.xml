@@ -2,5 +2,6 @@
 <resources>
 	<string name="app_name">Smart Store Explorer</string>
    	<string name="account_type">com.salesforce.samples.smartstoreexplorer</string>
+   	<string name="app_package">com.salesforce.samples.smartstoreexplorer</string>
 </resources>
 

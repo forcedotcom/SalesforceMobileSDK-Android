@@ -23,4 +23,14 @@
 	</application>
 
 	<uses-sdk android:minSdkVersion="12" />
+
+    <!--
+        GCM permission to ensure that only this application can
+        receive the messages and registration result. This must be of
+        the format <app-package-name>.C2D_MESSAGE for it to work.
+    -->
+    <permission android:name="com.salesforce.samples.fileexplorer.C2D_MESSAGE"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="com.salesforce.samples.fileexplorer.C2D_MESSAGE" />
 </manifest>
