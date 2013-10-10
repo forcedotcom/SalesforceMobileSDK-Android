@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.push;
 
+import com.salesforce.androidsdk.rest.BootConfig;
+
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -58,11 +60,6 @@ public class PushMessaging {
     public static final String COMMENT_PUSH_RECEIVED_EVENT = "com.salesforce.chatter.c2dm.COMMENT_RECEIVED";
     public static final String EXTRA_POST_ID = "com.salesforce.chatter.c2dm.POST_ID";
     public static final long MILLISECONDS_IN_A_DAY = 86400000L;
-
-    /*
-     * TODO: Read sender ID from somewhere.
-     */
-    private static final String GCM_SENDER_ID = "";
     private static final String GCM_PREFS = "gcm_prefs";
     private static final long DEFAULT_BACKOFF = 30000;
 
@@ -79,7 +76,8 @@ public class PushMessaging {
             final Intent registrationIntent = new Intent(REQUEST_REGISTRATION_INTENT);
             registrationIntent.putExtra(EXTRA_APPLICATION_PENDING_INTENT,
                     PendingIntent.getBroadcast(context, 0, new Intent(), 0));
-            registrationIntent.putExtra(SENDER, GCM_SENDER_ID);
+            registrationIntent.putExtra(SENDER,
+            		BootConfig.getBootConfig(context).getPushNotificationClientId());
             context.startService(registrationIntent);
         } else if (hasBeenADaySinceLastSFDCRegistration(context)) {
             registerSFDCPush(context);

@@ -56,6 +56,7 @@ public class BootConfig {
 	private static final String ERROR_PAGE = "errorPage";
 	private static final String SHOULD_AUTHENTICATE = "shouldAuthenticate";
 	private static final String ATTEMPT_OFFLINE_LOAD = "attemptOfflineLoad";
+	private static final String PUSH_NOTIFICATION_CLIENT_ID = "pushNotificationClientId";
 
 	// Default for optional configs.
 	private static final boolean DEFAULT_SHOULD_AUTHENTICATE = true;
@@ -69,6 +70,7 @@ public class BootConfig {
 	private String errorPage;
 	private boolean shouldAuthenticate;
 	private boolean attemptOfflineLoad;
+	private String pushNotificationClientId;
 
 	private static BootConfig INSTANCE = null;
 
@@ -110,6 +112,7 @@ public class BootConfig {
 		remoteAccessConsumerKey = res.getString(R.string.remoteAccessConsumerKey);
 		oauthRedirectURI = res.getString(R.string.oauthRedirectURI);
 		oauthScopes = res.getStringArray(R.array.oauthScopes);
+		pushNotificationClientId = res.getString(R.string.pushNotificationClientId);
 	}
 
 	/**
@@ -156,6 +159,7 @@ public class BootConfig {
 			errorPage = config.getString(ERROR_PAGE);
 
 			// Optional fields.
+			pushNotificationClientId = config.optString(PUSH_NOTIFICATION_CLIENT_ID);
 			shouldAuthenticate = config.optBoolean(SHOULD_AUTHENTICATE, DEFAULT_SHOULD_AUTHENTICATE);
 			attemptOfflineLoad = config.optBoolean(ATTEMPT_OFFLINE_LOAD, DEFAULT_ATTEMPT_OFFLINE_LOAD);
 		} catch (JSONException e) {
@@ -233,6 +237,15 @@ public class BootConfig {
 	 */
 	public boolean attemptOfflineLoad() {
 		return attemptOfflineLoad;
+	}
+
+	/**
+	 * Returns the push notification client ID.
+	 *
+	 * @return Push notification client ID.
+	 */
+	public String getPushNotificationClientId() {
+		return pushNotificationClientId;
 	}
 
 	/**
