@@ -56,7 +56,7 @@ public class BootConfig {
 	private static final String ERROR_PAGE = "errorPage";
 	private static final String SHOULD_AUTHENTICATE = "shouldAuthenticate";
 	private static final String ATTEMPT_OFFLINE_LOAD = "attemptOfflineLoad";
-	private static final String PUSH_NOTIFICATION_CLIENT_ID = "pushNotificationClientId";
+	private static final String PUSH_NOTIFICATION_CLIENT_ID = "androidPushNotificationClientId";
 
 	// Default for optional configs.
 	private static final boolean DEFAULT_SHOULD_AUTHENTICATE = true;

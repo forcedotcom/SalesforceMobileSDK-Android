@@ -6,7 +6,7 @@
     <string-array name="oauthScopes">
         <item>api</item>
     </string-array>
-    <string name="pushNotificationClientId"></string>
+    <string name="androidPushNotificationClientId"></string>
     <string name="account_name">sdktest@cs1.com (test)</string>
     <string name="account_type">com.salesforce.androisdk.test</string>
     <string name="encoding">UTF-8</string>
