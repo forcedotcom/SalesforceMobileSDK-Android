@@ -51,6 +51,7 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.push.PushMessaging;
+import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.AdminPrefsManager;
 import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -103,6 +104,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
     private AdminPrefsManager adminPrefsManager;
+    private PushNotificationInterface pushNotificationInterface;
 
     /**
      * Returns a singleton instance of this class.
@@ -380,6 +382,24 @@ public class SalesforceSDKManager implements AccountRemoved {
         }
         return loginServerManager;
     }    
+
+    /**
+     * Sets a receiver that handles received push notifications.
+     *
+     * @param pnInterface Implementation of PushNotificationInterface.
+     */
+    public synchronized void setPushNotificationReceiver(PushNotificationInterface pnInterface) {
+    	pushNotificationInterface = pnInterface;
+    }
+
+    /**
+     * Returns the configured receiver that handles received push notifications.
+     *
+     * @return Configured implementation of PushNotificationInterface.
+     */
+    public synchronized PushNotificationInterface getPushNotificationReceiver() {
+    	return pushNotificationInterface;
+    }
 
     /**
      * Returns the passcode manager associated with SalesforceSDKManager.

@@ -42,6 +42,7 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.os.Bundle;
 import android.os.PowerManager;
 import android.util.Log;
 
@@ -154,9 +155,13 @@ public class PushService extends IntentService {
 	 * @param intent Intent.
 	 */
 	protected void onMessage(Intent intent) {
-		/*
-		 * TODO: Add message handling of push notification here.
-		 */
+		if (intent != null) {
+			final Bundle pushMessage = intent.getExtras();
+			final PushNotificationInterface pnInterface = SalesforceSDKManager.getInstance().getPushNotificationReceiver();
+			if (pnInterface != null && pushMessage != null) {
+				pnInterface.onPushMessageReceived(pushMessage);
+			}
+		}
 	}
 
     /**
