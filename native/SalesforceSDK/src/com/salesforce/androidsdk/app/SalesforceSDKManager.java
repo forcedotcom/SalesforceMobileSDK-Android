@@ -50,6 +50,7 @@ import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.AdminPrefsManager;
 import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -495,6 +496,12 @@ public class SalesforceSDKManager implements AccountRemoved {
         if (frontActivity != null) {
             frontActivity.finish();
         }
+
+        // Unregister from push notifications, if push notification client ID is present.
+    	final String pushNotificationId = BootConfig.getBootConfig(context).getPushNotificationClientId();
+    	if (pushNotificationId != null && !pushNotificationId.trim().isEmpty()) {
+    		PushMessaging.unregister(context);
+    	}
 
         // Resets admin prefs manager.
         getAdminPrefsManager().reset();
