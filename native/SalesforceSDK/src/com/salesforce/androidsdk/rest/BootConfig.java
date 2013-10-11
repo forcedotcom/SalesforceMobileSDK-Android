@@ -112,7 +112,7 @@ public class BootConfig {
 		remoteAccessConsumerKey = res.getString(R.string.remoteAccessConsumerKey);
 		oauthRedirectURI = res.getString(R.string.oauthRedirectURI);
 		oauthScopes = res.getStringArray(R.array.oauthScopes);
-		pushNotificationClientId = res.getString(R.string.pushNotificationClientId);
+		pushNotificationClientId = res.getString(R.string.androidPushNotificationClientId);
 	}
 
 	/**
