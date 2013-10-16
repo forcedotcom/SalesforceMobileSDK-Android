@@ -517,11 +517,10 @@ public class SalesforceSDKManager implements AccountRemoved {
             frontActivity.finish();
         }
 
-        // Unregister from push notifications, if push notification client ID is present.
-    	final String pushNotificationId = BootConfig.getBootConfig(context).getPushNotificationClientId();
-    	if (pushNotificationId != null && !pushNotificationId.trim().isEmpty()) {
-    		PushMessaging.unregister(context);
-    	}
+		// Un-registers from push notifications.
+		if (PushMessaging.isRegistered(context)) {
+	        PushMessaging.unregister(context);
+        }
 
         // Resets admin prefs manager.
         getAdminPrefsManager().reset();
@@ -567,7 +566,8 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param showLoginPage True - if the login page should be shown, False - otherwise.
      */
     public void logout(Activity frontActivity, final boolean showLoginPage) {
-        final ClientManager clientMgr = new ClientManager(context, getAccountType(), null, shouldLogoutWhenTokenRevoked());
+        final ClientManager clientMgr = new ClientManager(context, getAccountType(),
+        		null, shouldLogoutWhenTokenRevoked());
 		final AccountManager mgr = AccountManager.get(context);
 		String refreshToken = null;
 		String clientId = null;

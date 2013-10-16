@@ -26,13 +26,13 @@
  */
 package com.salesforce.androidsdk.push;
 
-import com.salesforce.androidsdk.rest.BootConfig;
-
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+
+import com.salesforce.androidsdk.rest.BootConfig;
 
 /**
  * This class provides utility functions related to push notifications,
@@ -45,12 +45,13 @@ import android.content.SharedPreferences.Editor;
  */
 public class PushMessaging {
 
+	// Public constants.
     public static final String UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesfore.mobilesdk.c2dm.UNREGISTERED";
     public static final String UNREGISTERED_EVENT = "com.salesfore.mobilesdk.c2dm.ACTUAL_UNREGISTERED";
 
+    // Private constants.
     private static final String SENDER = "sender";
     private static final String EXTRA_APPLICATION_PENDING_INTENT = "app";
-    private static final String EXTRA_UNREGISTRATION_CALLBACK = "callback";
     private static final String REQUEST_UNREGISTRATION_INTENT = "com.google.android.c2dm.intent.UNREGISTER";
     private static final String REQUEST_REGISTRATION_INTENT = "com.google.android.c2dm.intent.REGISTER";
     private static final String LAST_SFDC_REGISTRATION_TIME = "last_registration_change";
@@ -58,7 +59,6 @@ public class PushMessaging {
     private static final String BACKOFF = "backoff";
     private static final String DEVICE_ID = "deviceId";
     private static final String IN_PROGRESS = "inprogress";
-    private static final String REGISTERED_EVENT = "com.salesfore.mobilesdk.c2dm.REGISTERED";
     private static final long MILLISECONDS_IN_A_DAY = 86400000L;
     private static final String GCM_PREFS = "gcm_prefs";
     private static final long DEFAULT_BACKOFF = 30000;
@@ -217,7 +217,7 @@ public class PushMessaging {
     }
 
     /**
-     * Returns whether push notification registration/unregistration is in progress.
+     * Returns whether push notification registration/un-registration is in progress.
      *
      * @param context Context.
      * @return True - if in progress, False - otherwise.
