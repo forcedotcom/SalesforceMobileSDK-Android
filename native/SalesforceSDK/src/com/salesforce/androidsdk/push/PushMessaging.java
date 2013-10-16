@@ -41,25 +41,25 @@ import android.content.SharedPreferences.Editor;
  * private shared preference file.
  *
  * @author bhariharan
+ * @author ktanna
  */
 public class PushMessaging {
 
-    public static final String SENDER = "sender";
-    public static final String EXTRA_APPLICATION_PENDING_INTENT = "app";
-    public static final String EXTRA_UNREGISTRATION_CALLBACK = "callback";
-    public static final String REQUEST_UNREGISTRATION_INTENT = "com.google.android.c2dm.intent.UNREGISTER";
-    public static final String REQUEST_REGISTRATION_INTENT = "com.google.android.c2dm.intent.REGISTER";
-    public static final String LAST_SFDC_REGISTRATION_TIME = "last_registration_change";
-    public static final String REGISTRATION_ID = "c2dm_registration_id";
-    public static final String BACKOFF = "backoff";
-    public static final String DEVICE_ID = "deviceId";
-    public static final String IN_PROGRESS = "inprogress";
-    public static final String UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesfore.chatter.c2dm.UNREGISTERED";
-    public static final String UNREGISTERED_EVENT = "com.salesfore.chatter.c2dm.ACTUAL_UNREGISTERED";
-    public static final String REGISTERED_EVENT = "com.salesfore.chatter.c2dm.REGISTERED";
-    public static final String COMMENT_PUSH_RECEIVED_EVENT = "com.salesforce.chatter.c2dm.COMMENT_RECEIVED";
-    public static final String EXTRA_POST_ID = "com.salesforce.chatter.c2dm.POST_ID";
-    public static final long MILLISECONDS_IN_A_DAY = 86400000L;
+    public static final String UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesfore.mobilesdk.c2dm.UNREGISTERED";
+    public static final String UNREGISTERED_EVENT = "com.salesfore.mobilesdk.c2dm.ACTUAL_UNREGISTERED";
+
+    private static final String SENDER = "sender";
+    private static final String EXTRA_APPLICATION_PENDING_INTENT = "app";
+    private static final String EXTRA_UNREGISTRATION_CALLBACK = "callback";
+    private static final String REQUEST_UNREGISTRATION_INTENT = "com.google.android.c2dm.intent.UNREGISTER";
+    private static final String REQUEST_REGISTRATION_INTENT = "com.google.android.c2dm.intent.REGISTER";
+    private static final String LAST_SFDC_REGISTRATION_TIME = "last_registration_change";
+    private static final String REGISTRATION_ID = "c2dm_registration_id";
+    private static final String BACKOFF = "backoff";
+    private static final String DEVICE_ID = "deviceId";
+    private static final String IN_PROGRESS = "inprogress";
+    private static final String REGISTERED_EVENT = "com.salesfore.mobilesdk.c2dm.REGISTERED";
+    private static final long MILLISECONDS_IN_A_DAY = 86400000L;
     private static final String GCM_PREFS = "gcm_prefs";
     private static final long DEFAULT_BACKOFF = 30000;
 
@@ -71,7 +71,7 @@ public class PushMessaging {
      * @param context Context.
      */
     public static void register(Context context) {
-        if (!isRegistered(context) && isPushEnabled(context)) {
+        if (!isRegistered(context)) {
             setInProgress(context, true);
             final Intent registrationIntent = new Intent(REQUEST_REGISTRATION_INTENT);
             registrationIntent.putExtra(EXTRA_APPLICATION_PENDING_INTENT,
@@ -86,16 +86,18 @@ public class PushMessaging {
 
     /**
      * Initiates push registration against the SFDC endpoint.
+     *
+     * @param context Context.
      */
     public static void registerSFDCPush(Context context) {
-        if (isRegistered(context) && isPushEnabled(context)) {
+        if (isRegistered(context)) {
             final Intent registrationIntent = new Intent(PushService.SFDC_REGISTRATION_RETRY_INTENT);
             PushService.runIntentInService(registrationIntent);
         }
     }
 
     /**
-     * Performs GCM and SFDC unregistration from push notifications.
+     * Performs GCM and SFDC un-registration from push notifications.
      *
      * @param context Context.
      */
@@ -145,7 +147,7 @@ public class PushMessaging {
     public static boolean isRegistered(Context context) {
         final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
         		Context.MODE_PRIVATE);
-        return prefs.getString(REGISTRATION_ID, null) != null;
+        return (prefs.getString(REGISTRATION_ID, null) != null);
     }
 
     /**
@@ -170,7 +172,7 @@ public class PushMessaging {
     public static boolean isRegisteredWithSFDC(Context context) {
         final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
         		Context.MODE_PRIVATE);
-        return prefs.getString(DEVICE_ID, null) != null;
+        return (prefs.getString(DEVICE_ID, null) != null);
     }
 
     /**
@@ -201,7 +203,7 @@ public class PushMessaging {
 
     /**
      * Sets a boolean that reflects the status of push notification
-     * registration or unregistration (in progress or not).
+     * registration or un-registration (in progress or not).
      *
      * @param context Context.
      * @param inProgress True - if in progress, False - otherwise.
@@ -293,20 +295,7 @@ public class PushMessaging {
     private static boolean hasBeenADaySinceLastSFDCRegistration(Context context) {
         final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
         		Context.MODE_PRIVATE);
-        long lastRegisterationTimeStamp = prefs.getLong(LAST_SFDC_REGISTRATION_TIME, 0);
-        return (System.currentTimeMillis() - lastRegisterationTimeStamp) > MILLISECONDS_IN_A_DAY;
-    }
-
-    /**
-     * Returns if push notifications are enabled for this application.
-     *
-     * @param context Context.
-     * @return True - if push notifications are enabled, False - otherwise.
-     */
-    private static boolean isPushEnabled(Context context) {
-    	/*
-    	 * TODO: Plugin real call to connected app endpoint here.
-    	 */
-    	return true;
+        long lastRegistrationTimeStamp = prefs.getLong(LAST_SFDC_REGISTRATION_TIME, 0);
+        return ((System.currentTimeMillis() - lastRegistrationTimeStamp) > MILLISECONDS_IN_A_DAY);
     }
 }

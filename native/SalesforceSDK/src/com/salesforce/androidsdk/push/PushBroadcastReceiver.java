@@ -36,6 +36,7 @@ import android.content.Intent;
  * occurs in a service, to avoid blocking the UI thread.
  *
  * @author bhariharan
+ * @author ktanna
  */
 public class PushBroadcastReceiver extends BroadcastReceiver {
 

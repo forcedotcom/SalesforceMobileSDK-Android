@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.http.HttpStatus;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.AlarmManager;
@@ -66,25 +65,22 @@ public class PushService extends IntentService {
 
 	private static final String TAG = "PushService";
 
-	// Retry time constants.
-    private static final long MILLISECONDS_IN_SIX_DAYS = 518400000L;
-    private static final long SFDC_REGISTRATION_RETRY = 30000;
-
     // Intent actions.
 	public static final String GCM_REGISTRATION_CALLBACK_INTENT = "com.google.android.c2dm.intent.REGISTRATION";
     public static final String GCM_RECEIVE_INTENT = "com.google.android.c2dm.intent.RECEIVE";
-    public static final String SFDC_REGISTRATION_RETRY_INTENT = "com.salesforce.chatter.c2dm.intent.RETRY";
+    public static final String SFDC_REGISTRATION_RETRY_INTENT = "com.salesforce.mobilesdk.c2dm.intent.RETRY";
 
     // Extras in the registration callback intents.
-    public static final String EXTRA_UNREGISTERED = "unregistered";
-    public static final String EXTRA_ERROR = "error";
-    public static final String EXTRA_REGISTRATION_ID = "registration_id";
+    private static final String EXTRA_UNREGISTERED = "unregistered";
+    private static final String EXTRA_ERROR = "error";
+    private static final String EXTRA_REGISTRATION_ID = "registration_id";
 
-    // Error constants.
-    public static final String ERR_SERVICE_NOT_AVAILABLE = "SERVICE_NOT_AVAILABLE";
-    public static final String ERR_ACCOUNT_MISSING = "ACCOUNT_MISSING";
-    public static final String ERR_AUTHENTICATION_FAILED = "AUTHENTICATION_FAILED";
-    public static final String ERR_TOO_MANY_REGISTRATIONS = "TOO_MANY_REGISTRATIONS";
+    // Error constant when service is not available.
+    private static final String ERR_SERVICE_NOT_AVAILABLE = "SERVICE_NOT_AVAILABLE";
+
+	// Retry time constants.
+    private static final long MILLISECONDS_IN_SIX_DAYS = 518400000L;
+    private static final long SFDC_REGISTRATION_RETRY = 30000;
 
     // Salesforce push notification constants.
     private static final String MOBILE_PUSH_SERVICE_DEVICE = "MobilePushServiceDevice";
@@ -138,7 +134,10 @@ public class PushService extends IntentService {
             } else if (intent.getAction().equals(GCM_RECEIVE_INTENT)) {
                 onMessage(intent);
             } else if (intent.getAction().equals(SFDC_REGISTRATION_RETRY_INTENT)) {
-                onRegistered(PushMessaging.getRegistrationId(context));
+            	final String regId = PushMessaging.getRegistrationId(context);
+            	if (regId != null) {
+                    onRegistered(regId);
+            	}
             }
         } finally {
 
@@ -165,7 +164,7 @@ public class PushService extends IntentService {
 	}
 
     /**
-     * Handles errors associated with registration or unregistration.
+     * Handles errors associated with registration or un-registration.
      *
      * @param error Error received from the GCM service.
      */
@@ -184,22 +183,8 @@ public class PushService extends IntentService {
      * @param error Error received from the GCM service.
      */
     private void handleRegistrationError(String error) {
-    	if (error != null) {
-            if (ERR_SERVICE_NOT_AVAILABLE.equals(error)) {
-                scheduleGCMRetry(true);
-            } else if (ERR_ACCOUNT_MISSING.equals(error)) {
-            	/*
-            	 * TODO: Show failed notification to the user?
-            	 */
-            } else if (ERR_AUTHENTICATION_FAILED.equals(error)) {
-            	/*
-            	 * TODO: Show failed notification to the user?
-            	 */
-            } else if (ERR_TOO_MANY_REGISTRATIONS.equals(error)) {
-            	/*
-            	 * TODO: Show failed notification to the user?
-            	 */
-            }	
+    	if (error != null && ERR_SERVICE_NOT_AVAILABLE.equals(error)) {
+    		scheduleGCMRetry(true);
     	}
     }
 
@@ -220,9 +205,9 @@ public class PushService extends IntentService {
     }
 
     /**
-     * Schedules retry of GCM registration or unregistration.
+     * Schedules retry of GCM registration or un-registration.
      *
-     * @param register True - for registration retry, False - for unregistration retry.
+     * @param register True - for registration retry, False - for un-registration retry.
      */
     private void scheduleGCMRetry(boolean register) {
         long backoffTimeMs = PushMessaging.getBackoff(context);
@@ -261,26 +246,36 @@ public class PushService extends IntentService {
      * @param registrationId Registration ID received from GCM service.
      */
     private void onRegistered(String registrationId) {
-    	final String id = registerSFDCPushNotification(registrationId);
-    	long retryInterval = MILLISECONDS_IN_SIX_DAYS;
-    	if (id != null) {
-    		PushMessaging.setRegistrationInfo(context, registrationId, id);
-    	} else {
-    		retryInterval = SFDC_REGISTRATION_RETRY;
-        	PushMessaging.setRegistrationId(context, registrationId);
+    	long retryInterval = SFDC_REGISTRATION_RETRY;
+    	try {
+        	final String id = registerSFDCPushNotification(registrationId);
+        	if (id != null) {
+        		retryInterval = MILLISECONDS_IN_SIX_DAYS;
+        		PushMessaging.setRegistrationInfo(context, registrationId, id);
+        	} else {
+            	PushMessaging.setRegistrationId(context, registrationId);
+        	}
+    	} catch (Exception e) {
+    		Log.e(TAG, "Error occurred during SFDC registration.", e);
+    	} finally {
+            scheduleSFDCRegistrationRetry(retryInterval);
     	}
-        scheduleSFDCRegistrationRetry(retryInterval);
     }
 
     /**
-     * This method is called when the device has been unregistered.
+     * This method is called when the device has been un-registered.
      */
     private void onUnregistered() {
-    	final String id = PushMessaging.getDeviceId(context);
-    	unregisterSFDCPushNotification(id);
-    	PushMessaging.clearRegistrationInfo(context);
-        context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT));
-        context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_EVENT));
+    	try {
+        	final String id = PushMessaging.getDeviceId(context);
+        	unregisterSFDCPushNotification(id);
+    	} catch (Exception e) {
+    		Log.e(TAG, "Error occurred during SFDC un-registration.", e);
+    	} finally {
+        	PushMessaging.clearRegistrationInfo(context);
+            context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT));
+            context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_EVENT));
+    	}
     }
 
     /**
@@ -305,19 +300,17 @@ public class PushService extends IntentService {
         		}
         	}
         	return id;
-    	} catch (IOException e) {
-    		Log.e(TAG, "Push notification registration failed.", e);
-    	} catch (JSONException e) {
+    	} catch (Exception e) {
     		Log.e(TAG, "Push notification registration failed.", e);
     	}
     	return null;
     }
 
     /**
-     * Hits the Salesforce endpoint to unregister from push notifications.
+     * Hits the Salesforce endpoint to un-register from push notifications.
      *
      * @param registeredId Salesforce ID that uniquely identifies the registered device.
-     * @return True - if unregistration was successful, False - otherwise.
+     * @return True - if un-registration was successful, False - otherwise.
      */
     private boolean unregisterSFDCPushNotification(String registeredId) {
     	final RestRequest req = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER,
@@ -328,7 +321,7 @@ public class PushService extends IntentService {
         		return true;
         	}
     	} catch (IOException e) {
-    		Log.e(TAG, "Push notification unregistration failed.", e);
+    		Log.e(TAG, "Push notification un-registration failed.", e);
     	}
     	return false;
     }
