@@ -562,10 +562,11 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param clientId Client ID.
      * @param loginServer Login server.
      * @param account Account instance.
+     * @param frontActivity Front activity.
      */
     private void unregisterPush(final ClientManager clientMgr, final boolean showLoginPage,
     		final String refreshToken, final String clientId,
-    		final String loginServer, final Account account) {
+    		final String loginServer, final Account account, final Activity frontActivity) {
         final IntentFilter intentFilter = new IntentFilter(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT);
         final BroadcastReceiver pushUnregisterReceiver = new BroadcastReceiver() {
 
@@ -573,7 +574,7 @@ public class SalesforceSDKManager implements AccountRemoved {
             public void onReceive(Context context, Intent intent) {
                 if (intent.getAction().equals(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT)) {
                     postPushUnregister(this, clientMgr, showLoginPage,
-                    		refreshToken, clientId, loginServer, account);
+                    		refreshToken, clientId, loginServer, account, frontActivity);
                 }
             }
         };
@@ -595,7 +596,7 @@ public class SalesforceSDKManager implements AccountRemoved {
                     SystemClock.sleep(500);
                 }
                 postPushUnregister(pushUnregisterReceiver, clientMgr, showLoginPage,
-                		refreshToken, clientId, loginServer, account);
+                		refreshToken, clientId, loginServer, account, frontActivity);
             };
         }).start();
     }
@@ -611,18 +612,19 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param clientId Client ID.
      * @param loginServer Login server.
      * @param account Account instance.
+     * @param frontActivity Front activity.
      */
     private synchronized void postPushUnregister(BroadcastReceiver pushReceiver,
     		final ClientManager clientMgr, final boolean showLoginPage,
     		final String refreshToken, final String clientId,
-    		final String loginServer, final Account account) {
+    		final String loginServer, final Account account, Activity frontActivity) {
         if (!loggedOut) {
             try {
                 context.unregisterReceiver(pushReceiver);
             } catch (Exception e) {
             	Log.e("SalesforceSDKManager:postPushUnregister", "Exception occurred while un-registering.", e);
             }
-    		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account);
+    		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
         }
     }
 
@@ -656,18 +658,13 @@ public class SalesforceSDKManager implements AccountRemoved {
 	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
 	        loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());	
 		}
-        if (accWatcher != null) {
-    		accWatcher.remove();
-    		accWatcher = null;
-    	}
-    	cleanUp(frontActivity);
 
 		// Makes a call to un-register from push notifications.
     	if (PushMessaging.isRegistered(context)) {
     		loggedOut = false;
-    		unregisterPush(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account);
+    		unregisterPush(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
     	} else {
-    		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account);
+    		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
     	}
     }
 
@@ -680,10 +677,16 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param clientId Client ID.
      * @param loginServer Login server.
      * @param account Account instance.
+     * @param frontActivity Front activity.
      */
     private void removeAccount(ClientManager clientMgr, final boolean showLoginPage,
-    		String refreshToken, String clientId, String loginServer, Account account) {
+    		String refreshToken, String clientId, String loginServer, Account account, Activity frontActivity) {
     	loggedOut = true;
+        if (accWatcher != null) {
+    		accWatcher.remove();
+    		accWatcher = null;
+    	}
+    	cleanUp(frontActivity);
 
     	// Removes the exisiting account, if any.
     	if (clientMgr.getAccount() == null) {
