@@ -291,15 +291,17 @@ public class PushService extends IntentService {
     	try {
         	final RestRequest req = RestRequest.getRequestForCreate(ApiVersionStrings.VERSION_NUMBER,
         			MOBILE_PUSH_SERVICE_DEVICE, fields);
-        	final RestResponse res = restClient.sendSync(req);
-        	String id = null;
-        	if (res.getStatusCode() == HttpStatus.SC_CREATED) {
-        		final JSONObject obj = res.asJSONObject();
-        		if (obj != null) {
-        			id = obj.getString(FIELD_ID);
-        		}
+        	if (restClient != null) {
+            	final RestResponse res = restClient.sendSync(req);
+            	String id = null;
+            	if (res.getStatusCode() == HttpStatus.SC_CREATED) {
+            		final JSONObject obj = res.asJSONObject();
+            		if (obj != null) {
+            			id = obj.getString(FIELD_ID);
+            		}
+            	}
+            	return id;
         	}
-        	return id;
     	} catch (Exception e) {
     		Log.e(TAG, "Push notification registration failed.", e);
     	}
@@ -316,10 +318,12 @@ public class PushService extends IntentService {
     	final RestRequest req = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER,
     			MOBILE_PUSH_SERVICE_DEVICE, registeredId);
     	try {
-        	final RestResponse res = restClient.sendSync(req);
-        	if (res.getStatusCode() == HttpStatus.SC_NO_CONTENT) {
-        		return true;
-        	}
+    		if (restClient != null) {
+            	final RestResponse res = restClient.sendSync(req);
+            	if (res.getStatusCode() == HttpStatus.SC_NO_CONTENT) {
+            		return true;
+            	}
+    		}
     	} catch (IOException e) {
     		Log.e(TAG, "Push notification un-registration failed.", e);
     	}
@@ -335,7 +339,15 @@ public class PushService extends IntentService {
     	final ClientManager cm = new ClientManager(SalesforceSDKManager.getInstance().getAppContext(),
     			SalesforceSDKManager.getInstance().getAccountType(),
     			SalesforceSDKManager.getInstance().getLoginOptions(), true);
-    	return cm.peekRestClient();
+    	RestClient client = null;
+    	if (cm != null) {
+    		try {
+            	client = cm.peekRestClient();
+    		} catch (Exception e) {
+    			Log.e(TAG, "Failed to get rest client.", e);
+    		}
+    	}
+    	return client;
     }
 
     /**
