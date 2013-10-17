@@ -344,7 +344,7 @@ public class PushService extends IntentService {
     		try {
             	client = cm.peekRestClient();
     		} catch (Exception e) {
-    			Log.e(TAG, "Failed to get rest client.", e);
+    			Log.e(TAG, "Failed to get rest client.");
     		}
     	}
     	return client;
