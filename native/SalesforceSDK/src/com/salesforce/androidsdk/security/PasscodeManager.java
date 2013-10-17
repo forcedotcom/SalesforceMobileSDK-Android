@@ -92,6 +92,7 @@ public class PasscodeManager  {
     private int timeoutMs;
     private int minPasscodeLength;
     private LockChecker lockChecker;
+    private Class<? extends PasscodeActivity> passcodeActivity;
 
     /**
      * Parameterized constructor.
@@ -116,6 +117,7 @@ public class PasscodeManager  {
         // Locked at app startup if you're authenticated.
         this.locked = true;
         lockChecker = new LockChecker();
+        passcodeActivity = PasscodeActivity.class;
     }
 
     /**
@@ -377,11 +379,22 @@ public class PasscodeManager  {
         return timeoutMs > 0 && now() >= (lastActivity + timeoutMs);
     }
 
+    /**
+     * Sets a custom sub-class of PasscodeActivity to be used.
+     *
+     * @param activity Sub-class of PasscodeActivity.
+     */
+    public void setPasscodeActivity(Class<? extends PasscodeActivity> activity) {
+    	if (activity != null) {
+    		passcodeActivity = activity;
+    	}
+    }
+
     public void showLockActivity(Context ctx) {
         if (ctx == null) {
         	return;
         }
-        Intent i = new Intent(ctx, PasscodeActivity.class);
+        Intent i = new Intent(ctx, passcodeActivity);
         i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
