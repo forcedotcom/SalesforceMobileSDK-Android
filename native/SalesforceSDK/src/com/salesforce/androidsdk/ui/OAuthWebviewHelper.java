@@ -50,7 +50,9 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.AdminPrefsManager;
+import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
@@ -369,7 +371,15 @@ public class OAuthWebviewHelper {
                         getContext().getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericAuthenticationErrorBody()));
                 callback.finish();
             } else {
-                // Putting together all the information needed to create the new account
+
+            	// Register for push notifications, if push notification client ID is present.
+            	final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
+            	final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
+            	if (pushNotificationId != null && !pushNotificationId.trim().isEmpty()) {
+                	PushMessaging.register(appContext);
+            	}
+
+                // Putting together all the information needed to create the new account.
                 accountOptions = new AccountOptions(id.username, tr.refreshToken, tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId);
 
                 // Sets additional admin prefs, if they exist.

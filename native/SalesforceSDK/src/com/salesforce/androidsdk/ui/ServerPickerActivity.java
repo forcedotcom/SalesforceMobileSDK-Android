@@ -435,7 +435,7 @@ public class ServerPickerActivity extends Activity implements
      * control the elements in the layout based on past user choices said
      * another way, select the correct radio button, show the custom url if set
      */
-    private void setupRadioButtons() {
+    protected void setupRadioButtons() {
         RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
 
         for (LoginServer currentServer : loginServerManager.getDefaultLoginServers()) {

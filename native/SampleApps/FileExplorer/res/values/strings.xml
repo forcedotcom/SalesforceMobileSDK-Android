@@ -2,6 +2,7 @@
 <resources>
     <string name="account_type">com.salesforce.samples.filexplorer.login</string>
 	<string name="app_name"><b>File Explorer</b></string>
+	<string name="app_package">com.salesforce.samples.fileexplorer</string>
     <string name="welcome">Welcome %s</string>
 	<string name="logout_button">Logout</string>
 	<string name="files_in_groups_button">Files In My Groups</string>
