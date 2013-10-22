@@ -33,7 +33,7 @@ import java.util.Map;
 
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
-import org.apache.cordova.api.CordovaInterface;
+import org.apache.cordova.CordovaInterface;
 import org.apache.http.HttpStatus;
 
 import android.app.Activity;
