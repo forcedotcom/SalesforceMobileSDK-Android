@@ -1,26 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<plugins>
+<widget xmlns     = "http://www.w3.org/ns/widgets"
+    id        = "com.salesforce.androidsdk"
+    version   = "2.1.0">
+
     <access origin="http://127.0.0.1*"/> <!-- allow local pages -->
     <access origin="https://force.com" subdomains="true" />
     <access origin="https://salesforce.com" subdomains="true" />
-    <log level="DEBUG"/>
+
+    <preference name="loglevel" level="DEBUG"/>
     <preference name="classicRender" value="true" />
 
-    <plugin name="App" value="org.apache.cordova.App"/>
-    <plugin name="Geolocation" value="org.apache.cordova.GeoBroker"/>
-    <plugin name="Device" value="org.apache.cordova.Device"/>
-    <plugin name="Accelerometer" value="org.apache.cordova.AccelListener"/>
-    <plugin name="Compass" value="org.apache.cordova.CompassListener"/>
-    <plugin name="Media" value="org.apache.cordova.AudioHandler"/>
-    <plugin name="Camera" value="org.apache.cordova.CameraLauncher"/>
-    <plugin name="Contacts" value="org.apache.cordova.ContactManager"/>
-    <plugin name="File" value="org.apache.cordova.FileUtils"/>
-    <plugin name="NetworkStatus" value="org.apache.cordova.NetworkManager"/>
-    <plugin name="Notification" value="org.apache.cordova.Notification"/>
-    <plugin name="Storage" value="org.apache.cordova.Storage"/>
-    <plugin name="Temperature" value="org.apache.cordova.TempListener"/>
-    <plugin name="FileTransfer" value="org.apache.cordova.FileTransfer"/>
-    <plugin name="Capture" value="org.apache.cordova.Capture"/>
-    <plugin name="com.salesforce.oauth" value="com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin"/>
-    <plugin name="com.salesforce.sdkinfo" value="com.salesforce.androidsdk.phonegap.SDKInfoPlugin"/>
-</plugins>
+    <feature name="App"><param name="android-package" value="org.apache.cordova.App"/></feature>
+    <feature name="Geolocation"><param name="android-package" value="org.apache.cordova.GeoBroker"/></feature>
+    <feature name="Device"><param name="android-package" value="org.apache.cordova.Device"/></feature>
+    <feature name="Accelerometer"><param name="android-package" value="org.apache.cordova.AccelListener"/></feature>
+    <feature name="Compass"><param name="android-package" value="org.apache.cordova.CompassListener"/></feature>
+    <feature name="Media"><param name="android-package" value="org.apache.cordova.AudioHandler"/></feature>
+    <feature name="Camera"><param name="android-package" value="org.apache.cordova.CameraLauncher"/></feature>
+    <feature name="Contacts"><param name="android-package" value="org.apache.cordova.ContactManager"/></feature>
+    <feature name="File"><param name="android-package" value="org.apache.cordova.FileUtils"/></feature>
+    <feature name="NetworkStatus"><param name="android-package" value="org.apache.cordova.NetworkManager"/></feature>
+    <feature name="Notification"><param name="android-package" value="org.apache.cordova.Notification"/></feature>
+    <feature name="Storage"><param name="android-package" value="org.apache.cordova.Storage"/></feature>
+    <feature name="Temperature"><param name="android-package" value="org.apache.cordova.TempListener"/></feature>
+    <feature name="FileTransfer"><param name="android-package" value="org.apache.cordova.FileTransfer"/></feature>
+    <feature name="Capture"><param name="android-package" value="org.apache.cordova.Capture"/></feature>
+    <feature name="com.salesforce.oauth"><param name="android-package" value="com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin"/></feature>
+    <feature name="com.salesforce.sdkinfo"><param name="android-package" value="com.salesforce.androidsdk.phonegap.SDKInfoPlugin"/></feature>
+
+</widget>
