@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <widget xmlns     = "http://www.w3.org/ns/widgets"
-    id        = "com.salesforce.androidsdk.test"
+    id        = "com.salesforce.androidsdk"
     version   = "2.1.0">
 
     <access origin="http://127.0.0.1*"/> <!-- allow local pages -->
@@ -11,20 +11,6 @@
     <preference name="classicRender" value="true" />
 
     <feature name="App"><param name="android-package" value="org.apache.cordova.App"/></feature>
-    <feature name="Geolocation"><param name="android-package" value="org.apache.cordova.GeoBroker"/></feature>
-    <feature name="Device"><param name="android-package" value="org.apache.cordova.Device"/></feature>
-    <feature name="Accelerometer"><param name="android-package" value="org.apache.cordova.AccelListener"/></feature>
-    <feature name="Compass"><param name="android-package" value="org.apache.cordova.CompassListener"/></feature>
-    <feature name="Media"><param name="android-package" value="org.apache.cordova.AudioHandler"/></feature>
-    <feature name="Camera"><param name="android-package" value="org.apache.cordova.CameraLauncher"/></feature>
-    <feature name="Contacts"><param name="android-package" value="org.apache.cordova.ContactManager"/></feature>
-    <feature name="File"><param name="android-package" value="org.apache.cordova.FileUtils"/></feature>
-    <feature name="NetworkStatus"><param name="android-package" value="org.apache.cordova.NetworkManager"/></feature>
-    <feature name="Notification"><param name="android-package" value="org.apache.cordova.Notification"/></feature>
-    <feature name="Storage"><param name="android-package" value="org.apache.cordova.Storage"/></feature>
-    <feature name="Temperature"><param name="android-package" value="org.apache.cordova.TempListener"/></feature>
-    <feature name="FileTransfer"><param name="android-package" value="org.apache.cordova.FileTransfer"/></feature>
-    <feature name="Capture"><param name="android-package" value="org.apache.cordova.Capture"/></feature>
     <feature name="com.salesforce.oauth"><param name="android-package" value="com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin"/></feature>
     <feature name="com.salesforce.sdkinfo"><param name="android-package" value="com.salesforce.androidsdk.phonegap.SDKInfoPlugin"/></feature>
     <feature name="com.salesforce.testrunner"><param name="android-package" value="com.salesforce.androidsdk.phonegap.TestRunnerPlugin"/></feature>

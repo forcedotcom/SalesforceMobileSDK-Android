@@ -1099,7 +1099,7 @@ public class ContactAccessorSdk5 extends ContactAccessor {
                         // This is an existing email so do a DB update
                         else {
                         	String emailValue=getJsonString(email, "value");
-                        	if(!emailValue.isEmpty()) {
+                        	if(emailValue.length() > 0) {
                                 ops.add(ContentProviderOperation.newUpdate(ContactsContract.Data.CONTENT_URI)
                                     .withSelection(ContactsContract.CommonDataKinds.Email._ID + "=? AND " +
                                             ContactsContract.Data.MIMETYPE + "=?",
