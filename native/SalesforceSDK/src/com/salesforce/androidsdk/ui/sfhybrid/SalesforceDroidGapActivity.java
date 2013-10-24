@@ -131,7 +131,9 @@ public class SalesforceDroidGapActivity extends DroidGap {
     }
 
 	protected ClientManager buildClientManager() {
-		return new ClientManager(this, SalesforceSDKManager.getInstance().getAccountType(), SalesforceSDKManager.getInstance().getLoginOptions(), SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
+		return new ClientManager(this, SalesforceSDKManager.getInstance().getAccountType(),
+				SalesforceSDKManager.getInstance().getLoginOptions(),
+				SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
 	}
 
     @Override
@@ -414,8 +416,15 @@ public class SalesforceDroidGapActivity extends DroidGap {
     	assert !bootconfig.isLocal();
     	String startPage = bootconfig.getStartPage();
     	Log.i("SalesforceDroidGapActivity.loadRemoteStartPage", "loading: " + startPage);
-		String url = getFrontDoorUrl(startPage);
-		loadUrl(url);
+
+    	/*
+    	 * If the app was swapped out of memory or killed, and if the session
+    	 * has expired, we need to swap the existing access token for a new one
+    	 * to keep the session alive. If not, we will get a 302 in the web view,
+    	 * which will redirect to the login page within the web view, and we will
+    	 * be stuck in a bad state. The refresh call here is inexpensive.
+    	 */
+		refresh(startPage);
     	webAppLoaded = true;
     }
     
