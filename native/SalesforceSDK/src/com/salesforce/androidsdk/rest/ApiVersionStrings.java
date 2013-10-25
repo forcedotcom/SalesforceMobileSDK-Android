@@ -26,16 +26,12 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import com.salesforce.androidsdk.R;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
- 
 /**
  * This is where all the API version info lives. This allows us to change one
  * line here and affect all our api calls.
  */
 public class ApiVersionStrings {
-    public static final String VERSION_NUMBER = SalesforceSDKManager.getInstance().
-    		getAppContext().getResources().getString(R.string.api_version);
+    public static final String VERSION_NUMBER = "v29.0";
     public static final String API_PREFIX = "/services/data/";
     public static final String BASE_PATH = API_PREFIX + VERSION_NUMBER;
     public static final String BASE_CHATTER_PATH = BASE_PATH + "/chatter/";
