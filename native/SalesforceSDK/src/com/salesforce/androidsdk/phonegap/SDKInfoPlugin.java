@@ -146,14 +146,14 @@ public class SDKInfoPlugin extends ForcePlugin {
 			XmlResourceParser xml = ctx.getResources().getXml(id);
 			int eventType = -1;
 			while (eventType != XmlResourceParser.END_DOCUMENT) {
-				if (eventType == XmlResourceParser.START_TAG) {
-					if (xml.getName().equals("plugin")) {
-						String service = xml.getAttributeValue(null, "name");
-						if (service.startsWith("com.salesforce.")) {
-							services.add(service);
-						}
+				String tagName = xml.getName();
+				if (eventType == XmlResourceParser.START_TAG && xml.getName().equals("feature")) {
+					String service = xml.getAttributeValue(null, "name");
+					if (service.startsWith("com.salesforce.")) {
+						services.add(service);
 					}
 				}
+		
 				try {
 					eventType = xml.next();
 				} catch (XmlPullParserException e) {
