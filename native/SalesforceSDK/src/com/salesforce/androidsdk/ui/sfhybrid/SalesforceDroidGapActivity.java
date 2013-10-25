@@ -131,7 +131,9 @@ public class SalesforceDroidGapActivity extends DroidGap {
     }
 
 	protected ClientManager buildClientManager() {
-		return new ClientManager(this, SalesforceSDKManager.getInstance().getAccountType(), SalesforceSDKManager.getInstance().getLoginOptions(), SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
+		return new ClientManager(this, SalesforceSDKManager.getInstance().getAccountType(),
+				SalesforceSDKManager.getInstance().getLoginOptions(),
+				SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
 	}
 
     @Override
