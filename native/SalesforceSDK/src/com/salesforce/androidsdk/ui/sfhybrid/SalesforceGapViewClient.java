@@ -92,12 +92,14 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
      * @return null if this is not a login redirect and return the the value for startURL if this is a login redirect
      */
     private String isLoginRedirect(String url) {
-    	Uri uri = Uri.parse(url);
-        Map<String, String> params = UriFragmentParser.parse(uri);
-    	String ec = params.get("ec");
-        String startURL = params.get("startURL");
+    	final Uri uri = Uri.parse(url);
+        final Map<String, String> params = UriFragmentParser.parse(uri);
+    	final String ec = params.get("ec");
+    	int ecInt = (ec != null ? Integer.parseInt(ec) : -1);
+        final String startURL = params.get("startURL");
     	if (uri != null && uri.getPath() != null && uri.getPath().equals("/")
-    			&& ec != null && (ec.equals(HttpStatus.SC_MOVED_PERMANENTLY) || ec.equals(HttpStatus.SC_MOVED_TEMPORARILY))
+    			&& (ecInt == HttpStatus.SC_MOVED_PERMANENTLY
+    			|| ecInt == HttpStatus.SC_MOVED_TEMPORARILY)
     			&& startURL != null) {
     		return startURL;
     	} else {
