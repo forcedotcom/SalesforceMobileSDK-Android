@@ -270,7 +270,7 @@ public class OAuthWebviewHelper {
      * @return login url
      */
     protected String getLoginUrl() {
-    	return SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url;
+    	return SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
     }
 
     /**
