@@ -270,7 +270,7 @@ public class OAuthWebviewHelper {
      * @return login url
      */
     protected String getLoginUrl() {
-    	return SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url;
+    	return SalesforceSDKManager.getInstance().getLoginServerManager().getSelectedLoginServer().url.trim();
     }
 
     /**
@@ -288,7 +288,7 @@ public class OAuthWebviewHelper {
 
 		@Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-			boolean isDone = url.replace("///", "/").startsWith(loginOptions.oauthCallbackUrl.replace("///", "/"));
+			boolean isDone = url.replace("///", "/").toLowerCase().startsWith(loginOptions.oauthCallbackUrl.replace("///", "/").toLowerCase());
             if (isDone) {
                 Uri callbackUri = Uri.parse(url);
                 Map<String, String> params = UriFragmentParser.parse(callbackUri);
