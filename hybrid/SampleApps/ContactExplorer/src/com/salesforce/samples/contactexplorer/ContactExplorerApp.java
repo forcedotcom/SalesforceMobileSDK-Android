@@ -39,5 +39,13 @@ public class ContactExplorerApp extends Application {
 	public void onCreate() {
 		super.onCreate();
 		SalesforceSDKManager.initHybrid(getApplicationContext(), new KeyImpl());
+
+		/*
+		 * Un-comment the line below to enable push notifications in this app.
+		 * Replace 'pnInterface' with your implementation of 'PushNotificationInterface'.
+		 * Add your Google package ID in 'bootonfig.json', as the value
+		 * for the key 'androidPushNotificationClientId'.
+		 */
+		// SalesforceSDKManager.getInstance().setPushNotificationReceiver(pnInterface);
 	}
 }
