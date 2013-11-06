@@ -37,7 +37,7 @@ Introduction
 	- This feature is only available on hybrid apps.
 
 **Other Technical Improvements**
-- Upgraded SQLCipher to v2.2.2, in order to support Android 4.3 (Jellybean) and Android 4.4 (Kit Kat).
+- Upgraded the `SQLCipher` library to `v2.2.2`, in order to support Android 4.3 (Jellybean) and Android 4.4 (Kit Kat).
 - Added the ability to merge Android Manifest files from the Mobile SDK library projects, using the `manifestmerger` attribute.
 - Added the ability for an app to supply a custom `PasscodeActivity`, using the `setPasscodeActivity()` method in `SalesforceSDKManager`.
 - Various bug fixes.
