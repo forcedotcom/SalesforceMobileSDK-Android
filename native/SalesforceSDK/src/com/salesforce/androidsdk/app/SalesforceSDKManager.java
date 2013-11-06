@@ -79,7 +79,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "2.1.0.unstable";
+    public static final String SDK_VERSION = "2.1.0";
 
     /**
      * Last phone version.
