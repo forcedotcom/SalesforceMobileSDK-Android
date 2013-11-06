@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 	<string name="app_name"><b>RestExplorer</b></string>
+	<string name="app_package">com.salesforce.samples.restexplorer</string>
 
 	<!-- Account Preferences -->
 	<string name="general_settings">General Settings</string>
@@ -64,7 +65,7 @@
 	<string name="fields_hint">json map of field names to field values</string>
 	<string name="soql_hint">SOQL</string>
 	<string name="sosl_hint">SOSL</string>
-	<string name="path_hint">/services/data/v22.0/sobjects</string>
+	<string name="path_hint">/services/data/%s/sobjects</string>
 	<string name="params_hint">json map of param names to param values</string>
 	<string name="get_method">GET</string>
 	<string name="post_method">POST</string>
@@ -74,7 +75,6 @@
 	<string name="patch_method">PATCH</string>
 
 	<!-- REST Options -->
-    <string name="api_version">v23.0</string>
     <string name="encoding">UTF-8</string>
     <string name="account_type">com.salesforce.samples.restexplorer.login</string>
 </resources>

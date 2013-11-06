@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.salesforce.samples.AccountEditor"
+    package="com.salesforce.samples.accounteditor"
     android:versionCode="1"
     android:versionName="1.0"
-	android:installLocation="internalOnly">
+    android:installLocation="internalOnly">
 
     <supports-screens android:largeScreens="true"
         android:normalScreens="true"
@@ -12,29 +12,11 @@
         android:resizeable="true"
         android:anyDensity="true" />
 
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-	<uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
-    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
-    <uses-permission android:name="android.permission.INTERNET" />
-	<uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
-	<uses-permission android:name="android.permission.USE_CREDENTIALS" />
-
     <uses-sdk android:minSdkVersion="8" />
 
     <application android:label="@string/app_name"
         android:name=".AccountEditorApp"
         android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
-
-		<!-- Service required for authentication -->
-		<service android:exported="true"
-		    android:process=":auth"
-			android:name="com.salesforce.androidsdk.auth.AuthenticatorService">
-			<intent-filter>
-				<action android:name="android.accounts.AccountAuthenticator" />
-			</intent-filter>
-			<meta-data android:name="android.accounts.AccountAuthenticator"
-				android:resource="@xml/authenticator" />
-		</service>
 
         <!--  Main activity -->
         <activity android:label="@string/app_name"
@@ -45,23 +27,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-		<!-- Login activity -->
-		<activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
-		    android:theme="@android:style/Theme.NoTitleBar" />
-
-		<!-- Passcode activity -->
-		<activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"
-		    android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-
-        <!-- Manage space activity -->
-        <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"
-            android:excludeFromRecents="true"
-            android:theme="@android:style/Theme.NoTitleBar" />
-
-		<!-- Choose server activity -->
-		<activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity"
-		    android:excludeFromRecents="true"
-		    android:theme="@android:style/Theme.NoTitleBar" />
     </application>
+
+    <!--
+        GCM permission to ensure that only this application can
+        receive the messages and registration result. This must be of
+        the format <app-package-name>.C2D_MESSAGE for it to work.
+    -->
+    <permission android:name="com.salesforce.samples.accounteditor.C2D_MESSAGE"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="com.salesforce.samples.accounteditor.C2D_MESSAGE" />
 </manifest>

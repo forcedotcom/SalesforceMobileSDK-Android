@@ -36,7 +36,6 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.app.UUIDManager;
-import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -57,7 +56,7 @@ public class PasscodeManager  {
 	private static final String EPREFIX = "eprefix";
 	
     // Default min passcode length
-    protected static final int MIN_PASSCODE_LENGTH = 6;
+    protected static final int MIN_PASSCODE_LENGTH = 4;
 
     // Key in preference for the passcode
     private static final String KEY_PASSCODE ="passcode";
@@ -381,12 +380,12 @@ public class PasscodeManager  {
         if (ctx == null) {
         	return;
         }
-        Intent i = new Intent(ctx, PasscodeActivity.class);
-        i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        i.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
-        i.setFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+        Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
+        i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
+        i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
-            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
         if (ctx instanceof Activity) {
             ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);

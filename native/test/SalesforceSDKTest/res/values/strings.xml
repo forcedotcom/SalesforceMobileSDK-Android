@@ -2,4 +2,5 @@
 <resources>
     <string name="hello">Hello World!</string>
     <string name="app_name">SalesforceSDKTest</string>
+    <string name="app_package">com.salesforce.androidsdk.tests</string>
 </resources>

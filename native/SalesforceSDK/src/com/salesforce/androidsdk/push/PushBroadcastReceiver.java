@@ -24,20 +24,28 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.AccountEditor;
+package com.salesforce.androidsdk.push;
 
-import android.app.Application;
-
-import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
+import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
 
 /**
- * Application class for the contact explorer app.
+ * This class receives GCM messages. The actual processing of the messages
+ * occurs in a service, to avoid blocking the UI thread.
+ *
+ * @author bhariharan
+ * @author ktanna
  */
-public class AccountEditorApp extends Application {
+public class PushBroadcastReceiver extends BroadcastReceiver {
 
-	@Override
-	public void onCreate() {
-		super.onCreate();
-		SalesforceSDKManagerWithSmartStore.initHybrid(getApplicationContext(), new KeyImpl());
-	}
+    @Override
+    public final void onReceive(Context context, Intent intent) {
+        if (intent.getAction().equals(PushService.GCM_REGISTRATION_CALLBACK_INTENT)
+                || intent.getAction().equals(PushService.GCM_RECEIVE_INTENT)) {
+            PushService.runIntentInService(intent);
+            setResult(Activity.RESULT_OK, null, null);
+        }
+    }
 }

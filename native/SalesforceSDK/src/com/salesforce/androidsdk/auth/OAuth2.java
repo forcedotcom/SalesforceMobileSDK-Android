@@ -99,6 +99,7 @@ public class OAuth2 {
     private static final String USERNAME = "username";
     private static final String CODE = "code";
     private static final String ACTIVATED_CLIENT_CODE = "activated_client_code";
+    private static final String CUSTOM_ATTRIBUTES = "custom_attributes";
 
     // Login paths
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
@@ -357,13 +358,15 @@ public class OAuth2 {
         public String username;
         public int pinLength = -1;
         public int screenLockTimeout = -1;
+        public JSONObject adminPrefs;
 
         public IdServiceResponse(HttpResponse httpResponse) {
             try {
                 JSONObject parsedResponse = parseResponse(httpResponse);
                 username = parsedResponse.getString(USERNAME);
+                adminPrefs = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
 
-                // With connected apps (pilot in Summer '12), the server can specify a policy
+                // With connected apps (pilot in Summer '12), the server can specify a policy.
                 if (parsedResponse.has(MOBILE_POLICY)) {
                     pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
                     screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);

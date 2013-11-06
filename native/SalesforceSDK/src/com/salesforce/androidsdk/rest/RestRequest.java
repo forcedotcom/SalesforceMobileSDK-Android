@@ -37,6 +37,8 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.protocol.HTTP;
 import org.json.JSONObject;
 
+import com.android.volley.Request;
+
 
 /**
  * RestRequest: Class to represent any REST request.
@@ -66,6 +68,22 @@ public class RestRequest {
 	 */
 	public enum RestMethod {
 		GET, POST, PUT, DELETE, HEAD, PATCH;
+		
+		// Methods missing from Request.Method
+		public static final int MethodPATCH = 4;
+		public static final int MethodHEAD = 5;
+		
+		public int asVolleyMethod() {
+			switch (this) {
+			case DELETE: return Request.Method.DELETE;
+			case GET:    return Request.Method.GET;
+			case POST:   return Request.Method.POST;
+			case PUT:    return Request.Method.PUT;
+			case HEAD:   return MethodHEAD; // not in Request.Method
+			case PATCH:  return MethodPATCH; // not in Request.Method 
+			default: return -2; // should never happen
+			}
+		}
 	}
 	
 	/**
@@ -366,4 +384,5 @@ public class RestRequest {
 			return entity;
 		}
 	}
+	
 }

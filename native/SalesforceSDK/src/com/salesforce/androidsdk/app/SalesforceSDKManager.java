@@ -33,13 +33,16 @@ import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.SystemClock;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -50,6 +53,9 @@ import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.push.PushMessaging;
+import com.salesforce.androidsdk.push.PushNotificationInterface;
+import com.salesforce.androidsdk.rest.AdminPrefsManager;
 import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
@@ -57,6 +63,7 @@ import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PRNGFixes;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
+import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -72,7 +79,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "2.0.6";
+    public static final String SDK_VERSION = "2.1.0";
 
     /**
      * Last phone version.
@@ -89,17 +96,26 @@ public class SalesforceSDKManager implements AccountRemoved {
      */
     protected static SalesforceSDKManager INSTANCE;
 
+    /**
+     * Timeout value for push un-registration.
+     */
+    private static final int PUSH_UNREGISTER_TIMEOUT_MILLIS = 30000;
+
     protected Context context;
     protected KeyInterface keyImpl;
     protected LoginOptions loginOptions;
     protected Class<? extends Activity> mainActivityClass;
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
+    protected Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
     protected AccountWatcher accWatcher;
     private String encryptionKey;
     private SalesforceR salesforceR = new SalesforceR();
     private PasscodeManager passcodeManager;
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
+    private AdminPrefsManager adminPrefsManager;
+    private PushNotificationInterface pushNotificationInterface;
+    private volatile boolean loggedOut = false;
 
     /**
      * Returns a singleton instance of this class.
@@ -254,7 +270,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     public static void initInternal(Context context) {
 
     	// Applies PRNG fixes for certain older versions of Android.
-    	PRNGFixes.apply();
+        PRNGFixes.apply();
 
         // Initializes the encryption module.
         Encryptor.init(context);
@@ -336,8 +352,29 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
 	 */
-    public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    public static void initNative(Context context, KeyInterface keyImpl,
+    		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	SalesforceSDKManager.init(context, keyImpl, mainActivity, loginActivity);
+    }
+
+    /**
+     * Sets a custom sub-class of PasscodeActivity to be used.
+     *
+     * @param activity Sub-class of PasscodeActivity.
+     */
+    public void setPasscodeActivity(Class<? extends PasscodeActivity> activity) {
+    	if (activity != null) {
+    		passcodeActivityClass = activity;
+    	}
+    }
+
+    /**
+     * Returns the custom sub-class of PasscodeActivity being used.
+     *
+     * @return Sub-class of PasscodeActivity.
+     */
+    public Class<? extends PasscodeActivity> getPasscodeActivity() {
+    	return passcodeActivityClass;
     }
 
     /**
@@ -379,6 +416,24 @@ public class SalesforceSDKManager implements AccountRemoved {
     }    
 
     /**
+     * Sets a receiver that handles received push notifications.
+     *
+     * @param pnInterface Implementation of PushNotificationInterface.
+     */
+    public synchronized void setPushNotificationReceiver(PushNotificationInterface pnInterface) {
+    	pushNotificationInterface = pnInterface;
+    }
+
+    /**
+     * Returns the configured receiver that handles received push notifications.
+     *
+     * @return Configured implementation of PushNotificationInterface.
+     */
+    public synchronized PushNotificationInterface getPushNotificationReceiver() {
+    	return pushNotificationInterface;
+    }
+
+    /**
      * Returns the passcode manager associated with SalesforceSDKManager.
      *
      * @return PasscodeManager instance.
@@ -388,6 +443,18 @@ public class SalesforceSDKManager implements AccountRemoved {
             passcodeManager = new PasscodeManager(context);
         }
         return passcodeManager;
+    }
+
+    /**
+     * Returns the admin prefs manager associated with SalesforceSDKManager.
+     *
+     * @return AdminPrefsManager instance.
+     */
+    public synchronized AdminPrefsManager getAdminPrefsManager() {
+    	if (adminPrefsManager == null) {
+    		adminPrefsManager = new AdminPrefsManager();
+    	}
+    	return adminPrefsManager;
     }
 
     /**
@@ -482,6 +549,10 @@ public class SalesforceSDKManager implements AccountRemoved {
             frontActivity.finish();
         }
 
+        // Resets admin prefs manager.
+        getAdminPrefsManager().reset();
+        adminPrefsManager = null;
+
         // Resets passcode and encryption key, if any.
         getPasscodeManager().reset(context);
         passcodeManager = null;
@@ -505,6 +576,82 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
+     * Unregisters from push notifications (both GCM and SFDC), and waits for
+     * it to complete or timeout.
+     *
+     * @param clientMgr ClientManager instance.
+     * @param showLoginPage True - if the login page should be shown, False - otherwise.
+     * @param refreshToken Refresh token.
+     * @param clientId Client ID.
+     * @param loginServer Login server.
+     * @param account Account instance.
+     * @param frontActivity Front activity.
+     */
+    private void unregisterPush(final ClientManager clientMgr, final boolean showLoginPage,
+    		final String refreshToken, final String clientId,
+    		final String loginServer, final Account account, final Activity frontActivity) {
+        final IntentFilter intentFilter = new IntentFilter(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT);
+        final BroadcastReceiver pushUnregisterReceiver = new BroadcastReceiver() {
+
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent.getAction().equals(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT)) {
+                    postPushUnregister(this, clientMgr, showLoginPage,
+                    		refreshToken, clientId, loginServer, account, frontActivity);
+                }
+            }
+        };
+        getAppContext().registerReceiver(pushUnregisterReceiver, intentFilter);
+
+        // Unregisters from notifications on logout.
+        PushMessaging.unregister(context);
+
+        /*
+         * Starts a background thread to wait up to the timeout period. If
+         * another thread has already performed logout, we exit immediately.
+         */
+        (new Thread() {
+            public void run() {
+                long startTime = System.currentTimeMillis();
+                while ((System.currentTimeMillis() - startTime) < PUSH_UNREGISTER_TIMEOUT_MILLIS && !loggedOut) {
+
+                    // Waits for half a second at a time.
+                    SystemClock.sleep(500);
+                }
+                postPushUnregister(pushUnregisterReceiver, clientMgr, showLoginPage,
+                		refreshToken, clientId, loginServer, account, frontActivity);
+            };
+        }).start();
+    }
+
+    /**
+     * This method is called either when push un-registration is complete, or
+     * a timeout occurred while waiting.
+     *
+     * @param pushReceiver Broadcast receiver.
+     * @param clientMgr ClientManager instance.
+     * @param showLoginPage True - if the login page should be shown, False - otherwise.
+     * @param refreshToken Refresh token.
+     * @param clientId Client ID.
+     * @param loginServer Login server.
+     * @param account Account instance.
+     * @param frontActivity Front activity.
+     */
+    private synchronized void postPushUnregister(BroadcastReceiver pushReceiver,
+    		final ClientManager clientMgr, final boolean showLoginPage,
+    		final String refreshToken, final String clientId,
+    		final String loginServer, final Account account, Activity frontActivity) {
+        if (!loggedOut) {
+            try {
+                context.unregisterReceiver(pushReceiver);
+            } catch (Exception e) {
+            	Log.e("SalesforceSDKManager:postPushUnregister", "Exception occurred while un-registering.", e);
+            }
+    		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
+        }
+    }
+
+    /**
      * Wipes out the stored authentication credentials (removes the account)
      * and restarts the app, if specified.
      *
@@ -522,7 +669,8 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param showLoginPage True - if the login page should be shown, False - otherwise.
      */
     public void logout(Activity frontActivity, final boolean showLoginPage) {
-        final ClientManager clientMgr = new ClientManager(context, getAccountType(), null, shouldLogoutWhenTokenRevoked());
+        final ClientManager clientMgr = new ClientManager(context, getAccountType(),
+        		null, shouldLogoutWhenTokenRevoked());
 		final AccountManager mgr = AccountManager.get(context);
 		String refreshToken = null;
 		String clientId = null;
@@ -533,6 +681,30 @@ public class SalesforceSDKManager implements AccountRemoved {
 	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
 	        loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());	
 		}
+
+		// Makes a call to un-register from push notifications.
+    	if (PushMessaging.isRegistered(context)) {
+    		loggedOut = false;
+    		unregisterPush(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
+    	} else {
+    		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
+    	}
+    }
+
+    /**
+     * Removes the account upon logout.
+     *
+     * @param clientMgr ClientManager instance.
+     * @param showLoginPage True - if the login page should be shown, False - otherwise.
+     * @param refreshToken Refresh token.
+     * @param clientId Client ID.
+     * @param loginServer Login server.
+     * @param account Account instance.
+     * @param frontActivity Front activity.
+     */
+    private void removeAccount(ClientManager clientMgr, final boolean showLoginPage,
+    		String refreshToken, String clientId, String loginServer, Account account, Activity frontActivity) {
+    	loggedOut = true;
         if (accWatcher != null) {
     		accWatcher.remove();
     		accWatcher = null;

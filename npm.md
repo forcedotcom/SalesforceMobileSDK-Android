@@ -36,6 +36,11 @@ Typing `forcedroid` with no arguments gives you a breakdown of the usage:
             --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for 'hybrid_remote')
             [--usesmartstore=<Whether or not to use SmartStore> ('true' or 'false'. false by default)]
 
+        OR
+
+        forcedroid samples
+            --targetdir=<Target Samples Folder>
+
 **Note:** You can specify any or all of the arguments as command line options as specified in the usage.  If you run `forcedroid create` with missing arguments, it prompts you for each missing option interactively.
 
 Once the creation script completes, you'll have a fully functioning basic application of the type you specified.  The new application will be configured as an Eclipse project in your target directory, alongside the Mobile SDK libraries it consumes.
@@ -57,6 +62,10 @@ Once the creation script completes, you'll have a fully functioning basic applic
 **Start Page:** \( *Required for hybrid\_remote apps only* \) The starting page of your application on salesforce.com.  This is the entry point of your remote application, though it's only the path, not the server portion of the URL.  For instance, `/apex/MyVisualforceStartPage`.
 
 **Use SmartStore:** \( *optional* \) Whether to use SmartStore in your app.  The value is `false` by default.  Set this value to `true` if you intend to use SmartStore in your app.
+
+### forcedroid samples options
+
+**Target Samples Folder:** The target folder where you want the samples to be copied.
 
 ## More information
 

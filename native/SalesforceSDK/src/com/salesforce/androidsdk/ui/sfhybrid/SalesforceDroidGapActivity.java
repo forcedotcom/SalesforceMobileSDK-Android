@@ -55,6 +55,7 @@ import android.webkit.WebViewClient;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
@@ -86,7 +87,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
     private static final String ACCESS_TOKEN = "accessToken";
 	
     // Used in refresh REST call
-    private static final String API_VERSION = "v26.0";
+    private static final String API_VERSION = ApiVersionStrings.VERSION_NUMBER;
 	
 	// Rest client
     private RestClient client;

@@ -61,7 +61,7 @@ import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
  * If the user selects one of the prefabs, save the selected index and the final
  * url into SharedPrefs[SERVER_URL_PREFS_SETTINGS] If the user selects a custom
  * url, that subsystem saves the final validated not null label and url AND
- * saves the selectedindex.
+ * saves the selected index.
  */
 public class ServerPickerActivity extends Activity implements
         OnDismissListener, OnCancelListener, View.OnClickListener,
@@ -435,7 +435,7 @@ public class ServerPickerActivity extends Activity implements
      * control the elements in the layout based on past user choices said
      * another way, select the correct radio button, show the custom url if set
      */
-    private void setupRadioButtons() {
+    protected void setupRadioButtons() {
         RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
 
         for (LoginServer currentServer : loginServerManager.getDefaultLoginServers()) {

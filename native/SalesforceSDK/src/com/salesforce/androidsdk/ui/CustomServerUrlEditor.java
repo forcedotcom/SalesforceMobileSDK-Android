@@ -188,26 +188,28 @@ public class CustomServerUrlEditor extends Dialog {
 		}
 		EditText et = (EditText) findViewById(editId);
 		SpannableString labelSpan = new SpannableString(value);
-		et.setText(labelSpan);
-		if (et.getOnFocusChangeListener() == null) {
-			et.setOnFocusChangeListener(new OnFocusChangeListener() {
+		if (et != null) {
+			et.setText(labelSpan);
+			if (et.getOnFocusChangeListener() == null) {
+				et.setOnFocusChangeListener(new OnFocusChangeListener() {
 
-				@Override
-				public void onFocusChange(View v, boolean hasFocus) {
-					EditText et = (EditText) v;
-					boolean isDefaultValue = et.getText().toString().equals(
-							getEditDefaultValue(et.getId()));
-					if (hasFocus && isDefaultValue) {
-						et.getText().clear();
-					} else if (!hasFocus && et.getText().toString().equals("")) {
-						if (et.getId() == salesforceR.idPickerCustomLabel()) {
-							setEditText(salesforceR.idPickerCustomLabel(), getEditDefaultValue(et.getId()));
-						} else {
-							setEditText(salesforceR.idPickerCustomUrl(), getEditDefaultValue(et.getId()));
+					@Override
+					public void onFocusChange(View v, boolean hasFocus) {
+						EditText et = (EditText) v;
+						boolean isDefaultValue = et.getText().toString().equals(
+								getEditDefaultValue(et.getId()));
+						if (hasFocus && isDefaultValue) {
+							et.getText().clear();
+						} else if (!hasFocus && et.getText().toString().equals("")) {
+							if (et.getId() == salesforceR.idPickerCustomLabel()) {
+								setEditText(salesforceR.idPickerCustomLabel(), getEditDefaultValue(et.getId()));
+							} else {
+								setEditText(salesforceR.idPickerCustomUrl(), getEditDefaultValue(et.getId()));
+							}
 						}
 					}
-				}
-			});
+				});
+			}
 		}
 	}
 

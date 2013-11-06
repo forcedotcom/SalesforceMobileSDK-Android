@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_type">com.salesforce.samples.filexplorer.login</string>
+	<string name="app_name"><b>File Explorer</b></string>
+	<string name="app_package">com.salesforce.samples.fileexplorer</string>
+    <string name="welcome">Welcome %s</string>
+	<string name="logout_button">Logout</string>
+	<string name="files_in_groups_button">Files In My Groups</string>
+	<string name="files_owned_button">Files Owned By Me</string>
+	<string name="files_shared_button">Files Shared With Me</string>
+	<string name="clear_button">Clear</string>
+	<string name="cancel_button">Cancel</string>
+</resources>
