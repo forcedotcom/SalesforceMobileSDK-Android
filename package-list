@@ -1,7 +1,9 @@
 com.salesforce.androidsdk.app
 com.salesforce.androidsdk.auth
 com.salesforce.androidsdk.phonegap
+com.salesforce.androidsdk.push
 com.salesforce.androidsdk.rest
+com.salesforce.androidsdk.rest.files
 com.salesforce.androidsdk.security
 com.salesforce.androidsdk.smartstore.app
 com.salesforce.androidsdk.smartstore.phonegap
