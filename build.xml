@@ -4,7 +4,7 @@
     <javadoc destdir="./doc"
       author="true"
       version="true"
-      doctitle="SalesforceSDK for Android 2.1 API"
+      doctitle="SalesforceSDK 2.1 API"
       verbose="on"
       use="true"
       sourcepath="./native/SalesforceSDK/src;./hybrid/SmartStore/src">
