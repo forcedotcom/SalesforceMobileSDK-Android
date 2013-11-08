@@ -1,8 +1,22 @@
 <project name="SalesforceMobileSDK" default="usage" basedir=".">
 
+  <target name="doc" description="Javadoc generation target">
+    <javadoc destdir="./doc"
+      author="true"
+      version="true"
+      doctitle="SalesforceSDK 2.1 API"
+      verbose="on"
+      use="true"
+      sourcepath="./native/SalesforceSDK/src;./hybrid/SmartStore/src">
+    </javadoc>
+  </target>
+
   <!-- Default target: describes useful targets -->
   <target name="usage" description="Key targets of this build.xml">
     <echo>
+      ant javadoc
+      Generates Javadoc for the SalesforceSDK and SmartStore pojects in the 'doc' folder.
+
       ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} [-Duse.smartstore=true]
       Creates a native application, for instance:
       ant create_native -Dapp.name=MyFirstNative -Dtarget.dir=./firstnative -Dpackage.name=com.acme.firstnative 
