@@ -1,1 +1,1 @@
-../../../../../external/cordova/cordova-3.1.0.js
+../../../../../external/cordova/cordova-3.3.0.js
