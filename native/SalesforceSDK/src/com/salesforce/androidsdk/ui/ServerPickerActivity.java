@@ -61,7 +61,7 @@ import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
  * If the user selects one of the prefabs, save the selected index and the final
  * url into SharedPrefs[SERVER_URL_PREFS_SETTINGS] If the user selects a custom
  * url, that subsystem saves the final validated not null label and url AND
- * saves the selectedindex.
+ * saves the selected index.
  */
 public class ServerPickerActivity extends Activity implements
         OnDismissListener, OnCancelListener, View.OnClickListener,

@@ -63,6 +63,7 @@ import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PRNGFixes;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
+import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -78,7 +79,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "2.1.0.unstable";
+    public static final String SDK_VERSION = "2.2.0.unstable";
 
     /**
      * Last phone version.
@@ -105,6 +106,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     protected LoginOptions loginOptions;
     protected Class<? extends Activity> mainActivityClass;
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
+    protected Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
     protected AccountWatcher accWatcher;
     private String encryptionKey;
     private SalesforceR salesforceR = new SalesforceR();
@@ -350,8 +352,29 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
 	 */
-    public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    public static void initNative(Context context, KeyInterface keyImpl,
+    		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	SalesforceSDKManager.init(context, keyImpl, mainActivity, loginActivity);
+    }
+
+    /**
+     * Sets a custom sub-class of PasscodeActivity to be used.
+     *
+     * @param activity Sub-class of PasscodeActivity.
+     */
+    public void setPasscodeActivity(Class<? extends PasscodeActivity> activity) {
+    	if (activity != null) {
+    		passcodeActivityClass = activity;
+    	}
+    }
+
+    /**
+     * Returns the custom sub-class of PasscodeActivity being used.
+     *
+     * @return Sub-class of PasscodeActivity.
+     */
+    public Class<? extends PasscodeActivity> getPasscodeActivity() {
+    	return passcodeActivityClass;
     }
 
     /**

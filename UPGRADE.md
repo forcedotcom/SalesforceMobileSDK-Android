@@ -1,4 +1,14 @@
-## Upgrade steps from v1.5.3 to v2.0.0 for native apps
+## Upgrade steps from v2.0.x to v2.1.0 for native and hybrid apps
+- Replace the existing `SalesforceSDK` project in Eclipse with the Mobile SDK 2.1.0 `SalesforceSDK` project.
+- If your app uses `SmartStore`, replace the existing `SmartStore` project in Eclipse with the new `SmartStore` project.
+- Right click your project and select `Properties`.
+- Click the `Android` tab and navigate to the library project section at the bottom and replace the existing `SalesforceSDK` entry with the new `SalesforceSDK` project in your workspace.
+- If your app uses `SmartStore`, repeat the previous step for the `SmartStore` project.
+- The Salesforce Mobile SDK Activity and Service declarations have now been moved from the app's `AndroidManifest.xml` file to the `AndroidManifest.xml` file of the `SalesforceSDK` project. These declarations are automatically merged into the app's manifest file if you enable the `manifestmerger` attribute. In order to use this, add `manifestmerger.enabled=true` to your app's `project.properties` file.
+	- NOTE:
+		- You are required to perform this step to use features that were added in Mobile SDK 2.1.0, such as push notifications.
+
+## Upgrade steps from v1.5.x to v2.0.0 for native apps
 - Swap the existing `SalesforceSDK` project in Eclipse with the new `SalesforceSDK` project (if your app uses `SmartStore`, replace the existing `SmartStore` project in Eclipse with the new `SmartStore` project).
 - Right click on your project and go to `Properties`.
 - Click on the `Android` tab and replace the existing `SalesforceSDK` entry at the bottom (in the library project section) with the new `SalesforceSDK` project in your workspace (repeat this step with the `SmartStore` project, if your app uses `SmartStore`).
@@ -21,7 +31,7 @@
 	- Update the app's class imports to reflect this change.
 - The SmartStore package has been changed to `com.salesforce.androidsdk.smartstore`. If you app uses the SmartStore project, update the app's class imports and other code references to reflect this change.
 
-## Upgrade steps from v1.5.3 to v2.0.0 for hybrid apps
+## Upgrade steps from v1.5.x to v2.0.0 for hybrid apps
 - Swap the existing `SalesforceSDK` project in Eclipse with the new `SalesforceSDK` project (if your app uses `SmartStore`, replace the existing `SmartStore` project in Eclipse with the new `SmartStore` project).
 - Right click on your project and go to `Properties`.
 - Click on the `Android` tab and replace the existing `SalesforceSDK` entry at the bottom (in the library project section) with the new `SalesforceSDK` project in your workspace (repeat this step with the `SmartStore` project, if your app uses `SmartStore`).

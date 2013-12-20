@@ -19,32 +19,29 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 2.0
+### What's New in 2.1
 
-**SmartSync library**
-- Introducing the SmartSync library (external/shared/libs/smartsync.js), a set of JavaScript tools to allow you to work with higher level data objects from Salesforce.
-- New AccountEditor hybrid sample app with User and Group Search, demonstrating the SmartSync functionality in action.
+**Push Notifications**
+- Registration and delivery of push notifications are now supported from a Salesforce org that enables push notifications.
 
-**SmartStore Enhancements**
-- SmartStore now supports 'Smart SQL' queries, such as complex aggregate functions, JOINs, and any other SQL-type queries.
-- NativeSqlAggregator is a new sample app to demonstrate usage of SmartStore within a native app to run Smart SQL queries, such as aggregate queries.
-- SmartStore now supports three data types for index fields - 'string', 'integer', and 'floating'.
+**Networking Enhancements**
+- The underlying networking library has been replaced with Volley. Volley provides the ability to configure advanced features, such as managing the network queue and cancelation of requests.
 
-**OAuth Enhancements**
-- Authentication can now be handled in an on-demand fashion.
-- Refresh tokens are now explicitly revoked from the server upon logout.
+**Files API Support**
+- The Salesforce Mobile SDK now provides convenience methods that build specialized REST requests for file upload/download and sharing operations.
+- A native sample app, `FileExplorer`, and a hybrid sample app, `HybridFileExplorer`, have been added to demonstrate these features.
+
+**SmartSync Enhancements**
+- You can now access custom endpoints using the `Force.RemoteObject` and `Force.RemoteObjectCollection` classes.
+- You can now access Apex REST endpoints using the `Force.ApexRestObject` and `Force.ApexRestObjectCollection` classes.
+- NOTE:
+	- This feature is only available on hybrid apps.
 
 **Other Technical Improvements**
-- Revamped the architecture of the Mobile SDK to make it pluggable and easy to use.
-	- Extending `ForceApp` or `ForceAppWithSmartStore` is no longer a requirement.
-	- Added `SalesforceListActivity` and `SalesforceExpandableListActivity`, that provide Salesforce wrappers around the standard `ListActivity` and `ExpandableListActivity` respectively.
-	- `rest.xml` has been removed and replaced with `bootconfig.xml`. Login options do not have to be supplied through code anymore, they can be specified in `bootconfig.xml`.
-	- Bootstrap flow for hybrid apps now occurs on the native side, thereby enabling faster initial load times (`bootstrap.html` is no longer required or used).
-- Changed the package name of the SmartStore library, so that it can coexist with other library projects.
-- Added support for community users to login.
-- Consolidated our Cordova JS plugins and utility code into one file (cordova.force.js).
-- Updated `forcetk.js` and renamed to `forcetk.mobilesdk.js`, to pull in the latest functionality from ForceTK and enhance its ability to work with the Mobile SDK authentication process.
-- Fixed session state rehydration for Visualforce apps, in the event of session timeouts during JavaScript Remoting calls in Visualforce.
+- Upgraded the `SQLCipher` library to `v2.2.2`, in order to support Android 4.3 (Jellybean) and Android 4.4 (Kit Kat).
+- Added the ability to merge Android Manifest files from the Mobile SDK library projects, using the `manifestmerger` attribute.
+- Added the ability for an app to supply a custom `PasscodeActivity`, using the `setPasscodeActivity()` method in `SalesforceSDKManager`.
+- Various bug fixes.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials
 

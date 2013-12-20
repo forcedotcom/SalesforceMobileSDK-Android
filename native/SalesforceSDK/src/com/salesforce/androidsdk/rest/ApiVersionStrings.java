@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
- 
 /**
  * This is where all the API version info lives. This allows us to change one
  * line here and affect all our api calls.
