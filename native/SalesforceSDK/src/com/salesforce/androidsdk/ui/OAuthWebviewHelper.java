@@ -36,6 +36,7 @@ import android.net.Uri;
 import android.net.http.SslError;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
@@ -375,7 +376,7 @@ public class OAuthWebviewHelper {
             	// Register for push notifications, if push notification client ID is present.
             	final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
             	final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
-            	if (pushNotificationId != null && !pushNotificationId.trim().isEmpty()) {
+            	if (!TextUtils.isEmpty(pushNotificationId)) {
                 	PushMessaging.register(appContext);
             	}
 
