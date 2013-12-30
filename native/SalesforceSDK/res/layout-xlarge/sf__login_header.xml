@@ -20,6 +20,7 @@
 				<ImageView 
 				    android:id="@+id/sf__reload_page"
 				    style="@style/SalesforceSDK.Header.Reload"
+				    android:contentDescription="@string/sf__reload"
 					android:onClick="onReloadClick"
 				/>
 				
