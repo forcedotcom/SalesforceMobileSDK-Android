@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.ui.sfhybrid;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.cordova.CordovaWebView;
@@ -160,7 +161,7 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
         if (url == null || url.trim().equals(""))
             return false;
         for (String reservedUrlPattern : RESERVED_URL_PATTERNS) {
-            if (url.toLowerCase().contains(reservedUrlPattern.toLowerCase()))
+            if (url.toLowerCase(Locale.US).contains(reservedUrlPattern.toLowerCase(Locale.US)))
                 return true;
         }
         return false;
