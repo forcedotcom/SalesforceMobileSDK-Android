@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.ui;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Locale;
 import java.util.Map;
 
 import android.app.Activity;
@@ -289,7 +290,7 @@ public class OAuthWebviewHelper {
 
 		@Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-			boolean isDone = url.replace("///", "/").toLowerCase().startsWith(loginOptions.oauthCallbackUrl.replace("///", "/").toLowerCase());
+			boolean isDone = url.replace("///", "/").toLowerCase(Locale.US).startsWith(loginOptions.oauthCallbackUrl.replace("///", "/").toLowerCase(Locale.US));
             if (isDone) {
                 Uri callbackUri = Uri.parse(url);
                 Map<String, String> params = UriFragmentParser.parse(callbackUri);
