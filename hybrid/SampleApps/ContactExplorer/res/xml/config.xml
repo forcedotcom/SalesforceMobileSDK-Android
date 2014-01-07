@@ -11,11 +11,8 @@
     <preference name="classicRender" value="true" />
 
     <feature name="App"><param name="android-package" value="org.apache.cordova.App"/></feature>
+    <feature name="Contacts"><param name="android-package" value="org.apache.cordova.contacts.ContactManager"/></feature>
     <feature name="com.salesforce.oauth"><param name="android-package" value="com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin"/></feature>
     <feature name="com.salesforce.sdkinfo"><param name="android-package" value="com.salesforce.androidsdk.phonegap.SDKInfoPlugin"/></feature>
-    <feature name="com.salesforce.smartstore"><param name="android-package" value="com.salesforce.androidsdk.smartstore.phonegap.SmartStorePlugin"/></feature>
-    <feature name="com.salesforce.testrunner"><param name="android-package" value="com.salesforce.androidsdk.phonegap.TestRunnerPlugin"/></feature>
 
 </widget>
-
-

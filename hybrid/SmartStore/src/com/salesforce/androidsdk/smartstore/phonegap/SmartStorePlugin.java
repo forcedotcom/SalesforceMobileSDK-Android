@@ -29,8 +29,8 @@ package com.salesforce.androidsdk.smartstore.phonegap;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.cordova.api.CallbackContext;
-import org.apache.cordova.api.PluginResult;
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.PluginResult;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;

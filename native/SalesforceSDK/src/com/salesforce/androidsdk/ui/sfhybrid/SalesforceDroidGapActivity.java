@@ -32,11 +32,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaActivity;
 import org.apache.cordova.CordovaChromeClient;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
-import org.apache.cordova.DroidGap;
-import org.apache.cordova.api.CallbackContext;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
@@ -73,7 +73,7 @@ import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 /**
  * Class that defines the main activity for a PhoneGap-based application.
  */
-public class SalesforceDroidGapActivity extends DroidGap {
+public class SalesforceDroidGapActivity extends CordovaActivity {
 
     // Keys in credentials map
     private static final String USER_AGENT = "userAgent";
