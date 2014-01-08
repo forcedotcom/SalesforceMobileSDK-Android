@@ -36,7 +36,7 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
-import com.salesforce.androidsdk.ui.sfhybrid.SalesforceGapViewClient;
+import com.salesforce.androidsdk.ui.sfhybrid.SalesforceWebViewClientHelper;
 
 /**
  * PhoneGap plugin for Salesforce OAuth.
@@ -111,7 +111,7 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
      */
     protected void getAppHomeUrl(CallbackContext callbackContext)  {
         Log.i("SalesforceOAuthPlugin.getAppHomeUrl", "getAppHomeUrl called");
-        callbackContext.success(SalesforceGapViewClient.getAppHomeUrl(cordova.getActivity()));
+        callbackContext.success(SalesforceWebViewClientHelper.getAppHomeUrl(cordova.getActivity()));
     }
 
     /**

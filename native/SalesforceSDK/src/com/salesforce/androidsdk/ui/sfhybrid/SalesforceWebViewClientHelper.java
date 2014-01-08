@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -31,12 +31,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.CordovaWebViewClient;
-import org.apache.cordova.CordovaInterface;
 import org.apache.http.HttpStatus;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -48,9 +44,14 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
-public class SalesforceGapViewClient extends CordovaWebViewClient {
 
-    public static String TAG = "SalesforceGapViewClient";
+/**
+ * Helper class for SalesforceWebViewClient, SalesforceIceCreamWebViewClient
+ * 
+ */
+public class SalesforceWebViewClientHelper {
+
+	public static String TAG = "SalesforceWebViewClientHelper";
     public static final String SFDC_WEB_VIEW_CLIENT_SETTINGS = "sfdc_gapviewclient";
     public static final String APP_HOME_URL_PROP_KEY =  "app_home_url";
 
@@ -58,66 +59,36 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
     private static final List<String> RESERVED_URL_PATTERNS =
             Arrays.asList("/secur/frontdoor.jsp", "/secur/contentDoor");
 
-
-    // The first non-reserved URL that's loaded will be considered the app's "home page", for caching purposes.
-    protected boolean foundHomeUrl = false;
-
-    protected Activity ctx;
-
     /**
-     * Constructor.
+     * To be called from shouldOverrideUrlLoading.
      * 
-     * @param cordova
+     * @param ctx
      * @param view
+     * @param url
+     * @return
      */
-    public SalesforceGapViewClient(CordovaInterface cordova, CordovaWebView view) {
-        super(cordova, view);
-        this.ctx = cordova.getActivity();
-    }
-
-    @Override
-    public boolean shouldOverrideUrlLoading(final WebView view, String url) {
-        String startURL = isLoginRedirect(url);
+    public static boolean shouldOverrideUrlLoading(SalesforceDroidGapActivity ctx, WebView view, String url) {
+        String startURL = SalesforceWebViewClientHelper.isLoginRedirect(url);
         if (startURL != null) {
-        	((SalesforceDroidGapActivity) ctx).refresh(startURL);
+        	ctx.refresh(startURL);
         	return true;
         } else {
-        	return super.shouldOverrideUrlLoading(view,  url);
+        	return false;
         }
     }
-    
+
     /**
-     * Login redirect are of the form https://host/?ec=30x&startURL=xyz
-     * @param url
-     * @return null if this is not a login redirect and return the the value for startURL if this is a login redirect
-     */
-    private String isLoginRedirect(String url) {
-    	final Uri uri = Uri.parse(url);
-        final Map<String, String> params = UriFragmentParser.parse(uri);
-    	final String ec = params.get("ec");
-    	int ecInt = (ec != null ? Integer.parseInt(ec) : -1);
-        final String startURL = params.get("startURL");
-    	if (uri != null && uri.getPath() != null && uri.getPath().equals("/")
-    			&& (ecInt == HttpStatus.SC_MOVED_PERMANENTLY
-    			|| ecInt == HttpStatus.SC_MOVED_TEMPORARILY)
-    			&& startURL != null) {
-    		return startURL;
-    	} else {
-    		return null;
-    	}
-    }
-    
-    /**
-     * Notify the host application that a page has finished loading.
-     *
+     * To be called from onPageFinished.
+     * Return true if we have arrived on the actual home page and false otherwise.
+     * 
+     * @param ctx			Context.
      * @param view          The webview initiating the callback.
      * @param url           The url of the page.
      */
-    @Override
-    public void onPageFinished(WebView view, String url) {
+    public static boolean onHomePage(Context ctx, WebView view, String url) {
         // The first URL that's loaded that's not one of the URLs used in the bootstrap process will
         // be considered the "app home URL", which can be loaded directly in the event that the app is offline.
-        if (!this.foundHomeUrl && !isReservedUrl(url)) {
+        if (!isReservedUrl(url)) {
             Log.i(TAG,"Setting '" + url + "' as the home page URL for this app");
 
             SharedPreferences sp = ctx.getSharedPreferences(SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
@@ -125,19 +96,20 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
             e.putString(APP_HOME_URL_PROP_KEY, url);
             e.commit();
 
-            this.foundHomeUrl = true;
             EventsObservable.get().notifyEvent(EventType.GapWebViewPageFinished, url);
+            
+            return true;
+        } else {
+        	return false;
         }
-
-        super.onPageFinished(view, url);
     }
-
+    
     /**
      * @return app's home page
      */
     public static String getAppHomeUrl(Context ctx) {
-        SharedPreferences sp = ctx.getSharedPreferences(SalesforceGapViewClient.SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
-        String url = sp.getString(SalesforceGapViewClient.APP_HOME_URL_PROP_KEY, null);
+        SharedPreferences sp = ctx.getSharedPreferences(SalesforceWebViewClientHelper.SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
+        String url = sp.getString(SalesforceWebViewClientHelper.APP_HOME_URL_PROP_KEY, null);
         return url;
     }
 
@@ -164,5 +136,26 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
                 return true;
         }
         return false;
+    }
+
+    /**
+     * Login redirect are of the form https://host/?ec=30x&startURL=xyz
+     * @param url
+     * @return null if this is not a login redirect and return the the value for startURL if this is a login redirect
+     */
+    private static String isLoginRedirect(String url) {
+    	final Uri uri = Uri.parse(url);
+        final Map<String, String> params = UriFragmentParser.parse(uri);
+    	final String ec = params.get("ec");
+    	int ecInt = (ec != null ? Integer.parseInt(ec) : -1);
+        final String startURL = params.get("startURL");
+    	if (uri != null && uri.getPath() != null && uri.getPath().equals("/")
+    			&& (ecInt == HttpStatus.SC_MOVED_PERMANENTLY
+    			|| ecInt == HttpStatus.SC_MOVED_TEMPORARILY)
+    			&& startURL != null) {
+    		return startURL;
+    	} else {
+    		return null;
+    	}
     }
 }

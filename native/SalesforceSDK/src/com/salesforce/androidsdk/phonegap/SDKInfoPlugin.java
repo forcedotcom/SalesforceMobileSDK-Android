@@ -146,7 +146,6 @@ public class SDKInfoPlugin extends ForcePlugin {
 			XmlResourceParser xml = ctx.getResources().getXml(id);
 			int eventType = -1;
 			while (eventType != XmlResourceParser.END_DOCUMENT) {
-				String tagName = xml.getName();
 				if (eventType == XmlResourceParser.START_TAG && xml.getName().equals("feature")) {
 					String service = xml.getAttributeValue(null, "name");
 					if (service.startsWith("com.salesforce.")) {
