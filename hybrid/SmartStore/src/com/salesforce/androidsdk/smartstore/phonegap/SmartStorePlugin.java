@@ -96,36 +96,49 @@ public class SmartStorePlugin extends ForcePlugin {
 	}
 
     @Override
-    public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, CallbackContext callbackContext) throws JSONException {
-        // All smart store action need to be serialized
-    	synchronized(SmartStorePlugin.class) {
-	    	// Figure out action
-	    	Action action = null;
-	    	try {
-	    		action = Action.valueOf(actionStr);
-				switch(action) {
-                  case pgCloseCursor:           closeCursor(args, callbackContext); return true;
-                  case pgMoveCursorToPageIndex: moveCursorToPageIndex(args, callbackContext); return true;
-                  case pgQuerySoup:             querySoup(args, callbackContext); return true;
-                  case pgRegisterSoup:          registerSoup(args, callbackContext); return true;
-                  case pgRemoveFromSoup:        removeFromSoup(args, callbackContext); return true;
-                  case pgRemoveSoup:            removeSoup(args, callbackContext); return true;
-                  case pgRetrieveSoupEntries:   retrieveSoupEntries(args, callbackContext); return true;
-                  case pgRunSmartQuery:         runSmartQuery(args, callbackContext); return true;
-                  case pgSoupExists:            soupExists(args, callbackContext); return true;
-                  case pgUpsertSoupEntries:     upsertSoupEntries(args, callbackContext); return true;
-                  default: return false;
-		    	}
-	    	}
-	    	catch (IllegalArgumentException e) {
-                return false;
-	    	}
-	    	catch (SmartStoreException e) {
-	    		Log.w("SmartStorePlugin.execute", e.getMessage(), e);
-	    		callbackContext.error(e.getMessage());
-	    		return true;
-	    	}
+    public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
+    	final long start = System.currentTimeMillis();
+    	// Figure out action
+    	final Action action;
+    	try {
+    		action = Action.valueOf(actionStr);
     	}
+    	catch (IllegalArgumentException e) {
+    		Log.e("SmartStorePlugin.execute", "Unknown action " + actionStr);
+            return false;
+    	}
+
+    	// Not running smartstore action on the main thread
+    	cordova.getThreadPool().execute(new Runnable() {
+			@Override
+			public void run() {
+		    	// All smart store action need to be serialized
+				synchronized(SmartStorePlugin.class) {
+	        		try {
+		        		switch(action) {
+		                  case pgCloseCursor:           closeCursor(args, callbackContext); break;
+		                  case pgMoveCursorToPageIndex: moveCursorToPageIndex(args, callbackContext); break;
+		                  case pgQuerySoup:             querySoup(args, callbackContext); break;
+		                  case pgRegisterSoup:          registerSoup(args, callbackContext); break;
+		                  case pgRemoveFromSoup:        removeFromSoup(args, callbackContext); break;
+		                  case pgRemoveSoup:            removeSoup(args, callbackContext); break;
+		                  case pgRetrieveSoupEntries:   retrieveSoupEntries(args, callbackContext); break;
+		                  case pgRunSmartQuery:         runSmartQuery(args, callbackContext); break;
+		                  case pgSoupExists:            soupExists(args, callbackContext); break;
+		                  case pgUpsertSoupEntries:     upsertSoupEntries(args, callbackContext); break;
+		                  default: throw new SmartStoreException("No handler for action " + action);
+		    	    	}
+	        		}
+	            	catch (Exception e) {
+	            		Log.w("SmartStorePlugin.execute", e.getMessage(), e);
+	            		callbackContext.error(e.getMessage());
+	            	}	        		
+	            	Log.d("SmartSTorePlugin.execute", "Total time for " + action + "->" + (System.currentTimeMillis() - start));
+	        	}
+			}
+    	});
+    	Log.d("SmartSTorePlugin.execute", "Main thread time for " + action + "->" + (System.currentTimeMillis() - start));
+    	return true;
     }
 
 	/**
