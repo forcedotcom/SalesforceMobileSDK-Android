@@ -107,7 +107,7 @@ public class PasscodeActivityTest extends
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
 		assertEquals("Activity expected in create mode still", PasscodeMode.Create, passcodeActivity.getMode());
-		assertEquals("Error expected", "The passcode must be at least 6 characters long", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
+		assertEquals("Error expected", "The passcode must be at least 4 characters long", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
 		
 		// Entering in 123456 and submitting
 		setText(R.id.sf__passcode_text, "123456");
@@ -141,7 +141,7 @@ public class PasscodeActivityTest extends
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
 		assertEquals("Activity expected in create confirm mode still", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
-		assertEquals("Error expected", "The passcode must be at least 6 characters long", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
+		assertEquals("Error expected", "The passcode must be at least 4 characters long", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
 
 		// Entering 123456 and submitting
 		setText(R.id.sf__passcode_text, "123456");

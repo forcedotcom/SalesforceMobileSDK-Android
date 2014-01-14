@@ -1,1 +1,0 @@
-../../../../../external/shared/SampleApps/smartsync/fastclick.js
