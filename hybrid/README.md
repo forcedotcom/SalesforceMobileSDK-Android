@@ -75,10 +75,12 @@ Where:
 
 
 If it's your first time build an application with the Salesforce SDK, do the following:
+<pre>
 cd $NATIVE_DIR/SalesforceSDK
 $ANDROID_SDK_DIR/android update project -p .
 cd $HYBRID_DIR/SmartStore
 $ANDROID_SDK_DIR/android update project -p .
+</pre>
 
 To build the new application, do the following:
 <pre>
