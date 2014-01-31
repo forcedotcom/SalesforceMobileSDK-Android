@@ -119,82 +119,6 @@ function fetchSamples(outputDir) {
     inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
     inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
     create(inputProperties);
-
-    // Sets properties and copies over the 'AccountEditor' app.
-    commandLineArgsMap.apptype = 'hybrid_local';
-    commandLineArgsMap.appname = 'AccountEditor';
-    commandLineArgsMap.targetdir = outputDir;
-    commandLineArgsMap.packagename = 'com.salesforce.samples.accounteditor';
-    commandLineArgsMap.boolusesmartstore = true;
-    inputProperties.templateDir = path.join(packageSdkRootDir, 'hybrid/SampleApps/AccountEditor');
-    inputProperties.templateAppName = 'AccountEditor';
-    inputProperties.templatePackageName = 'com.salesforce.samples.accounteditor';
-    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
-    inputProperties.bootConfigPath = path.join(projectDir, 'assets', 'www', 'bootconfig.json');
-    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
-    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
-    create(inputProperties);
-
-    // Sets properties and copies over the 'ContactExplorer' app.
-    commandLineArgsMap.apptype = 'hybrid_local';
-    commandLineArgsMap.appname = 'ContactExplorer';
-    commandLineArgsMap.targetdir = outputDir;
-    commandLineArgsMap.packagename = 'com.salesforce.samples.contactexplorer';
-    commandLineArgsMap.boolusesmartstore = false;
-    inputProperties.templateDir = path.join(packageSdkRootDir, 'hybrid/SampleApps/ContactExplorer');
-    inputProperties.templateAppName = 'ContactExplorer';
-    inputProperties.templatePackageName = 'com.salesforce.samples.contactexplorer';
-    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
-    inputProperties.bootConfigPath = path.join(projectDir, 'assets', 'www', 'bootconfig.json');
-    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
-    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
-    create(inputProperties);
-
-    // Sets properties and copies over the 'HybridFileExplorer' app.
-    commandLineArgsMap.apptype = 'hybrid_local';
-    commandLineArgsMap.appname = 'HybridFileExplorer';
-    commandLineArgsMap.targetdir = outputDir;
-    commandLineArgsMap.packagename = 'com.salesforce.samples.hybridfileexplorer';
-    commandLineArgsMap.boolusesmartstore = true;
-    inputProperties.templateDir = path.join(packageSdkRootDir, 'hybrid/SampleApps/HybridFileExplorer');
-    inputProperties.templateAppName = 'HybridFileExplorer';
-    inputProperties.templatePackageName = 'com.salesforce.samples.hybridfileexplorer';
-    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
-    inputProperties.bootConfigPath = path.join(projectDir, 'assets', 'www', 'bootconfig.json');
-    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
-    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
-    create(inputProperties);
-
-    // Sets properties and copies over the 'SmartStoreExplorer' app.
-    commandLineArgsMap.apptype = 'hybrid_local';
-    commandLineArgsMap.appname = 'SmartStoreExplorer';
-    commandLineArgsMap.targetdir = outputDir;
-    commandLineArgsMap.packagename = 'com.salesforce.samples.smartstoreexplorer';
-    commandLineArgsMap.boolusesmartstore = true;
-    inputProperties.templateDir = path.join(packageSdkRootDir, 'hybrid/SampleApps/SmartStoreExplorer');
-    inputProperties.templateAppName = 'SmartStoreExplorer';
-    inputProperties.templatePackageName = 'com.salesforce.samples.smartstoreexplorer';
-    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
-    inputProperties.bootConfigPath = path.join(projectDir, 'assets', 'www', 'bootconfig.json');
-    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
-    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
-    create(inputProperties);
-
-    // Sets properties and copies over the 'VFConnector' app.
-    commandLineArgsMap.apptype = 'hybrid_remote';
-    commandLineArgsMap.appname = 'VFConnector';
-    commandLineArgsMap.targetdir = outputDir;
-    commandLineArgsMap.packagename = 'com.salesforce.samples.vfconnector';
-    commandLineArgsMap.startpage = '/apex/BasicVFPage';
-    commandLineArgsMap.boolusesmartstore = true;
-    inputProperties.templateDir = path.join(packageSdkRootDir, 'hybrid/SampleApps/VFConnector');
-    inputProperties.templateAppName = 'VFConnector';
-    inputProperties.templatePackageName = 'com.salesforce.samples.vfconnector';
-    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
-    inputProperties.bootConfigPath = path.join(projectDir, 'assets', 'www', 'bootconfig.json');
-    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
-    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
-    create(inputProperties);
 }
 
 function usage() {
@@ -220,17 +144,51 @@ function create(sampleAppInputProperties) {
         console.log('App folder path \'' + projectDir + '\' already exists.  Cannot continue.');
         process.exit(3);
     }
-    var appInputProperties;
-    if (sampleAppInputProperties === undefined) {
-        appInputProperties = configureInputAppProperties(projectDir);
-    } else {
-        appInputProperties = sampleAppInputProperties;
+
+    if (commandLineArgsMap.apptype === 'native') {
+        var appInputProperties;
+        if (sampleAppInputProperties === undefined) {
+            appInputProperties = {};
+            appInputProperties.templateDir = path.join(packageSdkRootDir, 'native/TemplateApp');
+            appInputProperties.templateAppName = 'Template';
+            appInputProperties.templatePackageName = 'com.salesforce.samples.templateapp';
+            appInputProperties.bootConfigPath = path.join(projectDir, 'res', 'values', 'bootconfig.xml');
+            appInputProperties.templateAppClassName = appInputProperties.templateAppName + 'App';
+            appInputProperties.templatePackageDir = appInputProperties.templatePackageName.replace(/\./g, path.sep);
+        } else {
+            appInputProperties = sampleAppInputProperties;
+        }
+        createNativeApp(appInputProperties, projectDir);
     }
-    createApp(appInputProperties, projectDir);
+    else {
+        createHybridApp(projectDir);
+    }
 }
 
-function createApp(appInputProperties, projectDir) {
+function createHybridApp(projectDir) {
+    shellJs.exec('cordova create ' + projectDir + ' ' + commandLineArgsMap.packagename + ' ' + commandLineArgsMap.appname);
+    shellJs.pushd(projectDir);
+    shellJs.exec('cordova platform add android');
+    shellJs.exec('cordova plugin add https://github.com/wmathurin/SalesforceMobileSDK-CordovaPlugin');
+    shellJs.exec('node plugins/com.salesforce/tools/postinstall.js 19 ' + commandLineArgsMap.boolusesmartstore);
 
+    var bootconfig = {
+        "remoteAccessConsumerKey": "3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa",
+        "oauthRedirectURI": "testsfdc:///mobilesdk/detect/oauth/done",
+        "oauthScopes": ["web", "api"],
+        "isLocal": commandLineArgsMap.apptype === 'hybrid_local',
+        "startPage": commandLineArgsMap.startPage || 'index.html',
+        "errorPage": "error.html",
+        "shouldAuthenticate": true,
+        "attemptOfflineLoad": false,
+        "androidPushNotificationClientId": ""
+    };
+
+    fs.writeFileSync('www/bootconfig.json', JSON.stringify(bootconfig, null, 2));
+    shellJs.popd();
+}
+
+function createNativeApp(appInputProperties, projectDir) {
     // Copy the template files to the destination directory.
     shellJs.mkdir('-p', projectDir);
     shellJs.cp('-R', path.join(appInputProperties.templateDir, '*'), projectDir);
@@ -362,35 +320,6 @@ function createApp(appInputProperties, projectDir) {
     var relativeBootConfigPath = path.relative(commandLineArgsMap.targetdir, appInputProperties.bootConfigPath);
     console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
         + outputColors.magenta + relativeBootConfigPath + '.' + outputColors.reset);
-}
-
-function configureInputAppProperties(projectDir) {
-    var inputProperties = {};
-    switch (commandLineArgsMap.apptype) {
-        case 'native':
-            inputProperties.templateDir = path.join(packageSdkRootDir, 'native/TemplateApp');
-            inputProperties.templateAppName = 'Template';
-            inputProperties.templatePackageName = 'com.salesforce.samples.templateapp';
-            inputProperties.bootConfigPath = path.join(projectDir, 'res', 'values', 'bootconfig.xml');
-            break;
-        case 'hybrid_local':
-            inputProperties.templateDir = path.join(packageSdkRootDir, 'hybrid/SampleApps/ContactExplorer');
-            inputProperties.templateAppName = 'ContactExplorer';
-            inputProperties.templatePackageName = 'com.salesforce.samples.contactexplorer';
-            inputProperties.bootConfigPath = path.join(projectDir, 'assets', 'www', 'bootconfig.json');
-            break;
-        case 'hybrid_remote':
-            inputProperties.templateDir = path.join(packageSdkRootDir, 'hybrid/SampleApps/VFConnector');
-            inputProperties.templateAppName = 'VFConnector';
-            inputProperties.templatePackageName = 'com.salesforce.samples.vfconnector';
-            inputProperties.bootConfigPath = path.join(projectDir, 'assets', 'www', 'bootconfig.json');
-            break;
-    }
-
-    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
-    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
-
-    return inputProperties;
 }
 
 function makeContentReplacementPathsArray(appInputProperties, projectDir) {

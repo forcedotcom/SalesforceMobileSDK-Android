@@ -10,7 +10,8 @@
     ],
     "bin" : { "forcedroid" : "node/forcedroid.js" },
     "dependencies": {
-        "shelljs": ">=0.1.4"     
+        "shelljs": ">=0.1.4",
+        "cordova": ">=3.3.0"
     },
     "scripts": {
         "prepublish": "./node/prepublish.js",
