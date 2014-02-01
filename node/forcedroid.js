@@ -27,100 +27,88 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
- // node.js application for working with projects that use the Salesforce Mobile
- // SDK for Android.  Currently supports the creation of new apps from different
- // app templates and running sample apps.
+// node.js application for working with projects that use the Salesforce Mobile
+// SDK for Android.  Currently supports the creation of new apps from different
+// app templates and running sample apps.
 
-var exec = require('child_process').exec;
+//
+// External modules
+// 
 var path = require('path');
-var shellJs = require('shelljs');
-var fs = require('fs');
-var commandLineUtils = require('../external/shared/node/commandLineUtils');
 var outputColors = require('../external/shared/node/outputColors');
+var commandLineUtils = require('../external/shared/node/commandLineUtils');
 
-var packageSdkRootDir = path.resolve(__dirname, '..');
+//
+// Function to create wrapper around an existing package - to support verbose/dry-run mode
+// 
+function WrappedModule(moduleName, fnames) {
+    var that = this;
+    var module = require(moduleName);
+    var verbose = process.argv.indexOf('--verbose') > 0;
 
-var commandLineArgs = process.argv.slice(2, process.argv.length);
-var command = commandLineArgs.shift();
-if (typeof command !== 'string') {
-    usage();
-    process.exit(1);
-}
-var commandLineArgsMap = {};
-if (command === 'samples') {
-    var argProcessorList = samplesArgProcessorList();
-    commandLineUtils.processArgsInteractive(commandLineArgs, argProcessorList, function (outputArgsMap) {
-        var outputDir = outputArgsMap.targetdir;
-        fetchSamples(outputDir);
-    });
-} else {
-
-    // Set up the input argument processing / validation.
-    var argProcessorList = createArgProcessorList();
-    commandLineUtils.processArgsInteractive(commandLineArgs, argProcessorList, function (outputArgsMap) {
-        commandLineArgsMap = outputArgsMap;
-        switch  (command) {
-            case 'create':
-                create();
-                break;
-            default:
-                console.log('Unknown option: \'' + command + '\'.');
-                usage();
-                process.exit(2);
+    // Function to call wrapped module function
+    var run = function(fname, originalArguments) {
+        var originalArgs = Array.prototype.slice.call(originalArguments);
+        if (verbose) {
+            console.log('[' + moduleName + '] ' + fname + ' ' + originalArgs.join(','));
         }
-    });
+        module[fname].apply(module, originalArguments);
+    };
+
+    // Setting up delegates
+    var intercept = function(fnames) { 
+        for (var i in fnames) {
+            var fname = fnames[i];
+            that[fname] = function() { return run(fname, arguments);};
+        }
+    };
+
+    intercept(fnames);
 }
 
-function fetchSamples(outputDir) {
-    var inputProperties = {};
-    var projectDir;
+//
+// Wrapper around shelljs
+//
+var shelljs = require('shelljs') ; // new WrappedModule('shelljs', ['exec', 'pushd', 'popd', 'mkdir', 'cp', 'error', 'sed', 'rm']);
 
-    // Sets properties and copies over the 'FileExplorer' app.
-    commandLineArgsMap.apptype = 'native';
-    commandLineArgsMap.appname = 'FileExplorer';
-    commandLineArgsMap.targetdir = outputDir;
-    commandLineArgsMap.packagename = 'com.salesforce.samples.fileexplorer';
-    commandLineArgsMap.boolusesmartstore = false;
-    inputProperties.templateDir = path.join(packageSdkRootDir, 'native/SampleApps/FileExplorer');
-    inputProperties.templateAppName = 'FileExplorer';
-    inputProperties.templatePackageName = 'com.salesforce.samples.fileexplorer';
-    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
-    inputProperties.bootConfigPath = path.join(projectDir, 'res', 'values', 'bootconfig.xml');
-    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
-    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
-    create(inputProperties);
+//
+// Wrapper around fs
+//
+var fs = require('fs'); // new WrappedModule('fs', ['existsSync', 'writeFileSync', 'readdirSync', 'renameSync']);
 
-    // Sets properties and copies over the 'NativeSqlAggregator' app.
-    commandLineArgsMap.apptype = 'native';
-    commandLineArgsMap.appname = 'NativeSqlAggregator';
-    commandLineArgsMap.targetdir = outputDir;
-    commandLineArgsMap.packagename = 'com.salesforce.samples.nativesqlaggregator';
-    commandLineArgsMap.boolusesmartstore = true;
-    inputProperties.templateDir = path.join(packageSdkRootDir, 'native/SampleApps/NativeSqlAggregator');
-    inputProperties.templateAppName = 'NativeSqlAggregator';
-    inputProperties.templatePackageName = 'com.salesforce.samples.nativesqlaggregator';
-    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
-    inputProperties.bootConfigPath = path.join(projectDir, 'res', 'values', 'bootconfig.xml');
-    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
-    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
-    create(inputProperties);
+// Calling main
+main(process.argv);
 
-    // Sets properties and copies over the 'RestExplorer' app.
-    commandLineArgsMap.apptype = 'native';
-    commandLineArgsMap.appname = 'RestExplorer';
-    commandLineArgsMap.targetdir = outputDir;
-    commandLineArgsMap.packagename = 'com.salesforce.samples.restexplorer';
-    commandLineArgsMap.boolusesmartstore = true;
-    inputProperties.templateDir = path.join(packageSdkRootDir, 'native/SampleApps/RestExplorer');
-    inputProperties.templateAppName = 'RestExplorer';
-    inputProperties.templatePackageName = 'com.salesforce.samples.restexplorer';
-    projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
-    inputProperties.bootConfigPath = path.join(projectDir, 'res', 'values', 'bootconfig.xml');
-    inputProperties.templateAppClassName = inputProperties.templateAppName + 'App';
-    inputProperties.templatePackageDir = inputProperties.templatePackageName.replace(/\./g, path.sep);
-    create(inputProperties);
+// 
+// Main function
+// 
+function main(args) {
+    var commandLineArgs = args.slice(2, args.length);
+    var command = commandLineArgs.shift();
+
+    var processorList = null;
+    var commandHandler = null;
+
+    switch (command || '') {
+    case 'create': 
+        processorList = createArgsProcessorList(); 
+        commandHandler = create;
+        break;
+    case 'samples': 
+        processorList = samplesArgsProcessorList(); 
+        commandHandler = samples;
+        break;
+    default:
+        usage();
+        process.exit(1);
+    };
+
+    commandLineUtils.processArgsInteractive(commandLineArgs, processorList, commandHandler);
 }
 
+//
+// Usage
+//
 function usage() {
     console.log(outputColors.cyan + 'Usage:');
     console.log('\n');
@@ -136,174 +124,242 @@ function usage() {
     console.log('    --targetdir=<Target Samples Folder>' + outputColors.reset);
 }
 
-function create(sampleAppInputProperties) {
-    
-    // The destination project directory, in the target directory.
-    var projectDir = path.join(commandLineArgsMap.targetdir, commandLineArgsMap.appname);
-    if (fs.existsSync(projectDir)) {
-        console.log('App folder path \'' + projectDir + '\' already exists.  Cannot continue.');
-        process.exit(3);
-    }
+//
+// Processor list for 'samples' command
+//
+function samplesArgsProcessorList() {
+    var argProcessorList = new commandLineUtils.ArgProcessorList();
 
-    if (commandLineArgsMap.apptype === 'native') {
-        var appInputProperties;
-        if (sampleAppInputProperties === undefined) {
-            appInputProperties = {};
-            appInputProperties.templateDir = path.join(packageSdkRootDir, 'native/TemplateApp');
-            appInputProperties.templateAppName = 'Template';
-            appInputProperties.templatePackageName = 'com.salesforce.samples.templateapp';
-            appInputProperties.bootConfigPath = path.join(projectDir, 'res', 'values', 'bootconfig.xml');
-            appInputProperties.templateAppClassName = appInputProperties.templateAppName + 'App';
-            appInputProperties.templatePackageDir = appInputProperties.templatePackageName.replace(/\./g, path.sep);
-        } else {
-            appInputProperties = sampleAppInputProperties;
-        }
-        createNativeApp(appInputProperties, projectDir);
+    // Target dir
+    argProcessorList.addArgProcessor('targetdir', 'Enter the target directory of samples:', function(targetDir) {
+        if (targetDir.trim() === '')
+            return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for target dir: \'' + targetDir + '\'');
+        
+        return new commandLineUtils.ArgProcessorOutput(true, targetDir.trim());
+    });
+
+    return argProcessorList;
+}
+
+
+//
+// Helper to 'samples' command
+//
+function samples(config) {
+    // Sets properties and copies over the 'FileExplorer' app.
+    createNativeApp({targetdir: config.targetdir,
+                     apptype: 'native',
+                     appname: 'FileExplorer',
+                     packagename: 'com.salesforce.samples.fileexplorer',
+                     boolusesmartstore: false,
+                     relativeTemplateDir: 'native/SampleApps/FileExplorer',
+                     templateAppName: 'FileExplorer',
+                     templatePackageName: 'com.salesforce.samples.fileexplorer'});
+
+    // Sets properties and copies over the 'NativeSqlAggregator' app.
+    createNativeApp({targetdir: config.targetdir,
+                     apptype: 'native',
+                     appname: 'NativeSqlAggregator',
+                     packagename: 'com.salesforce.samples.nativesqlaggregator',
+                     boolusesmartstore: true,
+                     relativeTemplateDir: 'native/SampleApps/NativeSqlAggregator',
+                     templateAppName: 'NativeSqlAggregator',
+                     templatePackageName: 'com.salesforce.samples.nativesqlaggregator'});
+
+    // Sets properties and copies over the 'RestExplorer' app.
+    createNativeApp({targetdir: config.targetdir,
+                     apptype: 'native',
+                     appname: 'RestExplorer',
+                     packagename: 'com.salesforce.samples.restexplorer',
+                     boolusesmartstore: true,
+                     relativeTemplateDir: 'native/SampleApps/RestExplorer',
+                     templateAppName: 'RestExplorer',
+                     templatePackageName: 'com.salesforce.samples.restexplorer'});
+}
+
+//
+// Helper for 'create' command
+//
+function create(config) {
+    // Native app creation
+    if (config.apptype === 'native') {
+        config.relativeTemplateDir = 'native/TemplateApp';
+        config.templateAppName = 'Template';
+        config.templatePackageName = 'com.salesforce.samples.templateapp';
+        createNativeApp(config);
     }
+    // Hybrid app creation
     else {
-        createHybridApp(projectDir);
+        createHybridApp(config);
     }
 }
 
-function createHybridApp(projectDir) {
-    shellJs.exec('cordova create ' + projectDir + ' ' + commandLineArgsMap.packagename + ' ' + commandLineArgsMap.appname);
-    shellJs.pushd(projectDir);
-    shellJs.exec('cordova platform add android');
-    shellJs.exec('cordova plugin add https://github.com/wmathurin/SalesforceMobileSDK-CordovaPlugin');
-    shellJs.exec('node plugins/com.salesforce/tools/postinstall.js 19 ' + commandLineArgsMap.boolusesmartstore);
+//
+// Helper to create hybrid application
+//
+function createHybridApp(config) {
+    config.projectDir = path.join(config.targetdir, config.appname);
+    // console.log("Config:" + JSON.stringify(config, null, 2));
+
+    shelljs.exec('cordova create ' + config.projectDir + ' ' + config.packagename + ' ' + config.appname);
+    shelljs.pushd(config.projectDir);
+    shelljs.exec('cordova platform add android');
+    shelljs.exec('cordova plugin add https://github.com/wmathurin/SalesforceMobileSDK-CordovaPlugin');
+    shelljs.exec('node plugins/com.salesforce/tools/postinstall.js 19 ' + config.boolusesmartstore);
 
     var bootconfig = {
         "remoteAccessConsumerKey": "3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa",
         "oauthRedirectURI": "testsfdc:///mobilesdk/detect/oauth/done",
         "oauthScopes": ["web", "api"],
-        "isLocal": commandLineArgsMap.apptype === 'hybrid_local',
-        "startPage": commandLineArgsMap.startPage || 'index.html',
+        "isLocal": config.apptype === 'hybrid_local',
+        "startPage": config.startPage || 'index.html',
         "errorPage": "error.html",
         "shouldAuthenticate": true,
         "attemptOfflineLoad": false,
         "androidPushNotificationClientId": ""
     };
+    // console.log("Bootconfig:" + JSON.stringify(bootconfig, null, 2));
 
     fs.writeFileSync('www/bootconfig.json', JSON.stringify(bootconfig, null, 2));
-    shellJs.popd();
+    shelljs.exec('cordova build');
+    shelljs.popd();
 }
 
-function createNativeApp(appInputProperties, projectDir) {
+//
+// Helper to create native application
+//
+function createNativeApp(config) {
+    // Computed config
+    config.projectDir = path.join(config.targetdir, config.appname);
+    config.bootConfigPath = path.join(config.projectDir, 'res', 'values', 'bootconfig.xml');
+    config.templatePackageDir = config.templatePackageName.replace(/\./g, path.sep);
+    var packageSdkRootDir = path.resolve(__dirname, '..');
+    config.templateDir = path.join(packageSdkRootDir, config.relativeTemplateDir);
+    config.templateAppClassName = config.templateAppName + 'App';
+
+    // console.log("Config:" + JSON.stringify(config, null, 2));
+
+    // Checking if config.projectDir already exists
+    if (fs.existsSync(config.projectDir)) {
+        console.log('App folder path \'' + config.projectDir + '\' already exists.  Cannot continue.');
+        process.exit(3);
+    }
+
     // Copy the template files to the destination directory.
-    shellJs.mkdir('-p', projectDir);
-    shellJs.cp('-R', path.join(appInputProperties.templateDir, '*'), projectDir);
-    shellJs.cp(path.join(appInputProperties.templateDir, '.project'), projectDir);
-    shellJs.cp(path.join(appInputProperties.templateDir, '.classpath'), projectDir);
-    if (shellJs.error()) {
-        console.log('There was an error copying the template files from \'' + appInputProperties.templateDir + '\' to \'' + projectDir + '\': ' + shellJs.error());
+    shelljs.mkdir('-p', config.projectDir);
+    shelljs.cp('-R', path.join(config.templateDir, '*'), config.projectDir);
+    shelljs.cp(path.join(config.templateDir, '.project'), config.projectDir);
+    shelljs.cp(path.join(config.templateDir, '.classpath'), config.projectDir);
+    if (shelljs.error()) {
+        console.log('There was an error copying the template files from \'' + config.templateDir + '\' to \'' + config.projectDir + '\': ' + shelljs.error());
         process.exit(4);
     }
 
     // Copy the SDK into the app folder as well, if it's not already there.
-    var destSdkDir = path.join(commandLineArgsMap.targetdir, path.basename(packageSdkRootDir));
+    var destSdkDir = path.join(config.targetdir, path.basename(packageSdkRootDir));
     if (!fs.existsSync(destSdkDir)) {
-        shellJs.cp('-R', packageSdkRootDir, commandLineArgsMap.targetdir);
-        if (shellJs.error()) {
-            console.log('There was an error copying the SDK directory from \'' + packageSdkRootDir + '\' to \'' + commandLineArgsMap.targetdir + '\': ' + shellJs.error());
+        shelljs.cp('-R', packageSdkRootDir, config.targetdir);
+        if (shelljs.error()) {
+            console.log('There was an error copying the SDK directory from \'' + packageSdkRootDir + '\' to \'' + config.targetdir + '\': ' + shelljs.error());
             process.exit(5);
         }
     } else {
         console.log(outputColors.cyan + 'INFO:' + outputColors.reset + ' SDK directory \'' + destSdkDir + '\' already exists.  Skipping copy.');
     }
 
-    var contentFilesWithReplacements = makeContentReplacementPathsArray(appInputProperties, projectDir);
+    var contentFilesWithReplacements = makeContentReplacementPathsArray(config);
 
     // Library project reference
     console.log(outputColors.yellow + 'Adjusting SalesforceSDK library project reference in project.properties.');
     var absNativeSdkPath = path.join(destSdkDir, 'native', 'SalesforceSDK');
-    var nativeSdkPathRelativeToProject = path.relative(projectDir, absNativeSdkPath);
-    var projectPropertiesFilePath = path.join(projectDir, 'project.properties');
-    shellJs.sed('-i', /=.*SalesforceSDK/g, '=' + nativeSdkPathRelativeToProject, projectPropertiesFilePath);
+    var nativeSdkPathRelativeToProject = path.relative(config.projectDir, absNativeSdkPath);
+    var projectPropertiesFilePath = path.join(config.projectDir, 'project.properties');
+    shelljs.sed('-i', /=.*SalesforceSDK/g, '=' + nativeSdkPathRelativeToProject, projectPropertiesFilePath);
 
     // Substitute app class name
-    var appClassName = commandLineArgsMap.appname + 'App';
+    var appClassName = config.appname + 'App';
     console.log('Renaming application class to ' + appClassName + ' in source.');
     contentFilesWithReplacements.forEach(function(file) {
-        var templateAppClassNameRegExp = new RegExp(appInputProperties.templateAppClassName, 'g');
-        shellJs.sed('-i', templateAppClassNameRegExp, appClassName, file);
+        var templateAppClassNameRegExp = new RegExp(config.templateAppClassName, 'g');
+        shelljs.sed('-i', templateAppClassNameRegExp, appClassName, file);
     });
 
     // Substitute app name
-    console.log('Renaming application to ' + commandLineArgsMap.appname + ' in source.');
+    console.log('Renaming application to ' + config.appname + ' in source.');
     contentFilesWithReplacements.forEach(function(file) {
-        var templateAppNameRegExp = new RegExp(appInputProperties.templateAppName, 'g');
-        shellJs.sed('-i', templateAppNameRegExp, commandLineArgsMap.appname, file);
+        var templateAppNameRegExp = new RegExp(config.templateAppName, 'g');
+        shelljs.sed('-i', templateAppNameRegExp, config.appname, file);
     });
 
     // Substitute package name.
-    console.log('Renaming package name to ' + commandLineArgsMap.packagename + ' in source.');
+    console.log('Renaming package name to ' + config.packagename + ' in source.');
     contentFilesWithReplacements.forEach(function(file) {
-        var templatePackageNameRegExp = new RegExp(appInputProperties.templatePackageName.replace(/\./g, '\\.'), 'g');
-        shellJs.sed('-i', templatePackageNameRegExp, commandLineArgsMap.packagename, file);
+        var templatePackageNameRegExp = new RegExp(config.templatePackageName.replace(/\./g, '\\.'), 'g');
+        shelljs.sed('-i', templatePackageNameRegExp, config.packagename, file);
     });
 
     // Rename source package folders.
     console.log('Moving source files to proper package path.')
-    var srcFilePaths = getTemplateSourceFilePaths(appInputProperties, projectDir);
+    var srcFilePaths = getTemplateSourceFilePaths(config);
     srcFilePaths.forEach(function(srcFile) {
-        fs.renameSync(srcFile.path, path.join(projectDir, 'src', srcFile.name));  // Temporary location
+        fs.renameSync(srcFile.path, path.join(config.projectDir, 'src', srcFile.name));  // Temporary location
     });
-    shellJs.rm('-rf', path.join(projectDir, 'src', 'com'));
-    var packageDir = commandLineArgsMap.packagename.replace(/\./g, path.sep);
-    shellJs.mkdir('-p', path.resolve(projectDir, 'src', packageDir));
+    shelljs.rm('-rf', path.join(config.projectDir, 'src', 'com'));
+    var packageDir = config.packagename.replace(/\./g, path.sep);
+    shelljs.mkdir('-p', path.resolve(config.projectDir, 'src', packageDir));
     srcFilePaths.forEach(function(srcFile) {
-        fs.renameSync(path.join(projectDir, 'src', srcFile.name), path.resolve(projectDir, 'src', packageDir, srcFile.name));
+        fs.renameSync(path.join(config.projectDir, 'src', srcFile.name), path.resolve(config.projectDir, 'src', packageDir, srcFile.name));
     });
 
     // Rename the app class name.
     console.log('Renaming the app class filename to ' + appClassName + '.java.');
-    var appClassDir = path.join(projectDir, 'src', packageDir);
-    var templateAppClassPath = path.join(appClassDir, appInputProperties.templateAppClassName) + '.java';
+    var appClassDir = path.join(config.projectDir, 'src', packageDir);
+    var templateAppClassPath = path.join(appClassDir, config.templateAppClassName) + '.java';
     var appClassPath = path.join(appClassDir, appClassName) + '.java';
     fs.renameSync(templateAppClassPath, appClassPath);
 
     // If SmartStore is configured, set it up.
-    if (commandLineArgsMap.usesmartstore) {
+    if (config.usesmartstore) {
         console.log('Adding SmartStore support.');
-        shellJs.mkdir('-p', path.join(projectDir, 'assets'));  // May not exist for native.
-        shellJs.cp(path.join(packageSdkRootDir, 'external', 'sqlcipher', 'assets', 'icudt46l.zip'), path.join(projectDir, 'assets', 'icudt46l.zip'));
+        shelljs.mkdir('-p', path.join(config.projectDir, 'assets'));  // May not exist for native.
+        shelljs.cp(path.join(packageSdkRootDir, 'external', 'sqlcipher', 'assets', 'icudt46l.zip'), path.join(config.projectDir, 'assets', 'icudt46l.zip'));
 
         console.log('Adding SmartStore library reference in project.properties.');
-        var projectPropertiesContent = shellJs.cat(projectPropertiesFilePath);
+        var projectPropertiesContent = shelljs.cat(projectPropertiesFilePath);
         var smartStoreAbsPath = path.join(destSdkDir, 'hybrid', 'SmartStore');
-        var smartStorePathRelativeToProject = path.relative(projectDir, smartStoreAbsPath);
+        var smartStorePathRelativeToProject = path.relative(config.projectDir, smartStoreAbsPath);
         var smartStoreProjectPropertyContent = 'android.library.reference.1=' + smartStorePathRelativeToProject + '\n';
         projectPropertiesContent = smartStoreProjectPropertyContent;
         projectPropertiesContent.to(projectPropertiesFilePath);
 
         console.log('Extending SalesforceSDKManagerWithSmartStore instead of SalesforceSDKManager.');
-        shellJs.sed('-i', /SalesforceSDKManager/g, 'SalesforceSDKManagerWithSmartStore', appClassPath);
-        shellJs.sed('-i',
+        shelljs.sed('-i', /SalesforceSDKManager/g, 'SalesforceSDKManagerWithSmartStore', appClassPath);
+        shelljs.sed('-i',
             /com\.salesforce\.androidsdk\.app\.SalesforceSDKManagerWithSmartStore/g,
             'com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore',
             appClassPath);
     }
 
     // If it's a hybrid remote app, replace the start page.
-    if (commandLineArgsMap.apptype === 'hybrid_remote') {
-        console.log('Changing remote page reference in ' + appInputProperties.bootConfigPath + '.');
+    if (config.apptype === 'hybrid_remote') {
+        console.log('Changing remote page reference in ' + config.bootConfigPath + '.');
         var templateRemotePageRegExp = /\/apex\/BasicVFPage/g;
-        shellJs.sed('-i', templateRemotePageRegExp, commandLineArgsMap.startpage, appInputProperties.bootConfigPath);
+        shelljs.sed('-i', templateRemotePageRegExp, config.startpage, config.bootConfigPath);
     }
 
     // Inform the user of next steps.
     var sdkLibrariesToIncludeMsg = 'the ' + outputColors.magenta + path.join(path.basename(destSdkDir), 'native', 'SalesforceSDK')
         + outputColors.reset + ' library project';
-    if (commandLineArgsMap.usesmartstore) {
+    if (config.usesmartstore) {
         sdkLibrariesToIncludeMsg += ', the ' + outputColors.magenta + path.join(path.basename(destSdkDir), 'hybrid', 'SmartStore')
         + outputColors.reset + ' library project';
     }
     var nextStepsOutput =
         ['',
-         outputColors.green + 'Your application project is ready in ' + commandLineArgsMap.targetdir + '.',
+         outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
          '',
          outputColors.cyan + 'To build the new application, do the following:' + outputColors.reset,
-         '   - cd ' + projectDir,
+         '   - cd ' + config.projectDir,
          '   - $ANDROID_SDK_DIR/android update project -p .',
          '   - ant clean debug',
          '',
@@ -312,24 +368,24 @@ function createNativeApp(appInputProperties, projectDir) {
          '',
          outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
          '   - Import ' + sdkLibrariesToIncludeMsg + ',',
-         '     and the ' + outputColors.magenta + commandLineArgsMap.appname + outputColors.reset + ' project into your workspace',
+         '     and the ' + outputColors.magenta + config.appname + outputColors.reset + ' project into your workspace',
          '   - Choose \'Build All\' from the Project menu',
          '   - Run your application by choosing "Run as Android application"',
          ''].join('\n');
     console.log(nextStepsOutput);
-    var relativeBootConfigPath = path.relative(commandLineArgsMap.targetdir, appInputProperties.bootConfigPath);
+    var relativeBootConfigPath = path.relative(config.targetdir, config.bootConfigPath);
     console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
         + outputColors.magenta + relativeBootConfigPath + '.' + outputColors.reset);
 }
 
-function makeContentReplacementPathsArray(appInputProperties, projectDir) {
+function makeContentReplacementPathsArray(config) {
     var returnArray = [];
-    returnArray.push(path.join(projectDir, 'AndroidManifest.xml'));
-    returnArray.push(path.join(projectDir, '.project'));
-    returnArray.push(path.join(projectDir, 'build.xml'));
-    returnArray.push(path.join(projectDir, 'res', 'values', 'strings.xml'));
-    returnArray.push(appInputProperties.bootConfigPath);
-    var srcFilePaths = getTemplateSourceFilePaths(appInputProperties, projectDir);
+    returnArray.push(path.join(config.projectDir, 'AndroidManifest.xml'));
+    returnArray.push(path.join(config.projectDir, '.project'));
+    returnArray.push(path.join(config.projectDir, 'build.xml'));
+    returnArray.push(path.join(config.projectDir, 'res', 'values', 'strings.xml'));
+    returnArray.push(config.bootConfigPath);
+    var srcFilePaths = getTemplateSourceFilePaths(config);
     srcFilePaths.forEach(function(srcFile) {
         returnArray.push(srcFile.path);
     });
@@ -337,9 +393,9 @@ function makeContentReplacementPathsArray(appInputProperties, projectDir) {
     return returnArray;
 }
 
-function getTemplateSourceFilePaths(appInputProperties, projectDir) {
+function getTemplateSourceFilePaths(config) {
     var srcFilesArray = [];
-    var srcDir = path.join(projectDir, 'src', appInputProperties.templatePackageDir);
+    var srcDir = path.join(config.projectDir, 'src', config.templatePackageDir);
     fs.readdirSync(srcDir).forEach(function(srcFile) {
         if (/\.java$/.test(srcFile))
             srcFilesArray.push({ 'name': srcFile, 'path': path.join(srcDir, srcFile) });
@@ -348,11 +404,10 @@ function getTemplateSourceFilePaths(appInputProperties, projectDir) {
     return srcFilesArray;
 }
 
-// -----
-// Input argument validation / processing.
-// -----
-
-function createArgProcessorList() {
+//
+// Processor list for 'create' command
+//
+function createArgsProcessorList() {
     var argProcessorList = new commandLineUtils.ArgProcessorList();
 
     // App type
@@ -423,16 +478,3 @@ function createArgProcessorList() {
     return argProcessorList;
 }
 
-function samplesArgProcessorList() {
-    var argProcessorList = new commandLineUtils.ArgProcessorList();
-
-    // Target dir
-    argProcessorList.addArgProcessor('targetdir', 'Enter the target directory of samples:', function(targetDir) {
-        if (targetDir.trim() === '')
-            return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for target dir: \'' + targetDir + '\'');
-        
-        return new commandLineUtils.ArgProcessorOutput(true, targetDir.trim());
-    });
-
-    return argProcessorList;
-}
