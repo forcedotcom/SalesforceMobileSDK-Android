@@ -37,44 +37,8 @@
 var path = require('path');
 var outputColors = require('../external/shared/node/outputColors');
 var commandLineUtils = require('../external/shared/node/commandLineUtils');
-
-//
-// Function to create wrapper around an existing package - to support verbose/dry-run mode
-// 
-function WrappedModule(moduleName, fnames) {
-    var that = this;
-    var module = require(moduleName);
-    var verbose = process.argv.indexOf('--verbose') > 0;
-
-    // Function to call wrapped module function
-    var run = function(fname, originalArguments) {
-        var originalArgs = Array.prototype.slice.call(originalArguments);
-        if (verbose) {
-            console.log('[' + moduleName + '] ' + fname + ' ' + originalArgs.join(','));
-        }
-        module[fname].apply(module, originalArguments);
-    };
-
-    // Setting up delegates
-    var intercept = function(fnames) { 
-        for (var i in fnames) {
-            var fname = fnames[i];
-            that[fname] = function() { return run(fname, arguments);};
-        }
-    };
-
-    intercept(fnames);
-}
-
-//
-// Wrapper around shelljs
-//
-var shelljs = require('shelljs') ; // new WrappedModule('shelljs', ['exec', 'pushd', 'popd', 'mkdir', 'cp', 'error', 'sed', 'rm']);
-
-//
-// Wrapper around fs
-//
-var fs = require('fs'); // new WrappedModule('fs', ['existsSync', 'writeFileSync', 'readdirSync', 'renameSync']);
+var shelljs = require('shelljs') ;
+var fs = require('fs'); 
 
 // Calling main
 main(process.argv);
@@ -117,30 +81,14 @@ function usage() {
     console.log('    --appname=<Application Name>');
     console.log('    --targetdir=<Target App Folder>');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
+    console.log('    --targetApi=<Target Api e.g. 19 for KitKat>');
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
     console.log('    [--usesmartstore=<Whether or not to use SmartStore> (\'true\' or \'false\'. false by default)]');
     console.log(outputColors.cyan + '\nOR\n');
     console.log(outputColors.magenta + 'forcedroid samples');
     console.log('    --targetdir=<Target Samples Folder>' + outputColors.reset);
+    console.log('    --targetApi=<Target Api e.g. 19 for KitKat>');
 }
-
-//
-// Processor list for 'samples' command
-//
-function samplesArgsProcessorList() {
-    var argProcessorList = new commandLineUtils.ArgProcessorList();
-
-    // Target dir
-    argProcessorList.addArgProcessor('targetdir', 'Enter the target directory of samples:', function(targetDir) {
-        if (targetDir.trim() === '')
-            return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for target dir: \'' + targetDir + '\'');
-        
-        return new commandLineUtils.ArgProcessorOutput(true, targetDir.trim());
-    });
-
-    return argProcessorList;
-}
-
 
 //
 // Helper to 'samples' command
@@ -151,27 +99,29 @@ function samples(config) {
                      apptype: 'native',
                      appname: 'FileExplorer',
                      packagename: 'com.salesforce.samples.fileexplorer',
-                     boolusesmartstore: false,
+                     usesmartstore: false,
                      relativeTemplateDir: 'native/SampleApps/FileExplorer',
                      templateAppName: 'FileExplorer',
                      templatePackageName: 'com.salesforce.samples.fileexplorer'});
 
+/* FIXME This one is broken (did it ever work?
     // Sets properties and copies over the 'NativeSqlAggregator' app.
     createNativeApp({targetdir: config.targetdir,
                      apptype: 'native',
                      appname: 'NativeSqlAggregator',
                      packagename: 'com.salesforce.samples.nativesqlaggregator',
-                     boolusesmartstore: true,
+                     usesmartstore: true,
                      relativeTemplateDir: 'native/SampleApps/NativeSqlAggregator',
                      templateAppName: 'NativeSqlAggregator',
                      templatePackageName: 'com.salesforce.samples.nativesqlaggregator'});
+*/
 
     // Sets properties and copies over the 'RestExplorer' app.
     createNativeApp({targetdir: config.targetdir,
                      apptype: 'native',
                      appname: 'RestExplorer',
                      packagename: 'com.salesforce.samples.restexplorer',
-                     boolusesmartstore: true,
+                     usesmartstore: false,
                      relativeTemplateDir: 'native/SampleApps/RestExplorer',
                      templateAppName: 'RestExplorer',
                      templatePackageName: 'com.salesforce.samples.restexplorer'});
@@ -205,7 +155,7 @@ function createHybridApp(config) {
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android');
     shelljs.exec('cordova plugin add https://github.com/wmathurin/SalesforceMobileSDK-CordovaPlugin');
-    shelljs.exec('node plugins/com.salesforce/tools/postinstall.js 19 ' + config.boolusesmartstore);
+    shelljs.exec('node plugins/com.salesforce/tools/postinstall.js 19 ' + config.usesmartstore);
 
     var bootconfig = {
         "remoteAccessConsumerKey": "3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa",
@@ -328,8 +278,7 @@ function createNativeApp(config) {
         var projectPropertiesContent = shelljs.cat(projectPropertiesFilePath);
         var smartStoreAbsPath = path.join(destSdkDir, 'hybrid', 'SmartStore');
         var smartStorePathRelativeToProject = path.relative(config.projectDir, smartStoreAbsPath);
-        var smartStoreProjectPropertyContent = 'android.library.reference.1=' + smartStorePathRelativeToProject + '\n';
-        projectPropertiesContent = smartStoreProjectPropertyContent;
+        projectPropertiesContent += 'android.library.reference.1=' + smartStorePathRelativeToProject + '\n';
         projectPropertiesContent.to(projectPropertiesFilePath);
 
         console.log('Extending SalesforceSDKManagerWithSmartStore instead of SalesforceSDKManager.');
@@ -338,13 +287,6 @@ function createNativeApp(config) {
             /com\.salesforce\.androidsdk\.app\.SalesforceSDKManagerWithSmartStore/g,
             'com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore',
             appClassPath);
-    }
-
-    // If it's a hybrid remote app, replace the start page.
-    if (config.apptype === 'hybrid_remote') {
-        console.log('Changing remote page reference in ' + config.bootConfigPath + '.');
-        var templateRemotePageRegExp = /\/apex\/BasicVFPage/g;
-        shelljs.sed('-i', templateRemotePageRegExp, config.startpage, config.bootConfigPath);
     }
 
     // Inform the user of next steps.
@@ -411,70 +353,67 @@ function createArgsProcessorList() {
     var argProcessorList = new commandLineUtils.ArgProcessorList();
 
     // App type
-    argProcessorList.addArgProcessor('apptype', 'Enter your application type (native, hybrid_remote, or hybrid_local):', function(appType) {
-        appType = appType.trim();
-        if (appType !== 'native' && appType !== 'hybrid_remote' && appType !== 'hybrid_local')
-            return new commandLineUtils.ArgProcessorOutput(false, 'App type must be native, hybrid_remote, or hybrid_local.');
-
-        return new commandLineUtils.ArgProcessorOutput(true, appType);
-    });
+    addProcessorFor(argProcessorList, 'apptype', 'Enter your application type (native, hybrid_remote, or hybrid_local):', 'App type must be native, hybrid_remote, or hybrid_local.', 
+                    function(val) { return ['native', 'hybrid_remote', 'hybrid_local'].indexOf(val) >= 0; });
 
     // App name
-    argProcessorList.addArgProcessor('appname', 'Enter your application name:', function(appName) {
-        if (appName.trim() === '')
-            return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for app name: \'' + appName + '\'');
-        
-        return new commandLineUtils.ArgProcessorOutput(true, appName.trim());
-    });
+    addProcessorFor(argProcessorList, 'appname', 'Enter your application name:', 'Invalid value for application name: \'$val\'.', /\S+/);
 
     // Target dir
-    argProcessorList.addArgProcessor('targetdir', 'Enter the target directory of your app:', function(targetDir) {
-        if (targetDir.trim() === '')
-            return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for target dir: \'' + targetDir + '\'');
-        
-        return new commandLineUtils.ArgProcessorOutput(true, targetDir.trim());
-    });
+    addProcessorFor(argProcessorList, 'targetdir', 'Enter the target directory of your app:', 'Invalid value for target dir: \'$val\'.',  /\S+/);
+
+    // Target API 
+    addProcessorFor(argProcessorList, 'targetapi', 'Enter the target api for your application (number between 8 (Froyo) and 19 (KitKat):', 'Target api must be a number between 8 and 19.', 
+                    function(val) { var intVal = parseInt(val); return intVal >= 8 && intVal <= 19; });
 
     // Package name
-    argProcessorList.addArgProcessor('packagename', 'Enter the package name for your app (com.mycompany.my_app):', function(packageName) {
-        if (packageName.trim() === '')
-            return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for package name: \'' + packageName + '\'');
-
-        packageName = packageName.trim();
-        var validPackageRegExp = /^[a-z]+[a-z0-9_]*(\.[a-z]+[a-z0-9_]*)*$/;
-        if (!validPackageRegExp.test(packageName)) {
-            return new commandLineUtils.ArgProcessorOutput(false, '\'' + packageName + '\' is not a valid Java package name.');
-        }
-        
-        return new commandLineUtils.ArgProcessorOutput(true, packageName);
-    });
+    addProcessorFor(argProcessorList, 'packagename', 'Enter the package name for your app (com.mycompany.my_app):', '\'$val\' is not a valid Java package name.', /^[a-z]+[a-z0-9_]*(\.[a-z]+[a-z0-9_]*)*$/);
 
     // Start page
-    argProcessorList.addArgProcessor(
-        'startpage',
-        'Enter the start page for your app (only applicable for hybrid_remote apps):',
-        function(startPage, argsMap) {
-            if (argsMap && argsMap.apptype === 'hybrid_remote') {
-                if (startPage.trim() === '')
-                    return new commandLineUtils.ArgProcessorOutput(false, 'Invalid value for start page: \'' + startPage + '\'');
-
-                return new commandLineUtils.ArgProcessorOutput(true, startPage.trim());
-            }
-
-            // Unset any value here, as it doesn't apply for non-remote apps.
-            return new commandLineUtils.ArgProcessorOutput(true, undefined);
-        },
-        function (argsMap) {
-            return (argsMap['apptype'] === 'hybrid_remote');
-        }
-    );
+    addProcessorFor(argProcessorList, 'startpage', 'Enter the start page for your app (only applicable for hybrid_remote apps):', 'Invalid value for start page: \'$val\'.', /\S+/, 
+                    function(argsMap) { return (argsMap['apptype'] === 'hybrid_remote'); });
 
     // Use SmartStore
-    argProcessorList.addArgProcessor('usesmartstore', 'Do you want to use SmartStore in your app? [yes/NO] (\'No\' by default)', function(useSmartStore) {
-        var boolUseSmartStore = (useSmartStore.trim().toLowerCase() === 'yes');
-        return new commandLineUtils.ArgProcessorOutput(true, boolUseSmartStore);
-    });
+    addProcessorFor(argProcessorList, 'usesmartstore', 'Do you want to use SmartStore in your app? [yes/NO] (\'No\' by default)', 'Use smartstore must be yes or no.',
+                    function(val) { return ['yes', 'no'].indexOf(val.toLowerCase()) >= 0; },
+                    undefined,
+                    function(val) { return (val.toLowerCase() === 'yes'); });
 
     return argProcessorList;
 }
 
+//
+// Processor list for 'samples' command
+//
+function samplesArgsProcessorList() {
+    var argProcessorList = new commandLineUtils.ArgProcessorList();
+    addProcessorFor(argProcessorList, 'targetdir', 'Enter the target directory of samples:', 'Invalid value for target dir: \'$val\'.',  /\S+/);
+    return argProcessorList;
+}
+
+//
+// Helper function to add arg processor
+// * argProcessorList: ArgProcessorList
+// * argName: string, name of argument
+// * prompt: string for prompt
+// * error: string for error (can contain $val to print the value typed by the user in the error message)
+// * validation: function or regexp or null (no validation)
+// * preprocessor: function or null
+// * postprocessor: function or null
+// 
+function addProcessorFor(argProcessorList, argName, prompt, error, validation, preprocessor, postprocessor) {
+   argProcessorList.addArgProcessor(argName, prompt, function(val) {
+       val = val.trim();
+
+       // validation is either a function or a regexp
+       if (typeof validation === 'function' && validation(val)
+           || typeof validation === 'object' && typeof validation.test === 'function' && validation.test(val))
+       {
+           return new commandLineUtils.ArgProcessorOutput(true, typeof postprocessor === 'function' ? postprocessor(val) : val);
+       }
+       else {
+           return new commandLineUtils.ArgProcessorOutput(false, error.replace('$val', val));
+       }
+
+   }, preprocessor);
+}
