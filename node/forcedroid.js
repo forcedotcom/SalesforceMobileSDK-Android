@@ -104,7 +104,7 @@ function samples(config) {
                      templateAppName: 'FileExplorer',
                      templatePackageName: 'com.salesforce.samples.fileexplorer'});
 
-/* FIXME This one is broken (did it ever work?
+/* FIXME This one is broken - you end up with SalesforceSDKManagerWithSmartStoreWithSmartStore in app class - also project.properties is messed up
     // Sets properties and copies over the 'NativeSqlAggregator' app.
     createNativeApp({targetdir: config.targetdir,
                      apptype: 'native',
@@ -173,6 +173,30 @@ function createHybridApp(config) {
     fs.writeFileSync('www/bootconfig.json', JSON.stringify(bootconfig, null, 2));
     shelljs.exec('cordova build');
     shelljs.popd();
+
+    // Inform the user of next steps.
+    var nextStepsOutput =
+        ['',
+         outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
+         '',
+         outputColors.cyan + 'To build the new application, do the following:' + outputColors.reset,
+         '   - cd ' + config.targetdir,
+         '   - cordova build',
+         '',
+         outputColors.cyan + 'To run the application, start an emulator or plug in your device and run:' + outputColors.reset,
+         '   - cordova run',
+         '',
+         outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
+         '   - Use ' + config.targetdir + ' as your workspace,',
+         '   - Choose Import -> Existing Android into Workspace,',
+         '   - Choose ' + config.targetdir + ' as the root directory',
+         '   - Pick the following projects: platforms/android, platforms/android/CordovaLib, plugins/com.salesforce/android/hybrid/SmartStore and plugins/com.salesforce/android/native/SalesforceSDK',
+         '   - For platforms/android, click on the project name, and change it to ' + config.appname,
+         '   - Once everything is built, right-click on the ' + config.appname + ' project and choose "Run as Android application"',
+         ''].join('\n');
+    console.log(nextStepsOutput);
+    console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
+        + outputColors.magenta + 'www/bootconfig.json' + outputColors.reset);
 }
 
 //
