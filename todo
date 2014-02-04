@@ -1,3 +1,10 @@
-Update README.md
-Revisit hybrid_local and hybrid_remote app creation in build.xml
+[FEA] Use cordova as a library project instead of jar
+[BUG] With multiple sample apps installed, second one might try to launch login activity of first one
+[DOC] Update README.md
+[BUG] Revisit hybrid_local and hybrid_remote app creation in build.xml or kill build.xml?
+[BUG] forcedroid create native: generated app doesn't have an android target
+[BUG] forcedroid samples: nativesqlqggregator broken (tries to import SalesforceSDKManagerWithSmartStoreWithSmartStore, also project.properties is bad)
+[FEA] forcedroid create hybrid_local: we end up with cordova's default index.html (so we don't show how to get the auth token etc)
+
+
 
