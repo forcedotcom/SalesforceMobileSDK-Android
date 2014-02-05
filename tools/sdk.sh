@@ -2,6 +2,7 @@
 TOP=`pwd`
 NATIVE_TOP=$TOP/native/
 HYBRID_TOP=$TOP/hybrid/
+CORDOVA_TOP=$TOP/external/cordova/
 TRUE=0
 FALSE=1
 TARGETS=""
@@ -45,6 +46,7 @@ usage ()
     echo "        all"
     echo "        SalesforceSDK"
     echo "        SmartStore"
+    echo "        Cordova"
     echo "        RestExplorer"
     echo "        NativeSqlAggregator"
     echo "        FileExplorer"
@@ -147,6 +149,7 @@ then
 else
     process_args $@
 
+    build_project_if_requested "Cordova" $CORDOVA_TOP/framework 19
     build_project_if_requested "SalesforceSDK" $NATIVE_TOP/SalesforceSDK 11
     build_project_if_requested "SmartStore" $HYBRID_TOP/SmartStore
     build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp
