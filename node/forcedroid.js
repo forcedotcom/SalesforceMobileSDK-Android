@@ -81,51 +81,60 @@ function usage() {
     console.log('    --appname=<Application Name>');
     console.log('    --targetdir=<Target App Folder>');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
-    console.log('    --targetApi=<Target Api e.g. 19 for KitKat>');
+    console.log('    --targetandroidapi=<Target Api e.g. 19 for KitKat>');
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
     console.log('    [--usesmartstore=<Whether or not to use SmartStore> (\'true\' or \'false\'. false by default)]');
     console.log(outputColors.cyan + '\nOR\n');
     console.log(outputColors.magenta + 'forcedroid samples');
-    console.log('    --targetdir=<Target Samples Folder>' + outputColors.reset);
-    console.log('    --targetApi=<Target Api e.g. 19 for KitKat>');
+    console.log('    --targetdir=<Target Samples Folder>');
+    console.log('    --targetandroidapi=<Target Api e.g. 19 for KitKat>' + outputColors.reset);
 }
 
 //
 // Helper to 'samples' command
 //
 function samples(config) {
-    // Sets properties and copies over the 'FileExplorer' app.
-    createNativeApp({targetdir: config.targetdir,
-                     apptype: 'native',
-                     appname: 'FileExplorer',
-                     packagename: 'com.salesforce.samples.fileexplorer',
-                     usesmartstore: false,
-                     relativeTemplateDir: 'native/SampleApps/FileExplorer',
-                     templateAppName: 'FileExplorer',
-                     templatePackageName: 'com.salesforce.samples.fileexplorer'});
+    // Map of sample app name to boolean indicating if it uses smartstore
+    var sampleApps = {'FileExplorer':false, 'NativeSqlAggregator':true, 'RestExplorer': false};
 
-/* FIXME This one is broken - you end up with SalesforceSDKManagerWithSmartStoreWithSmartStore in app class - also project.properties is messed up
-    // Sets properties and copies over the 'NativeSqlAggregator' app.
-    createNativeApp({targetdir: config.targetdir,
-                     apptype: 'native',
-                     appname: 'NativeSqlAggregator',
-                     packagename: 'com.salesforce.samples.nativesqlaggregator',
-                     usesmartstore: true,
-                     relativeTemplateDir: 'native/SampleApps/NativeSqlAggregator',
-                     templateAppName: 'NativeSqlAggregator',
-                     templatePackageName: 'com.salesforce.samples.nativesqlaggregator'});
-*/
+    // Generating sample app projects
+    for (var appname in sampleApps) {
+        sampleNativeApp(config, appname, sampleApps[appname]);
+    }
 
-    // Sets properties and copies over the 'RestExplorer' app.
-    createNativeApp({targetdir: config.targetdir,
-                     apptype: 'native',
-                     appname: 'RestExplorer',
-                     packagename: 'com.salesforce.samples.restexplorer',
-                     usesmartstore: false,
-                     relativeTemplateDir: 'native/SampleApps/RestExplorer',
-                     templateAppName: 'RestExplorer',
-                     templatePackageName: 'com.salesforce.samples.restexplorer'});
+    // Inform the user of next steps.
+    var nextStepsOutput = ['',
+                           outputColors.green + 'Your sample applications projects are ready in ' + config.targetdir + '.',
+                           '',
+                           'To build from the command line do the following:' + outputColors.reset,
+                           '   - cd ' + path.join(config.targetdir, '<SampleApp>'),
+                           '   - ant clean debug',
+                           '',
+                           outputColors.cyan + 'To run the application, start an emulator or plug in your device and run:' + outputColors.reset,
+                           '   - ant installd',
+                           '',
+                           outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
+                           '   - Set ' + config.targetdir + ' as your workspace',
+                           '   - Go to Import -> Existing project and select ' + config.targetdir + ' as the root and import all the projects shown',
+                           '   - Choose \'Build All\' from the Project menu',
+                           '   - Run your application by choosing "Run as Android application"',
+                           ''].join('\n');
+    console.log(nextStepsOutput);
 }
+
+function sampleNativeApp(config, appname, usesmartstore) {
+   createNativeApp({targetdir: config.targetdir,
+                     targetandroidapi: config.targetandroidapi,
+                     apptype: 'native',
+                     appname: appname,
+                     packagename: 'com.salesforce.samples.' + appname.toLowerCase(),
+                     usesmartstore: usesmartstore,
+                     relativeTemplateDir: 'native/SampleApps/' + appname,
+                     templateAppName: appname,
+                     templatePackageName: 'com.salesforce.samples.' + appname.toLowerCase()},
+                   false);
+}
+
 
 //
 // Helper for 'create' command
@@ -136,7 +145,7 @@ function create(config) {
         config.relativeTemplateDir = 'native/TemplateApp';
         config.templateAppName = 'Template';
         config.templatePackageName = 'com.salesforce.samples.templateapp';
-        createNativeApp(config);
+        createNativeApp(config, true);
     }
     // Hybrid app creation
     else {
@@ -202,7 +211,7 @@ function createHybridApp(config) {
 //
 // Helper to create native application
 //
-function createNativeApp(config) {
+function createNativeApp(config, showNextSteps) {
     // Computed config
     config.projectDir = path.join(config.targetdir, config.appname);
     config.bootConfigPath = path.join(config.projectDir, 'res', 'values', 'bootconfig.xml');
@@ -210,7 +219,7 @@ function createNativeApp(config) {
     var packageSdkRootDir = path.resolve(__dirname, '..');
     config.templateDir = path.join(packageSdkRootDir, config.relativeTemplateDir);
     config.templateAppClassName = config.templateAppName + 'App';
-
+    
     // console.log("Config:" + JSON.stringify(config, null, 2));
 
     // Checking if config.projectDir already exists
@@ -229,26 +238,7 @@ function createNativeApp(config) {
         process.exit(4);
     }
 
-    // Copy the SDK into the app folder as well, if it's not already there.
-    var destSdkDir = path.join(config.targetdir, path.basename(packageSdkRootDir));
-    if (!fs.existsSync(destSdkDir)) {
-        shelljs.cp('-R', packageSdkRootDir, config.targetdir);
-        if (shelljs.error()) {
-            console.log('There was an error copying the SDK directory from \'' + packageSdkRootDir + '\' to \'' + config.targetdir + '\': ' + shelljs.error());
-            process.exit(5);
-        }
-    } else {
-        console.log(outputColors.cyan + 'INFO:' + outputColors.reset + ' SDK directory \'' + destSdkDir + '\' already exists.  Skipping copy.');
-    }
-
     var contentFilesWithReplacements = makeContentReplacementPathsArray(config);
-
-    // Library project reference
-    console.log(outputColors.yellow + 'Adjusting SalesforceSDK library project reference in project.properties.');
-    var absNativeSdkPath = path.join(destSdkDir, 'native', 'SalesforceSDK');
-    var nativeSdkPathRelativeToProject = path.relative(config.projectDir, absNativeSdkPath);
-    var projectPropertiesFilePath = path.join(config.projectDir, 'project.properties');
-    shelljs.sed('-i', /=.*SalesforceSDK/g, '=' + nativeSdkPathRelativeToProject, projectPropertiesFilePath);
 
     // Substitute app class name
     var appClassName = config.appname + 'App';
@@ -298,50 +288,64 @@ function createNativeApp(config) {
         shelljs.mkdir('-p', path.join(config.projectDir, 'assets'));  // May not exist for native.
         shelljs.cp(path.join(packageSdkRootDir, 'external', 'sqlcipher', 'assets', 'icudt46l.zip'), path.join(config.projectDir, 'assets', 'icudt46l.zip'));
 
-        console.log('Adding SmartStore library reference in project.properties.');
-        var projectPropertiesContent = shelljs.cat(projectPropertiesFilePath);
-        var smartStoreAbsPath = path.join(destSdkDir, 'hybrid', 'SmartStore');
-        var smartStorePathRelativeToProject = path.relative(config.projectDir, smartStoreAbsPath);
-        projectPropertiesContent += 'android.library.reference.1=' + smartStorePathRelativeToProject + '\n';
-        projectPropertiesContent.to(projectPropertiesFilePath);
-
         console.log('Extending SalesforceSDKManagerWithSmartStore instead of SalesforceSDKManager.');
         shelljs.sed('-i', /SalesforceSDKManager/g, 'SalesforceSDKManagerWithSmartStore', appClassPath);
+        shelljs.sed('-i', /WithSmartStoreWithSmartStore/g, 'WithSmartStore', appClassPath); // undoing change if the template was already using SalesforceSDKManagerWithSmartStore
         shelljs.sed('-i',
             /com\.salesforce\.androidsdk\.app\.SalesforceSDKManagerWithSmartStore/g,
             'com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore',
             appClassPath);
     }
 
-    // Inform the user of next steps.
-    var sdkLibrariesToIncludeMsg = 'the ' + outputColors.magenta + path.join(path.basename(destSdkDir), 'native', 'SalesforceSDK')
-        + outputColors.reset + ' library project';
+    // Copy SalesforceSDK library project into the app folder as well, if it's not already there.
+    copyFromSDK(packageSdkRootDir, config.targetdir, path.join('native', 'SalesforceSDK'));
+
+    // Copy Cordova library project into the app folder as well, if it's not already there.
+    var destCordovaDir = path.join(config.targetdir, path.basename(packageSdkRootDir), 'external', 'cordova');
+    copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'cordova', 'framework'));
+    shelljs.cp(path.join(packageSdkRootDir, 'external', 'cordova', 'VERSION'), destCordovaDir);
+    console.log(destCordovaDir);
+//    shelljs.exec('android update lib-project -p ' + path.join(destCordovaDir, 'framework') + ' -t "android-' + config.targetandroidapi);
+    console.log('update done');
+
+    // Copy SmartStore library project into the app folder as well, if it's not already there - if required.
     if (config.usesmartstore) {
-        sdkLibrariesToIncludeMsg += ', the ' + outputColors.magenta + path.join(path.basename(destSdkDir), 'hybrid', 'SmartStore')
-        + outputColors.reset + ' library project';
+        copyFromSDK(packageSdkRootDir, config.targetdir, path.join('hybrid', 'SmartStore'));
+        copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
-    var nextStepsOutput =
-        ['',
-         outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
-         '',
-         outputColors.cyan + 'To build the new application, do the following:' + outputColors.reset,
-         '   - cd ' + config.projectDir,
-         '   - $ANDROID_SDK_DIR/android update project -p .',
-         '   - ant clean debug',
-         '',
-         outputColors.cyan + 'To run the application, start an emulator or plug in your device and run:' + outputColors.reset,
-         '   - ant installd',
-         '',
-         outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
-         '   - Import ' + sdkLibrariesToIncludeMsg + ',',
-         '     and the ' + outputColors.magenta + config.appname + outputColors.reset + ' project into your workspace',
-         '   - Choose \'Build All\' from the Project menu',
-         '   - Run your application by choosing "Run as Android application"',
-         ''].join('\n');
-    console.log(nextStepsOutput);
-    var relativeBootConfigPath = path.relative(config.targetdir, config.bootConfigPath);
-    console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
-        + outputColors.magenta + relativeBootConfigPath + '.' + outputColors.reset);
+
+    // Library project reference
+    console.log(outputColors.yellow + 'Fixing project.properties.');
+    var projectPropertiesFilePath = path.join(config.projectDir, 'project.properties');
+    shelljs.rm(projectPropertiesFilePath);
+    var libProject = config.usesmartstore ? path.join('..', 'SalesforceMobileSDK-Android', 'hybrid', 'SmartStore') : path.join('..', 'SalesforceMobileSDK-Android', 'native', 'SalesforceSDK');
+    shelljs.exec('android update project -p ' + config.projectDir + ' -t "android-' + config.targetandroidapi + '" -l ' + libProject);
+    shelljs.echo('\nmanifestmerger.enabled=true\n').toEnd(projectPropertiesFilePath);
+
+    // Inform the user of next steps if requested.
+    if (showNextSteps) {
+        var nextStepsOutput =
+            ['',
+             outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
+             '',
+             outputColors.cyan + 'To build the new application, do the following:' + outputColors.reset,
+             '   - cd ' + config.projectDir,
+             '   - ant clean debug',
+             '',
+             outputColors.cyan + 'To run the application, start an emulator or plug in your device and run:' + outputColors.reset,
+             '   - ant installd',
+             '',
+             outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
+             '   - Import ' + path.basename(libProject) + ',',
+             '     and the ' + outputColors.magenta + config.appname + outputColors.reset + ' project into your workspace',
+             '   - Choose \'Build All\' from the Project menu',
+             '   - Run your application by choosing "Run as Android application"',
+             ''].join('\n');
+        console.log(nextStepsOutput);
+        var relativeBootConfigPath = path.relative(config.targetdir, config.bootConfigPath);
+        console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
+                    + outputColors.magenta + relativeBootConfigPath + '.' + outputColors.reset);
+    }
 }
 
 function makeContentReplacementPathsArray(config) {
@@ -370,6 +374,22 @@ function getTemplateSourceFilePaths(config) {
     return srcFilesArray;
 }
 
+function copyFromSDK(packageSdkRootDir, targetDir, srcDirRelative) {
+    console.log('Copying ' + srcDirRelative + '.');
+    var destDir = path.join(targetDir, path.basename(packageSdkRootDir), path.dirname(srcDirRelative));
+    var srcDir = path.join(packageSdkRootDir, srcDirRelative);
+    if (!fs.existsSync(path.join(destDir, path.basename(srcDirRelative)))) {
+        shelljs.mkdir('-p', destDir);
+        shelljs.cp('-R', srcDir, destDir);
+        if (shelljs.error()) {
+            console.log('There was an error copying ' + srcDirRelative + ' from \'' + packageSdkRootDir + '\' to \'' + destDir + '\': ' + shelljs.error());
+            process.exit(5);
+        }
+    } else {
+        console.log(outputColors.cyan + 'INFO:' + outputColors.reset + ' ' + srcDirRelative + ' already exists.  Skipping copy.');
+    }
+}
+
 //
 // Processor list for 'create' command
 //
@@ -387,8 +407,7 @@ function createArgsProcessorList() {
     addProcessorFor(argProcessorList, 'targetdir', 'Enter the target directory of your app:', 'Invalid value for target dir: \'$val\'.',  /\S+/);
 
     // Target API 
-    addProcessorFor(argProcessorList, 'targetapi', 'Enter the target api for your application (number between 8 (Froyo) and 19 (KitKat):', 'Target api must be a number between 8 and 19.', 
-                    function(val) { var intVal = parseInt(val); return intVal >= 8 && intVal <= 19; });
+    addProcessorForAndroidApi(argProcessorList);
 
     // Package name
     addProcessorFor(argProcessorList, 'packagename', 'Enter the package name for your app (com.mycompany.my_app):', '\'$val\' is not a valid Java package name.', /^[a-z]+[a-z0-9_]*(\.[a-z]+[a-z0-9_]*)*$/);
@@ -412,8 +431,19 @@ function createArgsProcessorList() {
 function samplesArgsProcessorList() {
     var argProcessorList = new commandLineUtils.ArgProcessorList();
     addProcessorFor(argProcessorList, 'targetdir', 'Enter the target directory of samples:', 'Invalid value for target dir: \'$val\'.',  /\S+/);
+    addProcessorForAndroidApi(argProcessorList);
     return argProcessorList;
 }
+
+//
+// Add processor for target android api
+// 
+function addProcessorForAndroidApi(argProcessorList) { 
+    // Target API 
+    addProcessorFor(argProcessorList, 'targetandroidapi', 'Enter the target android api for your application (number between 8 (Froyo) and 19 (KitKat):', 'Target api must be a number between 8 and 19.', 
+                    function(val) { var intVal = parseInt(val); return intVal >= 8 && intVal <= 19; });
+}
+
 
 //
 // Helper function to add arg processor
