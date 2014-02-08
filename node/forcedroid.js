@@ -171,7 +171,7 @@ function createHybridApp(config) {
         "oauthRedirectURI": "testsfdc:///mobilesdk/detect/oauth/done",
         "oauthScopes": ["web", "api"],
         "isLocal": config.apptype === 'hybrid_local',
-        "startPage": config.startPage || 'index.html',
+        "startPage": config.startpage || 'index.html',
         "errorPage": "error.html",
         "shouldAuthenticate": true,
         "attemptOfflineLoad": false,
@@ -299,18 +299,20 @@ function createNativeApp(config, showNextSteps) {
 
     // Copy SalesforceSDK library project into the app folder as well, if it's not already there.
     copyFromSDK(packageSdkRootDir, config.targetdir, path.join('native', 'SalesforceSDK'));
+    shelljs.exec('android update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), 'native', 'SalesforceSDK'));
 
     // Copy Cordova library project into the app folder as well, if it's not already there.
     var destCordovaDir = path.join(config.targetdir, path.basename(packageSdkRootDir), 'external', 'cordova');
     copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'cordova', 'framework'));
     shelljs.cp(path.join(packageSdkRootDir, 'external', 'cordova', 'VERSION'), destCordovaDir);
     console.log(destCordovaDir);
-//    shelljs.exec('android update lib-project -p ' + path.join(destCordovaDir, 'framework') + ' -t "android-' + config.targetandroidapi);
+    shelljs.exec('android update project -p ' + path.join(destCordovaDir, 'framework'));
     console.log('update done');
 
     // Copy SmartStore library project into the app folder as well, if it's not already there - if required.
     if (config.usesmartstore) {
         copyFromSDK(packageSdkRootDir, config.targetdir, path.join('hybrid', 'SmartStore'));
+        shelljs.exec('android update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), 'hybrid', 'SmartStore'));
         copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
 
@@ -320,7 +322,7 @@ function createNativeApp(config, showNextSteps) {
     shelljs.rm(projectPropertiesFilePath);
     var libProject = config.usesmartstore ? path.join('..', 'SalesforceMobileSDK-Android', 'hybrid', 'SmartStore') : path.join('..', 'SalesforceMobileSDK-Android', 'native', 'SalesforceSDK');
     shelljs.exec('android update project -p ' + config.projectDir + ' -t "android-' + config.targetandroidapi + '" -l ' + libProject);
-    shelljs.echo('\nmanifestmerger.enabled=true\n').toEnd(projectPropertiesFilePath);
+    '\nmanifestmerger.enabled=true\n'.toEnd(projectPropertiesFilePath);
 
     // Inform the user of next steps if requested.
     if (showNextSteps) {
