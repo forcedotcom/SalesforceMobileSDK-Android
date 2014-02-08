@@ -571,6 +571,7 @@ public class SalesforceSDKManager implements AccountRemoved {
 
         // Restarts the application.
         final Intent i = new Intent(context, getMainActivityClass());
+        i.setPackage(getAppContext().getPackageName());
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(i);
     }

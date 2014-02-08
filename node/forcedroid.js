@@ -180,7 +180,6 @@ function createHybridApp(config) {
     // console.log("Bootconfig:" + JSON.stringify(bootconfig, null, 2));
 
     fs.writeFileSync('www/bootconfig.json', JSON.stringify(bootconfig, null, 2));
-    shelljs.exec('cordova build');
     shelljs.popd();
 
     // Inform the user of next steps.
