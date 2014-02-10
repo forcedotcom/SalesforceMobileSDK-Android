@@ -40,6 +40,7 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import android.annotation.TargetApi;
 import android.app.Service;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
@@ -64,6 +65,7 @@ public class Encryptor {
      * @return true if the cryptographic module was successfully initialized
      * @throws GeneralSecurityException
      */
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static boolean init(Context ctx) {
         // Check if file system encryption is available and active
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
