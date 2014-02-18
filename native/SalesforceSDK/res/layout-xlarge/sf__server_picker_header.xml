@@ -1,38 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 
- Copyright 2011 Salesforce.com.
- All Rights Reserved.
- Company Confidential.
- -->
-<LinearLayout
-		xmlns:android="http://schemas.android.com/apk/res/android"
-		android:orientation="vertical"
-		android:layout_width="fill_parent"
-		android:layout_height="@dimen/sf__header_layout_height">		
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="@dimen/sf__header_layout_height">
 
 	<LinearLayout style="@style/SalesforceSDK.Header.Container">
-	    
-		<RelativeLayout 
-			android:layout_width="wrap_content"
-			android:layout_height="fill_parent">
-			
-				<TextView 
-					android:id="@+id/sf__clear_server_url"
-					android:text="@string/sf__server_url_reset"
-					style="@style/SalesforceSDK.Header.Text.RightMargin"
-					android:onClick="onResetClick"
-					android:layout_alignParentRight="true"
-				/>
-				
-				<include layout="@layout/sf__header_separator"
-					style="@style/SalesforceSDK.Header.Separator"
-				    android:id="@+id/sf__seperator"
-					android:layout_toLeftOf="@id/sf__clear_server_url"
-				/>
-				
+
+        <RelativeLayout android:layout_width="wrap_content"
+            android:layout_height="fill_parent">
+
+            <TextView android:id="@+id/sf__clear_server_url"
+                android:text="@string/sf__server_url_reset"
+				style="@style/SalesforceSDK.Header.Text.RightMargin"
+				android:onClick="onResetClick"
+				android:layout_alignParentRight="true" />
+
+            <include layout="@layout/sf__header_separator"
+                style="@style/SalesforceSDK.Header.Separator"
+				android:id="@+id/sf__seperator"
+				android:layout_toLeftOf="@id/sf__clear_server_url" />
 		</RelativeLayout>
 	</LinearLayout>
-	
+
 	<include layout="@layout/sf__header_bottom" />
-	
 </LinearLayout>
