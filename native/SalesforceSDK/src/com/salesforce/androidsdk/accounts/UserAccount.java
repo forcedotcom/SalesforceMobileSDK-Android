@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.accounts;
 
-import com.salesforce.androidsdk.security.PasscodeManager;
 
 /**
  * This class represents a single user account that is currently
@@ -37,10 +36,145 @@ import com.salesforce.androidsdk.security.PasscodeManager;
  */
 public class UserAccount {
 
-	private SFDCUser sfdcUser;
-	private SFDCOrg sfdcOrg;
-	private SFDCCommunity sfdcCommunity;
-	private PasscodeManager passcodeManager;
+	private String authToken;
+	private String refreshToken;
+	private String loginServer;
+	private String idUrl;
+	private String instanceServer;
+	private String orgId;
+	private String userId;
+	private String username;
+	private String accountName;
+	private String clientId;
+
+	/**
+	 * Parameterized constructor.
+	 *
+	 * @param authToken Auth token.
+	 * @param refreshToken Refresh token.
+	 * @param loginServer Login server.
+	 * @param idUrl Identity URL.
+	 * @param instanceServer Instance server.
+	 * @param orgId Org ID.
+	 * @param userId User ID.
+	 * @param username Username.
+	 * @param accountName Account name.
+	 * @param clientId Client ID.
+	 */
+	public UserAccount(String authToken, String refreshToken,
+			String loginServer, String idUrl, String instanceServer,
+			String orgId, String userId, String username, String accountName,
+			String clientId) {
+		this.authToken = authToken;
+		this.refreshToken = refreshToken;
+		this.loginServer = loginServer;
+		this.idUrl = idUrl;
+		this.instanceServer = instanceServer;
+		this.orgId = orgId;
+		this.userId = userId;
+		this.username = username;
+		this.accountName = accountName;
+		this.clientId = clientId;
+	}
+
+	/**
+	 * Returns the auth token for this user account.
+	 *
+	 * @return Auth token.
+	 */
+	public String getAuthToken() {
+		return authToken;
+	}
+
+	/**
+	 * Returns the refresh token for this user account.
+	 *
+	 * @return Refresh token.
+	 */
+	public String getRefreshToken() {
+		return refreshToken;
+	}
+
+	/**
+	 * Returns the login server for this user account.
+	 *
+	 * @return Login server.
+	 */
+	public String getLoginServer() {
+		return loginServer;
+	}
+
+	/**
+	 * Returns the identity URL for this user account.
+	 *
+	 * @return Identity URL.
+	 */
+	public String getIdUrl() {
+		return idUrl;
+	}
+
+	/**
+	 * Returns the instance server for this user account.
+	 *
+	 * @return Instance server.
+	 */
+	public String getInstanceServer() {
+		return instanceServer;
+	}
+
+	/**
+	 * Returns the org ID for this user account.
+	 *
+	 * @return Org ID.
+	 */
+	public String getOrgId() {
+		return orgId;
+	}
+
+	/**
+	 * Returns the user ID for this user account.
+	 *
+	 * @return User ID.
+	 */
+	public String getUserId() {
+		return userId;
+	}
+
+	/**
+	 * Returns the username for this user account.
+	 *
+	 * @return Username.
+	 */
+	public String getUsername() {
+		return username;
+	}
+
+	/**
+	 * Returns the account name for this user account.
+	 *
+	 * @return Account name.
+	 */
+	public String getAccountName() {
+		return accountName;
+	}
+
+	/**
+	 * Returns the client ID for this user account.
+	 *
+	 * @return Client ID.
+	 */
+	public String getClientId() {
+		return clientId;
+	}
+
+	/**
+	 * Sets the auth token for this user acocunt.
+	 *
+	 * @param authToken Auth token to be set.
+	 */
+	public void setAuthToken(String authToken) {
+		this.authToken = authToken;
+	}
 
 	/**
 	 * Returns the file storage path for this user account.

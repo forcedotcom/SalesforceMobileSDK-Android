@@ -26,7 +26,15 @@
  */
 package com.salesforce.androidsdk.accounts;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import android.accounts.Account;
+import android.accounts.AccountManager;
+import android.content.Context;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.AuthenticatorService;
 
 /**
  * This class acts as a manager that provides methods to access
@@ -37,30 +45,123 @@ import java.util.List;
  */
 public class UserAccountManager {
 
-	public static UserAccount getCurrentUser() {
+	private static UserAccountManager INSTANCE;
+
+	private Context context;
+	private AccountManager accountManager;
+	private String accountType;
+	private String passcodeHash;
+
+	/**
+	 * Returns a singleton instance of this class.
+	 *
+	 * @return Instance of this class.
+	 */
+	public static UserAccountManager getInstance() {
+		if (INSTANCE == null) {
+			INSTANCE = new UserAccountManager();
+		}
+		return INSTANCE;
+	}
+
+	/**
+	 * Private constructor.
+	 */
+	private UserAccountManager() {
+		context = SalesforceSDKManager.getInstance().getAppContext();
+		accountManager = AccountManager.get(context);
+		accountType = SalesforceSDKManager.getInstance().getAccountType();
+        passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
+	}
+
+	/**
+	 * Returns the current user logged in.
+	 *
+	 * @return Current user that's logged in.
+	 */
+	public UserAccount getCurrentUser() {
+        final Account[] accounts = accountManager.getAccountsByType(accountType);
 		/*
 		 * TODO:
 		 */
 		return null;
 	}
 
-	public static List<UserAccount> getAuthenticatedUsers() {
-		return null;
+	/**
+	 * Returns a list of authenticated users.
+	 *
+	 * @return List of authenticated users.
+	 */
+	public List<UserAccount> getAuthenticatedUsers() {
+        final Account[] accounts = accountManager.getAccountsByType(accountType);
+        if (accounts == null || accounts.length == 0) {
+        	return null;
+        }
+        final List<UserAccount> userAccounts = new ArrayList<UserAccount>();
+        for (final Account account : accounts) {
+        	final UserAccount userAccount = buildUserAccount(account);
+        	if (userAccount != null) {
+        		userAccounts.add(userAccount);
+        	}
+        }
+        if (userAccounts.size() == 0) {
+        	return null;
+        }
+        return userAccounts;
 	}
 
-	public static void switchToUser(UserAccount user) {
+	public void switchToUser(UserAccount user) {
+		/*
+		 * TODO:
+		 */
 		
 	}
 
-	public static void switchToNewUser() {
+	public void switchToNewUser() {
+		/*
+		 * TODO:
+		 */
 		
 	}
 
-	public static void signoutCurrentUser() {
+	public void signoutCurrentUser() {
+		/*
+		 * TODO:
+		 */
 		
 	}
 
-	public static void signoutUser(UserAccount user) {
+	public void signoutUser(UserAccount user) {
+		/*
+		 * TODO:
+		 */
 		
+	}
+
+	/**
+	 * Builds a UserAccount object from the saved account.
+	 *
+	 * @param account Account object.
+	 * @return UserAccount object.
+	 */
+	private UserAccount buildUserAccount(Account account) {
+		if (account == null) {
+			return null;
+		}
+		final String authToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,AccountManager.KEY_AUTHTOKEN), passcodeHash);
+		final String refreshToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getPassword(account), passcodeHash);
+		final String loginServer = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), passcodeHash);
+		final String idUrl = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ID_URL), passcodeHash);
+		final String instanceServer = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
+		final String orgId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), passcodeHash);
+		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID), passcodeHash);
+		final String username = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), passcodeHash);
+		final String accountName = accountManager.getUserData(account, AccountManager.KEY_ACCOUNT_NAME);
+		final String clientId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
+		if (authToken == null || instanceServer == null || userId == null || orgId == null) {
+			return null;
+		}
+		return new UserAccount(authToken, refreshToken, loginServer, idUrl,
+				instanceServer, orgId, userId, username, accountName, clientId);
 	}
 }

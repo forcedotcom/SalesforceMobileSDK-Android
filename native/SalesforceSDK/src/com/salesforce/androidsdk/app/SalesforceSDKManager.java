@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.app;
 
 import java.net.URI;
-import java.util.Map;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -48,7 +47,6 @@ import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
-import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.auth.AccountWatcher;
 import com.salesforce.androidsdk.auth.AccountWatcher.AccountRemoved;
@@ -447,9 +445,18 @@ public class SalesforceSDKManager implements AccountRemoved {
     	 * if the one that we need is a new account.
     	 */
         if (passcodeManager == null) {
-            passcodeManager = new PasscodeManager(context, UserAccountManager.getCurrentUser());
+            passcodeManager = new PasscodeManager(context, getUserAccountManager().getCurrentUser());
         }
         return passcodeManager;
+    }
+
+    /**
+     * Returns an instance of the UserAccountManager class.
+     *
+     * @return Instance of the UserAccountManager class.
+     */
+    public UserAccountManager getUserAccountManager() {
+    	return UserAccountManager.getInstance();
     }
 
     /**
