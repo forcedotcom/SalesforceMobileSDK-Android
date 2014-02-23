@@ -692,8 +692,10 @@ public class SalesforceSDKManager implements AccountRemoved {
 		final Account account = clientMgr.getAccount();
 		if (account != null) {
 	        refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), getPasscodeHash());
-	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
-	        loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());	
+	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
+	        		AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
+	        loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
+	        		AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());	
 		}
 
 		// Makes a call to un-register from push notifications.

@@ -168,7 +168,7 @@ public class UserAccount {
 	}
 
 	/**
-	 * Sets the auth token for this user acocunt.
+	 * Sets the auth token for this user account.
 	 *
 	 * @param authToken Auth token to be set.
 	 */

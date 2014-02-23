@@ -31,6 +31,7 @@ import java.util.List;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -128,6 +129,39 @@ public class UserAccountManager {
 	}
 
 	/**
+	 * Returns the current user logged in.
+	 *
+	 * @return Current user that's logged in.
+	 */
+	public Account getCurrentAccount() {
+        final Account[] accounts = accountManager.getAccountsByType(accountType);
+        if (accounts == null || accounts.length == 0) {
+        	return null;
+        }
+
+        // Reads the stored user ID and org ID.
+        final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
+				Context.MODE_PRIVATE);
+        final String storedUserId = sp.getString(USER_ID_KEY, "");
+        final String storedOrgId = sp.getString(ORG_ID_KEY, "");
+        for (final Account account : accounts) {
+        	if (account != null) {
+
+        		// Reads the user ID and org ID from account manager.
+                final String orgId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
+                		AuthenticatorService.KEY_ORG_ID), passcodeHash);
+        		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
+        				AuthenticatorService.KEY_USER_ID), passcodeHash);
+        		if (storedUserId.trim().equals(userId.trim())
+        				&& storedOrgId.trim().equals(orgId.trim())) {
+        			return account;
+        		}
+        	}
+        }
+		return null;
+	}
+
+	/**
 	 * Returns a list of authenticated users.
 	 *
 	 * @return List of authenticated users.
@@ -164,11 +198,23 @@ public class UserAccountManager {
 		
 	}
 
-	public void signoutCurrentUser() {
-		/*
-		 * TODO:
-		 */
-		
+	/**
+	 * Logs the current user out.
+	 *
+	 * @param frontActivity Front activity.
+	 */
+	public void signoutCurrentUser(Activity frontActivity) {
+		SalesforceSDKManager.getInstance().logout(frontActivity);
+	}
+
+	/**
+	 * Logs the current user out.
+	 *
+	 * @param frontActivity Front activity.
+	 * @param showLoginPage True - if the login page should be shown, False - otherwise.
+	 */
+	public void signoutCurrentUser(Activity frontActivity, boolean showLoginPage) {
+		SalesforceSDKManager.getInstance().logout(frontActivity, showLoginPage);
 	}
 
 	public void signoutUser(UserAccount user) {

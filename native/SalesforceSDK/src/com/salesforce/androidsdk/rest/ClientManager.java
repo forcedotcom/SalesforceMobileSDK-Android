@@ -182,13 +182,12 @@ public class ClientManager {
     }
 
     /**
-     * @return The first account found with the application account type.
+     * Returns the user account that is currently active.
+     *
+     * @return The current user account.
      */
     public Account getAccount() {
-        Account[] accounts = accountManager.getAccountsByType(getAccountType());
-        if (accounts == null || accounts.length == 0)
-            return null;
-        return accounts[0];
+    	return SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentAccount();
     }
 
     /**
