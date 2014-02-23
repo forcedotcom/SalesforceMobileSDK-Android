@@ -179,9 +179,10 @@ public class UserAccount {
 	/**
 	 * Returns the file storage path for this user account.
 	 *
+	 * @param communityId Community ID. If it is not a community, pass 'null'.
 	 * @return File storage path.
 	 */
-	public String getFileStoragePath() {
+	public String getFileStoragePath(String communityId) {
 		/*
 		 * TODO:
 		 */
@@ -191,9 +192,10 @@ public class UserAccount {
 	/**
 	 * Returns the database storage path for this user account.
 	 *
+	 * @param communityId Community ID. If it is not a community, pass 'null'.
 	 * @return Database storage path.
 	 */
-	public String getDatabaseStoragePath() {
+	public String getDatabaseStoragePath(String communityId) {
 		/*
 		 * TODO:
 		 */
@@ -203,9 +205,10 @@ public class UserAccount {
 	/**
 	 * Returns the shared pref storage path for this user account.
 	 *
+	 * @param communityId Community ID. If it is not a community, pass 'null'.
 	 * @return Shared pref storage path.
 	 */
-	public String getSharedPrefStoragePath() {
+	public String getSharedPrefStoragePath(String communityId) {
 		/*
 		 * TODO:
 		 */
