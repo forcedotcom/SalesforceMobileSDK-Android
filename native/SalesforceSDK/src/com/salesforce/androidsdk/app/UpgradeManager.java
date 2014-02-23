@@ -26,8 +26,13 @@
  */
 package com.salesforce.androidsdk.app;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
+
+import com.salesforce.androidsdk.auth.AuthenticatorService;
 
 /**
  * This class handles upgrades from one version to another.
@@ -72,6 +77,29 @@ public class UpgradeManager {
 
         // Update shared preference file to reflect the latest version.
         writeCurVersion(ACC_MGR_KEY, SalesforceSDKManager.SDK_VERSION);
+
+        /*
+         * If the installed version < v2.2.0, we need to store the current
+         * user's user ID and org ID in a shared preference file, to
+         * support fast user switching.
+         */
+        try {
+            double installedVerDouble = Double.parseDouble(installedVersion);
+            if (installedVerDouble < 2.2) {
+                final AccountManager accountManager = AccountManager.get(SalesforceSDKManager.getInstance().getAppContext());
+                final Account[] accounts = accountManager.getAccountsByType(SalesforceSDKManager.getInstance().getAccountType());
+                if (accounts != null && accounts.length > 0) {
+                	final Account account = accounts[0];
+                    final String orgId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
+                    		AuthenticatorService.KEY_ORG_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
+            		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
+            				AuthenticatorService.KEY_USER_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
+                	SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUser(userId, orgId);
+                }
+            }
+        } catch (NumberFormatException e) {
+        	Log.e("UpgradeManager:upgradeAccMgr", "Failed to parse installed version.");
+        }
     }
 
     /**

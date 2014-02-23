@@ -32,6 +32,8 @@ import java.util.List;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
@@ -45,6 +47,9 @@ import com.salesforce.androidsdk.auth.AuthenticatorService;
  */
 public class UserAccountManager {
 
+	private static final String CURRENT_USER_PREF = "current_user_info";
+	private static final String USER_ID_KEY = "user_id";
+	private static final String ORG_ID_KEY = "org_id";
 	private static UserAccountManager INSTANCE;
 
 	private Context context;
@@ -75,15 +80,50 @@ public class UserAccountManager {
 	}
 
 	/**
+	 * Stores the current active user in a shared preference file.
+	 *
+	 * @param userId User ID.
+	 * @param orgId Org ID.
+	 */
+	public void storeCurrentUser(String userId, String orgId) {
+		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
+				Context.MODE_PRIVATE);
+        final Editor e = sp.edit();
+        e.putString(USER_ID_KEY, userId);
+        e.putString(ORG_ID_KEY, orgId);
+        e.commit();
+	}
+
+	/**
 	 * Returns the current user logged in.
 	 *
 	 * @return Current user that's logged in.
 	 */
 	public UserAccount getCurrentUser() {
         final Account[] accounts = accountManager.getAccountsByType(accountType);
-		/*
-		 * TODO:
-		 */
+        if (accounts == null || accounts.length == 0) {
+        	return null;
+        }
+
+        // Reads the stored user ID and org ID.
+        final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
+				Context.MODE_PRIVATE);
+        final String storedUserId = sp.getString(USER_ID_KEY, "");
+        final String storedOrgId = sp.getString(ORG_ID_KEY, "");
+        for (final Account account : accounts) {
+        	if (account != null) {
+
+        		// Reads the user ID and org ID from account manager.
+                final String orgId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
+                		AuthenticatorService.KEY_ORG_ID), passcodeHash);
+        		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
+        				AuthenticatorService.KEY_USER_ID), passcodeHash);
+        		if (storedUserId.trim().equals(userId.trim())
+        				&& storedOrgId.trim().equals(orgId.trim())) {
+        			return buildUserAccount(account);
+        		}
+        	}
+        }
 		return null;
 	}
 
