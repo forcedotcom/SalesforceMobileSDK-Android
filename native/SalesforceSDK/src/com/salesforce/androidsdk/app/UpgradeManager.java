@@ -84,7 +84,11 @@ public class UpgradeManager {
          * support fast user switching.
          */
         try {
-            double installedVerDouble = Double.parseDouble(installedVersion);
+        	final String majorVersionNum = installedVersion.substring(0, 3);
+        	/*
+        	 * TODO: Test if this parsing happens ok, and the split above works.
+        	 */
+            double installedVerDouble = Double.parseDouble(majorVersionNum);
             if (installedVerDouble < 2.2) {
                 final AccountManager accountManager = AccountManager.get(SalesforceSDKManager.getInstance().getAppContext());
                 final Account[] accounts = accountManager.getAccountsByType(SalesforceSDKManager.getInstance().getAccountType());

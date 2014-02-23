@@ -33,8 +33,11 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
@@ -191,11 +194,20 @@ public class UserAccountManager {
 		
 	}
 
+	/**
+	 * Kicks off the login flow to switch to a new user.
+	 */
 	public void switchToNewUser() {
-		/*
-		 * TODO:
-		 */
-		
+
+        // Clears cookies.
+        CookieSyncManager.createInstance(context);
+        CookieManager.getInstance().removeAllCookie();
+
+        // Starts the login activity.
+        final Intent i = new Intent(context,
+        		SalesforceSDKManager.getInstance().getMainActivityClass());
+        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(i);
 	}
 
 	/**
