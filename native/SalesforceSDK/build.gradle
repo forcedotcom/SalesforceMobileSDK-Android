@@ -1,0 +1,49 @@
+
+apply plugin: 'android-library'
+
+dependencies {
+  compile files('libs/cordova-2.3.0.jar')
+  compile files('libs/volley_android-4.3_r2.1.jar')
+  compile files('libs/android-junit-report-1.2.6.jar')
+  compile 'com.google.guava:guava:r09'
+
+  //compile files('libs/httpmime-4.0.3.jar')
+  compile 'org.apache.httpcomponents:httpmime:4.0.3'
+
+  //compile files('libs/apache-mime4j-0.6.jar')
+  compile 'org.apache.james:apache-mime4j:0.6'
+}
+
+android {
+  compileSdkVersion 11
+  buildToolsVersion "19.0.1"
+
+  sourceSets {
+    main {
+      manifest.srcFile 'AndroidManifest.xml'
+      java.srcDirs = ['src']
+      resources.srcDirs = ['src']
+      aidl.srcDirs = ['src']
+      renderscript.srcDirs = ['src']
+      res.srcDirs = ['res']
+      assets.srcDirs = ['assets']
+    }
+    
+    instrumentTest.setRoot('../test/SalesforceSDKTest')
+    instrumentTest {
+      java.srcDirs = ['../test/SalesforceSDKTest/src']
+      resources.srcDirs = ['../test/SalesforceSDKTest/src']
+      res.srcDirs = ['../test/SalesforceSDKTest/res']
+    }
+  }
+  defaultConfig {
+    testPackageName "com.salesforce.androidsdk.tests"
+    testInstrumentationRunner "com.salesforce.androidsdk.util.JUnitReportTestRunner"
+  }
+  packagingOptions {
+    exclude 'META-INF/LICENSE'
+    exclude 'META-INF/DEPENDENCIES'
+    exclude 'META-INF/NOTICE'
+  }
+
+}

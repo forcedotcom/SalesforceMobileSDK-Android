@@ -10,3 +10,4 @@ local.properties
 proguard-project.txt
 .settings/
 .gradle/
+*~
