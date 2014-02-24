@@ -36,6 +36,10 @@ package com.salesforce.androidsdk.accounts;
  */
 public class UserAccount {
 
+	/*
+	 * TODO: Add user profile picture, community ID, community name,
+	 * and org name fields here.
+	 */
 	private String authToken;
 	private String refreshToken;
 	private String loginServer;

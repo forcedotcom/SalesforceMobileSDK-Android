@@ -558,6 +558,11 @@ public class SalesforceSDKManager implements AccountRemoved {
      */
     protected void cleanUp(Activity frontActivity) {
 
+    	/*
+    	 * TODO: Cleanup passcode manager, encryption key,
+    	 * admin prefs manager, etc., only for the account passed in,
+    	 * not for the current one (fast user switching support).
+    	 */
         // Finishes front activity if specified.
         if (frontActivity != null) {
             frontActivity.finish();
@@ -679,18 +684,46 @@ public class SalesforceSDKManager implements AccountRemoved {
      * Wipes out the stored authentication credentials (removes the account)
      * and restarts the app, if specified.
      *
+     * @param account Account.
+     * @param frontActivity Front activity.
+     */
+    public void logout(Account account, Activity frontActivity) {
+        logout(frontActivity, true);
+    }
+
+    /**
+     * Wipes out the stored authentication credentials (removes the account)
+     * and restarts the app, if specified.
+     *
      * @param frontActivity Front activity.
      * @param showLoginPage True - if the login page should be shown, False - otherwise.
      */
     public void logout(Activity frontActivity, final boolean showLoginPage) {
         final ClientManager clientMgr = new ClientManager(context, getAccountType(),
         		null, shouldLogoutWhenTokenRevoked());
+		final Account account = clientMgr.getAccount();
+		logout(account, frontActivity, showLoginPage);
+    }
+
+    /**
+     * Wipes out the stored authentication credentials (removes the account)
+     * and restarts the app, if specified.
+     *
+     * @param account Account.
+     * @param frontActivity Front activity.
+     * @param showLoginPage True - if the login page should be shown, False - otherwise.
+     */
+    public void logout(Account account, Activity frontActivity, final boolean showLoginPage) {
+        final ClientManager clientMgr = new ClientManager(context, getAccountType(),
+        		null, shouldLogoutWhenTokenRevoked());
 		final AccountManager mgr = AccountManager.get(context);
 		String refreshToken = null;
 		String clientId = null;
 		String loginServer = null;
-		final Account account = clientMgr.getAccount();
 		if (account != null) {
+			/*
+			 * TODO: Get passcode hash for the correct account here, not the default one.
+			 */
 	        refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), getPasscodeHash());
 	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
 	        		AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
@@ -701,9 +734,11 @@ public class SalesforceSDKManager implements AccountRemoved {
 		// Makes a call to un-register from push notifications.
     	if (PushMessaging.isRegistered(context)) {
     		loggedOut = false;
-    		unregisterPush(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
+    		unregisterPush(clientMgr, showLoginPage, refreshToken, clientId,
+    				loginServer, account, frontActivity);
     	} else {
-    		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
+    		removeAccount(clientMgr, showLoginPage, refreshToken, clientId,
+    				loginServer, account, frontActivity);
     	}
     }
 
@@ -719,7 +754,8 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param frontActivity Front activity.
      */
     private void removeAccount(ClientManager clientMgr, final boolean showLoginPage,
-    		String refreshToken, String clientId, String loginServer, Account account, Activity frontActivity) {
+    		String refreshToken, String clientId, String loginServer,
+    		Account account, Activity frontActivity) {
     	loggedOut = true;
         if (accWatcher != null) {
     		accWatcher.remove();
@@ -727,7 +763,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     	}
     	cleanUp(frontActivity);
 
-    	// Removes the exisiting account, if any.
+    	// Removes the existing account, if any.
     	if (clientMgr.getAccount() == null) {
     		EventsObservable.get().notifyEvent(EventType.LogoutComplete);
     		if (showLoginPage) {

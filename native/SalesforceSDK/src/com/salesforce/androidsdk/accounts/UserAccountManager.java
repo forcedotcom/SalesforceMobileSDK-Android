@@ -59,6 +59,9 @@ public class UserAccountManager {
 	private Context context;
 	private AccountManager accountManager;
 	private String accountType;
+	/*
+	 * TODO: Each account might have a different passcode hash.
+	 */
 	private String passcodeHash;
 
 	/**
@@ -229,11 +232,27 @@ public class UserAccountManager {
 		SalesforceSDKManager.getInstance().logout(frontActivity, showLoginPage);
 	}
 
-	public void signoutUser(UserAccount user) {
-		/*
-		 * TODO:
-		 */
-		
+	/**
+	 * Logs the specified user out.
+	 *
+	 * @param userAccount User account.
+	 * @param frontActivity Front activity.
+	 */
+	public void signoutUser(UserAccount userAccount, Activity frontActivity) {
+		final Account account = buildAccount(userAccount);
+		SalesforceSDKManager.getInstance().logout(account, frontActivity);
+	}
+
+	/**
+	 * Logs the specified user out.
+	 *
+	 * @param userAccount User account.
+	 * @param frontActivity Front activity.
+	 * @param showLoginPage True - if the login page should be shown, False - otherwise.
+	 */
+	public void signoutUser(UserAccount userAccount, Activity frontActivity, boolean showLoginPage) {
+		final Account account = buildAccount(userAccount);
+		SalesforceSDKManager.getInstance().logout(account, frontActivity, showLoginPage);
 	}
 
 	/**
@@ -261,5 +280,40 @@ public class UserAccountManager {
 		}
 		return new UserAccount(authToken, refreshToken, loginServer, idUrl,
 				instanceServer, orgId, userId, username, accountName, clientId);
+	}
+
+	/**
+	 * Builds an Account object from the user account passed in.
+	 *
+	 * @param userAccount UserAccount object.
+	 * @return Account object.
+	 */
+	private Account buildAccount(UserAccount userAccount) {
+		final Account[] accounts = accountManager.getAccountsByType(accountType);
+		if (userAccount == null) {
+			return null;
+		}
+        if (accounts == null || accounts.length == 0) {
+        	return null;
+        }
+
+        // Reads the user account's user ID and org ID.
+        final String storedUserId = ((userAccount.getUserId() == null) ? "" : userAccount.getUserId());
+        final String storedOrgId = ((userAccount.getOrgId() == null) ? "" : userAccount.getOrgId());
+        for (final Account account : accounts) {
+        	if (account != null) {
+
+        		// Reads the user ID and org ID from account manager.
+                final String orgId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
+                		AuthenticatorService.KEY_ORG_ID), passcodeHash);
+        		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
+        				AuthenticatorService.KEY_USER_ID), passcodeHash);
+        		if (storedUserId.trim().equals(userId.trim())
+        				&& storedOrgId.trim().equals(orgId.trim())) {
+        			return account;
+        		}
+        	}
+        }
+		return null;
 	}
 }
