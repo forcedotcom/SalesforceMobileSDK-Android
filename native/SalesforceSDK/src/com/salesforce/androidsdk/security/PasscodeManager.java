@@ -116,8 +116,8 @@ public class PasscodeManager  {
 	   mobilePolicyPref = MOBILE_POLICY_PREF;
 	   userPref = PREF_NAME;
 	   if (account != null) {
-		   mobilePolicyPref = MOBILE_POLICY_PREF + account.getSharedPrefStoragePath(null);
-		   userPref = PREF_NAME + account.getSharedPrefStoragePath(null);
+		   mobilePolicyPref = MOBILE_POLICY_PREF + account.getStoragePath(null);
+		   userPref = PREF_NAME + account.getStoragePath(null);
 	   }
        this.minPasscodeLength = MIN_PASSCODE_LENGTH;
        this.lastActivity = now();

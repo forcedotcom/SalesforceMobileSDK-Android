@@ -26,9 +26,7 @@
  */
 package com.salesforce.androidsdk.accounts;
 
-import java.io.File;
-
-import android.os.Environment;
+import android.text.TextUtils;
 
 
 /**
@@ -39,6 +37,10 @@ import android.os.Environment;
  * @author bhariharan
  */
 public class UserAccount {
+
+	private static final String DEFAULT_PATH_FOR_ORG = "default";
+	private static final String FORWARD_SLASH = "/";
+	private static final String UNDERSCORE = "_";
 
 	/*
 	 * TODO: Add user profile picture, community ID, community name,
@@ -181,71 +183,36 @@ public class UserAccount {
 	 * @param authToken Auth token to be set.
 	 */
 	public void setAuthToken(String authToken) {
+		/*
+		 * TODO: This must be called when an account switch happens,
+		 * alongwith a slew of other changes, such as passcode manager,
+		 * admin prefs manager, etc.
+		 */
 		this.authToken = authToken;
 	}
 
 	/**
-	 * Returns the file storage path for this user account.
+	 * Returns the storage path for this user account, relative to the higher
+	 * level directory of app data. The higher level directory could be
+	 * 'shared_prefs', or 'databases', or 'files'. The output is of the format
+	 * '/<userID>_<orgID>/<communityID/'. If 'communityID' is null, then the
+	 * output would be '/<userID>_<orgID>/default/'.
 	 *
 	 * @param communityId Community ID. If it is not a community, pass 'null'.
 	 * @return File storage path.
 	 */
-	public String getFileStoragePath(String communityId) {
-		/*
-		 * TODO: Verify output here.
-		 */
-		final String fileStoragePath = getDataDirPath();
-		if (fileStoragePath != null) {
-			return fileStoragePath + "files";
+	public String getStoragePath(String communityId) {
+		final StringBuffer sb = new StringBuffer(FORWARD_SLASH);
+		sb.append(userId);
+		sb.append(UNDERSCORE);
+		sb.append(orgId);
+		sb.append(FORWARD_SLASH);
+		String leafDir = DEFAULT_PATH_FOR_ORG;
+		if (!TextUtils.isEmpty(communityId)) {
+			leafDir = communityId;
 		}
-		return null;
-	}
-
-	/**
-	 * Returns the database storage path for this user account.
-	 *
-	 * @param communityId Community ID. If it is not a community, pass 'null'.
-	 * @return Database storage path.
-	 */
-	public String getDatabaseStoragePath(String communityId) {
-		/*
-		 * TODO: Verify output here.
-		 */
-		final String fileStoragePath = getDataDirPath();
-		if (fileStoragePath != null) {
-			return fileStoragePath + "databases";
-		}
-		return null;
-	}
-
-	/**
-	 * Returns the shared pref storage path for this user account.
-	 *
-	 * @param communityId Community ID. If it is not a community, pass 'null'.
-	 * @return Shared pref storage path.
-	 */
-	public String getSharedPrefStoragePath(String communityId) {
-		/*
-		 * TODO: Verify output here.
-		 */
-		final String fileStoragePath = getDataDirPath();
-		if (fileStoragePath != null) {
-			return fileStoragePath + "shared_prefs";
-		}
-		return null;
-	}
-
-	/**
-	 * Returns the data directory path for this application.
-	 *
-	 * @return Data directory path.
-	 */
-	private String getDataDirPath() {
-		String dataDirPath = null;
-		final File dataDir = Environment.getDataDirectory();
-		if (dataDir != null) {
-			dataDirPath = dataDir.getPath();
-		}
-		return dataDirPath;
+		sb.append(leafDir);
+		sb.append(FORWARD_SLASH);
+		return sb.toString();
 	}
 }

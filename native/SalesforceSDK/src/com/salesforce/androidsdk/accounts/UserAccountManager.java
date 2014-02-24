@@ -37,8 +37,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
-import android.webkit.CookieManager;
-import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
@@ -202,14 +200,13 @@ public class UserAccountManager {
 	 * Kicks off the login flow to switch to a new user.
 	 */
 	public void switchToNewUser() {
-		/*
-		 * TODO: Verify if this actually adds an account or look at
-		 * authenticator service to fix this.
-		 */
 		final Bundle reply = new Bundle();
-        final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
-        i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
+		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        final Bundle options = SalesforceSDKManager.getInstance().getLoginOptions().asBundle();
+        i.putExtras(options);
         reply.putParcelable(AccountManager.KEY_INTENT, i);
+		context.startActivity(i);
 	}
 
 	/**
