@@ -3,7 +3,7 @@ apply plugin: 'android-library'
 
 dependencies {
   compile files('libs/cordova-2.3.0.jar')
-  compile files('libs/volley_android-4.3_r2.1.jar')
+  compile files('libs/volley_android-4.4.2_r2.jar')
   compile files('libs/android-junit-report-1.2.6.jar')
   compile 'com.google.guava:guava:r09'
 
@@ -29,8 +29,8 @@ android {
       assets.srcDirs = ['assets']
     }
     
-    instrumentTest.setRoot('../test/SalesforceSDKTest')
-    instrumentTest {
+    androidTest.setRoot('../test/SalesforceSDKTest')
+    androidTest {
       java.srcDirs = ['../test/SalesforceSDKTest/src']
       resources.srcDirs = ['../test/SalesforceSDKTest/src']
       res.srcDirs = ['../test/SalesforceSDKTest/res']
@@ -42,6 +42,7 @@ android {
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'
+    exclude 'META-INF/LICENSE.txt'
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
   }

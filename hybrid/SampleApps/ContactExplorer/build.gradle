@@ -1,10 +1,9 @@
 
-apply plugin: 'android-library'
+apply plugin: 'android'
 
 dependencies {
   compile project(':native:SalesforceSDK')
-  compile files('libs/commons-codec.jar')
-  compile files('libs/sqlcipher.jar')
+
 }
 
 android {
@@ -12,6 +11,7 @@ android {
   buildToolsVersion "19.0.1"
 
   sourceSets {
+
     main {
       manifest.srcFile 'AndroidManifest.xml'
       java.srcDirs = ['src']
@@ -20,17 +20,16 @@ android {
       renderscript.srcDirs = ['src']
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
-      jniLibs.srcDir '../../external/sqlcipher/libs'
     }
-    androidTest.setRoot('../test/SmartStoreTest')
-    androidTest {
-      java.srcDirs = ['../test/SmartStoreTest/src']
-      resources.srcDirs = ['../test/SmartStoreTest/src']
-      res.srcDirs = ['../test/SmartStoreTest/res']
+    instrumentTest.setRoot('../test/ContactExplorerTest')
+    instrumentTest {
+      java.srcDirs = ['../test/ContactExplorerTest/src']
+      resources.srcDirs = ['../test/ContactExplorerTest/src']
+      res.srcDirs = ['../test/ContactExplorerTest/res']
     }
   }
   defaultConfig {
-    testPackageName "com.salesforce.androidsdk.smartstore.tests"
+    testPackageName "com.salesforce.samples.contactexplorer.tests"
     testInstrumentationRunner "com.salesforce.androidsdk.util.JUnitReportTestRunner"
   }
   packagingOptions {
@@ -40,4 +39,3 @@ android {
     exclude 'META-INF/NOTICE'
   }
 }
-

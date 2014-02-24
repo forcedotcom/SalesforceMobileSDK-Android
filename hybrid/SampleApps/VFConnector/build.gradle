@@ -1,10 +1,8 @@
-
-apply plugin: 'android-library'
+apply plugin: 'android'
 
 dependencies {
   compile project(':native:SalesforceSDK')
-  compile files('libs/commons-codec.jar')
-  compile files('libs/sqlcipher.jar')
+
 }
 
 android {
@@ -12,6 +10,7 @@ android {
   buildToolsVersion "19.0.1"
 
   sourceSets {
+
     main {
       manifest.srcFile 'AndroidManifest.xml'
       java.srcDirs = ['src']
@@ -20,17 +19,17 @@ android {
       renderscript.srcDirs = ['src']
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
-      jniLibs.srcDir '../../external/sqlcipher/libs'
     }
-    androidTest.setRoot('../test/SmartStoreTest')
-    androidTest {
-      java.srcDirs = ['../test/SmartStoreTest/src']
-      resources.srcDirs = ['../test/SmartStoreTest/src']
-      res.srcDirs = ['../test/SmartStoreTest/res']
+    
+    instrumentTest.setRoot('../test/VFConnectorTest')
+    instrumentTest {
+      java.srcDirs = ['../test/VFConnectorTest/src']
+      resources.srcDirs = ['../test/VFConnectorTest/src']
+      res.srcDirs = ['../test/VFConnectorTest/res']
     }
   }
   defaultConfig {
-    testPackageName "com.salesforce.androidsdk.smartstore.tests"
+    testPackageName "com.salesforce.samples.vfconnector.tests"
     testInstrumentationRunner "com.salesforce.androidsdk.util.JUnitReportTestRunner"
   }
   packagingOptions {
@@ -39,5 +38,5 @@ android {
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
   }
-}
 
+}
