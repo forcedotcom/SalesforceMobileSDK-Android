@@ -70,13 +70,19 @@ public class UpgradeManager {
      * version to the current version.
      */
     public synchronized void upgradeAccMgr() {
-        final String installedVersion = getInstalledAccMgrVersion();
+        String installedVersion = getInstalledAccMgrVersion();
         if (installedVersion.equals(SalesforceSDKManager.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
         writeCurVersion(ACC_MGR_KEY, SalesforceSDKManager.SDK_VERSION);
+
+        /*
+         * We need to update this variable, since the app will not
+         * have this value set for a first time install.
+         */
+        installedVersion = getInstalledAccMgrVersion();
 
         /*
          * If the installed version < v2.2.0, we need to store the current
@@ -86,7 +92,8 @@ public class UpgradeManager {
         try {
         	final String majorVersionNum = installedVersion.substring(0, 3);
         	/*
-        	 * TODO: Test if this parsing happens ok, and the split above works.
+        	 * TODO: Add upgrade migration for passcode file location and other
+        	 * shared pref files from old location to new one. Verify upgrade path too.
         	 */
             double installedVerDouble = Double.parseDouble(majorVersionNum);
             if (installedVerDouble < 2.2) {

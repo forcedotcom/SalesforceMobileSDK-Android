@@ -36,6 +36,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.os.Bundle;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
@@ -125,8 +126,8 @@ public class UserAccountManager {
                 		AuthenticatorService.KEY_ORG_ID), passcodeHash);
         		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
         				AuthenticatorService.KEY_USER_ID), passcodeHash);
-        		if (storedUserId.trim().equals(userId.trim())
-        				&& storedOrgId.trim().equals(orgId.trim())) {
+        		if (storedUserId.trim().equals(userId)
+        				&& storedOrgId.trim().equals(orgId)) {
         			return buildUserAccount(account);
         		}
         	}
@@ -158,8 +159,8 @@ public class UserAccountManager {
                 		AuthenticatorService.KEY_ORG_ID), passcodeHash);
         		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
         				AuthenticatorService.KEY_USER_ID), passcodeHash);
-        		if (storedUserId.trim().equals(userId.trim())
-        				&& storedOrgId.trim().equals(orgId.trim())) {
+        		if (storedUserId.trim().equals(userId)
+        				&& storedOrgId.trim().equals(orgId)) {
         			return account;
         		}
         	}
@@ -201,16 +202,14 @@ public class UserAccountManager {
 	 * Kicks off the login flow to switch to a new user.
 	 */
 	public void switchToNewUser() {
-
-        // Clears cookies.
-        CookieSyncManager.createInstance(context);
-        CookieManager.getInstance().removeAllCookie();
-
-        // Starts the login activity.
-        final Intent i = new Intent(context,
-        		SalesforceSDKManager.getInstance().getMainActivityClass());
-        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        context.startActivity(i);
+		/*
+		 * TODO: Verify if this actually adds an account or look at
+		 * authenticator service to fix this.
+		 */
+		final Bundle reply = new Bundle();
+        final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
+        i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        reply.putParcelable(AccountManager.KEY_INTENT, i);
 	}
 
 	/**

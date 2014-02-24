@@ -92,7 +92,8 @@ public class PasscodeManager  {
     private int timeoutMs;
     private int minPasscodeLength;
     private LockChecker lockChecker;
-    private UserAccount account;
+    private String mobilePolicyPref;
+    private String userPref;
 
     /**
      * Parameterized constructor.
@@ -104,12 +105,20 @@ public class PasscodeManager  {
      */
    public PasscodeManager(Context ctx, UserAccount account) {
 	   this(ctx,
-		   new HashConfig(UUIDManager.getUuId(VPREFIX), UUIDManager.getUuId(VSUFFIX), UUIDManager.getUuId(VKEY)),
-		   new HashConfig(UUIDManager.getUuId(EPREFIX), UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY)), account);
+		   new HashConfig(UUIDManager.getUuId(VPREFIX),
+				   UUIDManager.getUuId(VSUFFIX), UUIDManager.getUuId(VKEY)),
+		   new HashConfig(UUIDManager.getUuId(EPREFIX),
+				   UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY)), account);
    }
 
-   public PasscodeManager(Context ctx, HashConfig verificationHashConfig, HashConfig encryptionHashConfig, UserAccount account) {
-	   this.account = account;
+   public PasscodeManager(Context ctx, HashConfig verificationHashConfig,
+		   HashConfig encryptionHashConfig, UserAccount account) {
+	   mobilePolicyPref = MOBILE_POLICY_PREF;
+	   userPref = PREF_NAME;
+	   if (account != null) {
+		   mobilePolicyPref = MOBILE_POLICY_PREF + account.getSharedPrefStoragePath(null);
+		   userPref = PREF_NAME + account.getSharedPrefStoragePath(null);
+	   }
        this.minPasscodeLength = MIN_PASSCODE_LENGTH;
        this.lastActivity = now();
        this.verificationHashConfig = verificationHashConfig;
@@ -130,7 +139,7 @@ public class PasscodeManager  {
 
         // Context will be null only in test runs.
         if (context != null) {
-            final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF + account.getSharedPrefStoragePath(null), Context.MODE_PRIVATE);
+            final SharedPreferences sp = context.getSharedPreferences(mobilePolicyPref, Context.MODE_PRIVATE);
             Editor e = sp.edit();
             e.putInt(KEY_TIMEOUT, timeoutMs);
             e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
@@ -147,7 +156,7 @@ public class PasscodeManager  {
 
         // Context will be null only in test runs.
         if (context != null) {
-            final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF + account.getSharedPrefStoragePath(null), Context.MODE_PRIVATE);
+            final SharedPreferences sp = context.getSharedPreferences(mobilePolicyPref, Context.MODE_PRIVATE);
             if (!sp.contains(KEY_TIMEOUT) || !sp.contains(KEY_PASSCODE_LENGTH)) {
                 timeoutMs = 0;
                 minPasscodeLength = MIN_PASSCODE_LENGTH;
@@ -167,7 +176,7 @@ public class PasscodeManager  {
         locked = true;
         failedPasscodeAttempts = 0;
         passcodeHash = null;
-        SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME + account.getSharedPrefStoragePath(null), Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(userPref, Context.MODE_PRIVATE);
         Editor e = sp.edit();
         e.remove(KEY_PASSCODE);
         e.commit();
@@ -212,7 +221,7 @@ public class PasscodeManager  {
      * @return true if passcode matches the one stored (hashed) in private preference
      */
     public boolean check(Context ctx, String passcode) {
-        SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME + account.getSharedPrefStoragePath(null), Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(userPref, Context.MODE_PRIVATE);
         String hashedPasscode = sp.getString(KEY_PASSCODE, null);
         hashedPasscode = Encryptor.removeNewLine(hashedPasscode);
         if (hashedPasscode != null) {
@@ -231,7 +240,7 @@ public class PasscodeManager  {
      * @param passcode
      */
     public void store(Context ctx, String passcode) {
-        SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME + account.getSharedPrefStoragePath(null), Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(userPref, Context.MODE_PRIVATE);
         Editor e = sp.edit();
         e.putString(KEY_PASSCODE, hashForVerification(passcode));
         e.commit();
@@ -242,7 +251,7 @@ public class PasscodeManager  {
      * @return true if passcode was already created
      */
     public boolean hasStoredPasscode(Context ctx) {
-        SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME + account.getSharedPrefStoragePath(null), Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(userPref, Context.MODE_PRIVATE);
         return sp.contains(KEY_PASSCODE);
     }
 
@@ -306,7 +315,8 @@ public class PasscodeManager  {
      * To be called by passcode protected activity when being paused
      */
     public void onPause(Activity ctx) {
-        // Disable passcode manager
+
+        // Disables passcode manager.
         setEnabled(false);
     }
 
@@ -318,13 +328,14 @@ public class PasscodeManager  {
      * @return true if the resume should be allowed to continue and false otherwise
      */
     public boolean onResume(Activity ctx) {
-        // Enable passcode manager
+
+        // Enables passcode manager.
         setEnabled(true);
 
-        // Bring up passcode screen if needed
+        // Brings up passcode screen if needed.
         lockIfNeeded(ctx, true);
 
-        // If locked, do nothing - when the app gets unlocked we will be back here
+        // If locked, do nothing - when the app gets unlocked we will be back here.
         return !isLocked();
     }
 

@@ -272,6 +272,7 @@ public class ClientManager {
         Account acc = new Account(accountName, getAccountType());
         accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encryptWithPasscode(refreshToken, passcodeHash), extras);
         accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
+        SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUser(userId, orgId);
         return extras;
     }
 

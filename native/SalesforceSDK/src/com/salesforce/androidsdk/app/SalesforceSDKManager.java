@@ -442,10 +442,12 @@ public class SalesforceSDKManager implements AccountRemoved {
     public synchronized PasscodeManager getPasscodeManager() {
     	/*
     	 * TODO: Remove null check here, and instantiate a new PM here only
-    	 * if the one that we need is a new account.
+    	 * if the one that we need is a new account. Also need to figure out
+    	 * a way to pass in current user account without involving passcode
+    	 * manager so that there's no circular loop and stack overflow.
     	 */
         if (passcodeManager == null) {
-            passcodeManager = new PasscodeManager(context, getUserAccountManager().getCurrentUser());
+            passcodeManager = new PasscodeManager(context, null);
         }
         return passcodeManager;
     }

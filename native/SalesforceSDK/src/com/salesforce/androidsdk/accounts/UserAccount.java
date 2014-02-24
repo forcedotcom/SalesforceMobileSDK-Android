@@ -26,6 +26,10 @@
  */
 package com.salesforce.androidsdk.accounts;
 
+import java.io.File;
+
+import android.os.Environment;
+
 
 /**
  * This class represents a single user account that is currently
@@ -188,8 +192,12 @@ public class UserAccount {
 	 */
 	public String getFileStoragePath(String communityId) {
 		/*
-		 * TODO:
+		 * TODO: Verify output here.
 		 */
+		final String fileStoragePath = getDataDirPath();
+		if (fileStoragePath != null) {
+			return fileStoragePath + "files";
+		}
 		return null;
 	}
 
@@ -201,8 +209,12 @@ public class UserAccount {
 	 */
 	public String getDatabaseStoragePath(String communityId) {
 		/*
-		 * TODO:
+		 * TODO: Verify output here.
 		 */
+		final String fileStoragePath = getDataDirPath();
+		if (fileStoragePath != null) {
+			return fileStoragePath + "databases";
+		}
 		return null;
 	}
 
@@ -214,8 +226,26 @@ public class UserAccount {
 	 */
 	public String getSharedPrefStoragePath(String communityId) {
 		/*
-		 * TODO:
+		 * TODO: Verify output here.
 		 */
+		final String fileStoragePath = getDataDirPath();
+		if (fileStoragePath != null) {
+			return fileStoragePath + "shared_prefs";
+		}
 		return null;
+	}
+
+	/**
+	 * Returns the data directory path for this application.
+	 *
+	 * @return Data directory path.
+	 */
+	private String getDataDirPath() {
+		String dataDirPath = null;
+		final File dataDir = Environment.getDataDirectory();
+		if (dataDir != null) {
+			dataDirPath = dataDir.getPath();
+		}
+		return dataDirPath;
 	}
 }
