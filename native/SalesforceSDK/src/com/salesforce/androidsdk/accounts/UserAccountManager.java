@@ -348,7 +348,7 @@ public class UserAccountManager {
 		if (account == null) {
 			return null;
 		}
-		final String authToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,AccountManager.KEY_AUTHTOKEN), SalesforceSDKManager.getInstance().getPasscodeHash());
+		final String authToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN), SalesforceSDKManager.getInstance().getPasscodeHash());
 		final String refreshToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getPassword(account), SalesforceSDKManager.getInstance().getPasscodeHash());
 		final String loginServer = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), SalesforceSDKManager.getInstance().getPasscodeHash());
 		final String idUrl = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ID_URL), SalesforceSDKManager.getInstance().getPasscodeHash());

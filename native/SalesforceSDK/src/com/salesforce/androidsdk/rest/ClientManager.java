@@ -220,7 +220,7 @@ public class ClientManager {
     }
 
     /**
-     * @param name The name associated with the account
+     * @param name The name associated with the account.
      * @return The account with the application account type and the given name.
      */
     public Account getAccountByName(String name) {
@@ -244,13 +244,14 @@ public class ClientManager {
 
     /**
      * Remove all of the accounts passed in.
+     *
      * @param accounts The array of accounts to remove.
      */
     public void removeAccounts(Account[] accounts) {
         List<AccountManagerFuture<Boolean>> removalFutures = new ArrayList<AccountManagerFuture<Boolean>>();
-        for (Account a : accounts)
+        for (Account a : accounts) {
             removalFutures.add(accountManager.removeAccount(a, null, null));
-
+        }
         for (AccountManagerFuture<Boolean> f : removalFutures) {
             try {
                 f.getResult();
@@ -362,17 +363,18 @@ public class ClientManager {
     }
 
     /**
-     * Removes the user account from the account manager.  This is an
-     * asynchronous process: the callback will be called on completion, if
+     * Removes the user account from the account manager. This is an
+     * asynchronous process, the callback will be called on completion, if
      * specified.
+     *
+     * @param acc Account to be removed.
      * @param callback The callback to call when the account removal completes.
      */
-    public void removeAccountAsync(AccountManagerCallback<Boolean> callback) {
-        Account acc = getAccount();
-        if (acc != null)
+    public void removeAccountAsync(Account acc, AccountManagerCallback<Boolean> callback) {
+        if (acc != null) {
             accountManager.removeAccount(acc, callback, null);
+        }
     }
-
 
     /**
      * Callback from either user account creation, or a call to getAuthToken, used
@@ -461,7 +463,6 @@ public class ClientManager {
         @Override
         public String getNewAuthToken() {
             Log.i("AccMgrAuthTokenProvider:getNewAuthToken", "Need new access token");
-
             Account acc = clientManager.getAccount();
             if (acc == null)
                 return null;

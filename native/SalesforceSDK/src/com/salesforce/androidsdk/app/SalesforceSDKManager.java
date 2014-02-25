@@ -711,7 +711,7 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param frontActivity Front activity.
      */
     public void logout(Account account, Activity frontActivity) {
-        logout(frontActivity, true);
+        logout(account, frontActivity, true);
     }
 
     /**
@@ -743,19 +743,26 @@ public class SalesforceSDKManager implements AccountRemoved {
 		String refreshToken = null;
 		String clientId = null;
 		String loginServer = null;
-		if (account != null) {
-			/*
-			 * TODO: Get passcode hash for the correct account here, not the default one.
-			 */
-	        refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), getPasscodeHash());
+
+		/*
+		 * We will try to obtain the refresh token from AccountManager
+		 * only for the current user account, since we have access to
+		 * the passcode hash only for the current user account.
+		 */
+		if (account != null && account.equals(clientMgr.getAccount())) {
+			refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account),
+	        		getPasscodeHash());
 	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
 	        		AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
 	        loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
 	        		AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());	
 		}
 
-		// Makes a call to un-register from push notifications.
-    	if (PushMessaging.isRegistered(context)) {
+		/*
+		 * Makes a call to un-register from push notifications, only
+		 * if the refresh token is available (only current user account).
+		 */
+    	if (PushMessaging.isRegistered(context) && refreshToken != null) {
     		loggedOut = false;
     		unregisterPush(clientMgr, showLoginPage, refreshToken, clientId,
     				loginServer, account, frontActivity);
@@ -787,13 +794,13 @@ public class SalesforceSDKManager implements AccountRemoved {
     	cleanUp(frontActivity);
 
     	// Removes the existing account, if any.
-    	if (clientMgr.getAccount() == null) {
+    	if (account == null) {
     		EventsObservable.get().notifyEvent(EventType.LogoutComplete);
     		if (showLoginPage) {
     			startLoginPage();
     		}
     	} else {
-    		clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
+    		clientMgr.removeAccountAsync(account, new AccountManagerCallback<Boolean>() {
 
     			@Override
     			public void run(AccountManagerFuture<Boolean> arg0) {
@@ -806,7 +813,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     	}
 
     	// Revokes the existing refresh token.
-        if (shouldLogoutWhenTokenRevoked() && account != null) {
+        if (shouldLogoutWhenTokenRevoked() && account != null && refreshToken != null) {
         	new RevokeTokenTask(refreshToken, clientId, loginServer).execute();
         }
     }

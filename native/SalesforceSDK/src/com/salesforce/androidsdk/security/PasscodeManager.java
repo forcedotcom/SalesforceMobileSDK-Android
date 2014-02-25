@@ -172,6 +172,10 @@ public class PasscodeManager  {
      * Reset this passcode manager: delete stored passcode and reset fields to their starting value
      */
     public void reset(Context ctx) {
+    	/*
+    	 * TODO: Add a method to delete backing shared pref file for the user upon logout.
+    	 * Call the new method from logout.
+    	 */
         lastActivity = now();
         locked = true;
         failedPasscodeAttempts = 0;

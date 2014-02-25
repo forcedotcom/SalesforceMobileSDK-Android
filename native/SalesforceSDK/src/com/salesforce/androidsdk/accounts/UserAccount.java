@@ -178,21 +178,6 @@ public class UserAccount {
 	}
 
 	/**
-	 * Sets the auth token for this user account.
-	 *
-	 * @param authToken Auth token to be set.
-	 */
-	public void setAuthToken(String authToken) {
-		/*
-		 * TODO: This must be called when an account switch happens,
-		 * alongwith a slew of other changes, such as passcode manager,
-		 * admin prefs manager, etc. This needs to be done for switchUser(),
-		 * probably not for a new user logging in.
-		 */
-		this.authToken = authToken;
-	}
-
-	/**
 	 * Returns the storage path for this user account, relative to the higher
 	 * level directory of app data. The higher level directory could be
 	 * 'databases', or 'files'. The output is of the format
