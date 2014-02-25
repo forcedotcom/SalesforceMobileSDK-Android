@@ -63,10 +63,10 @@ public class PasscodeManager  {
     private static final String KEY_PASSCODE ="passcode";
 
     // Private preference where we stored the passcode (hashed)
-    private static final String PREF_NAME = "user_";
+    private static final String PREF_NAME = "user";
 
     // Private preference where we stored the org settings.
-    private static final String MOBILE_POLICY_PREF = "mobile_policy_";
+    private static final String MOBILE_POLICY_PREF = "mobile_policy";
 
     // Key in preference for the access timeout.
     private static final String KEY_TIMEOUT ="access_timeout";
@@ -116,8 +116,8 @@ public class PasscodeManager  {
 	   mobilePolicyPref = MOBILE_POLICY_PREF;
 	   userPref = PREF_NAME;
 	   if (account != null) {
-		   mobilePolicyPref = MOBILE_POLICY_PREF + account.getStoragePath(null);
-		   userPref = PREF_NAME + account.getStoragePath(null);
+		   mobilePolicyPref = MOBILE_POLICY_PREF + account.getSharedPrefSuffix(null);
+		   userPref = PREF_NAME + account.getSharedPrefSuffix(null);
 	   }
        this.minPasscodeLength = MIN_PASSCODE_LENGTH;
        this.lastActivity = now();
@@ -184,6 +184,18 @@ public class PasscodeManager  {
         minPasscodeLength = MIN_PASSCODE_LENGTH;
         storeMobilePolicy(ctx);
         handler = null;
+    }
+
+    /**
+     * Sets the user account associated with this passcode manager.
+     *
+     * @param account User account.
+     */
+    public void setUserAccount(UserAccount account) {
+    	if (account != null) {
+ 		   	mobilePolicyPref = MOBILE_POLICY_PREF + account.getSharedPrefSuffix(null);
+ 		   	userPref = PREF_NAME + account.getSharedPrefSuffix(null);
+    	}
     }
 
     /**

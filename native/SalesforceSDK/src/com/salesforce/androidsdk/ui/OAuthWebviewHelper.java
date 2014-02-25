@@ -47,6 +47,7 @@ import android.webkit.WebViewClient;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.R;
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -394,6 +395,13 @@ public class OAuthWebviewHelper {
                 if (id.screenLockTimeout > 0) {
                     PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
                     passcodeManager.reset(getContext()); // get rid of existing passcode if any
+                    final UserAccount account = new UserAccount(accountOptions.authToken,
+                    		accountOptions.refreshToken, loginOptions.loginUrl,
+                    		accountOptions.identityUrl, accountOptions.instanceUrl,
+                    		accountOptions.orgId, accountOptions.userId,
+                    		accountOptions.username, buildAccountName(accountOptions.username),
+                    		loginOptions.clientSecret);
+                    passcodeManager.setUserAccount(account);
                     passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60 /* converting minutes to milliseconds*/);
                     passcodeManager.setMinPasscodeLength(id.pinLength);
 

@@ -50,6 +50,19 @@ import com.salesforce.androidsdk.auth.AuthenticatorService;
  */
 public class UserAccountManager {
 
+	/*
+	 * NOTE:
+	 *
+	 * In many parts of this file, we repeatedly call
+	 * 'SalesforceSDKManager.getInstance().getPasscodeHash()'.
+	 * The reason we don't use an instance variable here is because
+	 * the passcode hash changes every time the current user account
+	 * changes, or when a login occurs. Using an instance variable
+	 * leaves us with stale data, and becomes a nightmare to manage
+	 * in terms of updating it every time an event that affects this
+	 * value occurs. Hence, we always grab the current value from
+	 * the source of truth.
+	 */
 	private static final String CURRENT_USER_PREF = "current_user_info";
 	private static final String USER_ID_KEY = "user_id";
 	private static final String ORG_ID_KEY = "org_id";
@@ -58,10 +71,6 @@ public class UserAccountManager {
 	private Context context;
 	private AccountManager accountManager;
 	private String accountType;
-	/*
-	 * TODO: Each account might have a different passcode hash.
-	 */
-	private String passcodeHash;
 
 	/**
 	 * Returns a singleton instance of this class.
@@ -82,7 +91,6 @@ public class UserAccountManager {
 		context = SalesforceSDKManager.getInstance().getAppContext();
 		accountManager = AccountManager.get(context);
 		accountType = SalesforceSDKManager.getInstance().getAccountType();
-        passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
 	}
 
 	/**
@@ -98,6 +106,28 @@ public class UserAccountManager {
         e.putString(USER_ID_KEY, userId);
         e.putString(ORG_ID_KEY, orgId);
         e.commit();
+	}
+
+	/**
+	 * Returns the stored user ID.
+	 *
+	 * @return User ID.
+	 */
+	public String getStoredUserId() {
+		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
+				Context.MODE_PRIVATE);
+        return sp.getString(USER_ID_KEY, null);
+	}
+
+	/**
+	 * Returns the stored org ID.
+	 *
+	 * @return Org ID.
+	 */
+	public String getStoredOrgId() {
+		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
+				Context.MODE_PRIVATE);
+        return sp.getString(ORG_ID_KEY, null);
 	}
 
 	/**
@@ -121,9 +151,9 @@ public class UserAccountManager {
 
         		// Reads the user ID and org ID from account manager.
                 final String orgId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
-                		AuthenticatorService.KEY_ORG_ID), passcodeHash);
+                		AuthenticatorService.KEY_ORG_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
         		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
-        				AuthenticatorService.KEY_USER_ID), passcodeHash);
+        				AuthenticatorService.KEY_USER_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
         		if (storedUserId.trim().equals(userId)
         				&& storedOrgId.trim().equals(orgId)) {
         			return buildUserAccount(account);
@@ -154,9 +184,9 @@ public class UserAccountManager {
 
         		// Reads the user ID and org ID from account manager.
                 final String orgId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
-                		AuthenticatorService.KEY_ORG_ID), passcodeHash);
+                		AuthenticatorService.KEY_ORG_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
         		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
-        				AuthenticatorService.KEY_USER_ID), passcodeHash);
+        				AuthenticatorService.KEY_USER_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
         		if (storedUserId.trim().equals(userId)
         				&& storedOrgId.trim().equals(orgId)) {
         			return account;
@@ -261,16 +291,16 @@ public class UserAccountManager {
 		if (account == null) {
 			return null;
 		}
-		final String authToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,AccountManager.KEY_AUTHTOKEN), passcodeHash);
-		final String refreshToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getPassword(account), passcodeHash);
-		final String loginServer = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), passcodeHash);
-		final String idUrl = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ID_URL), passcodeHash);
-		final String instanceServer = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
-		final String orgId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), passcodeHash);
-		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID), passcodeHash);
-		final String username = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), passcodeHash);
+		final String authToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,AccountManager.KEY_AUTHTOKEN), SalesforceSDKManager.getInstance().getPasscodeHash());
+		final String refreshToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getPassword(account), SalesforceSDKManager.getInstance().getPasscodeHash());
+		final String loginServer = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), SalesforceSDKManager.getInstance().getPasscodeHash());
+		final String idUrl = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ID_URL), SalesforceSDKManager.getInstance().getPasscodeHash());
+		final String instanceServer = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), SalesforceSDKManager.getInstance().getPasscodeHash());
+		final String orgId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
+		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
+		final String username = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), SalesforceSDKManager.getInstance().getPasscodeHash());
 		final String accountName = accountManager.getUserData(account, AccountManager.KEY_ACCOUNT_NAME);
-		final String clientId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
+		final String clientId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
 		if (authToken == null || instanceServer == null || userId == null || orgId == null) {
 			return null;
 		}
@@ -301,9 +331,9 @@ public class UserAccountManager {
 
         		// Reads the user ID and org ID from account manager.
                 final String orgId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
-                		AuthenticatorService.KEY_ORG_ID), passcodeHash);
+                		AuthenticatorService.KEY_ORG_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
         		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
-        				AuthenticatorService.KEY_USER_ID), passcodeHash);
+        				AuthenticatorService.KEY_USER_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
         		if (storedUserId.trim().equals(userId.trim())
         				&& storedOrgId.trim().equals(orgId.trim())) {
         			return account;

@@ -43,10 +43,12 @@ import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.SystemClock;
+import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.auth.AccountWatcher;
 import com.salesforce.androidsdk.auth.AccountWatcher.AccountRemoved;
@@ -440,14 +442,33 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @return PasscodeManager instance.
      */
     public synchronized PasscodeManager getPasscodeManager() {
-    	/*
-    	 * TODO: Remove null check here, and instantiate a new PM here only
-    	 * if the one that we need is a new account. Also need to figure out
-    	 * a way to pass in current user account without involving passcode
-    	 * manager so that there's no circular loop and stack overflow.
-    	 */
-        if (passcodeManager == null) {
-            passcodeManager = new PasscodeManager(context, null);
+    	if (passcodeManager == null) {
+        	final UserAccountManager userAccMgr = getUserAccountManager();
+        	final String storedOrgId = userAccMgr.getStoredOrgId();
+        	final String storedUserId = userAccMgr.getStoredUserId();
+
+        	/*
+        	 * This sets the correct user account in passcode manager, without which
+        	 * passcode manager won't know where to read the PIN policy from. This
+        	 * UserAccount instance contains only orgID and userID, but that is
+        	 * adequate to compute the filename for the passcode manager.
+        	 */
+        	if (!TextUtils.isEmpty(storedUserId) && !TextUtils.isEmpty(storedOrgId)) {
+        		final UserAccount userAcc = new UserAccount(null, null, null, null,
+        				null, storedOrgId, storedUserId, null, null, null);
+                passcodeManager = new PasscodeManager(context, userAcc);
+        	} else {
+
+            	/*
+            	 * This is initialized without a user account, to prevent a circular
+            	 * dependency. Every time a login flow occurs, or if the app tries
+            	 * to obtain a RestClient instance from ClientManager by calling either
+            	 * peekRestClient() or getRestClient(), or if the user account is
+            	 * switched, the underlying account backing the passcode manager and the
+            	 * org timeout settings will be updated behind the scenes.
+            	 */
+                passcodeManager = new PasscodeManager(context, null);
+        	}
         }
         return passcodeManager;
     }

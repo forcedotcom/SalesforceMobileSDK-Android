@@ -186,7 +186,8 @@ public class UserAccount {
 		/*
 		 * TODO: This must be called when an account switch happens,
 		 * alongwith a slew of other changes, such as passcode manager,
-		 * admin prefs manager, etc.
+		 * admin prefs manager, etc. This needs to be done for switchUser(),
+		 * probably not for a new user logging in.
 		 */
 		this.authToken = authToken;
 	}
@@ -194,7 +195,7 @@ public class UserAccount {
 	/**
 	 * Returns the storage path for this user account, relative to the higher
 	 * level directory of app data. The higher level directory could be
-	 * 'shared_prefs', or 'databases', or 'files'. The output is of the format
+	 * 'databases', or 'files'. The output is of the format
 	 * '/<userID>_<orgID>/<communityID/'. If 'communityID' is null, then the
 	 * output would be '/<userID>_<orgID>/default/'.
 	 *
@@ -213,6 +214,29 @@ public class UserAccount {
 		}
 		sb.append(leafDir);
 		sb.append(FORWARD_SLASH);
+		return sb.toString();
+	}
+
+	/**
+	 * Returns a unique suffix for this user account, that can be appended
+	 * to a shared preference file to uniquely identify this account.
+	 * The output is of the format '_<userID>_<orgID>_<communityID>'.
+	 * If 'communityID' is null, then the output would be '_<userID>_<orgID>_default'.
+	 *
+	 * @param communityId Community ID. If it is not a community, pass 'null'.
+	 * @return Shared preference suffix.
+	 */
+	public String getSharedPrefSuffix(String communityId) {
+		final StringBuffer sb = new StringBuffer(UNDERSCORE);
+		sb.append(userId);
+		sb.append(UNDERSCORE);
+		sb.append(orgId);
+		sb.append(UNDERSCORE);
+		String leafDir = DEFAULT_PATH_FOR_ORG;
+		if (!TextUtils.isEmpty(communityId)) {
+			leafDir = communityId;
+		}
+		sb.append(leafDir);
 		return sb.toString();
 	}
 }

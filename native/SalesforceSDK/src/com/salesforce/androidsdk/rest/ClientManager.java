@@ -42,8 +42,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Looper;
+import android.text.TextUtils;
 import android.util.Log;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -103,7 +106,24 @@ public class ClientManager {
      * @param restClientCallback     callback invoked once the RestClient is ready
      */
     public void getRestClient(Activity activityContext, RestClientCallback restClientCallback) {
+    	/*
+    	 * TODO: Verify this position of this. Kill app and restart post-login.
+    	 */
+    	final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+    	final String storedOrgId = userAccMgr.getStoredOrgId();
+    	final String storedUserId = userAccMgr.getStoredUserId();
 
+    	/*
+    	 * This sets the correct user account in passcode manager, without which
+    	 * passcode manager won't know where to read the PIN policy from. This
+    	 * UserAccount instance contains only orgID and userID, but that is
+    	 * adequate to compute the filename for the passcode manager.
+    	 */
+    	if (!TextUtils.isEmpty(storedUserId) && !TextUtils.isEmpty(storedOrgId)) {
+    		final UserAccount userAcc = new UserAccount(null, null, null, null,
+    				null, storedOrgId, storedUserId, null, null, null);
+    		SalesforceSDKManager.getInstance().getPasscodeManager().setUserAccount(userAcc);
+    	}
         Account acc = getAccount();
 
         // Passing the passcodeHash to the authenticator service to that it can encrypt/decrypt oauth tokens
@@ -135,6 +155,24 @@ public class ClientManager {
      * @return
      */
     public RestClient peekRestClient() {
+    	/*
+    	 * TODO: Verify this position of this. Kill app and restart post-login.
+    	 */
+    	final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+    	final String storedOrgId = userAccMgr.getStoredOrgId();
+    	final String storedUserId = userAccMgr.getStoredUserId();
+
+    	/*
+    	 * This sets the correct user account in passcode manager, without which
+    	 * passcode manager won't know where to read the PIN policy from. This
+    	 * UserAccount instance contains only orgID and userID, but that is
+    	 * adequate to compute the filename for the passcode manager.
+    	 */
+    	if (!TextUtils.isEmpty(storedUserId) && !TextUtils.isEmpty(storedOrgId)) {
+    		final UserAccount userAcc = new UserAccount(null, null, null, null,
+    				null, storedOrgId, storedUserId, null, null, null);
+    		SalesforceSDKManager.getInstance().getPasscodeManager().setUserAccount(userAcc);
+    	}
         Account acc = getAccount();
         if (acc == null) {
             AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
