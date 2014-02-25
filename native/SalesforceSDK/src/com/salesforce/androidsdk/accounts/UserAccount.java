@@ -239,4 +239,27 @@ public class UserAccount {
 		sb.append(leafDir);
 		return sb.toString();
 	}
+
+    @Override
+    public boolean equals(Object object) {
+        if (object == null || !(object instanceof UserAccount)) {
+            return false;
+        }
+        final UserAccount userAccount = (UserAccount) object;
+        if (userId == null || orgId == null || userAccount.getUserId() == null
+        		|| userAccount.getOrgId() == null) {
+        	return false;
+        }
+        if (userAccount.getUserId().equals(userId) && userAccount.getOrgId().equals(orgId)) {
+        	return true;
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = userId.hashCode();
+        result ^= orgId.hashCode() + result * 37;
+        return result;
+    }
 }

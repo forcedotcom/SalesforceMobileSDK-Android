@@ -40,6 +40,7 @@ import android.os.Bundle;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
+import com.salesforce.androidsdk.rest.ClientManager;
 
 /**
  * This class acts as a manager that provides methods to access
@@ -219,15 +220,63 @@ public class UserAccountManager {
         return userAccounts;
 	}
 
-	public void switchToUser(UserAccount user) {
-		/*
-		 * TODO:
-		 */
-		
+	/**
+	 * Returns whether the specified user account exists or not.
+	 *
+	 * @param account User account.
+	 * @return True - if it exists, False - otherwise.
+	 */
+	public boolean doesUserAccountExist(UserAccount account) {
+		if (account == null) {
+			return false;
+		}
+		final List<UserAccount> userAccounts = getAuthenticatedUsers();
+		if (userAccounts == null || userAccounts.size() == 0) {
+			return false;
+		}
+		for (final UserAccount userAccount : userAccounts) {
+			if (account.equals(userAccount)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
-	 * Kicks off the login flow to switch to a new user.
+	 * Switches to the specified user account. If the specified user account
+	 * is invalid/doesn't exist, this method kicks off the login flow
+	 * for a new user. When the user account switch is complete, it is
+	 * imperative for the app to update its cached references to RestClient,
+	 * to avoid holding on to a RestClient from the previous user.
+	 *
+	 * @param user User account to switch to.
+	 */
+	public void switchToUser(UserAccount user) {
+		if (user == null || !doesUserAccountExist(user)) {
+			switchToNewUser();
+			return;
+		}
+		final UserAccount curUser = getCurrentUser();
+
+		/*
+		 * Checks if we are attempting to switch to the current user.
+		 * In this case, there's nothing to be done.
+		 */
+		if (user.equals(curUser)) {
+			return;
+		}
+		final ClientManager cm = new ClientManager(context, accountType,
+				SalesforceSDKManager.getInstance().getLoginOptions(), true);
+		final Account account = cm.getAccountByName(user.getAccountName());
+		storeCurrentUser(user.getUserId(), user.getOrgId());
+		cm.peekRestClient(account);
+	}
+
+	/**
+	 * Kicks off the login flow to switch to a new user. Once the login
+	 * flow is complete, the context will automatically become the
+	 * new user's context and a call to peekRestClient() or getRestClient()
+	 * in ClientManager will return a RestClient instance for the new user.
 	 */
 	public void switchToNewUser() {
 		final Bundle reply = new Bundle();
@@ -267,6 +316,10 @@ public class UserAccountManager {
 	public void signoutUser(UserAccount userAccount, Activity frontActivity) {
 		final Account account = buildAccount(userAccount);
 		SalesforceSDKManager.getInstance().logout(account, frontActivity);
+		/*
+		 * TODO: Add a param for which activity to launch after logout.
+		 * Default will be login activity.
+		 */
 	}
 
 	/**
@@ -279,6 +332,10 @@ public class UserAccountManager {
 	public void signoutUser(UserAccount userAccount, Activity frontActivity, boolean showLoginPage) {
 		final Account account = buildAccount(userAccount);
 		SalesforceSDKManager.getInstance().logout(account, frontActivity, showLoginPage);
+		/*
+		 * TODO: Add a param for which activity to launch after logout.
+		 * Default will be login activity.
+		 */
 	}
 
 	/**

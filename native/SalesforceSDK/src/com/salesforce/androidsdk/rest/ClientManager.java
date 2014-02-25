@@ -106,24 +106,7 @@ public class ClientManager {
      * @param restClientCallback     callback invoked once the RestClient is ready
      */
     public void getRestClient(Activity activityContext, RestClientCallback restClientCallback) {
-    	/*
-    	 * TODO: Verify this position of this. Kill app and restart post-login.
-    	 */
-    	final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-    	final String storedOrgId = userAccMgr.getStoredOrgId();
-    	final String storedUserId = userAccMgr.getStoredUserId();
-
-    	/*
-    	 * This sets the correct user account in passcode manager, without which
-    	 * passcode manager won't know where to read the PIN policy from. This
-    	 * UserAccount instance contains only orgID and userID, but that is
-    	 * adequate to compute the filename for the passcode manager.
-    	 */
-    	if (!TextUtils.isEmpty(storedUserId) && !TextUtils.isEmpty(storedOrgId)) {
-    		final UserAccount userAcc = new UserAccount(null, null, null, null,
-    				null, storedOrgId, storedUserId, null, null, null);
-    		SalesforceSDKManager.getInstance().getPasscodeManager().setUserAccount(userAcc);
-    	}
+    	updatePasscodeManagerAccount();
         Account acc = getAccount();
 
         // Passing the passcodeHash to the authenticator service to that it can encrypt/decrypt oauth tokens
@@ -148,16 +131,9 @@ public class ClientManager {
     }
 
     /**
-     * Method to create RestClient synchronously. It is intended to be used by code not on the UI thread (e.g. ContentProvider).
-     *
-     * If there is no account, it will throw an exception.
-     *
-     * @return
+     * Updates the account associated with the passcode manager.
      */
-    public RestClient peekRestClient() {
-    	/*
-    	 * TODO: Verify this position of this. Kill app and restart post-login.
-    	 */
+    private void updatePasscodeManagerAccount() {
     	final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
     	final String storedOrgId = userAccMgr.getStoredOrgId();
     	final String storedUserId = userAccMgr.getStoredUserId();
@@ -173,7 +149,22 @@ public class ClientManager {
     				null, storedOrgId, storedUserId, null, null, null);
     		SalesforceSDKManager.getInstance().getPasscodeManager().setUserAccount(userAcc);
     	}
-        Account acc = getAccount();
+    }
+
+    public RestClient peekRestClient() {
+    	updatePasscodeManagerAccount();
+        return peekRestClient(getAccount());
+    }
+
+    /**
+     * Method to create RestClient synchronously. It is intended to be used by code not on the UI thread (e.g. ContentProvider).
+     *
+     * If there is no account, it will throw an exception.
+     *
+     * @return
+     */
+    public RestClient peekRestClient(Account acc) {
+    	updatePasscodeManagerAccount();
         if (acc == null) {
             AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
             Log.i("ClientManager:peekRestClient", "No user account found", e);
