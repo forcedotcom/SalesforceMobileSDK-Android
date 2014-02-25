@@ -43,7 +43,7 @@ public class SmartSyncJSTest extends JSTestCase {
     
     @Override
     public List<String> getTestNames() {
-		return Arrays.asList(new String[] { "testCollectionFetch",
+		return Arrays.asList(new String[] { "testSObjectCollectionFetch",
 				"testFetchSObjects", "testFetchSObjectsFromServer",
 				"testSObjectDestroy", "testSObjectFetch", "testSObjectSave",
 				"testSObjectTypeDescribe", "testSObjectTypeGetMetadata",
@@ -201,7 +201,7 @@ public class SmartSyncJSTest extends JSTestCase {
         runTest("testFetchSObjects");
     }
 
-    public void testCollectionFetch() {
-        runTest("testCollectionFetch");
+    public void testSObjectCollectionFetch() {
+        runTest("testSObjectCollectionFetch");
     }
 }

@@ -198,6 +198,7 @@ public class AuthenticatorService extends Service {
         private Bundle makeAuthIntentBundle(AccountAuthenticatorResponse response, Bundle options) {
             Bundle reply = new Bundle();
             Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
+            i.setPackage(context.getPackageName());
             i.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             i.putExtra(AccountManager.KEY_ACCOUNT_AUTHENTICATOR_RESPONSE, response);
             if (options != null)

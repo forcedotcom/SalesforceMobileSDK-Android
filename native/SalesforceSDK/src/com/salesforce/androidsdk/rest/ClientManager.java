@@ -138,7 +138,7 @@ public class ClientManager {
         Account acc = getAccount();
         if (acc == null) {
             AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
-            Log.i("ClientManager:peekRestClient", "No user account found", e);
+            Log.i("ClientManager:peekRestClient", "No user account found");
             throw e;
         }
         String passcodeHash = (SalesforceSDKManager.getInstance().getIsTestRun() ? loginOptions.passcodeHash : SalesforceSDKManager.getInstance().getPasscodeHash());
