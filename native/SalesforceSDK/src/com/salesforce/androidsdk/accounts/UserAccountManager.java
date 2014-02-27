@@ -294,6 +294,11 @@ public class UserAccountManager {
 	 * @param frontActivity Front activity.
 	 */
 	public void signoutCurrentUser(Activity frontActivity) {
+		/*
+		 * TODO: Update shared pref file that contains current user info.
+		 * Remove existing entry and add new default entry of previous user.
+		 * This should happen for all logout calls.
+		 */
 		SalesforceSDKManager.getInstance().logout(frontActivity);
 	}
 
@@ -308,7 +313,8 @@ public class UserAccountManager {
 	}
 
 	/**
-	 * Logs the specified user out.
+	 * Logs the specified user out. If the user specified is not the current
+	 * user, push notification un-registration will not take place.
 	 *
 	 * @param userAccount User account.
 	 * @param frontActivity Front activity.
@@ -323,7 +329,8 @@ public class UserAccountManager {
 	}
 
 	/**
-	 * Logs the specified user out.
+	 * Logs the specified user out. If the user specified is not the current
+	 * user, push notification un-registration will not take place.
 	 *
 	 * @param userAccount User account.
 	 * @param frontActivity Front activity.
