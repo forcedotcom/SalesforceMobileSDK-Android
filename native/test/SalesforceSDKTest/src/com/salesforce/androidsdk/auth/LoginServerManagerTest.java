@@ -271,14 +271,12 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	private void assertProduction(LoginServer server) {
 		assertEquals("Expected production's name", "Production", server.name);
 		assertEquals("Expected production's url", PRODUCTION_URL, server.url);
-		assertEquals("Expected production to be index 0", 0, server.index);
 		assertEquals("Expected production to be marked as not custom", false, server.isCustom);
 	}
 
 	private void assertSandbox(LoginServer server) {
 		assertEquals("Expected sandbox's name", "Sandbox", server.name);
 		assertEquals("Expected sandbox's url", SANDBOX_URL, server.url);
-		assertEquals("Expected sandbox to be index 1", 1, server.index);
 		assertEquals("Expected sandbox to be marked as not custom", false, server.isCustom);
 	}
 
@@ -289,21 +287,18 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	private void assertOther(LoginServer server) {
 		assertEquals("Expected other's name", "Other", server.name);
 		assertEquals("Expected other's url", OTHER_URL, server.url);
-		assertEquals("Expected other to be index 2", 2, server.index);
 		assertEquals("Expected other to be marked as not custom", false, server.isCustom);
 	}
 
 	private void assertCustom(LoginServer server) {
 		assertEquals("Expected custom's name", CUSTOM_NAME, server.name);
 		assertEquals("Expected custom's url", CUSTOM_URL, server.url);
-		assertEquals("Expected custom to be index 3", 3, server.index);
 		assertEquals("Expected custom to be marked as not custom", true, server.isCustom);
 	}	
 	
 	private void assertCustom2(LoginServer server) {
 		assertEquals("Expected custom2's name", CUSTOM_NAME_2, server.name);
 		assertEquals("Expected custom2's url", CUSTOM_URL_2, server.url);
-		assertEquals("Expected custom2 to be index 3", 3, server.index);
 		assertEquals("Expected custom2 to be marked as not custom", true, server.isCustom);
 	}		
 	

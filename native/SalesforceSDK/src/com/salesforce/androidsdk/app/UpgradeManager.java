@@ -30,9 +30,11 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.util.Log;
 
 import com.salesforce.androidsdk.auth.AuthenticatorService;
+import com.salesforce.androidsdk.auth.LoginServerManager;
 
 /**
  * This class handles upgrades from one version to another.
@@ -97,6 +99,8 @@ public class UpgradeManager {
         	 */
             double installedVerDouble = Double.parseDouble(majorVersionNum);
             if (installedVerDouble < 2.2) {
+
+            	// Creates the current user shared pref file.
                 final AccountManager accountManager = AccountManager.get(SalesforceSDKManager.getInstance().getAppContext());
                 final Account[] accounts = accountManager.getAccountsByType(SalesforceSDKManager.getInstance().getAccountType());
                 if (accounts != null && accounts.length > 0) {
@@ -107,6 +111,14 @@ public class UpgradeManager {
             				AuthenticatorService.KEY_USER_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
                 	SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUser(userId, orgId);
                 }
+
+                // Removes the old shared pref file for custom URL.
+            	final SharedPreferences settings = SalesforceSDKManager.getInstance()
+            			.getAppContext().getSharedPreferences(LoginServerManager.LEGACY_SERVER_URL_PREFS_SETTINGS,
+            			Context.MODE_PRIVATE);
+        		final Editor edit = settings.edit();
+        		edit.clear();
+        		edit.commit();
             }
         } catch (NumberFormatException e) {
         	Log.e("UpgradeManager:upgradeAccMgr", "Failed to parse installed version.");

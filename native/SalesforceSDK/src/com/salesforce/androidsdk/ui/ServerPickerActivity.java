@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,66 +26,39 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import java.util.List;
+
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnCancelListener;
 import android.content.DialogInterface.OnDismissListener;
 import android.os.Bundle;
-import android.text.Spannable;
-import android.text.SpannableString;
-import android.text.SpannableStringBuilder;
-import android.text.style.TextAppearanceSpan;
-import android.util.Log;
-import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.LinearLayout.LayoutParams;
-import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.TextView.BufferType;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
 
 /**
- * UI to change the login server URL to use during an OAuth flow.
- * If the user selects one of the pre-populated servers, we save the selected
- * index and the final URL into a SharedPrefs file (SERVER_URL_PREFS_SETTINGS).
- * If the user selects a custom URL, that subsystem saves the final
- * validated non-null label and URL and saves the selected index.
+ * This class provides UI to change the login server URL to use
+ * during an OAuth flow. The user can add a number of custom servers,
+ * or switch between the list of existing servers in the list.
+ *
+ * @author bhariharan
  */
 public class ServerPickerActivity extends Activity implements
-        OnDismissListener, OnCancelListener, View.OnClickListener,
+        OnDismissListener, OnCancelListener,
         android.widget.RadioGroup.OnCheckedChangeListener {
-
-	/**
-	 * Specifies the saved configuration for the login URL.
-	 */
-    private static class SavedConfig {
-
-        public final int currentSelection;
-        public final int originalStartingIndex;
-
-        SavedConfig(int currentSelection, int originalStartingIndex) {
-            this.currentSelection = currentSelection;
-            this.originalStartingIndex = originalStartingIndex;
-        }
-    }
 
     private static final int SERVER_DIALOG_ID = 0;
 
-    private int customRadioButtonId = -1;
-    private int restoredConfigIndex = -1;
-    private int startingIndex = -1;
     public CustomServerUrlEditor urlEditDialog;
     private SalesforceR salesforceR;
     private LoginServerManager loginServerManager;
-    boolean wasEditUrlDialogCanceled = false;
 
     /**
      * Clears any custom URLs that may have been set.
@@ -95,54 +68,27 @@ public class ServerPickerActivity extends Activity implements
     	rebuildDisplay();
     }
 
-    @Override
-    public void onBackPressed() {
-        setCancelReturnValue(null);
-    }
-
-    @Override
-    public void onCancel(DialogInterface dialog) {
-        wasEditUrlDialogCanceled = true;
-    }
-
     /**
-     * Supports a rogue radio button, which only gets hooked up
-     * when there is a custom URL.
+     * Method called when the 'Cancel' button is clicked.
+     *
+     * @param v View that was clicked.
      */
+    public void setCancelReturnValue(View v) {
+        onBackPressed();
+    }
+
     @Override
     public void onCheckedChanged(RadioGroup group, int checkedId) {
-
-    	/*
-    	 * Some things like this work, but most don't.
-    	 */
-        if (checkedId < 0 || customRadioButtonId < 0
-                || checkedId == customRadioButtonId) {
-            return;
-        }
-
-        if (((RadioButton) group.findViewById(checkedId)).isChecked()) {
-
-            // Turns off rogue radio button by hand (may or may not actually be checked).
-            final RadioButton rb = (RadioButton) group.findViewById(customRadioButtonId);
-            if (rb != null) {
-                rb.setChecked(false);
-            } else {
-            	Log.w("ServerPickerActivity:onCheckedChanged", "Failed to find custom URL radio button.");
-            }
-        }
-    }
-
-    /**
-     * Custom handling for rogue radio button (custom link). This handles
-     * the actual click on the rogue radio button.
-     */
-    @Override
-    public void onClick(View v) {
-        final RadioButton rb = (RadioButton) v;
-        if (rb.isChecked()) {
-            final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
-            radioGroup.clearCheck();
-        }
+    	if (group != null) {
+    		final SalesforceServerRadioButton rb = (SalesforceServerRadioButton) group.findViewById(checkedId);
+    		if (rb != null) {
+    			final String name = rb.getName();
+    			final String url = rb.getUrl();
+    			boolean isCustom = rb.isCustom();
+    			loginServerManager.setSelectedLoginServer(new LoginServer(name,
+    					url, isCustom));
+    		}
+    	}
     }
 
     /**
@@ -165,22 +111,28 @@ public class ServerPickerActivity extends Activity implements
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+    	/*
+    	 * TODO: Handle saving and restoring on orientation change.
+    	 */
         super.onCreate(savedInstanceState);
-
-        // Object which allows reference to resources living outside the SDK.
         salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
         setContentView(salesforceR.layoutServerPicker());
-        final SavedConfig savedConfig = (SavedConfig) getLastNonConfigurationInstance();
-        if (savedConfig == null) {
+        final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
+        radioGroup.setOnCheckedChangeListener(this);
+    }
 
-            // Saves starting state to restore on cancel.
-            saveStartingState();
-        } else {
-            startingIndex = savedConfig.originalStartingIndex;
-            restoredConfigIndex = savedConfig.currentSelection;
-        }
-        rebuildDisplay();
+    @Override
+    public void onResume() {
+    	super.onResume();
+    	rebuildDisplay();
+    }
+
+    @Override
+    public void onDestroy() {
+        final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
+        radioGroup.setOnCheckedChangeListener(null);
+        super.onDestroy();
     }
 
     @Override
@@ -208,9 +160,7 @@ public class ServerPickerActivity extends Activity implements
 
     @Override
     public void onDismiss(DialogInterface dialog) {
-        if (!wasEditUrlDialogCanceled) {
-            rebuildDisplay();
-        }
+    	rebuildDisplay();
     }
 
     @Override
@@ -223,78 +173,6 @@ public class ServerPickerActivity extends Activity implements
         }
     }
 
-    @Override
-    public Object onRetainNonConfigurationInstance() {
-        final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
-        return new SavedConfig(radioGroup.getCheckedRadioButtonId(),
-                startingIndex);
-    }
-
-    /**
-     * Rebuilds the display.
-     */
-    private void rebuildDisplay() {
-        final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
-        radioGroup.removeAllViews();
-        radioGroup.clearCheck();
-        radioGroup.setOnCheckedChangeListener(null);
-        customRadioButtonId = -1;
-        setupRadioButtons();
-    }
-
-    /**
-     * Restores the starting state.
-     */
-    private void restoreStartingState() {
-    	loginServerManager.setSelectedLoginServerByIndex(startingIndex);
-    }
-
-    /**
-     * Restore the starting index, if the user cancels after setting a custom URL.
-     */
-    private void saveStartingState() {
-        startingIndex = loginServerManager.getSelectedLoginServer().index;
-    }
-
-    /**
-     * Saves the current selection state into a shared prefs file.
-     */
-    private void saveUrlEdits() {
-
-    	/*
-    	 * The ID is also the index, but we use 'findViewById()' to get the
-    	 * actual radio button, and not 'childAtIndex()', which could be anything.
-    	 */
-        final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
-
-        // If the selected item is the custom radio this won't return it.
-        int selectedId = radioGroup.getCheckedRadioButtonId();
-        if (selectedId == -1) {
-            selectedId = customRadioButtonId;
-        }
-        final View selectedView = radioGroup.findViewById(selectedId);
-        if (selectedView == null) {
-
-            // This should never happen, but you know how that goes.
-        	Log.w("ServerPickerActivity:saveUrlEdits",
-        			"Failed to save state, could not find selected URL.");
-            rebuildDisplay();
-            return;
-        }
-        loginServerManager.setSelectedLoginServerByIndex(selectedId);
-    }
-    
-    /**
-     * Method called when the 'Cancel' or back buttons are clicked.
-     *
-     * @param v View that was clicked.
-     */
-    public void setCancelReturnValue(View v) {
-        setResult(Activity.RESULT_CANCELED, null);
-        restoreStartingState();
-        finish();
-    }
-
     /**
      * Sets the return value of the activity. Selection is stored in the
      * shared prefs file, AuthActivity pulls from the file or a default value.
@@ -302,132 +180,8 @@ public class ServerPickerActivity extends Activity implements
      * @param v View.
      */
     public void setPositiveReturnValue(View v) {
-        saveUrlEdits();
         setResult(Activity.RESULT_OK, null);
         finish();
-    }
-
-    /**
-     * The index is set as the ID of the actual radio buttons. Other views do not
-     * get an explicit ID, but it means you can't get radio buttons by
-     * selectedId -> childAtIndex, and have to use 'findViewById()' instead.
-     *
-     * @param radioGroup RadioGroup instance.
-     * @param server Login server.
-     */
-    private void setRadioState(RadioGroup radioGroup, LoginServer server) {
-    	int index = server.index;
-    	boolean isCustom = server.isCustom;
-    	String titleText = server.name;
-    	String urlText = server.url;
-        final RadioButton rb = new RadioButton(this);
-        rb.setId(index);
-        final SpannableStringBuilder result = new SpannableStringBuilder();
-        final SpannableString titleSpan = new SpannableString(titleText);
-        titleSpan.setSpan(new TextAppearanceSpan(this,
-                SalesforceSDKManager.isTablet() ? salesforceR.styleTextHostName()
-                : android.R.style.TextAppearance_Medium), 0, titleText.length(),
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        final SpannableString urlSpan = new SpannableString(urlText);
-        urlSpan.setSpan(new TextAppearanceSpan(this,
-                SalesforceSDKManager.isTablet() ? salesforceR.styleTextHostUrl()
-                : android.R.style.TextAppearance_Small), 0, urlText.length(),
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-        result.append(titleSpan);
-        result.append(System.getProperty("line.separator"));
-        result.append(urlSpan);
-        rb.setText(result, BufferType.SPANNABLE);
-        rb.setTag(urlText);
-        if (isCustom) {
-
-            // Keeps the edit link always to the right of the row.
-            final LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.FILL_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            rowParams.weight = 1;
-            final LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            buttonParams.weight = (float) 0.75;
-            final LinearLayout.LayoutParams linkParams = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.FILL_PARENT);
-
-            /*
-             * Interesting side effect of this is that if the URL gets bug,
-             * the runtime will shrink this guy, and it doesn't matter if
-             * width/height are set.
-             */
-            linkParams.gravity = Gravity.CENTER_HORIZONTAL
-                    | Gravity.CENTER_VERTICAL;
-            final ImageView iv = new ImageView(this);
-            iv.setImageResource(salesforceR.drawableEditIcon());
-            iv.setOnClickListener(new View.OnClickListener() {
-
-                @Override
-                public void onClick(View v) {
-                    showCustomUrlDialog(null);
-                }
-            });
-            customRadioButtonId = index;
-
-            /* 
-             * The problem here is that if the radio button is not the top level
-             * child view when adding, the group does not control it
-             * (check the radio group code), so we do it by hand.
-             * It sort of controls it, you can select it through the group,
-             * but it does not get de-selected correctly and is not
-             * returned by a standard 'getSelected()' call on the group.
-             */
-            rb.setOnClickListener(this);
-            final LinearLayout lay = new LinearLayout(this);
-            lay.addView(rb, 0, buttonParams);
-            lay.addView(iv, 1, linkParams);
-            radioGroup.addView(lay, rowParams);
-            radioGroup.setOnCheckedChangeListener(this);
-        } else {
-            radioGroup.addView(rb);
-        }
-
-        // Spacer line.
-        final View spacerView = new View(this);
-        spacerView.setBackgroundColor(0xffdcdcdc);
-        LayoutParams lp = new LinearLayout.LayoutParams(LayoutParams.FILL_PARENT, 1);
-        spacerView.setLayoutParams(lp);
-        radioGroup.addView(spacerView);
-    }
-
-    /**
-     * Controls the elements in the layout based on past user choices.
-     */
-    protected void setupRadioButtons() {
-        final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
-        for (final LoginServer currentServer : loginServerManager.getDefaultLoginServers()) {
-            setRadioState(radioGroup, currentServer);
-        }
-
-        /*
-         * Custom URL is set, but may or may not be selected. UI is a radio button
-         * with an edit link either way.
-         */
-        final View postView = findViewById(salesforceR.idShowCustomUrlEdit());
-        final LoginServer customServer = loginServerManager.getCustomLoginServer();
-        if (customServer != null) {
-        	postView.setVisibility(View.GONE);
-            setRadioState(radioGroup, customServer);
-        } else {
-        	postView.setVisibility(View.VISIBLE);
-        }
-
-        // Sets selection.
-        int which = -1;
-        if (restoredConfigIndex >= 0) {
-            which = restoredConfigIndex;
-            restoredConfigIndex = -1;
-        } else {
-            which = loginServerManager.getSelectedLoginServer().index;
-        }
-        radioGroup.check(which);
     }
 
     /**
@@ -436,7 +190,56 @@ public class ServerPickerActivity extends Activity implements
      * @param v View.
      */
     public void showCustomUrlDialog(View v) {
-        wasEditUrlDialogCanceled = false;
         showDialog(SERVER_DIALOG_ID);
+    }
+
+	@Override
+	public void onCancel(DialogInterface dialog) {
+		rebuildDisplay();
+	}
+
+    /**
+     * Sets the radio state.
+     *
+     * @param radioGroup RadioGroup instance.
+     * @param server Login server.
+     */
+    private void setRadioState(RadioGroup radioGroup, LoginServer server) {
+    	final SalesforceServerRadioButton rb = new SalesforceServerRadioButton(this,
+    			server.name, server.url, server.isCustom);
+    	radioGroup.addView(rb);
+    }
+
+    /**
+     * Controls the elements in the layout based on past user choices.
+     */
+    private void setupRadioButtons() {
+        final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
+        final List<LoginServer> servers = loginServerManager.getAllSavedSevers();
+        if (servers != null) {
+            for (final LoginServer currentServer : loginServerManager.getAllSavedSevers()) {
+                setRadioState(radioGroup, currentServer);
+            }
+        }
+    }
+
+    /**
+     * Rebuilds the display.
+     */
+    private void rebuildDisplay() {
+        final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
+        radioGroup.removeAllViews();
+        setupRadioButtons();
+
+    	/*
+    	 * Multiple users could have selected different custom endpoints, while
+    	 * logging into different orgs, which makes it difficult for us to
+    	 * choose which one to check by default. Hence, we check the first server
+    	 * on the list (usually production) by default.
+    	 */
+    	final SalesforceServerRadioButton rb = (SalesforceServerRadioButton) radioGroup.getChildAt(0);
+    	if (rb != null) {
+    		rb.setChecked(true);
+    	}
     }
 }
