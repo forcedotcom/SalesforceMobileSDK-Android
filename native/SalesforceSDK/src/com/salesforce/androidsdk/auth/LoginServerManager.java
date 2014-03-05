@@ -261,6 +261,9 @@ public class LoginServerManager {
 			edit.putString(String.format(SERVER_NAME, i), curServer.name);
 		    edit.putString(String.format(SERVER_URL, i), curServer.url);
 		    edit.putBoolean(String.format(IS_CUSTOM, i), curServer.isCustom);
+		    if (i == 0) {
+		    	setSelectedLoginServer(curServer);
+		    }
 		}
 	    edit.putInt(NUMBER_OF_ENTRIES, numServers);
 	    edit.commit();
