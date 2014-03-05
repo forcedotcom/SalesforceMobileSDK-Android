@@ -109,7 +109,7 @@ public class UpgradeManager {
                     		AuthenticatorService.KEY_ORG_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
             		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
             				AuthenticatorService.KEY_USER_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
-                	SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUser(userId, orgId);
+                	SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
                 }
 
                 // Removes the old shared pref file for custom URL.

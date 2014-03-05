@@ -95,12 +95,12 @@ public class UserAccountManager {
 	}
 
 	/**
-	 * Stores the current active user in a shared preference file.
+	 * Stores the current active user's user ID and org ID in a shared preference file.
 	 *
 	 * @param userId User ID.
 	 * @param orgId Org ID.
 	 */
-	public void storeCurrentUser(String userId, String orgId) {
+	public void storeCurrentUserInfo(String userId, String orgId) {
 		final SharedPreferences sp = context.getSharedPreferences(CURRENT_USER_PREF,
 				Context.MODE_PRIVATE);
         final Editor e = sp.edit();
@@ -268,7 +268,7 @@ public class UserAccountManager {
 		final ClientManager cm = new ClientManager(context, accountType,
 				SalesforceSDKManager.getInstance().getLoginOptions(), true);
 		final Account account = cm.getAccountByName(user.getAccountName());
-		storeCurrentUser(user.getUserId(), user.getOrgId());
+		storeCurrentUserInfo(user.getUserId(), user.getOrgId());
 		cm.peekRestClient(account);
 	}
 
