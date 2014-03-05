@@ -38,7 +38,7 @@ import android.text.TextUtils;
  */
 public class UserAccount {
 
-	private static final String DEFAULT_PATH_FOR_ORG = "default";
+	private static final String INTERNAL_COMMUNITY_PATH = "internal";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
 
@@ -178,22 +178,58 @@ public class UserAccount {
 	}
 
 	/**
+	 * Returns the org level storage path for this user account, relative to
+	 * the higher level directory of app data. The higher level directory
+	 * could be 'databases', or 'files'. The output is of the format
+	 * '/<orgID>/'. This storage path is meant for data that can be shared
+	 * across multiple users of the same org.
+	 *
+	 * @return File storage path.
+	 */
+	public String getOrgLevelStoragePath() {
+		final StringBuffer sb = new StringBuffer(FORWARD_SLASH);
+		sb.append(orgId);
+		sb.append(FORWARD_SLASH);
+		return sb.toString();
+	}
+
+	/**
+	 * Returns the user level storage path for this user account, relative to
+	 * the higher level directory of app data. The higher level directory
+	 * could be 'databases', or 'files'. The output is of the format
+	 * '/<orgID>/<userId>/'. This storage path is meant for data that is unique
+	 * to a particular user in an org, but common across all the communities
+	 * that the user is a member of within that org.
+	 *
+	 * @return File storage path.
+	 */
+	public String getUserLevelStoragePath() {
+		final StringBuffer sb = new StringBuffer(FORWARD_SLASH);
+		sb.append(orgId);
+		sb.append(FORWARD_SLASH);
+		sb.append(userId);
+		sb.append(FORWARD_SLASH);
+		return sb.toString();
+	}
+
+	/**
 	 * Returns the storage path for this user account, relative to the higher
 	 * level directory of app data. The higher level directory could be
 	 * 'databases', or 'files'. The output is of the format
-	 * '/<userID>_<orgID>/<communityID/'. If 'communityID' is null, then the
-	 * output would be '/<userID>_<orgID>/default/'.
+	 * '/<orgID>/<userID>/<communityID>/'. If 'communityID' is null, then the
+	 * output would be '/<orgID>/<userID>/internal/'. This storage path is meant
+	 * for data that is unique to a particular user in a specific community.
 	 *
-	 * @param communityId Community ID. If it is not a community, pass 'null'.
+	 * @param communityId Community ID. Pass 'null' for internal community.
 	 * @return File storage path.
 	 */
-	public String getStoragePath(String communityId) {
+	public String getCommunityLevelStoragePath(String communityId) {
 		final StringBuffer sb = new StringBuffer(FORWARD_SLASH);
-		sb.append(userId);
-		sb.append(UNDERSCORE);
 		sb.append(orgId);
 		sb.append(FORWARD_SLASH);
-		String leafDir = DEFAULT_PATH_FOR_ORG;
+		sb.append(userId);
+		sb.append(FORWARD_SLASH);
+		String leafDir = INTERNAL_COMMUNITY_PATH;
 		if (!TextUtils.isEmpty(communityId)) {
 			leafDir = communityId;
 		}
@@ -204,20 +240,54 @@ public class UserAccount {
 
 	/**
 	 * Returns a unique suffix for this user account, that can be appended
-	 * to a shared preference file to uniquely identify this account.
-	 * The output is of the format '_<userID>_<orgID>_<communityID>'.
-	 * If 'communityID' is null, then the output would be '_<userID>_<orgID>_default'.
+	 * to a shared preference file to uniquely identify this account, at an
+	 * org level. The output is of the format '_<orgID>'. This suffix is meant
+	 * for data that can be shared across multiple users of the same org.
 	 *
-	 * @param communityId Community ID. If it is not a community, pass 'null'.
 	 * @return Shared preference suffix.
 	 */
-	public String getSharedPrefSuffix(String communityId) {
+	public String getOrgLevelSharedPrefSuffix() {
 		final StringBuffer sb = new StringBuffer(UNDERSCORE);
-		sb.append(userId);
-		sb.append(UNDERSCORE);
+		sb.append(orgId);
+		return sb.toString();
+	}
+
+	/**
+	 * Returns a unique suffix for this user account, that can be appended
+	 * to a shared preference file to uniquely identify this account, at a
+	 * user level. The output is of the format '_<orgID>_<userID>'. This suffix
+	 * is meant for data that is unique to a particular user in an org,
+	 * but common across all the communities that the user is a member
+	 * of within that org.
+	 *
+	 * @return Shared preference suffix.
+	 */
+	public String getUserLevelSharedPrefSuffix() {
+		final StringBuffer sb = new StringBuffer(UNDERSCORE);
 		sb.append(orgId);
 		sb.append(UNDERSCORE);
-		String leafDir = DEFAULT_PATH_FOR_ORG;
+		sb.append(userId);
+		return sb.toString();
+	}
+
+	/**
+	 * Returns a unique suffix for this user account, that can be appended
+	 * to a shared preference file to uniquely identify this account, at a
+	 * community level. The output is of the format '_<orgID>_<userID>_<communityID>'.
+	 * If 'communityID' is null, then the output would be '_<orgID>_<userID>_internal'.
+	 * This suffix is meant for data that is unique to a particular
+	 * user in a specific community.
+	 *
+	 * @param communityId Community ID. Pass 'null' for internal community.
+	 * @return Shared preference suffix.
+	 */
+	public String getCommunityLevelSharedPrefSuffix(String communityId) {
+		final StringBuffer sb = new StringBuffer(UNDERSCORE);
+		sb.append(orgId);
+		sb.append(UNDERSCORE);
+		sb.append(userId);
+		sb.append(UNDERSCORE);
+		String leafDir = INTERNAL_COMMUNITY_PATH;
 		if (!TextUtils.isEmpty(communityId)) {
 			leafDir = communityId;
 		}
