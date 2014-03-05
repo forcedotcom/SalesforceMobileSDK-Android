@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.accounts;
 
 import android.text.TextUtils;
 
-
 /**
  * This class represents a single user account that is currently
  * logged in against a Salesforce endpoint. It encapsulates data

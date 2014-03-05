@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -69,10 +69,10 @@ public class PasscodeManager  {
     private static final String MOBILE_POLICY_PREF = "mobile_policy";
 
     // Key in preference for the access timeout.
-    private static final String KEY_TIMEOUT ="access_timeout";
+    private static final String KEY_TIMEOUT = "access_timeout";
 
     // Key in preference for the passcode length.
-    private static final String KEY_PASSCODE_LENGTH ="passcode_length";
+    private static final String KEY_PASSCODE_LENGTH = "passcode_length";
 
     // Request code used to start passcode activity
     public static final int PASSCODE_REQUEST_CODE = 777;
@@ -80,6 +80,15 @@ public class PasscodeManager  {
     // this is a hash of the passcode to be used as part of the key to encrypt/decrypt oauth tokens
     // It's using a different salt/key than the one used to verify the entry
     private String passcodeHash;
+
+    /*
+     * TODO: Need to store one master copy of mobile policy as well - to ensure
+     * that we know what policy to use. The org level policy should also be
+     * stored to switch timeout values. Every time a logout or a login occurs,
+     * we need to update the master copy with the lowest session timeout value,
+     * and update in memory, and go through the re-encryption thingy, with
+     * the changePasscode()/setTimeoutMs() methods.
+     */
 
     // Misc
     private HashConfig verificationHashConfig;
@@ -116,8 +125,7 @@ public class PasscodeManager  {
 	   mobilePolicyPref = MOBILE_POLICY_PREF;
 	   userPref = PREF_NAME;
 	   if (account != null) {
-		   mobilePolicyPref = MOBILE_POLICY_PREF + account.getSharedPrefSuffix(null);
-		   userPref = PREF_NAME + account.getSharedPrefSuffix(null);
+		   mobilePolicyPref = MOBILE_POLICY_PREF + account.getOrgLevelSharedPrefSuffix();
 	   }
        this.minPasscodeLength = MIN_PASSCODE_LENGTH;
        this.lastActivity = now();
@@ -197,9 +205,8 @@ public class PasscodeManager  {
      */
     public void setUserAccount(UserAccount account) {
     	if (account != null) {
- 		   	mobilePolicyPref = MOBILE_POLICY_PREF + account.getSharedPrefSuffix(null);
- 		   	userPref = PREF_NAME + account.getSharedPrefSuffix(null);
-    	}
+ 		   	mobilePolicyPref = MOBILE_POLICY_PREF + account.getOrgLevelSharedPrefSuffix();
+ 		}
     }
 
     /**
