@@ -111,10 +111,7 @@ public class ServerPickerActivity extends Activity implements
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-    	/*
-    	 * TODO: Handle saving and restoring on orientation change.
-    	 */
-        super.onCreate(savedInstanceState);
+    	super.onCreate(savedInstanceState);
         salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
         setContentView(salesforceR.layoutServerPicker());
@@ -217,7 +214,7 @@ public class ServerPickerActivity extends Activity implements
         final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
         final List<LoginServer> servers = loginServerManager.getAllSavedSevers();
         if (servers != null) {
-            for (final LoginServer currentServer : loginServerManager.getAllSavedSevers()) {
+            for (final LoginServer currentServer : servers) {
                 setRadioState(radioGroup, currentServer);
             }
         }

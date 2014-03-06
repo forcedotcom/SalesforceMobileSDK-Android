@@ -33,39 +33,33 @@ import android.text.SpannableStringBuilder;
 import android.text.style.TextAppearanceSpan;
 import android.widget.RadioButton;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
- * Custom radio button implementation to represent a Salesforce
- * custom server endpoint. Classes using this radio button should use
- * the custom 'setText()' method to display text in this radio button.
+ * Custom radio button implementation to represent a Salesforce account.
+ * Classes using this radio button should use the custom 'setText()'
+ * method to display text in this radio button.
  *
  * @author bhariharan
  */
-public class SalesforceServerRadioButton extends RadioButton {
+public class SalesforceAccountRadioButton extends RadioButton {
 
 	private Context context;
 	private SalesforceR salesforceR;
-	private String name;
-	private String url;
-	private boolean isCustom;
+	private UserAccount account;
 
 	/**
 	 * Parameterized constructor.
 	 *
 	 * @param context Context.
-	 * @param name Server name.
-	 * @param url Server URL.
-	 * @param isCustom True - if it is a custom URL, False - otherwise.
+	 * @param account User account.
 	 */
-	public SalesforceServerRadioButton(Context context, String name, String url,
-			boolean isCustom) {
+	public SalesforceAccountRadioButton(Context context, UserAccount account) {
 		super(context);
 		this.context = context;
 		salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
-		this.name = name;
-		this.url = url;
-		this.isCustom = isCustom;
+		this.account = account;
 		setText();
 	}
 
@@ -74,16 +68,18 @@ public class SalesforceServerRadioButton extends RadioButton {
 	 */
 	public void setText() {
 		final SpannableStringBuilder result = new SpannableStringBuilder();
-		if (name != null && url != null) {
-	        final SpannableString titleSpan = new SpannableString(name);
+		if (account != null && account.getUsername() != null && account.getLoginServer() != null) {
+			final String username = account.getUsername();
+			final String loginServer = account.getLoginServer();
+	        final SpannableString titleSpan = new SpannableString(username);
 	        titleSpan.setSpan(new TextAppearanceSpan(context,
 	                SalesforceSDKManager.isTablet() ? salesforceR.styleTextHostName()
-	                : android.R.style.TextAppearance_Medium), 0, name.length(),
+	                : android.R.style.TextAppearance_Medium), 0, username.length(),
 	                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-	        final SpannableString urlSpan = new SpannableString(url);
+	        final SpannableString urlSpan = new SpannableString(loginServer);
 	        urlSpan.setSpan(new TextAppearanceSpan(context,
 	                SalesforceSDKManager.isTablet() ? salesforceR.styleTextHostUrl()
-	                : android.R.style.TextAppearance_Small), 0, url.length(),
+	                : android.R.style.TextAppearance_Small), 0, loginServer.length(),
 	                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 	        result.append(titleSpan);
 	        result.append(System.getProperty("line.separator"));
@@ -93,29 +89,11 @@ public class SalesforceServerRadioButton extends RadioButton {
 	}
 
 	/**
-	 * Returns the server name.
+	 * Returns the user account associated with this button.
 	 *
-	 * @return Server name.
+	 * @return UserAccount instance.
 	 */
-	public String getName() {
-		return name;
-	}
-
-	/**
-	 * Returns the server URL.
-	 *
-	 * @return Server URL.
-	 */
-	public String getUrl() {
-		return url;
-	}
-
-	/**
-	 * Returns whether this is a custom server or not.
-	 *
-	 * @return True - if custom server, False - otherwise.
-	 */
-	public boolean isCustom() {
-		return isCustom;
+	public UserAccount getAccount() {
+		return account;
 	}
 }

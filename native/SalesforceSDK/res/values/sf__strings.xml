@@ -52,4 +52,7 @@
 
 	<!-- Manage space activity -->
 	<string name="sf__manage_space_confirmation">Clearing user data will log the current user out. Are you sure you want to perform this action?</string>
+
+	<!-- Account switcher screen -->
+	<string name="sf__add_new_account">Add New Account</string>
 </resources>

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
     <style name="SalesforceSDK">
     </style>
@@ -7,11 +8,11 @@
         <item name="android:layout_width">fill_parent</item>
         <item name="android:layout_height">wrap_content</item>
     </style>
-    
+
     <style name="SalesforceSDK.ServerPicker.List">
         <item name="android:orientation">vertical</item>
     </style>
-    
+
     <style name="SalesforceSDK.ServerPicker.Button">
         <item name="android:layout_marginTop">@dimen/sf__custom_url_margin_top</item>
     </style>
@@ -19,7 +20,7 @@
     <style name="SalesforceSDK.ServerPicker.ButtonContainer">
         <item name="android:padding">@dimen/sf__custom_url_layout_padding</item>
     </style>
-    
+
     <style name="SalesforceSDK.ServerPicker.Button.OkCancel">
         <item name="android:layout_margin">@dimen/sf__button_margin</item>
         <item name="android:layout_weight">1</item>
@@ -90,5 +91,27 @@
         <item name="android:layout_marginLeft">@dimen/sf__passcode_instr_margin_left</item>
         <item name="android:layout_marginRight">@dimen/sf__passcode_instr_margin_right</item>
     </style>
-    
+
+    <style name="SalesforceSDK.AccountSwitcher">
+        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+
+    <style name="SalesforceSDK.AccountSwitcher.List">
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <style name="SalesforceSDK.AccountSwitcher.Button">
+        <item name="android:layout_marginTop">@dimen/sf__custom_url_margin_top</item>
+    </style>
+
+    <style name="SalesforceSDK.AccountSwitcher.Button.AddAccount">
+        <item name="android:textSize">@dimen/sf__button_font_size</item>
+        <item name="android:layout_margin">@dimen/sf__button_margin</item>
+    </style>
+
+    <style name="SalesforceSDK.AccountSwitcher.Button.Apply">
+        <item name="android:textSize">@dimen/sf__button_font_size</item>
+        <item name="android:layout_margin">@dimen/sf__button_margin</item>
+    </style>
 </resources>
