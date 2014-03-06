@@ -383,24 +383,25 @@ public class OAuthWebviewHelper {
             	}
 
                 // Putting together all the information needed to create the new account.
-                accountOptions = new AccountOptions(id.username, tr.refreshToken, tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId);
+                accountOptions = new AccountOptions(id.username, tr.refreshToken,
+                		tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId);
 
                 // Sets additional admin prefs, if they exist.
+                final UserAccount account = new UserAccount(accountOptions.authToken,
+                		accountOptions.refreshToken, loginOptions.loginUrl,
+                		accountOptions.identityUrl, accountOptions.instanceUrl,
+                		accountOptions.orgId, accountOptions.userId,
+                		accountOptions.username, buildAccountName(accountOptions.username),
+                		loginOptions.clientSecret);
                 if (id.adminPrefs != null) {
                     final AdminPrefsManager prefManager = SalesforceSDKManager.getInstance().getAdminPrefsManager();
-                    prefManager.setPrefs(id.adminPrefs);
+                    prefManager.setPrefs(id.adminPrefs, account);
                 }
 
                 // Screen lock required by mobile policy
                 if (id.screenLockTimeout > 0) {
                     PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
                     passcodeManager.reset(getContext()); // get rid of existing passcode if any
-                    final UserAccount account = new UserAccount(accountOptions.authToken,
-                    		accountOptions.refreshToken, loginOptions.loginUrl,
-                    		accountOptions.identityUrl, accountOptions.instanceUrl,
-                    		accountOptions.orgId, accountOptions.userId,
-                    		accountOptions.username, buildAccountName(accountOptions.username),
-                    		loginOptions.clientSecret);
                     passcodeManager.setUserAccount(account);
                     passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60 /* converting minutes to milliseconds*/);
                     passcodeManager.setMinPasscodeLength(id.pinLength);

@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.app;
 
+import java.util.Map;
+
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
@@ -35,6 +37,7 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.LoginServerManager;
+import com.salesforce.androidsdk.rest.AdminPrefsManager;
 
 /**
  * This class handles upgrades from one version to another.
@@ -110,6 +113,22 @@ public class UpgradeManager {
             		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
             				AuthenticatorService.KEY_USER_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
                 	SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
+
+            		/*
+            		 * Copies admin prefs for current account from old file to new file.
+            		 * We pass in a 'null' account in the getter, since we want the contents
+            		 * from the default storage path. We pass the correct account to
+            		 * the setter, to migrate the contents to the correct storage path.
+            		 */
+            		final Map<String, String> prefs = SalesforceSDKManager.getInstance().getAdminPrefsManager().getPrefs(null);
+            		SalesforceSDKManager.getInstance().getAdminPrefsManager().setPrefs(prefs,
+            				SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account));
+            		final SharedPreferences settings = SalesforceSDKManager.getInstance()
+                			.getAppContext().getSharedPreferences(AdminPrefsManager.ADMIN_PREFS,
+                			Context.MODE_PRIVATE);
+            		final Editor edit = settings.edit();
+            		edit.clear();
+            		edit.commit();
                 }
 
                 // Removes the old shared pref file for custom URL.

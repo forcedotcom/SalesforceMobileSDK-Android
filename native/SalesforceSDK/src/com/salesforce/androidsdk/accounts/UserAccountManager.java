@@ -297,7 +297,7 @@ public class UserAccountManager {
 		/*
 		 * TODO: Update shared pref file that contains current user info.
 		 * Remove existing entry and add new default entry of previous user.
-		 * This should happen for all logout calls.
+		 * This should happen for all logout calls, or new sign in calls.
 		 */
 		SalesforceSDKManager.getInstance().logout(frontActivity);
 	}
@@ -351,7 +351,7 @@ public class UserAccountManager {
 	 * @param account Account object.
 	 * @return UserAccount object.
 	 */
-	private UserAccount buildUserAccount(Account account) {
+	public UserAccount buildUserAccount(Account account) {
 		if (account == null) {
 			return null;
 		}
@@ -378,7 +378,7 @@ public class UserAccountManager {
 	 * @param userAccount UserAccount object.
 	 * @return Account object.
 	 */
-	private Account buildAccount(UserAccount userAccount) {
+	public Account buildAccount(UserAccount userAccount) {
 		final Account[] accounts = accountManager.getAccountsByType(accountType);
 		if (userAccount == null) {
 			return null;

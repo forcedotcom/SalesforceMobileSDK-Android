@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartstore.app;
 
 import net.sqlcipher.database.SQLiteDatabase;
+import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
 
@@ -160,13 +161,13 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     }
 
     @Override
-    protected void cleanUp(Activity frontActivity) {
+    protected void cleanUp(Activity frontActivity, Account account) {
 
         // Reset smartstore.
         if (hasSmartStore()) {
         	DBHelper.INSTANCE.reset(INSTANCE.getAppContext());
         }
-        super.cleanUp(frontActivity);
+        super.cleanUp(frontActivity, account);
     }
 
     @Override

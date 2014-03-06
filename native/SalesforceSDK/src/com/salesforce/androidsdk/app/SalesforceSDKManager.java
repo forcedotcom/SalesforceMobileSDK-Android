@@ -403,7 +403,11 @@ public class SalesforceSDKManager implements AccountRemoved {
 
     @Override
     public void onAccountRemoved() {
-        INSTANCE.cleanUp(null);
+    	/*
+    	 * TODO: Handle this case, where account is removed from settings.
+    	 * Clean up should be done only for the removed account.
+    	 */
+        INSTANCE.cleanUp(null, null);
     }
 
     /**
@@ -578,8 +582,9 @@ public class SalesforceSDKManager implements AccountRemoved {
      * Cleans up cached credentials and data.
      *
      * @param frontActivity Front activity.
+     * @param account Account.
      */
-    protected void cleanUp(Activity frontActivity) {
+    protected void cleanUp(Activity frontActivity, Account account) {
 
     	/*
     	 * TODO: Cleanup passcode manager, encryption key,
@@ -590,9 +595,10 @@ public class SalesforceSDKManager implements AccountRemoved {
         if (frontActivity != null) {
             frontActivity.finish();
         }
+        final UserAccount userAcc = SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account);
 
         // Resets admin prefs manager.
-        getAdminPrefsManager().reset();
+        getAdminPrefsManager().reset(userAcc);
         adminPrefsManager = null;
 
         // Resets passcode and encryption key, if any.
@@ -791,7 +797,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     		accWatcher.remove();
     		accWatcher = null;
     	}
-    	cleanUp(frontActivity);
+    	cleanUp(frontActivity, account);
 
     	// Removes the existing account, if any.
     	if (account == null) {
