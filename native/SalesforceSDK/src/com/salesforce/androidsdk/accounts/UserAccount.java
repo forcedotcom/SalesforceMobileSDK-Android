@@ -41,10 +41,6 @@ public class UserAccount {
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
 
-	/*
-	 * TODO: Add user profile picture, community ID, community name,
-	 * and org name fields here.
-	 */
 	private String authToken;
 	private String refreshToken;
 	private String loginServer;

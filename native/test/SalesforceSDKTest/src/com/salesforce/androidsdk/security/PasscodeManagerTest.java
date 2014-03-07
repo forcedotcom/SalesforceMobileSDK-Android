@@ -30,7 +30,6 @@ package com.salesforce.androidsdk.security;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
 
 /**
@@ -60,7 +59,7 @@ public class PasscodeManagerTest extends InstrumentationTestCase {
 
         TestPasscodeManager() {
             super(getInstrumentation().getTargetContext(), TEST_HASH_CONFIG,
-            		TEST_HASH_CONFIG, SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser());
+            		TEST_HASH_CONFIG);
             setTimeoutMs(TEST_TIMEOUT_MS);
             setEnabled(true);
             // start in a known state.

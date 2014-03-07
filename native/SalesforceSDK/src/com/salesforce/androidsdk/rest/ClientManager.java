@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -42,11 +42,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Looper;
-import android.text.TextUtils;
 import android.util.Log;
 
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -106,7 +103,6 @@ public class ClientManager {
      * @param restClientCallback     callback invoked once the RestClient is ready
      */
     public void getRestClient(Activity activityContext, RestClientCallback restClientCallback) {
-    	updatePasscodeManagerAccount();
         Account acc = getAccount();
 
         // Passing the passcodeHash to the authenticator service to that it can encrypt/decrypt oauth tokens
@@ -130,29 +126,7 @@ public class ClientManager {
         }
     }
 
-    /**
-     * Updates the account associated with the passcode manager.
-     */
-    private void updatePasscodeManagerAccount() {
-    	final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-    	final String storedOrgId = userAccMgr.getStoredOrgId();
-    	final String storedUserId = userAccMgr.getStoredUserId();
-
-    	/*
-    	 * This sets the correct user account in passcode manager, without which
-    	 * passcode manager won't know where to read the PIN policy from. This
-    	 * UserAccount instance contains only orgID and userID, but that is
-    	 * adequate to compute the filename for the passcode manager.
-    	 */
-    	if (!TextUtils.isEmpty(storedUserId) && !TextUtils.isEmpty(storedOrgId)) {
-    		final UserAccount userAcc = new UserAccount(null, null, null, null,
-    				null, storedOrgId, storedUserId, null, null, null);
-    		SalesforceSDKManager.getInstance().getPasscodeManager().setUserAccount(userAcc);
-    	}
-    }
-
     public RestClient peekRestClient() {
-    	updatePasscodeManagerAccount();
         return peekRestClient(getAccount());
     }
 
@@ -164,7 +138,6 @@ public class ClientManager {
      * @return
      */
     public RestClient peekRestClient(Account acc) {
-    	updatePasscodeManagerAccount();
         if (acc == null) {
             AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
             Log.i("ClientManager:peekRestClient", "No user account found", e);
@@ -327,30 +300,31 @@ public class ClientManager {
         if (acctManager != null) {
             final Account[] accounts = acctManager.getAccountsByType(SalesforceSDKManager.getInstance().getAccountType());
             if (accounts != null && accounts.length > 0) {
-                final Account account = accounts[0];
+                for (final Account account : accounts) {
 
-                // Grab existing data stored in AccountManager.
-                final String authToken = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AccountManager.KEY_AUTHTOKEN), oldPass);
-                final String refreshToken = SalesforceSDKManager.decryptWithPasscode(acctManager.getPassword(account), oldPass);
-                final String loginServer = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), oldPass);
-                final String idUrl = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_ID_URL), oldPass);
-                final String instanceServer = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), oldPass);
-                final String orgId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), oldPass);
-                final String userId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_USER_ID), oldPass);
-                final String username = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_USERNAME), oldPass);
-                final String clientId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), oldPass);
+                    // Grab existing data stored in AccountManager.
+                    final String authToken = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AccountManager.KEY_AUTHTOKEN), oldPass);
+                    final String refreshToken = SalesforceSDKManager.decryptWithPasscode(acctManager.getPassword(account), oldPass);
+                    final String loginServer = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), oldPass);
+                    final String idUrl = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_ID_URL), oldPass);
+                    final String instanceServer = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), oldPass);
+                    final String orgId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), oldPass);
+                    final String userId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_USER_ID), oldPass);
+                    final String username = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_USERNAME), oldPass);
+                    final String clientId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), oldPass);
 
-                // Encrypt data with new hash and put it back in AccountManager.
-                acctManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, newPass));
-                acctManager.setPassword(account, SalesforceSDKManager.encryptWithPasscode(refreshToken, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encryptWithPasscode(loginServer, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_ID_URL, SalesforceSDKManager.encryptWithPasscode(idUrl, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encryptWithPasscode(instanceServer, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encryptWithPasscode(orgId, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encryptWithPasscode(userId, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_USERNAME, SalesforceSDKManager.encryptWithPasscode(username, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encryptWithPasscode(clientId, newPass));
-                acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, authToken);
+                    // Encrypt data with new hash and put it back in AccountManager.
+                    acctManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, newPass));
+                    acctManager.setPassword(account, SalesforceSDKManager.encryptWithPasscode(refreshToken, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encryptWithPasscode(loginServer, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_ID_URL, SalesforceSDKManager.encryptWithPasscode(idUrl, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encryptWithPasscode(instanceServer, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encryptWithPasscode(orgId, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encryptWithPasscode(userId, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_USERNAME, SalesforceSDKManager.encryptWithPasscode(username, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encryptWithPasscode(clientId, newPass));
+                    acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, authToken);
+                }
             }
         }
     }

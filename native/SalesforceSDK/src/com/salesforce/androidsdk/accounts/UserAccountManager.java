@@ -298,6 +298,8 @@ public class UserAccountManager {
 		 * TODO: Update shared pref file that contains current user info.
 		 * Remove existing entry and add new default entry of previous user.
 		 * This should happen for all logout calls, or new sign in calls.
+		 * Also should trigger the passcode change flow, if we go to all
+		 * remaining orgs have no passcode.
 		 */
 		SalesforceSDKManager.getInstance().logout(frontActivity);
 	}

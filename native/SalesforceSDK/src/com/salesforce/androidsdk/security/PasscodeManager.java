@@ -57,13 +57,13 @@ public class PasscodeManager  {
 	private static final String EPREFIX = "eprefix";
 	
     // Default min passcode length
-    protected static final int MIN_PASSCODE_LENGTH = 4;
+    public static final int MIN_PASSCODE_LENGTH = 4;
 
     // Key in preference for the passcode
     private static final String KEY_PASSCODE ="passcode";
 
     // Private preference where we stored the passcode (hashed)
-    private static final String PREF_NAME = "user";
+    private static final String PASSCODE_PREF_NAME = "user";
 
     // Private preference where we stored the org settings.
     private static final String MOBILE_POLICY_PREF = "mobile_policy";
@@ -81,15 +81,6 @@ public class PasscodeManager  {
     // It's using a different salt/key than the one used to verify the entry
     private String passcodeHash;
 
-    /*
-     * TODO: Need to store one master copy of mobile policy as well - to ensure
-     * that we know what policy to use. The org level policy should also be
-     * stored to switch timeout values. Every time a logout or a login occurs,
-     * we need to update the master copy with the lowest session timeout value,
-     * and update in memory, and go through the re-encryption thingy, with
-     * the changePasscode()/setTimeoutMs() methods.
-     */
-
     // Misc
     private HashConfig verificationHashConfig;
     private HashConfig encryptionHashConfig;
@@ -101,8 +92,6 @@ public class PasscodeManager  {
     private int timeoutMs;
     private int minPasscodeLength;
     private LockChecker lockChecker;
-    private String mobilePolicyPref;
-    private String userPref;
 
     /**
      * Parameterized constructor.
@@ -110,23 +99,17 @@ public class PasscodeManager  {
      * @param ctx Context.
      * @param verificationHashConfig Verification HashConfig.
      * @param encryptionHashConfig Encryption HashConfig.
-     * @param account Current user account.
      */
-   public PasscodeManager(Context ctx, UserAccount account) {
+   public PasscodeManager(Context ctx) {
 	   this(ctx,
 		   new HashConfig(UUIDManager.getUuId(VPREFIX),
 				   UUIDManager.getUuId(VSUFFIX), UUIDManager.getUuId(VKEY)),
 		   new HashConfig(UUIDManager.getUuId(EPREFIX),
-				   UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY)), account);
+				   UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY)));
    }
 
    public PasscodeManager(Context ctx, HashConfig verificationHashConfig,
-		   HashConfig encryptionHashConfig, UserAccount account) {
-	   mobilePolicyPref = MOBILE_POLICY_PREF;
-	   userPref = PREF_NAME;
-	   if (account != null) {
-		   mobilePolicyPref = MOBILE_POLICY_PREF + account.getOrgLevelSharedPrefSuffix();
-	   }
+		   HashConfig encryptionHashConfig) {
        this.minPasscodeLength = MIN_PASSCODE_LENGTH;
        this.lastActivity = now();
        this.verificationHashConfig = verificationHashConfig;
@@ -138,6 +121,58 @@ public class PasscodeManager  {
        lockChecker = new LockChecker(); 
    }
 
+   /**
+    * Returns the timeout value for the specified account.
+    *
+    * @param account UserAccount instance.
+    * @return Timeout value.
+    */
+   	public int getTimeoutMsForOrg(UserAccount account) {
+   		if (account == null) {
+   			return 0;
+   		}
+   		final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
+        		+ account.getOrgLevelSharedPrefSuffix(), Context.MODE_PRIVATE);
+        return sp.getInt(KEY_TIMEOUT, 0);
+   	}
+
+    /**
+     * Returns the minimum passcode length for the specified account.
+     *
+     * @param account UserAccount instance.
+     * @return Minimum passcode length.
+     */
+    public int getPasscodeLengthForOrg(UserAccount account) {
+    	if (account == null) {
+    		return MIN_PASSCODE_LENGTH;
+    	}
+    	final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
+        		+ account.getOrgLevelSharedPrefSuffix(), Context.MODE_PRIVATE);
+        return sp.getInt(KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
+    }
+
+    /**
+     * Stores the mobile policy for the specified account.
+     *
+     * @param account UserAccount instance.
+     * @param timeout Timeout value, in ms.
+     * @param passLen Minimum passcode length.
+     */
+    public void storeMobilePolicyForOrg(UserAccount account, int timeout, int passLen) {
+    	if (account == null) {
+    		return;
+    	}
+    	final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
+        		+ account.getOrgLevelSharedPrefSuffix(), Context.MODE_PRIVATE);
+        final Editor e = sp.edit();
+        e.putInt(KEY_TIMEOUT, timeoutMs);
+        e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
+        e.commit();
+    }
+
     /**
      * Stores the mobile policy in a private file.
      *
@@ -147,7 +182,7 @@ public class PasscodeManager  {
 
         // Context will be null only in test runs.
         if (context != null) {
-            final SharedPreferences sp = context.getSharedPreferences(mobilePolicyPref, Context.MODE_PRIVATE);
+            final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
             Editor e = sp.edit();
             e.putInt(KEY_TIMEOUT, timeoutMs);
             e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
@@ -164,7 +199,7 @@ public class PasscodeManager  {
 
         // Context will be null only in test runs.
         if (context != null) {
-            final SharedPreferences sp = context.getSharedPreferences(mobilePolicyPref, Context.MODE_PRIVATE);
+            final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
             if (!sp.contains(KEY_TIMEOUT) || !sp.contains(KEY_PASSCODE_LENGTH)) {
                 timeoutMs = 0;
                 minPasscodeLength = MIN_PASSCODE_LENGTH;
@@ -182,13 +217,13 @@ public class PasscodeManager  {
     public void reset(Context ctx) {
     	/*
     	 * TODO: Add a method to delete backing shared pref file for the user upon logout.
-    	 * Call the new method from logout.
+    	 * Call the new method from logout. Or do it in reset().
     	 */
         lastActivity = now();
         locked = true;
         failedPasscodeAttempts = 0;
         passcodeHash = null;
-        SharedPreferences sp = ctx.getSharedPreferences(userPref, Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         Editor e = sp.edit();
         e.remove(KEY_PASSCODE);
         e.commit();
@@ -196,17 +231,6 @@ public class PasscodeManager  {
         minPasscodeLength = MIN_PASSCODE_LENGTH;
         storeMobilePolicy(ctx);
         handler = null;
-    }
-
-    /**
-     * Sets the user account associated with this passcode manager.
-     *
-     * @param account User account.
-     */
-    public void setUserAccount(UserAccount account) {
-    	if (account != null) {
- 		   	mobilePolicyPref = MOBILE_POLICY_PREF + account.getOrgLevelSharedPrefSuffix();
- 		}
     }
 
     /**
@@ -244,7 +268,7 @@ public class PasscodeManager  {
      * @return true if passcode matches the one stored (hashed) in private preference
      */
     public boolean check(Context ctx, String passcode) {
-        SharedPreferences sp = ctx.getSharedPreferences(userPref, Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         String hashedPasscode = sp.getString(KEY_PASSCODE, null);
         hashedPasscode = Encryptor.removeNewLine(hashedPasscode);
         if (hashedPasscode != null) {
@@ -263,7 +287,7 @@ public class PasscodeManager  {
      * @param passcode
      */
     public void store(Context ctx, String passcode) {
-        SharedPreferences sp = ctx.getSharedPreferences(userPref, Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         Editor e = sp.edit();
         e.putString(KEY_PASSCODE, hashForVerification(passcode));
         e.commit();
@@ -274,7 +298,7 @@ public class PasscodeManager  {
      * @return true if passcode was already created
      */
     public boolean hasStoredPasscode(Context ctx) {
-        SharedPreferences sp = ctx.getSharedPreferences(userPref, Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         return sp.contains(KEY_PASSCODE);
     }
 
@@ -407,7 +431,16 @@ public class PasscodeManager  {
     }
 
     public void setMinPasscodeLength(int minPasscodeLength) {
+    	/*
+    	 * TODO: Need to trigger the change passcode flow here - through the
+    	 * UI, informing the user that the policy has changed and a new
+    	 * longer PIN needs to be used.
+    	 */
+    	if (minPasscodeLength <= this.minPasscodeLength) {
+    		// TODO: Do nothing here - no need for new flow in this case.
+    	}
         this.minPasscodeLength = minPasscodeLength;
+        storeMobilePolicy(SalesforceSDKManager.getInstance().getAppContext());
     }
 
     public boolean shouldLock() {
