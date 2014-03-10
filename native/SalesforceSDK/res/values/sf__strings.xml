@@ -55,4 +55,5 @@
 
 	<!-- Account switcher screen -->
 	<string name="sf__add_new_account">Add New Account</string>
+	<string name="sf__switch_account">Switch Account</string>
 </resources>

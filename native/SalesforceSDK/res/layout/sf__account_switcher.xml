@@ -10,7 +10,7 @@
         style="@style/SalesforceSDK.AccountSwitcher.List" />
 
     <Button android:id="@+id/sf__switcher_apply_button"
-        android:text="@string/sf__server_url_default_apply"
+        android:text="@string/sf__switch_account"
         style="@style/SalesforceSDK.AccountSwitcher.Button.Apply"
         android:onClick="switchToExistingAccount" />
 
