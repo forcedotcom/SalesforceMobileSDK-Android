@@ -392,7 +392,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
 
         // Call removeAccountAsync
         final BlockingQueue<AccountManagerFuture<Boolean>> q = new ArrayBlockingQueue<AccountManagerFuture<Boolean>>(1);
-        clientManager.removeAccountAsync(new AccountManagerCallback<Boolean>() {
+        clientManager.removeAccountAsync(clientManager.getAccount(), new AccountManagerCallback<Boolean>() {
 
             @Override
             public void run(AccountManagerFuture<Boolean> future) {

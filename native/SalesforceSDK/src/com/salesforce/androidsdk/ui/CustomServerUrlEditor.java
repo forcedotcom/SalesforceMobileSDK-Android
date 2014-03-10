@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -41,10 +41,9 @@ import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.LoginServerManager;
-import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
 
 /**
- * Custom dialog to allow the user to set a label and url to use for the login.
+ * Custom dialog to allow the user to set a label and URL to use for the login.
  */
 public class CustomServerUrlEditor extends Dialog {
 
@@ -57,16 +56,22 @@ public class CustomServerUrlEditor extends Dialog {
 	private LoginServerManager loginServerManager;
 	private int width;
 
+	/**
+	 * Parameterized constructor.
+	 *
+	 * @param context Context.
+	 * @param width Width.
+	 */
 	public CustomServerUrlEditor(Context context, int width) {
 		super(context);
-		
-		// Object which allows reference to resources living outside the SDK
+
+		// Object which allows reference to resources living outside the SDK.
 		salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
-		
-		// Login server manager
+
+		// Login server manager.
 		loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
-		
-		// Width
+
+		// Width.
 		this.width = width;
 	}
 
@@ -87,11 +92,6 @@ public class CustomServerUrlEditor extends Dialog {
 		cancel();
 	}
 
-	/**
-	 * onStart will build the saved display, this will restore whatever the user
-	 * typed before the rotate gets called after onStart, which is nice and
-	 * means the controls are already hooked.
-	 */
 	@Override
 	public void onRestoreInstanceState(Bundle savedInstanceState) {
 		super.onRestoreInstanceState(savedInstanceState);
@@ -100,17 +100,15 @@ public class CustomServerUrlEditor extends Dialog {
 		setEditText(salesforceR.idPickerCustomUrl(), savedInstanceState
 				.getString(PERSISTED_URL_VALUE));
 		if (savedInstanceState.getInt(PERSISTED_CTRL_FOCUS) > 0) {
-			EditText et = (EditText) findViewById(savedInstanceState
+			final EditText et = (EditText) findViewById(savedInstanceState
 					.getInt(PERSISTED_CTRL_FOCUS));
 			et.requestFocus();
 		}
 	}
 
-	// save values of edit ctrls
-	// save empty as "" not null
 	@Override
 	public Bundle onSaveInstanceState() {
-		Bundle superBundle = super.onSaveInstanceState();
+		final Bundle superBundle = super.onSaveInstanceState();
 		persistEditCtrlInfo(superBundle, PERSISTED_LABEL, salesforceR.idPickerCustomLabel());
 		persistEditCtrlInfo(superBundle, PERSISTED_URL_VALUE, salesforceR.idPickerCustomUrl());
 		return superBundle;
@@ -118,13 +116,9 @@ public class CustomServerUrlEditor extends Dialog {
 
 	@Override
 	protected void onCreate(Bundle savedInstance) {
-		LoginServer customServer = loginServerManager.getCustomLoginServer();
-		String label = (customServer != null ? customServer.name : 
-				getEditDefaultValue((salesforceR.idPickerCustomLabel())));
-		String urlValue = (customServer != null ? customServer.url : 
-				getEditDefaultValue((salesforceR.idPickerCustomUrl())));
-		isDefault = urlValue
-				.equals(getString(salesforceR.stringServerUrlDefaultCustomUrl()));
+		final String label = (getEditDefaultValue((salesforceR.idPickerCustomLabel())));
+		final String urlValue = (getEditDefaultValue((salesforceR.idPickerCustomUrl())));
+		isDefault = urlValue.equals(getString(salesforceR.stringServerUrlDefaultCustomUrl()));
 		if (isDefault) {
 			setTitle(salesforceR.stringServerUrlAddTitle());
 		} else {
@@ -134,30 +128,29 @@ public class CustomServerUrlEditor extends Dialog {
 		setEditText(salesforceR.idPickerCustomLabel(), label);
 		setEditText(salesforceR.idPickerCustomUrl(), urlValue);
 
-		// set handlers in code, otherwise it will default to a dialog listener,
-		// which is not what we want here
-		Button applyBtn = (Button) findViewById(salesforceR.idApplyButton());
+		/*
+		 * Sets handlers in the code for the dialog. 
+		 */
+		final Button applyBtn = (Button) findViewById(salesforceR.idApplyButton());
 		applyBtn.setOnClickListener(new View.OnClickListener() {
 
 			@Override
 			public void onClick(View v) {
-
-				// validate. if the values are non default just accept them
-				String lbl = validateInput(salesforceR.idPickerCustomLabel());
-				if (null == lbl) {
+				final String lbl = validateInput(salesforceR.idPickerCustomLabel());
+				if (lbl == null) {
 					return;
 				}
-				String val = validateInput(salesforceR.idPickerCustomUrl());
-				if (null == val) {
+				final String val = validateInput(salesforceR.idPickerCustomUrl());
+				if (val == null) {
 					return;
 				}
 
-				// save state and finish
-				loginServerManager.setCustomLoginServer(lbl, val);
+				// Saves state and dismisses the dialog.
+				loginServerManager.addCustomLoginServer(lbl, val);
 				dismiss();
 			}
 		});
-		Button cancelBtn = (Button) findViewById(salesforceR.idCancelButton());
+		final Button cancelBtn = (Button) findViewById(salesforceR.idCancelButton());
 		cancelBtn.setOnClickListener(new View.OnClickListener() {
 
 			@Override
@@ -165,17 +158,14 @@ public class CustomServerUrlEditor extends Dialog {
 				cancel();
 			}
 		});
-
-		// can only get a dialog to resize after the layout has been set
-		// we want to take up the full screen...
-		LayoutParams params = getWindow().getAttributes();
+		final LayoutParams params = getWindow().getAttributes();
 		params.width = (width != 0 ? width : LayoutParams.FILL_PARENT);
 		getWindow().setAttributes(params);
 	}
 
 	private void persistEditCtrlInfo(Bundle superBundle, String keyName,
 			int ctrlId) {
-		EditText et = (EditText) findViewById(ctrlId);
+		final EditText et = (EditText) findViewById(ctrlId);
 		superBundle.putString(keyName, et.getText().toString());
 		if (et.hasFocus()) {
 			superBundle.putInt(PERSISTED_CTRL_FOCUS, ctrlId);
@@ -183,11 +173,11 @@ public class CustomServerUrlEditor extends Dialog {
 	}
 
 	private void setEditText(int editId, String value) {
-		if (null == value) {
+		if (value == null) {
 			throw new RuntimeException("Value cannot be null");
 		}
-		EditText et = (EditText) findViewById(editId);
-		SpannableString labelSpan = new SpannableString(value);
+		final EditText et = (EditText) findViewById(editId);
+		final SpannableString labelSpan = new SpannableString(value);
 		if (et != null) {
 			et.setText(labelSpan);
 			if (et.getOnFocusChangeListener() == null) {
@@ -195,7 +185,7 @@ public class CustomServerUrlEditor extends Dialog {
 
 					@Override
 					public void onFocusChange(View v, boolean hasFocus) {
-						EditText et = (EditText) v;
+						final EditText et = (EditText) v;
 						boolean isDefaultValue = et.getText().toString().equals(
 								getEditDefaultValue(et.getId()));
 						if (hasFocus && isDefaultValue) {
@@ -214,14 +204,14 @@ public class CustomServerUrlEditor extends Dialog {
 	}
 
 	private String validateInput(int editId) {
-		EditText et = (EditText) findViewById(editId);
-		Editable etVal = et.getText();
-		boolean isInvalidValue = etVal.toString().equals(
-				getEditDefaultValue(editId))
+		final EditText et = (EditText) findViewById(editId);
+		final Editable etVal = et.getText();
+		boolean isInvalidValue = etVal.toString().equals(getEditDefaultValue(editId))
 				|| etVal.toString().equals("");
 
-		// Ensure that the URL is a 'https://' URL, since OAuth requires
-		// 'https://'.
+		/*
+		 * Ensures that the URL is a 'https://' URL, since OAuth requires 'https://'.
+		 */
 		if (editId == salesforceR.idPickerCustomUrl()) {
 			isInvalidValue = !URLUtil.isHttpsUrl(etVal.toString());
 			if (isInvalidValue) {

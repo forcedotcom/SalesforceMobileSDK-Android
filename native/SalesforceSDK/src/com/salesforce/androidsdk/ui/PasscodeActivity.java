@@ -49,7 +49,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
     private static final String EXTRA_KEY = "input_text";
     private static final String LOGOUT_EXTRA = "logout_key";
-    protected static final int MAX_PASSCODE_ATTEMPTS = 3;
+    protected static final int MAX_PASSCODE_ATTEMPTS = 10;
 
     private PasscodeMode currentMode;
     private TextView title, instr, error;

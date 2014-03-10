@@ -47,6 +47,8 @@ import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.auth.AccountWatcher;
 import com.salesforce.androidsdk.auth.AccountWatcher.AccountRemoved;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
@@ -400,7 +402,11 @@ public class SalesforceSDKManager implements AccountRemoved {
 
     @Override
     public void onAccountRemoved() {
-        INSTANCE.cleanUp(null);
+    	/*
+    	 * TODO: Handle this case, where account is removed from settings.
+    	 * Clean up should be done only for the removed account.
+    	 */
+        INSTANCE.cleanUp(null, null);
     }
 
     /**
@@ -439,10 +445,19 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @return PasscodeManager instance.
      */
     public synchronized PasscodeManager getPasscodeManager() {
-        if (passcodeManager == null) {
-            passcodeManager = new PasscodeManager(context);
+    	if (passcodeManager == null) {
+    		passcodeManager = new PasscodeManager(context);
         }
         return passcodeManager;
+    }
+
+    /**
+     * Returns an instance of the UserAccountManager class.
+     *
+     * @return Instance of the UserAccountManager class.
+     */
+    public UserAccountManager getUserAccountManager() {
+    	return UserAccountManager.getInstance();
     }
 
     /**
@@ -541,16 +556,23 @@ public class SalesforceSDKManager implements AccountRemoved {
      * Cleans up cached credentials and data.
      *
      * @param frontActivity Front activity.
+     * @param account Account.
      */
-    protected void cleanUp(Activity frontActivity) {
+    protected void cleanUp(Activity frontActivity, Account account) {
 
+    	/*
+    	 * TODO: Cleanup passcode manager, encryption key,
+    	 * admin prefs manager, etc., only for the account passed in,
+    	 * not for the current one (fast user switching support).
+    	 */
         // Finishes front activity if specified.
         if (frontActivity != null) {
             frontActivity.finish();
         }
+        final UserAccount userAcc = SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account);
 
         // Resets admin prefs manager.
-        getAdminPrefsManager().reset();
+        getAdminPrefsManager().reset(userAcc);
         adminPrefsManager = null;
 
         // Resets passcode and encryption key, if any.
@@ -665,29 +687,68 @@ public class SalesforceSDKManager implements AccountRemoved {
      * Wipes out the stored authentication credentials (removes the account)
      * and restarts the app, if specified.
      *
+     * @param account Account.
+     * @param frontActivity Front activity.
+     */
+    public void logout(Account account, Activity frontActivity) {
+        logout(account, frontActivity, true);
+    }
+
+    /**
+     * Wipes out the stored authentication credentials (removes the account)
+     * and restarts the app, if specified.
+     *
      * @param frontActivity Front activity.
      * @param showLoginPage True - if the login page should be shown, False - otherwise.
      */
     public void logout(Activity frontActivity, final boolean showLoginPage) {
         final ClientManager clientMgr = new ClientManager(context, getAccountType(),
         		null, shouldLogoutWhenTokenRevoked());
+		final Account account = clientMgr.getAccount();
+		logout(account, frontActivity, showLoginPage);
+    }
+
+    /**
+     * Wipes out the stored authentication credentials (removes the account)
+     * and restarts the app, if specified.
+     *
+     * @param account Account.
+     * @param frontActivity Front activity.
+     * @param showLoginPage True - if the login page should be shown, False - otherwise.
+     */
+    public void logout(Account account, Activity frontActivity, final boolean showLoginPage) {
+        final ClientManager clientMgr = new ClientManager(context, getAccountType(),
+        		null, shouldLogoutWhenTokenRevoked());
 		final AccountManager mgr = AccountManager.get(context);
 		String refreshToken = null;
 		String clientId = null;
 		String loginServer = null;
-		final Account account = clientMgr.getAccount();
-		if (account != null) {
-	        refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), getPasscodeHash());
-	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
-	        loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());	
+
+		/*
+		 * We will try to obtain the refresh token from AccountManager
+		 * only for the current user account, since we have access to
+		 * the passcode hash only for the current user account.
+		 */
+		if (account != null && account.equals(clientMgr.getAccount())) {
+			refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account),
+	        		getPasscodeHash());
+	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
+	        		AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
+	        loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
+	        		AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());	
 		}
 
-		// Makes a call to un-register from push notifications.
-    	if (PushMessaging.isRegistered(context)) {
+		/*
+		 * Makes a call to un-register from push notifications, only
+		 * if the refresh token is available (only current user account).
+		 */
+    	if (PushMessaging.isRegistered(context) && refreshToken != null) {
     		loggedOut = false;
-    		unregisterPush(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
+    		unregisterPush(clientMgr, showLoginPage, refreshToken, clientId,
+    				loginServer, account, frontActivity);
     	} else {
-    		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
+    		removeAccount(clientMgr, showLoginPage, refreshToken, clientId,
+    				loginServer, account, frontActivity);
     	}
     }
 
@@ -703,22 +764,23 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param frontActivity Front activity.
      */
     private void removeAccount(ClientManager clientMgr, final boolean showLoginPage,
-    		String refreshToken, String clientId, String loginServer, Account account, Activity frontActivity) {
+    		String refreshToken, String clientId, String loginServer,
+    		Account account, Activity frontActivity) {
     	loggedOut = true;
         if (accWatcher != null) {
     		accWatcher.remove();
     		accWatcher = null;
     	}
-    	cleanUp(frontActivity);
+    	cleanUp(frontActivity, account);
 
-    	// Removes the exisiting account, if any.
-    	if (clientMgr.getAccount() == null) {
+    	// Removes the existing account, if any.
+    	if (account == null) {
     		EventsObservable.get().notifyEvent(EventType.LogoutComplete);
     		if (showLoginPage) {
     			startLoginPage();
     		}
     	} else {
-    		clientMgr.removeAccountAsync(new AccountManagerCallback<Boolean>() {
+    		clientMgr.removeAccountAsync(account, new AccountManagerCallback<Boolean>() {
 
     			@Override
     			public void run(AccountManagerFuture<Boolean> arg0) {
@@ -731,7 +793,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     	}
 
     	// Revokes the existing refresh token.
-        if (shouldLogoutWhenTokenRevoked() && account != null) {
+        if (shouldLogoutWhenTokenRevoked() && account != null && refreshToken != null) {
         	new RevokeTokenTask(refreshToken, clientId, loginServer).execute();
         }
     }
