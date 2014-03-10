@@ -1,38 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/sf__oauth_background"
-    android:orientation="vertical" >
+    android:orientation="vertical">
 
     <include layout="@layout/sf__login_header" />
 
-    <ScrollView
-        android:layout_width="match_parent"
+    <ScrollView android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true" >
+        android:fillViewport="true">
 
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" 
+        <RelativeLayout android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:layout_weight="1">
 
             <LinearLayout style="@style/SalesforceSDK.Login.Container">
 
-                <TextView
-                    style="@style/SalesforceSDK.ServerPicker.Title"
-                    android:text="@string/sf__login_title"
-				/>
+                <TextView style="@style/SalesforceSDK.ServerPicker.Title"
+                    android:text="@string/sf__login_title" />
 
                 <View style="@style/SalesforceSDK.ServerPicker.Spacer" />
 
-                <WebView
-                    android:id="@+id/sf__oauth_webview"
+                <WebView android:id="@+id/sf__oauth_webview"
                     android:layout_width="@dimen/sf__login_webview_width"
                     android:layout_height="match_parent"
-                    android:scrollbars="none"
-                />
-                
+                    android:scrollbars="none" />
             </LinearLayout>
         </RelativeLayout>
     </ScrollView>

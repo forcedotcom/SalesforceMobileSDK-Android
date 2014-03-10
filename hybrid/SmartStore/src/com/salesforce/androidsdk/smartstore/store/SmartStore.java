@@ -752,7 +752,9 @@ public class SmartStore  {
         String[] pathElements = path.split("[.]");
         Object o = soup;
         for (String pathElement : pathElements) {
-            o = ((JSONObject) o).opt(pathElement);
+        	if (o != null) {
+                o = ((JSONObject) o).opt(pathElement);
+        	}
         }
         return o;
     }

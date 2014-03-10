@@ -1,43 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <!--
-		focus on the layout itself to prevent the edit controls from gaining
-		on load.. clearFocus() doesn't work
+  Focus on the layout itself to prevent the edit controls
+  from gaining on load. clearFocus() doesn't work.
 -->
+
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:id="@+id/sf__layout_root" 
+	android:id="@+id/sf__layout_root"
 	android:orientation="vertical"
-	android:layout_width="fill_parent" 
+	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
-	android:padding="@dimen/sf__server_layout_padding" 
+	android:padding="@dimen/sf__server_layout_padding"
 	android:focusable="true"
 	android:focusableInTouchMode="true">
 
-	<EditText
-	    android:id="@+id/sf__picker_custom_label"
+	<EditText android:id="@+id/sf__picker_custom_label"
 	    style="@style/SalesforceSDK.ServerPicker.EditText"
-		android:imeOptions="actionNext"
-	/>
+		android:imeOptions="actionNext" />
 
-	<EditText
-	    android:id="@+id/sf__picker_custom_url" 
+	<EditText android:id="@+id/sf__picker_custom_url"
 	    style="@style/SalesforceSDK.ServerPicker.EditText"
-		android:imeOptions="actionDone"
-	/>
+		android:imeOptions="actionDone" />
 
 	<LinearLayout style="@style/SalesforceSDK.ServerPicker.ButtonContainer">
-	    
-		<Button
-		    android:id="@+id/sf__apply_button" 
+
+		<Button android:id="@+id/sf__apply_button"
 		    android:text="@string/sf__server_url_default_apply"
-		    style="@style/SalesforceSDK.ServerPicker.Button.OkCancel"
-		/>
+		    style="@style/SalesforceSDK.ServerPicker.Button.OkCancel" />
 
-		<Button
-		    android:id="@+id/sf__cancel_button" 
+		<Button android:id="@+id/sf__cancel_button"
 		    android:text="@string/sf__server_url_default_cancel"
-		    style="@style/SalesforceSDK.ServerPicker.Button.OkCancel"
-		/>
-
+		    style="@style/SalesforceSDK.ServerPicker.Button.OkCancel" />
 	</LinearLayout>
-
 </LinearLayout>
