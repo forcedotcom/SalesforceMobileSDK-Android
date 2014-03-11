@@ -1,8 +1,0 @@
-Changes included in the v2.2.2 release of SQLCipher for Android:
-
- * Adjust init to configure the OpenSSL source dir
- * Fix spelling typo
- * Add support for building OpenSSL libraries on Linux
- * Build with static OpenSSL libraries
- * Use OpenSSL 1.0.1e tag
- * Add release target
