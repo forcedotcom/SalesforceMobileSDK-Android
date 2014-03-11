@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.accounts;
 
+import org.json.JSONObject;
+
 import android.text.TextUtils;
 
 /**
@@ -80,6 +82,17 @@ public class UserAccount {
 		this.username = username;
 		this.accountName = accountName;
 		this.clientId = clientId;
+	}
+
+	/**
+	 * Parameterized constructor.
+	 *
+	 * @param object JSON object.
+	 */
+	public UserAccount(JSONObject object) {
+		/*
+		 * TODO:
+		 */
 	}
 
 	/**
@@ -311,5 +324,12 @@ public class UserAccount {
         int result = userId.hashCode();
         result ^= orgId.hashCode() + result * 37;
         return result;
+    }
+
+    public JSONObject toJson() {
+    	/*
+    	 * TODO:
+    	 */
+    	return null;
     }
 }

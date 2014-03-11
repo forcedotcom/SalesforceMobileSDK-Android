@@ -345,6 +345,9 @@ public class UserAccountManager {
 		 * TODO: Add a param for which activity to launch after logout.
 		 * Default will be login activity.
 		 */
+		/*
+		 * TODO: Add a signoutAllUsers() API.
+		 */
 	}
 
 	/**
