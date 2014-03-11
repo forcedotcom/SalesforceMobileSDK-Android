@@ -52,7 +52,6 @@ public class SFAccountManagerPlugin extends ForcePlugin {
         getUsers,
         getCurrentUser,
         logout,
-        logoutAll,
         switchToUser
     }
 
@@ -72,9 +71,6 @@ public class SFAccountManagerPlugin extends ForcePlugin {
                 	return true;
                 case logout:
                 	logout(args, callbackContext);
-                	return true;
-                case logoutAll:
-                	logoutAll(callbackContext);
                 	return true;
                 case switchToUser:
                 	switchToUser(args, callbackContext);
@@ -135,20 +131,6 @@ public class SFAccountManagerPlugin extends ForcePlugin {
         	}
         }
         SalesforceSDKManager.getInstance().getUserAccountManager().signoutUser(account, cordova.getActivity());
-        callbackContext.success();
-    }
-
-    /**
-     * Native implementation for the 'logoutAll' action.
-     *
-     * @param callbackContext Used when calling back into Javascript.
-     */
-    protected void logoutAll(CallbackContext callbackContext) {
-        Log.i("SFAccountManagerPlugin.logoutAll", "logoutAll called");
-        /*
-         * TODO: Enable once method is ready.
-         */
-        // SalesforceSDKManager.getInstance().getUserAccountManager().signoutAllUsers(cordova.getActivity());
         callbackContext.success();
     }
 
