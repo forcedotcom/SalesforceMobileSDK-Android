@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import java.util.List;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -39,6 +41,8 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 
@@ -348,7 +352,27 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             @Override
             public void onClick(DialogInterface dialog,
                     int which) {
-            	SalesforceSDKManager.getInstance().logout(PasscodeActivity.this);
+            	final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+            	final List<UserAccount> userAccounts = userAccMgr.getAuthenticatedUsers();
+
+            	/*
+            	 * If the user forgot his/her passcode, we log all the authenticated
+            	 * users out. All the existing accounts except the last account
+            	 * are removed without dismissing the PasscodeActivity. The last
+            	 * account is removed, after which the PasscodeActivity is dismissed,
+            	 * and the login page is brought up at this point.
+            	 */
+            	if (userAccounts != null) {
+            		int numAccounts = userAccounts.size();
+            		for (int i = 0; i < numAccounts - 1; i++) {
+            			final UserAccount account = userAccounts.get(i);
+                    	userAccMgr.signoutUser(account, null, false);
+            		}
+        			final UserAccount lastAccount = userAccounts.get(numAccounts);
+                	userAccMgr.signoutUser(lastAccount, PasscodeActivity.this);
+            	} else {
+            		userAccMgr.signoutCurrentUser(PasscodeActivity.this);
+            	}
             }
         }).setNegativeButton(getLogoutNoString(),
         		new DialogInterface.OnClickListener() {
