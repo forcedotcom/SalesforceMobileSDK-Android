@@ -1,0 +1,10 @@
+Changes included in the v3.0.2 release of SQLCipher for Android:
+
+ * Add char[] for password to public interface to open database connections
+ * Merge branch 'master' of https://github.com/amplify-education/android-database-sqlcipher into amplify-education-master
+ * Rebuild static openssl libraries from NDK r9c
+ * Fix to use NDK r9c to build standalone toolchain
+ * Add spacing in log messages for readability
+ * Fix security issues where sensitive data is logged
+ * Merge branch 'fixUbuntuBuild' of https://github.com/illarionov/android-sqlcipher-spatialite into illarionov-fixUbuntuBuild
+ * Fix build when using Android NDK >= r9
