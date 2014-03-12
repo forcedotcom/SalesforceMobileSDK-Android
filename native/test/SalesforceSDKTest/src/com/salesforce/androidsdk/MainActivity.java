@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,22 +26,13 @@
  */
 package com.salesforce.androidsdk;
 
-import android.app.Application;
-
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import android.app.Activity;
 
 /**
- * Test implementation of Application class that uses SalesforceSDKManager.
+ * Mock main activity.
  *
  * @author bhariharan
  */
-public class TestForceApp extends Application {
+public class MainActivity extends Activity {
 
-    @Override
-    public void onCreate() {
-    	SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(),
-    			MainActivity.class);
-    	super.onCreate();
-    	SalesforceSDKManager.getInstance().setIsTestRun(true);
-    }
 }

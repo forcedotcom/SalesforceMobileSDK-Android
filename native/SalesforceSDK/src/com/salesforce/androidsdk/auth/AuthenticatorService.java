@@ -125,8 +125,12 @@ public class AuthenticatorService extends Service {
                             Account account,
                             String authTokenType,
                             Bundle options) throws NetworkErrorException {
-            // Log.i("Authenticator:getAuthToken", "Get auth token for " + account.name);
             final AccountManager mgr = AccountManager.get(context);
+            /*
+             * TODO: Verify how this works. Shouldn't we be using the passcode
+             * hash from passcode manager at this point, since a bundle
+             * is never passed in for the refresh flow.
+             */
             final String passcodeHash = LoginOptions.fromBundle(options).passcodeHash;
             final String refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), passcodeHash);
             final String loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), passcodeHash);

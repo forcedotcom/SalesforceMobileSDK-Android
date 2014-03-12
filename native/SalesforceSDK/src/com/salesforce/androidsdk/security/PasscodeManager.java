@@ -317,6 +317,17 @@ public class PasscodeManager  {
     }
 
     /**
+     * Sets the passcode hash, used ONLY in tests.
+     *
+     * @param passcodeHash Passcode hash.
+     */
+    public void setPasscodeHash(String passcodeHash) {
+    	if (SalesforceSDKManager.getInstance().getIsTestRun()) {
+        	this.passcodeHash = passcodeHash;
+    	}
+    }
+
+    /**
      * @return true if locked
      */
     public boolean isLocked() {

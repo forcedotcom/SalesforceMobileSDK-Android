@@ -60,21 +60,23 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 public class ClientManagerTest extends InstrumentationTestCase {
 
     public static final String TEST_PASSCODE_HASH = Encryptor.hash("passcode", "hash-key");
-    private static final String TEST_ORG_ID = "test_org_id";
-    private static final String TEST_USER_ID = "test_user_id";
-    private static final String TEST_ACCOUNT_NAME = "test_accountname";
-    private static final String TEST_USERNAME = "test_username";
-    private static final String TEST_CLIENT_ID = "test_client_d";
-    private static final String TEST_LOGIN_URL = "https://test.salesforce.com";
-    private static final String TEST_INSTANCE_URL = "https://cs1.salesforce.com";
-    private static final String TEST_IDENTITY_URL = "https://test.salesforce.com";
-    private static final String TEST_AUTH_TOKEN = "test_auth_token";
-    private static final String TEST_REFRESH_TOKEN = "test_refresh_token";
-    private static final String TEST_OTHER_ACCOUNT_NAME = "test_other_accountname";
-    private static final String TEST_OTHER_USERNAME = "test_other_username";
-    private static final String TEST_ACCOUNT_TYPE = "com.salesforce.androisdk.test"; // must match authenticator.xml in SalesforceSDK project
-    private static final String[] TEST_SCOPES = new String[] {"web"};
-    private static final String TEST_CALLBACK_URL = "test://callback";
+    public static final String TEST_ORG_ID = "test_org_id";
+    public static final String TEST_USER_ID = "test_user_id";
+    public static final String TEST_ORG_ID_2 = "test_org_id_2";
+    public static final String TEST_USER_ID_2 = "test_user_id_2";
+    public static final String TEST_ACCOUNT_NAME = "test_accountname";
+    public static final String TEST_USERNAME = "test_username";
+    public static final String TEST_CLIENT_ID = "test_client_d";
+    public static final String TEST_LOGIN_URL = "https://test.salesforce.com";
+    public static final String TEST_INSTANCE_URL = "https://cs1.salesforce.com";
+    public static final String TEST_IDENTITY_URL = "https://test.salesforce.com";
+    public static final String TEST_AUTH_TOKEN = "test_auth_token";
+    public static final String TEST_REFRESH_TOKEN = "test_refresh_token";
+    public static final String TEST_OTHER_ACCOUNT_NAME = "test_other_accountname";
+    public static final String TEST_OTHER_USERNAME = "test_other_username";
+    public static final String TEST_ACCOUNT_TYPE = "com.salesforce.androisdk.test"; // must match authenticator.xml in SalesforceSDK project
+    public static final String[] TEST_SCOPES = new String[] {"web"};
+    public static final String TEST_CALLBACK_URL = "test://callback";
 
     private Context targetContext;
     private ClientManager clientManager;
