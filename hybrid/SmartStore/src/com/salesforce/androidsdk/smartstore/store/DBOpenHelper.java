@@ -80,7 +80,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		public void preKey(SQLiteDatabase database) {
 			database.execSQL("PRAGMA cipher_default_kdf_iter = '4000'"); 
 			// the new default for sqlcipher 3.x (64000) is too slow
-            // also that way we can open 2.x databases without having to do a pragma migrate_cipher
+            // also that way we can open 2.x databases without any migration
 		}
 
 		public void postKey(SQLiteDatabase database) {
