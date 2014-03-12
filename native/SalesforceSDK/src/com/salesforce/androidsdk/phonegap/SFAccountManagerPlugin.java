@@ -33,10 +33,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.Intent;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 
 /**
  * Cordova plugin that provides methods related to user account management.
@@ -143,13 +145,31 @@ public class SFAccountManagerPlugin extends ForcePlugin {
     protected void switchToUser(JSONArray args, CallbackContext callbackContext) {
         Log.i("SFAccountManagerPlugin.switchToUser", "switchToUser called");
         UserAccount account = null;
-        if (args != null && args.length() > 0) {
+        final List<UserAccount> userAccounts = SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
+
+        /*
+         * If no user is specified to switch to, we check the number of users
+         * available. If only 1 user is signed in, we automatically launch the
+         * login activity. If more than 1 user is already signed in, we bring
+         * up the default account switcher screen, where a selection can be
+         * made on which account to switch to.
+         */
+        if (args == null || args.length() == 0) {
+        	if (userAccounts == null || userAccounts.size() == 1) {
+        		SalesforceSDKManager.getInstance().getUserAccountManager().switchToNewUser();
+        	} else {
+        		final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+        				AccountSwitcherActivity.class);
+        		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        		SalesforceSDKManager.getInstance().getAppContext().startActivity(i);
+        	}
+        } else {
         	final JSONObject user = args.optJSONObject(0);
         	if (user != null) {
         		account = new UserAccount(user);
         	}
+    		SalesforceSDKManager.getInstance().getUserAccountManager().switchToUser(account);
         }
-		SalesforceSDKManager.getInstance().getUserAccountManager().switchToUser(account);
         callbackContext.success();
     }
 }
