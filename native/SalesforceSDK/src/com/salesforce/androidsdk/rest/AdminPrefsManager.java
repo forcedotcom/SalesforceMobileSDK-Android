@@ -165,12 +165,10 @@ public class AdminPrefsManager {
      */
     public void resetAll() {
     	final UserAccountManager usrAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-    	if (usrAccMgr != null) {
-    		final List<UserAccount> accounts = usrAccMgr.getAuthenticatedUsers();
-    		if (accounts != null) {
-    			for (final UserAccount account : accounts) {
-    				reset(account);
-    			}
+    	final List<UserAccount> accounts = usrAccMgr.getAuthenticatedUsers();
+    	if (accounts != null) {
+    		for (final UserAccount account : accounts) {
+    			reset(account);
     		}
     	}
     }

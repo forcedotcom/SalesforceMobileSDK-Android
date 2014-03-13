@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.security;
 
+import java.util.List;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -215,15 +217,18 @@ public class PasscodeManager  {
      * Reset this passcode manager: delete stored passcode and reset fields to their starting value
      */
     public void reset(Context ctx) {
-    	/*
-    	 * TODO: Add a method to delete backing shared pref file for the user upon logout.
-    	 * Call the new method from logout. Or do it in reset().
-    	 */
-        lastActivity = now();
+    	final List<UserAccount> users = SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
+    	if (users != null) {
+    		for (final UserAccount account : users) {
+    			reset(ctx, account);
+    		}
+    	}
+    	lastActivity = now();
         locked = true;
         failedPasscodeAttempts = 0;
         passcodeHash = null;
-        SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME,
+        		Context.MODE_PRIVATE);
         Editor e = sp.edit();
         e.remove(KEY_PASSCODE);
         e.commit();
@@ -231,6 +236,23 @@ public class PasscodeManager  {
         minPasscodeLength = MIN_PASSCODE_LENGTH;
         storeMobilePolicy(ctx);
         handler = null;
+    }
+
+    /**
+     * Resets the passcode policies for a particular org upon logout.
+     *
+     * @param context Context.
+     * @param account User account.
+     */
+    public void reset(Context context, UserAccount account) {
+    	if (account == null) {
+    		return;
+    	}
+        final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
+        		+ account.getOrgLevelSharedPrefSuffix(), Context.MODE_PRIVATE);
+        final Editor e = sp.edit();
+        e.clear();
+        e.commit();
     }
 
     /**

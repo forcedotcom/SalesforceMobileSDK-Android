@@ -334,14 +334,6 @@ public class UserAccountManager {
 	public void signoutUser(UserAccount userAccount, Activity frontActivity) {
 		final Account account = buildAccount(userAccount);
 		SalesforceSDKManager.getInstance().logout(account, frontActivity);
-		/*
-		 * TODO: Add a param for which activity to launch after logout.
-		 * Default will be login activity.
-		 */
-		/*
-		 * TODO: If this is a hybrid app, we need to reload the webview
-		 * if logging out of current account. Otherwise, logout in the background.
-		 */
 	}
 
 	/**
@@ -355,10 +347,6 @@ public class UserAccountManager {
 	public void signoutUser(UserAccount userAccount, Activity frontActivity, boolean showLoginPage) {
 		final Account account = buildAccount(userAccount);
 		SalesforceSDKManager.getInstance().logout(account, frontActivity, showLoginPage);
-		/*
-		 * TODO: Add a param for which activity to launch after logout.
-		 * Default will be login activity.
-		 */
 	}
 
 	/**
