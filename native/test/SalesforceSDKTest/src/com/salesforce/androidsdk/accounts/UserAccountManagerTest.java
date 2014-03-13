@@ -76,7 +76,6 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         		ClientManagerTest.TEST_ACCOUNT_TYPE, loginOptions, true);
         accMgr = clientManager.getAccountManager();
         SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
-        cleanupAccounts();
     }
 
     @Override

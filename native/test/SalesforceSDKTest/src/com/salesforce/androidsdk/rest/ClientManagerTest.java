@@ -91,24 +91,26 @@ public class ClientManagerTest extends InstrumentationTestCase {
         final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
         getInstrumentation().callApplicationOnCreate(app);
         TestCredentials.init(getInstrumentation().getContext());
-        loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_PASSCODE_HASH, TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES);
-        clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE, loginOptions, true);
+        loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_PASSCODE_HASH,
+        		TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES);
+        clientManager = new ClientManager(targetContext, TEST_ACCOUNT_TYPE,
+        		loginOptions, true);
         accountManager = clientManager.getAccountManager();
         eq = new EventsListenerQueue();
         if (SalesforceSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
-        cleanupAccounts();
+        SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
     }
 
     @Override
     public void tearDown() throws Exception {
-        cleanupAccounts();
-        assertNoAccounts();
         if (eq != null) {
             eq.tearDown();
             eq = null;
         }
+        cleanupAccounts();
+        assertNoAccounts();
         super.tearDown();
     }
 
@@ -116,7 +118,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test getAccountType
      */
     public void testGetAccountType() {
-        assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, clientManager.getAccountType());
+        assertEquals("Wrong account type", TEST_ACCOUNT_TYPE,
+        		clientManager.getAccountType());
     }
 
     /**
@@ -130,7 +133,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         createTestAccount();
 
         // Check that the account did get created
-        Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
+        Account[] accounts = clientManager.getAccounts();
         assertEquals("One account should have been returned", 1, accounts.length);
         assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
         assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, accounts[0].type);
@@ -189,7 +192,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
     /**
      * Test getAccounts - when there are several accounts
      */
-    public void testGetAccountsWithSeveralAccount() {
+    public void testGetAccountsWithSeveralAccounts() {
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -223,7 +226,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         createOtherTestAccount();
 
         // Check that the accounts did get created
-        Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
+        Account[] accounts = clientManager.getAccounts();
         assertEquals("Two accounts should have been returned", 2, accounts.length);
 
         // Get the first one by name
@@ -251,7 +254,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         createTestAccount();
 
         // Check that the account did get created
-        Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
+        Account[] accounts = clientManager.getAccounts();
         assertEquals("One account should have been returned", 1, accounts.length);
         assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
 
@@ -265,7 +268,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
     /**
      * Test removeAccounts - removing one account where there are several
      */
-    public void testRemoveOneOfSeveralAccount() {
+    public void testRemoveOneOfSeveralAccounts() {
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -274,14 +277,14 @@ public class ClientManagerTest extends InstrumentationTestCase {
         createOtherTestAccount();
 
         // Check that the accounts did get created
-        Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
+        Account[] accounts = clientManager.getAccounts();
         assertEquals("Two accounts should have been returned", 2, accounts.length);
 
         // Remove one of them
         clientManager.removeAccounts(new Account[] {accounts[0]});
 
         // Make sure the other account is still there
-        Account[] accountsLeft = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
+        Account[] accountsLeft = clientManager.getAccounts();
         assertEquals("One account should have been returned", 1, accountsLeft.length);
         assertEquals("Wrong account name", accounts[1].name, accountsLeft[0].name);
     }
@@ -298,7 +301,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         createOtherTestAccount();
 
         // Check that the accounts did get created
-        Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
+        Account[] accounts = clientManager.getAccounts();
         assertEquals("Two accounts should have been returned", 2, accounts.length);
 
         // Remove one of them
@@ -389,7 +392,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         createTestAccount();
 
         // Check that the accounts did get created
-        Account[] accounts = accountManager.getAccountsByType(TEST_ACCOUNT_TYPE);
+        Account[] accounts = clientManager.getAccounts();
         assertEquals("Two accounts should have been returned", 1, accounts.length);
 
         // Call removeAccountAsync
@@ -423,7 +426,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * @throws IOException
      *
      */
-    public void _testFetchNewAuthToken() throws AccountInfoNotFoundException, IOException {
+    public void testFetchNewAuthToken() throws AccountInfoNotFoundException, IOException {
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -479,6 +482,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private Bundle createOtherTestAccount() {
         return clientManager.createNewAccount(TEST_OTHER_ACCOUNT_NAME, TEST_OTHER_USERNAME,
                 TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL,
-                TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, TEST_PASSCODE_HASH);
+                TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID_2, TEST_USER_ID_2, TEST_PASSCODE_HASH);
     }
 }
