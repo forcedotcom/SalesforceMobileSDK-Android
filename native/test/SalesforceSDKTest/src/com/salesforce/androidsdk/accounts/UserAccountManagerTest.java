@@ -113,6 +113,7 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
     	List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
     	assertNull("There should be no authenticated users", users);
     	createTestAccount();
+    	SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
     	users = userAccMgr.getAuthenticatedUsers();
     	assertEquals("There should be 1 authenticated user", 1, users.size());
     	final UserAccount curUser = userAccMgr.getCurrentUser();

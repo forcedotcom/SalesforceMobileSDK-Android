@@ -137,7 +137,7 @@ public class ExplorerActivityTest extends
     /**
      * Test clicking logout and then canceling out.
      */
-    public void _testClickLogoutThenCancel() {
+    public void testClickLogoutThenCancel() {
         // Click on logout
         clickView(getActivity().findViewById(R.id.logout_button));
 
@@ -156,10 +156,8 @@ public class ExplorerActivityTest extends
 
     /**
      * Test clicking logout and then clicking yes - make sure we end up in login screen.
-     *
-     * FIXME after logout subsequent tests fail
      */
-    public void _testClickLogoutThenConfirm() {
+    public void testClickLogoutThenConfirm() {
         // Click on logout
         clickView(getActivity().findViewById(R.id.logout_button));
 
