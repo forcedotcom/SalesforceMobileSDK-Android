@@ -564,9 +564,10 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param account Account.
      */
     protected void cleanUp(Activity frontActivity, Account account) {
+        final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
 
-        // Finishes front activity if specified.
-        if (frontActivity != null) {
+        // Finishes front activity if specified, and if this is the last account.
+        if (frontActivity != null && (users == null || users.size() <= 1)) {
             frontActivity.finish();
         }
 
@@ -578,7 +579,6 @@ public class SalesforceSDKManager implements AccountRemoved {
          * there might be other accounts on that same org, and these policies
          * are stored at the org level.
          */
-        final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
         if (users == null || users.size() <= 1) {
             getAdminPrefsManager().resetAll();
             adminPrefsManager = null;
@@ -632,6 +632,7 @@ public class SalesforceSDKManager implements AccountRemoved {
         	userAccMgr.switchToUser(accounts.get(0));
         } else {
         	final Intent i = new Intent(context, AccountSwitcherActivity.class);
+    		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     		context.startActivity(i);
         }
     }
