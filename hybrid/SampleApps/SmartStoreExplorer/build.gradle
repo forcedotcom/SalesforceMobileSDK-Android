@@ -20,8 +20,8 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
-    instrumentTest.setRoot('../test/SmartStoreExplorerTest')
-    instrumentTest {
+    androidTest.setRoot('../test/SmartStoreExplorerTest')
+    androidTest {
       java.srcDirs = ['../test/SmartStoreExplorerTest/src']
       resources.srcDirs = ['../test/SmartStoreExplorerTest/src']
       res.srcDirs = ['../test/SmartStoreExplorerTest/res']

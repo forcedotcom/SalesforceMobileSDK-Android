@@ -21,8 +21,8 @@ android {
       assets.srcDirs = ['assets']
     }
     
-    instrumentTest.setRoot('../test/RestExplorerTest')
-    instrumentTest {
+    androidTest.setRoot('../test/RestExplorerTest')
+    androidTest {
       java.srcDirs = ['../test/RestExplorerTest/src']
       resources.srcDirs = ['../test/RestExplorerTest/src']
       res.srcDirs = ['../test/RestExplorerTest/res']

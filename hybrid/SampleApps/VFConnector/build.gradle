@@ -21,8 +21,8 @@ android {
       assets.srcDirs = ['assets']
     }
     
-    instrumentTest.setRoot('../test/VFConnectorTest')
-    instrumentTest {
+    androidTest.setRoot('../test/VFConnectorTest')
+    androidTest {
       java.srcDirs = ['../test/VFConnectorTest/src']
       resources.srcDirs = ['../test/VFConnectorTest/src']
       res.srcDirs = ['../test/VFConnectorTest/res']
