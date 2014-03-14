@@ -40,6 +40,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.SystemClock;
@@ -814,6 +815,9 @@ public class SalesforceSDKManager implements AccountRemoved {
             appVersion = packageInfo.versionName;
         } catch (NameNotFoundException e) {
             Log.w("SalesforceSDKManager:getUserAgent", e);
+        } catch (Resources.NotFoundException nfe) {
+            // if your application doesn't have a name (like a test harness from Gradle)
+            Log.w("SalesforceSDKManager:getUserAgent", nfe);
         }
 	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native");
 	    return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s",
