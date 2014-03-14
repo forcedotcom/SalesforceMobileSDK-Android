@@ -111,6 +111,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     protected Class<? extends Activity> mainActivityClass;
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
     protected Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
+    protected Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
     protected AccountWatcher accWatcher;
     private String encryptionKey;
     private SalesforceR salesforceR = new SalesforceR();
@@ -160,6 +161,26 @@ public class SalesforceSDKManager implements AccountRemoved {
      */
     public Class<? extends Activity> getMainActivityClass() {
     	return mainActivityClass;
+    }
+
+    /**
+     * Returns the class for the account switcher activity.
+     *
+     * @return The class for the account switcher activity.
+     */
+    public Class<? extends AccountSwitcherActivity> getAccountSwitcherActivityClass() {
+    	return switcherActivityClass;
+    }
+
+    /**
+     * Returns the class for the account switcher activity.
+     *
+     * @return The class for the account switcher activity.
+     */
+    public void setAccountSwitcherActivityClass(Class<? extends AccountSwitcherActivity> activity) {
+    	if (activity != null) {
+        	switcherActivityClass = activity;
+    	}
     }
 
     public interface KeyInterface {
@@ -628,7 +649,7 @@ public class SalesforceSDKManager implements AccountRemoved {
         } else if (accounts.size() == 1) {
         	userAccMgr.switchToUser(accounts.get(0));
         } else {
-        	final Intent i = new Intent(context, AccountSwitcherActivity.class);
+        	final Intent i = new Intent(context, switcherActivityClass);
     		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     		context.startActivity(i);
         }

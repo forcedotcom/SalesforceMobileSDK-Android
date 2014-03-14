@@ -38,7 +38,6 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 
 /**
  * Cordova plugin that provides methods related to user account management.
@@ -159,7 +158,7 @@ public class SFAccountManagerPlugin extends ForcePlugin {
         		SalesforceSDKManager.getInstance().getUserAccountManager().switchToNewUser();
         	} else {
         		final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
-        				AccountSwitcherActivity.class);
+        				SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
         		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         		SalesforceSDKManager.getInstance().getAppContext().startActivity(i);
         	}
