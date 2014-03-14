@@ -29,6 +29,8 @@ package com.salesforce.androidsdk.accounts;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -113,8 +115,11 @@ public class UserAccount {
 			orgId = object.optString(ORG_ID, null);
 			userId = object.optString(USER_ID, null);
 			username = object.optString(USERNAME, null);
-			accountName = object.optString(ACCOUNT_NAME, null);
 			clientId = object.optString(CLIENT_ID, null);
+			if (!TextUtils.isEmpty(username)) {
+				accountName = String.format("%s (%s)", username,
+						SalesforceSDKManager.getInstance().getApplicationName());
+			}
 		}
 	}
 
@@ -365,7 +370,6 @@ public class UserAccount {
         	object.put(ORG_ID, orgId);
         	object.put(USER_ID, userId);
         	object.put(USERNAME, username);
-        	object.put(ACCOUNT_NAME, accountName);
         	object.put(CLIENT_ID, clientId);
     	} catch (JSONException e) {
     		Log.e(TAG, "Unable to convert to JSON");
