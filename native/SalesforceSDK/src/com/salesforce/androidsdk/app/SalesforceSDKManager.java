@@ -425,11 +425,7 @@ public class SalesforceSDKManager implements AccountRemoved {
 
     @Override
     public void onAccountRemoved() {
-    	/*
-    	 * TODO: Handle this case, where account is removed from settings.
-    	 * Clean up should be done only for the removed account.
-    	 */
-        INSTANCE.cleanUp(null, null);
+    	INSTANCE.cleanUp(null);
     }
 
     /**
@@ -579,9 +575,8 @@ public class SalesforceSDKManager implements AccountRemoved {
      * Cleans up cached credentials and data.
      *
      * @param frontActivity Front activity.
-     * @param account Account.
      */
-    protected void cleanUp(Activity frontActivity, Account account) {
+    protected void cleanUp(Activity frontActivity) {
         final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
 
         // Finishes front activity if specified, and if this is the last account.
@@ -823,7 +818,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     		accWatcher.remove();
     		accWatcher = null;
     	}
-    	cleanUp(frontActivity, account);
+    	cleanUp(frontActivity);
 
     	// Removes the existing account, if any.
     	if (account == null) {
@@ -987,5 +982,9 @@ public class SalesforceSDKManager implements AccountRemoved {
      */
     public void setIsTestRun(boolean isTestRun) {
     	INSTANCE.isTestRun = isTestRun;
+    	if (accWatcher != null) {
+    		accWatcher.remove();
+    	}
+    	accWatcher = null;
     }
 }
