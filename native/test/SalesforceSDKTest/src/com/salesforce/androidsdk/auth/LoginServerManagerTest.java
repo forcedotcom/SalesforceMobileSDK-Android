@@ -142,6 +142,26 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	}
 
 	/**
+	 * Test for adding more than one custom server.
+	 */
+	public void testAddMultipleCustomServers() {
+
+		// Starting point, only 3 servers.
+		List<LoginServer> servers = loginServerManager.getAllSavedSevers();
+		assertEquals("Expected no custom login servers", 3, servers.size());
+
+		// Adding first custom server.
+		loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
+		servers = loginServerManager.getAllSavedSevers();
+		assertEquals("Expected one custom login server", 4, servers.size());
+
+		// Adding second custom server.
+		loginServerManager.addCustomLoginServer(CUSTOM_NAME_2, CUSTOM_URL_2);
+		servers = loginServerManager.getAllSavedSevers();
+		assertEquals("Expected one custom login server", 5, servers.size());
+	}
+
+	/**
 	 * Test for getCustomLoginServer/setCustomLoginServer.
 	 */
 	public void testGetSetCustomLoginServer() {

@@ -72,7 +72,6 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
-import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.TokenRevocationReceiver;
@@ -245,7 +244,7 @@ public class ExplorerActivity extends TabActivity {
 	 * @param v View that was clicked.
 	 */
 	public void onSwitchAccClick(View v) {
-		final Intent i = new Intent(this, AccountSwitcherActivity.class);
+		final Intent i = new Intent(this, SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
 		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 		this.startActivity(i);
 	}

@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.app;
 
 import java.net.URI;
+import java.util.List;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
@@ -64,6 +65,7 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PRNGFixes;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.SalesforceR;
@@ -109,6 +111,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     protected Class<? extends Activity> mainActivityClass;
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
     protected Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
+    protected Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
     protected AccountWatcher accWatcher;
     private String encryptionKey;
     private SalesforceR salesforceR = new SalesforceR();
@@ -158,6 +161,26 @@ public class SalesforceSDKManager implements AccountRemoved {
      */
     public Class<? extends Activity> getMainActivityClass() {
     	return mainActivityClass;
+    }
+
+    /**
+     * Returns the class for the account switcher activity.
+     *
+     * @return The class for the account switcher activity.
+     */
+    public Class<? extends AccountSwitcherActivity> getAccountSwitcherActivityClass() {
+    	return switcherActivityClass;
+    }
+
+    /**
+     * Returns the class for the account switcher activity.
+     *
+     * @return The class for the account switcher activity.
+     */
+    public void setAccountSwitcherActivityClass(Class<? extends AccountSwitcherActivity> activity) {
+    	if (activity != null) {
+        	switcherActivityClass = activity;
+    	}
     }
 
     public interface KeyInterface {
@@ -531,7 +554,7 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @return The hashed passcode, or null if it's not required.
      */
     public String getPasscodeHash() {
-        return passcodeManager == null ? null : passcodeManager.getPasscodeHash();
+        return getPasscodeManager().getPasscodeHash();
     }
 
     /**
@@ -559,27 +582,33 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @param account Account.
      */
     protected void cleanUp(Activity frontActivity, Account account) {
+        final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
 
-    	/*
-    	 * TODO: Cleanup passcode manager, encryption key,
-    	 * admin prefs manager, etc., only for the account passed in,
-    	 * not for the current one (fast user switching support).
-    	 */
-        // Finishes front activity if specified.
-        if (frontActivity != null) {
+        // Finishes front activity if specified, and if this is the last account.
+        if (frontActivity != null && (users == null || users.size() <= 1)) {
             frontActivity.finish();
         }
-        final UserAccount userAcc = SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account);
 
-        // Resets admin prefs manager.
-        getAdminPrefsManager().reset(userAcc);
-        adminPrefsManager = null;
-
-        // Resets passcode and encryption key, if any.
-        getPasscodeManager().reset(context);
-        passcodeManager = null;
-        encryptionKey = null;
-        UUIDManager.resetUuids();
+        /*
+         * Checks how many accounts are left that are authenticated. If only one
+         * account is left, this is the account that is being removed. In this
+         * case, we can safely reset passcode manager, admin prefs, and encryption keys.
+         * Otherwise, we don't reset passcode manager and admin prefs since
+         * there might be other accounts on that same org, and these policies
+         * are stored at the org level.
+         */
+        if (users == null || users.size() <= 1) {
+            getAdminPrefsManager().resetAll();
+            adminPrefsManager = null;
+            getPasscodeManager().reset(context);
+            passcodeManager = null;
+            encryptionKey = null;
+            UUIDManager.resetUuids();
+        }
+        /*
+         * TODO: At this point, launch the method to change passcode if there
+         * are no orgs with passcode left. Do nothing otherwise.
+         */
     }
 
     /**
@@ -595,6 +624,35 @@ public class SalesforceSDKManager implements AccountRemoved {
         final Intent i = new Intent(context, getMainActivityClass());
         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(i);
+    }
+
+    /**
+     * Starts account switcher activity if an account has been removed.
+     */
+    protected void startSwitcherActivityIfRequired() {
+
+        // Clears cookies.
+        CookieSyncManager.createInstance(context);
+        CookieManager.getInstance().removeAllCookie();
+
+        /*
+         * If the number of accounts remaining is 0, shows the login page.
+         * If the number of accounts remaining is 1, switches to that user
+         * automatically. If there is more than 1 account logged in, shows
+         * the account switcher screen, so that the user can pick which
+         * account to switch to.
+         */
+        final UserAccountManager userAccMgr = getUserAccountManager();
+        final List<UserAccount> accounts = userAccMgr.getAuthenticatedUsers();
+        if (accounts == null || accounts.size() == 0) {
+        	startLoginPage();
+        } else if (accounts.size() == 1) {
+        	userAccMgr.switchToUser(accounts.get(0));
+        } else {
+        	final Intent i = new Intent(context, switcherActivityClass);
+    		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+    		context.startActivity(i);
+        }
     }
 
     /**
@@ -723,13 +781,7 @@ public class SalesforceSDKManager implements AccountRemoved {
 		String refreshToken = null;
 		String clientId = null;
 		String loginServer = null;
-
-		/*
-		 * We will try to obtain the refresh token from AccountManager
-		 * only for the current user account, since we have access to
-		 * the passcode hash only for the current user account.
-		 */
-		if (account != null && account.equals(clientMgr.getAccount())) {
+		if (account != null) {
 			refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account),
 	        		getPasscodeHash());
 	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
@@ -740,7 +792,7 @@ public class SalesforceSDKManager implements AccountRemoved {
 
 		/*
 		 * Makes a call to un-register from push notifications, only
-		 * if the refresh token is available (only current user account).
+		 * if the refresh token is available.
 		 */
     	if (PushMessaging.isRegistered(context) && refreshToken != null) {
     		loggedOut = false;
@@ -777,7 +829,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     	if (account == null) {
     		EventsObservable.get().notifyEvent(EventType.LogoutComplete);
     		if (showLoginPage) {
-    			startLoginPage();
+    			startSwitcherActivityIfRequired();
     		}
     	} else {
     		clientMgr.removeAccountAsync(account, new AccountManagerCallback<Boolean>() {
@@ -786,7 +838,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     			public void run(AccountManagerFuture<Boolean> arg0) {
     				EventsObservable.get().notifyEvent(EventType.LogoutComplete);
     				if (showLoginPage) {
-    					startLoginPage();
+    					startSwitcherActivityIfRequired();
     				}
     			}
     		});

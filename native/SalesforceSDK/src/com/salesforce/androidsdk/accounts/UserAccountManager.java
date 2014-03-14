@@ -270,6 +270,16 @@ public class UserAccountManager {
 		final Account account = cm.getAccountByName(user.getAccountName());
 		storeCurrentUserInfo(user.getUserId(), user.getOrgId());
 		cm.peekRestClient(account);
+
+		/*
+		 * If this is a hybrid app, we need to reload the webview
+		 * after the account switch is complete.
+		 */
+		if (SalesforceSDKManager.getInstance().isHybrid()) {
+	        final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getMainActivityClass());
+	        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+	        context.startActivity(i);
+		}
 	}
 
 	/**
@@ -294,13 +304,6 @@ public class UserAccountManager {
 	 * @param frontActivity Front activity.
 	 */
 	public void signoutCurrentUser(Activity frontActivity) {
-		/*
-		 * TODO: Update shared pref file that contains current user info.
-		 * Remove existing entry and add new default entry of previous user.
-		 * This should happen for all logout calls, or new sign in calls.
-		 * Also should trigger the passcode change flow, if we go to all
-		 * remaining orgs have no passcode.
-		 */
 		SalesforceSDKManager.getInstance().logout(frontActivity);
 	}
 
@@ -324,10 +327,6 @@ public class UserAccountManager {
 	public void signoutUser(UserAccount userAccount, Activity frontActivity) {
 		final Account account = buildAccount(userAccount);
 		SalesforceSDKManager.getInstance().logout(account, frontActivity);
-		/*
-		 * TODO: Add a param for which activity to launch after logout.
-		 * Default will be login activity.
-		 */
 	}
 
 	/**
@@ -341,10 +340,6 @@ public class UserAccountManager {
 	public void signoutUser(UserAccount userAccount, Activity frontActivity, boolean showLoginPage) {
 		final Account account = buildAccount(userAccount);
 		SalesforceSDKManager.getInstance().logout(account, frontActivity, showLoginPage);
-		/*
-		 * TODO: Add a param for which activity to launch after logout.
-		 * Default will be login activity.
-		 */
 	}
 
 	/**
