@@ -180,22 +180,41 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
      * Test to signout of the current user.
      */
     public void testSignoutCurrentUser() {
-    	/*
-    	 * TODO:
-    	 */
+    	List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
+    	assertNull("There should be no authenticated users", users);
+    	createTestAccount();
+    	users = userAccMgr.getAuthenticatedUsers();
+    	assertEquals("There should be 1 authenticated user", 1, users.size());
+    	userAccMgr.signoutCurrentUser(null);
+    	users = userAccMgr.getAuthenticatedUsers();
+    	assertNull("There should be no authenticated users", users);
     }
 
     /**
      * Test to signout of a background user.
      */
     public void testSignoutBackgroundUser() {
-    	/*
-    	 * TODO:
-    	 */
+    	List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
+    	assertNull("There should be no authenticated users", users);
+    	createTestAccount();
+    	users = userAccMgr.getAuthenticatedUsers();
+    	assertEquals("There should be 1 authenticated user", 1, users.size());
+    	createOtherTestAccount();
+    	users = userAccMgr.getAuthenticatedUsers();
+    	assertEquals("There should be 2 authenticated users", 2, users.size());
+    	final UserAccount userAcc = new UserAccount(ClientManagerTest.TEST_AUTH_TOKEN,
+        		ClientManagerTest.TEST_REFRESH_TOKEN, ClientManagerTest.TEST_LOGIN_URL,
+        		ClientManagerTest.TEST_IDENTITY_URL, ClientManagerTest.TEST_INSTANCE_URL,
+        		ClientManagerTest.TEST_ORG_ID, ClientManagerTest.TEST_USER_ID,
+        		ClientManagerTest.TEST_USERNAME, ClientManagerTest.TEST_ACCOUNT_NAME,
+        		ClientManagerTest.TEST_CLIENT_ID);
+    	userAccMgr.signoutUser(userAcc, null);
+    	users = userAccMgr.getAuthenticatedUsers();
+    	assertEquals("There should be 1 authenticated user", 1, users.size());
     }
 
     /**
-     * Remove any existing accounts
+     * Removes any existing accounts.
      */
     private void cleanupAccounts() throws Exception {
         clientManager.removeAccounts(accMgr.getAccountsByType(ClientManagerTest.TEST_ACCOUNT_TYPE));
