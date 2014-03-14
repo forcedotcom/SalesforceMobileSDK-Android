@@ -533,9 +533,6 @@ public class SalesforceSDKManager implements AccountRemoved {
      * @return The hashed passcode, or null if it's not required.
      */
     public String getPasscodeHash() {
-    	/*
-    	 * TODO: Verify if this works, or should we fallback on the previous way.
-    	 */
         return getPasscodeManager().getPasscodeHash();
     }
 
