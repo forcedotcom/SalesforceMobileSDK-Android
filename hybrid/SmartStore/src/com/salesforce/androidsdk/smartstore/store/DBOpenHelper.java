@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,56 +26,139 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
-import net.sqlcipher.database.SQLiteDatabaseHook;
-import android.content.Context;
-import android.util.Log;
+import java.util.HashMap;
+import java.util.Map;
 
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteDatabaseHook;
+import net.sqlcipher.database.SQLiteOpenHelper;
+import android.content.Context;
+import android.text.TextUtils;
+
+import com.salesforce.androidsdk.accounts.UserAccount;
 
 /**
  * Helper class to manage SmartStore's database creation and version management.
  */
 public class DBOpenHelper extends SQLiteOpenHelper {
-	public static final String DB_NAME = "smartstore.db";
-	public static final int DB_VERSION = 1;
 
-	private static DBOpenHelper openHelper;
-	
-	public static synchronized DBOpenHelper getOpenHelper(Context ctx) {
-		if (openHelper == null) {
-			openHelper = new DBOpenHelper(ctx);
-		}
-		return openHelper;
+	public static final int DB_VERSION = 1;
+	public static final String DB_NAME = "smartstore.db";
+
+	private static Map<String, DBOpenHelper> openHelpers;
+
+	/**
+	 * Returns the DBOpenHelper instance associated with this user account.
+	 *
+	 * @param ctx Context.
+	 * @param account User account.
+	 * @return DBOpenHelper instance.
+	 */
+	public static synchronized DBOpenHelper getOpenHelper(Context ctx,
+			UserAccount account) {
+		return getOpenHelper(ctx, account, null);
 	}
-	
-	private DBOpenHelper(Context context) {
-		super(context, DB_NAME, null, DB_VERSION, new DBHook());
+
+	/**
+	 * Returns the DBOpenHelper instance associated with this user and community.
+	 *
+	 * @param ctx Context.
+	 * @param account User account.
+	 * @param communityId Community ID.
+	 * @return DBOpenHelper instance.
+	 */
+	public static synchronized DBOpenHelper getOpenHelper(Context ctx,
+			UserAccount account, String communityId) {
+		String dbName = DB_NAME;
+
+		/*
+		 * If this method is called before authentication, we will simply
+		 * return the default smart store DB, which is not associated with
+		 * any user account. Otherwise, we will return a unique database
+		 * at the community level.
+		 */
+		if (account != null) {
+
+			// Default user path for a user is 'internal', if community ID is null.
+			final String dbPath = account.getCommunityLevelStoragePath(communityId);
+			if (!TextUtils.isEmpty(dbPath)) {
+				dbName = dbPath + DB_NAME;
+			}
+			String uniqueId = account.getUserId();
+			if (!TextUtils.isEmpty(communityId)) {
+				uniqueId = uniqueId + communityId;
+			}
+			DBOpenHelper helper = null;
+			if (openHelpers == null) {
+				openHelpers = new HashMap<String, DBOpenHelper>();
+				helper = new DBOpenHelper(ctx, dbName);
+				openHelpers.put(uniqueId, helper);
+			} else {
+				helper = openHelpers.get(uniqueId);
+			}
+			if (helper == null) {
+				helper = new DBOpenHelper(ctx, dbName);
+				openHelpers.put(uniqueId, helper);
+			}
+			return helper;
+		} else {
+			return new DBOpenHelper(ctx, dbName);
+		}
+	}
+
+	private DBOpenHelper(Context context, String dbName) {
+		super(context, dbName, null, DB_VERSION, new DBHook());
 		SQLiteDatabase.loadLibs(context);
-		Log.i("DBOpenHelper:DBOpenHelper", DB_NAME + "/" + DB_VERSION);
 	}
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
-		Log.i("DBOpenHelper:onCreate", DB_NAME + "/" + DB_VERSION);
 		SmartStore.createMetaTables(db);
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		Log.i("DBOpenHelper:onUpgrade", DB_NAME + "/" + DB_VERSION);
 		// do the needful if DB_VERSION has changed 
 	}
 
-	public static void deleteDatabase(Context ctx) {
-		Log.i("DBOpenHelper:deleteDatabase", DB_NAME + "/" + DB_VERSION);
-		if (openHelper != null) {
-			openHelper.close();
-			openHelper =  null;
-		}
-		ctx.deleteDatabase(DB_NAME);
+	/**
+	 * Deletes the underlying database for the specified user account.
+	 *
+	 * @param ctx Context.
+	 * @param account User account.
+	 */
+	public static void deleteDatabase(Context ctx, UserAccount account) {
+		deleteDatabase(ctx, account, null);
 	}
-	
+
+	/**
+	 * Deletes the underlying database for the specified user and community.
+	 *
+	 * @param ctx Context.
+	 * @param account User account.
+	 * @param communityId Community ID.
+	 */
+	public static void deleteDatabase(Context ctx, UserAccount account,
+			String communityId) {
+		String uniqueId = account.getUserId();
+		if (!TextUtils.isEmpty(communityId)) {
+			uniqueId = uniqueId + communityId;
+		}
+		if (openHelpers != null) {
+			final DBOpenHelper helper = openHelpers.get(uniqueId);
+			if (helper != null) {
+				helper.close();
+				openHelpers.remove(uniqueId);
+			}
+		}
+		String dbName = DB_NAME;
+		final String dbPath = account.getCommunityLevelStoragePath(communityId);
+		if (!TextUtils.isEmpty(dbPath)) {
+			dbName = dbPath + DB_NAME;
+		}
+		ctx.deleteDatabase(dbName);
+	}
+
 	static class DBHook implements SQLiteDatabaseHook {
 		public void preKey(SQLiteDatabase database) {
 			database.execSQL("PRAGMA cipher_default_kdf_iter = '4000'"); 

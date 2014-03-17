@@ -75,7 +75,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	}
 	
 	protected SQLiteDatabase getWritableDatabase() {
-		return DBOpenHelper.getOpenHelper(targetContext).getWritableDatabase("");
+		return DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase("");
 	}
 
 	@Override

@@ -66,6 +66,9 @@ public class UpgradeManagerWithSmartStore extends UpgradeManager {
 
         // Update shared preference file to reflect the latest version.
         writeCurVersion(SMART_STORE_KEY, SalesforceSDKManagerWithSmartStore.SDK_VERSION);
+        /*
+         * TODO: First time install & upgrade steps - migrate DB to correct path.
+         */
     }
 
     /**

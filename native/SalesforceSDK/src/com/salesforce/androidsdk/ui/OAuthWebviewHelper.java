@@ -386,13 +386,6 @@ public class OAuthWebviewHelper {
                 callback.finish();
             } else {
 
-            	// Register for push notifications, if push notification client ID is present.
-            	final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
-            	final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
-            	if (!TextUtils.isEmpty(pushNotificationId)) {
-                	PushMessaging.register(appContext);
-            	}
-
                 // Putting together all the information needed to create the new account.
                 accountOptions = new AccountOptions(id.username, tr.refreshToken,
                 		tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId);
@@ -481,7 +474,6 @@ public class OAuthWebviewHelper {
     }
 
     protected void addAccount() {
-
         ClientManager clientManager = new ClientManager(getContext(),
         		SalesforceSDKManager.getInstance().getAccountType(),
         		loginOptions, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
@@ -503,6 +495,16 @@ public class OAuthWebviewHelper {
                 loginOptions.passcodeHash,
                 loginOptions.clientSecret);
 
+    	/*
+    	 * Registers for push notifications, if push notification client ID is present.
+    	 * This step needs to happen after the account has been added by client
+    	 * manager, so that the push service has all the account info it needs.
+    	 */
+    	final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
+    	final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
+    	if (!TextUtils.isEmpty(pushNotificationId)) {
+        	PushMessaging.register(appContext);
+    	}
         callback.onAccountAuthenticatorResult(extras);
     }
 
