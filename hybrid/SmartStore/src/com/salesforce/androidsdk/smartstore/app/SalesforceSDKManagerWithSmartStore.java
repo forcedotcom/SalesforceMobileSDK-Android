@@ -183,6 +183,9 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     	 */
         // Reset smartstore.
         if (hasSmartStore()) {
+        	/*
+        	 * TODO: Call the right reset() method here, with the user account.
+        	 */
         	DBHelper.INSTANCE.reset(INSTANCE.getAppContext());
         }
         super.cleanUp(frontActivity);
@@ -277,10 +280,12 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      */
     public boolean hasSmartStore(UserAccount account, String communityId) {
     	String dbName = String.format(DBOpenHelper.DB_NAME, "");
-    	final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
-		if (!TextUtils.isEmpty(dbPath)) {
-			dbName = String.format(DBOpenHelper.DB_NAME, dbPath);
-		}
+    	if (account != null) {
+        	final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
+    		if (!TextUtils.isEmpty(dbPath)) {
+    			dbName = String.format(DBOpenHelper.DB_NAME, dbPath);
+    		}
+    	}
         return context.getDatabasePath(dbName).exists();
     }
 }
