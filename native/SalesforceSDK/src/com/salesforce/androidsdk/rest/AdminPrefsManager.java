@@ -62,7 +62,7 @@ public class AdminPrefsManager {
 		if (attribs != null) {
 			String sharedPrefPath = ADMIN_PREFS;
 			if (account != null) {
-				sharedPrefPath = ADMIN_PREFS + account.getOrgLevelSharedPrefSuffix();
+				sharedPrefPath = ADMIN_PREFS + account.getOrgLevelFilenameSuffix();
 			}
 			final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext()
 	                    .getSharedPreferences(sharedPrefPath, Context.MODE_PRIVATE);
@@ -87,7 +87,7 @@ public class AdminPrefsManager {
 		if (attribs != null) {
 			String sharedPrefPath = ADMIN_PREFS;
 			if (account != null) {
-				sharedPrefPath = ADMIN_PREFS + account.getOrgLevelSharedPrefSuffix();
+				sharedPrefPath = ADMIN_PREFS + account.getOrgLevelFilenameSuffix();
 			}
 			final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext()
 	                    .getSharedPreferences(sharedPrefPath, Context.MODE_PRIVATE);
@@ -115,7 +115,7 @@ public class AdminPrefsManager {
 	public String getPref(String key, UserAccount account) {
     	String sharedPrefPath = ADMIN_PREFS;
 		if (account != null) {
-			sharedPrefPath = ADMIN_PREFS + account.getOrgLevelSharedPrefSuffix();
+			sharedPrefPath = ADMIN_PREFS + account.getOrgLevelFilenameSuffix();
 		}
     	final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext()
     			.getSharedPreferences(sharedPrefPath, Context.MODE_PRIVATE);
@@ -136,7 +136,7 @@ public class AdminPrefsManager {
 	public Map<String, String> getPrefs(UserAccount account) {
     	String sharedPrefPath = ADMIN_PREFS;
 		if (account != null) {
-			sharedPrefPath = ADMIN_PREFS + account.getOrgLevelSharedPrefSuffix();
+			sharedPrefPath = ADMIN_PREFS + account.getOrgLevelFilenameSuffix();
 		}
     	final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext()
     			.getSharedPreferences(sharedPrefPath, Context.MODE_PRIVATE);
@@ -151,7 +151,7 @@ public class AdminPrefsManager {
     public void reset(UserAccount account) {
     	String sharedPrefPath = ADMIN_PREFS;
 		if (account != null) {
-			sharedPrefPath = ADMIN_PREFS + account.getOrgLevelSharedPrefSuffix();
+			sharedPrefPath = ADMIN_PREFS + account.getOrgLevelFilenameSuffix();
 		}
     	final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext()
     			.getSharedPreferences(sharedPrefPath, Context.MODE_PRIVATE);

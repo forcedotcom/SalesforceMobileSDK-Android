@@ -135,7 +135,7 @@ public class PasscodeManager  {
    		}
    		final Context context = SalesforceSDKManager.getInstance().getAppContext();
         final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
-        		+ account.getOrgLevelSharedPrefSuffix(), Context.MODE_PRIVATE);
+        		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
         return sp.getInt(KEY_TIMEOUT, 0);
    	}
 
@@ -151,7 +151,7 @@ public class PasscodeManager  {
     	}
     	final Context context = SalesforceSDKManager.getInstance().getAppContext();
         final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
-        		+ account.getOrgLevelSharedPrefSuffix(), Context.MODE_PRIVATE);
+        		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
         return sp.getInt(KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
     }
 
@@ -168,7 +168,7 @@ public class PasscodeManager  {
     	}
     	final Context context = SalesforceSDKManager.getInstance().getAppContext();
         final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
-        		+ account.getOrgLevelSharedPrefSuffix(), Context.MODE_PRIVATE);
+        		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
         final Editor e = sp.edit();
         e.putInt(KEY_TIMEOUT, timeoutMs);
         e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
@@ -249,7 +249,7 @@ public class PasscodeManager  {
     		return;
     	}
         final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
-        		+ account.getOrgLevelSharedPrefSuffix(), Context.MODE_PRIVATE);
+        		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
         final Editor e = sp.edit();
         e.clear();
         e.commit();

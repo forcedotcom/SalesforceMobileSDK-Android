@@ -43,7 +43,7 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 public class DBOpenHelper extends SQLiteOpenHelper {
 
 	public static final int DB_VERSION = 1;
-	public static final String DB_NAME = "smartstore.db";
+	public static final String DB_NAME = "smartstore%s.db";
 
 	private static Map<String, DBOpenHelper> openHelpers;
 
@@ -69,7 +69,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 */
 	public static synchronized DBOpenHelper getOpenHelper(Context ctx,
 			UserAccount account, String communityId) {
-		String dbName = DB_NAME;
+		String dbName = String.format(DB_NAME, "");
 
 		/*
 		 * If this method is called before authentication, we will simply
@@ -80,9 +80,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		if (account != null) {
 
 			// Default user path for a user is 'internal', if community ID is null.
-			final String dbPath = account.getCommunityLevelStoragePath(communityId);
+			final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
 			if (!TextUtils.isEmpty(dbPath)) {
-				dbName = dbPath + DB_NAME;
+				dbName = String.format(DB_NAME, dbPath);
 			}
 			String uniqueId = account.getUserId();
 			if (!TextUtils.isEmpty(communityId)) {
@@ -151,10 +151,10 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 				openHelpers.remove(uniqueId);
 			}
 		}
-		String dbName = DB_NAME;
-		final String dbPath = account.getCommunityLevelStoragePath(communityId);
+		String dbName = String.format(DB_NAME, "");
+		final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
 		if (!TextUtils.isEmpty(dbPath)) {
-			dbName = dbPath + DB_NAME;
+			dbName = String.format(DB_NAME, dbPath);
 		}
 		ctx.deleteDatabase(dbName);
 	}

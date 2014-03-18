@@ -216,8 +216,8 @@ public class UserAccount {
 	/**
 	 * Returns the org level storage path for this user account, relative to
 	 * the higher level directory of app data. The higher level directory
-	 * could be 'databases', or 'files'. The output is of the format
-	 * '/<orgID>/'. This storage path is meant for data that can be shared
+	 * could be 'files'. The output is of the format '/{orgID}/'.
+	 * This storage path is meant for data that can be shared
 	 * across multiple users of the same org.
 	 *
 	 * @return File storage path.
@@ -232,10 +232,10 @@ public class UserAccount {
 	/**
 	 * Returns the user level storage path for this user account, relative to
 	 * the higher level directory of app data. The higher level directory
-	 * could be 'databases', or 'files'. The output is of the format
-	 * '/<orgID>/<userId>/'. This storage path is meant for data that is unique
-	 * to a particular user in an org, but common across all the communities
-	 * that the user is a member of within that org.
+	 * could be 'files'. The output is of the format '/{orgID}/{userId}/'.
+	 * This storage path is meant for data that is unique to a particular
+	 * user in an org, but common across all the communities that the
+	 * user is a member of within that org.
 	 *
 	 * @return File storage path.
 	 */
@@ -250,11 +250,11 @@ public class UserAccount {
 
 	/**
 	 * Returns the storage path for this user account, relative to the higher
-	 * level directory of app data. The higher level directory could be
-	 * 'databases', or 'files'. The output is of the format
-	 * '/<orgID>/<userID>/<communityID>/'. If 'communityID' is null, then the
-	 * output would be '/<orgID>/<userID>/internal/'. This storage path is meant
-	 * for data that is unique to a particular user in a specific community.
+	 * level directory of app data. The higher level directory could be 'files'.
+	 * The output is of the format '/{orgID}/{userID}/{communityID}/'.
+	 * If 'communityID' is null, then the output would be '/{orgID}/{userID}/internal/'.
+	 * This storage path is meant for data that is unique to a particular
+	 * user in a specific community.
 	 *
 	 * @param communityId Community ID. Pass 'null' for internal community.
 	 * @return File storage path.
@@ -276,13 +276,13 @@ public class UserAccount {
 
 	/**
 	 * Returns a unique suffix for this user account, that can be appended
-	 * to a shared preference file to uniquely identify this account, at an
-	 * org level. The output is of the format '_<orgID>'. This suffix is meant
+	 * to a file to uniquely identify this account, at an org level.
+	 * The output is of the format '_{orgID}'. This suffix is meant
 	 * for data that can be shared across multiple users of the same org.
 	 *
-	 * @return Shared preference suffix.
+	 * @return Filename suffix.
 	 */
-	public String getOrgLevelSharedPrefSuffix() {
+	public String getOrgLevelFilenameSuffix() {
 		final StringBuffer sb = new StringBuffer(UNDERSCORE);
 		sb.append(orgId);
 		return sb.toString();
@@ -290,15 +290,15 @@ public class UserAccount {
 
 	/**
 	 * Returns a unique suffix for this user account, that can be appended
-	 * to a shared preference file to uniquely identify this account, at a
-	 * user level. The output is of the format '_<orgID>_<userID>'. This suffix
+	 * to a file to uniquely identify this account, at a user level.
+	 * The output is of the format '_{orgID}_{userID}'. This suffix
 	 * is meant for data that is unique to a particular user in an org,
 	 * but common across all the communities that the user is a member
 	 * of within that org.
 	 *
-	 * @return Shared preference suffix.
+	 * @return Filename suffix.
 	 */
-	public String getUserLevelSharedPrefSuffix() {
+	public String getUserLevelFilenameSuffix() {
 		final StringBuffer sb = new StringBuffer(UNDERSCORE);
 		sb.append(orgId);
 		sb.append(UNDERSCORE);
@@ -308,16 +308,16 @@ public class UserAccount {
 
 	/**
 	 * Returns a unique suffix for this user account, that can be appended
-	 * to a shared preference file to uniquely identify this account, at a
-	 * community level. The output is of the format '_<orgID>_<userID>_<communityID>'.
-	 * If 'communityID' is null, then the output would be '_<orgID>_<userID>_internal'.
+	 * to a file to uniquely identify this account, at a community level.
+	 * The output is of the format '_{orgID}_{userID}_{communityID}'.
+	 * If 'communityID' is null, then the output would be '_{orgID}_{userID}_internal'.
 	 * This suffix is meant for data that is unique to a particular
 	 * user in a specific community.
 	 *
 	 * @param communityId Community ID. Pass 'null' for internal community.
-	 * @return Shared preference suffix.
+	 * @return Filename suffix.
 	 */
-	public String getCommunityLevelSharedPrefSuffix(String communityId) {
+	public String getCommunityLevelFilenameSuffix(String communityId) {
 		final StringBuffer sb = new StringBuffer(UNDERSCORE);
 		sb.append(orgId);
 		sb.append(UNDERSCORE);

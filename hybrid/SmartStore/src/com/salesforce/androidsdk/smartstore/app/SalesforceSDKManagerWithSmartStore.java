@@ -179,6 +179,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
 
     	/*
     	 * TODO: Clean up user level smart store here. Maybe pass in UserAccount here?
+    	 * Also clean up the whole directory using File I/O at this point.
     	 */
         // Reset smartstore.
         if (hasSmartStore()) {
