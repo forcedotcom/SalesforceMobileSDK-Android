@@ -276,10 +276,10 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @return True - if the user has a smart store database, False - otherwise.
      */
     public boolean hasSmartStore(UserAccount account, String communityId) {
-    	String dbName = DBOpenHelper.DB_NAME;
-    	final String dbPath = account.getCommunityLevelStoragePath(communityId);
+    	String dbName = String.format(DBOpenHelper.DB_NAME, "");
+    	final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
 		if (!TextUtils.isEmpty(dbPath)) {
-			dbName = dbPath + DBOpenHelper.DB_NAME;
+			dbName = String.format(DBOpenHelper.DB_NAME, dbPath);
 		}
         return context.getDatabasePath(dbName).exists();
     }
