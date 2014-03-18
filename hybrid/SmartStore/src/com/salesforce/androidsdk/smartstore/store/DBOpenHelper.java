@@ -140,21 +140,25 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 */
 	public static void deleteDatabase(Context ctx, UserAccount account,
 			String communityId) {
-		String uniqueId = account.getUserId();
-		if (!TextUtils.isEmpty(communityId)) {
-			uniqueId = uniqueId + communityId;
-		}
-		if (openHelpers != null) {
-			final DBOpenHelper helper = openHelpers.get(uniqueId);
-			if (helper != null) {
-				helper.close();
-				openHelpers.remove(uniqueId);
+		if (account != null) {
+			String uniqueId = account.getUserId();
+			if (!TextUtils.isEmpty(communityId)) {
+				uniqueId = uniqueId + communityId;
+			}
+			if (openHelpers != null) {
+				final DBOpenHelper helper = openHelpers.get(uniqueId);
+				if (helper != null) {
+					helper.close();
+					openHelpers.remove(uniqueId);
+				}
 			}
 		}
 		String dbName = String.format(DB_NAME, "");
-		final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
-		if (!TextUtils.isEmpty(dbPath)) {
-			dbName = String.format(DB_NAME, dbPath);
+		if (account != null) {
+			final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
+			if (!TextUtils.isEmpty(dbPath)) {
+				dbName = String.format(DB_NAME, dbPath);
+			}
 		}
 		ctx.deleteDatabase(dbName);
 	}
