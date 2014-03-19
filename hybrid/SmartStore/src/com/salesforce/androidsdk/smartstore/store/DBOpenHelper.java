@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
+import net.sqlcipher.database.SQLiteDatabaseHook;
 import android.content.Context;
 import android.util.Log;
 
@@ -49,7 +50,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 	
 	private DBOpenHelper(Context context) {
-		super(context, DB_NAME, null, DB_VERSION);
+		super(context, DB_NAME, null, DB_VERSION, new DBHook());
 		SQLiteDatabase.loadLibs(context);
 		Log.i("DBOpenHelper:DBOpenHelper", DB_NAME + "/" + DB_VERSION);
 	}
@@ -74,4 +75,15 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		}
 		ctx.deleteDatabase(DB_NAME);
 	}
+	
+	static class DBHook implements SQLiteDatabaseHook {
+		public void preKey(SQLiteDatabase database) {
+			database.execSQL("PRAGMA cipher_default_kdf_iter = '4000'"); 
+			// the new default for sqlcipher 3.x (64000) is too slow
+            // also that way we can open 2.x databases without any migration
+		}
+
+		public void postKey(SQLiteDatabase database) {
+		}
+	};
 }

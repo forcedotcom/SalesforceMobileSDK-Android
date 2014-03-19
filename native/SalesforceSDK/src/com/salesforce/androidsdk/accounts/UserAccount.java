@@ -26,7 +26,13 @@
  */
 package com.salesforce.androidsdk.accounts;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+
 import android.text.TextUtils;
+import android.util.Log;
 
 /**
  * This class represents a single user account that is currently
@@ -37,6 +43,18 @@ import android.text.TextUtils;
  */
 public class UserAccount {
 
+	public static final String AUTH_TOKEN = "authToken";
+	public static final String REFRESH_TOKEN = "refreshToken";
+	public static final String LOGIN_SERVER = "loginServer";
+	public static final String ID_URL = "idUrl";
+	public static final String INSTANCE_SERVER = "instanceServer";
+	public static final String ORG_ID = "orgId";
+	public static final String USER_ID = "userId";
+	public static final String USERNAME = "username";
+	public static final String ACCOUNT_NAME = "accountName";
+	public static final String CLIENT_ID = "clientId";
+
+	private static final String TAG = "UserAccount";
 	private static final String INTERNAL_COMMUNITY_PATH = "internal";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
@@ -80,6 +98,29 @@ public class UserAccount {
 		this.username = username;
 		this.accountName = accountName;
 		this.clientId = clientId;
+	}
+
+	/**
+	 * Parameterized constructor.
+	 *
+	 * @param object JSON object.
+	 */
+	public UserAccount(JSONObject object) {
+		if (object != null) {
+			authToken = object.optString(AUTH_TOKEN, null);
+			refreshToken = object.optString(REFRESH_TOKEN, null);
+			loginServer = object.optString(LOGIN_SERVER, null);
+			idUrl = object.optString(ID_URL, null);
+			instanceServer = object.optString(INSTANCE_SERVER, null);
+			orgId = object.optString(ORG_ID, null);
+			userId = object.optString(USER_ID, null);
+			username = object.optString(USERNAME, null);
+			clientId = object.optString(CLIENT_ID, null);
+			if (!TextUtils.isEmpty(username)) {
+				accountName = String.format("%s (%s)", username,
+						SalesforceSDKManager.getInstance().getApplicationName());
+			}
+		}
 	}
 
 	/**
@@ -311,5 +352,28 @@ public class UserAccount {
         int result = userId.hashCode();
         result ^= orgId.hashCode() + result * 37;
         return result;
+    }
+
+    /**
+     * Returns a JSON representation of this instance.
+     *
+     * @return JSONObject instance.
+     */
+    public JSONObject toJson() {
+    	final JSONObject object = new JSONObject();
+    	try {
+        	object.put(AUTH_TOKEN, authToken);
+        	object.put(REFRESH_TOKEN, refreshToken);
+        	object.put(LOGIN_SERVER, loginServer);
+        	object.put(ID_URL, idUrl);
+        	object.put(INSTANCE_SERVER, instanceServer);
+        	object.put(ORG_ID, orgId);
+        	object.put(USER_ID, userId);
+        	object.put(USERNAME, username);
+        	object.put(CLIENT_ID, clientId);
+    	} catch (JSONException e) {
+    		Log.e(TAG, "Unable to convert to JSON");
+    	}
+    	return object;
     }
 }

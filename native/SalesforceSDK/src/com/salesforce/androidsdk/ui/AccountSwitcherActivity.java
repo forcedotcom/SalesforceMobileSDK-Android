@@ -98,10 +98,13 @@ public class AccountSwitcherActivity extends Activity {
 	private void buildAccountList() {
         final RadioGroup radioGroup = (RadioGroup) findViewById(salesforceR.idAccountListGroup());
         radioGroup.removeAllViews();
-        final UserAccount curAccount = userAccMgr.getCurrentUser();
+        UserAccount curAccount = userAccMgr.getCurrentUser();
 		final List<UserAccount> accounts = userAccMgr.getAuthenticatedUsers();
-		if (curAccount == null || accounts == null || accounts.size() == 0) {
+		if (accounts == null || accounts.size() == 0) {
 			return;
+		}
+		if (curAccount == null) {
+			curAccount = accounts.get(0);
 		}
 		int curSelectedIndex = 0;
 		for (int i = 0; i < accounts.size(); i++) {
