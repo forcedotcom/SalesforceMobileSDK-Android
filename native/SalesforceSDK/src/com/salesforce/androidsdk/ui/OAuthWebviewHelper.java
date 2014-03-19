@@ -165,6 +165,11 @@ public class OAuthWebviewHelper {
      * to finalize the account creation.
      */
     public void onNewPasscode() {
+    	/*
+    	 * TODO: Login to org without passcode, then org with passcode
+    	 * is not re-encrypting properly, so I don't see the background
+    	 * account (org with no passcode). Must fix!
+    	 */
         if (accountOptions != null) {
             loginOptions.passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
 

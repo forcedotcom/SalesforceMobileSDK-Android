@@ -179,7 +179,7 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
     /**
      * Test to signout of the current user.
      */
-    public void _testSignoutCurrentUser() {
+    public void testSignoutCurrentUser() {
     	/*
     	 * FIXME: This test works standalone, but in a suite, subsequent tests
     	 * won't execute, since logout pops the top activity off the stack,
@@ -198,7 +198,7 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
     /**
      * Test to signout of a background user.
      */
-    public void _testSignoutBackgroundUser() {
+    public void testSignoutBackgroundUser() {
     	/*
     	 * FIXME: This test works standalone, but in a suite, subsequent tests
     	 * won't execute, since logout pops the top activity off the stack,

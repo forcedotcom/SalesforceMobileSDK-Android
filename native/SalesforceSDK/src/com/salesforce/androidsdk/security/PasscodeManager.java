@@ -26,7 +26,8 @@
  */
 package com.salesforce.androidsdk.security;
 
-import java.util.List;
+import java.io.File;
+import java.io.FilenameFilter;
 
 import android.app.Activity;
 import android.content.Context;
@@ -170,8 +171,8 @@ public class PasscodeManager  {
         final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
         		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
         final Editor e = sp.edit();
-        e.putInt(KEY_TIMEOUT, timeoutMs);
-        e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
+        e.putInt(KEY_TIMEOUT, timeout);
+        e.putInt(KEY_PASSCODE_LENGTH, passLen);
         e.commit();
     }
 
@@ -184,7 +185,8 @@ public class PasscodeManager  {
 
         // Context will be null only in test runs.
         if (context != null) {
-            final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+            final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF,
+            		Context.MODE_PRIVATE);
             Editor e = sp.edit();
             e.putInt(KEY_TIMEOUT, timeoutMs);
             e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
@@ -201,7 +203,8 @@ public class PasscodeManager  {
 
         // Context will be null only in test runs.
         if (context != null) {
-            final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+            final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF,
+            		Context.MODE_PRIVATE);
             if (!sp.contains(KEY_TIMEOUT) || !sp.contains(KEY_PASSCODE_LENGTH)) {
                 timeoutMs = 0;
                 minPasscodeLength = MIN_PASSCODE_LENGTH;
@@ -217,10 +220,14 @@ public class PasscodeManager  {
      * Reset this passcode manager: delete stored passcode and reset fields to their starting value
      */
     public void reset(Context ctx) {
-    	final List<UserAccount> users = SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
-    	if (users != null) {
-    		for (final UserAccount account : users) {
-    			reset(ctx, account);
+
+    	// Deletes the underlying org policy files for all orgs.
+    	final String sharedPrefPath = ctx.getApplicationInfo().dataDir + "/shared_prefs";
+    	final File dir = new File(sharedPrefPath);
+    	final PasscodeFileFilter fileFilter = new PasscodeFileFilter();
+    	for (final File file : dir.listFiles()) {
+    		if (file != null && fileFilter.accept(dir, file.getName())) {
+    			file.delete();
     		}
     	}
     	lastActivity = now();
@@ -464,13 +471,12 @@ public class PasscodeManager  {
     }
 
     public void setMinPasscodeLength(int minPasscodeLength) {
-    	/*
-    	 * TODO: Need to trigger the change passcode flow here - through the
-    	 * UI, informing the user that the policy has changed and a new
-    	 * longer PIN needs to be used.
-    	 */
-    	if (minPasscodeLength <= this.minPasscodeLength) {
-    		// TODO: Do nothing here - no need for new flow in this case.
+    	if (minPasscodeLength > this.minPasscodeLength) {
+    		/*
+        	 * TODO: Need to trigger the change passcode flow here - through the
+        	 * UI, informing the user that the policy has changed and a new
+        	 * longer PIN needs to be used.
+        	 */
     	}
         this.minPasscodeLength = minPasscodeLength;
         storeMobilePolicy(SalesforceSDKManager.getInstance().getAppContext());
@@ -558,5 +564,23 @@ public class PasscodeManager  {
             this.suffix = suffix;
             this.key = key;
         }
+    }
+
+    /**
+     * This class acts as a filter to identify only the relevant passcode files.
+     *
+     * @author bhariharan
+     */
+    private static class PasscodeFileFilter implements FilenameFilter {
+
+    	private static final String PASSCODE_FILE_PREFIX = MOBILE_POLICY_PREF + "_";
+
+		@Override
+		public boolean accept(File dir, String filename) {
+			if (filename != null && filename.startsWith(PASSCODE_FILE_PREFIX)) {
+				return true;
+			}
+			return false;
+		}
     }
 }

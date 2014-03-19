@@ -26,8 +26,9 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,7 +39,6 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
@@ -164,12 +164,31 @@ public class AdminPrefsManager {
      * Clears the stored admin prefs for all users.
      */
     public void resetAll() {
-    	final UserAccountManager usrAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-    	final List<UserAccount> accounts = usrAccMgr.getAuthenticatedUsers();
-    	if (accounts != null) {
-    		for (final UserAccount account : accounts) {
-    			reset(account);
+
+    	// Deletes the underlying admin pref files for all orgs.
+    	final String sharedPrefPath = SalesforceSDKManager.getInstance().getAppContext().getApplicationInfo().dataDir + "/shared_prefs";
+    	final File dir = new File(sharedPrefPath);
+    	final AdminPrefFileFilter fileFilter = new AdminPrefFileFilter();
+    	for (final File file : dir.listFiles()) {
+    		if (file != null && fileFilter.accept(dir, file.getName())) {
+    			file.delete();
     		}
     	}
+    }
+
+    /**
+     * This class acts as a filter to identify only the relevant admin pref files.
+     *
+     * @author bhariharan
+     */
+    private static class AdminPrefFileFilter implements FilenameFilter {
+
+		@Override
+		public boolean accept(File dir, String filename) {
+			if (filename != null && filename.startsWith(ADMIN_PREFS)) {
+				return true;
+			}
+			return false;
+		}
     }
 }
