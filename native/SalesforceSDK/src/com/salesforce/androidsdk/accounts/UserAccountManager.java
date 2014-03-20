@@ -86,9 +86,9 @@ public class UserAccountManager {
 	}
 
 	/**
-	 * Private constructor.
+	 * Protected constructor.
 	 */
-	private UserAccountManager() {
+	protected UserAccountManager() {
 		context = SalesforceSDKManager.getInstance().getAppContext();
 		accountManager = AccountManager.get(context);
 		accountType = SalesforceSDKManager.getInstance().getAccountType();

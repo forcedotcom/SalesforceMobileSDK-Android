@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,24 +24,42 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk;
+package com.salesforce.androidsdk.accounts;
 
-import android.app.Application;
-
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
+import com.salesforce.androidsdk.smartstore.store.DBHelper;
 
 /**
- * Test implementation of Application class that uses SalesforceSDKManagerWithSmartStore.
+ * This class acts as a manager that provides methods to access
+ * user accounts that are currently logged in, and can be used
+ * to add new user accounts.
  *
  * @author bhariharan
  */
-public class TestForceApp extends Application {
+public class UserAccountManagerWithSmartStore extends UserAccountManager {
 
-    @Override
-    public void onCreate() {
-    	SalesforceSDKManagerWithSmartStore.initNative(getApplicationContext(), new KeyImpl(), MainActivity.class);
-    	super.onCreate();
-    	SalesforceSDKManager.getInstance().setIsTestRun(true);
-    }
+	private static UserAccountManagerWithSmartStore INSTANCE;
+
+	/**
+	 * Returns a singleton instance of this class.
+	 *
+	 * @return Instance of this class.
+	 */
+	public static UserAccountManagerWithSmartStore getInstance() {
+		if (INSTANCE == null) {
+			INSTANCE = new UserAccountManagerWithSmartStore();
+		}
+		return INSTANCE;
+	}
+
+	@Override
+	public void switchToUser(UserAccount user) {
+		super.switchToUser(user);
+		DBHelper.INSTANCE.clearMemoryCache();
+	}
+
+	@Override
+	public void switchToNewUser() {
+		super.switchToNewUser();
+		DBHelper.INSTANCE.clearMemoryCache();
+	}
 }

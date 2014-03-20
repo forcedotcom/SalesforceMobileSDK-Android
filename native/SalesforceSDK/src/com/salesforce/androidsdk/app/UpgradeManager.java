@@ -145,7 +145,7 @@ public class UpgradeManager {
     /**
      * Upgrade steps for older versions of the Mobile SDK to Mobile SDK 2.2.
      */
-    private void upgradeTo2Dot2() {
+    protected void upgradeTo2Dot2() {
 
     	/*
     	 * TODO: Add upgrade migration for push notification shared prefs, if

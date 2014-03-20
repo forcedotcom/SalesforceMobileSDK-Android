@@ -398,6 +398,6 @@ public class SmartStorePlugin extends ForcePlugin {
 	
 
 	private SmartStore getSmartStore() {
-		return (SalesforceSDKManagerWithSmartStore.getInstance()).getSmartStore();
+		return SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore();
 	}
 }

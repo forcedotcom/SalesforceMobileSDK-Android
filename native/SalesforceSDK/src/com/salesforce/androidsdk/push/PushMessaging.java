@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -59,14 +59,14 @@ public class PushMessaging {
     private static final String BACKOFF = "backoff";
     private static final String DEVICE_ID = "deviceId";
     private static final String IN_PROGRESS = "inprogress";
-    private static final long MILLISECONDS_IN_A_DAY = 86400000L;
     private static final String GCM_PREFS = "gcm_prefs";
     private static final long DEFAULT_BACKOFF = 30000;
 
     /**
      * Initiates push registration, if the application is not already registered.
-     * If it has been more than a day since the registration occurred, this method
-     * initiates re-registration to the SFDC endpoint, in order to keep it alive.
+     * Otherwise, this method initiates registration/re-registration to the
+     * SFDC endpoint, in order to keep it alive, or to register a new account
+     * that just logged in.
      *
      * @param context Context.
      */
@@ -79,7 +79,7 @@ public class PushMessaging {
             registrationIntent.putExtra(SENDER,
             		BootConfig.getBootConfig(context).getPushNotificationClientId());
             context.startService(registrationIntent);
-        } else if (hasBeenADaySinceLastSFDCRegistration(context)) {
+        } else {
             registerSFDCPush(context);
         }
     }
@@ -284,18 +284,5 @@ public class PushMessaging {
         editor.putLong(LAST_SFDC_REGISTRATION_TIME, System.currentTimeMillis());
         editor.putBoolean(IN_PROGRESS, false);
         editor.commit();
-    }
-
-    /**
-     * Returns whether it has been a day since the last SFDC registration.
-     *
-     * @param context Context.
-     * @return True - if it has been a day, False - otherwise.
-     */
-    private static boolean hasBeenADaySinceLastSFDCRegistration(Context context) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
-        		Context.MODE_PRIVATE);
-        long lastRegistrationTimeStamp = prefs.getLong(LAST_SFDC_REGISTRATION_TIME, 0);
-        return ((System.currentTimeMillis() - lastRegistrationTimeStamp) > MILLISECONDS_IN_A_DAY);
     }
 }

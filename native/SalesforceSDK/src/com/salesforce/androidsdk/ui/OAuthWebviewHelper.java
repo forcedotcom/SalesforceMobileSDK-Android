@@ -165,6 +165,11 @@ public class OAuthWebviewHelper {
      * to finalize the account creation.
      */
     public void onNewPasscode() {
+    	/*
+    	 * TODO: Login to org without passcode, then org with passcode
+    	 * is not re-encrypting properly, so I don't see the background
+    	 * account (org with no passcode). Must fix!
+    	 */
         if (accountOptions != null) {
             loginOptions.passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
 
@@ -175,7 +180,8 @@ public class OAuthWebviewHelper {
              */
             final List<UserAccount> accounts = SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
             if (accounts != null && accounts.size() > 0) {
-            	ClientManager.changePasscode(null, loginOptions.passcodeHash);
+            	SalesforceSDKManager.getInstance().changePasscode(null,
+            			loginOptions.passcodeHash);
             }
             addAccount();
             callback.finish();
@@ -386,13 +392,6 @@ public class OAuthWebviewHelper {
                 callback.finish();
             } else {
 
-            	// Register for push notifications, if push notification client ID is present.
-            	final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
-            	final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
-            	if (!TextUtils.isEmpty(pushNotificationId)) {
-                	PushMessaging.register(appContext);
-            	}
-
                 // Putting together all the information needed to create the new account.
                 accountOptions = new AccountOptions(id.username, tr.refreshToken,
                 		tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId);
@@ -481,7 +480,6 @@ public class OAuthWebviewHelper {
     }
 
     protected void addAccount() {
-
         ClientManager clientManager = new ClientManager(getContext(),
         		SalesforceSDKManager.getInstance().getAccountType(),
         		loginOptions, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
@@ -503,6 +501,16 @@ public class OAuthWebviewHelper {
                 loginOptions.passcodeHash,
                 loginOptions.clientSecret);
 
+    	/*
+    	 * Registers for push notifications, if push notification client ID is present.
+    	 * This step needs to happen after the account has been added by client
+    	 * manager, so that the push service has all the account info it needs.
+    	 */
+    	final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
+    	final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
+    	if (!TextUtils.isEmpty(pushNotificationId)) {
+        	PushMessaging.register(appContext);
+    	}
         callback.onAccountAuthenticatorResult(extras);
     }
 

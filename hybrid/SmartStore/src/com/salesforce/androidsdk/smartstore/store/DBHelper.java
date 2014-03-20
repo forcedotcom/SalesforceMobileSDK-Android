@@ -40,6 +40,8 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
@@ -289,30 +291,52 @@ public enum DBHelper  {
 	public void delete(SQLiteDatabase db, String table, String whereClause, String... whereArgs) {
 		db.delete(table, whereClause, whereArgs);
 	}
-	
+
 	/**
-	 * Reset all cached data and delete database
-	 * @param ctx
+	 * Resets all cached data and deletes the database for all users.
+	 *
+	 * @param ctx Context.
 	 */
 	public void reset(Context ctx) {
-		// Close all statements
-		for(InsertHelper  ih : tableNameToInsertHelpersMap.values()) {
+		clearMemoryCache();
+		final List<UserAccount> accounts = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getAuthenticatedUsers();
+		if (accounts != null) {
+			for (final UserAccount account : accounts) {
+				reset(ctx, account);
+			}
+		}
+	}
+
+	/**
+	 * Resets all cached data and deletes the database for the specified user.
+	 *
+	 * @param ctx Context.
+	 * @param account User account.
+	 */
+	public void reset(Context ctx, UserAccount account) {
+		clearMemoryCache();
+		DBOpenHelper.deleteDatabase(ctx, account);
+	}
+
+	/**
+	 * Resets all cached data from memory.
+	 */
+	public void clearMemoryCache() {
+
+		// Closes all statements.
+		for (final InsertHelper  ih : tableNameToInsertHelpersMap.values()) {
 			ih.close();
 		}
-		for (SQLiteStatement prog : tableNameToNextIdStatementsMap.values()) {
+		for (final SQLiteStatement prog : tableNameToNextIdStatementsMap.values()) {
 			prog.close();
 		}
-		
-		// Clear all maps
+
+		// Clears all maps.
 		soupNameToTableNamesMap.clear();
 		soupNameToIndexSpecsMap.clear();
 		tableNameToInsertHelpersMap.clear();
 		tableNameToNextIdStatementsMap.clear();
-
-		DBOpenHelper.deleteDatabase(ctx);
 	}
-
-	
 
     /**
      * Return column name in soup table that holds the soup projection for path

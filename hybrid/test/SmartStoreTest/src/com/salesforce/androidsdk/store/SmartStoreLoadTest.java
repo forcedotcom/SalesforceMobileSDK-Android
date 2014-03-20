@@ -65,7 +65,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		DBHelper.INSTANCE.reset(targetContext); // start clean
+		DBHelper.INSTANCE.reset(targetContext, null); // start clean
 		db = getWritableDatabase();
 		store = new SmartStore(db);
 		
@@ -75,7 +75,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	}
 	
 	protected SQLiteDatabase getWritableDatabase() {
-		return DBOpenHelper.getOpenHelper(targetContext).getWritableDatabase("");
+		return DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase("");
 	}
 
 	@Override
