@@ -8,6 +8,8 @@ dependencies {
   compile files('libs/guava-r09.jar') 
   compile files('libs/httpmime-4.0.3.jar')
   compile files('libs/apache-mime4j-0.6.jar')
+  // TODO if we ever move off ant, we can remove the jars from the repo and have the jars be pulled from maven central
+  //      by using: compile 'group:name:version'
 }
 
 android {
