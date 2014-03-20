@@ -32,6 +32,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException
  * Simple class to represent a query spec
  */
 public class QuerySpec {
+	private static final String SELECT_COUNT = "SELECT count(*) ";
 	// Constants
 	private static final String SELECT = "SELECT  ";
 	private static final String FROM = "FROM ";
@@ -42,6 +43,7 @@ public class QuerySpec {
 	public final QueryType queryType;
     public final int pageSize;
     public final String smartSql;
+    public final String countSmartSql;
 
     // Exact/Range/Like
 	public final String soupName;
@@ -68,11 +70,13 @@ public class QuerySpec {
         this.order = order;
         this.pageSize = pageSize;
         this.smartSql = computeSmartSql();
+        this.countSmartSql = computeCountSql();
     }
 
     // Private constructor for smart query spec
     private QuerySpec(String smartSql, int pageSize) {
     	this.smartSql = smartSql;
+        this.countSmartSql = computeCountSql(smartSql);
     	this.pageSize = pageSize;
         this.queryType = QueryType.smart;
     	
@@ -148,10 +152,31 @@ public class QuerySpec {
     }
 
     /**
-     * @return smartSql for exact/like/range queries
+     * Compute smartSql for exact/like/range queries
      */
     private String computeSmartSql() {
-    	return computeSelectClause() + computeFromClause() + computeWhereClause() + computeOrderClause();
+    	String selectClause = computeSelectClause();
+    	String fromClause = computeFromClause();
+    	String whereClause = computeWhereClause();
+    	String orderClause = computeOrderClause();
+    	return selectClause + fromClause + whereClause + orderClause;
+    }
+
+    /**
+     * Compute countSmartSql for exact/like/range queries
+     */
+    private String computeCountSql() {
+    	String fromClause = computeFromClause();
+    	String whereClause = computeWhereClause();
+    	return SELECT_COUNT + fromClause + whereClause;
+    }
+    
+    /**
+     * Compute countSmartSql for smart queries
+     */
+    private String computeCountSql(String smartSql) {
+    	int fromLocation = smartSql.toLowerCase().indexOf(" from ");
+    	return SELECT_COUNT  + smartSql.substring(fromLocation);
     }
 
     /**
