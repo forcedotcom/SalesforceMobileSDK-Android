@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.ui;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
