@@ -194,7 +194,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     @Override
     public synchronized void changePasscode(String oldPass, String newPass) {
     	if (isNewPasscode(oldPass, newPass)) {
-    		final UserAccountManager accMgr = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager();
+    		final UserAccountManager accMgr = getUserAccountManager();
     		final List<UserAccount> accounts = accMgr.getAuthenticatedUsers();
     		if (accounts != null) {
     			for (final UserAccount account : accounts) {

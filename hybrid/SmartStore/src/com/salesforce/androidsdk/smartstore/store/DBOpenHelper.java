@@ -36,7 +36,6 @@ import net.sqlcipher.database.SQLiteDatabaseHook;
 import net.sqlcipher.database.SQLiteOpenHelper;
 import android.content.Context;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 
@@ -199,7 +198,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		@Override
 		public boolean accept(File dir, String filename) {
 			final String subString = SMARTSTORE_FILE_PREFIX.substring(0, SMARTSTORE_FILE_PREFIX.length() - 3);
-			Log.e("*****************", "Substring: " + subString);
 			if (filename != null && filename.startsWith(subString)) {
 				return true;
 			}
