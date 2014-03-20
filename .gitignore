@@ -11,3 +11,4 @@ proguard-project.txt
 .settings/
 .gradle/
 *~
+build/
