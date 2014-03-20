@@ -65,13 +65,21 @@ public class UpgradeManagerWithSmartStore extends UpgradeManager {
      * version to the current version.
      */
     public synchronized void upgradeSmartStore() {
-        final String installedVersion = getInstalledSmartStoreVersion();
+        String installedVersion = getInstalledSmartStoreVersion();
         if (installedVersion.equals(SalesforceSDKManagerWithSmartStore.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
         writeCurVersion(SMART_STORE_KEY, SalesforceSDKManagerWithSmartStore.SDK_VERSION);
+
+        /*
+         * We need to update this variable, since the app will not
+         * have this value set for a first time install.
+         */
+        if (TextUtils.isEmpty(installedVersion)) {
+            installedVersion = getInstalledSmartStoreVersion();
+        }
     }
 
     /**
