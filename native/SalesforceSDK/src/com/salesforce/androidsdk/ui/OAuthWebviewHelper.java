@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.ui;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -165,24 +164,13 @@ public class OAuthWebviewHelper {
      * to finalize the account creation.
      */
     public void onNewPasscode() {
+
     	/*
-    	 * TODO: Login to org without passcode, then org with passcode
-    	 * is not re-encrypting properly, so I don't see the background
-    	 * account (org with no passcode). Must fix!
+    	 * Re-encryption of existing accounts with the new passcode is taken
+    	 * care of in the 'Confirm Passcode' step in PasscodeActivity.
     	 */
         if (accountOptions != null) {
             loginOptions.passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
-
-            /*
-             * Since this is the first time a passcode is being created, we
-             * check if there are any other accounts already existing,
-             * and re-encrypt them with the new passcode hash.
-             */
-            final List<UserAccount> accounts = SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
-            if (accounts != null && accounts.size() > 0) {
-            	SalesforceSDKManager.getInstance().changePasscode(null,
-            			loginOptions.passcodeHash);
-            }
             addAccount();
             callback.finish();
         }
@@ -414,6 +402,8 @@ public class OAuthWebviewHelper {
                     // Stores the mobile policy for the org.
                     final PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
                     passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength);
+                    passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
+                    passcodeManager.setMinPasscodeLength(id.pinLength);
 
                     /*
                      * Checks if a passcode already exists. If a passcode has NOT
@@ -425,16 +415,12 @@ public class OAuthWebviewHelper {
                      * account is added at this point.
                      */
                     if (!passcodeManager.hasStoredPasscode(SalesforceSDKManager.getInstance().getAppContext())) {
-                        passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
-                        passcodeManager.setMinPasscodeLength(id.pinLength);
 
                         // This will bring up the create passcode screen - we will create the account in onResume
                         SalesforceSDKManager.getInstance().getPasscodeManager().setEnabled(true);
                         SalesforceSDKManager.getInstance().getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
                     } else {
                         loginOptions.passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
-                        passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
-                        passcodeManager.setMinPasscodeLength(id.pinLength);
                     	addAccount();
                         callback.finish();
                     }

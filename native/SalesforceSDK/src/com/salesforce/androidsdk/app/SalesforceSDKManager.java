@@ -643,9 +643,6 @@ public class SalesforceSDKManager implements AccountRemoved {
         final List<UserAccount> accounts = userAccMgr.getAuthenticatedUsers();
         if (accounts == null || accounts.size() == 0) {
         	startLoginPage();
-        	/*
-        	 * TODO: Clear current user info at this point.
-        	 */
         } else if (accounts.size() == 1) {
         	userAccMgr.switchToUser(accounts.get(0));
         } else {
