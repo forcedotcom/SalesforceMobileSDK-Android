@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,6 +36,7 @@ import net.sqlcipher.database.SQLiteDatabaseHook;
 import net.sqlcipher.database.SQLiteOpenHelper;
 import android.content.Context;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 
@@ -118,7 +121,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		// do the needful if DB_VERSION has changed 
+		// do the needful if DB_VERSION has changed
 	}
 
 	/**
@@ -161,6 +164,16 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			}
 		}
 		ctx.deleteDatabase(dbName);
+
+    	// Deletes the community databases associated with this user account.
+    	final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
+    	final File dir = new File(dbPath);
+    	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter();
+    	for (final File file : dir.listFiles()) {
+    		if (file != null && fileFilter.accept(dir, file.getName())) {
+    			file.delete();
+    		}
+    	}
 	}
 
 	static class DBHook implements SQLiteDatabaseHook {
@@ -173,4 +186,24 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		public void postKey(SQLiteDatabase database) {
 		}
 	};
+
+    /**
+     * This class acts as a filter to identify only the relevant SmartStore files.
+     *
+     * @author bhariharan
+     */
+    private static class SmartStoreFileFilter implements FilenameFilter {
+
+    	private static final String SMARTSTORE_FILE_PREFIX = String.format(DB_NAME, "_");
+
+		@Override
+		public boolean accept(File dir, String filename) {
+			final String subString = SMARTSTORE_FILE_PREFIX.substring(0, SMARTSTORE_FILE_PREFIX.length() - 3);
+			Log.e("*****************", "Substring: " + subString);
+			if (filename != null && filename.startsWith(subString)) {
+				return true;
+			}
+			return false;
+		}
+    }
 }

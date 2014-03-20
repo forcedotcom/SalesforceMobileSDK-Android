@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.smartstore.app;
 import java.util.List;
 
 import net.sqlcipher.database.SQLiteDatabase;
+import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
 import android.text.TextUtils;
@@ -175,20 +176,14 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     }
 
     @Override
-    protected void cleanUp(Activity frontActivity) {
-
-    	/*
-    	 * TODO: Clean up user level smart store here. Maybe pass in UserAccount here?
-    	 * Also clean up the whole directory using File I/O at this point.
-    	 */
-        // Reset smartstore.
-        if (hasSmartStore()) {
-        	/*
-        	 * TODO: Call the right reset() method here, with the user account.
-        	 */
-        	DBHelper.INSTANCE.reset(INSTANCE.getAppContext());
-        }
-        super.cleanUp(frontActivity);
+    protected void cleanUp(Activity frontActivity, Account account) {
+    	if (account != null) {
+    		final UserAccount userAccount = getUserAccountManager().buildUserAccount(account);
+    		if (userAccount != null && hasSmartStore(userAccount)) {
+            	DBHelper.INSTANCE.reset(INSTANCE.getAppContext(), userAccount);
+    		}
+    	}
+        super.cleanUp(frontActivity, account);
     }
 
     @Override
