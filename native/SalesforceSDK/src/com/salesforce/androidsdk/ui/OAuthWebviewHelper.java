@@ -180,7 +180,8 @@ public class OAuthWebviewHelper {
              */
             final List<UserAccount> accounts = SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
             if (accounts != null && accounts.size() > 0) {
-            	ClientManager.changePasscode(null, loginOptions.passcodeHash);
+            	SalesforceSDKManager.getInstance().changePasscode(null,
+            			loginOptions.passcodeHash);
             }
             addAccount();
             callback.finish();
