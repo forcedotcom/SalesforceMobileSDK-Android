@@ -414,6 +414,8 @@ public class OAuthWebviewHelper {
                     // Stores the mobile policy for the org.
                     final PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
                     passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength);
+                    passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
+                    passcodeManager.setMinPasscodeLength(id.pinLength);
 
                     /*
                      * Checks if a passcode already exists. If a passcode has NOT
@@ -425,16 +427,12 @@ public class OAuthWebviewHelper {
                      * account is added at this point.
                      */
                     if (!passcodeManager.hasStoredPasscode(SalesforceSDKManager.getInstance().getAppContext())) {
-                        passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
-                        passcodeManager.setMinPasscodeLength(id.pinLength);
 
                         // This will bring up the create passcode screen - we will create the account in onResume
                         SalesforceSDKManager.getInstance().getPasscodeManager().setEnabled(true);
                         SalesforceSDKManager.getInstance().getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
                     } else {
                         loginOptions.passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
-                        passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
-                        passcodeManager.setMinPasscodeLength(id.pinLength);
                     	addAccount();
                         callback.finish();
                     }
