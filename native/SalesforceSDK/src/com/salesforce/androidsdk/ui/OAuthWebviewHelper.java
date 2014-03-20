@@ -165,24 +165,13 @@ public class OAuthWebviewHelper {
      * to finalize the account creation.
      */
     public void onNewPasscode() {
+
     	/*
-    	 * TODO: Login to org without passcode, then org with passcode
-    	 * is not re-encrypting properly, so I don't see the background
-    	 * account (org with no passcode). Must fix!
+    	 * Re-encryption of existing accounts with the new passcode is taken
+    	 * care of in the 'Confirm Passcode' step in PasscodeActivity.
     	 */
         if (accountOptions != null) {
             loginOptions.passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
-
-            /*
-             * Since this is the first time a passcode is being created, we
-             * check if there are any other accounts already existing,
-             * and re-encrypt them with the new passcode hash.
-             */
-            final List<UserAccount> accounts = SalesforceSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
-            if (accounts != null && accounts.size() > 0) {
-            	SalesforceSDKManager.getInstance().changePasscode(null,
-            			loginOptions.passcodeHash);
-            }
             addAccount();
             callback.finish();
         }
