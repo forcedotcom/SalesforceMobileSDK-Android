@@ -7,7 +7,7 @@
 
 	<application android:label="@string/app_name"
         android:name="com.salesforce.androidsdk.TestForceApp"
-        android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
+        android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity" android:icon="@drawable/sf__hybrid__icon">
 
         <uses-library android:name="android.test.runner" />
 	</application>
