@@ -33,6 +33,7 @@ import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -89,12 +90,9 @@ public class UpgradeManager {
          * We need to update this variable, since the app will not
          * have this value set for a first time install.
          */
-        /*
-         * TODO: Verify this logic, this sounds fault-prone.
-         * 3 cases - no version stored, older version stored,
-         * current version stored.
-         */
-        installedVersion = getInstalledAccMgrVersion();
+        if (TextUtils.isEmpty(installedVersion)) {
+            installedVersion = getInstalledAccMgrVersion();
+        }
 
         /*
          * If the installed version < v2.2.0, we need to store the current
