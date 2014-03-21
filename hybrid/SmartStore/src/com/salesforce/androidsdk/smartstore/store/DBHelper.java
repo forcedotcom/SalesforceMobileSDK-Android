@@ -210,15 +210,13 @@ public enum DBHelper  {
 	}
 
 	/**
-	 * Does a count for a raw query
+	 * Does a count for a raw count query
 	 * @param db
 	 * @param sql
 	 * @param whereArgs
 	 * @return
 	 */
-	public int countRawQuery(SQLiteDatabase db, String sql, String... whereArgs) {
-		String countSql = String.format(COUNT_SELECT, "", "(" + sql + ")");
-
+	public int countRawCountQuery(SQLiteDatabase db, String countSql, String... whereArgs) {
 		SQLiteStatement prog = rawCountSqlToStatementsMap.get(countSql);
 		if (prog == null) {
 			prog = db.compileStatement(countSql);
@@ -239,6 +237,18 @@ public enum DBHelper  {
 		} catch (SQLiteDoneException e) {
 			return -1;
 		}
+	}
+	
+	/**
+	 * Does a count for a raw query
+	 * @param db
+	 * @param sql
+	 * @param whereArgs
+	 * @return
+	 */
+	public int countRawQuery(SQLiteDatabase db, String sql, String... whereArgs) {
+		String countSql = String.format(COUNT_SELECT, "", "(" + sql + ")");
+		return countRawCountQuery(db, countSql, whereArgs);
 	}
 	
 	/**
