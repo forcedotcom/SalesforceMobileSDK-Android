@@ -396,8 +396,6 @@ public class SmartStore  {
 	public int countQuery(QuerySpec querySpec) {
 		String countSql = convertSmartSql(querySpec.countSmartSql);
 		return DBHelper.INSTANCE.countRawCountQuery(db, countSql, querySpec.getArgs());
-//		String sql = convertSmartSql(querySpec.smartSql);
-//		return DBHelper.INSTANCE.countRawQuery(db, sql, querySpec.getArgs());
 	}
 
 	/**
