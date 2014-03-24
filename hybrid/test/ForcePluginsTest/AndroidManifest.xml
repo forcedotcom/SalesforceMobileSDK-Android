@@ -14,7 +14,7 @@
     <uses-sdk android:minSdkVersion="8" />
 
     <application android:label="@string/app_name"
-        android:name="com.salesforce.androidsdk.ForcePluginsTestApp">
+        android:name="com.salesforce.androidsdk.ForcePluginsTestApp" android:icon="@drawable/sf__hybrid__icon">
 
 		<uses-library android:name="android.test.runner" />        
 
