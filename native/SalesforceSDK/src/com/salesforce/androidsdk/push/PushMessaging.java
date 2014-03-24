@@ -52,6 +52,7 @@ public class PushMessaging {
     public static final String UNREGISTERED_EVENT = "com.salesfore.mobilesdk.c2dm.ACTUAL_UNREGISTERED";
     public static final String ACCOUNT_BUNDLE_KEY = "account_bundle";
     public static final String ALL_ACCOUNTS_BUNDLE_VALUE = "all_accounts";
+    public static final String GCM_PREFS = "gcm_prefs";
 
     // Private constants.
     private static final String SENDER = "sender";
@@ -63,7 +64,6 @@ public class PushMessaging {
     private static final String BACKOFF = "backoff";
     private static final String DEVICE_ID = "deviceId";
     private static final String IN_PROGRESS = "inprogress";
-    private static final String GCM_PREFS = "gcm_prefs";
     private static final long DEFAULT_BACKOFF = 30000;
 
     /**
