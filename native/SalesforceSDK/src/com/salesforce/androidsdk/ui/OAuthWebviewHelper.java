@@ -495,7 +495,13 @@ public class OAuthWebviewHelper {
     	final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
     	final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
     	if (!TextUtils.isEmpty(pushNotificationId)) {
-        	PushMessaging.register(appContext);
+            final UserAccount account = new UserAccount(accountOptions.authToken,
+            		accountOptions.refreshToken, loginOptions.loginUrl,
+            		accountOptions.identityUrl, accountOptions.instanceUrl,
+            		accountOptions.orgId, accountOptions.userId,
+            		accountOptions.username, accountName,
+            		loginOptions.clientSecret);
+        	PushMessaging.register(appContext, account);
     	}
         callback.onAccountAuthenticatorResult(extras);
     }
