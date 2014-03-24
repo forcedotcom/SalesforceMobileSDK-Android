@@ -12,3 +12,5 @@ proguard-project.txt
 .gradle/
 *~
 build/
+.idea/
+*.iml
