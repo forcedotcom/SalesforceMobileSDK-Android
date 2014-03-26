@@ -140,7 +140,7 @@ public class PushService extends IntentService {
 		boolean allAccounts = false;
 		if (bundle != null) {
 			final String allAccountsValue = bundle.getString(PushMessaging.ACCOUNT_BUNDLE_KEY);
-			if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(allAccountsValue.trim())) {
+			if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(allAccountsValue)) {
 				allAccounts = true;
 			} else {
 				account = new UserAccount(bundle);
@@ -158,6 +158,8 @@ public class PushService extends IntentService {
             		}
             	} else if (account != null) {
                     handleRegistration(intent, account);
+            	} else {
+            		handleRegistration(intent, userAccMgr.getCurrentUser());
             	}
             } else if (intent.getAction().equals(GCM_RECEIVE_INTENT)) {
                 onMessage(intent);
@@ -172,7 +174,10 @@ public class PushService extends IntentService {
                         	}
                 		}
             		}
-            	} else if (account != null) {
+            	} else {
+            		if (account == null) {
+            			account = userAccMgr.getCurrentUser();
+            		}
                 	final String regId = PushMessaging.getRegistrationId(context,
                 			account);
                 	if (regId != null) {
