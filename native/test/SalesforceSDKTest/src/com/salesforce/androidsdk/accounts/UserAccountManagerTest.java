@@ -180,17 +180,13 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
      * Test to signout of the current user.
      */
     public void testSignoutCurrentUser() {
-    	/*
-    	 * FIXME: This test works standalone, but in a suite, subsequent tests
-    	 * won't execute, since logout pops the top activity off the stack,
-    	 * driving the test runner crazy. Need to find a workaround.
-    	 */
     	List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
     	assertNull("There should be no authenticated users", users);
     	createTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
     	assertEquals("There should be 1 authenticated user", 1, users.size());
     	userAccMgr.signoutCurrentUser(null);
+    	eq.waitForEvent(EventType.LogoutComplete, 30000);
     	users = userAccMgr.getAuthenticatedUsers();
     	assertNull("There should be no authenticated users", users);
     }
@@ -199,15 +195,11 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
      * Test to signout of a background user.
      */
     public void testSignoutBackgroundUser() {
-    	/*
-    	 * FIXME: This test works standalone, but in a suite, subsequent tests
-    	 * won't execute, since logout pops the top activity off the stack,
-    	 * driving the test runner crazy. Need to find a workaround.
-    	 */
     	List<UserAccount> users = userAccMgr.getAuthenticatedUsers();
     	assertNull("There should be no authenticated users", users);
     	createTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
+    	assertNotNull("There should be at least 1 authenticated user", users);
     	assertEquals("There should be 1 authenticated user", 1, users.size());
     	createOtherTestAccount();
     	users = userAccMgr.getAuthenticatedUsers();
@@ -219,6 +211,7 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         		ClientManagerTest.TEST_USERNAME, ClientManagerTest.TEST_ACCOUNT_NAME,
         		ClientManagerTest.TEST_CLIENT_ID);
     	userAccMgr.signoutUser(userAcc, null);
+    	eq.waitForEvent(EventType.LogoutComplete, 30000);
     	users = userAccMgr.getAuthenticatedUsers();
     	assertEquals("There should be 1 authenticated user", 1, users.size());
     }
