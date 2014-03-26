@@ -27,8 +27,6 @@
 package com.salesforce.samples.templateapp;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.NativeInstrumentationTestCase;
 
 /**
@@ -37,20 +35,10 @@ import com.salesforce.androidsdk.util.NativeInstrumentationTestCase;
 public class TemplateAppTest extends NativeInstrumentationTestCase {
 
 	/**
-	 * Load app then click logout
-	 * @throws Exception
-	 */
-	public void testLogout() throws Exception {
-		clickView(mainActivity.findViewById(R.id.logout_button));
-		waitForEvent(EventType.LogoutComplete);
-		cleanupActivityFollowingLogout();
-	}
-
-	/**
 	 * Check the user agent used by http access
 	 */
 	public void testUserAgentOfHttpAccess() {
-		String userAgent = HttpAccess.DEFAULT.getUserAgent();
+		String userAgent = SalesforceSDKManager.getInstance().getUserAgent();
 		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + SalesforceSDKManager.SDK_VERSION));
 		assertTrue("User agent should contain Template/1.0 Native", userAgent.contains("Template/1.0 Native"));
 	}
