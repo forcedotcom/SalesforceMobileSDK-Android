@@ -602,10 +602,6 @@ public class SalesforceSDKManager implements AccountRemoved {
             encryptionKey = null;
             UUIDManager.resetUuids();
         }
-        /*
-         * TODO: At this point, launch the method to change passcode if there
-         * are no orgs with passcode left. Do nothing otherwise.
-         */
     }
 
     /**
