@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.app;
 
+import java.io.File;
 import java.util.Map;
 
 import android.accounts.Account;
@@ -39,6 +40,7 @@ import android.util.Log;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.LoginServerManager;
+import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.AdminPrefsManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 
@@ -145,10 +147,6 @@ public class UpgradeManager {
      */
     protected void upgradeTo2Dot2() {
 
-    	/*
-    	 * TODO: Add upgrade migration for push notification shared prefs, if
-    	 * they exist (if PN is enabled).
-    	 */
     	// Creates the current user shared pref file.
         final AccountManager accountManager = AccountManager.get(SalesforceSDKManager.getInstance().getAppContext());
         final Account[] accounts = accountManager.getAccountsByType(SalesforceSDKManager.getInstance().getAccountType());
@@ -159,6 +157,22 @@ public class UpgradeManager {
     		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
     				AuthenticatorService.KEY_USER_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
         	SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
+
+    		/*
+    		 * Renames push notification shared prefs file to new format,
+    		 * if the application is registered for push notifications.
+    		 */
+        	final String oldFilename = PushMessaging.GCM_PREFS;
+    		final String sharedPrefDir = SalesforceSDKManager.getInstance().
+    				getAppContext().getApplicationInfo().dataDir
+    				+ "/shared_prefs";
+    		final File from = new File(sharedPrefDir, oldFilename);
+    		if (from.exists()) {
+    			final String newFilename = PushMessaging.GCM_PREFS + SalesforceSDKManager.getInstance().
+               		getUserAccountManager().buildUserAccount(account).getUserLevelFilenameSuffix();
+        		final File to = new File(sharedPrefDir, newFilename);
+        		from.renameTo(to);
+    		}
 
     		/*
     		 * Copies admin prefs for current account from old file to new file.
