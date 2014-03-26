@@ -219,7 +219,7 @@ public class PasscodeActivityTest extends
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
 		assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
-		assertEquals("Error expected", "The passcode you entered is incorrect. Please try again. You have 2 attempts remaining.", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
+		assertEquals("Error expected", "The passcode you entered is incorrect. Please try again. You have 9 attempts remaining.", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
 		assertEquals("Wrong failure count", 1, passcodeManager.getFailedPasscodeAttempts());
 
 		// Entering 123456 and submitting
@@ -242,23 +242,11 @@ public class PasscodeActivityTest extends
 		
 		// We should still be locked
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
-		
-		// Entering 654321 and submitting -> expect passcode incorrect error
-		setText(R.id.sf__passcode_text, "654321");
-		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
-		assertTrue("Application should still be locked", passcodeManager.isLocked());
-		assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
-		assertEquals("Error expected", "The passcode you entered is incorrect. Please try again. You have 2 attempts remaining.", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
-		assertEquals("Wrong failure count", 1, passcodeManager.getFailedPasscodeAttempts());
 
-		// Entering 321654 and submitting -> expect passcode incorrect error
-		setText(R.id.sf__passcode_text, "321654");
-		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
-		assertTrue("Application should still be locked", passcodeManager.isLocked());
-		assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
-		assertEquals("Error expected", "Final passcode attempt", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
-		assertEquals("Wrong failure count", 2, passcodeManager.getFailedPasscodeAttempts());
-		
+		for (int i = 1; i < 10; i++) {
+			enterWrongPasscode(i);
+		}
+
 		// Entering 123456 and submitting
 		setText(R.id.sf__passcode_text, "123456");
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
@@ -285,7 +273,7 @@ public class PasscodeActivityTest extends
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
 		assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
-		assertEquals("Error expected", "The passcode you entered is incorrect. Please try again. You have 2 attempts remaining.", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
+		assertEquals("Error expected", "The passcode you entered is incorrect. Please try again. You have 9 attempts remaining.", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
 		assertEquals("Wrong failure count", 1, passcodeManager.getFailedPasscodeAttempts());
 	}
 	
@@ -304,22 +292,10 @@ public class PasscodeActivityTest extends
 		
 		// We should still be locked
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
-		
-		// Entering 654321 and submitting -> expect passcode incorrect error
-		setText(R.id.sf__passcode_text, "654321");
-		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
-		assertTrue("Application should still be locked", passcodeManager.isLocked());
-		assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
-		assertEquals("Error expected", "The passcode you entered is incorrect. Please try again. You have 2 attempts remaining.", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
-		assertEquals("Wrong failure count", 1, passcodeManager.getFailedPasscodeAttempts());
 
-		// Entering 321654 and submitting -> expect passcode incorrect error
-		setText(R.id.sf__passcode_text, "321654");
-		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
-		assertTrue("Application should still be locked", passcodeManager.isLocked());
-		assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
-		assertEquals("Error expected", "Final passcode attempt", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
-		assertEquals("Wrong failure count", 2, passcodeManager.getFailedPasscodeAttempts());
+		for (int i = 1; i < 10; i++) {
+			enterWrongPasscode(i);
+		}
 		
 		// Entering 132645 and submitting -> expect passcode manager to be reset
 		setText(R.id.sf__passcode_text, "132645");
@@ -361,5 +337,18 @@ public class PasscodeActivityTest extends
 		clickView(logoutDialog.getButton(AlertDialog.BUTTON_POSITIVE)); 
 		waitSome();
 		assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
+	}
+
+	private void enterWrongPasscode(int count) {
+
+		// Entering 321654 and submitting -> expect passcode incorrect error
+		setText(R.id.sf__passcode_text, "321654");
+		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+		assertTrue("Application should still be locked", passcodeManager.isLocked());
+		assertEquals("Activity expected in check mode still", PasscodeMode.Check, passcodeActivity.getMode());
+		if (count == 9) {
+			assertEquals("Error expected", "Final passcode attempt", ((TextView) passcodeActivity.findViewById(R.id.sf__passcode_error)).getText());
+		}
+		assertEquals("Wrong failure count", count, passcodeManager.getFailedPasscodeAttempts());
 	}
 }

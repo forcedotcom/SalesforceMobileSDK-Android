@@ -602,10 +602,6 @@ public class SalesforceSDKManager implements AccountRemoved {
             encryptionKey = null;
             UUIDManager.resetUuids();
         }
-        /*
-         * TODO: At this point, launch the method to change passcode if there
-         * are no orgs with passcode left. Do nothing otherwise.
-         */
     }
 
     /**
@@ -682,7 +678,8 @@ public class SalesforceSDKManager implements AccountRemoved {
         getAppContext().registerReceiver(pushUnregisterReceiver, intentFilter);
 
         // Unregisters from notifications on logout.
-        PushMessaging.unregister(context);
+		final UserAccount userAcc = getUserAccountManager().buildUserAccount(account);
+        PushMessaging.unregister(context, userAcc);
 
         /*
          * Starts a background thread to wait up to the timeout period. If
@@ -792,7 +789,8 @@ public class SalesforceSDKManager implements AccountRemoved {
 		 * Makes a call to un-register from push notifications, only
 		 * if the refresh token is available.
 		 */
-    	if (PushMessaging.isRegistered(context) && refreshToken != null) {
+		final UserAccount userAcc = getUserAccountManager().buildUserAccount(account);
+    	if (PushMessaging.isRegistered(context, userAcc) && refreshToken != null) {
     		loggedOut = false;
     		unregisterPush(clientMgr, showLoginPage, refreshToken, clientId,
     				loginServer, account, frontActivity);

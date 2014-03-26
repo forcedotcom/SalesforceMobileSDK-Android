@@ -29,10 +29,11 @@ package com.salesforce.androidsdk.accounts;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-
+import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * This class represents a single user account that is currently
@@ -120,6 +121,26 @@ public class UserAccount {
 				accountName = String.format("%s (%s)", username,
 						SalesforceSDKManager.getInstance().getApplicationName());
 			}
+		}
+	}
+
+	/**
+	 * Parameterized constructor.
+	 *
+	 * @param bundle Bundle.
+	 */
+	public UserAccount(Bundle bundle) {
+		if (bundle != null) {
+			authToken = bundle.getString(AUTH_TOKEN);
+			refreshToken = bundle.getString(REFRESH_TOKEN);
+			loginServer = bundle.getString(LOGIN_SERVER);
+			idUrl = bundle.getString(ID_URL);
+			instanceServer = bundle.getString(INSTANCE_SERVER);
+			orgId = bundle.getString(ORG_ID);
+			userId = bundle.getString(USER_ID);
+			username = bundle.getString(USERNAME);
+			clientId = bundle.getString(CLIENT_ID);
+			accountName = bundle.getString(ACCOUNT_NAME);
 		}
 	}
 
@@ -374,6 +395,26 @@ public class UserAccount {
     	} catch (JSONException e) {
     		Log.e(TAG, "Unable to convert to JSON");
     	}
+    	return object;
+    }
+
+    /**
+     * Returns a representation of this instance in a bundle.
+     *
+     * @return Bundle instance.
+     */
+    public Bundle toBundle() {
+    	final Bundle object = new Bundle();
+        object.putString(AUTH_TOKEN, authToken);
+        object.putString(REFRESH_TOKEN, refreshToken);
+        object.putString(LOGIN_SERVER, loginServer);
+        object.putString(ID_URL, idUrl);
+        object.putString(INSTANCE_SERVER, instanceServer);
+        object.putString(ORG_ID, orgId);
+        object.putString(USER_ID, userId);
+        object.putString(USERNAME, username);
+        object.putString(CLIENT_ID, clientId);
+        object.putString(ACCOUNT_NAME, accountName);
     	return object;
     }
 }

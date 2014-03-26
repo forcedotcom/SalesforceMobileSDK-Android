@@ -167,11 +167,16 @@ public class DBOpenHelper extends SQLiteOpenHelper {
     	// Deletes the community databases associated with this user account.
     	final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
     	final File dir = new File(dbPath);
-    	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter();
-    	for (final File file : dir.listFiles()) {
-    		if (file != null && fileFilter.accept(dir, file.getName())) {
-    			file.delete();
-    		}
+    	if (dir != null) {
+        	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter();
+        	final File[] fileList = dir.listFiles();
+        	if (fileList != null) {
+            	for (final File file : fileList) {
+            		if (file != null && fileFilter.accept(dir, file.getName())) {
+            			file.delete();
+            		}
+            	}
+        	}
     	}
 	}
 
