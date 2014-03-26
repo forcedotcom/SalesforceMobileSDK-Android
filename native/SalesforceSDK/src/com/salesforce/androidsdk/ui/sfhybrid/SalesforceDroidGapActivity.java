@@ -486,15 +486,30 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
        // Android 3.0+ clients want to use the standard .[domain] format. Earlier clients will only work
        // with the [domain] format.  Set them both; each platform will leverage its respective format.
-       addSidCookieForDomain(cookieMgr,"salesforce.com", accessToken);
-       addSidCookieForDomain(cookieMgr,".salesforce.com", accessToken);
+       addSidCookieForInstance(cookieMgr,"salesforce.com", accessToken);
+       addSidCookieForInstance(cookieMgr,".salesforce.com", accessToken);
 
        // Log.i("SalesforceOAuthPlugin.setSidCookies", "accessToken=" + accessToken);
        cookieSyncMgr.sync();
    }
 
+   private void addSidCookieForInstance(CookieManager cookieMgr, String domain, String sid) {
+	   final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
+       URI instanceUrl = null;
+       if (clientInfo != null) {
+    	   instanceUrl = clientInfo.instanceUrl;
+       }
+       String host = null;
+       if (instanceUrl != null) {
+    	   host = instanceUrl.getHost();
+       }
+       if (host != null) {
+    	   addSidCookieForDomain(cookieMgr, host, sid);
+       }
+   }
+
    private void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
-       String cookieStr = "sid=" + sid;
+	   String cookieStr = "sid=" + sid;
        cookieMgr.setCookie(domain, cookieStr);
    }    
     

@@ -9,6 +9,6 @@
 	<classpathentry exported="true" kind="lib" path="libs/android-junit-report-1.2.6.jar"/>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
 	<classpathentry kind="lib" path="libs/guava-r09.jar"/>
-	<classpathentry kind="lib" path="libs/volley_android-4.3_r2.1.jar"/>
+	<classpathentry kind="lib" path="libs/volley_android-4.4.2_r2.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

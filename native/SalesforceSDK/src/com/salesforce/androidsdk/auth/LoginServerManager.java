@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -28,8 +28,8 @@ package com.salesforce.androidsdk.auth;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -43,247 +43,257 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.SalesforceR;
 
 /**
- * Class to manage login hosts (default and user entered)
+ * Class to manage login hosts (default and user entered).
+ *
+ * @author bhariharan
  */
 public class LoginServerManager {
-	
-	// Default login servers
+
+	// Default login servers.
     public static final String PRODUCTION_LOGIN_URL = "https://login.salesforce.com";
     public static final String SANDBOX_LOGIN_URL = "https://test.salesforce.com";
-	
-	// Key for login servers properties stored in preferences
-	public static final String SERVER_URL_PREFS_SETTINGS = "server_url_prefs";
-	public static final String SERVER_URL_PREFS_CUSTOM_LABEL = "server_url_custom_label";
-	public static final String SERVER_URL_PREFS_CUSTOM_URL = "server_url_custom_url";
-	public static final String SERVER_URL_CURRENT_SELECTION = "server_url_current_string";
-	
-	// Members
+
+	// Legacy keys for login servers properties stored in preferences.
+	public static final String LEGACY_SERVER_URL_PREFS_SETTINGS = "server_url_prefs";
+
+	// Keys used in shared preferences.
+	private static final String SERVER_URL_FILE = "server_url_file";
+	private static final String NUMBER_OF_ENTRIES = "number_of_entries";
+	private static final String SERVER_NAME = "server_name_%d";
+	private static final String SERVER_URL = "server_url_%d";
+	private static final String IS_CUSTOM = "is_custom_%d";
+
 	private Context ctx;
-	private List<LoginServer> defaultLoginServers;
-	private LoginServer customServer;
 	private LoginServer selectedServer;
 	private SharedPreferences settings;
-	
+
     /**
-     * @param ctx
+     * Parameterized constructor.
+     *
+     * @param ctx Context.
      */
     public LoginServerManager(Context ctx) {
     	this.ctx = ctx;
-    	settings = ctx.getSharedPreferences(SERVER_URL_PREFS_SETTINGS, Context.MODE_PRIVATE);
-    	
-    	// Read default login servers from servers.xml
-    	this.defaultLoginServers = getLoginServersFromXML();
-
-    	// If that fails (e.g. if servers.xml is missing), use "legacy" default (i.e. production and sandbox)
-    	if (defaultLoginServers == null) {
-    		defaultLoginServers = getLegacyLoginServers();
+    	settings = ctx.getSharedPreferences(SERVER_URL_FILE,
+    			Context.MODE_PRIVATE);
+    	initSharedPrefFile();
+    	final List<LoginServer> allServers = getAllSavedSevers();
+    	selectedServer = new LoginServer("Production", PRODUCTION_LOGIN_URL, false);
+    	if (allServers != null) {
+    		final LoginServer server = allServers.get(0);
+    		if (server != null) {
+    			selectedServer = server;
+    		}
     	}
-
-    	// Look for custom server in pref
-		String name = settings.getString(SERVER_URL_PREFS_CUSTOM_LABEL, null);
-		String url = settings.getString(SERVER_URL_PREFS_CUSTOM_URL, null);
-		if (name != null && url != null) {
-			customServer = new LoginServer(name, url, defaultLoginServers.size(), true);
-		}
-		
-		// Look for selected server in pref, select first one if not specified
-		String loginUrl = settings.getString(SERVER_URL_CURRENT_SELECTION, null);
-		selectedServer = getLoginServerFromURL(loginUrl); 
-		if (selectedServer == null) {
-			selectedServer = defaultLoginServers.get(0);
-		}
     }
 
     /**
-     * @param url
-     * @return return matching login server if found or null
+     * Returns a LoginServer instance from URL.
+     *
+     * @param url Server URL.
+     * @return Matching LoginServer instance if found, or null.
      */
     public LoginServer getLoginServerFromURL(String url) {
     	if (url == null) {
     		return null;
     	}
-    	
-    	if (customServer != null && customServer.url.equals(url)) {
-    		return customServer;
+    	final List<LoginServer> allServers = getAllSavedSevers();
+    	if (allServers != null) {
+    		for (final LoginServer server : allServers) {
+    			if (server != null && url.equals(server.url)) {
+    				return server;
+    			}
+    		}
     	}
-    	
-		for (LoginServer server : defaultLoginServers) {
-			if (server.url.equals(url)) {
-				return server;
-			}
-		}
-		
 		return null;
     }
-    
+
     /**
-	 * @return list of default login servers
-	 */
-	public List<LoginServer> getDefaultLoginServers() {
-		return Collections.unmodifiableList(defaultLoginServers);
-	}
-    
-    /**
-     * @return selected login server
+     * Returns the selected login server to display.
+     *
+     * @return LoginServer instance.
      */
     public LoginServer getSelectedLoginServer() {
     	return selectedServer;
     }
-    
-    /**
-     * @return custom login server
-     */
-    public LoginServer getCustomLoginServer() {
-    	return customServer;
-    }
 
-    
     /**
-     * Note: server is expected to be customServer or one of defaultLoginServers
-     * (LoginServer's constructor is private and therefore only LoginServerManager should construct LoginServer instances)
-     * @param server
+     * Sets the currently selected login server to display.
+     *
+     * @param server LoginServer instance.
      */
     public void setSelectedLoginServer(LoginServer server) {
-    	selectedServer = server; 
-		
-    	// Update pref 
-        Editor edit = settings.edit();
-        edit.putString(SERVER_URL_CURRENT_SELECTION, server.url);
-        edit.commit();
+    	if (server == null) {
+    		return;
+    	}
+    	selectedServer = server;
     }
 
     /**
-     * Select sandbox as login server (use in tests)
+     * Selects Sandbox as login server (used in tests).
      */
     public void useSandbox() {
-    	LoginServer sandboxServer = getLoginServerFromURL(SANDBOX_LOGIN_URL);
+    	final LoginServer sandboxServer = getLoginServerFromURL(SANDBOX_LOGIN_URL);
     	setSelectedLoginServer(sandboxServer);
     }
-    
-    /**
-     * Select login server by index in the list defaultLoginServers + customServer
-     * @param index
-     */
-    public void setSelectedLoginServerByIndex(int index) {
-    	if (index == defaultLoginServers.size() && customServer != null) {
-    		setSelectedLoginServer(customServer);
-    	}
-    	else if (index >= 0 && index < defaultLoginServers.size()) {
-    		setSelectedLoginServer(defaultLoginServers.get(index));
-    	}
-    	else {
-    		// Bad index - selecting first
-    		setSelectedLoginServer(defaultLoginServers.get(0));
-    	}
-    }
-    
-    
+
 	/**
-	 * Record custom login server in memory and pref file
-	 * @param name
-	 * @param url
+	 * Adds a custom login server to the shared pref file.
+	 *
+	 * @param name Server name.
+	 * @param url Server URL.
 	 */
-	public void setCustomLoginServer(String name, String url) {
-		customServer = new LoginServer(name, url, defaultLoginServers.size(), true);
-		
-		// Update pref
-		SharedPreferences.Editor editor = settings.edit();
-        editor.putString(SERVER_URL_PREFS_CUSTOM_LABEL, name);
-        editor.putString(SERVER_URL_PREFS_CUSTOM_URL, url);
-        editor.commit();
+	public void addCustomLoginServer(String name, String url) {
+		if (name == null || url == null) {
+			return;
+		}
+		int numServers = settings.getInt(NUMBER_OF_ENTRIES, 0);
+        final Editor edit = settings.edit();
+        edit.putString(String.format(SERVER_NAME, numServers), name);
+        edit.putString(String.format(SERVER_URL, numServers), url);
+        edit.putBoolean(String.format(IS_CUSTOM, numServers), true);
+        edit.putInt(NUMBER_OF_ENTRIES, ++numServers);
+        edit.commit();
+        setSelectedLoginServer(new LoginServer(name, url, true));
 	}
-	
+
 	/**
-	 * Clear custom login server in memory and pref file
-	 * Reset selected server to be the first default login server (production)
+	 * Clears all saved custom servers.
 	 */
 	public void reset() {
-		selectedServer = defaultLoginServers.get(0);
-		customServer = null;
-
-		// Update pref
-		SharedPreferences.Editor editor = settings.edit();
-        editor.clear();
-        editor.commit();
+		final Editor edit = settings.edit();
+		edit.clear();
+		edit.commit();
+		initSharedPrefFile();
 	}
 
 	/**
-	 * Return production and sandbox as the login servers (only called when servers.xml is missing)
+	 * Returns the list of all saved servers, including custom servers.
+	 *
+	 * @return List of all saved servers.
 	 */
-	List<LoginServer> getLegacyLoginServers() {
-		SalesforceR salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
-		List<LoginServer> loginServers = new ArrayList<LoginServer>();
+	public List<LoginServer> getAllSavedSevers() {
+		int numServers = settings.getInt(NUMBER_OF_ENTRIES, 0);
+		if (numServers == 0) {
+			return null;
+		}
+		final List<LoginServer> allServers = new ArrayList<LoginServer>();
+		for (int i = 0; i < numServers; i++) {
+			final String name = settings.getString(String.format(SERVER_NAME, i), null);
+			final String url = settings.getString(String.format(SERVER_URL, i), null);
+			boolean isCustom = settings.getBoolean(String.format(IS_CUSTOM, i), false);
+			if (name != null && url != null) {
+				final LoginServer server = new LoginServer(name, url, isCustom);
+				allServers.add(server);
+			}
+		}
+		return (allServers.size() > 0 ? allServers : null);
+	}
 
-		int index = 0;
-		LoginServer productionServer = new LoginServer(ctx.getString(salesforceR.stringAuthLoginProduction()), PRODUCTION_LOGIN_URL, index++, false);
-		loginServers.add(productionServer);
-		Log.i("LoginServerManager.getLegacyLoginServers", "Read " + productionServer + " from servers.xml"); 
-
-		LoginServer sandboxServer = new LoginServer(ctx.getString(salesforceR.stringAuthLoginSandbox()), SANDBOX_LOGIN_URL, index++, false);
-		loginServers.add(sandboxServer);
-		Log.i("LoginServerManager.getLegacyLoginServers", "Read " + sandboxServer + " from servers.xml"); 
-	
-		return loginServers; 
-	}    
-    
 	/**
-	 * @return login servers defined in res/xml/servers.xml or null
+	 * Returns production and sandbox as the login servers
+	 * (only called when servers.xml is missing).
 	 */
-	List<LoginServer> getLoginServersFromXML() {
+	private List<LoginServer> getLegacyLoginServers() {
+		final SalesforceR salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
+		final List<LoginServer> loginServers = new ArrayList<LoginServer>();
+		final LoginServer productionServer = new LoginServer(ctx.getString(salesforceR.stringAuthLoginProduction()),
+				PRODUCTION_LOGIN_URL, false);
+		loginServers.add(productionServer);
+		final LoginServer sandboxServer = new LoginServer(ctx.getString(salesforceR.stringAuthLoginSandbox()),
+				SANDBOX_LOGIN_URL, false);
+		loginServers.add(sandboxServer);
+		return loginServers;
+	}
+
+	/**
+	 * Returns the list of login servers from XML.
+	 *
+	 * @return Login servers defined in 'res/xml/servers.xml', or null.
+	 */
+	private List<LoginServer> getLoginServersFromXML() {
 		List<LoginServer> loginServers = null;
-		
 		int id = ctx.getResources().getIdentifier("servers", "xml", ctx.getPackageName());
 		if (id != 0) {
 			loginServers = new ArrayList<LoginServer>();
-			XmlResourceParser xml = ctx.getResources().getXml(id);
-			int index = 0;
-			int eventType = -1;			
+			final XmlResourceParser xml = ctx.getResources().getXml(id);
+			int eventType = -1;		
 			while (eventType != XmlResourceParser.END_DOCUMENT) {
 				if (eventType == XmlResourceParser.START_TAG) {
 					if (xml.getName().equals("server")) {
 						String name = xml.getAttributeValue(null, "name");
 						String url = xml.getAttributeValue(null, "url");
-						LoginServer loginServer = new LoginServer(name, url, index++, false);
+						final LoginServer loginServer = new LoginServer(name,
+								url, false);
 						loginServers.add(loginServer);
-						Log.i("LoginServerManager.getLoginServersFromXml", "Read " + loginServer + " from servers.xml"); 
 					}
 				}
 				try {
 					eventType = xml.next();
 				} catch (XmlPullParserException e) {
-					Log.w("LoginServerManager.getLoginServersFromXml", e);
+					Log.w("LoginServerManager:getLoginServersFromXml", e);
 				} catch (IOException e) {
-					Log.w("LoginServerManager.getLoginServersFromXml", e);
+					Log.w("LoginServerManager:getLoginServersFromXml", e);
 				}
 			}
 		}
-
 		return loginServers;
 	}
-	
-	
+
 	/**
-	 * Class to encapsulate a login server name, url. index and type (custom or not)
-	 *
+	 * Initializes the shared pref file with all available servers for
+	 * the first time, if necessary. This is required primarily for the
+	 * first time a user is upgrading to a newer version of the Mobile SDK.
 	 */
-	public static class LoginServer {
-		public final String name;
-		public final String url;
-		public final int index;
-		public final boolean isCustom;
-		
-		private LoginServer(String name, String url, int index, boolean isCustom) {
-			this.name = name;
-			this.url = url;
-			this.index = index;
-			this.isCustom = isCustom;
+	private void initSharedPrefFile() {
+		final Map<String, ?> values = settings.getAll();
+		if (values != null && !values.isEmpty()) {
+			return;
 		}
-		
-		@Override 
-		public String toString() {
-			return index + ": " + name + "[" + url + "] custom:" + isCustom;
+		List<LoginServer> servers = getLoginServersFromXML();
+		if (servers == null || servers.isEmpty()) {
+			servers = getLegacyLoginServers();
 		}
+		int numServers = servers.size();
+	    final Editor edit = settings.edit();
+		for (int i = 0; i < numServers; i++) {
+			final LoginServer curServer = servers.get(i);
+			edit.putString(String.format(SERVER_NAME, i), curServer.name);
+		    edit.putString(String.format(SERVER_URL, i), curServer.url);
+		    edit.putBoolean(String.format(IS_CUSTOM, i), curServer.isCustom);
+		    if (i == 0) {
+		    	setSelectedLoginServer(curServer);
+		    }
+		}
+	    edit.putInt(NUMBER_OF_ENTRIES, numServers);
+	    edit.commit();
 	}
 
+	/**
+	 * Class to encapsulate a login server name, URL, index and type (custom or not).
+	 */
+	public static class LoginServer {
 
+		public final String name;
+		public final String url;
+		public final boolean isCustom;
+
+		/**
+		 * Parameterized constructor.
+		 *
+		 * @param name Server name.
+		 * @param url Server URL.
+		 * @param isCustom True - if custom URL, False - otherwise.
+		 */
+		public LoginServer(String name, String url, boolean isCustom) {
+			this.name = name;
+			this.url = url;
+			this.isCustom = isCustom;
+		}
+
+		@Override 
+		public String toString() {
+			return "Name: " + name + ", URL: " + url + ", Custom URL: " + isCustom;
+		}
+	}
 }

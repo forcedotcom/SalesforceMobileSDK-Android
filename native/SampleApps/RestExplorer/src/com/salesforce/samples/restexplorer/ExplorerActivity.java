@@ -49,6 +49,7 @@ import android.app.Dialog;
 import android.app.TabActivity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
@@ -235,6 +236,17 @@ public class ExplorerActivity extends TabActivity {
 	 */
 	public void onGetVersionsClick(View v) {
 		sendRequest(RestRequest.getRequestForVersions());
+	}
+
+	/**
+	 * Called when "Switch Account" button is clicked.
+	 *
+	 * @param v View that was clicked.
+	 */
+	public void onSwitchAccClick(View v) {
+		final Intent i = new Intent(this, SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
+		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		this.startActivity(i);
 	}
 
 	/**

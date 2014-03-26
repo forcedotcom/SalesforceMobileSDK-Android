@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+
 <resources>
 
     <!-- Dimensions used in sf__custom_server_url.xml -->
@@ -27,4 +28,6 @@
     <dimen name="sf__custom_url_layout_padding">0dp</dimen>
     <dimen name="sf__button_margin">2dp</dimen>
 
+    <!-- Dimensions used in sf__account_switcher.xml -->
+    <dimen name="sf__button_font_size">24dp</dimen>
 </resources>

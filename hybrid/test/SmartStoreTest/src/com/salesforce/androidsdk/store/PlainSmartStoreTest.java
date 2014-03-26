@@ -38,6 +38,6 @@ public class PlainSmartStoreTest extends AbstractSmartStoreTest {
 
 	@Override
 	protected SQLiteDatabase getWritableDatabase() {
-		return DBOpenHelper.getOpenHelper(targetContext).getWritableDatabase("");
+		return DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase("");
 	}
 }

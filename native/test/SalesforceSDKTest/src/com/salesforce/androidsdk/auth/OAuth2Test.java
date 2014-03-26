@@ -194,7 +194,7 @@ public class OAuth2Test extends InstrumentationTestCase {
 	 * @throws OAuthFailedException
 	 * @throws URISyntaxException
 	 */
-	public void testCallIdentiyService() throws IOException, OAuthFailedException, URISyntaxException {
+	public void testCallIdentityService() throws IOException, OAuthFailedException, URISyntaxException {
 		// Get an auth token using the refresh token
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
 		assertNotNull("Auth token should not be null", refreshResponse.authToken);

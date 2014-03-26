@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,10 +26,17 @@
  */
 package com.salesforce.androidsdk.smartstore.app;
 
+import java.util.List;
+
 import net.sqlcipher.database.SQLiteDatabase;
+import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
+import android.text.TextUtils;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.accounts.UserAccountManagerWithSmartStore;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
@@ -88,7 +95,8 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param keyImpl Implementation of KeyInterface.
 	 */
     public static void initHybrid(Context context, KeyInterface keyImpl) {
-    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, SalesforceDroidGapActivity.class, LoginActivity.class);
+    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl,
+    			SalesforceDroidGapActivity.class, LoginActivity.class);
     }
 
 	/**
@@ -100,8 +108,10 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param keyImpl Implementation of KeyInterface.
      * @param loginActivity Login activity.
 	 */
-    public static void initHybrid(Context context, KeyInterface keyImpl, Class<? extends Activity> loginActivity) {
-    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, SalesforceDroidGapActivity.class, loginActivity);
+    public static void initHybrid(Context context, KeyInterface keyImpl,
+    		Class<? extends Activity> loginActivity) {
+    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl,
+    			SalesforceDroidGapActivity.class, loginActivity);
     }
 
 	/**
@@ -114,8 +124,11 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param mainActivity Main activity.
      * @param loginActivity Login activity.
 	 */
-    public static void initHybrid(Context context, KeyInterface keyImpl, Class<? extends SalesforceDroidGapActivity> mainActivity, Class<? extends Activity> loginActivity) {
-    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity, loginActivity);
+    public static void initHybrid(Context context, KeyInterface keyImpl,
+    		Class<? extends SalesforceDroidGapActivity> mainActivity,
+    		Class<? extends Activity> loginActivity) {
+    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl,
+    			mainActivity, loginActivity);
     }
     
 	/**
@@ -127,8 +140,10 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
 	 */
-    public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity) {
-    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity, LoginActivity.class);
+    public static void initNative(Context context, KeyInterface keyImpl,
+    		Class<? extends Activity> mainActivity) {
+    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity,
+    			LoginActivity.class);
     }
 
 	/**
@@ -141,7 +156,8 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
 	 */
-    public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    public static void initNative(Context context, KeyInterface keyImpl,
+    		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity, loginActivity);
     }
 
@@ -160,47 +176,111 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     }
 
     @Override
-    protected void cleanUp(Activity frontActivity) {
+    protected void cleanUp(Activity frontActivity, Account account) {
+    	if (account != null) {
+    		final UserAccount userAccount = getUserAccountManager().buildUserAccount(account);
+    		if (userAccount != null && hasSmartStore(userAccount)) {
+            	DBHelper.INSTANCE.reset(INSTANCE.getAppContext(), userAccount);
+    		}
+    	}
+        super.cleanUp(frontActivity, account);
+    }
 
-        // Reset smartstore.
-        if (hasSmartStore()) {
-        	DBHelper.INSTANCE.reset(INSTANCE.getAppContext());
-        }
-        super.cleanUp(frontActivity);
+    @Override
+    public UserAccountManager getUserAccountManager() {
+    	return UserAccountManagerWithSmartStore.getInstance();
     }
 
     @Override
     public synchronized void changePasscode(String oldPass, String newPass) {
     	if (isNewPasscode(oldPass, newPass)) {
-	        if (hasSmartStore()) {
+    		final UserAccountManager accMgr = getUserAccountManager();
+    		final List<UserAccount> accounts = accMgr.getAuthenticatedUsers();
+    		if (accounts != null) {
+    			for (final UserAccount account : accounts) {
+    				if (hasSmartStore(account)) {
 
-	            // If the old passcode is null, use the default key.
-	            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context).getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
+    		            // If the old passcode is null, use the default key.
+    		            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context, account).getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
 
-	            // If the new passcode is null, use the default key.
-	            SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
-	        }
+    		            // If the new passcode is null, use the default key.
+    		            SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
+    		        }
+    			}
+    		}
 	        super.changePasscode(oldPass, newPass);
 		}
     }
 
     /**
-     * Returns the database used for smart store.
+     * Returns the database used by smart store for the current user.
      *
      * @return SmartStore instance.
      */
     public SmartStore getSmartStore() {
-        final String passcodeHash = getPasscodeHash();
-        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context).getWritableDatabase(passcodeHash == null ? getEncryptionKeyForPasscode(null) : passcodeHash);
+    	return getSmartStore(getUserAccountManager().getCurrentUser());
+    }
+
+    /**
+     * Returns the database used by smart store for a specified user.
+     *
+     * @param account UserAccount instance.
+     * @return SmartStore instance.
+     */
+    public SmartStore getSmartStore(UserAccount account) {
+    	return getSmartStore(account, null);
+    }
+
+    /**
+     * Returns the database used by smart store for a specified user in the
+     * specified community.
+     *
+     * @param account UserAccount instance.
+     * @param communityId Community ID.
+     * @return SmartStore instance.
+     */
+    public SmartStore getSmartStore(UserAccount account, String communityId) {
+    	final String passcodeHash = getPasscodeHash();
+        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context,
+        		account, communityId).getWritableDatabase(passcodeHash == null ?
+        		getEncryptionKeyForPasscode(null) : passcodeHash);
         return new SmartStore(db);
     }
 
     /**
-     * Returns whether smart store is enabled.
+     * Returns whether smart store is enabled for the current user or not.
      *
-     * @return True - if the application has a smart store database, False - otherwise.
+     * @return True - if the user has a smart store database, False - otherwise.
      */
     public boolean hasSmartStore() {
-        return context.getDatabasePath(DBOpenHelper.DB_NAME).exists();
+    	return hasSmartStore(getUserAccountManager().getCurrentUser(), null);
+    }
+
+    /**
+     * Returns whether smart store is enabled for the specified user or not.
+     *
+     * @param account UserAccount instance.
+     * @return True - if the user has a smart store database, False - otherwise.
+     */
+    public boolean hasSmartStore(UserAccount account) {
+    	return hasSmartStore(account, null);
+    }
+
+    /**
+     * Returns whether smart store is enabled for the specified community or not.
+     *
+     * @param account UserAccount instance.
+     * @param communityId Community ID.
+     * @return True - if the user has a smart store database, False - otherwise.
+     */
+    public boolean hasSmartStore(UserAccount account, String communityId) {
+    	String dbName = String.format(DBOpenHelper.DB_NAME, "");
+    	if (account != null) {
+        	final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
+    		if (!TextUtils.isEmpty(dbPath)) {
+    			dbName = String.format(DBOpenHelper.DB_NAME, dbPath);
+    		}
+    	}
+        return context.getDatabasePath(dbName).exists();
     }
 }

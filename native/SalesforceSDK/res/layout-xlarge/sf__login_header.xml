@@ -1,80 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-		xmlns:android="http://schemas.android.com/apk/res/android"
-		android:orientation="vertical"
-		android:layout_width="fill_parent"
-		android:layout_height="@dimen/sf__header_layout_height">		
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="@dimen/sf__header_layout_height">	
 
 	<LinearLayout style="@style/SalesforceSDK.Header.Container">
-			
-			<RelativeLayout 
-				android:layout_width="wrap_content"
-				android:layout_height="fill_parent">
-				
-				<TextView 
-					android:id="@+id/sf__server_name"
-					style="@style/SalesforceSDK.Header.Text.LeftMargin"
-					android:layout_alignParentLeft="true"
-				/>
-					
-				<ImageView 
-				    android:id="@+id/sf__reload_page"
-				    style="@style/SalesforceSDK.Header.Reload"
-				    android:contentDescription="@string/sf__reload"
-					android:onClick="onReloadClick"
-				/>
-				
-				<include layout="@layout/sf__header_separator"
-					android:id="@+id/sf__seperator"
-					android:layout_toLeftOf="@id/sf__reload_page"
-				    style="@style/SalesforceSDK.Header.Separator"
-				/>
-				
-				<TextView 
-					android:id="@+id/sf__clear_cookies"
-					android:text="@string/sf__clear_cookies"
-					android:layout_toLeftOf="@id/sf__seperator"
-					style="@style/SalesforceSDK.Header.Text.RightMargin"
-					android:onClick="onClearCookiesClick"
-				/>
-					
-				<include layout="@layout/sf__header_separator"
-				    android:id="@+id/sf__seperator2"
-					android:layout_toLeftOf="@id/sf__clear_cookies"
-				    style="@style/SalesforceSDK.Header.Separator"
-				/>
-				
-				<TextView 
-					android:id="@+id/sf__change_server"
-					android:text="@string/sf__pick_server"
-					android:layout_toLeftOf="@id/sf__seperator2"
-					style="@style/SalesforceSDK.Header.Text.RightMargin"
-					android:onClick="onPickServerClick"
-				/>
-				
-				<include layout="@layout/sf__header_separator"
-				    android:id="@+id/sf__seperator3"
-					android:layout_toLeftOf="@id/sf__change_server"
-				    style="@style/SalesforceSDK.Header.Separator"
-				/>
-				
-				<ProgressBar android:id="@+id/sf__load_spinner"
-				    style="@style/SalesforceSDK.Header.ProgressBar"
-					android:layout_toLeftOf="@id/sf__seperator3"
-					android:visibility="gone"
-				/>
-				
-				<include
-				    layout="@layout/sf__header_separator"
-				    android:id="@+id/sf__load_separator"
-					android:layout_toLeftOf="@id/sf__load_spinner"
-				    style="@style/SalesforceSDK.Header.Separator"
-				    android:visibility="gone"
-				/>
-									
-		</RelativeLayout>
+
+        <RelativeLayout android:layout_width="wrap_content"
+            android:layout_height="fill_parent">
+
+			<TextView android:id="@+id/sf__server_name"
+                style="@style/SalesforceSDK.Header.Text.LeftMargin"
+				android:layout_alignParentLeft="true" />
+
+			<ImageView android:id="@+id/sf__reload_page"
+                style="@style/SalesforceSDK.Header.Reload"
+				android:contentDescription="@string/sf__reload"
+				android:onClick="onReloadClick" />
+
+            <include layout="@layout/sf__header_separator"
+                android:id="@+id/sf__seperator"
+				android:layout_toLeftOf="@id/sf__reload_page"
+				style="@style/SalesforceSDK.Header.Separator" />
+
+            <TextView android:id="@+id/sf__clear_cookies"
+                android:text="@string/sf__clear_cookies"
+				android:layout_toLeftOf="@id/sf__seperator"
+				style="@style/SalesforceSDK.Header.Text.RightMargin"
+				android:onClick="onClearCookiesClick" />
+
+            <include layout="@layout/sf__header_separator"
+                android:id="@+id/sf__seperator2"
+				android:layout_toLeftOf="@id/sf__clear_cookies"
+				style="@style/SalesforceSDK.Header.Separator" />
+
+            <TextView android:id="@+id/sf__change_server"
+                android:text="@string/sf__pick_server"
+				android:layout_toLeftOf="@id/sf__seperator2"
+				style="@style/SalesforceSDK.Header.Text.RightMargin"
+				android:onClick="onPickServerClick" />
+
+            <include layout="@layout/sf__header_separator"
+                android:id="@+id/sf__seperator3"
+				android:layout_toLeftOf="@id/sf__change_server"
+				style="@style/SalesforceSDK.Header.Separator" />
+
+            <ProgressBar android:id="@+id/sf__load_spinner"
+                style="@style/SalesforceSDK.Header.ProgressBar"
+				android:layout_toLeftOf="@id/sf__seperator3"
+				android:visibility="gone" />
+
+            <include layout="@layout/sf__header_separator"
+                android:id="@+id/sf__load_separator"
+				android:layout_toLeftOf="@id/sf__load_spinner"
+				style="@style/SalesforceSDK.Header.Separator"
+				android:visibility="gone" />					
+        </RelativeLayout>
 	</LinearLayout>
-	
+
 	<include layout="@layout/sf__header_bottom" />
-	
 </LinearLayout>

@@ -1,17 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-	xmlns:android="http://schemas.android.com/apk/res/android"
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:id="@+id/sf__seperator"
-	style="@style/SalesforceSDK.Header.Separator"
->
-	<View
-	    style="@style/SalesforceSDK.Header.SeparatorLine"
-    	android:background="@drawable/sf__header_left_border"
-    />
-    	
-	<View
-	    style="@style/SalesforceSDK.Header.SeparatorLine"
-		android:background="@drawable/sf__header_right_border"
-	/>
-	
+	style="@style/SalesforceSDK.Header.Separator">
+
+	<View style="@style/SalesforceSDK.Header.SeparatorLine"
+    	android:background="@drawable/sf__header_left_border" />
+
+	<View style="@style/SalesforceSDK.Header.SeparatorLine"
+		android:background="@drawable/sf__header_right_border" />
 </LinearLayout> 

@@ -59,11 +59,6 @@ public class MainActivity extends SalesforceActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		smartStoreIntf = new SmartStoreInterface();
-
-		// Creates soups, if they don't exist already.
-		smartStoreIntf.createAccountsSoup();
-		smartStoreIntf.createOpportunitiesSoup();
 
 		// Configures options for the progress indicator.
 		progressDialog = new ProgressDialog(this);
@@ -84,6 +79,11 @@ public class MainActivity extends SalesforceActivity {
 	@Override
 	public void onResume(RestClient client) {
         this.client = client;
+		smartStoreIntf = new SmartStoreInterface();
+
+		// Creates soups, if they don't exist already.
+		smartStoreIntf.createAccountsSoup();
+		smartStoreIntf.createOpportunitiesSoup();
 
 		// Show the view.
 		findViewById(R.id.root).setVisibility(View.VISIBLE);
