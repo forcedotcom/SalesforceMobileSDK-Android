@@ -95,7 +95,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         final Intent i = getIntent();
         boolean shouldChangePasscode = false;
         if (i != null) {
-        	shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CREATE_LONGER_PASSCODE_KEY,
+        	shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CHANGE_PASSCODE_KEY,
         			false);
         }
         if (shouldChangePasscode) {

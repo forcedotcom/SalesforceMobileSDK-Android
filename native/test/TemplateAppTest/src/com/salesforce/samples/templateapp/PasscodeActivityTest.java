@@ -28,6 +28,7 @@ package com.salesforce.samples.templateapp;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
 
@@ -72,7 +73,7 @@ public class PasscodeActivityTest extends
 		}
 		super.tearDown();
 	}
-	
+
 	/**
 	 * Test passcode creation flow when no mistakes are made by user
 	 */
@@ -87,6 +88,31 @@ public class PasscodeActivityTest extends
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
 		assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
 		
+		// Re-entering 123456 and submitting
+		setText(R.id.sf__passcode_text, "123456");
+		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+		assertFalse("Application should be unlocked", passcodeManager.isLocked());
+		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
+	}
+
+	/**
+	 * Test passcode change flow when no mistakes are made by user
+	 */
+	public void testChangeWithNoMistakes() {
+		// Get activity
+		final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+				SalesforceSDKManager.getInstance().getPasscodeActivity());
+        i.putExtra(PasscodeManager.CHANGE_PASSCODE_KEY, true);
+		setActivityIntent(i);
+		passcodeActivity = getActivity();
+		assertEquals("Activity expected in change mode", PasscodeMode.Change, passcodeActivity.getMode());
+
+		// Entering in 123456 and submitting
+		setText(R.id.sf__passcode_text, "123456");
+		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+		assertTrue("Application should still be locked", passcodeManager.isLocked());
+		assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
+
 		// Re-entering 123456 and submitting
 		setText(R.id.sf__passcode_text, "123456");
 		doEditorAction(R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);

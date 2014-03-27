@@ -81,7 +81,7 @@ public class PasscodeManager  {
     public static final int PASSCODE_REQUEST_CODE = 777;
 
     // Key used to specify that a longer passcode needs to be created.
-    public static final String CREATE_LONGER_PASSCODE_KEY = "create_longer_passcode";
+    public static final String CHANGE_PASSCODE_KEY = "change_passcode";
 
     // this is a hash of the passcode to be used as part of the key to encrypt/decrypt oauth tokens
     // It's using a different salt/key than the one used to verify the entry
@@ -498,7 +498,7 @@ public class PasscodeManager  {
         if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
-        i.putExtra(CREATE_LONGER_PASSCODE_KEY, changePasscodeFlow);
+        i.putExtra(CHANGE_PASSCODE_KEY, changePasscodeFlow);
         if (ctx instanceof Activity) {
             ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
         } else {
