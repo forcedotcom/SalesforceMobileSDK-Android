@@ -42,22 +42,21 @@ import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
 import org.apache.http.util.EntityUtils;
 
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Instrumentation.ActivityMonitor;
 import android.content.Context;
-import android.content.IntentFilter;
 import android.widget.Button;
 import android.widget.TabHost;
 import android.widget.TextView;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.util.BaseActivityInstrumentationTestCase;
 import com.salesforce.androidsdk.util.EventsListenerQueue;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * Tests for ExplorerActivity
@@ -155,7 +154,8 @@ public class ExplorerActivityTest extends
     }
 
     /**
-     * Test clicking logout and then clicking yes - make sure we end up in login screen.
+     * Test clicking logout and then clicking yes - make sure we end up removing
+     * the account.
      */
     public void testClickLogoutThenConfirm() {
         // Click on logout
@@ -163,17 +163,16 @@ public class ExplorerActivityTest extends
 
         // Check that confirmation dialog is shown
         assertTrue("Logout confirmation dialog showing", getActivity().logoutConfirmationDialog.isShowing());
-
-        // Setup activity monitor
-        ActivityMonitor monitor = getInstrumentation().addMonitor(new IntentFilter(LoginActivity.class.getName()), null, false);
+        final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+        UserAccount curUser = userAccMgr.getCurrentUser();
+        assertNotNull("Current user should not be null", curUser);
 
         // Click yes
         clickView(getActivity().logoutConfirmationDialog.getButton(AlertDialog.BUTTON_POSITIVE));
-
-        // Wait for login screen
-        Activity loginActivity = monitor.waitForActivityWithTimeout(10000);
-        assertTrue("Login should have been launched", loginActivity instanceof LoginActivity);
-        loginActivity.finish();
+        final EventsListenerQueue eq = new EventsListenerQueue();
+        eq.waitForEvent(EventType.LogoutComplete, 30000);
+        curUser = userAccMgr.getCurrentUser();
+        assertNull("Current user should be null", curUser);
     }
 
     /**
