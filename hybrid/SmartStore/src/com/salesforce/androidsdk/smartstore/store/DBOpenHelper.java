@@ -48,6 +48,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static final String DB_NAME = "smartstore%s.db";
 
 	private static Map<String, DBOpenHelper> openHelpers;
+	private static DBOpenHelper defaultHelper;
 
 	/**
 	 * Returns the DBOpenHelper instance associated with this user account.
@@ -104,7 +105,10 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			}
 			return helper;
 		} else {
-			return new DBOpenHelper(ctx, dbName);
+			if (defaultHelper == null) {
+				defaultHelper = new DBOpenHelper(ctx, dbName);
+			}
+			return defaultHelper;
 		}
 	}
 
@@ -154,6 +158,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 					openHelpers.remove(uniqueId);
 				}
 			}
+		} else if (defaultHelper != null) {
+			defaultHelper.close();
+			defaultHelper = null;
 		}
 		String dbName = String.format(DB_NAME, "");
 		if (account != null) {
@@ -202,7 +209,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 		@Override
 		public boolean accept(File dir, String filename) {
-			final String subString = SMARTSTORE_FILE_PREFIX.substring(0, SMARTSTORE_FILE_PREFIX.length() - 3);
+			final String subString = SMARTSTORE_FILE_PREFIX.substring(0,
+					SMARTSTORE_FILE_PREFIX.length() - 3);
 			if (filename != null && filename.startsWith(subString)) {
 				return true;
 			}
