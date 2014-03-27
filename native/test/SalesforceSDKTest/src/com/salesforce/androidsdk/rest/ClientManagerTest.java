@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -49,7 +48,6 @@ import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
-import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -417,41 +415,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
         } catch (InterruptedException e) {
             fail("removeAccountAsync did not return after 5s");
         }
-    }
-
-    /**
-     * Test fetch new auth token flow
-     * We are creating a real account (using real client id/refresh token etc from TestCredentials)
-     * @throws AccountInfoNotFoundException
-     * @throws IOException
-     *
-     */
-    public void testFetchNewAuthToken() throws AccountInfoNotFoundException, IOException {
-    	/*
-    	 * FIXME: Something's going on here.
-    	 */
-        // Make sure we have no accounts initially
-        assertNoAccounts();
-
-        String badToken = "bad token";
-
-        // Create real account
-        clientManager.createNewAccount(TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
-                TestCredentials.REFRESH_TOKEN, badToken, TestCredentials.INSTANCE_URL,
-                TEST_LOGIN_URL, TEST_IDENTITY_URL, TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
-                TestCredentials.USER_ID, TEST_PASSCODE_HASH);
-
-        // Peek rest client
-        RestClient restClient = clientManager.peekRestClient();
-        restClient.setHttpAccessor(new HttpAccess(null, "dummy-agent")); // clientManager initializes the client with HttpAccess.DEFAULT -- but that's null without an app
-
-        // Check the client
-        assertEquals("RestClient should be using authToken from account", badToken, restClient.getAuthToken());
-
-        // Try a call - it should succeed and client should end up with a new auth token
-        RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
-        assertFalse("RestClient should now be using a new token", badToken.equals(restClient.getAuthToken()));
-        assertTrue("Call should have succeeded", response.isSuccess());
     }
 
     /**
