@@ -31,6 +31,7 @@ import java.util.List;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
@@ -68,7 +69,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     public enum PasscodeMode {
         Create,
         CreateConfirm,
-        Check;
+        Check,
+        Change;
     }
 
     @Override
@@ -90,7 +92,17 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         entry = getEntryView();
         entry.setOnEditorActionListener(this);
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-        setMode(passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create);
+        final Intent i = getIntent();
+        boolean shouldChangePasscode = false;
+        if (i != null) {
+        	shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CHANGE_PASSCODE_KEY,
+        			false);
+        }
+        if (shouldChangePasscode) {
+        	setMode(PasscodeMode.Change);
+        } else {
+            setMode(passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create);
+        }
         Log.i("PasscodeActivity:onCreate", "Mode: " + getMode());
         logoutEnabled = true;
         if (savedInstanceState != null) {
@@ -148,6 +160,10 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             title.setText(getConfirmTitle());
             instr.setText(getConfirmInstructions());
             break;
+        case Change:
+            title.setText(getCreateTitle());
+            instr.setText(getChangeInstructions());
+        	break;
         }
         entry.setText("");
         error.setText("");
@@ -214,6 +230,11 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
                 }
             }
             return true;
+
+        case Change:
+            firstPasscode = enteredPasscode;
+            setMode(PasscodeMode.CreateConfirm);
+            return false;
         }
         return false;
     }
@@ -281,6 +302,10 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
     protected String getCreateInstructions() {
     	return String.format(getString(salesforceR.stringPasscodeCreateInstructions()), SalesforceSDKManager.getInstance().getAppDisplayString());
+    }
+
+    protected String getChangeInstructions() {
+    	return getString(salesforceR.stringPasscodeChangeInstructions());
     }
 
     protected String getConfirmInstructions() {

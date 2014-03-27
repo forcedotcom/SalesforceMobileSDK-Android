@@ -72,7 +72,7 @@ public class PasscodeManagerTest extends InstrumentationTestCase {
         }
 
         @Override
-        public void showLockActivity(Context ctx) {
+        public void showLockActivity(Context ctx, boolean changePasscodeFlow) {
             startedLockActivity = true;
         }
     }
