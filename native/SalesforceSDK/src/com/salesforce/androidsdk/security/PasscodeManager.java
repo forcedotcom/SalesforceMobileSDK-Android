@@ -80,6 +80,9 @@ public class PasscodeManager  {
     // Request code used to start passcode activity
     public static final int PASSCODE_REQUEST_CODE = 777;
 
+    // Key used to specify that a longer passcode needs to be created.
+    public static final String CREATE_LONGER_PASSCODE_KEY = "create_longer_passcode";
+
     // this is a hash of the passcode to be used as part of the key to encrypt/decrypt oauth tokens
     // It's using a different salt/key than the one used to verify the entry
     private String passcodeHash;
@@ -368,7 +371,7 @@ public class PasscodeManager  {
      */
     public void lock(Context ctx) {
         locked = true;
-        showLockActivity(ctx);
+        showLockActivity(ctx, false);
         EventsObservable.get().notifyEvent(EventType.AppLocked);
     }
 
@@ -472,11 +475,9 @@ public class PasscodeManager  {
 
     public void setMinPasscodeLength(int minPasscodeLength) {
     	if (minPasscodeLength > this.minPasscodeLength) {
-    		/*
-        	 * TODO: Need to trigger the change passcode flow here - through the
-        	 * UI, informing the user that the policy has changed and a new
-        	 * longer PIN needs to be used.
-        	 */
+            this.minPasscodeLength = minPasscodeLength;
+    		showLockActivity(SalesforceSDKManager.getInstance().getAppContext(),
+    				true);
     	}
         this.minPasscodeLength = minPasscodeLength;
         storeMobilePolicy(SalesforceSDKManager.getInstance().getAppContext());
@@ -486,17 +487,18 @@ public class PasscodeManager  {
         return timeoutMs > 0 && now() >= (lastActivity + timeoutMs);
     }
 
-    public void showLockActivity(Context ctx) {
+    public void showLockActivity(Context ctx, boolean changePasscodeFlow) {
         if (ctx == null) {
         	return;
         }
-        Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
+        final Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
         i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
+        i.putExtra(CREATE_LONGER_PASSCODE_KEY, changePasscodeFlow);
         if (ctx instanceof Activity) {
             ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
         } else {
