@@ -42,8 +42,8 @@ import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
 /**
@@ -56,9 +56,9 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	private static final int MAX_NUMBER_FIELDS = 2048;
 	private static final int MAX_FIELD_LENGTH = 65536;
 	private static final int NUMBER_FIELDS_PER_ENTRY = 128;
-	private static final int NUMBER_ENTRIES_PER_BATCH = 8;
-	private static final int NUMBER_BATCHES = 32;
-	private static final int QUERY_PAGE_SIZE = 8;
+	private static final int NUMBER_ENTRIES_PER_BATCH = 64;
+	private static final int NUMBER_BATCHES = 128;
+	private static final int QUERY_PAGE_SIZE = 64;
 
 	private static final String TEST_SOUP = "test_soup";
 	
