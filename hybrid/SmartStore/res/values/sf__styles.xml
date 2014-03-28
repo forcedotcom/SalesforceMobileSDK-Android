@@ -19,7 +19,7 @@
         <item name="android:layout_height">wrap_content</item>
         <item name="android:background">@color/sf__inspector_text_background_color</item>
         <item name="android:layout_margin">@dimen/sf__inspector_margin</item>
-		<item name="android:textColor">@color/sf__inspector_text_color</item>
+        <item name="android:textColor">@color/sf__inspector_text_color</item>
         <item name="android:textSize">@dimen/sf__inspector_text_size</item>
         <item name="android:typeface">monospace</item>
     </style>
@@ -28,8 +28,8 @@
         <item name="android:layout_width">fill_parent</item>
         <item name="android:layout_height">fill_parent</item>
         <item name="android:layout_margin">@dimen/sf__inspector_margin</item>
-	    <item name="android:horizontalSpacing">@dimen/sf__inspector_grid_cell_spacing</item>
-	    <item name="android:verticalSpacing">@dimen/sf__inspector_grid_cell_spacing</item>
+        <item name="android:horizontalSpacing">@dimen/sf__inspector_grid_cell_spacing</item>
+        <item name="android:verticalSpacing">@dimen/sf__inspector_grid_cell_spacing</item>
         <item name="android:listSelector">@null</item>
         <item name="android:stretchMode">columnWidth</item>
     </style>
