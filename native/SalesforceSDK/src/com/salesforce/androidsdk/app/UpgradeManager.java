@@ -162,14 +162,14 @@ public class UpgradeManager {
     		 * Renames push notification shared prefs file to new format,
     		 * if the application is registered for push notifications.
     		 */
-        	final String oldFilename = PushMessaging.GCM_PREFS;
+        	final String oldFilename = PushMessaging.GCM_PREFS + ".xml";
     		final String sharedPrefDir = SalesforceSDKManager.getInstance().
     				getAppContext().getApplicationInfo().dataDir
     				+ "/shared_prefs";
     		final File from = new File(sharedPrefDir, oldFilename);
     		if (from.exists()) {
     			final String newFilename = PushMessaging.GCM_PREFS + SalesforceSDKManager.getInstance().
-               		getUserAccountManager().buildUserAccount(account).getUserLevelFilenameSuffix();
+               		getUserAccountManager().buildUserAccount(account).getUserLevelFilenameSuffix() + ".xml";
         		final File to = new File(sharedPrefDir, newFilename);
         		from.renameTo(to);
     		}
