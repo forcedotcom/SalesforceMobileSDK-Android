@@ -20,4 +20,15 @@
 		android:layout_centerVertical="true"
 		android:onClick="onLogoutClick"
 		android:text="@string/logout_button" />
+
+	<Button android:id="@+id/inspect_button" 
+	    android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_toLeftOf="@id/logout_button"
+		android:layout_marginRight="3dp"
+		android:layout_centerVertical="true"
+		android:onClick="onInspectClick"
+		android:text="@string/inspect_button" />
+	
+	
 </RelativeLayout>
