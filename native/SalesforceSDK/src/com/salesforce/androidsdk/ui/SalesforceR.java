@@ -67,6 +67,7 @@ public class SalesforceR {
 	public int stringPasscodeConfirmTitle() {return R.string.sf__passcode_confirm_title; }
 	public int stringPasscodeEnterInstructions() {return R.string.sf__passcode_enter_instructions; }
 	public int stringPasscodeCreateInstructions() {return R.string.sf__passcode_create_instructions; }
+	public int stringPasscodeChangeInstructions() {return R.string.sf__passcode_change_instructions; }
 	public int stringPasscodeConfirmInstructions() {return R.string.sf__passcode_confirm_instructions; }
 	public int stringPasscodeMinLength() {return R.string.sf__passcode_min_length; }
 	public int stringPasscodeTryAgain() {return R.string.sf__passcode_try_again; }
