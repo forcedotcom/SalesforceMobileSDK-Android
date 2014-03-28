@@ -9,3 +9,8 @@ local.properties
 .DS_Store
 proguard-project.txt
 .settings/
+.gradle/
+*~
+build/
+.idea/
+*.iml

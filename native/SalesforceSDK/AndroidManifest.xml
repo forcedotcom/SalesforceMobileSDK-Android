@@ -36,6 +36,11 @@
             android:excludeFromRecents="true"
             android:theme="@android:style/Theme.NoTitleBar" />
 
+        <!-- Account switcher activity -->
+        <activity android:name="com.salesforce.androidsdk.ui.AccountSwitcherActivity"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoTitleBar" />
+
         <!--
             Push notification services and receivers. The 'category' attribute
             here should match the <app-package-name> attribute.

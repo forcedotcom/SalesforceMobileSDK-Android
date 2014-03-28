@@ -31,7 +31,6 @@ import java.util.List;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -43,6 +42,7 @@ import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
@@ -51,9 +51,14 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
  */
 public class SmartStoreLoadTest extends InstrumentationTestCase {
 
-	private static final int LOG2_MAX_NUMBER_ENTRIES = 10 /* stopping at 1024 entries */;	
-	private static final int LOG2_MAX_LENGTH_FIELD = 16 /* stopping at 65536 characters */;
-	private static final int LOG2_MAX_NUMBER_FIELDS = 10 /* stopping at 1024 fields */;
+	
+	private static final int MAX_NUMBER_ENTRIES = 2048;
+	private static final int MAX_NUMBER_FIELDS = 2048;
+	private static final int MAX_FIELD_LENGTH = 65536;
+	private static final int NUMBER_FIELDS_PER_ENTRY = 128;
+	private static final int NUMBER_ENTRIES_PER_BATCH = 64;
+	private static final int NUMBER_BATCHES = 128;
+	private static final int QUERY_PAGE_SIZE = 64;
 
 	private static final String TEST_SOUP = "test_soup";
 	
@@ -65,7 +70,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		DBHelper.INSTANCE.reset(targetContext); // start clean
+		DBHelper.INSTANCE.reset(targetContext, null); // start clean
 		db = getWritableDatabase();
 		store = new SmartStore(db);
 		
@@ -75,7 +80,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	}
 	
 	protected SQLiteDatabase getWritableDatabase() {
-		return DBOpenHelper.getOpenHelper(targetContext).getWritableDatabase("");
+		return DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase("");
 	}
 
 	@Override
@@ -85,136 +90,217 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 		super.tearDown();
 	}
 
-	/**
-	 * Load more and more entries
-	 * @throws JSONException 
-	 */
-	public void testLoadManyEntries() throws JSONException {
-		int n = 1;
-		for (int k=0; k <= LOG2_MAX_NUMBER_ENTRIES; k++) {
-			// Upsert more entries
-			List<Long> times = new ArrayList<Long>();
-			for (int i=n/2; i<n; i++) {
-				JSONObject entry = new JSONObject();
-				entry.put("key", "k" + i);
-				entry.put("value", "x");
-				long start = System.currentTimeMillis();
-				store.upsert(TEST_SOUP, entry);
-				long end = System.currentTimeMillis();
-				times.add(end-start);
-				
-			}
+    /**
+     * TEST: Upsert 1,2,...,MAX_NUMBER_ENTRIES entries (with just a couple of fields) into a soup
+     * @throws JSONException 
+     */
+    public void testUpsertManyEntries() throws JSONException {
+        Log.i("SmartStoreLoadTest", "In testUpsertManyEntries");
+        upsertNextManyEntries(1);
+    }
 
-			// Compute average time taken
-			long avg = 0;
-			for (int i=0; i<times.size(); i++) {
-				avg += times.get(i);
-			}
-			avg /= times.size();
+    private void upsertNextManyEntries(int k) throws JSONException {
+        List<Long> times = new ArrayList<Long>();
+    	store.beginTransaction();
+        for (int i=0; i<k; i++) {
+            JSONObject entry = new JSONObject();
+            entry.put("key", "k_" + k + "_" + i);
+            entry.put("value", "x");
+            long start = System.currentTimeMillis();
+            store.upsert(TEST_SOUP, entry);
+            long end = System.currentTimeMillis();
+            times.add(end-start);
+        }
+        store.setTransactionSuccessful();
+        store.endTransaction();
+        
+        // Compute average time taken
+        long avg = 0;
+        for (int i=0; i<times.size(); i++) {
+            avg += times.get(i);
+        }
+        avg /= times.size();
 			
-			// Log avg time taken
-			Log.i("SmartStoreLoadTest", "upserting entries [" + (n/2) + "," + n + "[,"
-					+ " avg time taken: " + avg + " ms");
-			
-			
-			// Query one of them
-			QuerySpec query = QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "k" + ((n/2 + n) / 2), 1);
-			long start = System.currentTimeMillis();
-			JSONArray resultSet = store.query(query, 0);
-			long end = System.currentTimeMillis();
-			assertEquals("Should have returned one entry", 1, resultSet.length());
-			Log.i("SmartStoreLoadTest", "querying entry out of " + n + ","
-					+ " time taken: " + (end - start) + " ms");
-			
-			n *= 2;
-		}
+        // Log avg time taken
+        Log.i("SmartStoreLoadTest", "upserting " + k + " entries avg time taken: " + avg + " ms");
+
+        // Next
+        if (k < MAX_NUMBER_ENTRIES) {
+        	upsertNextManyEntries(k*2);
+        }
+    }
+
+
+    /**
+     * TEST: Upsert entries with 1,2,...,MAX_NUMBER_FIELDS into a soup
+     * @throws JSONException 
+     */
+    public void testNumerousFields() throws JSONException {
+        Log.i("SmartStoreLoadTest", "In testNumerousFields");
+        upsertNextManyFieldsEntry(1);
+    }
+
+    private void upsertNextManyFieldsEntry(int k) throws JSONException {
+    	JSONObject entry = new JSONObject();
+    	
+        for (int i=0; i<k; i++) {
+            entry.put("v"+i, "value_" + i);
+        }
+
+        // Upsert
+        upsertEntry("upserting entry with " + k + "+ fields", entry);
+        
+        // Next
+        if (k < MAX_NUMBER_FIELDS) {
+        	upsertNextManyFieldsEntry(k*2);
+        }
+    }
+
+	private void upsertEntry(String msg, JSONObject entry) throws JSONException {
+		long start = System.currentTimeMillis();
+    	store.beginTransaction();
+        store.upsert(TEST_SOUP, entry);
+        store.setTransactionSuccessful();
+        store.endTransaction();
+        long end = System.currentTimeMillis();
+        
+        // Log time taken
+        Log.i("SmartStoreLoadTest", msg + " time taken: " + (end-start) + " ms");
 	}
-	
-	/**
-	 * Load entries with more and more fields
-	 * @throws JSONException 
-	 */
-	public void testLoadEntriesWithManyFields() throws JSONException {
-		// Loading entries with 1,2,4,... fields
-		int n = 1;
-		for (int k=0; k < LOG2_MAX_NUMBER_FIELDS; k++) {
-			n *= 2;
-			
-			JSONObject entry = new JSONObject();
-			entry.put("key", "k" + n);
-			for (int i=0; i<n-1; i++) {
-				entry.put("v" + i, "value_" + i);
-			}
-			long start = System.currentTimeMillis();
-			store.upsert(TEST_SOUP, entry);
-			Log.i("SmartStoreLoadTest", "upserting entry with " + n + " fields,"
-					+ " raw length: " +  entry.toString().length() + ", "
-					+ " time taken: " + (System.currentTimeMillis() - start) + " ms");
-		}
-		// Validation
-		n = 1;
-		for (int k=0; k < LOG2_MAX_NUMBER_FIELDS; k++) {
-			n *= 2;
-			QuerySpec query = QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "k" + n, 1);
-			long start = System.currentTimeMillis();
-			JSONArray resultSet = store.query(query, 0);
-			long end = System.currentTimeMillis();
-			assertEquals("Should have returned one entry", 1, resultSet.length());
-			JSONObject entry = resultSet.getJSONObject(0);
-			Log.i("SmartStoreLoadTest", "querying entry with " + n + " fields,"
-					+ " raw length: " +  entry.toString().length() + ", "
-					+ " time taken: " + (end - start) + " ms");
-			
-			assertEquals("Wrong key", "k" + n, entry.getString("key"));
-			for (int i=0; i<n-1; i++) {
-				assertEquals("Wrong value", "value_" + i, entry.getString("v" + i));
-			}
-		}
-	}
-	
-	/**
-	 * Load entries with a key and a value - getting larger and larger
-	 * @throws JSONException 
-	 */
-	public void testLoadEntriesWithLargeField() throws JSONException {
-		// Loading entries with 1,2,4,... characters field
-		int n = 1;
-		for (int k=0; k <= LOG2_MAX_LENGTH_FIELD ; k++) {
-			JSONObject entry = new JSONObject();
-			entry.put("key", "k" + n);
-			StringBuilder sb = new StringBuilder(n);
-			for (int i=0; i<n; i++) {
-				sb.append("x");
-			}
-			entry.put("value", sb.toString());
 
-			long start = System.currentTimeMillis();
-			store.upsert(TEST_SOUP, entry);
-			Log.i("SmartStoreLoadTest", "upserting entry with " + n + " chars field, "
-					+ " raw length: " +  entry.toString().length() + ", "
-					+ " time taken: " + (System.currentTimeMillis() - start) + " ms");
 
-			n *= 2;
-		}
+    /**
+     * TEST: Upsert entry with a value field that is 1,2, ... , MAX_FIELD_LENGTH long into a soup
+     * @throws JSONException 
+     */
+    public void testIncreasingFieldLength() throws JSONException {
+    	Log.i("SmartStoreLoadTest", "In testIncreasingFieldLength");
+        upsertNextLargerFieldEntry(1);
+    }
 
-		// Validation
-		n = 1;
-		for (int k=0; k <= LOG2_MAX_LENGTH_FIELD; k++) {
-			QuerySpec query = QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "k" + n, 1);
-			long start = System.currentTimeMillis();
-			JSONArray resultSet = store.query(query, 0);
-			long end = System.currentTimeMillis();
-			assertEquals("Should have returned one entry", 1, resultSet.length());
-			JSONObject entry = resultSet.getJSONObject(0);
-			Log.i("SmartStoreLoadTest", "querying entry with " + n + " chars field,"
-					+ " raw length: " +  entry.toString().length() + ", "
-					+ " time taken: " + (end - start) + " ms");
-			
-			assertEquals("Wrong key", "k" + n, entry.getString("key"));
-			assertEquals("Wrong value", n, entry.getString("value").length());
-			
-			n *= 2;
-		}
-	}
+    private void upsertNextLargerFieldEntry(int k) throws JSONException {
+    	Log.i("SmartStoreLoadTest", "upsertNextLargerFieldEntry " + k);
+
+        StringBuilder sb = new StringBuilder();
+        for (int i=0; i< k; i++) {
+            sb.append("x");
+        }
+
+        JSONObject entry = new JSONObject();
+        entry.put("key", "k" + k);
+        entry.put("value", sb.toString());
 	
+        // Upsert
+        upsertEntry("upserting entry with field with " + k + " characters", entry);
+        
+        // Next
+        if (k < MAX_FIELD_LENGTH) {
+        	upsertNextLargerFieldEntry(k*2);
+        }
+    }
+    
+    /**
+     * TEST: Upsert MAX_NUMBER_ENTRIES entries into a soup and retrieve them back
+     * @throws JSONException 
+     */
+    public void testAddAndRetrieveManyEntries() throws JSONException {
+    	Log.i("SmartStoreLoadTest", "In testAddAndRetrieveManyEntries");
+
+    	List<Long> soupEntryIds = new ArrayList<Long>();
+        List<Long> times = new ArrayList<Long>();
+    	store.beginTransaction();
+    	for (int i=0; i < MAX_NUMBER_ENTRIES; i++) {
+            String paddedIndex = String.format("%05d", i);
+    		JSONObject entry = new JSONObject();
+            entry.put("Name", "Todd Stellanova" + paddedIndex);
+            entry.put("Id", "003" + paddedIndex);
+            JSONObject attributes = new JSONObject();
+            attributes.put("type", "Contact");
+            attributes.put("url", "/foo/Contact" + paddedIndex);
+            entry.put("attributes", attributes);
+
+            long start = System.currentTimeMillis();
+            JSONObject upsertedEntry = store.upsert(TEST_SOUP, entry);
+            Long soupEntryId = upsertedEntry.getLong(SmartStore.SOUP_ENTRY_ID);
+            soupEntryIds.add(soupEntryId);
+            long end = System.currentTimeMillis();
+            times.add(end-start);
+        }
+        store.setTransactionSuccessful();
+        store.endTransaction();
+
+        // Compute average time taken
+        long avg = 0;
+        for (int i=0; i<times.size(); i++) {
+            avg += times.get(i);
+        }
+        avg /= times.size();
+			
+        // Log avg time taken
+        Log.i("SmartStoreLoadTest", "upserting " + MAX_NUMBER_ENTRIES + " entries avg time taken: " + avg + " ms");
+
+        // Retrieve
+        long start = System.currentTimeMillis();
+    	store.retrieve(TEST_SOUP, soupEntryIds.toArray(new Long[]{}));
+        long end = System.currentTimeMillis();
+
+        // Log retrieve time taken
+        Log.i("SmartStoreLoadTest", "retrieve " + MAX_NUMBER_ENTRIES + " entries time taken: " + (end-start) + " ms");
+    }
+
+    /**
+     * TEST: Upsert NUMBER_BATCHES batches of NUMBER_ENTRIES_PER_BATCH entries with NUMBER_FIELDS_PER_ENTRY fields into a soup and query all (fetching only a page of QUERY_PAGE_SIZE entries)
+     * @throws JSONException 
+     */
+    public void testUpsertAndQueryEntries() throws JSONException {
+        Log.i("SmartStoreLoadTest", "In testUpsertAndQueryEntries");
+        upsertQueryEntries(0);
+    }
+
+    private void upsertQueryEntries(int batch) throws JSONException {
+        int startKey = batch * NUMBER_ENTRIES_PER_BATCH;
+        int endKey = (batch+1) * NUMBER_ENTRIES_PER_BATCH;
+
+        List<Long> times = new ArrayList<Long>();
+    	store.beginTransaction();
+        for (int i=startKey; i<endKey; i++) {
+            JSONObject entry = new JSONObject();
+            entry.put("key", "k_" + i);
+            entry.put("value", "x");
+            for (int j=0; j<NUMBER_FIELDS_PER_ENTRY; j++) {
+            	entry.put("v" + j, "value_" + j);
+            }
+            long start = System.currentTimeMillis();
+            store.upsert(TEST_SOUP, entry);
+            long end = System.currentTimeMillis();
+            times.add(end-start);
+        }
+        store.setTransactionSuccessful();
+        store.endTransaction();
+        
+        // Compute average time taken
+        long avg = 0;
+        for (int i=0; i<times.size(); i++) {
+            avg += times.get(i);
+        }
+        avg /= times.size();
+			
+        // Log avg time taken
+        Log.i("SmartStoreLoadTest", "upserting " + NUMBER_ENTRIES_PER_BATCH + " entries avg time taken: " + avg + " ms");
+        
+        
+        // Query all
+        QuerySpec qs = QuerySpec.buildAllQuerySpec(TEST_SOUP, "key", Order.ascending, QUERY_PAGE_SIZE);        
+        long start = System.currentTimeMillis();
+        store.query(qs, 0);
+        long end = System.currentTimeMillis();
+        
+        // Log query time
+        Log.i("SmartStoreLoadTest", "querying out of soup with " + (batch+1)*NUMBER_ENTRIES_PER_BATCH + " entries time taken: " + (end-start) + " ms");        
+
+        // Next
+        if (batch < NUMBER_BATCHES - 1) {
+            upsertQueryEntries(batch + 1);
+        }
+    }
 }

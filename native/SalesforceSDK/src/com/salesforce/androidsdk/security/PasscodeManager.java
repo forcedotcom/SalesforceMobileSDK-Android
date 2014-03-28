@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.security;
 
+import java.io.File;
+import java.io.FilenameFilter;
+
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -34,6 +37,7 @@ import android.content.SharedPreferences.Editor;
 import android.os.Handler;
 import android.util.Log;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.app.UUIDManager;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -56,25 +60,28 @@ public class PasscodeManager  {
 	private static final String EPREFIX = "eprefix";
 	
     // Default min passcode length
-    protected static final int MIN_PASSCODE_LENGTH = 4;
+    public static final int MIN_PASSCODE_LENGTH = 4;
 
     // Key in preference for the passcode
     private static final String KEY_PASSCODE ="passcode";
 
     // Private preference where we stored the passcode (hashed)
-    private static final String PREF_NAME = "user";
+    private static final String PASSCODE_PREF_NAME = "user";
 
     // Private preference where we stored the org settings.
     private static final String MOBILE_POLICY_PREF = "mobile_policy";
 
     // Key in preference for the access timeout.
-    private static final String KEY_TIMEOUT ="access_timeout";
+    private static final String KEY_TIMEOUT = "access_timeout";
 
     // Key in preference for the passcode length.
-    private static final String KEY_PASSCODE_LENGTH ="passcode_length";
+    private static final String KEY_PASSCODE_LENGTH = "passcode_length";
 
     // Request code used to start passcode activity
     public static final int PASSCODE_REQUEST_CODE = 777;
+
+    // Key used to specify that a longer passcode needs to be created.
+    public static final String CHANGE_PASSCODE_KEY = "change_passcode";
 
     // this is a hash of the passcode to be used as part of the key to encrypt/decrypt oauth tokens
     // It's using a different salt/key than the one used to verify the entry
@@ -101,20 +108,75 @@ public class PasscodeManager  {
      */
    public PasscodeManager(Context ctx) {
 	   this(ctx,
-		   new HashConfig(UUIDManager.getUuId(VPREFIX), UUIDManager.getUuId(VSUFFIX), UUIDManager.getUuId(VKEY)),
-		   new HashConfig(UUIDManager.getUuId(EPREFIX), UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY)));
+		   new HashConfig(UUIDManager.getUuId(VPREFIX),
+				   UUIDManager.getUuId(VSUFFIX), UUIDManager.getUuId(VKEY)),
+		   new HashConfig(UUIDManager.getUuId(EPREFIX),
+				   UUIDManager.getUuId(ESUFFIX), UUIDManager.getUuId(EKEY)));
    }
 
-   public PasscodeManager(Context ctx, HashConfig verificationHashConfig, HashConfig encryptionHashConfig) {
-        this.minPasscodeLength = MIN_PASSCODE_LENGTH;
-        this.lastActivity = now();
-        this.verificationHashConfig = verificationHashConfig;
-        this.encryptionHashConfig = encryptionHashConfig;
-        readMobilePolicy(ctx);
+   public PasscodeManager(Context ctx, HashConfig verificationHashConfig,
+		   HashConfig encryptionHashConfig) {
+       this.minPasscodeLength = MIN_PASSCODE_LENGTH;
+       this.lastActivity = now();
+       this.verificationHashConfig = verificationHashConfig;
+       this.encryptionHashConfig = encryptionHashConfig;
+       readMobilePolicy(ctx);
 
-        // Locked at app startup if you're authenticated.
-        this.locked = true;
-        lockChecker = new LockChecker();
+       // Locked at app startup if you're authenticated.
+       this.locked = true;
+       lockChecker = new LockChecker(); 
+   }
+
+   /**
+    * Returns the timeout value for the specified account.
+    *
+    * @param account UserAccount instance.
+    * @return Timeout value.
+    */
+   	public int getTimeoutMsForOrg(UserAccount account) {
+   		if (account == null) {
+   			return 0;
+   		}
+   		final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
+        		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+        return sp.getInt(KEY_TIMEOUT, 0);
+   	}
+
+    /**
+     * Returns the minimum passcode length for the specified account.
+     *
+     * @param account UserAccount instance.
+     * @return Minimum passcode length.
+     */
+    public int getPasscodeLengthForOrg(UserAccount account) {
+    	if (account == null) {
+    		return MIN_PASSCODE_LENGTH;
+    	}
+    	final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
+        		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+        return sp.getInt(KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
+    }
+
+    /**
+     * Stores the mobile policy for the specified account.
+     *
+     * @param account UserAccount instance.
+     * @param timeout Timeout value, in ms.
+     * @param passLen Minimum passcode length.
+     */
+    public void storeMobilePolicyForOrg(UserAccount account, int timeout, int passLen) {
+    	if (account == null) {
+    		return;
+    	}
+    	final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
+        		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+        final Editor e = sp.edit();
+        e.putInt(KEY_TIMEOUT, timeout);
+        e.putInt(KEY_PASSCODE_LENGTH, passLen);
+        e.commit();
     }
 
     /**
@@ -126,7 +188,8 @@ public class PasscodeManager  {
 
         // Context will be null only in test runs.
         if (context != null) {
-            final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+            final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF,
+            		Context.MODE_PRIVATE);
             Editor e = sp.edit();
             e.putInt(KEY_TIMEOUT, timeoutMs);
             e.putInt(KEY_PASSCODE_LENGTH, minPasscodeLength);
@@ -143,15 +206,16 @@ public class PasscodeManager  {
 
         // Context will be null only in test runs.
         if (context != null) {
-            final SharedPreferences sp = context.getSharedPreferences(PasscodeManager.MOBILE_POLICY_PREF, Context.MODE_PRIVATE);
+            final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF,
+            		Context.MODE_PRIVATE);
             if (!sp.contains(KEY_TIMEOUT) || !sp.contains(KEY_PASSCODE_LENGTH)) {
                 timeoutMs = 0;
                 minPasscodeLength = MIN_PASSCODE_LENGTH;
                 storeMobilePolicy(context);
                 return;
             }
-            timeoutMs = sp.getInt(PasscodeManager.KEY_TIMEOUT, 0);
-            minPasscodeLength = sp.getInt(PasscodeManager.KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
+            timeoutMs = sp.getInt(KEY_TIMEOUT, 0);
+            minPasscodeLength = sp.getInt(KEY_PASSCODE_LENGTH, MIN_PASSCODE_LENGTH);
         }
     }
 
@@ -159,11 +223,22 @@ public class PasscodeManager  {
      * Reset this passcode manager: delete stored passcode and reset fields to their starting value
      */
     public void reset(Context ctx) {
-        lastActivity = now();
+
+    	// Deletes the underlying org policy files for all orgs.
+    	final String sharedPrefPath = ctx.getApplicationInfo().dataDir + "/shared_prefs";
+    	final File dir = new File(sharedPrefPath);
+    	final PasscodeFileFilter fileFilter = new PasscodeFileFilter();
+    	for (final File file : dir.listFiles()) {
+    		if (file != null && fileFilter.accept(dir, file.getName())) {
+    			file.delete();
+    		}
+    	}
+    	lastActivity = now();
         locked = true;
         failedPasscodeAttempts = 0;
         passcodeHash = null;
-        SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME,
+        		Context.MODE_PRIVATE);
         Editor e = sp.edit();
         e.remove(KEY_PASSCODE);
         e.commit();
@@ -171,6 +246,23 @@ public class PasscodeManager  {
         minPasscodeLength = MIN_PASSCODE_LENGTH;
         storeMobilePolicy(ctx);
         handler = null;
+    }
+
+    /**
+     * Resets the passcode policies for a particular org upon logout.
+     *
+     * @param context Context.
+     * @param account User account.
+     */
+    public void reset(Context context, UserAccount account) {
+    	if (account == null) {
+    		return;
+    	}
+        final SharedPreferences sp = context.getSharedPreferences(MOBILE_POLICY_PREF
+        		+ account.getOrgLevelFilenameSuffix(), Context.MODE_PRIVATE);
+        final Editor e = sp.edit();
+        e.clear();
+        e.commit();
     }
 
     /**
@@ -208,7 +300,7 @@ public class PasscodeManager  {
      * @return true if passcode matches the one stored (hashed) in private preference
      */
     public boolean check(Context ctx, String passcode) {
-        SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         String hashedPasscode = sp.getString(KEY_PASSCODE, null);
         hashedPasscode = Encryptor.removeNewLine(hashedPasscode);
         if (hashedPasscode != null) {
@@ -227,7 +319,7 @@ public class PasscodeManager  {
      * @param passcode
      */
     public void store(Context ctx, String passcode) {
-        SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         Editor e = sp.edit();
         e.putString(KEY_PASSCODE, hashForVerification(passcode));
         e.commit();
@@ -238,7 +330,7 @@ public class PasscodeManager  {
      * @return true if passcode was already created
      */
     public boolean hasStoredPasscode(Context ctx) {
-        SharedPreferences sp = ctx.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         return sp.contains(KEY_PASSCODE);
     }
 
@@ -257,6 +349,17 @@ public class PasscodeManager  {
     }
 
     /**
+     * Sets the passcode hash, used ONLY in tests.
+     *
+     * @param passcodeHash Passcode hash.
+     */
+    public void setPasscodeHash(String passcodeHash) {
+    	if (SalesforceSDKManager.getInstance().getIsTestRun()) {
+        	this.passcodeHash = passcodeHash;
+    	}
+    }
+
+    /**
      * @return true if locked
      */
     public boolean isLocked() {
@@ -268,7 +371,7 @@ public class PasscodeManager  {
      */
     public void lock(Context ctx) {
         locked = true;
-        showLockActivity(ctx);
+        showLockActivity(ctx, false);
         EventsObservable.get().notifyEvent(EventType.AppLocked);
     }
 
@@ -302,7 +405,8 @@ public class PasscodeManager  {
      * To be called by passcode protected activity when being paused
      */
     public void onPause(Activity ctx) {
-        // Disable passcode manager
+
+        // Disables passcode manager.
         setEnabled(false);
     }
 
@@ -314,13 +418,14 @@ public class PasscodeManager  {
      * @return true if the resume should be allowed to continue and false otherwise
      */
     public boolean onResume(Activity ctx) {
-        // Enable passcode manager
+
+        // Enables passcode manager.
         setEnabled(true);
 
-        // Bring up passcode screen if needed
+        // Brings up passcode screen if needed.
         lockIfNeeded(ctx, true);
 
-        // If locked, do nothing - when the app gets unlocked we will be back here
+        // If locked, do nothing - when the app gets unlocked we will be back here.
         return !isLocked();
     }
 
@@ -369,24 +474,31 @@ public class PasscodeManager  {
     }
 
     public void setMinPasscodeLength(int minPasscodeLength) {
+    	if (minPasscodeLength > this.minPasscodeLength) {
+            this.minPasscodeLength = minPasscodeLength;
+    		showLockActivity(SalesforceSDKManager.getInstance().getAppContext(),
+    				true);
+    	}
         this.minPasscodeLength = minPasscodeLength;
+        storeMobilePolicy(SalesforceSDKManager.getInstance().getAppContext());
     }
 
     public boolean shouldLock() {
         return timeoutMs > 0 && now() >= (lastActivity + timeoutMs);
     }
 
-    public void showLockActivity(Context ctx) {
+    public void showLockActivity(Context ctx, boolean changePasscodeFlow) {
         if (ctx == null) {
         	return;
         }
-        Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
+        final Intent i = new Intent(ctx, SalesforceSDKManager.getInstance().getPasscodeActivity());
         i.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
         i.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY);
         i.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         if (ctx == SalesforceSDKManager.getInstance().getAppContext()) {
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         }
+        i.putExtra(CHANGE_PASSCODE_KEY, changePasscodeFlow);
         if (ctx instanceof Activity) {
             ((Activity) ctx).startActivityForResult(i, PASSCODE_REQUEST_CODE);
         } else {
@@ -454,5 +566,23 @@ public class PasscodeManager  {
             this.suffix = suffix;
             this.key = key;
         }
+    }
+
+    /**
+     * This class acts as a filter to identify only the relevant passcode files.
+     *
+     * @author bhariharan
+     */
+    private static class PasscodeFileFilter implements FilenameFilter {
+
+    	private static final String PASSCODE_FILE_PREFIX = MOBILE_POLICY_PREF + "_";
+
+		@Override
+		public boolean accept(File dir, String filename) {
+			if (filename != null && filename.startsWith(PASSCODE_FILE_PREFIX)) {
+				return true;
+			}
+			return false;
+		}
     }
 }

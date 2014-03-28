@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -103,7 +103,6 @@ public class ClientManager {
      * @param restClientCallback     callback invoked once the RestClient is ready
      */
     public void getRestClient(Activity activityContext, RestClientCallback restClientCallback) {
-
         Account acc = getAccount();
 
         // Passing the passcodeHash to the authenticator service to that it can encrypt/decrypt oauth tokens
@@ -127,6 +126,10 @@ public class ClientManager {
         }
     }
 
+    public RestClient peekRestClient() {
+        return peekRestClient(getAccount());
+    }
+
     /**
      * Method to create RestClient synchronously. It is intended to be used by code not on the UI thread (e.g. ContentProvider).
      *
@@ -134,8 +137,7 @@ public class ClientManager {
      *
      * @return
      */
-    public RestClient peekRestClient() {
-        Account acc = getAccount();
+    public RestClient peekRestClient(Account acc) {
         if (acc == null) {
             AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
             Log.i("ClientManager:peekRestClient", "No user account found");
@@ -182,17 +184,16 @@ public class ClientManager {
     }
 
     /**
-     * @return The first account found with the application account type.
+     * Returns the user account that is currently active.
+     *
+     * @return The current user account.
      */
     public Account getAccount() {
-        Account[] accounts = accountManager.getAccountsByType(getAccountType());
-        if (accounts == null || accounts.length == 0)
-            return null;
-        return accounts[0];
+    	return SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentAccount();
     }
 
     /**
-     * @param name The name associated with the account
+     * @param name The name associated with the account.
      * @return The account with the application account type and the given name.
      */
     public Account getAccountByName(String name) {
@@ -216,13 +217,14 @@ public class ClientManager {
 
     /**
      * Remove all of the accounts passed in.
+     *
      * @param accounts The array of accounts to remove.
      */
     public void removeAccounts(Account[] accounts) {
         List<AccountManagerFuture<Boolean>> removalFutures = new ArrayList<AccountManagerFuture<Boolean>>();
-        for (Account a : accounts)
+        for (Account a : accounts) {
             removalFutures.add(accountManager.removeAccount(a, null, null));
-
+        }
         for (AccountManagerFuture<Boolean> f : removalFutures) {
             try {
                 f.getResult();
@@ -273,6 +275,7 @@ public class ClientManager {
         Account acc = new Account(accountName, getAccountType());
         accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encryptWithPasscode(refreshToken, passcodeHash), extras);
         accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
+        SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
         return extras;
     }
 
@@ -297,30 +300,31 @@ public class ClientManager {
         if (acctManager != null) {
             final Account[] accounts = acctManager.getAccountsByType(SalesforceSDKManager.getInstance().getAccountType());
             if (accounts != null && accounts.length > 0) {
-                final Account account = accounts[0];
+                for (final Account account : accounts) {
 
-                // Grab existing data stored in AccountManager.
-                final String authToken = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AccountManager.KEY_AUTHTOKEN), oldPass);
-                final String refreshToken = SalesforceSDKManager.decryptWithPasscode(acctManager.getPassword(account), oldPass);
-                final String loginServer = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), oldPass);
-                final String idUrl = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_ID_URL), oldPass);
-                final String instanceServer = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), oldPass);
-                final String orgId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), oldPass);
-                final String userId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_USER_ID), oldPass);
-                final String username = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_USERNAME), oldPass);
-                final String clientId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), oldPass);
+                    // Grab existing data stored in AccountManager.
+                    final String authToken = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AccountManager.KEY_AUTHTOKEN), oldPass);
+                    final String refreshToken = SalesforceSDKManager.decryptWithPasscode(acctManager.getPassword(account), oldPass);
+                    final String loginServer = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), oldPass);
+                    final String idUrl = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_ID_URL), oldPass);
+                    final String instanceServer = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), oldPass);
+                    final String orgId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), oldPass);
+                    final String userId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_USER_ID), oldPass);
+                    final String username = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_USERNAME), oldPass);
+                    final String clientId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), oldPass);
 
-                // Encrypt data with new hash and put it back in AccountManager.
-                acctManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, newPass));
-                acctManager.setPassword(account, SalesforceSDKManager.encryptWithPasscode(refreshToken, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encryptWithPasscode(loginServer, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_ID_URL, SalesforceSDKManager.encryptWithPasscode(idUrl, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encryptWithPasscode(instanceServer, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encryptWithPasscode(orgId, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encryptWithPasscode(userId, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_USERNAME, SalesforceSDKManager.encryptWithPasscode(username, newPass));
-                acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encryptWithPasscode(clientId, newPass));
-                acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, authToken);
+                    // Encrypt data with new hash and put it back in AccountManager.
+                    acctManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, newPass));
+                    acctManager.setPassword(account, SalesforceSDKManager.encryptWithPasscode(refreshToken, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encryptWithPasscode(loginServer, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_ID_URL, SalesforceSDKManager.encryptWithPasscode(idUrl, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encryptWithPasscode(instanceServer, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_ORG_ID, SalesforceSDKManager.encryptWithPasscode(orgId, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encryptWithPasscode(userId, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_USERNAME, SalesforceSDKManager.encryptWithPasscode(username, newPass));
+                    acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encryptWithPasscode(clientId, newPass));
+                    acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, authToken);
+                }
             }
         }
     }
@@ -333,17 +337,18 @@ public class ClientManager {
     }
 
     /**
-     * Removes the user account from the account manager.  This is an
-     * asynchronous process: the callback will be called on completion, if
+     * Removes the user account from the account manager. This is an
+     * asynchronous process, the callback will be called on completion, if
      * specified.
+     *
+     * @param acc Account to be removed.
      * @param callback The callback to call when the account removal completes.
      */
-    public void removeAccountAsync(AccountManagerCallback<Boolean> callback) {
-        Account acc = getAccount();
-        if (acc != null)
+    public void removeAccountAsync(Account acc, AccountManagerCallback<Boolean> callback) {
+        if (acc != null) {
             accountManager.removeAccount(acc, callback, null);
+        }
     }
-
 
     /**
      * Callback from either user account creation, or a call to getAuthToken, used
@@ -432,7 +437,6 @@ public class ClientManager {
         @Override
         public String getNewAuthToken() {
             Log.i("AccMgrAuthTokenProvider:getNewAuthToken", "Need new access token");
-
             Account acc = clientManager.getAccount();
             if (acc == null)
                 return null;

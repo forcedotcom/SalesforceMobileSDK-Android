@@ -1,27 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-	xmlns:android="http://schemas.android.com/apk/res/android"
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
-	android:orientation="vertical"	
+	android:orientation="vertical"
 	android:background="@drawable/sf__oauth_background">
-	
-	<include layout="@layout/sf__server_picker_header" />
-	
-	<View style="@style/SalesforceSDK.ServerPicker.DropShadow" />
-	
-	<LinearLayout
-	 	android:id="@+id/sf__auth_container"
-	 	style="@style/SalesforceSDK.ServerPicker.Container">
-     
-	    <TextView
-	    	android:text="@string/sf__login_title" 
-	    	style="@style/SalesforceSDK.ServerPicker.Title"
-		/>
-	    			
-		<View style="@style/SalesforceSDK.ServerPicker.Spacer" />
-		 
-		<include layout="@layout/sf__server_picker_list" />
 
+	<include layout="@layout/sf__server_picker_header" />
+
+	<View style="@style/SalesforceSDK.ServerPicker.DropShadow" />
+
+	<LinearLayout android:id="@+id/sf__auth_container"
+	 	style="@style/SalesforceSDK.ServerPicker.Container">
+
+        <TextView android:text="@string/sf__login_title"
+	    	style="@style/SalesforceSDK.ServerPicker.Title" />
+
+		<View style="@style/SalesforceSDK.ServerPicker.Spacer" />
+
+		<include layout="@layout/sf__server_picker_list" />
 	</LinearLayout>			
 </RelativeLayout>

@@ -56,11 +56,11 @@ function main(args) {
     switch (command || '') {
     case 'create': 
         processorList = createArgsProcessorList(); 
-        commandHandler = create;
+        commandHandler = createApp;
         break;
     case 'samples': 
         processorList = samplesArgsProcessorList(); 
-        commandHandler = samples;
+        commandHandler = fetchSamples;
         break;
     default:
         usage();
@@ -93,7 +93,7 @@ function usage() {
 //
 // Helper to 'samples' command
 //
-function samples(config) {
+function fetchSamples(config) {
     // Map of sample app name to boolean indicating if it uses smartstore
     var sampleApps = {'FileExplorer':false, 'NativeSqlAggregator':true, 'RestExplorer': false};
 
@@ -139,7 +139,7 @@ function sampleNativeApp(config, appname, usesmartstore) {
 //
 // Helper for 'create' command
 //
-function create(config) {
+function createApp(config) {
     // Native app creation
     if (config.apptype === 'native') {
         config.relativeTemplateDir = 'native/TemplateApp';
@@ -164,7 +164,7 @@ function createHybridApp(config) {
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android');
     shelljs.exec('cordova plugin add https://github.com/wmathurin/SalesforceMobileSDK-CordovaPlugin');
-    shelljs.exec('node plugins/com.salesforce/tools/postinstall.js 19 ' + config.usesmartstore);
+    shelljs.exec('node plugins/com.salesforce/tools/postinstall-android.js ' + config.targetandroidapi + ' ' + config.usesmartstore);
 
     var bootconfig = {
         "remoteAccessConsumerKey": "3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa",
