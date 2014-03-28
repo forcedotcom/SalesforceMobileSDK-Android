@@ -4,7 +4,11 @@
 	package="com.salesforce.androidsdk.smartstore"
 	android:versionCode="33"
 	android:versionName="2.2.0.unstable">
-    <application />
+	
+	<application>
+        <!--  SmartStore Inpsector screen -->
+        <activity android:name="com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity" />
+	</application>        
 
     <uses-sdk android:minSdkVersion="8" />
 </manifest>
