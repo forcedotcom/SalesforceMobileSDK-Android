@@ -70,15 +70,16 @@ public class SmartStoreInspectorActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.sf__inspector);
-
-		smartStore = SalesforceSDKManagerWithSmartStore.getInstance()
-				.getSmartStore();
-
 		queryText = (MultiAutoCompleteTextView) findViewById(R.id.sf__inspector_query_text);
 		pageSizeText = (EditText) findViewById(R.id.sf__inspector_pagesize_text);
 		pageIndexText = (EditText) findViewById(R.id.sf__inspector_pageindex_text);
 		resultGrid = (GridView) findViewById(R.id.sf__inspector_result_grid);
-
+	}
+	
+	@Override
+	protected void onResume() {
+		super.onResume();
+		smartStore = SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore();
 		setupAutocomplete(queryText);
 	}
 
