@@ -9,7 +9,8 @@
 	<string name="clear_button">Clear Offline Store</string>
 	<string name="join_button">Run Report</string>
 	<string name="inspect_button">Inspect</string>
-
+	<string name="switch_button">Switch</string>
+	
 	<!-- Query strings -->
     <string name="join_button_query">"SELECT {Account:Name}, COUNT({Opportunity:Name}), SUM({Opportunity:Amount}), AVG({Opportunity:Amount}), {Account:Id}, {Opportunity:AccountId} FROM {Account}, {Opportunity} WHERE {Account:Id} = {Opportunity:AccountId} GROUP BY {Account:Name}"</string>
 </resources>
