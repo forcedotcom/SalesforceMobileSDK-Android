@@ -108,7 +108,19 @@ public class MainActivity extends SalesforceActivity {
 	 * @param v View that was clicked.
 	 */
 	public void onLogoutClick(View v) {
-		SalesforceSDKManager.getInstance().logout(this);
+		 SalesforceSDKManager.getInstance().logout(this);
+	}
+
+	/**
+	 * Called when "Switch" button is clicked.
+	 *
+	 * @param v View that was clicked.
+	 */
+	public void onSwitchClick(View v) {
+		final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
+				SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
+		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		SalesforceSDKManager.getInstance().getAppContext().startActivity(i);
 	}
 	
 	/**
