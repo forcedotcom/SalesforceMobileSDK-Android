@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.smartstore.ui;
 
+import java.util.LinkedList;
 import java.util.List;
 
 import org.json.JSONArray;
@@ -65,6 +66,11 @@ public class SmartStoreInspectorActivity extends Activity {
 	private EditText pageSizeText;
 	private EditText pageIndexText;
 	private GridView resultGrid;
+	
+	// Test support
+	private String lastAlertTitle;
+	private String lastAlertMessage;
+	private JSONArray lastResults;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -75,27 +81,61 @@ public class SmartStoreInspectorActivity extends Activity {
 		pageIndexText = (EditText) findViewById(R.id.sf__inspector_pageindex_text);
 		resultGrid = (GridView) findViewById(R.id.sf__inspector_result_grid);
 	}
-	
+
 	@Override
 	protected void onResume() {
 		super.onResume();
-		smartStore = SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore();
+		smartStore = SalesforceSDKManagerWithSmartStore.getInstance()
+				.getSmartStore();
 		setupAutocomplete(queryText);
 	}
 
 	/**
 	 * Called when "Clear" button is clicked
+	 * 
 	 * @param v
 	 */
 	public void onClearClick(View v) {
+		reset();
+	}
+
+	/**
+	 * Reset activity to its original state
+	 */
+	public void reset() {
 		queryText.setText("");
 		pageSizeText.setText("");
 		pageIndexText.setText("");
 		resultGrid.setAdapter(null);
+		lastAlertTitle = null;
+		lastAlertMessage = null;
+		lastResults = null;
+	}
+	
+	/**
+	 * @return title of last alert shown (used by tests)
+	 */
+	public String getLastAlertTitle() {
+		return lastAlertTitle;
+	}
+
+	/**
+	 * @return message of last alert shown (used by tests)
+	 */
+	public String getLastAlertMessage() {
+		return lastAlertMessage;
+	}
+	
+	/**
+	 * @return last results shown (used by tests)
+	 */
+	public JSONArray getLastResults() {
+		return lastResults;
 	}
 
 	/**
 	 * Called when "Run" button is clicked
+	 * 
 	 * @param v
 	 */
 	public void onRunClick(View v) {
@@ -104,26 +144,26 @@ public class SmartStoreInspectorActivity extends Activity {
 
 	/**
 	 * Called when "Soups" button is clicked
+	 * 
 	 * @param v
 	 */
 	public void onSoupsClick(View v) {
 		List<String> names = smartStore.getAllSoupNames();
-		
+
 		if (names.size() > 10) {
-			queryText.setText("select soupName from soup_names");
-		}
-		else {
+			queryText.setText(getString(R.string.sf__inspector_soups_query));
+		} else {
 			StringBuilder sb = new StringBuilder();
 			boolean first = true;
 			for (String name : names) {
-				if (!first) 
+				if (!first)
 					sb.append(" union ");
 				sb.append("select '");
 				sb.append(name);
 				sb.append("', count(*) from {");
 				sb.append(name);
 				sb.append("}");
-				first = false;			
+				first = false;
 			}
 			queryText.setText(sb.toString());
 		}
@@ -132,21 +172,24 @@ public class SmartStoreInspectorActivity extends Activity {
 
 	/**
 	 * Called when "Indices" button is clicked
+	 * 
 	 * @param v
 	 */
 	public void onIndicesClick(View v) {
-		queryText.setText("select soupName, path, columnType from soup_index_map");
+		queryText
+				.setText(getString(R.string.sf__inspector_indices_query));
 		runQuery();
 	}
 
 	/**
-	 * Helper method that builds query spec from typed query, runs it and updates result grid
+	 * Helper method that builds query spec from typed query, runs it and
+	 * updates result grid
 	 */
 	private void runQuery() {
 		try {
 			String query = queryText.getText().toString();
 			if (query.length() == 0) {
-				showAlert(null, "No query specified");
+				showAlert(null, getString(R.string.sf__inspector_no_query_specified));
 				return;
 			}
 			int pageSize = getInt(pageSizeText, DEFAULT_PAGE_SIZE);
@@ -160,8 +203,9 @@ public class SmartStoreInspectorActivity extends Activity {
 	}
 
 	/**
-	 * Helper function to get integer typed in a text field
-	 * Returns defaultValue if no integer were typed
+	 * Helper function to get integer typed in a text field Returns defaultValue
+	 * if no integer were typed
+	 * 
 	 * @param textField
 	 * @param defaultValue
 	 * @return
@@ -177,26 +221,32 @@ public class SmartStoreInspectorActivity extends Activity {
 
 	/**
 	 * Helper method to show an alert
+	 * 
 	 * @param e
 	 */
 	private void showAlert(String title, String message) {
+		lastAlertTitle = title;
+		lastAlertMessage = message;
 		new AlertDialog.Builder(this).setTitle(title)
 				.setMessage(message).show();
 	}
 
 	/**
-	 * Helper method to populate result grid with query result set (expected to be a JSONArray of JSONArray's)
+	 * Helper method to populate result grid with query result set (expected to
+	 * be a JSONArray of JSONArray's)
+	 * 
 	 * @param result
 	 * @throws JSONException
 	 */
 	private void showResult(JSONArray result) throws JSONException {
+		lastResults = result;
 		ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
 				R.layout.sf__inspector_result_cell);
 
 		if (result.length() == 0) {
-			showAlert(null, "No results returned");
+			showAlert(null, getString(R.string.sf__inspector_no_rows_returned));
 		}
-		
+
 		for (int j = 0; j < result.length(); j++) {
 			JSONArray row = result.getJSONArray(j);
 			for (int i = 0; i < row.length(); i++) {
@@ -215,6 +265,7 @@ public class SmartStoreInspectorActivity extends Activity {
 
 	/**
 	 * Helper method to attach animation to grid view
+	 * 
 	 * @param gridView
 	 */
 	private void animateGridView(GridView gridView) {
@@ -228,6 +279,7 @@ public class SmartStoreInspectorActivity extends Activity {
 
 	/**
 	 * Helper method to setup auto-complete for query input field
+	 * 
 	 * @param textView
 	 */
 	private void setupAutocomplete(MultiAutoCompleteTextView textView) {
@@ -235,7 +287,8 @@ public class SmartStoreInspectorActivity extends Activity {
 				android.R.layout.simple_dropdown_item_1line);
 
 		// Adding {soupName} and {soupName:specialField}
-		List<String> names = smartStore.getAllSoupNames();
+		List<String> names = new  LinkedList<String>();
+		names.addAll(smartStore.getAllSoupNames());
 		for (String name : names) {
 			adapter.add("{" + name + "}");
 			adapter.add("{" + name + ":" + SmartSqlHelper.SOUP + "}");
@@ -264,6 +317,7 @@ public class SmartStoreInspectorActivity extends Activity {
 		adapter.add("order by");
 		adapter.add("asc");
 		adapter.add("desc");
+		adapter.add("group by");
 
 		textView.setAdapter(adapter);
 		textView.setTokenizer(new QueryTokenizer());
@@ -273,8 +327,9 @@ public class SmartStoreInspectorActivity extends Activity {
 
 /**
  * Tokenized used by query auto-complete field
+ * 
  * @author wmathurin
- *
+ * 
  */
 class QueryTokenizer implements Tokenizer {
 
