@@ -15,5 +15,10 @@
     <string name="sf__inspector_querytext_hint">Type your query here</string>
     <string name="sf__inspector_pagesize_hint">Page size (default: 10)</string>
     <string name="sf__inspector_pageindex_hint">Page index (default: 0)</string>    
+    <string name="sf__inspector_no_query_specified">No query specified</string>
+    <string name="sf__inspector_no_rows_returned">No rows returned</string>
+    
+    <string name="sf__inspector_soups_query">select soupName from soup_names</string>
+    <string name="sf__inspector_indices_query">select soupName, path, columnType from soup_index_map</string>
 
 </resources>

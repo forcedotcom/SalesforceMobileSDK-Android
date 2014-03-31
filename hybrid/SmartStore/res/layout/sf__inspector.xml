@@ -37,24 +37,28 @@
         android:orientation="horizontal" >
 
         <Button
+            android:id="@+id/sf__inspector_run_button"
             style="@style/SmartStore.Inspector.Button"
             android:layout_weight="1"
             android:onClick="onRunClick"
             android:text="@string/sf__inspector_run_button" />
 
         <Button
+            android:id="@+id/sf__inspector_clear_button"
             style="@style/SmartStore.Inspector.Button"
             android:layout_weight="1"
             android:onClick="onClearClick"
             android:text="@string/sf__inspector_clear_button" />
 
         <Button
+            android:id="@+id/sf__inspector_soups_button"
             style="@style/SmartStore.Inspector.Button"
             android:layout_weight="1"
             android:onClick="onSoupsClick"
             android:text="@string/sf__inspector_soups_button" />
 
         <Button
+            android:id="@+id/sf__inspector_indices_button"
             style="@style/SmartStore.Inspector.Button"
             android:layout_weight="1"
             android:onClick="onIndicesClick"
