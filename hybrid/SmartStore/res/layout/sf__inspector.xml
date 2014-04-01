@@ -6,8 +6,7 @@
 
     <MultiAutoCompleteTextView
         android:id="@+id/sf__inspector_query_text"
-        style="@style/SmartStore.Inspector.EditText"
-        android:layout_width="fill_parent"
+        style="@style/SmartStore.Inspector.EditText.Query"
         android:hint="@string/sf__inspector_querytext_hint" />
 
     <LinearLayout

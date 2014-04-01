@@ -22,7 +22,13 @@
         <item name="android:textColor">@color/sf__inspector_text_color</item>
         <item name="android:textSize">@dimen/sf__inspector_text_size</item>
         <item name="android:typeface">monospace</item>
+        <item name="android:gravity">top</item>
     </style>
+    
+    <style name="SmartStore.Inspector.EditText.Query">
+        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_height">@dimen/sf__inspector_query_field_height</item>
+    </style>    
     
     <style name="SmartStore.Inspector.GridView">
         <item name="android:layout_width">fill_parent</item>
