@@ -35,6 +35,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -47,6 +49,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 
 /**
  * PhoneGap plugin for smart store.
@@ -91,6 +94,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		pgRemoveSoup,
 		pgRetrieveSoupEntries,
 		pgRunSmartQuery,
+		pgShowInspector,
 		pgSoupExists,
 		pgUpsertSoupEntries
 	}
@@ -124,6 +128,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		                  case pgRemoveSoup:            removeSoup(args, callbackContext); break;
 		                  case pgRetrieveSoupEntries:   retrieveSoupEntries(args, callbackContext); break;
 		                  case pgRunSmartQuery:         runSmartQuery(args, callbackContext); break;
+		                  case pgShowInspector:         showInspector(args, callbackContext); break;
 		                  case pgSoupExists:            soupExists(args, callbackContext); break;
 		                  case pgUpsertSoupEntries:     upsertSoupEntries(args, callbackContext); break;
 		                  default: throw new SmartStoreException("No handler for action " + action);
@@ -235,6 +240,20 @@ public class SmartStorePlugin extends ForcePlugin {
 		callbackContext.success(result);
 	}
 
+	/**
+	 * Native implementation of pgShowInspector
+	 * @param args
+	 * @param callbackContext
+	 * @return
+	 * @throws JSONException 
+	 */
+	private void showInspector(JSONArray args, CallbackContext callbackContext) throws JSONException {
+		Activity activity = cordova.getActivity();
+		final Intent i = new Intent(activity, SmartStoreInspectorActivity.class);
+		activity.startActivity(i);
+	}	
+	
+	
 	/**
 	 * Native implementation of pgSoupExists
 	 * @param args
