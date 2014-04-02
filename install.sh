@@ -7,6 +7,8 @@ git submodule sync
 git submodule update
 
 CURRENT_DIR=`pwd`
-cd external/shared
-bower install
+cd external
+bower install ./samples # will bring in shared and its dependencies
+ln -s ../bower_components ./shared/bower_components
+ln -s ../bower_components ./samples/bower_components
 cd $CURRENT_DIR

@@ -40,16 +40,6 @@ If Err.number <> 0 Then
     WScript.Quit 1
 End If
 
-' If bower is not available, this script cannot run.
-Set objShell = WScript.CreateObject("WScript.Shell")
-intReturnVal = objShell.Run("bower help", 1, True)
-If Err.number <> 0 Then
-    strErrorDescription = Err.Description
-    Err.Clear
-    WScript.Echo "There was an error running bower: '" & strErrorDescription & "' Make sure to npm install -g bower."
-    WScript.Quit 1
-End If
-
 If intReturnVal <> 0 Then
     If intReturnVal = 128 Then
         WScript.Echo "Git repository not initialized!  You must clone this repository via the 'git clone' command to run this script."
@@ -58,6 +48,16 @@ If intReturnVal <> 0 Then
         WScript.Echo "Unknown error getting the git repository status (" & intReturnVal & ").  Make sure git is installed and part of your PATH, and that you've cloned the git repository using the 'git clone' command."
         WScript.Quit 8
     End If
+End If
+
+' If bower is not available, this script cannot run.
+Set objShell = WScript.CreateObject("WScript.Shell")
+intReturnVal = objShell.Run("bower help", 1, True)
+If Err.number <> 0 Then
+    strErrorDescription = Err.Description
+    Err.Clear
+    WScript.Echo "There was an error running bower: '" & strErrorDescription & "' Make sure to npm install -g bower."
+    WScript.Quit 1
 End If
 
 ' Initialze and update the submodules.
@@ -76,14 +76,15 @@ If intReturnVal <> 0 Then
     WScript.Echo "Error updating the submodules!"
     WScript.Quit 3
 End If
-objShell.CurrentDirectory = strWorkingDirectory & "external\shared"
-intReturnVal = objShell.Run("bower install", 1, True)
+
+' Run bower install for samples - will bring in shared and its dependencies 
+objShell.CurrentDirectory = strWorkingDirectory & "external"
+intReturnVal = objShell.Run("bower install .\samples", 1, True)
 If intReturnVal <> 0 Then
     WScript.Echo "Error running bower install in the shared submodule!"
     WScript.Quit 3
 End If
 objShell.CurrentDirectory = strWorkingDirectory
-
 
 ' Copy the hard files to where their symlinks would be.
 Call CopySymlinkFiles()
