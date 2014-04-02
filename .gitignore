@@ -14,3 +14,4 @@ proguard-project.txt
 build/
 .idea/
 *.iml
+bower_components/
