@@ -50,16 +50,6 @@ If intReturnVal <> 0 Then
     End If
 End If
 
-' If bower is not available, this script cannot run.
-Set objShell = WScript.CreateObject("WScript.Shell")
-intReturnVal = objShell.Run("bower help", 1, True)
-If Err.number <> 0 Then
-    strErrorDescription = Err.Description
-    Err.Clear
-    WScript.Echo "There was an error running bower: '" & strErrorDescription & "' Make sure to npm install -g bower."
-    WScript.Quit 1
-End If
-
 ' Initialze and update the submodules.
 intReturnVal = objShell.Run("git submodule init", 1, True)
 If intReturnVal <> 0 Then
@@ -76,15 +66,6 @@ If intReturnVal <> 0 Then
     WScript.Echo "Error updating the submodules!"
     WScript.Quit 3
 End If
-
-' Run bower install for samples - will bring in shared and its dependencies 
-objShell.CurrentDirectory = strWorkingDirectory & "external"
-intReturnVal = objShell.Run("bower install .\samples", 1, True)
-If intReturnVal <> 0 Then
-    WScript.Echo "Error running bower install in the shared submodule!"
-    WScript.Quit 3
-End If
-objShell.CurrentDirectory = strWorkingDirectory
 
 ' Copy the hard files to where their symlinks would be.
 Call CopySymlinkFiles()
