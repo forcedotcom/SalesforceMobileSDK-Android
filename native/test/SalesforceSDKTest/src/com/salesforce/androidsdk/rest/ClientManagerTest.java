@@ -72,7 +72,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
     public static final String TEST_REFRESH_TOKEN = "test_refresh_token";
     public static final String TEST_OTHER_ACCOUNT_NAME = "test_other_accountname";
     public static final String TEST_OTHER_USERNAME = "test_other_username";
-    public static final String TEST_ACCOUNT_TYPE = "com.salesforce.androisdk.test"; // must match authenticator.xml in SalesforceSDK project
+    public static final String TEST_ACCOUNT_TYPE = "com.salesforce.androidsdk.salesforcesdktest.login"; // must match authenticator.xml in SalesforceSDK project
     public static final String[] TEST_SCOPES = new String[] {"web"};
     public static final String TEST_CALLBACK_URL = "test://callback";
 
