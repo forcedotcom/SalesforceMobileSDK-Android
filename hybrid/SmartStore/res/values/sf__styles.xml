@@ -23,6 +23,7 @@
         <item name="android:textSize">@dimen/sf__inspector_text_size</item>
         <item name="android:typeface">monospace</item>
         <item name="android:gravity">top</item>
+        <item name="android:inputType">textNoSuggestions</item>
     </style>
     
     <style name="SmartStore.Inspector.EditText.Query">
