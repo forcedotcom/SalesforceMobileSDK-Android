@@ -20,16 +20,6 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
-    androidTest.setRoot('../test/SmartStoreExplorerTest')
-    androidTest {
-      java.srcDirs = ['../test/SmartStoreExplorerTest/src']
-      resources.srcDirs = ['../test/SmartStoreExplorerTest/src']
-      res.srcDirs = ['../test/SmartStoreExplorerTest/res']
-    }
-  }
-  defaultConfig {
-    testPackageName "com.salesforce.samples.smartstoreexplorer.tests"
-    testInstrumentationRunner "com.salesforce.androidsdk.util.JUnitReportTestRunner"
   }
 
   packagingOptions {
