@@ -20,18 +20,8 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
-    
-    androidTest.setRoot('../test/VFConnectorTest')
-    androidTest {
-      java.srcDirs = ['../test/VFConnectorTest/src']
-      resources.srcDirs = ['../test/VFConnectorTest/src']
-      res.srcDirs = ['../test/VFConnectorTest/res']
-    }
   }
-  defaultConfig {
-    testPackageName "com.salesforce.samples.vfconnector.tests"
-    testInstrumentationRunner "com.salesforce.androidsdk.util.JUnitReportTestRunner"
-  }
+
   packagingOptions {
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/LICENSE.txt'
