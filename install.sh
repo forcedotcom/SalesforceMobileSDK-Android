@@ -5,8 +5,3 @@
 git submodule init
 git submodule sync
 git submodule update
-
-CURRENT_DIR=`pwd`
-cd external/shared
-bower install
-cd $CURRENT_DIR
