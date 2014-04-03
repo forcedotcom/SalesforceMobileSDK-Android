@@ -45,6 +45,7 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 		assertEquals("Wrong number of force plugins", 3, plugins.size());
 		assertTrue("oauth plugin should have been returned", plugins.contains("com.salesforce.oauth"));
 		assertTrue("sdkinfo plugin should have been returned", plugins.contains("com.salesforce.sdkinfo"));
+		assertTrue("sfaccountmanager plugin should have been returned", plugins.contains("com.salesforce.sfaccountmanager"));
 	}
 	
 }
