@@ -3,7 +3,6 @@
 "external\samples\hybrid\accounteditor\AccountEditor.html" "hybrid\SampleApps\AccountEditor\assets\www\AccountEditor.html"
 "external\samples\hybrid\accounteditor\bootconfig.json" "hybrid\SampleApps\AccountEditor\assets\www\bootconfig.json"
 "external\samples\hybrid\accounteditor\css" "hybrid\SampleApps\AccountEditor\assets\www\css"
-"external\samples\hybrid\accounteditor\dependencies" "hybrid\SampleApps\AccountEditor\assets\www\dependencies"
 "external\samples\hybrid\accounteditor\js" "hybrid\SampleApps\AccountEditor\assets\www\js"
 "external\samples\hybrid\common\auth.js" "external\samples\hybrid\accounteditor\js\auth.js"
 "external\samples\hybrid\common\auth.js" "external\samples\hybrid\fileexplorer\js\auth.js"
