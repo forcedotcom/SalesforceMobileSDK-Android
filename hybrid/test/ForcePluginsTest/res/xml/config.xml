@@ -18,5 +18,3 @@
     <feature name="com.salesforce.testrunner"><param name="android-package" value="com.salesforce.androidsdk.phonegap.TestRunnerPlugin"/></feature>
 
 </widget>
-
-

@@ -166,10 +166,12 @@ else
     build_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/test/TemplateAppTest ../../TemplateApp
     build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/SampleApps/test/RestExplorerTest ../../RestExplorer
     build_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest .
+    build_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest .
 
     run_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/test/SalesforceSDKTest
     run_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest 
     run_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/test/TemplateAppTest
     run_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/SampleApps/test/RestExplorerTest
     run_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest
+    run_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest
 fi
