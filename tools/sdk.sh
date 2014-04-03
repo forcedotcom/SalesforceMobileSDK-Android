@@ -57,20 +57,14 @@ usage ()
     echo "        SalesforceSDKTest"
     echo "        RestExplorerTest"
     echo "        TemplateAppTest"
-    echo "        ContactExplorerTest"
     echo "        ForcePluginsTest"
-    echo "        VFConnectorTest"
-    echo "        SmartStoreExplorerTest"
     echo "    <test_target> can be "
     echo "        all"
     echo "        SalesforceSDKTest"
     echo "        SmartStoreTest"
     echo "        RestExplorerTest"
     echo "        TemplateAppTest"
-    echo "        ContactExplorerTest"
     echo "        ForcePluginsTest"
-    echo "        VFConnectorTest"
-    echo "        SmartStoreExplorerTest"
 }
 
 verbose ()
@@ -174,16 +168,10 @@ else
     build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/SampleApps/test/RestExplorerTest ../../RestExplorer
     build_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest .
     build_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest .
-    build_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/test/ContactExplorerTest ../../ContactExplorer
-    build_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/test/SmartStoreExplorerTest ../../SmartStoreExplorer
-    build_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/test/VFConnectorTest ../../VFConnector
 
     run_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/test/SalesforceSDKTest
     run_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/test/TemplateAppTest
     run_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/SampleApps/test/RestExplorerTest
     run_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest
     run_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest
-    run_test_project_if_requested "ContactExplorerTest" $HYBRID_TOP/SampleApps/test/ContactExplorerTest
-    run_test_project_if_requested "SmartStoreExplorerTest" $HYBRID_TOP/SampleApps/test/SmartStoreExplorerTest
-    run_test_project_if_requested "VFConnectorTest" $HYBRID_TOP/SampleApps/test/VFConnectorTest
 fi
