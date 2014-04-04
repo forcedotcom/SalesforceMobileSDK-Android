@@ -270,16 +270,6 @@ public class UserAccountManager {
 		final Account account = cm.getAccountByName(user.getAccountName());
 		storeCurrentUserInfo(user.getUserId(), user.getOrgId());
 		cm.peekRestClient(account);
-
-		/*
-		 * If this is a hybrid app, we need to reload the webview
-		 * after the account switch is complete.
-		 */
-		if (SalesforceSDKManager.getInstance().isHybrid()) {
-	        final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getMainActivityClass());
-	        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-	        context.startActivity(i);
-		}
 	}
 
 	/**
