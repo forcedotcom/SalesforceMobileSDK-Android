@@ -641,6 +641,7 @@ public class SalesforceSDKManager implements AccountRemoved {
         	startLoginPage();
         } else if (accounts.size() == 1) {
         	userAccMgr.switchToUser(accounts.get(0));
+        	userAccMgr.sendUserSwitchIntent();
         } else {
         	final Intent i = new Intent(context, switcherActivityClass);
     		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

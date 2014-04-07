@@ -42,6 +42,8 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -54,6 +56,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -98,6 +101,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	private BootConfig bootconfig;
     private PasscodeManager passcodeManager;
     private TokenRevocationReceiver tokenRevocationReceiver;
+    private UserSwitchReceiver userSwitchReceiver;
 
 	// Web app loaded?
 	private boolean webAppLoaded = false;	
@@ -124,6 +128,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         // Passcode manager
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         tokenRevocationReceiver = new TokenRevocationReceiver(this);
+        userSwitchReceiver = new UserSwitchReceiver();
 
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
@@ -165,10 +170,8 @@ public class SalesforceDroidGapActivity extends DroidGap {
     @Override
     public void onResume() {
         super.onResume();
-        
-        restartIfUserSwitched();
-        
-    	registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
+        registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
+        registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
     	if (passcodeManager.onResume(this)) {
 
     		// Not logged in
@@ -193,6 +196,9 @@ public class SalesforceDroidGapActivity extends DroidGap {
         }
     }
 
+    /**
+     * Restarts the activity if the user has been switched.
+     */
 	private void restartIfUserSwitched() {
 		if (client != null) {
             try {
@@ -204,6 +210,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
     		        this.startActivity(i);
     			}
     		} catch (AccountInfoNotFoundException e) {
+            	Log.i("SalesforceDroidGapActivity.restartIfUserSwitched", "No user account found");
     		}
         }
 	}
@@ -289,6 +296,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         passcodeManager.onPause(this);
         CookieSyncManager.getInstance().stopSync();
     	unregisterReceiver(tokenRevocationReceiver);
+    	unregisterReceiver(userSwitchReceiver);
     }
 
     @Override
@@ -539,8 +547,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
    }
 
     /**
-     * Exception thrown if initial web page load fails
-     *
+     * Exception thrown if initial web page load fails.
      */
     public static class HybridAppLoadException extends RuntimeException {
 
@@ -549,6 +556,20 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		}
 
 		private static final long serialVersionUID = 1L;
-	
+    }
+
+    /**
+     * Broadcast receiver for a user switch intent.
+     *
+     * @author bhariharan
+     */
+    private class UserSwitchReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (intent != null && UserAccountManager.USER_SWITCH_INTENT_ACTION.equals(intent.getAction())) {
+				restartIfUserSwitched();
+			}
+		}
     }
 }
