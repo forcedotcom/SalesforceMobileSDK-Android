@@ -52,6 +52,8 @@ usage ()
     echo "        FileExplorer"
     echo "        TemplateApp"
     echo "        AccountEditor"
+    echo "        ContactExplorer"
+    echo "        SmartStoreExplorer"
     echo "        VFConnector"
     echo "        SalesforceSDKTest"
     echo "        SmartStoreTest"
@@ -159,6 +161,8 @@ else
     build_project_if_requested "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator
     build_project_if_requested "FileExplorer" $NATIVE_TOP/SampleApps/FileExplorer
     build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor
+    build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer
+    build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer
     build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector
 
     build_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/test/SalesforceSDKTest .

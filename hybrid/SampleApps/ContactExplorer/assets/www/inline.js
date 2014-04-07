@@ -1,0 +1,1 @@
+../../../../../external/samples/hybrid/contactexplorer/inline.js
