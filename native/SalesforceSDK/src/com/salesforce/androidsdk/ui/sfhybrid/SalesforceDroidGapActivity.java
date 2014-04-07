@@ -129,6 +129,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         tokenRevocationReceiver = new TokenRevocationReceiver(this);
         userSwitchReceiver = new UserSwitchReceiver();
+        registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
 
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
@@ -170,7 +171,6 @@ public class SalesforceDroidGapActivity extends DroidGap {
     @Override
     public void onResume() {
         super.onResume();
-        registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
         registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
     	if (passcodeManager.onResume(this)) {
 
@@ -296,7 +296,12 @@ public class SalesforceDroidGapActivity extends DroidGap {
         passcodeManager.onPause(this);
         CookieSyncManager.getInstance().stopSync();
     	unregisterReceiver(tokenRevocationReceiver);
+    }
+
+    @Override
+    public void onDestroy() {
     	unregisterReceiver(userSwitchReceiver);
+    	super.onDestroy();
     }
 
     @Override
