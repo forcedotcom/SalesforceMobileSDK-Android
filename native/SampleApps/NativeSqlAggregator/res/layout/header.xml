@@ -41,5 +41,4 @@
         android:layout_toLeftOf="@id/switch_button"
         android:onClick="onInspectClick"
         android:text="@string/inspect_button" />
-
 </RelativeLayout>
