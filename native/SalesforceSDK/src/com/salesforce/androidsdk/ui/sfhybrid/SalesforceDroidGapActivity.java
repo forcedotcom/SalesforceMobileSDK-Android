@@ -116,14 +116,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
         // Get clientManager
         clientManager = buildClientManager();
-		
-        // Get client (if already logged in)
-        try {
-			client = clientManager.peekRestClient();
-		} catch (AccountInfoNotFoundException e) {
-			client = null;
-		}
-        
+
         // Passcode manager
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         tokenRevocationReceiver = new TokenRevocationReceiver(this);
@@ -172,6 +165,13 @@ public class SalesforceDroidGapActivity extends DroidGap {
         super.onResume();
         registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
     	if (passcodeManager.onResume(this)) {
+
+            // Get client (if already logged in)
+            try {
+    			client = clientManager.peekRestClient();
+    		} catch (AccountInfoNotFoundException e) {
+    			client = null;
+    		}
 
     		// Not logged in
         	if (client == null) {
