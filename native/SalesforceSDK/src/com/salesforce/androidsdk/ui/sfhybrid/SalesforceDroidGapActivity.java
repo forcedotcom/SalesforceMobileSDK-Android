@@ -42,8 +42,6 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -73,6 +71,7 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.TokenRevocationReceiver;
+import com.salesforce.androidsdk.util.UserSwitchReceiver;
 
 /**
  * Class that defines the main activity for a PhoneGap-based application.
@@ -128,7 +127,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         // Passcode manager
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         tokenRevocationReceiver = new TokenRevocationReceiver(this);
-        userSwitchReceiver = new UserSwitchReceiver();
+        userSwitchReceiver = new DroidGapUserSwitchReceiver();
         registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
 
         // Ensure we have a CookieSyncManager
@@ -564,17 +563,15 @@ public class SalesforceDroidGapActivity extends DroidGap {
     }
 
     /**
-     * Broadcast receiver for a user switch intent.
+     * Acts on the user switch event.
      *
      * @author bhariharan
      */
-    private class UserSwitchReceiver extends BroadcastReceiver {
+    private class DroidGapUserSwitchReceiver extends UserSwitchReceiver {
 
 		@Override
-		public void onReceive(Context context, Intent intent) {
-			if (intent != null && UserAccountManager.USER_SWITCH_INTENT_ACTION.equals(intent.getAction())) {
-				restartIfUserSwitched();
-			}
+		protected void onUserSwitch() {
+			restartIfUserSwitched();
 		}
     }
 }
