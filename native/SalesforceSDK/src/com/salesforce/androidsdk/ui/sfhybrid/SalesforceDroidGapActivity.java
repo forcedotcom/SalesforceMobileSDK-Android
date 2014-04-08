@@ -42,7 +42,6 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
-import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -203,10 +202,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
             try {
     			RestClient currentClient = clientManager.peekRestClient();
     			if (currentClient != null && !currentClient.getClientInfo().userId.equals(client.getClientInfo().userId)) {
-    				this.finish();
-    		        final Intent i = new Intent(this, this.getClass());
-    		        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-    		        this.startActivity(i);
+    				this.recreate();
     			}
     		} catch (AccountInfoNotFoundException e) {
             	Log.i("SalesforceDroidGapActivity.restartIfUserSwitched", "No user account found");
