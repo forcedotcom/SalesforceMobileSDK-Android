@@ -125,7 +125,7 @@ public abstract class SalesforceExpandableListActivity extends ExpandableListAct
     /**
      * Refreshes the client if the user has been switched.
      */
-	private void refreshIfUserSwitched() {
+	protected void refreshIfUserSwitched() {
 		if (passcodeManager.onResume(this)) {
 
 			// Gets login options.
