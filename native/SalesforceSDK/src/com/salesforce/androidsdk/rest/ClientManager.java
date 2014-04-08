@@ -57,6 +57,7 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 public class ClientManager {
 
 	public static final String ACCESS_TOKEN_REVOKE_INTENT = "access_token_revoked";
+    public static final String ACCESS_TOKEN_REFRESH_INTENT = "access_token_refeshed";
 
     private final AccountManager accountManager;
     private final String accountType;
@@ -478,6 +479,11 @@ public class ClientManager {
                             // Broadcasts an intent that the access token has been revoked.
                             final Intent revokeIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
                             SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(revokeIntent);
+                        } else {
+
+                            // Broadcasts an intent that the access token has been refreshed.
+                            final Intent refreshIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
+                            SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(refreshIntent);
                         }
                     }
                 }
