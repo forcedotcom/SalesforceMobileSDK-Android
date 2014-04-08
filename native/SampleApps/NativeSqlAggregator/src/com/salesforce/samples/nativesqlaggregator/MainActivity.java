@@ -72,7 +72,7 @@ public class MainActivity extends SalesforceActivity {
 	public void onResume() {
 
 		// Hide the view until we are logged in.
-		findViewById(R.id.root).setVisibility(View.INVISIBLE);		
+		findViewById(R.id.root).setVisibility(View.INVISIBLE);
 		super.onResume();
 	}
 
@@ -107,7 +107,19 @@ public class MainActivity extends SalesforceActivity {
 	 * @param v View that was clicked.
 	 */
 	public void onLogoutClick(View v) {
-		SalesforceSDKManager.getInstance().logout(this);
+		SalesforceSDKManagerWithSmartStore.getInstance().logout(this);
+	}
+
+	/**
+	 * Called when "Switch User" button is clicked.
+	 *
+	 * @param v View that was clicked.
+	 */
+	public void onSwitchUserClick(View v) {
+		final Intent i = new Intent(this,
+				SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
+		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		this.startActivity(i);
 	}
 
 	/**
