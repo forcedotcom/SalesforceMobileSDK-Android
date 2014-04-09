@@ -77,6 +77,15 @@ public class MainActivity extends SalesforceActivity {
 	}
 
 	@Override
+	protected void refreshIfUserSwitched() {
+		smartStoreIntf = new SmartStoreInterface();
+
+		// Creates soups, if they don't exist already.
+		smartStoreIntf.createAccountsSoup();
+		smartStoreIntf.createOpportunitiesSoup();
+	}
+
+	@Override
 	public void onResume(RestClient client) {
         this.client = client;
 		smartStoreIntf = new SmartStoreInterface();
