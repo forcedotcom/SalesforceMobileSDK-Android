@@ -688,4 +688,18 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		store.dropSoup(FOURTH_TEST_SOUP);
 		assertFalse("Soup " + FOURTH_TEST_SOUP + " should have been deleted", store.hasSoup(FOURTH_TEST_SOUP));
 	}
+	
+	/**
+	 * Test for getDatabaseSize
+	 * 
+	 * @throws JSONException
+	 */
+	public void testGetDatabaseSize() throws JSONException {
+		int initialSize = store.getDatabaseSize();
+		for (int i=0; i<100; i++) {
+			JSONObject soupElt = new JSONObject("{'key':'abcd" + i + "', 'value':'va" + i + "', 'otherValue':'ova" + i + "'}");
+			store.create(TEST_SOUP, soupElt);
+		}
+		assertTrue("Database should be larger now", store.getDatabaseSize() > initialSize);
+	}
 }
