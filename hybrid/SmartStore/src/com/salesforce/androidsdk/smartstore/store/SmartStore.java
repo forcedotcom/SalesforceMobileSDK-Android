@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -134,6 +135,13 @@ public class SmartStore  {
         this.db = db;
     }
 
+    /**
+     * Get database size
+     */
+    public int getDatabaseSize() {
+    	return (int) (new File(db.getPath()).length()); // XXX That cast will be trouble if the file is more than 2GB 
+    }
+    
     /**
      * Start transaction
      */

@@ -42,7 +42,7 @@ public class SmartStoreJSTest extends JSTestCase {
 
     @Override
     public List<String> getTestNames() {
-    	return Arrays.asList(new String[] {"testSmartQueryWithCount", "testSmartQueryWithSpecialFields", "testArbitrarySoupNames", "testCompoundQueryPath", "testEmptyQuerySpec", "testIntegerQuerySpec", "testLikeQueryInnerText", "testLikeQuerySpecEndsWith", "testLikeQuerySpecStartsWith", "testManipulateCursor", "testMoveCursorToNextPageFromLastPage", "testMoveCursorToPreviousPageFromFirstPage", "testQuerySoup", "testQuerySoupBadQuerySpec", "testQuerySoupBeginKeyNoEndKey", "testQuerySoupDescending", "testQuerySoupEndKeyNoBeginKey", "testQuerySpecFactories", "testRegisterBogusSoup", "testRegisterRemoveSoup", "testRegisterSoupNoIndices", "testRemoveFromSoup", "testRetrieveSoupEntries", "testUpsertSoupEntries", "testUpsertSoupEntriesWithExternalId", "testUpsertToNonexistentSoup"});
+    	return Arrays.asList(new String[] {"testSmartQueryWithCount", "testSmartQueryWithSpecialFields", "testArbitrarySoupNames", "testCompoundQueryPath", "testEmptyQuerySpec", "testIntegerQuerySpec", "testLikeQueryInnerText", "testLikeQuerySpecEndsWith", "testLikeQuerySpecStartsWith", "testManipulateCursor", "testMoveCursorToNextPageFromLastPage", "testMoveCursorToPreviousPageFromFirstPage", "testQuerySoup", "testQuerySoupBadQuerySpec", "testQuerySoupBeginKeyNoEndKey", "testQuerySoupDescending", "testQuerySoupEndKeyNoBeginKey", "testQuerySpecFactories", "testRegisterBogusSoup", "testRegisterRemoveSoup", "testRegisterSoupNoIndices", "testRemoveFromSoup", "testRetrieveSoupEntries", "testUpsertSoupEntries", "testUpsertSoupEntriesWithExternalId", "testUpsertToNonexistentSoup", "testGetDatabaseSize"});
     }
     
     public void testRegisterRemoveSoup()  {
@@ -147,5 +147,9 @@ public class SmartStoreJSTest extends JSTestCase {
 
     public void testSmartQueryWithSpecialFields() {
     	runTest("testSmartQueryWithSpecialFields");
+    }
+
+    public void testGetDatabaseSize() {
+    	runTest("testGetDatabaseSize");
     }
 }

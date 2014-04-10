@@ -87,6 +87,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	 */
 	enum Action {
 		pgCloseCursor,
+		pgGetDatabaseSize,
 		pgMoveCursorToPageIndex,
 		pgQuerySoup,
 		pgRegisterSoup,
@@ -121,6 +122,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	        		try {
 		        		switch(action) {
 		                  case pgCloseCursor:           closeCursor(args, callbackContext); break;
+		                  case pgGetDatabaseSize:       getDatabaseSize(args, callbackContext); break;
 		                  case pgMoveCursorToPageIndex: moveCursorToPageIndex(args, callbackContext); break;
 		                  case pgQuerySoup:             querySoup(args, callbackContext); break;
 		                  case pgRegisterSoup:          registerSoup(args, callbackContext); break;
@@ -428,6 +430,18 @@ public class SmartStorePlugin extends ForcePlugin {
 		callbackContext.success();
 	}
 	
+	
+	/**
+	 * Native implementation of pgGetDatabaseSize
+	 * @param args
+	 * @param callbackContext
+	 * @return
+	 * @throws JSONException 
+	 */
+	private void getDatabaseSize(JSONArray args, CallbackContext callbackContext) throws JSONException {
+		int databaseSize = getSmartStore().getDatabaseSize();
+		callbackContext.success(databaseSize);
+	}	
 
 	private SmartStore getSmartStore() {
 		return SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore();
