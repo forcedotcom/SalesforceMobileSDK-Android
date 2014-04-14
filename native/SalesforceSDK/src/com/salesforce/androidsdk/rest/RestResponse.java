@@ -203,7 +203,7 @@ public class RestResponse {
 		try {
 			return asString();
 		} catch (Exception e) {
-			Log.e("RestResponse: toString()", "Exception caught while calling asString()");
+			Log.e("RestResponse: toString()", "Exception caught while calling asString()", e);
 			return ((response == null) ? "" : response.toString());
 		}
 	}
