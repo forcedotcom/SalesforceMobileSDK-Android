@@ -41,6 +41,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.util.Log;
+
 import com.android.volley.NetworkResponse;
 
 
@@ -201,6 +203,7 @@ public class RestResponse {
 		try {
 			return asString();
 		} catch (Exception e) {
+			Log.e("RestResponse: toString()", "Exception caught while calling asString()");
 			return ((response == null) ? "" : response.toString());
 		}
 	}
