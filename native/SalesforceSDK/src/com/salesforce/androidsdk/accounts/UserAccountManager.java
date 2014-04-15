@@ -68,7 +68,7 @@ public class UserAccountManager {
 	private static final String USER_ID_KEY = "user_id";
 	private static final String ORG_ID_KEY = "org_id";
 
-	public static final String USER_SWITCH_INTENT_ACTION = "user_switched_intent";
+	public static final String USER_SWITCH_INTENT_ACTION = "com.salesforce.USERSWITCHED";
 
 	private static UserAccountManager INSTANCE;
 
