@@ -252,7 +252,45 @@ public class SmartStore  {
             db.endTransaction();
         }
     }
+    
+	/**
+	 * Alter soup (change indexes)
+	 * 
+	 * @param soupName
+	 * @param array
+	 * @param reIndexData
+	 */
+	public void alterSoup(String soupName, IndexSpec[] indexSpecs,
+			boolean reIndexData) {
+		
+		throw new UnsupportedOperationException("alterSoup not implemented yet");
+		
+		/*
+		if (reIndexData) {
+			// TODO lock smartstore
+			registerSoup(soupName + "__tmp", indexSpecs);
+			// TODO move data
+			// TODO drop old soup
+			// TODO rename soupName__tmp to soupName
+		}
+		else {
+			// TODO a bunch of alter tables?
+		}
+		*/
+	}
 
+	/**
+	 * Return indexSpecs of soup
+	 * 
+	 * @param soupName
+	 * @return
+	 */
+	public IndexSpec[] getSoupIndexSpecs(String soupName) {
+        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
+        return DBHelper.INSTANCE.getIndexSpecs(db, soupName);
+	}
+	
     /**
      * Check if soup exists
      *
@@ -797,4 +835,5 @@ public class SmartStore  {
         private static final long serialVersionUID = -6369452803270075464L;
 
     }
+
 }
