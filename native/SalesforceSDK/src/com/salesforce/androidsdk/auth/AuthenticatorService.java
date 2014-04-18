@@ -65,6 +65,8 @@ public class AuthenticatorService extends Service {
     public static final String KEY_USERNAME = "username";
     public static final String KEY_ID_URL = "id";
     public static final String KEY_CLIENT_SECRET = "clientSecret";
+    public static final String KEY_COMMUNITY_ID = "communityId";
+    public static final String KEY_COMMUNITY_URL = "communityUrl";
 
     private Authenticator getAuthenticator() {
         if (authenticator == null)
@@ -138,6 +140,18 @@ public class AuthenticatorService extends Service {
             if (encClientSecret != null) {
                 clientSecret = SalesforceSDKManager.decryptWithPasscode(encClientSecret, passcodeHash);
             }
+            final String encCommunityId = mgr.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
+            String communityId = null;
+            if (encCommunityId != null) {
+            	communityId = SalesforceSDKManager.decryptWithPasscode(encCommunityId,
+            			SalesforceSDKManager.getInstance().getPasscodeHash());
+            }
+            final String encCommunityUrl = mgr.getUserData(account, AuthenticatorService.KEY_COMMUNITY_URL);
+            String communityUrl = null;
+            if (encCommunityUrl != null) {
+            	communityUrl = SalesforceSDKManager.decryptWithPasscode(encCommunityUrl,
+            			SalesforceSDKManager.getInstance().getPasscodeHash());
+            }
             final Bundle resBundle = new Bundle();
             try {
                 final TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken, clientSecret);
@@ -163,6 +177,16 @@ public class AuthenticatorService extends Service {
                     encrClientSecret = SalesforceSDKManager.encryptWithPasscode(clientSecret, passcodeHash);
                 }
                 resBundle.putString(AuthenticatorService.KEY_CLIENT_SECRET, encrClientSecret);
+                String encrCommunityId = null;
+                if (communityId != null) {
+                	encrCommunityId = SalesforceSDKManager.encryptWithPasscode(communityId, passcodeHash);
+                }
+                resBundle.putString(AuthenticatorService.KEY_COMMUNITY_ID, encrCommunityId);
+                String encrCommunityUrl = null;
+                if (communityUrl != null) {
+                	encrCommunityUrl = SalesforceSDKManager.encryptWithPasscode(communityUrl, passcodeHash);
+                }
+                resBundle.putString(AuthenticatorService.KEY_COMMUNITY_URL, encrCommunityUrl);
                 // Log.i("Authenticator:getAuthToken", "Returning auth bundle for " + account.name);
             } catch (ClientProtocolException e) {
                 Log.w("Authenticator:getAuthToken", "", e);

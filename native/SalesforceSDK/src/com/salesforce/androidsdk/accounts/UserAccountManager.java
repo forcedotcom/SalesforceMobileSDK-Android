@@ -356,11 +356,24 @@ public class UserAccountManager {
 		final String username = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), SalesforceSDKManager.getInstance().getPasscodeHash());
 		final String accountName = accountManager.getUserData(account, AccountManager.KEY_ACCOUNT_NAME);
 		final String clientId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
+		final String encCommunityId = accountManager.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
+        String communityId = null;
+        if (encCommunityId != null) {
+        	communityId = SalesforceSDKManager.decryptWithPasscode(encCommunityId,
+        			SalesforceSDKManager.getInstance().getPasscodeHash());
+        }
+        final String encCommunityUrl = accountManager.getUserData(account, AuthenticatorService.KEY_COMMUNITY_URL);
+        String communityUrl = null;
+        if (encCommunityUrl != null) {
+        	communityUrl = SalesforceSDKManager.decryptWithPasscode(encCommunityUrl,
+        			SalesforceSDKManager.getInstance().getPasscodeHash());
+        }
 		if (authToken == null || instanceServer == null || userId == null || orgId == null) {
 			return null;
 		}
 		return new UserAccount(authToken, refreshToken, loginServer, idUrl,
-				instanceServer, orgId, userId, username, accountName, clientId);
+				instanceServer, orgId, userId, username, accountName, clientId,
+				communityId, communityUrl);
 	}
 
 	/**
