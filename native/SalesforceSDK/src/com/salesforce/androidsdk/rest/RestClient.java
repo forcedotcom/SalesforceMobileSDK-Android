@@ -215,6 +215,7 @@ public class RestClient {
 	 * All immutable information for an authenticated client (e.g. username, org ID, etc.).
 	 */
 	public static class ClientInfo {
+
 		public final String clientId;
 		public final URI instanceUrl;
 		public final URI loginUrl;
@@ -223,8 +224,12 @@ public class RestClient {
 		public final String username;
 		public final String userId;
 		public final String orgId;
+		public final String communityId;
+		public final String communityUrl;
 		
-		public ClientInfo(String clientId, URI instanceUrl, URI loginUrl, URI identityUrl, String accountName, String username, String userId, String orgId) {
+		public ClientInfo(String clientId, URI instanceUrl, URI loginUrl,
+				URI identityUrl, String accountName, String username,
+				String userId, String orgId, String communityId, String communityUrl) {
 			this.clientId = clientId;
 			this.instanceUrl = instanceUrl;
 			this.loginUrl = loginUrl;
@@ -233,6 +238,8 @@ public class RestClient {
 			this.username = username;	
 			this.userId = userId;
 			this.orgId = orgId;
+			this.communityId = communityId;
+			this.communityUrl = communityUrl;
 		}
 		
 		public String toString() {
@@ -245,6 +252,8 @@ public class RestClient {
 			  .append("     username: ").append(username).append("\n")
 			  .append("     userId: ").append(userId).append("\n")
 			  .append("     orgId: ").append(orgId).append("\n")
+			  .append("     communityId: ").append(communityId).append("\n")
+			  .append("     communityUrl: ").append(communityUrl).append("\n")
 			  .append("  }\n");
 			return sb.toString();
 		}

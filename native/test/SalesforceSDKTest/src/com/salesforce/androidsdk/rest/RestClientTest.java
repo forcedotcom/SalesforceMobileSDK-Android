@@ -74,7 +74,12 @@ public class RestClientTest extends InstrumentationTestCase {
         httpAccess = new HttpAccess(null, null);
         TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
         authToken = refreshResponse.authToken;
-        clientInfo = new ClientInfo(TestCredentials.CLIENT_ID, new URI(TestCredentials.INSTANCE_URL), new URI(TestCredentials.LOGIN_URL), new URI(TestCredentials.IDENTITY_URL), TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME, TestCredentials.USER_ID, TestCredentials.ORG_ID);
+        clientInfo = new ClientInfo(TestCredentials.CLIENT_ID,
+        		new URI(TestCredentials.INSTANCE_URL),
+        		new URI(TestCredentials.LOGIN_URL),
+        		new URI(TestCredentials.IDENTITY_URL),
+        		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
+        		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null);
         restClient = new RestClient(clientInfo, authToken, httpAccess, null);
     }
 
