@@ -315,6 +315,13 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testSearch() throws Exception {
         IdName newAccountIdName = createAccount();
+
+        /*
+         * This is ugly, but I can't think of a better way to do this. It looks
+         * like search indexer takes a second or two, and since we create the
+         * object and query for it right away, this test flaps a lot.
+         */
+        Thread.sleep(3000);
         RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
         checkResponse(response, HttpStatus.SC_OK, true);
         JSONArray matchingRows = response.asJSONArray();
