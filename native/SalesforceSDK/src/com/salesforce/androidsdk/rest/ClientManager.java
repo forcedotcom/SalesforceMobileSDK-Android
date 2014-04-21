@@ -157,7 +157,16 @@ public class ClientManager {
         String username = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(acc, AuthenticatorService.KEY_USERNAME), passcodeHash);
         String accountName = accountManager.getUserData(acc, AccountManager.KEY_ACCOUNT_NAME);
         String clientId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(acc, AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
-
+        final String encCommunityId = accountManager.getUserData(acc, AuthenticatorService.KEY_COMMUNITY_ID);
+        String communityId = null;
+        if (encCommunityId != null) {
+        	communityId = SalesforceSDKManager.decryptWithPasscode(encCommunityId, passcodeHash);
+        }
+        final String encCommunityUrl = accountManager.getUserData(acc, AuthenticatorService.KEY_COMMUNITY_URL);
+        String communityUrl = null;
+        if (encCommunityUrl != null) {
+        	communityUrl = SalesforceSDKManager.decryptWithPasscode(encCommunityUrl, passcodeHash);
+        }
         if (authToken == null)
             throw new AccountInfoNotFoundException(AccountManager.KEY_AUTHTOKEN);
         if (instanceServer == null)
@@ -169,7 +178,9 @@ public class ClientManager {
 
         try {
             AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, authToken, refreshToken);
-            ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer), new URI(loginServer), new URI(idUrl), accountName, username, userId, orgId);
+            ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer),
+            		new URI(loginServer), new URI(idUrl), accountName, username,
+            		userId, orgId, communityId, communityUrl);
             return new RestClient(clientInfo, authToken, HttpAccess.DEFAULT, authTokenProvider);
         } catch (URISyntaxException e) {
             Log.w("ClientManager:peekRestClient", "Invalid server URL", e);
@@ -250,15 +261,27 @@ public class ClientManager {
      * @param passcodeHash
      * @return
      */
-    public Bundle createNewAccount(String accountName, String username, String refreshToken, String authToken,
-                                   String instanceUrl, String loginUrl, String idUrl, String clientId, String orgId, String userId, String passcodeHash) {
+    public Bundle createNewAccount(String accountName, String username, String refreshToken,
+    		String authToken, String instanceUrl, String loginUrl, String idUrl,
+    		String clientId, String orgId, String userId, String passcodeHash) {
         return createNewAccount(accountName, username, refreshToken, authToken,
-                                instanceUrl, loginUrl, idUrl, clientId, orgId, userId, passcodeHash, null);
+                                instanceUrl, loginUrl, idUrl, clientId, orgId,
+                                userId, passcodeHash, null);
     }
 
-    public Bundle createNewAccount(String accountName, String username, String refreshToken, String authToken,
-                                   String instanceUrl, String loginUrl, String idUrl, String clientId, String orgId, String userId, String passcodeHash,
+    public Bundle createNewAccount(String accountName, String username, String refreshToken,
+    		String authToken, String instanceUrl, String loginUrl, String idUrl,
+    		String clientId, String orgId, String userId, String passcodeHash,
             String clientSecret) {
+        return createNewAccount(accountName, username, refreshToken, authToken,
+                instanceUrl, loginUrl, idUrl, clientId, orgId,
+                userId, passcodeHash, clientSecret, null, null);
+    }
+
+    public Bundle createNewAccount(String accountName, String username, String refreshToken,
+    		String authToken, String instanceUrl, String loginUrl, String idUrl,
+    		String clientId, String orgId, String userId, String passcodeHash,
+            String clientSecret, String communityId, String communityUrl) {
         Bundle extras = new Bundle();
         extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
         extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
@@ -271,6 +294,12 @@ public class ClientManager {
         extras.putString(AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encryptWithPasscode(userId, passcodeHash));
         if (clientSecret != null) {
             extras.putString(AuthenticatorService.KEY_CLIENT_SECRET, SalesforceSDKManager.encryptWithPasscode(clientSecret, passcodeHash));
+        }
+        if (communityId != null) {
+            extras.putString(AuthenticatorService.KEY_COMMUNITY_ID, SalesforceSDKManager.encryptWithPasscode(communityId, passcodeHash));
+        }
+        if (communityUrl != null) {
+            extras.putString(AuthenticatorService.KEY_COMMUNITY_URL, SalesforceSDKManager.encryptWithPasscode(communityUrl, passcodeHash));
         }
         extras.putString(AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, passcodeHash));
         Account acc = new Account(accountName, getAccountType());
@@ -313,6 +342,21 @@ public class ClientManager {
                     final String userId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_USER_ID), oldPass);
                     final String username = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_USERNAME), oldPass);
                     final String clientId = SalesforceSDKManager.decryptWithPasscode(acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), oldPass);
+                    final String encClientSecret = acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET);
+                    String clientSecret = null;
+                    if (encClientSecret != null) {
+                    	clientSecret = SalesforceSDKManager.decryptWithPasscode(encClientSecret, oldPass);
+                    }
+                    final String encCommunityId = acctManager.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
+                    String communityId = null;
+                    if (encCommunityId != null) {
+                    	communityId = SalesforceSDKManager.decryptWithPasscode(encCommunityId, oldPass);
+                    }
+                    final String encCommunityUrl = acctManager.getUserData(account, AuthenticatorService.KEY_COMMUNITY_URL);
+                    String communityUrl = null;
+                    if (encCommunityUrl != null) {
+                    	communityUrl = SalesforceSDKManager.decryptWithPasscode(encCommunityUrl, oldPass);
+                    }
 
                     // Encrypt data with new hash and put it back in AccountManager.
                     acctManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, newPass));
@@ -324,6 +368,15 @@ public class ClientManager {
                     acctManager.setUserData(account, AuthenticatorService.KEY_USER_ID, SalesforceSDKManager.encryptWithPasscode(userId, newPass));
                     acctManager.setUserData(account, AuthenticatorService.KEY_USERNAME, SalesforceSDKManager.encryptWithPasscode(username, newPass));
                     acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encryptWithPasscode(clientId, newPass));
+                    if (clientSecret != null) {
+                        acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_SECRET, SalesforceSDKManager.encryptWithPasscode(clientSecret, newPass));
+                    }
+                    if (communityId != null) {
+                        acctManager.setUserData(account, AuthenticatorService.KEY_COMMUNITY_ID, SalesforceSDKManager.encryptWithPasscode(communityId, newPass));
+                    }
+                    if (communityUrl != null) {
+                        acctManager.setUserData(account, AuthenticatorService.KEY_COMMUNITY_URL, SalesforceSDKManager.encryptWithPasscode(communityUrl, newPass));
+                    }
                     acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, authToken);
                 }
             }

@@ -54,11 +54,14 @@ public class UserAccount {
 	public static final String USERNAME = "username";
 	public static final String ACCOUNT_NAME = "accountName";
 	public static final String CLIENT_ID = "clientId";
+	public static final String COMMUNITY_ID = "communityId";
+	public static final String COMMUNITY_URL = "communityUrl";
 
 	private static final String TAG = "UserAccount";
 	private static final String INTERNAL_COMMUNITY_PATH = "internal";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
+	private static final String INTERNAL_COMMUNITY_ID = "000000000000000";
 
 	private String authToken;
 	private String refreshToken;
@@ -70,6 +73,8 @@ public class UserAccount {
 	private String username;
 	private String accountName;
 	private String clientId;
+	private String communityId;
+	private String communityUrl;
 
 	/**
 	 * Parameterized constructor.
@@ -84,11 +89,13 @@ public class UserAccount {
 	 * @param username Username.
 	 * @param accountName Account name.
 	 * @param clientId Client ID.
+	 * @param communityId Community ID.
+	 * @param communityUrl Community URL.
 	 */
 	public UserAccount(String authToken, String refreshToken,
 			String loginServer, String idUrl, String instanceServer,
 			String orgId, String userId, String username, String accountName,
-			String clientId) {
+			String clientId, String communityId, String communityUrl) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
@@ -99,6 +106,8 @@ public class UserAccount {
 		this.username = username;
 		this.accountName = accountName;
 		this.clientId = clientId;
+		this.communityId = communityId;
+		this.communityUrl = communityUrl;
 	}
 
 	/**
@@ -121,6 +130,8 @@ public class UserAccount {
 				accountName = String.format("%s (%s)", username,
 						SalesforceSDKManager.getInstance().getApplicationName());
 			}
+			communityId = object.optString(communityId, null);
+			communityUrl = object.optString(communityUrl, null);
 		}
 	}
 
@@ -141,6 +152,8 @@ public class UserAccount {
 			username = bundle.getString(USERNAME);
 			clientId = bundle.getString(CLIENT_ID);
 			accountName = bundle.getString(ACCOUNT_NAME);
+			communityId = bundle.getString(COMMUNITY_ID);
+			communityUrl = bundle.getString(COMMUNITY_URL);
 		}
 	}
 
@@ -235,6 +248,24 @@ public class UserAccount {
 	}
 
 	/**
+	 * Returns the community ID for this user account.
+	 *
+	 * @return Community ID.
+	 */
+	public String getCommunityId() {
+		return communityId;
+	}
+
+	/**
+	 * Returns the community URL for this user account.
+	 *
+	 * @return Community URL.
+	 */
+	public String getCommunityUrl() {
+		return communityUrl;
+	}
+
+	/**
 	 * Returns the org level storage path for this user account, relative to
 	 * the higher level directory of app data. The higher level directory
 	 * could be 'files'. The output is of the format '/{orgID}/'.
@@ -273,9 +304,27 @@ public class UserAccount {
 	 * Returns the storage path for this user account, relative to the higher
 	 * level directory of app data. The higher level directory could be 'files'.
 	 * The output is of the format '/{orgID}/{userID}/{communityID}/'.
-	 * If 'communityID' is null, then the output would be '/{orgID}/{userID}/internal/'.
-	 * This storage path is meant for data that is unique to a particular
-	 * user in a specific community.
+	 * If 'communityID' is null or the internal community ID, then the output
+	 * would be '/{orgID}/{userID}/internal/'. This storage path is meant for
+	 * data that is unique to a particular user in a specific community.
+	 *
+	 * @return File storage path.
+	 */
+	public String getCommunityLevelStoragePath() {
+		String leafDir = INTERNAL_COMMUNITY_PATH;
+		if (!TextUtils.isEmpty(communityId) && !communityId.equals(INTERNAL_COMMUNITY_ID)) {
+			leafDir = communityId;
+		}
+		return getCommunityLevelStoragePath(leafDir);
+	}
+
+	/**
+	 * Returns the storage path for this user account, relative to the higher
+	 * level directory of app data. The higher level directory could be 'files'.
+	 * The output is of the format '/{orgID}/{userID}/{communityID}/'.
+	 * If 'communityID' is null or the internal community ID, then the output
+	 * would be '/{orgID}/{userID}/internal/'. This storage path is meant for
+	 * data that is unique to a particular user in a specific community.
 	 *
 	 * @param communityId Community ID. Pass 'null' for internal community.
 	 * @return File storage path.
@@ -287,7 +336,7 @@ public class UserAccount {
 		sb.append(userId);
 		sb.append(FORWARD_SLASH);
 		String leafDir = INTERNAL_COMMUNITY_PATH;
-		if (!TextUtils.isEmpty(communityId)) {
+		if (!TextUtils.isEmpty(communityId) && !communityId.equals(INTERNAL_COMMUNITY_ID)) {
 			leafDir = communityId;
 		}
 		sb.append(leafDir);
@@ -331,9 +380,27 @@ public class UserAccount {
 	 * Returns a unique suffix for this user account, that can be appended
 	 * to a file to uniquely identify this account, at a community level.
 	 * The output is of the format '_{orgID}_{userID}_{communityID}'.
-	 * If 'communityID' is null, then the output would be '_{orgID}_{userID}_internal'.
-	 * This suffix is meant for data that is unique to a particular
-	 * user in a specific community.
+	 * If 'communityID' is null or the internal community ID, then the output
+	 * would be '_{orgID}_{userID}_internal'. This storage path is meant for
+	 * data that is unique to a particular user in a specific community.
+	 *
+	 * @return Filename suffix.
+	 */
+	public String getCommunityLevelFilenameSuffix() {
+		String leafDir = INTERNAL_COMMUNITY_PATH;
+		if (!TextUtils.isEmpty(communityId) && !communityId.equals(INTERNAL_COMMUNITY_ID)) {
+			leafDir = communityId;
+		}
+		return getCommunityLevelFilenameSuffix(leafDir);
+	}
+
+	/**
+	 * Returns a unique suffix for this user account, that can be appended
+	 * to a file to uniquely identify this account, at a community level.
+	 * The output is of the format '_{orgID}_{userID}_{communityID}'.
+	 * If 'communityID' is null or the internal community ID, then the output
+	 * would be '_{orgID}_{userID}_internal'. This storage path is meant for
+	 * data that is unique to a particular user in a specific community.
 	 *
 	 * @param communityId Community ID. Pass 'null' for internal community.
 	 * @return Filename suffix.
@@ -345,7 +412,7 @@ public class UserAccount {
 		sb.append(userId);
 		sb.append(UNDERSCORE);
 		String leafDir = INTERNAL_COMMUNITY_PATH;
-		if (!TextUtils.isEmpty(communityId)) {
+		if (!TextUtils.isEmpty(communityId) && !communityId.equals(INTERNAL_COMMUNITY_ID)) {
 			leafDir = communityId;
 		}
 		sb.append(leafDir);
@@ -392,6 +459,8 @@ public class UserAccount {
         	object.put(USER_ID, userId);
         	object.put(USERNAME, username);
         	object.put(CLIENT_ID, clientId);
+        	object.put(COMMUNITY_ID, communityId);
+        	object.put(COMMUNITY_URL, communityUrl);
     	} catch (JSONException e) {
     		Log.e(TAG, "Unable to convert to JSON");
     	}
@@ -415,6 +484,8 @@ public class UserAccount {
         object.putString(USERNAME, username);
         object.putString(CLIENT_ID, clientId);
         object.putString(ACCOUNT_NAME, accountName);
+        object.putString(COMMUNITY_ID, communityId);
+        object.putString(COMMUNITY_URL, communityUrl);
     	return object;
     }
 }

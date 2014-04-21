@@ -99,9 +99,8 @@ public class ExplorerActivityTest extends
     private MockHttpAccess mockHttpAccessor;
     EventsListenerQueue eq;
 
-
     public ExplorerActivityTest() {
-        super("com.salesforce.samples.restexplorer", ExplorerActivity.class);
+        super(ExplorerActivity.class);
     }
 
     @Override

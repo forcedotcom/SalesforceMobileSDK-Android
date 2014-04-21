@@ -49,7 +49,7 @@ public class PasscodeActivityTest extends
 	private PasscodeManager passcodeManager;
 
 	public PasscodeActivityTest() {
-		super("com.salesforce.samples.templateapp", PasscodeActivity.class);
+		super(PasscodeActivity.class);
 	}
 
 	@Override

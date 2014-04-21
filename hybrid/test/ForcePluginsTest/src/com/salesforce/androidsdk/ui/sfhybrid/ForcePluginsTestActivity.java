@@ -72,6 +72,8 @@ public class ForcePluginsTestActivity extends SalesforceDroidGapActivity {
 			String loginUrl = "https://test.salesforce.com";
 			String orgId = "00DS0000000HDptMAG";
 			String userId = "005S0000003yO7jIAE";
+			String communityId = null;
+			String communityUrl = null;
 			LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
 			
 			try {
@@ -80,7 +82,7 @@ public class ForcePluginsTestActivity extends SalesforceDroidGapActivity {
 				ClientInfo clientInfo = new ClientInfo(
 						loginOptions.oauthClientId, new URI(instanceUrl),
 						new URI(loginUrl), new URI(identityUrl),
-						accountName, username, userId, orgId);
+						accountName, username, userId, orgId, communityId, communityUrl);
 				return new RestClient(clientInfo, authToken,
 						HttpAccess.DEFAULT, authTokenProvider);
 			} catch (URISyntaxException e) {

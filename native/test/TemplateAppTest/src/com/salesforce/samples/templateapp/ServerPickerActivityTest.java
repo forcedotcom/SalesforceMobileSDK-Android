@@ -45,7 +45,7 @@ public class ServerPickerActivityTest extends
 	private EditText txtUrl;
 
 	public ServerPickerActivityTest() {
-		super("com.salesforce.samples.templateapp", ServerPickerActivity.class);
+		super(ServerPickerActivity.class);
 	}
 	
 	@Override

@@ -87,6 +87,8 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     private static final String USER_ID = "userId";
     private static final String REFRESH_TOKEN = "refreshToken";
     private static final String ACCESS_TOKEN = "accessToken";
+    private static final String COMMUNITY_ID = "communityId";
+    private static final String COMMUNITY_URL = "communityUrl";
 	
     // Used in refresh REST call
     private static final String API_VERSION = ApiVersionStrings.VERSION_NUMBER;
@@ -561,6 +563,8 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 	       data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
 	       data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
 	       data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent());
+	       data.put(COMMUNITY_ID, clientInfo.communityId);
+	       data.put(COMMUNITY_URL, clientInfo.communityUrl);
 	       return new JSONObject(data);
 	   } else {
 		   return null;
