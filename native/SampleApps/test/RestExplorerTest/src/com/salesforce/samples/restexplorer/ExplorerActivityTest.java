@@ -44,7 +44,11 @@ import org.apache.http.util.EntityUtils;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.test.ActivityInstrumentationTestCase2;
+import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.RadioButton;
 import android.widget.TabHost;
 import android.widget.TextView;
 
@@ -54,7 +58,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.util.BaseActivityInstrumentationTestCase;
 import com.salesforce.androidsdk.util.EventsListenerQueue;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -66,7 +69,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  *     and make sure that the http requests coming through are as expected (method/path/body)
  */
 public class ExplorerActivityTest extends
-        BaseActivityInstrumentationTestCase<ExplorerActivity> {
+        ActivityInstrumentationTestCase2<ExplorerActivity> {
 
     private static final String TEST_ORG_ID = "test_org_id";
     private static final String TEST_USER_ID = "test_user_id";
@@ -78,7 +81,6 @@ public class ExplorerActivityTest extends
     private static final String TEST_REFRESH_TOKEN = "test_refresh_token";
     private static final String TEST_USERNAME = "test_username";
     private static final String TEST_ACCOUNT_NAME = "test_account_name";
-
 
     private static final int VERSIONS_TAB = 0;
     private static final int RESOURCES_TAB = 1;
@@ -94,10 +96,10 @@ public class ExplorerActivityTest extends
     private static final int SEARCH_TAB = 11;
     private static final int MANUAL_REQUEST_TAB = 12;
 
+    private EventsListenerQueue eq;
     private Context targetContext;
     private ClientManager clientManager;
     private MockHttpAccess mockHttpAccessor;
-    EventsListenerQueue eq;
 
     public ExplorerActivityTest() {
         super(ExplorerActivity.class);
@@ -107,6 +109,12 @@ public class ExplorerActivityTest extends
     public void setUp() throws Exception {
         super.setUp();
         setActivityInitialTouchMode(false);
+        eq = new EventsListenerQueue();
+
+        // Waits for app initialization to complete.
+        if (SalesforceSDKManager.getInstance() == null) {
+            eq.waitForEvent(EventType.AppCreateComplete, 5000);
+        }
         targetContext = getInstrumentation().getTargetContext();
         clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
         clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
@@ -114,6 +122,15 @@ public class ExplorerActivityTest extends
         mockHttpAccessor = new MockHttpAccess(SalesforceSDKManager.getInstance().getAppContext());
         SalesforceSDKManager.getInstance().getPasscodeManager().setTimeoutMs(0 /* disabled */);
     }
+
+	@Override
+	public void tearDown() throws Exception {
+		if (eq != null) {
+            eq.tearDown();
+            eq = null;
+        }
+		super.tearDown();
+	}
 
     /**
      * Test clicking clear.
@@ -409,6 +426,75 @@ public class ExplorerActivityTest extends
             q.add(mockResponse);
             res.setEntity(new StringEntity(mockResponse));
             return new Execution(req, res);
+        }
+    }
+
+    private void setText(final int textViewId, final String text) {
+        try {
+            runTestOnUiThread(new Runnable() {
+                @Override public void run() {
+                    TextView v = (TextView) getActivity().findViewById(textViewId);
+                    v.setText(text);
+                    if (v instanceof EditText)
+                        ((EditText) v).setSelection(v.getText().length());
+                }
+            });
+        } catch (Throwable t) {
+            fail("Failed to set text " + text);
+        }
+    }
+
+    private void waitForRender() {
+        eq.waitForEvent(EventType.RenditionComplete, 5000);
+    }
+
+    private void clickTab(final TabHost tabHost, final int tabIndex) {
+        try {
+            runTestOnUiThread(new Runnable() {
+
+                @Override
+                public void run() {
+                    tabHost.setCurrentTab(tabIndex);
+                } 
+            });
+        } catch (Throwable t) {
+            fail("Failed to click tab " + tabIndex);
+        }
+    }
+
+    private void waitSome() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            fail("Test interrupted");
+        }
+    }
+
+    private void clickView(final View v) {
+        try {
+            runTestOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    v.performClick();
+                }
+            });
+        } catch (Throwable t) {
+            fail("Failed to click view " + v);
+        }
+    }
+
+    private void checkRadioButton(final int radioButtonId) {
+        try {
+            runTestOnUiThread(new Runnable() {
+
+                @Override
+                public void run() {
+                    RadioButton v = (RadioButton) getActivity().findViewById(radioButtonId);
+                    v.setChecked(true);
+                }
+            });
+        } catch (Throwable t) {
+            fail("Failed to check radio button " + radioButtonId);
         }
     }
 }

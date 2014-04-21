@@ -29,21 +29,26 @@ package com.salesforce.samples.templateapp;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.test.ActivityInstrumentationTestCase2;
+import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.PasscodeActivity;
 import com.salesforce.androidsdk.ui.PasscodeActivity.PasscodeMode;
-import com.salesforce.androidsdk.util.BaseActivityInstrumentationTestCase;
+import com.salesforce.androidsdk.util.EventsListenerQueue;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * Tests for PasscodeActivity
  */
 public class PasscodeActivityTest extends
-		BaseActivityInstrumentationTestCase<PasscodeActivity> {
+		ActivityInstrumentationTestCase2<PasscodeActivity> {
 
+    private EventsListenerQueue eq;
 	private Context targetContext;
 	private PasscodeActivity passcodeActivity;
 	private PasscodeManager passcodeManager;
@@ -55,6 +60,13 @@ public class PasscodeActivityTest extends
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
+        setActivityInitialTouchMode(false);
+        eq = new EventsListenerQueue();
+
+        // Waits for app initialization to complete.
+        if (SalesforceSDKManager.getInstance() == null) {
+            eq.waitForEvent(EventType.AppCreateComplete, 5000);
+        }
 		targetContext = getInstrumentation().getTargetContext();
 		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
 		passcodeManager.reset(targetContext);
@@ -62,15 +74,17 @@ public class PasscodeActivityTest extends
 		assertTrue("Application should be locked", passcodeManager.isLocked());
 		assertFalse("Application should not have a passcode", passcodeManager.hasStoredPasscode(targetContext));
 	}
-	
-	/* (non-Javadoc)
-	 * @see com.salesforce.androidsdk.util.BaseActivityInstrumentationTestCase#tearDown()
-	 */
+
+	@Override
 	public void tearDown() throws Exception {
 		if (passcodeActivity != null) {
 			passcodeActivity.finish();
 			passcodeActivity = null;
 		}
+		if (eq != null) {
+            eq.tearDown();
+            eq = null;
+        }
 		super.tearDown();
 	}
 
@@ -377,4 +391,53 @@ public class PasscodeActivityTest extends
 		}
 		assertEquals("Wrong failure count", count, passcodeManager.getFailedPasscodeAttempts());
 	}
+
+    private void clickView(final View v) {
+        try {
+            runTestOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    v.performClick();
+                }
+            });
+        } catch (Throwable t) {
+            fail("Failed to click view " + v);
+        }
+    }
+
+    private void setText(final int textViewId, final String text) {
+        try {
+            runTestOnUiThread(new Runnable() {
+                @Override public void run() {
+                    TextView v = (TextView) getActivity().findViewById(textViewId);
+                    v.setText(text);
+                    if (v instanceof EditText)
+                        ((EditText) v).setSelection(v.getText().length());
+                }
+            });
+        } catch (Throwable t) {
+            fail("Failed to set text " + text);
+        }
+    }
+
+    private void doEditorAction(final int textViewId, final int actionCode) {
+        try {
+            runTestOnUiThread(new Runnable() {
+                @Override public void run() {
+                    TextView v = (TextView) getActivity().findViewById(textViewId);
+                    v.onEditorAction(actionCode);
+                }
+            });
+        } catch (Throwable t) {
+            fail("Failed do editor action " + actionCode);
+        }
+    }
+
+    private void waitSome() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            fail("Test interrupted");
+        }
+    }
 }
