@@ -61,6 +61,8 @@ import com.salesforce.androidsdk.rest.files.FileRequests;
 public class RestClientTest extends InstrumentationTestCase {
 
     private static final String ENTITY_NAME_PREFIX = "RestClientTest";
+    private static final String SEARCH_ENTITY_NAME = "RestClientSearchTest";
+    private static final String SEARCH_ENTITY_ID = "001S000000gxUx7IAE";
     private static final String BAD_TOKEN = "bad-token";
     private ClientInfo clientInfo;
     private HttpAccess httpAccess;
@@ -314,23 +316,15 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws Exception
      */
     public void testSearch() throws Exception {
-        IdName newAccountIdName = createAccount();
-
-        /*
-         * This is ugly, but I can't think of a better way to do this. It looks
-         * like search indexer takes a second or two, and since we create the
-         * object and query for it right away, this test flaps a lot.
-         */
-        Thread.sleep(3000);
-        RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + SEARCH_ENTITY_NAME + "}"));
         checkResponse(response, HttpStatus.SC_OK, true);
         JSONArray matchingRows = response.asJSONArray();
         assertEquals("Expected one row", 1, matchingRows.length());
         JSONObject matchingRow = matchingRows.getJSONObject(0);
         checkKeys(matchingRow, "attributes", "Id");
-        assertEquals("Wrong row returned", newAccountIdName.id, matchingRow.get("Id"));
+        assertEquals("Wrong row returned", SEARCH_ENTITY_ID, matchingRow.get("Id"));
     }
-    
+
     /**
      * Testing that calling resume more than once on a RestResponse doesn't throw an exception
      * @throws Exception 
