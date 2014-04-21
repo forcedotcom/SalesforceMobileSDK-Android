@@ -28,7 +28,10 @@ package com.salesforce.androidsdk.smartstore.store;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
@@ -39,6 +42,7 @@ import org.json.JSONObject;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 
@@ -190,7 +194,20 @@ public class SmartStore  {
         finally {
             db.endTransaction();
         }
-
+        
+        // Do the rest - create table / indexes
+        registerSoupUsingTableName(soupName, indexSpecs, soupTableName);
+    }
+        
+    
+    /**
+     * Helper method for registerSoup
+     * 
+	 * @param soupName
+	 * @param indexSpecs
+	 * @param soupTableName
+	 */
+    private void registerSoupUsingTableName(String soupName, IndexSpec[] indexSpecs, String soupTableName) {
         // Prepare SQL for creating soup table and its indices
         StringBuilder createTableStmt = new StringBuilder();          // to create new soup table
         List<String> createIndexStmts = new ArrayList<String>();      // to create indices on new soup table
@@ -254,31 +271,152 @@ public class SmartStore  {
     }
     
 	/**
-	 * Alter soup (change indexes)
+	 * Alter soup
 	 * 
 	 * @param soupName
-	 * @param array
+	 * @param array of index specs
 	 * @param reIndexData
 	 */
 	public void alterSoup(String soupName, IndexSpec[] indexSpecs,
 			boolean reIndexData) {
 		
-		throw new UnsupportedOperationException("alterSoup not implemented yet");
+		// Get backing table for soup
+        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
+
+        // Get old indexSpecs
+        IndexSpec[] oldIndexSpecs = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
+        
+        // Removing db indexes on table (otherwise registerSoup will fail to create indexes with the same name
+        for (int i=0; i<oldIndexSpecs.length; i++) {
+	        String indexName = soupTableName + "_" + i + "_idx";
+            db.execSQL("DROP INDEX "  + indexName);
+        }
+        
+        // Remove soup from cache
+		DBHelper.INSTANCE.removeFromCache(soupName);
+
+        // Rename backing table for soup
+        String soupTableNameOld = soupTableName + "_old";
+		db.execSQL("ALTER TABLE " + soupTableName + " RENAME TO " + soupTableNameOld);
 		
-		/*
+		// Create new table for soup
+		registerSoupUsingTableName(soupName, indexSpecs, soupTableName);
+		
+		// Get new backing table for soup
+		String soupTableNameNew = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+
+		// Get new indexSpecs (we need db column names)
+		IndexSpec[] newIndexSpecs = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
+		
+		// Move data
+		db.execSQL(computeCopyTableStatement(soupTableNameOld, soupTableNameNew, oldIndexSpecs, newIndexSpecs));
+				
+		// Drop old table
+		db.execSQL("DROP TABLE " + soupTableNameOld);
+		
+		// Index soups for new index specs
 		if (reIndexData) {
-			// TODO lock smartstore
-			registerSoup(soupName + "__tmp", indexSpecs);
-			// TODO move data
-			// TODO drop old soup
-			// TODO rename soupName__tmp to soupName
+			reIndexSoup(soupTableName, newIndexSpecs);
+            // XXX optimization: only do indexSpecs with new paths or modified types
 		}
-		else {
-			// TODO a bunch of alter tables?
-		}
-		*/
 	}
 
+	/**
+	 * Helper method - re-index all soup elements for passed indexSpecs
+	 * @param soupTableName
+	 * @param indexSpecs
+	 */
+	private void reIndexSoup(String soupTableName, IndexSpec[] indexSpecs) {
+		// XXX all updates in one transaction
+		db.beginTransaction();
+		Cursor cursor = null;
+		try {
+		    cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {ID_COL, SOUP_COL}, null, null, null);
+
+		    if (cursor.moveToFirst()) {
+		        do {
+		        	String soupEntryId = cursor.getString(0);
+		        	String soupRaw = cursor.getString(1);
+		        	try {
+		            	JSONObject soupElt = new JSONObject(soupRaw); 
+		            	ContentValues contentValues = new ContentValues();
+		            	for (IndexSpec indexSpec : indexSpecs) {
+			                projectIndexedPaths(soupElt, contentValues, indexSpec);
+			            }
+		                DBHelper.INSTANCE.update(db, soupTableName, contentValues, SOUP_ENTRY_ID_PREDICATE, soupEntryId + "");
+		        	}
+		        	catch (JSONException e) {
+		        		Log.w("SmartStore.alterSoup", "Could not parse soup element " + soupEntryId, e);
+		        		// Should not have happen - just keep going 
+		        	}
+		        }
+		        while (cursor.moveToNext());
+		    }
+		}
+		finally {
+			db.setTransactionSuccessful();
+			db.endTransaction();
+		    safeClose(cursor);
+		}
+	}
+	
+	/**
+	 * Helper method
+	 * @param soupTableNameOld
+	 * @param soupTableNameNew
+	 * @param oldIndexSpecs
+	 * @param newIndexSpecs
+	 * @return insert statement to copy data from soup old backing table to soup new backing table
+	 */
+	private String computeCopyTableStatement(String soupTableNameOld, String soupTableNameNew, IndexSpec[] oldIndexSpecs, IndexSpec[] newIndexSpecs) {
+		Map<String, IndexSpec> mapOldSpecs = mapForIndexSpecs(oldIndexSpecs);
+		Map<String, IndexSpec> mapNewSpecs = mapForIndexSpecs(newIndexSpecs);
+
+		// Figuring out paths we are keeping
+		Set<String> oldPaths = mapOldSpecs.keySet();
+		Set<String> keptPaths = mapNewSpecs.keySet(); 
+		keptPaths.retainAll(oldPaths);
+
+		// Compute list of columns to copy from / list of columns to copy into
+		List<String> oldColumns = new ArrayList<String>(); 
+		List<String> newColumns = new ArrayList<String>();
+		
+		// Adding core columns
+		for (String column : new String[] {ID_COL, SOUP_COL, CREATED_COL, LAST_MODIFIED_COL}) {
+			oldColumns.add(column);
+			newColumns.add(column);
+		}
+		
+		// Adding indexed path columns that we are keeping 
+		for (String keptPath : keptPaths) {
+			IndexSpec oldIndexSpec = mapOldSpecs.get(keptPath);
+			IndexSpec newIndexSpec = mapNewSpecs.get(keptPath);
+			if (oldIndexSpec.type == newIndexSpec.type) {
+				oldColumns.add(oldIndexSpec.columnName);
+				newColumns.add(newIndexSpec.columnName);
+			}
+		}
+
+		// Compute and return statement
+		return String.format("INSERT INTO %s (%s) SELECT %s FROM %s",
+							soupTableNameNew, TextUtils.join(",", newColumns),
+							TextUtils.join(",", oldColumns), soupTableNameOld);
+	}
+	
+	/**
+	 * Helper method
+	 * @param indexSpecs
+	 * @return map index spec path to index spec
+	 */
+	private Map<String, IndexSpec> mapForIndexSpecs(IndexSpec[] indexSpecs) {
+		Map<String, IndexSpec> map = new HashMap<String, IndexSpec>();
+		for (IndexSpec indexSpec : indexSpecs) {
+			map.put(indexSpec.path, indexSpec);
+		}
+		return map;
+	}
+	
 	/**
 	 * Return indexSpecs of soup
 	 * 
