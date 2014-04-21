@@ -382,7 +382,8 @@ public class OAuthWebviewHelper {
 
                 // Putting together all the information needed to create the new account.
                 accountOptions = new AccountOptions(id.username, tr.refreshToken,
-                		tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId);
+                		tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId,
+                		tr.communityId, tr.communityUrl);
 
                 // Sets additional admin prefs, if they exist.
                 final UserAccount account = new UserAccount(accountOptions.authToken,
@@ -390,7 +391,8 @@ public class OAuthWebviewHelper {
                 		accountOptions.identityUrl, accountOptions.instanceUrl,
                 		accountOptions.orgId, accountOptions.userId,
                 		accountOptions.username, buildAccountName(accountOptions.username),
-                		loginOptions.clientSecret);
+                		loginOptions.clientSecret, accountOptions.communityId,
+                		accountOptions.communityUrl);
                 if (id.adminPrefs != null) {
                     final AdminPrefsManager prefManager = SalesforceSDKManager.getInstance().getAdminPrefsManager();
                     prefManager.setPrefs(id.adminPrefs, account);
@@ -485,7 +487,9 @@ public class OAuthWebviewHelper {
                 accountOptions.orgId,
                 accountOptions.userId,
                 loginOptions.passcodeHash,
-                loginOptions.clientSecret);
+                loginOptions.clientSecret,
+                accountOptions.communityId,
+                accountOptions.communityUrl);
 
     	/*
     	 * Registers for push notifications, if push notification client ID is present.
@@ -500,7 +504,8 @@ public class OAuthWebviewHelper {
             		accountOptions.identityUrl, accountOptions.instanceUrl,
             		accountOptions.orgId, accountOptions.userId,
             		accountOptions.username, accountName,
-            		loginOptions.clientSecret);
+            		loginOptions.clientSecret, accountOptions.communityId,
+            		accountOptions.communityUrl);
         	PushMessaging.register(appContext, account);
     	}
         callback.onAccountAuthenticatorResult(extras);
@@ -536,6 +541,8 @@ public class OAuthWebviewHelper {
         private static final String AUTH_TOKEN = "authToken";
         private static final String REFRESH_TOKEN = "refreshToken";
         private static final String USERNAME = "username";
+        private static final String COMMUNITY_ID = "communityId";
+        private static final String COMMUNITY_URL = "communityUrl";
 
         public final String username;
         public final String refreshToken;
@@ -544,12 +551,14 @@ public class OAuthWebviewHelper {
         public final String instanceUrl;
         public final String orgId;
         public final String userId;
+        public final String communityId;
+        public final String communityUrl;
 
         private final Bundle bundle;
 
         public AccountOptions(String username, String refreshToken,
                 String authToken, String identityUrl, String instanceUrl,
-                String orgId, String userId) {
+                String orgId, String userId, String communityId, String communityUrl) {
             super();
             this.username = username;
             this.refreshToken = refreshToken;
@@ -558,6 +567,8 @@ public class OAuthWebviewHelper {
             this.instanceUrl = instanceUrl;
             this.orgId = orgId;
             this.userId = userId;
+            this.communityId = communityId;
+            this.communityUrl = communityUrl;
 
             bundle = new Bundle();
             bundle.putString(USERNAME, username);
@@ -566,6 +577,8 @@ public class OAuthWebviewHelper {
             bundle.putString(INSTANCE_URL, instanceUrl);
             bundle.putString(ORG_ID, orgId);
             bundle.putString(USER_ID, userId);
+            bundle.putString(COMMUNITY_ID, communityId);
+            bundle.putString(COMMUNITY_URL, communityUrl);
         }
 
         public Bundle asBundle() {
@@ -581,7 +594,9 @@ public class OAuthWebviewHelper {
                     options.getString(IDENTITY_URL),
                     options.getString(INSTANCE_URL),
                     options.getString(ORG_ID),
-                    options.getString(USER_ID)
+                    options.getString(USER_ID),
+                    options.getString(COMMUNITY_ID),
+                    options.getString(COMMUNITY_URL)
                     );
         }
 

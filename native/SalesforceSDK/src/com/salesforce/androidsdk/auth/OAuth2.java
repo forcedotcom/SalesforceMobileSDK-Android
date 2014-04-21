@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -100,6 +100,8 @@ public class OAuth2 {
     private static final String CODE = "code";
     private static final String ACTIVATED_CLIENT_CODE = "activated_client_code";
     private static final String CUSTOM_ATTRIBUTES = "custom_attributes";
+    private static final String SFDC_COMMUNITY_ID = "sfdc_community_id";
+    private static final String SFDC_COMMUNITY_URL = "sfdc_community_url";
 
     // Login paths
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
@@ -372,7 +374,7 @@ public class OAuth2 {
                     screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
                 }
             } catch (Exception e) {
-                Log.w("IdServiceResponse:contructor", "", e);
+                Log.w("IdServiceResponse:constructor", "", e);
             }
         }
     }
@@ -391,7 +393,7 @@ public class OAuth2 {
                 errorDescription = parsedResponse
                         .getString(ERROR_DESCRIPTION);
             } catch (Exception e) {
-                Log.w("TokenErrorResponse:contructor", "", e);
+                Log.w("TokenErrorResponse:constructor", "", e);
             }
         }
 
@@ -405,6 +407,7 @@ public class OAuth2 {
      * Helper class to parse a token refresh response.
      */
     public static class TokenEndpointResponse extends AbstractResponse {
+
         public String authToken;
         public String refreshToken;
         public String instanceUrl;
@@ -413,6 +416,8 @@ public class OAuth2 {
         public String orgId;
         public String userId;
         public String code;
+        public String communityId;
+        public String communityUrl;
 
         /**
          * Constructor used during login flow
@@ -426,8 +431,10 @@ public class OAuth2 {
                 idUrl = callbackUrlParams.get(ID);
                 code = callbackUrlParams.get(CODE);
                 computeOtherFields();
+                communityId = callbackUrlParams.get(SFDC_COMMUNITY_ID);
+                communityUrl = callbackUrlParams.get(SFDC_COMMUNITY_URL);
             } catch (Exception e) {
-                Log.w("TokenEndpointResponse:contructor", "", e);
+                Log.w("TokenEndpointResponse:constructor", "", e);
             }
         }
 
@@ -445,8 +452,14 @@ public class OAuth2 {
                 if (parsedResponse.has(REFRESH_TOKEN)) {
                     refreshToken = parsedResponse.getString(REFRESH_TOKEN);
                 }
+                if (parsedResponse.has(SFDC_COMMUNITY_ID)) {
+                	communityId = parsedResponse.getString(SFDC_COMMUNITY_ID);
+                }
+                if (parsedResponse.has(SFDC_COMMUNITY_URL)) {
+                	communityUrl = parsedResponse.getString(SFDC_COMMUNITY_URL);
+                }
             } catch (Exception e) {
-                Log.w("TokenEndpointResponse:contructor", "", e);
+                Log.w("TokenEndpointResponse:constructor", "", e);
             }
         }
 

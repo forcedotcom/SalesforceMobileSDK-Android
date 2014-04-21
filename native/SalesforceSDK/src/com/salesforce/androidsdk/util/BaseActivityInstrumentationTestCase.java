@@ -45,8 +45,8 @@ public class BaseActivityInstrumentationTestCase<T extends Activity> extends Act
 
     private EventsListenerQueue eq;
 
-    public BaseActivityInstrumentationTestCase(String pkg, Class<T> activityClass) {
-        super(pkg, activityClass);
+    public BaseActivityInstrumentationTestCase(Class<T> activityClass) {
+        super(activityClass);
     }
 
     @Override
