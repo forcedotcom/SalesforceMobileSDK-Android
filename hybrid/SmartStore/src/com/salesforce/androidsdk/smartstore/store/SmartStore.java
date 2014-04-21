@@ -287,7 +287,7 @@ public class SmartStore  {
         // Get old indexSpecs
         IndexSpec[] oldIndexSpecs = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
         
-        // Removing db indexes on table (otherwise registerSoup will fail to create indexes with the same name
+        // Removing db indexes on table (otherwise registerSoup will fail to create indexes with the same name)
         for (int i=0; i<oldIndexSpecs.length; i++) {
 	        String indexName = soupTableName + "_" + i + "_idx";
             db.execSQL("DROP INDEX "  + indexName);
@@ -309,13 +309,13 @@ public class SmartStore  {
 		// Get new indexSpecs (we need db column names)
 		IndexSpec[] newIndexSpecs = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
 		
-		// Move data
+		// Move data (core columns + indexed paths that we are still indexing)
 		db.execSQL(computeCopyTableStatement(soupTableNameOld, soupTableNameNew, oldIndexSpecs, newIndexSpecs));
 				
 		// Drop old table
 		db.execSQL("DROP TABLE " + soupTableNameOld);
 		
-		// Index soups for new index specs
+		// Re-index soup (if requested)
 		if (reIndexData) {
 			reIndexSoup(soupTableName, newIndexSpecs);
             // XXX optimization: only do indexSpecs with new paths or modified types
