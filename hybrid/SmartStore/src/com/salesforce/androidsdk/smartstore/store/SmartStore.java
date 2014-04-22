@@ -273,6 +273,10 @@ public class SmartStore  {
 	/**
 	 * Alter soup
 	 * 
+	 * XXX things could get ugly 
+	 *     - if writes are done while soup is altered (should we prevent that)
+	 *     - if app crashes while soup is altered
+	 * 
 	 * @param soupName
 	 * @param array of index specs
 	 * @param reIndexData
@@ -324,6 +328,9 @@ public class SmartStore  {
 
 	/**
 	 * Helper method - re-index all soup elements for passed indexSpecs
+	 * 
+	 * XXX may be we should expose reIndex outside this class (e.g. through SmartStorePlugin)
+	 * 
 	 * @param soupTableName
 	 * @param indexSpecs
 	 */
