@@ -303,11 +303,11 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      */
     public void testAlterSoup() throws JSONException {
     	Log.i("SmartStoreLoadTest", "In testAlterSoup");
-    	Log.i("SmartStoreLoadTest.testAlterSoup", "Initial database size:" + store.getDatabaseSize() + " bytes");
+    	Log.i("SmartStoreLoadTest.testAlterSoup", "Initial database size: " + store.getDatabaseSize() + " bytes");
         for (int i=0; i<NUMBER_BATCHES_ALTER_TEST; i++) {
         	upsertManyEntriesWithManyFields(i);
         }
-    	Log.i("SmartStoreLoadTest.testAlterSoup", "Database size after inserting " + NUMBER_ENTRIES_PER_BATCH * NUMBER_BATCHES_ALTER_TEST + " records with " + NUMBER_FIELDS_PER_ENTRY + " fields:" + store.getDatabaseSize() + " bytes");
+    	Log.i("SmartStoreLoadTest.testAlterSoup", "Database size after inserting " + NUMBER_ENTRIES_PER_BATCH * NUMBER_BATCHES_ALTER_TEST + " records with " + NUMBER_FIELDS_PER_ENTRY + " fields: " + store.getDatabaseSize() + " bytes");
 
     	// Without indexing for new index specs
     	alterSoup("Adding one index / no re-indexing", false, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("v0", Type.string)});

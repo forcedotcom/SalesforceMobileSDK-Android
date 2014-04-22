@@ -26,6 +26,11 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
 /**
@@ -48,4 +53,69 @@ public class IndexSpec {
         this.columnName = columnName;
     }
 
+    @Override
+    public int hashCode() {
+        int result = 17;
+        result = 31 * result + path.hashCode();
+        result = 31 * result + type.hashCode();
+        if (columnName != null) 
+        	result = 31 * result + columnName.hashCode();
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null)
+            return false;
+        if (obj == this)
+            return true;
+        if (!(obj instanceof IndexSpec))
+            return false;
+
+        IndexSpec rhs = (IndexSpec) obj;
+        boolean result = true;
+        result  = result && path.equals(rhs.path);
+        result = result && type.equals(rhs.type);
+        if (columnName == null) 
+        	result = result && (columnName == rhs.columnName);
+    	else
+    		result = result && columnName.equals(rhs.columnName);
+        
+        return result;
+    }
+    
+    /**
+     * @return path | type
+     */
+    public String getPathType() {
+    	return path + "|" + type;
+    }
+
+	/**
+	 * Helper method - return subset of indexSpecs for paths that were not indexed by any of the oldIndexSpecs (or changed type)
+	 * 
+	 * @param oldIndexSpecs
+	 * @param indexSpecs
+	 * @return
+	 */
+	public static IndexSpec[] getChangedOrNewIndexSpecs(IndexSpec[] oldIndexSpecs, IndexSpec[] indexSpecs) {
+		// Putting path--type of old index specs in a set
+		Set<String> oldPathTypeSet = new HashSet<String>();
+		for (IndexSpec oldIndexSpec : oldIndexSpecs) {
+			oldPathTypeSet.add(oldIndexSpec.getPathType());
+		}
+		
+		// Filtering out index specs that do not have their path--type in oldPathTypeSet
+		List<IndexSpec> newIndexSpecs = new ArrayList<IndexSpec>();
+		for (IndexSpec indexSpec : indexSpecs) {
+			if (!oldPathTypeSet.contains(indexSpec.getPathType())) {
+				newIndexSpecs.add(indexSpec);
+			}
+		}
+		
+		// Returing array built from newIndexSpecs
+		return newIndexSpecs.toArray(new IndexSpec[0]);
+	}
+
+    
 }

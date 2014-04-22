@@ -321,11 +321,10 @@ public class SmartStore  {
 		
 		// Re-index soup (if requested)
 		if (reIndexData) {
-			reIndexSoup(soupTableName, newIndexSpecs);
-            // XXX optimization: only do indexSpecs with new paths or modified types
+			reIndexSoup(soupTableName, IndexSpec.getChangedOrNewIndexSpecs(oldIndexSpecs, newIndexSpecs));
 		}
 	}
-
+	
 	/**
 	 * Helper method - re-index all soup elements for passed indexSpecs
 	 * 
@@ -335,7 +334,10 @@ public class SmartStore  {
 	 * @param indexSpecs
 	 */
 	private void reIndexSoup(String soupTableName, IndexSpec[] indexSpecs) {
-		// XXX all updates in one transaction
+		if (indexSpecs.length == 0) {
+			// Nothing to do
+			return;
+		}
 		db.beginTransaction();
 		Cursor cursor = null;
 		try {

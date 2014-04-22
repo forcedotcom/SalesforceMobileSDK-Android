@@ -724,7 +724,6 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		}
 	}
 	
-	
 	/**
 	 * Test for alterSoup with reIndexData = false
 	 * 
