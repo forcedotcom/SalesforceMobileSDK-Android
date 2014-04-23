@@ -742,6 +742,38 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		alterSoupHelper(true);
 	}
 
+	/**
+	 * Test for alterSoup with column type change
+	 * 
+	 * throws JSONException
+	 */
+	public void testAlterSoupTypeChange() throws JSONException {
+		IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("name", Type.string), new IndexSpec("population", Type.string)};
+		
+		assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
+		store.registerSoup(OTHER_TEST_SOUP, indexSpecs);
+		assertTrue("Register soup call failed", store.hasSoup(OTHER_TEST_SOUP));
+
+		JSONObject soupElt1 = new JSONObject("{'name': 'San Francisco', 'population': 825863}");
+		JSONObject soupElt2 = new JSONObject("{'name': 'Paris', 'population': 2234105}");
+
+		store.create(OTHER_TEST_SOUP, soupElt1);
+		store.create(OTHER_TEST_SOUP, soupElt2);
+
+		// Query all sorted by population ascending - we should get Paris first because we indexed population as a string
+		JSONArray results = store.query(QuerySpec.buildAllQuerySpec(OTHER_TEST_SOUP, "population", Order.ascending, 2), 0);
+		assertEquals("Paris should be first", "Paris", results.getJSONObject(0).get("name"));
+		assertEquals("San Francisco should be second", "San Francisco", results.getJSONObject(1).get("name"));
+
+		// Alter soup - index population as integer
+		IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec("name", Type.string), new IndexSpec("population", Type.integer)};
+		store.alterSoup(OTHER_TEST_SOUP, indexSpecsNew, true);
+
+		// Query all sorted by population ascending - we should get San Francisco first because we indexed population as an integer
+		JSONArray results2 = store.query(QuerySpec.buildAllQuerySpec(OTHER_TEST_SOUP, "population", Order.ascending, 2), 0);
+		assertEquals("San Francisco should be first", "San Francisco", results2.getJSONObject(0).get("name"));
+		assertEquals("Paris should be first", "Paris", results2.getJSONObject(1).get("name"));
+	}
 	
 	/**
 	 * Helper method for alter soup tests
