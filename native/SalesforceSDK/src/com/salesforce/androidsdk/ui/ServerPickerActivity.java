@@ -210,7 +210,7 @@ public class ServerPickerActivity extends Activity implements
     /**
      * Controls the elements in the layout based on past user choices.
      */
-    private void setupRadioButtons() {
+    protected void setupRadioButtons() {
         final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
         final List<LoginServer> servers = loginServerManager.getAllSavedSevers();
         if (servers != null) {
