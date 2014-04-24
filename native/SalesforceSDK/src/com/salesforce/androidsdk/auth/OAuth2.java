@@ -282,9 +282,10 @@ public class OAuth2 {
             throws OAuthFailedException, IOException {
         UrlEncodedFormEntity req = new UrlEncodedFormEntity(params, "UTF-8");
         try {
-            // Call the token endpoint, and get tokens, instance url etc.
-            Execution ex = httpAccessor.doPost(null, loginServer
-                            .resolve(OAUTH_TOKEN_PATH), req);
+
+        	// Call the token endpoint, and get tokens, instance url etc.
+            final String refreshPath = loginServer.toString() + OAUTH_TOKEN_PATH;
+            Execution ex = httpAccessor.doPost(null, new URI(refreshPath), req);
             int statusCode = ex.response.getStatusLine().getStatusCode();
             if (statusCode == 200) {
                 return new TokenEndpointResponse(ex.response);
@@ -293,6 +294,8 @@ public class OAuth2 {
                         ex.response), statusCode);
             }
         } catch (UnsupportedEncodingException ex1) {
+            throw new RuntimeException(ex1); // should never happen
+        } catch (URISyntaxException ex1) {
             throw new RuntimeException(ex1); // should never happen
         }
     }
