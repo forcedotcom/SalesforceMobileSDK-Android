@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -119,6 +119,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     private PasscodeManager passcodeManager;
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
+    private boolean isLoggingOut = false;
     private AdminPrefsManager adminPrefsManager;
     private PushNotificationInterface pushNotificationInterface;
     private volatile boolean loggedOut = false;
@@ -772,6 +773,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     public void logout(Account account, Activity frontActivity, final boolean showLoginPage) {
         final ClientManager clientMgr = new ClientManager(context, getAccountType(),
         		null, shouldLogoutWhenTokenRevoked());
+        isLoggingOut = true;
 		final AccountManager mgr = AccountManager.get(context);
 		String refreshToken = null;
 		String clientId = null;
@@ -839,6 +841,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     			}
     		});
     	}
+    	isLoggingOut = false;
 
     	// Revokes the existing refresh token.
         if (shouldLogoutWhenTokenRevoked() && account != null && refreshToken != null) {
@@ -990,5 +993,14 @@ public class SalesforceSDKManager implements AccountRemoved {
     		accWatcher.remove();
     	}
     	accWatcher = null;
+    }
+
+    /**
+     * Returns whether a logout is in progress or not.
+     *
+     * @return True - if a logout is in progress, False - otherwise.
+     */
+    public boolean isLoggingOut() {
+    	return isLoggingOut;
     }
 }

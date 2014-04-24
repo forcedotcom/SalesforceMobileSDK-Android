@@ -144,6 +144,11 @@ public class ClientManager {
             Log.i("ClientManager:peekRestClient", "No user account found");
             throw e;
         }
+        if (SalesforceSDKManager.getInstance().isLoggingOut()) {
+        	AccountInfoNotFoundException e = new AccountInfoNotFoundException("User is logging out");
+            Log.i("ClientManager:peekRestClient", "User is logging out", e);
+            throw e;
+        }
         String passcodeHash = (SalesforceSDKManager.getInstance().getIsTestRun() ? loginOptions.passcodeHash : SalesforceSDKManager.getInstance().getPasscodeHash());
         String authToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(acc, AccountManager.KEY_AUTHTOKEN), passcodeHash);
         String refreshToken = SalesforceSDKManager.decryptWithPasscode(accountManager.getPassword(acc), passcodeHash);
