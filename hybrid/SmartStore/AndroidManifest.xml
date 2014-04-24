@@ -2,7 +2,7 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk.smartstore"
-	android:versionCode="33"
+	android:versionCode="34"
 	android:versionName="2.2.0.unstable">
     <application />
 
