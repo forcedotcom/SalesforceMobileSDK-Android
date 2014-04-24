@@ -53,7 +53,7 @@ import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 /**
  * Tests for ServerPickerActivity
  */
-public class SmartStoreInpsectorActivityTest extends
+public class SmartStoreInspectorActivityTest extends
 	ActivityInstrumentationTestCase2<SmartStoreInspectorActivity> {
 
 	private static final String TEST_SOUP = "test_soup";
@@ -64,7 +64,7 @@ public class SmartStoreInpsectorActivityTest extends
 	private Context targetContext;
 	private SmartStore store;
 
-	public SmartStoreInpsectorActivityTest() {
+	public SmartStoreInspectorActivityTest() {
 		super("com.salesforce.samples.templateapp",
 				SmartStoreInspectorActivity.class);
 	}
