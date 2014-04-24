@@ -78,6 +78,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	private static final String SOUP_NAME = "soupName";
 	static final String TOTAL_PAGES = "totalPages";
 	private static final String TYPE = "type";
+	static final String RE_INDEX_DATA = "reIndexData";
 
 	// Map of cursor id to StoreCursor
 	private static SparseArray<StoreCursor> storeCursors = new SparseArray<StoreCursor>();
@@ -86,8 +87,10 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * Supported plugin actions that the client can take.
 	 */
 	enum Action {
+		pgAlterSoup,
 		pgCloseCursor,
 		pgGetDatabaseSize,
+		pgGetSoupIndexSpecs,
 		pgMoveCursorToPageIndex,
 		pgQuerySoup,
 		pgRegisterSoup,
@@ -121,8 +124,10 @@ public class SmartStorePlugin extends ForcePlugin {
 				synchronized(SmartStorePlugin.class) {
 	        		try {
 		        		switch(action) {
+		        		  case pgAlterSoup:             alterSoup(args, callbackContext); break;  
 		                  case pgCloseCursor:           closeCursor(args, callbackContext); break;
 		                  case pgGetDatabaseSize:       getDatabaseSize(args, callbackContext); break;
+		                  case pgGetSoupIndexSpecs:     getSoupIndexSpecs(args, callbackContext); break;
 		                  case pgMoveCursorToPageIndex: moveCursorToPageIndex(args, callbackContext); break;
 		                  case pgQuerySoup:             querySoup(args, callbackContext); break;
 		                  case pgRegisterSoup:          registerSoup(args, callbackContext); break;
@@ -443,6 +448,58 @@ public class SmartStorePlugin extends ForcePlugin {
 		callbackContext.success(databaseSize);
 	}	
 
+	/**
+	 * Native implementation of pgAlterSoup
+	 * @param args
+	 * @param callbackContext
+	 * @return
+	 * @throws JSONException 
+	 */
+	private void alterSoup(JSONArray args, CallbackContext callbackContext) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		String soupName = arg0.getString(SOUP_NAME);
+		List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
+		JSONArray indexesJson = arg0.getJSONArray(INDEXES);
+		for (int i=0; i<indexesJson.length(); i++) {
+			JSONObject indexJson = indexesJson.getJSONObject(i);
+			indexSpecs.add(new IndexSpec(indexJson.getString(PATH), SmartStore.Type.valueOf(indexJson.getString(TYPE))));
+		}
+		boolean reIndexData = arg0.getBoolean(RE_INDEX_DATA);
+
+		// Run register
+		SmartStore smartStore = getSmartStore();
+		smartStore.alterSoup(soupName, indexSpecs.toArray(new IndexSpec[0]), reIndexData);
+		callbackContext.success(soupName);
+	}	
+	
+	/**
+	 * Native implementation of pgGetSoupIndexSpecs
+	 * @param args
+	 * @param callbackContext
+	 * @return
+	 * @throws JSONException 
+	 */
+	private void getSoupIndexSpecs(JSONArray args, CallbackContext callbackContext) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		String soupName = arg0.getString(SOUP_NAME);
+		
+		// Get soup index specs
+		SmartStore smartStore = getSmartStore();
+		IndexSpec[] indexSpecs = smartStore.getSoupIndexSpecs(soupName);
+		JSONArray indexSpecsJson = new JSONArray();
+		for (int i=0; i<indexSpecs.length; i++) {
+			JSONObject indexSpecJson = new JSONObject();
+			IndexSpec indexSpec = indexSpecs[i];
+			indexSpecJson.put(PATH, indexSpec.path);
+			indexSpecJson.put(TYPE, indexSpec.type);
+			indexSpecsJson.put(indexSpecJson);
+		}
+		callbackContext.success(indexSpecsJson);
+	}	
+
+	
 	private SmartStore getSmartStore() {
 		return SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore();
 	}

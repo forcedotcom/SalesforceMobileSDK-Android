@@ -42,8 +42,23 @@ public class SmartStoreJSTest extends JSTestCase {
 
     @Override
     public List<String> getTestNames() {
-    	return Arrays.asList(new String[] {"testSmartQueryWithCount", "testSmartQueryWithSpecialFields", "testArbitrarySoupNames", "testCompoundQueryPath", "testEmptyQuerySpec", "testIntegerQuerySpec", "testLikeQueryInnerText", "testLikeQuerySpecEndsWith", "testLikeQuerySpecStartsWith", "testManipulateCursor", "testMoveCursorToNextPageFromLastPage", "testMoveCursorToPreviousPageFromFirstPage", "testQuerySoup", "testQuerySoupBadQuerySpec", "testQuerySoupBeginKeyNoEndKey", "testQuerySoupDescending", "testQuerySoupEndKeyNoBeginKey", "testQuerySpecFactories", "testRegisterBogusSoup", "testRegisterRemoveSoup", "testRegisterSoupNoIndices", "testRemoveFromSoup", "testRetrieveSoupEntries", "testUpsertSoupEntries", "testUpsertSoupEntriesWithExternalId", "testUpsertToNonexistentSoup", "testGetDatabaseSize"});
-    }
+		return Arrays.asList(new String[] { "testSmartQueryWithCount",
+				"testSmartQueryWithSpecialFields", "testArbitrarySoupNames",
+				"testCompoundQueryPath", "testEmptyQuerySpec",
+				"testIntegerQuerySpec", "testLikeQueryInnerText",
+				"testLikeQuerySpecEndsWith", "testLikeQuerySpecStartsWith",
+				"testManipulateCursor", "testMoveCursorToNextPageFromLastPage",
+				"testMoveCursorToPreviousPageFromFirstPage", "testQuerySoup",
+				"testQuerySoupBadQuerySpec", "testQuerySoupBeginKeyNoEndKey",
+				"testQuerySoupDescending", "testQuerySoupEndKeyNoBeginKey",
+				"testQuerySpecFactories", "testRegisterBogusSoup",
+				"testRegisterRemoveSoup", "testRegisterSoupNoIndices",
+				"testRemoveFromSoup", "testRetrieveSoupEntries",
+				"testUpsertSoupEntries", "testUpsertSoupEntriesWithExternalId",
+				"testUpsertToNonexistentSoup", "testGetDatabaseSize",
+				"testAlterSoup", "testAlterSoupWithBogusSoupName",
+				"testGetSoupIndexSpecs", "testGetSoupIndexSpecsWithBogusSoupName"});
+	}
     
     public void testRegisterRemoveSoup()  {
         runTest("testRegisterRemoveSoup");
@@ -152,4 +167,21 @@ public class SmartStoreJSTest extends JSTestCase {
     public void testGetDatabaseSize() {
     	runTest("testGetDatabaseSize");
     }
+    
+    public void testAlterSoup() {
+    	runTest("testAlterSoup");
+    }
+    
+    public void testAlterSoupWithBogusSoupName() {
+    	runTest("testAlterSoupWithBogusSoupName");
+    }
+
+    public void testGetSoupIndexSpecs() {
+    	runTest("testGetSoupIndexSpecs");
+    }
+    
+    public void testGetSoupIndexSpecsWithBogusSoupName() {
+    	runTest("testGetSoupIndexSpecsWithBogusSoupName");
+    }
+    
 }

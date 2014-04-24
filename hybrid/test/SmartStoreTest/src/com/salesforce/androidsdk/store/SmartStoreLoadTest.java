@@ -59,7 +59,8 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	private static final int NUMBER_ENTRIES_PER_BATCH = 64;
 	private static final int NUMBER_BATCHES = 128;
 	private static final int QUERY_PAGE_SIZE = 64;
-
+	private static final int NUMBER_BATCHES_ALTER_TEST = 64;
+	
 	private static final String TEST_SOUP = "test_soup";
 	
 	protected Context targetContext;
@@ -96,10 +97,12 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      */
     public void testUpsertManyEntries() throws JSONException {
         Log.i("SmartStoreLoadTest", "In testUpsertManyEntries");
-        upsertNextManyEntries(1);
+        for (int k=1; k<MAX_NUMBER_ENTRIES; k*=2) {        
+        	upsertManyEntries(k);
+        }
     }
 
-    private void upsertNextManyEntries(int k) throws JSONException {
+    private void upsertManyEntries(int k) throws JSONException {
         List<Long> times = new ArrayList<Long>();
     	store.beginTransaction();
         for (int i=0; i<k; i++) {
@@ -123,11 +126,6 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 			
         // Log avg time taken
         Log.i("SmartStoreLoadTest", "upserting " + k + " entries avg time taken: " + avg + " ms");
-
-        // Next
-        if (k < MAX_NUMBER_ENTRIES) {
-        	upsertNextManyEntries(k*2);
-        }
     }
 
 
@@ -137,10 +135,12 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      */
     public void testNumerousFields() throws JSONException {
         Log.i("SmartStoreLoadTest", "In testNumerousFields");
-        upsertNextManyFieldsEntry(1);
+        for (int k=1; k<MAX_NUMBER_FIELDS; k*=2) {
+        	upsertEntryWithNumerousFields(k);
+        }
     }
 
-    private void upsertNextManyFieldsEntry(int k) throws JSONException {
+    private void upsertEntryWithNumerousFields(int k) throws JSONException {
     	JSONObject entry = new JSONObject();
     	
         for (int i=0; i<k; i++) {
@@ -149,11 +149,6 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 
         // Upsert
         upsertEntry("upserting entry with " + k + "+ fields", entry);
-        
-        // Next
-        if (k < MAX_NUMBER_FIELDS) {
-        	upsertNextManyFieldsEntry(k*2);
-        }
     }
 
 	private void upsertEntry(String msg, JSONObject entry) throws JSONException {
@@ -175,10 +170,12 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      */
     public void testIncreasingFieldLength() throws JSONException {
     	Log.i("SmartStoreLoadTest", "In testIncreasingFieldLength");
-        upsertNextLargerFieldEntry(1);
+        for (int k=1; k<MAX_FIELD_LENGTH; k*=2) {
+        	upsertEntryWithLargeField(k);
+        }
     }
 
-    private void upsertNextLargerFieldEntry(int k) throws JSONException {
+    private void upsertEntryWithLargeField(int k) throws JSONException {
     	Log.i("SmartStoreLoadTest", "upsertNextLargerFieldEntry " + k);
 
         StringBuilder sb = new StringBuilder();
@@ -192,11 +189,6 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	
         // Upsert
         upsertEntry("upserting entry with field with " + k + " characters", entry);
-        
-        // Next
-        if (k < MAX_FIELD_LENGTH) {
-        	upsertNextLargerFieldEntry(k*2);
-        }
     }
     
     /**
@@ -254,10 +246,13 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      */
     public void testUpsertAndQueryEntries() throws JSONException {
         Log.i("SmartStoreLoadTest", "In testUpsertAndQueryEntries");
-        upsertQueryEntries(0);
+        for (int i=0; i<NUMBER_BATCHES; i++) {
+        	upsertManyEntriesWithManyFields(i);
+        	queryEntries(i);
+        }
     }
 
-    private void upsertQueryEntries(int batch) throws JSONException {
+    private void upsertManyEntriesWithManyFields(int batch) throws JSONException {
         int startKey = batch * NUMBER_ENTRIES_PER_BATCH;
         int endKey = (batch+1) * NUMBER_ENTRIES_PER_BATCH;
 
@@ -287,20 +282,46 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 			
         // Log avg time taken
         Log.i("SmartStoreLoadTest", "upserting " + NUMBER_ENTRIES_PER_BATCH + " entries avg time taken: " + avg + " ms");
-        
-        
-        // Query all
+    }
+
+	private void queryEntries(int batch) throws JSONException {
+		// Query all
         QuerySpec qs = QuerySpec.buildAllQuerySpec(TEST_SOUP, "key", Order.ascending, QUERY_PAGE_SIZE);        
         long start = System.currentTimeMillis();
         store.query(qs, 0);
         long end = System.currentTimeMillis();
         
         // Log query time
-        Log.i("SmartStoreLoadTest", "querying out of soup with " + (batch+1)*NUMBER_ENTRIES_PER_BATCH + " entries time taken: " + (end-start) + " ms");        
+        Log.i("SmartStoreLoadTest", "querying out of soup with " + (batch+1)*NUMBER_ENTRIES_PER_BATCH + " entries time taken: " + (end-start) + " ms");
+	}
 
-        // Next
-        if (batch < NUMBER_BATCHES - 1) {
-            upsertQueryEntries(batch + 1);
+    /**
+     * TEST: NUMBER_BATCHES batches of NUMBER_ENTRIES_PER_BATCH entries with NUMBER_FIELDS_PER_ENTRY fields into a soup and alter the soup several times (adding/dropping indexes with/without re-indexing)
+     * @throws JSONException
+     */
+    public void testAlterSoup() throws JSONException {
+    	Log.i("SmartStoreLoadTest", "In testAlterSoup");
+    	Log.i("SmartStoreLoadTest.testAlterSoup", "Initial database size: " + store.getDatabaseSize() + " bytes");
+        for (int i=0; i<NUMBER_BATCHES_ALTER_TEST; i++) {
+        	upsertManyEntriesWithManyFields(i);
         }
+    	Log.i("SmartStoreLoadTest.testAlterSoup", "Database size after inserting " + NUMBER_ENTRIES_PER_BATCH * NUMBER_BATCHES_ALTER_TEST + " records with " + NUMBER_FIELDS_PER_ENTRY + " fields: " + store.getDatabaseSize() + " bytes");
+
+    	// Without indexing for new index specs
+    	alterSoup("Adding one index / no re-indexing", false, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("v0", Type.string)});
+    	alterSoup("Adding one index / dropping one index / no re-indexing", false, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("v1", Type.string)});
+    	alterSoup("Dropping two indexes / no re-indexing", false, new IndexSpec[] {new IndexSpec("key", Type.string)});
+
+    	// With indexing for new index specs
+    	alterSoup("Adding one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("v0", Type.string)});
+    	alterSoup("Adding one index / dropping one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("v1", Type.string)});
+    	alterSoup("Dropping two indexes / with re-indexing", true, new IndexSpec[] {new IndexSpec("key", Type.string)});
+    }
+    
+    private void alterSoup(String msg, boolean reIndexData, IndexSpec[] indexSpecs) {
+        long start = System.currentTimeMillis();
+        store.alterSoup(TEST_SOUP, indexSpecs, reIndexData);
+        long duration = System.currentTimeMillis() - start;
+        Log.i("SmartStoreLoadTest.alterSoup", msg + " completed in: " + duration + " ms");
     }
 }

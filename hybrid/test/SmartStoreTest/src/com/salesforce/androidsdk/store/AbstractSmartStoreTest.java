@@ -702,4 +702,156 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		}
 		assertTrue("Database should be larger now", store.getDatabaseSize() > initialSize);
 	}
+	
+	/**
+	 * Test for getSoupIndexSpecs
+	 * 
+	 * @throws JSONException
+	 */
+	public void testGetSoupIndexSpecs() throws JSONException {
+		IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("lastName", Type.string), new IndexSpec("address.city", Type.string)};
+		
+		assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
+		store.registerSoup(OTHER_TEST_SOUP, indexSpecs);
+		assertTrue("Register soup call failed", store.hasSoup(OTHER_TEST_SOUP));
+
+		IndexSpec[] indexSpecsReturned = store.getSoupIndexSpecs(OTHER_TEST_SOUP);
+		assertEquals("Should have the same number of index specs", indexSpecs.length, indexSpecsReturned.length);
+		for (int i = 0; i<indexSpecs.length; i++) {
+			assertEquals("Wrong index spec path", indexSpecs[i].path, indexSpecsReturned[i].path);
+			assertEquals("Wrong index spec type", indexSpecs[i].type, indexSpecsReturned[i].type);			
+			assertEquals("Wrong index spec column", "TABLE_2_" + i, indexSpecsReturned[i].columnName);			
+		}
+	}
+	
+	/**
+	 * Test for alterSoup with reIndexData = false
+	 * 
+	 * @throws JSONException
+	 */
+	public void testAlterSoupNoReIndexing() throws JSONException {
+		alterSoupHelper(false);
+	}
+	
+	/**
+	 * Test for alterSoup with reIndexData = true
+	 * 
+	 * @throws JSONException
+	 */
+	public void testAlterSoupWithReIndexing() throws JSONException {
+		alterSoupHelper(true);
+	}
+
+	/**
+	 * Test for alterSoup with column type change
+	 * 
+	 * throws JSONException
+	 */
+	public void testAlterSoupTypeChange() throws JSONException {
+		IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("name", Type.string), new IndexSpec("population", Type.string)};
+		
+		assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
+		store.registerSoup(OTHER_TEST_SOUP, indexSpecs);
+		assertTrue("Register soup call failed", store.hasSoup(OTHER_TEST_SOUP));
+
+		JSONObject soupElt1 = new JSONObject("{'name': 'San Francisco', 'population': 825863}");
+		JSONObject soupElt2 = new JSONObject("{'name': 'Paris', 'population': 2234105}");
+
+		store.create(OTHER_TEST_SOUP, soupElt1);
+		store.create(OTHER_TEST_SOUP, soupElt2);
+
+		// Query all sorted by population ascending - we should get Paris first because we indexed population as a string
+		JSONArray results = store.query(QuerySpec.buildAllQuerySpec(OTHER_TEST_SOUP, "population", Order.ascending, 2), 0);
+		assertEquals("Paris should be first", "Paris", results.getJSONObject(0).get("name"));
+		assertEquals("San Francisco should be second", "San Francisco", results.getJSONObject(1).get("name"));
+
+		// Alter soup - index population as integer
+		IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec("name", Type.string), new IndexSpec("population", Type.integer)};
+		store.alterSoup(OTHER_TEST_SOUP, indexSpecsNew, true);
+
+		// Query all sorted by population ascending - we should get San Francisco first because we indexed population as an integer
+		JSONArray results2 = store.query(QuerySpec.buildAllQuerySpec(OTHER_TEST_SOUP, "population", Order.ascending, 2), 0);
+		assertEquals("San Francisco should be first", "San Francisco", results2.getJSONObject(0).get("name"));
+		assertEquals("Paris should be first", "Paris", results2.getJSONObject(1).get("name"));
+	}
+	
+	/**
+	 * Helper method for alter soup tests
+	 * @param reIndexData
+	 * @throws JSONException
+	 */
+	private void alterSoupHelper(boolean reIndexData) throws JSONException {
+		IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("lastName", Type.string), new IndexSpec("address.city", Type.string)};
+		
+		assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
+		store.registerSoup(OTHER_TEST_SOUP, indexSpecs);
+		assertTrue("Register soup call failed", store.hasSoup(OTHER_TEST_SOUP));
+
+		JSONObject soupElt1 = new JSONObject("{'lastName':'Doe', 'address':{'city':'San Francisco','street':'1 market'}}");
+		JSONObject soupElt2 = new JSONObject("{'lastName':'Jackson', 'address':{'city':'Los Angeles','street':'100 mission'}}");
+		JSONObject soupElt3 = new JSONObject("{'lastName':'Watson', 'address':{'city':'London','street':'50 market'}}");
+
+		JSONObject soupElt1Created = store.create(OTHER_TEST_SOUP, soupElt1);
+		JSONObject soupElt2Created = store.create(OTHER_TEST_SOUP, soupElt2);
+		JSONObject soupElt3Created = store.create(OTHER_TEST_SOUP, soupElt3);
+
+		// Alter soup
+		IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec("lastName", Type.string), new IndexSpec("address.street", Type.string)};
+		store.alterSoup(OTHER_TEST_SOUP, indexSpecsNew, reIndexData);
+		
+		// Check index specs
+		IndexSpec[] indexSpecsReturned = store.getSoupIndexSpecs(OTHER_TEST_SOUP);
+		assertEquals("Should have the same number of index specs", indexSpecs.length, indexSpecsReturned.length);
+		for (int i = 0; i<indexSpecs.length; i++) {
+			assertEquals("Wrong index spec path", indexSpecsNew[i].path, indexSpecsReturned[i].path);
+			assertEquals("Wrong index spec type", indexSpecsNew[i].type, indexSpecsReturned[i].type);
+			assertEquals("Wrong index spec column", "TABLE_2_" + i, indexSpecsReturned[i].columnName);			
+		}
+		
+		// Check DB
+		Cursor c = null;
+		try {
+			String soupTableName = getSoupTableName(OTHER_TEST_SOUP);
+			assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
+			assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
+			
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
+			assertTrue("Expected a soup element", c.moveToFirst());
+			assertEquals("Expected three soup elements", 3, c.getCount());
+			
+			assertEquals("Wrong id", idOf(soupElt1Created), c.getLong(c.getColumnIndex("id")));
+			assertEquals("Wrong created date", soupElt1Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
+			assertEquals("Wrong value in index column", "Doe", c.getString(c.getColumnIndex(soupTableName + "_0")));
+			if (reIndexData)
+				assertEquals("Wrong value in index column", "1 market", c.getString(c.getColumnIndex(soupTableName + "_1")));
+			else
+				assertNull("Wrong value in index column", c.getString(c.getColumnIndex(soupTableName + "_1"))); 
+			assertSameJSON("Wrong value in soup column", soupElt1Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+			
+			c.moveToNext();
+			assertEquals("Wrong id", idOf(soupElt2Created), c.getLong(c.getColumnIndex("id")));
+			assertEquals("Wrong created date", soupElt2Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
+			assertEquals("Wrong value in index column", "Jackson", c.getString(c.getColumnIndex(soupTableName + "_0")));
+			if (reIndexData)
+				assertEquals("Wrong value in index column", "100 mission", c.getString(c.getColumnIndex(soupTableName + "_1")));
+			else
+				assertNull("Wrong value in index column", c.getString(c.getColumnIndex(soupTableName + "_1"))); 
+			assertSameJSON("Wrong value in soup column", soupElt2Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+
+			c.moveToNext();
+			assertEquals("Wrong id", idOf(soupElt3Created), c.getLong(c.getColumnIndex("id")));
+			assertEquals("Wrong created date", soupElt3Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
+			assertEquals("Wrong value in index column", "Watson", c.getString(c.getColumnIndex(soupTableName + "_0")));
+			if (reIndexData)
+				assertEquals("Wrong value in index column", "50 market", c.getString(c.getColumnIndex(soupTableName + "_1")));
+			else
+				assertNull("Wrong value in index column", c.getString(c.getColumnIndex(soupTableName + "_1"))); 
+			assertSameJSON("Wrong value in soup column", soupElt3Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+			
+		}
+		finally {
+			safeClose(c);
+		}
+	}
+	
 }
