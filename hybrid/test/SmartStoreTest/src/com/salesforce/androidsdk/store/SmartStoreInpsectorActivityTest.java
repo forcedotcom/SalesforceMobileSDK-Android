@@ -35,6 +35,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
+import android.test.ActivityInstrumentationTestCase2;
+import android.view.View;
+import android.widget.EditText;
 import android.widget.ListAdapter;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.TextView;
@@ -46,13 +49,12 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
-import com.salesforce.androidsdk.util.BaseActivityInstrumentationTestCase;
 
 /**
  * Tests for ServerPickerActivity
  */
 public class SmartStoreInpsectorActivityTest extends
-		BaseActivityInstrumentationTestCase<SmartStoreInspectorActivity> {
+	ActivityInstrumentationTestCase2<SmartStoreInspectorActivity> {
 
 	private static final String TEST_SOUP = "test_soup";
 	private static final String OTHER_TEST_SOUP = "other_test_soup";
@@ -298,4 +300,39 @@ public class SmartStoreInpsectorActivityTest extends
 		}
 	}
 
+    private void clickView(final View v) {
+        try {
+            runTestOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    v.performClick();
+                }
+            });
+        } catch (Throwable t) {
+            fail("Failed to click view " + v);
+        }
+    }
+    
+    private void setText(final int textViewId, final String text) {
+        try {
+            runTestOnUiThread(new Runnable() {
+                @Override public void run() {
+                    TextView v = (TextView) getActivity().findViewById(textViewId);
+                    v.setText(text);
+                    if (v instanceof EditText)
+                        ((EditText) v).setSelection(v.getText().length());
+                }
+            });
+        } catch (Throwable t) {
+            fail("Failed to set text " + text);
+        }
+    }
+    
+    private void waitSome() {
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            fail("Test interrupted");
+        }
+    }
 }
