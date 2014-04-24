@@ -28,14 +28,12 @@ package com.salesforce.androidsdk.store;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
