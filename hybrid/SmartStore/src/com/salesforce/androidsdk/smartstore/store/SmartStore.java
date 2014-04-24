@@ -566,17 +566,30 @@ public class SmartStore  {
 				// Note: we could end up returning a string if you aliased the column
 			}
 			else {
-	    		// Is it holding a integer
+				// TODO Leverage cursor.getType once our min api is 11 or above
+				// For now, we do our best to guess
+				
+				// Is it holding a integer ?
 	    		try {
 	    			Long n = Long.parseLong(raw);
 	    			row.put(n);
 	    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
 	    		}
-	    		// It must be holding a string then
+	    		// Is it holding a floating ?
 	    		catch (NumberFormatException e) {
-	    			row.put(raw);
+	    			try { 
+		    			Double d = Double.parseDouble(raw);
+		    			// No exception, let's get the value straight from the cursor
+		    			// XXX Double.parseDouble(cursor.getString(i)) is sometimes different from cursor.getDouble(i) !!!
+		    			d = cursor.getDouble(i);
+		    			row.put(d);
+		    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
+	    			}
+		    		// It must be holding a string then
+	    			catch (NumberFormatException ne) {
+		    			row.put(raw);
+	    			}
 	    		}
-	    		// cursor.getType is API 11 and above
 			}
 		}
 		return row;
@@ -676,11 +689,11 @@ public class SmartStore  {
         Object value = project(soupElt, indexSpec.path);
         switch (indexSpec.type) {
         case integer:
-            contentValues.put(indexSpec.columnName, (Integer) value); break;
+            contentValues.put(indexSpec.columnName, ((Number) value).longValue()); break;
         case string:
             contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
         case floating:
-        	contentValues.put(indexSpec.columnName, (Double) value); break;
+        	contentValues.put(indexSpec.columnName, ((Number) value).doubleValue()); break;
         }
     }
 

@@ -690,6 +690,122 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 	}
 	
 	/**
+	 * Test to verify proper indexing of integer and longs
+	 */
+	public void testIntegerIndexedField() throws JSONException {
+		store.registerSoup(FOURTH_TEST_SOUP, new IndexSpec[] { new IndexSpec("amount", Type.integer) });
+		tryNumber(Type.integer, Integer.MIN_VALUE, Integer.MIN_VALUE);
+		tryNumber(Type.integer, Integer.MAX_VALUE, Integer.MAX_VALUE);
+		tryNumber(Type.integer, Long.MIN_VALUE, Long.MIN_VALUE);
+		tryNumber(Type.integer, Long.MIN_VALUE, Long.MIN_VALUE);
+		tryNumber(Type.integer, Double.MIN_VALUE, (long) Double.MIN_VALUE);
+		tryNumber(Type.integer, Double.MAX_VALUE, (long) Double.MAX_VALUE);
+	}
+
+	/**
+	 * Test to verify proper indexing of doubles
+	 */
+	public void testFloatingIndexedField() throws JSONException {
+		store.registerSoup(FOURTH_TEST_SOUP, new IndexSpec[] { new IndexSpec("amount", Type.floating) });
+		tryNumber(Type.floating, Integer.MIN_VALUE, (double) Integer.MIN_VALUE);
+		tryNumber(Type.floating, Integer.MAX_VALUE, (double) Integer.MAX_VALUE);
+		tryNumber(Type.floating, Long.MIN_VALUE, (double) Long.MIN_VALUE);
+		tryNumber(Type.floating, Long.MIN_VALUE, (double) Long.MIN_VALUE);
+		tryNumber(Type.floating, Double.MIN_VALUE, Double.MIN_VALUE);
+		tryNumber(Type.floating, Double.MAX_VALUE, Double.MAX_VALUE);
+	}
+
+	/**
+	 * Helper method for testIntegerIndexedField and testFloatingIndexedField
+	 * Insert soup element with number and check db 
+	 * @param fieldType
+	 * @param valuesIn
+	 * @param valuesOut
+	 * @throws JSONException 
+	 */
+	private void tryNumber(Type fieldType, Number valueIn, Number valueOut) throws JSONException {
+		JSONObject elt = new JSONObject();
+		elt.put("amount", valueIn);
+		Long id = store.upsert(FOURTH_TEST_SOUP, elt).getLong(SmartStore.SOUP_ENTRY_ID);
+		
+		
+		Cursor c = null;
+		try {
+			String soupTableName = getSoupTableName(FOURTH_TEST_SOUP);
+			String amountColumnName = store.getSoupIndexSpecs(FOURTH_TEST_SOUP)[0].columnName;
+			c = DBHelper.INSTANCE.query(db, soupTableName, new String[] { amountColumnName }, null, null, "id = " + id);
+			assertTrue("Expected a soup element", c.moveToFirst());
+			assertEquals("Expected one soup element", 1, c.getCount());
+			if (fieldType == Type.integer)
+				assertEquals("Not the value expected", valueOut.longValue(), c.getLong(0));
+			else if (fieldType == Type.floating)
+				assertEquals("Not the value expected", valueOut.doubleValue(), c.getDouble(0)); 
+		}
+		finally {
+			safeClose(c);
+		}
+		
+		/*
+		String smartSql = "SELECT {" + FOURTH_TEST_SOUP + ":amount} FROM {" + FOURTH_TEST_SOUP + "} WHERE {" + FOURTH_TEST_SOUP + ":_soupEntryId} = ";
+		Number actualValueOut = (Number) store.query(QuerySpec.buildSmartQuerySpec(smartSql + id, 1), 0).getJSONArray(0).get(0);
+		if (fieldType == Type.integer)
+			assertEquals("No the value expected", valueOut.longValue(), actualValueOut.longValue());
+		else if (fieldType == Type.floating)
+			assertEquals("No the value expected", valueOut.doubleValue(), actualValueOut.doubleValue()); 
+		else
+			fail("tryNumber called with fieldType string");
+		*/
+	}
+	
+	/**
+	 * Test using smart sql to retrieve integer indexed fields
+	 */
+	public void testIntegerIndexedFieldWithSmartSql() throws JSONException {
+		store.registerSoup(FOURTH_TEST_SOUP, new IndexSpec[] { new IndexSpec("amount", Type.integer) });
+		tryNumberWithSmartSql(Type.integer, Integer.MIN_VALUE, Integer.MIN_VALUE);
+		tryNumberWithSmartSql(Type.integer, Integer.MAX_VALUE, Integer.MAX_VALUE);
+		tryNumberWithSmartSql(Type.integer, Long.MIN_VALUE, Long.MIN_VALUE);
+		tryNumberWithSmartSql(Type.integer, Long.MIN_VALUE, Long.MIN_VALUE);
+		tryNumberWithSmartSql(Type.integer, Double.MIN_VALUE, (long) Double.MIN_VALUE);
+		tryNumberWithSmartSql(Type.integer, Double.MAX_VALUE, (long) Double.MAX_VALUE);
+	}
+
+	/**
+	 * Test using smart sql to retrieve indexed fields holding doubles
+	 * NB smart sql will return a long when querying a double field that contains a long
+	 */
+	public void testFloatingIndexedFieldWithSmartSql() throws JSONException {
+		store.registerSoup(FOURTH_TEST_SOUP, new IndexSpec[] { new IndexSpec("amount", Type.floating) });
+		tryNumberWithSmartSql(Type.floating, Integer.MIN_VALUE, Integer.MIN_VALUE);
+		tryNumberWithSmartSql(Type.floating, Integer.MAX_VALUE, Integer.MAX_VALUE);
+		tryNumberWithSmartSql(Type.floating, Long.MIN_VALUE, Long.MIN_VALUE);
+		tryNumberWithSmartSql(Type.floating, Long.MIN_VALUE, Long.MIN_VALUE);
+		tryNumberWithSmartSql(Type.floating, Double.MIN_VALUE, Double.MIN_VALUE);
+		tryNumberWithSmartSql(Type.floating, Double.MAX_VALUE, Double.MAX_VALUE);
+	}
+
+	/**
+	 * Helper method for testIntegerIndexedFieldWithSmartSql and testFloatingIndexedFieldWithSmartSql
+	 * Insert soup element with number and retrieve it back using smartsql
+	 * @param fieldType
+	 * @param valuesIn
+	 * @param valuesOut
+	 * @throws JSONException 
+	 */
+	private void tryNumberWithSmartSql(Type fieldType, Number valueIn, Number valueOut) throws JSONException {
+		String smartSql = "SELECT {" + FOURTH_TEST_SOUP + ":amount} FROM {" + FOURTH_TEST_SOUP + "} WHERE {" + FOURTH_TEST_SOUP + ":_soupEntryId} = ";
+		JSONObject elt = new JSONObject();
+		elt.put("amount", valueIn);
+		Long id = store.upsert(FOURTH_TEST_SOUP, elt).getLong(SmartStore.SOUP_ENTRY_ID);
+		
+		Number actualValueOut = (Number) store.query(QuerySpec.buildSmartQuerySpec(smartSql + id, 1), 0).getJSONArray(0).get(0);
+		if (fieldType == Type.integer)
+			assertEquals("Not the value expected", valueOut.longValue(), actualValueOut.longValue());
+		else if (fieldType == Type.floating)
+			assertEquals("Not the value expected", valueOut.doubleValue(), actualValueOut.doubleValue()); 
+	}
+
+	/**
 	 * Test for getDatabaseSize
 	 * 
 	 * @throws JSONException
