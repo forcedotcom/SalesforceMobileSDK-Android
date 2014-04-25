@@ -744,17 +744,6 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		finally {
 			safeClose(c);
 		}
-		
-		/*
-		String smartSql = "SELECT {" + FOURTH_TEST_SOUP + ":amount} FROM {" + FOURTH_TEST_SOUP + "} WHERE {" + FOURTH_TEST_SOUP + ":_soupEntryId} = ";
-		Number actualValueOut = (Number) store.query(QuerySpec.buildSmartQuerySpec(smartSql + id, 1), 0).getJSONArray(0).get(0);
-		if (fieldType == Type.integer)
-			assertEquals("No the value expected", valueOut.longValue(), actualValueOut.longValue());
-		else if (fieldType == Type.floating)
-			assertEquals("No the value expected", valueOut.doubleValue(), actualValueOut.doubleValue()); 
-		else
-			fail("tryNumber called with fieldType string");
-		*/
 	}
 	
 	/**
@@ -969,5 +958,4 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			safeClose(c);
 		}
 	}
-	
 }
