@@ -44,7 +44,10 @@ import com.salesforce.androidsdk.accounts.UserAccount;
  */
 public class DBOpenHelper extends SQLiteOpenHelper {
 
-	public static final int DB_VERSION = 1;
+	// 1 --> up until 2.3
+	// 2 --> starting at 2.3 (new meta data table long_operations_status)
+	public static final int DB_VERSION = 2;
+
 	public static final String DB_NAME = "smartstore%s.db";
 
 	private static Map<String, DBOpenHelper> openHelpers;
@@ -124,7 +127,14 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-		// do the needful if DB_VERSION has changed
+		if (oldVersion == 1) {
+			SmartStore.createLongOperationsStatusTable(db);
+		}
+	}
+	
+	@Override
+	public void onOpen(SQLiteDatabase db) {
+		(new SmartStore(db)).completeInterruptedLongOperations();
 	}
 
 	/**

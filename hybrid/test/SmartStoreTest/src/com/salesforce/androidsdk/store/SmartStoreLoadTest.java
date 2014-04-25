@@ -318,7 +318,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
     	alterSoup("Dropping two indexes / with re-indexing", true, new IndexSpec[] {new IndexSpec("key", Type.string)});
     }
     
-    private void alterSoup(String msg, boolean reIndexData, IndexSpec[] indexSpecs) {
+    private void alterSoup(String msg, boolean reIndexData, IndexSpec[] indexSpecs) throws JSONException {
         long start = System.currentTimeMillis();
         store.alterSoup(TEST_SOUP, indexSpecs, reIndexData);
         long duration = System.currentTimeMillis() - start;

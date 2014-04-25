@@ -63,6 +63,9 @@ public class SmartStore  {
 
     // Table to keep track of soup's index specs
     protected static final String SOUP_INDEX_MAP_TABLE = "soup_index_map";
+    
+    // Table to keep track of status of long operations in flight
+    protected static final String LONG_OPERATIONS_STATUS_TABLE = "long_operations_status";
 
     // Columns of the soup index map table
     protected static final String SOUP_NAME_COL = "soupName";
@@ -76,6 +79,11 @@ public class SmartStore  {
     protected static final String LAST_MODIFIED_COL = "lastModified";
     protected static final String SOUP_COL = "soup";
 
+    // Columns of long operations status table
+	private static final String TYPE_COL = "type";
+    private static final String DETAILS_COL = "details";
+	private static final String STATUS_COL = "status";
+	
     // JSON fields added to soup element on insert/update
     public static final String SOUP_ENTRY_ID = "_soupEntryId";
     public static final String SOUP_LAST_MODIFIED_DATE = "_soupLastModifiedDate";
@@ -83,8 +91,14 @@ public class SmartStore  {
     // Predicates
     protected static final String SOUP_NAME_PREDICATE = SOUP_NAME_COL + " = ?";
     protected static final String PATH_PREDICATE = PATH_COL + " = ?";
-	protected static final String SOUP_ENTRY_ID_PREDICATE = ID_COL + " = ?";
-    
+	protected static final String ID_PREDICATE = ID_COL + " = ?";
+
+	// Fields of details for alter soup long operation row in long_operations_status table
+	private static final String SOUP_NAME = "soupName";
+	private static final String SOUP_TABLE_NAME = "soupTableName";
+	private static final String OLD_INDEX_SPECS = "oldIndexSpecs";
+	private static final String NEW_INDEX_SPECS = "newIndexSpecs";
+	private static final String RE_INDEX_DATA = "reIndexData";
 
     // Backing database
     protected SQLiteDatabase db;
@@ -134,6 +148,28 @@ public class SmartStore  {
 	        db.execSQL(sb.toString());
 	        // Add index on soup_name column
 	        db.execSQL(String.format("CREATE INDEX %s on %s ( %s )", SOUP_NAMES_TABLE + "_0", SOUP_NAMES_TABLE, SOUP_NAME_COL));
+	        
+	        // Create alter_soup_status table
+	        createLongOperationsStatusTable(db);
+    	}
+    }
+    
+    /**
+     * Create long_operations_status table
+     * @param db
+     */
+    public static void createLongOperationsStatusTable(SQLiteDatabase db) {
+    	synchronized(SmartStore.class) {
+    		StringBuilder sb = new StringBuilder();
+	    	sb.append("CREATE TABLE ").append(LONG_OPERATIONS_STATUS_TABLE).append(" (")
+	        .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
+	        .append(",").append(TYPE_COL).append(" TEXT")
+	        .append(",").append(DETAILS_COL).append(" TEXT")
+	        .append(",").append(STATUS_COL).append(" TEXT")
+	        .append(", ").append(CREATED_COL).append(" INTEGER")
+	        .append(", ").append(LAST_MODIFIED_COL).append(" INTEGER")
+	        .append(")");
+	        db.execSQL(sb.toString());
     	}
     }
 
@@ -278,18 +314,59 @@ public class SmartStore  {
     }
     
 	/**
+	 * Finish long operations that were interrupted
+	 */
+	public void completeInterruptedLongOperations() {
+		synchronized(SmartStore.class) {
+			Cursor cursor = null;
+			try {
+				cursor = DBHelper.INSTANCE.query(db, LONG_OPERATIONS_STATUS_TABLE, new String[] {ID_COL, TYPE_COL, DETAILS_COL, STATUS_COL}, null, null, null);
+	
+			    if (cursor.moveToFirst()) {
+			        do {
+			        	try {
+				        	long rowId = cursor.getLong(0);
+				        	LongOperationType operationType = LongOperationType.valueOf(cursor.getString(1));
+				        	JSONObject details = new JSONObject(cursor.getString(2));
+				        	String statusStr = cursor.getString(3);
+
+				        	if (operationType == LongOperationType.alterSoup) {
+				        		AlterStatus status = AlterStatus.valueOf(statusStr);
+				        		String soupName = details.getString(SOUP_NAME);
+				        		IndexSpec[] indexSpecs = IndexSpec.fromJSON(new JSONArray(details.getString(NEW_INDEX_SPECS)));
+				        		IndexSpec[] oldIndexSpecs = IndexSpec.fromJSON(new JSONArray(details.getString(OLD_INDEX_SPECS)));
+				        		boolean reIndexData = details.getBoolean(RE_INDEX_DATA);
+				        		String soupTableName = details.getString(SOUP_TABLE_NAME);
+				        		
+				        		this.alterSoupStartingAtStep(status, soupName, indexSpecs, reIndexData, soupTableName, oldIndexSpecs, rowId);
+				        	}
+				        	else {
+				        		Log.w("SmartStore.completeInterruptedOperations", "Unknown long operation type: " + operationType);
+				        	}
+			        	}
+			        	catch (Exception e) {
+			        		Log.e("SmartStore.completeInterruptedOperations", "Unexpected error", e);
+			        	}
+			        }
+			        while (cursor.moveToNext());
+			    }
+			}
+			finally {
+			    safeClose(cursor);
+			}
+		}
+	}
+    
+	/**
 	 * Alter soup
-	 * 
-	 * XXX things could get ugly 
-	 *     - if writes are done while soup is altered (should we prevent that)
-	 *     - if app crashes while soup is altered
 	 * 
 	 * @param soupName
 	 * @param array of index specs
 	 * @param reIndexData
+	 * @throws JSONException 
 	 */
 	public void alterSoup(String soupName, IndexSpec[] indexSpecs,
-			boolean reIndexData) {
+			boolean reIndexData) throws JSONException {
 		
     	synchronized(SmartStore.class) {
 			// Get backing table for soup
@@ -298,40 +375,164 @@ public class SmartStore  {
 	
 	        // Get old indexSpecs
 	        IndexSpec[] oldIndexSpecs = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
+
+    		// Create row in alter status table 
+    		long rowId = trackAlterStatus(soupName, soupTableName, oldIndexSpecs, indexSpecs, reIndexData);
 	        
-	        // Removing db indexes on table (otherwise registerSoup will fail to create indexes with the same name)
-	        for (int i=0; i<oldIndexSpecs.length; i++) {
-		        String indexName = soupTableName + "_" + i + "_idx";
-	            db.execSQL("DROP INDEX "  + indexName);
-	        }
-	        
-	        // Remove soup from cache
+	        alterSoupStartingAtStep(AlterStatus.initiated, soupName, indexSpecs, reIndexData,
+					soupTableName, oldIndexSpecs, rowId);
+    	}
+	}
+
+	/**
+	 * Helper method for alterSoup also used during recovery
+	 * 
+	 * @param status
+	 * @param soupName
+	 * @param indexSpecs
+	 * @param reIndexData
+	 * @param soupTableName
+	 * @param oldIndexSpecs
+	 * @param rowId
+	 */
+	private void alterSoupStartingAtStep(AlterStatus status, String soupName,
+			IndexSpec[] indexSpecs, boolean reIndexData, String soupTableName,
+			IndexSpec[] oldIndexSpecs, long rowId) {
+		
+		String soupTableNameOld = soupTableName + "_old";		
+
+		//
+		// We execute all the case blocks starting with the matching status
+		//
+		switch(status) {
+		case initiated:
+			// Removing db indexes on table (otherwise registerSoup will fail to create indexes with the same name)
+			for (int i=0; i<oldIndexSpecs.length; i++) {
+			    String indexName = soupTableName + "_" + i + "_idx";
+			    db.execSQL("DROP INDEX "  + indexName);
+			}
+
+			// Update row in alter status table 
+			trackAlterStatus(rowId, soupName, AlterStatus.oldIndexesDropped);
+
+		case oldIndexesDropped:
+			// Remove soup from cache
 			DBHelper.INSTANCE.removeFromCache(soupName);
-	
-	        // Rename backing table for soup
-	        String soupTableNameOld = soupTableName + "_old";
+
+			// Update row in alter status table 
+			trackAlterStatus(rowId, soupName, AlterStatus.oldSoupRemovedFromCache);
+
+		case oldSoupRemovedFromCache:
+			// Rename backing table for soup
 			db.execSQL("ALTER TABLE " + soupTableName + " RENAME TO " + soupTableNameOld);
-			
+
+			// Update row in alter status table 
+			trackAlterStatus(rowId, soupName, AlterStatus.oldSoupTableRenamed);
+
+		case oldSoupTableRenamed:
 			// Create new table for soup
 			registerSoupUsingTableName(soupName, indexSpecs, soupTableName);
-			
+
+			// Update row in alter status table 
+			trackAlterStatus(rowId, soupName, AlterStatus.registerSoupUsingTableNameCompleted);
+
+		case registerSoupUsingTableNameCompleted:
 			// Get new backing table for soup
 			String soupTableNameNew = DBHelper.INSTANCE.getSoupTableName(db, soupName);
-	
+
 			// Get new indexSpecs (we need db column names)
 			IndexSpec[] newIndexSpecs = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
 			
 			// Move data (core columns + indexed paths that we are still indexing)
 			db.execSQL(computeCopyTableStatement(soupTableNameOld, soupTableNameNew, oldIndexSpecs, newIndexSpecs));
-					
-			// Drop old table
-			db.execSQL("DROP TABLE " + soupTableNameOld);
-			
+
+			// Update row in alter status table 
+			trackAlterStatus(rowId, soupName, AlterStatus.copyTableCompleted);
+
+		case copyTableCompleted:
+			IndexSpec[] newIndexSpecs2 = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
+
 			// Re-index soup (if requested)
 			if (reIndexData) {
-				reIndexSoup(soupTableName, IndexSpec.getChangedOrNewIndexSpecs(oldIndexSpecs, newIndexSpecs));
+				reIndexSoup(soupTableName, IndexSpec.getChangedOrNewIndexSpecs(oldIndexSpecs, newIndexSpecs2));
+			    trackAlterStatus(rowId, soupName, AlterStatus.reIndexSoupCompleted);
 			}
-    	}
+
+		case reIndexSoupCompleted:
+			// Drop old table
+			db.execSQL("DROP TABLE " + soupTableNameOld);
+
+		case done:
+			// Done
+			trackAlterStatus(rowId, soupName, AlterStatus.done);
+		}
+	}
+	
+	/**
+	 * Create row in alter status table for a new alter soup operation 
+	 * @param soupName
+	 * @param soupTableName
+	 * @param oldIndexSpecs
+	 * @param newIndexSpecs
+	 * @param reIndexData
+	 * @return
+	 * @throws JSONException
+	 */
+	private long trackAlterStatus(String soupName, String soupTableName, IndexSpec[] oldIndexSpecs, IndexSpec[] newIndexSpecs, boolean reIndexData) throws JSONException {
+		try {
+			db.beginTransaction();
+			AlterStatus status = AlterStatus.initiated;
+	    	JSONObject details = new JSONObject();
+	    	details.put(SOUP_NAME, soupName);
+	    	details.put(SOUP_TABLE_NAME, soupTableName);
+	    	details.put(OLD_INDEX_SPECS, IndexSpec.toJSON(oldIndexSpecs).toString());
+	    	details.put(NEW_INDEX_SPECS, IndexSpec.toJSON(newIndexSpecs).toString());
+	    	details.put(RE_INDEX_DATA, reIndexData);
+			
+			Long now = System.currentTimeMillis();
+			ContentValues contentValues = new ContentValues();
+	    	contentValues.put(TYPE_COL, LongOperationType.alterSoup.toString());
+	    	contentValues.put(STATUS_COL, status.toString());
+	    	contentValues.put(DETAILS_COL, details.toString());
+	    	contentValues.put(CREATED_COL, now);
+	    	contentValues.put(LAST_MODIFIED_COL, now);
+	    	db.setTransactionSuccessful();
+	    	Log.i("SmartStore.trackAlterStatus", soupName + " " + status);
+			return DBHelper.INSTANCE.insert(db, LONG_OPERATIONS_STATUS_TABLE, contentValues);
+		}
+		finally {
+			db.endTransaction();
+		}
+	}
+	
+	/**
+	 * Update row in alter status table for on-going alter soup operation
+	 * Delete row if newStatus is AlterStatus.done
+	 * 
+	 * @param rowId
+	 * @param soupName
+	 * @param newStatus
+	 * @return
+	 */
+	private void trackAlterStatus(long rowId, String soupName, AlterStatus newStatus) {
+		try {
+			db.beginTransaction();
+			if (newStatus == AlterStatus.done) {
+		    	DBHelper.INSTANCE.delete(db, LONG_OPERATIONS_STATUS_TABLE, ID_PREDICATE, rowId + "");
+			}
+			else {
+		    	Long now = System.currentTimeMillis();
+				ContentValues contentValues = new ContentValues();
+		    	contentValues.put(STATUS_COL, newStatus.toString());
+		    	contentValues.put(LAST_MODIFIED_COL, now);
+		    	DBHelper.INSTANCE.update(db, LONG_OPERATIONS_STATUS_TABLE, contentValues, ID_PREDICATE, rowId + "");
+			}
+			db.setTransactionSuccessful();
+	    	Log.i("SmartStore.trackAlterStatus", soupName + " " + newStatus);
+		}
+		finally {
+			db.endTransaction();
+		}
 	}
 	
 	/**
@@ -362,7 +563,7 @@ public class SmartStore  {
 		            	for (IndexSpec indexSpec : indexSpecs) {
 			                projectIndexedPaths(soupElt, contentValues, indexSpec);
 			            }
-		                DBHelper.INSTANCE.update(db, soupTableName, contentValues, SOUP_ENTRY_ID_PREDICATE, soupEntryId + "");
+		                DBHelper.INSTANCE.update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "");
 		        	}
 		        	catch (JSONException e) {
 		        		Log.w("SmartStore.alterSoup", "Could not parse soup element " + soupEntryId, e);
@@ -808,7 +1009,7 @@ public class SmartStore  {
 	            if (handleTx) {
 	                db.beginTransaction();
 	            }
-	            boolean success = DBHelper.INSTANCE.update(db, soupTableName, contentValues, SOUP_ENTRY_ID_PREDICATE, soupEntryId + "") == 1;
+	            boolean success = DBHelper.INSTANCE.update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "") == 1;
 	            if (success) {
 	                if (handleTx) {
 	                    db.setTransactionSuccessful();
@@ -1027,6 +1228,27 @@ public class SmartStore  {
         public String getColumnType() {
             return columnType;
         }
+    }
+    
+    /**
+     * Enum for long operations types
+     */
+    public enum LongOperationType {
+    	alterSoup
+    }
+    
+    /**
+     * Enum for alter status
+     */
+    public enum AlterStatus {
+		initiated, 
+		oldIndexesDropped, 
+		oldSoupRemovedFromCache, 
+		oldSoupTableRenamed, 
+		registerSoupUsingTableNameCompleted, 
+		copyTableCompleted, 
+		reIndexSoupCompleted,
+		done
     }
 
     /**
