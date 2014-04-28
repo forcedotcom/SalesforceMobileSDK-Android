@@ -512,6 +512,42 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			safeClose(c);
 		}
 	}
+	
+	/**
+	 * Testing clear soup: create soup elements, clear soup and check database directly that there are in fact gone
+	 * @throws JSONException 
+	 */
+	public void testClearSoup() throws JSONException {
+		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1'}");
+		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2'}");
+		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3'}");
+		
+		JSONObject soupElt1Created = store.create(TEST_SOUP, soupElt1);
+		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
+		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
+		
+		store.clearSoup(TEST_SOUP);
+
+		JSONArray soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Created));
+		JSONArray soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created));
+		JSONArray soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created));
+
+		assertEquals("Should be empty", 0, soupElt1Retrieved.length());
+		assertEquals("Should be empty", 0, soupElt2Retrieved.length());
+		assertEquals("Should be empty", 0, soupElt3Retrieved.length());
+
+		// Check DB
+		Cursor c = null;
+		try {
+			String soupTableName = getSoupTableName(TEST_SOUP);
+			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
+			assertFalse("Expected no soup element", c.moveToFirst());
+		}
+		finally {
+			safeClose(c);
+		}
+	}
+	
 	/**
 	 * Test query when looking for all elements
 	 * @throws JSONException 

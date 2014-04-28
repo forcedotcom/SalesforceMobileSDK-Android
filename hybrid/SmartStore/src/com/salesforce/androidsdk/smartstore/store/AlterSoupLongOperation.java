@@ -55,16 +55,16 @@ public class AlterSoupLongOperation extends LongOperation {
      * Enum for alter steps
      */
     public enum AlterSoupStep {
-		initiated,
-		oldIndexesDropped,
-		oldSoupRemovedFromCache,
-		oldSoupTableRenamed,
-		registerSoupUsingTableNameCompleted,
-		copyTableCompleted,
-		reIndexSoupCompleted,
-        dropOldTable;
+		STARTING,
+		DROP_OLD_INDEXES,
+		REMOVE_OLD_SOUP_FROM_CACHE,
+		RENAME_OLD_SOUP_TABLE,
+		REGISTER_SOUP_USING_TABLE_NAME,
+		COPY_TABLE,
+		RE_INDEX_SOUP,
+        DROP_OLD_TABLE;
 
-        private static final AlterSoupStep LAST = dropOldTable;
+        private static final AlterSoupStep LAST = DROP_OLD_TABLE;
     }
 	
 	/**
@@ -89,7 +89,7 @@ public class AlterSoupLongOperation extends LongOperation {
     		// Create row in alter status table - auto commit
     		long rowId = trackAlterStatus(soupName, soupTableName, oldIndexSpecs, indexSpecs, reIndexData);
 	        
-	        alterSoup(AlterSoupStep.initiated, AlterSoupStep.LAST, soupName, indexSpecs, reIndexData, soupTableName, oldIndexSpecs, rowId);
+	        alterSoup(AlterSoupStep.STARTING, AlterSoupStep.LAST, soupName, indexSpecs, reIndexData, soupTableName, oldIndexSpecs, rowId);
     	}
 	}
 
@@ -131,29 +131,30 @@ public class AlterSoupLongOperation extends LongOperation {
 
 		
 		switch(afterStep) {
-		case initiated:
-			if (toStep == AlterSoupStep.initiated) break;
+		case STARTING:
 			dropOldIndexes(soupName, soupTableName, oldIndexSpecs, rowId);
-		case oldIndexesDropped:
-			if (toStep == AlterSoupStep.oldIndexesDropped) break;
+			if (toStep == AlterSoupStep.DROP_OLD_INDEXES) break;
+		case DROP_OLD_INDEXES:
 			removeOldSoupFromCache(soupName, rowId);
-		case oldSoupRemovedFromCache:
-			if (toStep == AlterSoupStep.oldSoupRemovedFromCache) break;
+			if (toStep == AlterSoupStep.REMOVE_OLD_SOUP_FROM_CACHE) break;
+		case REMOVE_OLD_SOUP_FROM_CACHE:
 			renameOldSoupTable(soupName, soupTableName, rowId, soupTableNameOld);
-		case oldSoupTableRenamed:
-			if (toStep == AlterSoupStep.oldSoupTableRenamed) break;
+			if (toStep == AlterSoupStep.RENAME_OLD_SOUP_TABLE) break;
+		case RENAME_OLD_SOUP_TABLE:
 			registerSoupUsingTableName(soupName, indexSpecs, soupTableName, rowId);
-		case registerSoupUsingTableNameCompleted:
-			if (toStep == AlterSoupStep.registerSoupUsingTableNameCompleted) break;
-		case copyTableCompleted:
-			if (toStep == AlterSoupStep.copyTableCompleted) break;
+			if (toStep == AlterSoupStep.REGISTER_SOUP_USING_TABLE_NAME) break;
+		case REGISTER_SOUP_USING_TABLE_NAME:
 			copyTable(soupName, oldIndexSpecs, rowId, soupTableNameOld);
-		case reIndexSoupCompleted:
-			if (toStep == AlterSoupStep.reIndexSoupCompleted) break;
+			if (toStep == AlterSoupStep.COPY_TABLE) break;
+		case COPY_TABLE:
 			reIndexSoup(soupName, reIndexData, soupTableName, oldIndexSpecs, rowId);
-		case dropOldTable:
-			if (toStep == AlterSoupStep.dropOldTable) break;
+			if (toStep == AlterSoupStep.RE_INDEX_SOUP) break;
+		case RE_INDEX_SOUP:
 			dropOldTable(soupTableNameOld, rowId, soupName);		
+			if (toStep == AlterSoupStep.DROP_OLD_TABLE) break;
+		case DROP_OLD_TABLE:
+			// Nothing left to do
+			break;
 		}
 	}
 
@@ -174,7 +175,7 @@ public class AlterSoupLongOperation extends LongOperation {
 		}
 	
 		// Update row in alter status table - auto commit
-		trackAlterStatus(rowId, soupName, AlterSoupStep.oldIndexesDropped);
+		trackAlterStatus(rowId, soupName, AlterSoupStep.DROP_OLD_INDEXES);
 	}
 
 
@@ -191,7 +192,7 @@ public class AlterSoupLongOperation extends LongOperation {
 		db.execSQL("ALTER TABLE " + soupTableName + " RENAME TO " + soupTableNameOld);
 	
 		// Update row in alter status table - auto commit
-		trackAlterStatus(rowId, soupName, AlterSoupStep.oldSoupTableRenamed);
+		trackAlterStatus(rowId, soupName, AlterSoupStep.RENAME_OLD_SOUP_TABLE);
 	}
 
 
@@ -205,7 +206,7 @@ public class AlterSoupLongOperation extends LongOperation {
 		DBHelper.INSTANCE.removeFromCache(soupName);
 	
 		// Update row in alter status table - auto commit
-		trackAlterStatus(rowId, soupName, AlterSoupStep.oldSoupRemovedFromCache);
+		trackAlterStatus(rowId, soupName, AlterSoupStep.REMOVE_OLD_SOUP_FROM_CACHE);
 	}
 
 
@@ -222,7 +223,7 @@ public class AlterSoupLongOperation extends LongOperation {
 		store.registerSoupUsingTableName(soupName, indexSpecs, soupTableName);
 	
 		// Update row in alter status table -auto commit
-		trackAlterStatus(rowId, soupName, AlterSoupStep.registerSoupUsingTableNameCompleted);
+		trackAlterStatus(rowId, soupName, AlterSoupStep.REGISTER_SOUP_USING_TABLE_NAME);
 	}
 
 
@@ -248,7 +249,7 @@ public class AlterSoupLongOperation extends LongOperation {
 			db.execSQL(computeCopyTableStatement(soupTableNameOld, soupTableNameNew, oldIndexSpecs, newIndexSpecs));
 	
 			// Update row in alter status table 
-			trackAlterStatus(rowId, soupName, AlterSoupStep.copyTableCompleted);
+			trackAlterStatus(rowId, soupName, AlterSoupStep.COPY_TABLE);
 		}
 		finally {
 			db.setTransactionSuccessful();
@@ -274,7 +275,7 @@ public class AlterSoupLongOperation extends LongOperation {
             db.beginTransaction();
             try {
                 store.reIndexSoup(soupTableName, IndexSpec.getChangedOrNewIndexSpecs(oldIndexSpecs, newIndexSpecs), false);
-                trackAlterStatus(rowId, soupName, AlterSoupStep.reIndexSoupCompleted);
+                trackAlterStatus(rowId, soupName, AlterSoupStep.RE_INDEX_SOUP);
             }
             finally {
                 db.setTransactionSuccessful();
@@ -295,7 +296,7 @@ public class AlterSoupLongOperation extends LongOperation {
 		db.execSQL("DROP TABLE " + soupTableNameOld);
 		
 		// Update status row - auto commit
-		trackAlterStatus(rowId, soupName, AlterSoupStep.dropOldTable);
+		trackAlterStatus(rowId, soupName, AlterSoupStep.DROP_OLD_TABLE);
 	}
 
 
@@ -310,7 +311,7 @@ public class AlterSoupLongOperation extends LongOperation {
 	 * @throws JSONException
 	 */
 	private long trackAlterStatus(String soupName, String soupTableName, IndexSpec[] oldIndexSpecs, IndexSpec[] newIndexSpecs, boolean reIndexData) throws JSONException {
-		AlterSoupStep status = AlterSoupStep.initiated;
+		AlterSoupStep status = AlterSoupStep.STARTING;
     	JSONObject details = new JSONObject();
     	details.put(SOUP_NAME, soupName);
     	details.put(SOUP_TABLE_NAME, soupTableName);
