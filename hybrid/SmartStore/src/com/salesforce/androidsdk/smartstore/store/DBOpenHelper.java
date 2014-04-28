@@ -134,7 +134,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	
 	@Override
 	public void onOpen(SQLiteDatabase db) {
-		(new SmartStore(db)).completeInterruptedLongOperations();
+		(new SmartStore(db)).resumeLongOperations();
 	}
 
 	/**
