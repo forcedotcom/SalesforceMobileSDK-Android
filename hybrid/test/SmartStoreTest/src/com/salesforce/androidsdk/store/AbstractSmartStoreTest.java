@@ -39,6 +39,7 @@ import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
+import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
@@ -993,5 +994,69 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		finally {
 			safeClose(c);
 		}
+	}
+
+
+	/**
+	 * Test reIndexSoup
+	 * @throws JSONException
+	 */
+	public void testReIndexSoup() throws JSONException {
+		IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("lastName", Type.string)};
+		
+		assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
+		store.registerSoup(OTHER_TEST_SOUP, indexSpecs);
+		assertTrue("Register soup call failed", store.hasSoup(OTHER_TEST_SOUP));
+
+		JSONObject soupElt1 = new JSONObject("{'lastName':'Doe', 'address':{'city':'San Francisco','street':'1 market'}}");
+		
+		store.create(OTHER_TEST_SOUP, soupElt1);
+
+		// Find by last name
+		assertRowCount(1, "lastName", "Doe");
+
+		// Find by city - error expected - field is not yet indexed
+		try {
+			assertRowCount(1, "address.city", "San Francisco");
+			fail("Expected smart sql exception");
+		}
+		catch (SmartSqlException e) {
+			// as expected
+		}
+
+		// Alter soup - add city + street
+		IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec("lastName", Type.string), new IndexSpec("address.city", Type.string), new IndexSpec("address.street", Type.string)};
+		store.alterSoup(OTHER_TEST_SOUP, indexSpecsNew, false);
+
+		// Find by city - no rows expected (we have not re-indexed yet)
+		assertRowCount(0, "address.city", "San Francisco");
+
+		// Re-index city
+		store.reIndexSoup(OTHER_TEST_SOUP, new String[] {"address.city"}, true);
+		
+		// Find by city
+		assertRowCount(1, "address.city", "San Francisco");
+
+		// Find by street - no rows expected (we have not re-indexed yet)
+		assertRowCount(0, "address.street", "1 market");
+
+		// Re-index street
+		store.reIndexSoup(OTHER_TEST_SOUP, new String[] {"address.street"}, true);
+		
+		// Find by street
+		assertRowCount(1, "address.street", "1 market");
+	}
+	
+	/**
+	 * Helper function for testReIndexSoup: count rows where field has value
+	 * @param expectedCount
+	 * @param field
+	 * @param value
+	 * @throws JSONException
+	 */
+	private void assertRowCount(int expectedCount, String field, String value) throws JSONException {
+		String smartSql = "SELECT count(*) FROM {" + OTHER_TEST_SOUP + "} WHERE {" + OTHER_TEST_SOUP + ":" + field + "} = '" + value + "'";
+		int actualCount = store.query(QuerySpec.buildSmartQuerySpec(smartSql, 1), 0).getJSONArray(0).getInt(0);
+		assertEquals("Should have found " + expectedCount + " rows", expectedCount, actualCount);
 	}
 }

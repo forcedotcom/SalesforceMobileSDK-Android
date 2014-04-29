@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.smartstore.store;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -147,7 +147,10 @@ public class AlterSoupLongOperation extends LongOperation {
 			copyTable(soupName, oldIndexSpecs, rowId, soupTableNameOld);
 			if (toStep == AlterSoupStep.COPY_TABLE) break;
 		case COPY_TABLE:
-			reIndexSoup(soupName, reIndexData, soupTableName, oldIndexSpecs, rowId);
+			// Re-index soup (if requested)
+			if (reIndexData) {
+				reIndexSoup(soupName, oldIndexSpecs, indexSpecs, rowId);
+			}
 			if (toStep == AlterSoupStep.RE_INDEX_SOUP) break;
 		case RE_INDEX_SOUP:
 			dropOldTable(soupTableNameOld, rowId, soupName);		
@@ -261,27 +264,33 @@ public class AlterSoupLongOperation extends LongOperation {
 	/**
 	 * Step 6: re-index soup for new indexes (optional step)
 	 * @param soupName
-	 * @param reIndexData
-	 * @param soupTableName
 	 * @param oldIndexSpecs
 	 * @param rowId
 	 */
-	private void reIndexSoup(String soupName, boolean reIndexData,
-			String soupTableName, IndexSpec[] oldIndexSpecs, long rowId) {
-		IndexSpec[] newIndexSpecs = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
-	
-		// Re-index soup (if requested)
-		if (reIndexData) {
-            db.beginTransaction();
-            try {
-                store.reIndexSoup(soupTableName, IndexSpec.getChangedOrNewIndexSpecs(oldIndexSpecs, newIndexSpecs), false);
-                trackAlterStatus(rowId, soupName, AlterSoupStep.RE_INDEX_SOUP);
-            }
-            finally {
-                db.setTransactionSuccessful();
-                db.endTransaction();
-            }
+	private void reIndexSoup(String soupName, IndexSpec[] oldIndexSpecs, IndexSpec[] newIndexSpecs, long rowId) {
+		// Putting path--type of old index specs in a set
+		Set<String> oldPathTypeSet = new HashSet<String>();
+		for (IndexSpec oldIndexSpec : oldIndexSpecs) {
+			oldPathTypeSet.add(oldIndexSpec.getPathType());
 		}
+		
+		// Filtering out the ones that do not have their path--type in oldPathTypeSet
+		List<String> indexPaths = new ArrayList<String>();
+		for (IndexSpec indexSpec : newIndexSpecs) {
+			if (!oldPathTypeSet.contains(indexSpec.getPathType())) {
+				indexPaths.add(indexSpec.path);
+			}
+		}
+		
+		db.beginTransaction();
+        try {
+            store.reIndexSoup(soupName, indexPaths.toArray(new String[0]), false);
+            trackAlterStatus(rowId, soupName, AlterSoupStep.RE_INDEX_SOUP);
+        }
+        finally {
+            db.setTransactionSuccessful();
+            db.endTransaction();
+        }
 	}
 
 
@@ -362,8 +371,8 @@ public class AlterSoupLongOperation extends LongOperation {
 	 * @return insert statement to copy data from soup old backing table to soup new backing table
 	 */
 	private String computeCopyTableStatement(String soupTableNameOld, String soupTableNameNew, IndexSpec[] oldIndexSpecs, IndexSpec[] newIndexSpecs) {
-		Map<String, IndexSpec> mapOldSpecs = mapForIndexSpecs(oldIndexSpecs);
-		Map<String, IndexSpec> mapNewSpecs = mapForIndexSpecs(newIndexSpecs);
+		Map<String, IndexSpec> mapOldSpecs = IndexSpec.mapForIndexSpecs(oldIndexSpecs);
+		Map<String, IndexSpec> mapNewSpecs = IndexSpec.mapForIndexSpecs(newIndexSpecs);
 
 		// Figuring out paths we are keeping
 		Set<String> oldPaths = mapOldSpecs.keySet();
@@ -395,18 +404,4 @@ public class AlterSoupLongOperation extends LongOperation {
 							soupTableNameNew, TextUtils.join(",", newColumns),
 							TextUtils.join(",", oldColumns), soupTableNameOld);
 	}
-	
-	/**
-	 * Helper method
-	 * @param indexSpecs
-	 * @return map index spec path to index spec
-	 */
-	private Map<String, IndexSpec> mapForIndexSpecs(IndexSpec[] indexSpecs) {
-		Map<String, IndexSpec> map = new HashMap<String, IndexSpec>();
-		for (IndexSpec indexSpec : indexSpecs) {
-			map.put(indexSpec.path, indexSpec);
-		}
-		return map;
-	}
-		
 }

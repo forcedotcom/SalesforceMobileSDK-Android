@@ -73,6 +73,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	private static final String ORDER = "order";
 	static final String PAGE_SIZE = "pageSize";
 	private static final String PATH = "path";
+	private static final String PATHS = "paths";
 	private static final String QUERY_SPEC = "querySpec";
 	private static final String QUERY_TYPE = "queryType";
 	private static final String SOUP_NAME = "soupName";
@@ -505,16 +506,15 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
-		JSONArray indexesJson = arg0.getJSONArray(INDEXES);
-		for (int i=0; i<indexesJson.length(); i++) {
-			JSONObject indexJson = indexesJson.getJSONObject(i);
-			indexSpecs.add(new IndexSpec(indexJson.getString(PATH), SmartStore.Type.valueOf(indexJson.getString(TYPE))));
+		List<String> indexPaths = new ArrayList<String>();
+		JSONArray indexPathsJson = arg0.getJSONArray(PATHS);
+		for (int i=0; i<indexPathsJson.length(); i++) {
+			indexPaths.add(indexPathsJson.getString(i));
 		}
 
 		// Run register
 		SmartStore smartStore = getSmartStore();
-		smartStore.reIndexSoup(soupName, indexSpecs.toArray(new IndexSpec[0]), true);
+		smartStore.reIndexSoup(soupName, indexPaths.toArray(new String[0]), true);
 		callbackContext.success(soupName);
 	}	
 	

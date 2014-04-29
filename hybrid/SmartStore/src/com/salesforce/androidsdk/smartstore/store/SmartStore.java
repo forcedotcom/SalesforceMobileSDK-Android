@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.smartstore.store;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
@@ -361,51 +362,69 @@ public class SmartStore  {
 	}
 
 	/**
-	 * Re-index all soup elements for passed indexSpecs
+	 * Re-index all soup elements for passed indexPaths
+	 * NB: only indexPath that have IndexSpec on them will be indexed
 	 * 
-	 * @param soupTableName
-	 * @param indexSpecs
+	 * @param soupName
+	 * @param indexPaths
 	 * @param handleTx
 	 */
-	public void reIndexSoup(String soupTableName, IndexSpec[] indexSpecs, boolean handleTx) {
-		if (indexSpecs.length == 0) {
-			// Nothing to do
-			return;
-		}
-		
-		if (handleTx) {
-			db.beginTransaction();
-		}
-		Cursor cursor = null;
-		try {
-		    cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {ID_COL, SOUP_COL}, null, null, null);
+	public void reIndexSoup(String soupName, String[] indexPaths, boolean handleTx) {
+		synchronized(SmartStore.class) {
+	        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 
-		    if (cursor.moveToFirst()) {
-		        do {
-		        	String soupEntryId = cursor.getString(0);
-		        	String soupRaw = cursor.getString(1);
-		        	try {
-		            	JSONObject soupElt = new JSONObject(soupRaw); 
-		            	ContentValues contentValues = new ContentValues();
-		            	for (IndexSpec indexSpec : indexSpecs) {
-			                projectIndexedPaths(soupElt, contentValues, indexSpec);
-			            }
-		                DBHelper.INSTANCE.update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "");
-		        	}
-		        	catch (JSONException e) {
-		        		Log.w("SmartStore.alterSoup", "Could not parse soup element " + soupEntryId, e);
-		        		// Should not have happen - just keep going 
-		        	}
-		        }
-		        while (cursor.moveToNext());
-		    }
-		}
-		finally {
-			if (handleTx) {
-				db.setTransactionSuccessful();
-				db.endTransaction();
+	        // Getting index specs from indexPaths
+			Map<String, IndexSpec> mapAllSpecs = IndexSpec.mapForIndexSpecs(getSoupIndexSpecs(soupName));
+			List<IndexSpec> indexSpecsList = new ArrayList<IndexSpec>();
+			for (String indexPath : indexPaths) {
+				if (mapAllSpecs.containsKey(indexPath)) {
+					indexSpecsList.add(mapAllSpecs.get(indexPath));
+				}
+				else {
+					Log.w("SmartStore.reIndexSoup", "Cannot re-index " + indexPath + " - it does not have an index");
+				}
 			}
-		    safeClose(cursor);
+			IndexSpec[] indexSpecs = indexSpecsList.toArray(new IndexSpec[0]);
+			if (indexSpecs.length == 0) {
+				// Nothing to do
+				return;
+			}
+			
+			if (handleTx) {
+				db.beginTransaction();
+			}
+			Cursor cursor = null;
+			try {
+			    cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {ID_COL, SOUP_COL}, null, null, null);
+	
+			    if (cursor.moveToFirst()) {
+			        do {
+			        	String soupEntryId = cursor.getString(0);
+			        	String soupRaw = cursor.getString(1);
+			        	try {
+			            	JSONObject soupElt = new JSONObject(soupRaw); 
+			            	ContentValues contentValues = new ContentValues();
+			            	for (IndexSpec indexSpec : indexSpecs) {
+				                projectIndexedPaths(soupElt, contentValues, indexSpec);
+				            }
+			                DBHelper.INSTANCE.update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "");
+			        	}
+			        	catch (JSONException e) {
+			        		Log.w("SmartStore.alterSoup", "Could not parse soup element " + soupEntryId, e);
+			        		// Should not have happen - just keep going 
+			        	}
+			        }
+			        while (cursor.moveToNext());
+			    }
+			}
+			finally {
+				if (handleTx) {
+					db.setTransactionSuccessful();
+					db.endTransaction();
+				}
+			    safeClose(cursor);
+			}
 		}
 	}
 	
