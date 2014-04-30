@@ -317,6 +317,22 @@ public class SmartStore  {
 	 */
 	public void resumeLongOperations() {
 		synchronized(SmartStore.class) {
+			for (LongOperation longOperation :  getLongOperations()) {
+				try {
+					longOperation.run();
+				} catch (Exception e) {
+	        		Log.e("SmartStore.resumeLongOperations", "Unexpected error", e);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * @return unfinished long operations
+	 */
+	public LongOperation[] getLongOperations() {
+		List<LongOperation> longOperations = new ArrayList<LongOperation>();
+		synchronized(SmartStore.class) {
 			Cursor cursor = null;
 			try {
 				cursor = DBHelper.INSTANCE.query(db, LONG_OPERATIONS_STATUS_TABLE, new String[] {ID_COL, TYPE_COL, DETAILS_COL, STATUS_COL}, null, null, null);
@@ -329,11 +345,10 @@ public class SmartStore  {
 				        	JSONObject details = new JSONObject(cursor.getString(2));
 				        	String statusStr = cursor.getString(3);
 
-				        	LongOperation operation = operationType.getOperation(this);
-				        	operation.resume(rowId, details, statusStr, null /* all remaining */);
+				        	longOperations.add(operationType.getOperation(this, rowId, details, statusStr));
 			        	}
 			        	catch (Exception e) {
-			        		Log.e("SmartStore.completeInterruptedOperations", "Unexpected error", e);
+			        		Log.e("SmartStore.getLongOperations", "Unexpected error", e);
 			        	}
 			        }
 			        while (cursor.moveToNext());
@@ -343,22 +358,21 @@ public class SmartStore  {
 			    safeClose(cursor);
 			}
 		}
+		return longOperations.toArray(new LongOperation[0]);
 	}
     
 	/**
 	 * Alter soup
 	 * 
 	 * @param soupName
-	 * @param array of index specs
+	 * @param indexSpecs array of index specs
 	 * @param reIndexData
 	 * @throws JSONException 
 	 */
 	public void alterSoup(String soupName, IndexSpec[] indexSpecs,
 			boolean reIndexData) throws JSONException {
-		
-		AlterSoupLongOperation operation = new AlterSoupLongOperation();
-		operation.setSmartStore(this);
-		operation.alterSoup(soupName, indexSpecs, reIndexData);
+		AlterSoupLongOperation operation = new AlterSoupLongOperation(this, soupName, indexSpecs, reIndexData);
+		operation.run();
 	}
 
 	/**

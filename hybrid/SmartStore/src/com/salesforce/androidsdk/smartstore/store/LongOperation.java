@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
-import net.sqlcipher.database.SQLiteDatabase;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -45,33 +43,33 @@ public abstract class LongOperation {
     		this.operationClass = operationClass;
     	}
 		
-		public LongOperation getOperation(SmartStore store) throws IllegalAccessException, InstantiationException {
+		public LongOperation getOperation(SmartStore store, long rowId, JSONObject details, String status) throws IllegalAccessException, InstantiationException, JSONException {
 			LongOperation newInstance;
 			newInstance = operationClass.newInstance();
-			newInstance.setSmartStore(store);
+			newInstance.initFromDbRow(store, rowId, details, status);
 			return newInstance;
 		}
     }
 
-	protected SmartStore store;
-	protected SQLiteDatabase db;
-
 	/**
-	 * @param db
-	 */
-	protected void setSmartStore(SmartStore store) {
-		this.store = store;
-		this.db = store.getDatabase();
-	}
-
-	/**
-	 * Resume long operation
-	 * @param rowId in long_operations
+	 * @param store
+	 * @param rowId
 	 * @param details
-	 * @param fromStepStr
-	 * @param toStepStr (used by tests - null means all remaining)
+	 * @param statusStr
 	 * @throws JSONException
 	 */
-	protected abstract void resume(long rowId, JSONObject details, String fromStepStr, String toStepStr) throws JSONException; 
+	protected abstract void initFromDbRow(SmartStore store, long rowId, JSONObject details, String statusStr) throws JSONException;
+
+	/**
+	 * Run long operation
+	 */
+	public abstract void run(); 
+	
+	
+	/**
+	 * @return details as json (to be store in long operations table)
+	 * @throws JSONException
+	 */
+	public abstract JSONObject getDetails() throws JSONException;
 	
 }

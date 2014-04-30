@@ -195,7 +195,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      * TEST: Upsert MAX_NUMBER_ENTRIES entries into a soup and retrieve them back
      * @throws JSONException 
      */
-    public void testAddAndRetrieveManyEntries() throws JSONException {
+	public void testAddAndRetrieveManyEntries() throws JSONException {
     	Log.i("SmartStoreLoadTest", "In testAddAndRetrieveManyEntries");
 
     	List<Long> soupEntryIds = new ArrayList<Long>();
