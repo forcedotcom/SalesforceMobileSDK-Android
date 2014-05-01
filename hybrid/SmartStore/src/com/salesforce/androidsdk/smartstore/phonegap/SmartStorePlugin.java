@@ -73,6 +73,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	private static final String ORDER = "order";
 	static final String PAGE_SIZE = "pageSize";
 	private static final String PATH = "path";
+	private static final String PATHS = "paths";
 	private static final String QUERY_SPEC = "querySpec";
 	private static final String QUERY_TYPE = "queryType";
 	private static final String SOUP_NAME = "soupName";
@@ -88,12 +89,14 @@ public class SmartStorePlugin extends ForcePlugin {
 	 */
 	enum Action {
 		pgAlterSoup,
+		pgClearSoup,
 		pgCloseCursor,
 		pgGetDatabaseSize,
 		pgGetSoupIndexSpecs,
 		pgMoveCursorToPageIndex,
 		pgQuerySoup,
 		pgRegisterSoup,
+		pgReIndexSoup,
 		pgRemoveFromSoup,
 		pgRemoveSoup,
 		pgRetrieveSoupEntries,
@@ -124,13 +127,15 @@ public class SmartStorePlugin extends ForcePlugin {
 				synchronized(SmartStorePlugin.class) {
 	        		try {
 		        		switch(action) {
-		        		  case pgAlterSoup:             alterSoup(args, callbackContext); break;  
+		        		  case pgAlterSoup:             alterSoup(args, callbackContext); break;
+		        		  case pgClearSoup:				clearSoup(args, callbackContext); break;
 		                  case pgCloseCursor:           closeCursor(args, callbackContext); break;
 		                  case pgGetDatabaseSize:       getDatabaseSize(args, callbackContext); break;
 		                  case pgGetSoupIndexSpecs:     getSoupIndexSpecs(args, callbackContext); break;
 		                  case pgMoveCursorToPageIndex: moveCursorToPageIndex(args, callbackContext); break;
 		                  case pgQuerySoup:             querySoup(args, callbackContext); break;
 		                  case pgRegisterSoup:          registerSoup(args, callbackContext); break;
+		                  case pgReIndexSoup:			reIndexSoup(args, callbackContext); break;
 		                  case pgRemoveFromSoup:        removeFromSoup(args, callbackContext); break;
 		                  case pgRemoveSoup:            removeSoup(args, callbackContext); break;
 		                  case pgRetrieveSoupEntries:   retrieveSoupEntries(args, callbackContext); break;
@@ -434,7 +439,24 @@ public class SmartStorePlugin extends ForcePlugin {
 		smartStore.dropSoup(soupName);
 		callbackContext.success();
 	}
-	
+
+	/**
+	 * Native implementation of pgClearSoup
+	 * @param args
+	 * @param callbackContext
+	 * @return
+	 * @throws JSONException 
+	 */
+	private void clearSoup(JSONArray args, CallbackContext callbackContext) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		String soupName = arg0.getString(SOUP_NAME);
+		
+		// Run clear
+		SmartStore smartStore = getSmartStore();
+		smartStore.clearSoup(soupName);
+		callbackContext.success();
+	}
 	
 	/**
 	 * Native implementation of pgGetDatabaseSize
@@ -472,6 +494,30 @@ public class SmartStorePlugin extends ForcePlugin {
 		smartStore.alterSoup(soupName, indexSpecs.toArray(new IndexSpec[0]), reIndexData);
 		callbackContext.success(soupName);
 	}	
+
+	/**
+	 * Native implementation of pgReIndexSoup
+	 * @param args
+	 * @param callbackContext
+	 * @return
+	 * @throws JSONException 
+	 */
+	private void reIndexSoup(JSONArray args, CallbackContext callbackContext) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		String soupName = arg0.getString(SOUP_NAME);
+		List<String> indexPaths = new ArrayList<String>();
+		JSONArray indexPathsJson = arg0.getJSONArray(PATHS);
+		for (int i=0; i<indexPathsJson.length(); i++) {
+			indexPaths.add(indexPathsJson.getString(i));
+		}
+
+		// Run register
+		SmartStore smartStore = getSmartStore();
+		smartStore.reIndexSoup(soupName, indexPaths.toArray(new String[0]), true);
+		callbackContext.success(soupName);
+	}	
+	
 	
 	/**
 	 * Native implementation of pgGetSoupIndexSpecs
