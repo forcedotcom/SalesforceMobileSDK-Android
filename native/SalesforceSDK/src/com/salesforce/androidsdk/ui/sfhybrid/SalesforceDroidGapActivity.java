@@ -42,7 +42,9 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
+import android.annotation.TargetApi;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
@@ -218,12 +220,18 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     /**
      * Restarts the activity if the user has been switched.
      */
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	private void restartIfUserSwitched() {
 		if (client != null) {
             try {
     			RestClient currentClient = clientManager.peekRestClient();
     			if (currentClient != null && !currentClient.getClientInfo().userId.equals(client.getClientInfo().userId)) {
-    				this.recreate();
+    		        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.HONEYCOMB) {
+        				this.recreate();
+    		        } else {
+    		        	this.onDestroy();
+    		        	this.onCreate(null);
+    		        }
     			}
     		} catch (AccountInfoNotFoundException e) {
             	Log.i("SalesforceDroidGapActivity.restartIfUserSwitched", "No user account found");
