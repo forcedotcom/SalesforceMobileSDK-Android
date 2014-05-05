@@ -137,9 +137,9 @@ public class SOSLBuilder {
         String result = null;
         if (path != null) {
             if (path.endsWith("/")) {
-                result = Uri.encode(String.format("%ssearch/?q=%s", path, buildAndEncode()));
+                result = Uri.encode(String.format("%ssearch/?q=%s", path, build()));
             } else {
-                result = Uri.encode(String.format("%s/search/?q=%s", path, buildAndEncode()));
+                result = Uri.encode(String.format("%s/search/?q=%s", path, build()));
             }
         }
         return result;
@@ -155,9 +155,9 @@ public class SOSLBuilder {
         String result = null;
         if (path != null) {
             if (path.endsWith("/")) {
-                result = Uri.encode(String.format("%ssearch/?q=%s", path, build()));
+                result = String.format("%ssearch/?q=%s", path, build());
             } else {
-                result = Uri.encode(String.format("%s/search/?q=%s", path, build()));
+                result = String.format("%s/search/?q=%s", path, build());
             }
         }
         return result;
@@ -203,7 +203,7 @@ public class SOSLBuilder {
             query.append(" limit ");
             query.append(String.format("%d", limit));
         }
-        return Uri.encode(query.toString());
+        return query.toString();
     }
 
     private SOSLBuilder searchTerm(String searchTerm) {

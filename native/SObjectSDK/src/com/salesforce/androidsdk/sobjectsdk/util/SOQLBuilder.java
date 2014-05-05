@@ -167,9 +167,9 @@ public class SOQLBuilder {
         String result = null;
         if (path != null) {
             if (path.endsWith("/")) {
-                result = Uri.encode(String.format("%squery/?q=%s", path, buildAndEncode()));
+                result = Uri.encode(String.format("%squery/?q=%s", path, build()));
             } else {
-                result = Uri.encode(String.format("%s/query/?q=%s", path, buildAndEncode()));
+                result = Uri.encode(String.format("%s/query/?q=%s", path, build()));
             }
         }
         return result;
