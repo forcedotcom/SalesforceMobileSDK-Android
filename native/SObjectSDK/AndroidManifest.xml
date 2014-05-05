@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.salesforce.androidsdk.sobjectsdk"
+    android:versionCode="35"
+    android:versionName="2.3.0.unstable">
+
+    <uses-sdk android:minSdkVersion="8" />
+
+    <application />
+</manifest>
