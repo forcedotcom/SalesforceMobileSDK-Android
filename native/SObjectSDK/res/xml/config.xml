@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<widget xmlns     = "http://www.w3.org/ns/widgets"
+    id        = "com.salesforce.androidsdk"
+    version   = "2.3.0">
+
+    <access origin="http://127.0.0.1*"/> <!-- allow local pages -->
+    <access origin="https://*.force.com" />
+    <access origin="https://*.salesforce.com" />
+
+    <preference name="loglevel" level="DEBUG"/>
+    <preference name="classicRender" value="true" />
+    
+    <feature name="App"><param name="android-package" value="org.apache.cordova.App"/></feature>
+    <feature name="com.salesforce.oauth"><param name="android-package" value="com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin"/></feature>
+    <feature name="com.salesforce.sdkinfo"><param name="android-package" value="com.salesforce.androidsdk.phonegap.SDKInfoPlugin"/></feature>
+    <feature name="com.salesforce.sfaccountmanager"><param name="android-package" value="com.salesforce.androidsdk.phonegap.SFAccountManagerPlugin"/></feature>
+    <feature name="com.salesforce.smartstore"><param name="android-package" value="com.salesforce.androidsdk.smartstore.phonegap.SmartStorePlugin"/></feature>
+</widget>
