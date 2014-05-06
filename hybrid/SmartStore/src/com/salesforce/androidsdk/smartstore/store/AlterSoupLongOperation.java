@@ -259,7 +259,6 @@ public class AlterSoupLongOperation extends LongOperation {
 
 	/**
 	 * Step 3: remove old soup from cache since we about to register a soup with the same name
-	 * @param rowId
 	 */
 	protected void removeOldSoupFromCache() {
 		// Remove soup from cache
@@ -272,7 +271,6 @@ public class AlterSoupLongOperation extends LongOperation {
 
 	/**
 	 * Step 4: register soup with new indexes
-	 * @param rowId
 	 */
 	protected void registerSoupUsingTableName() {
 		// Create new table for soup
@@ -285,7 +283,6 @@ public class AlterSoupLongOperation extends LongOperation {
 
 	/**
 	 * Step 5: copy data from old soup table to new soup table
-	 * @param rowId
 	 */
 	protected void copyTable() {
 		db.beginTransaction();
@@ -308,7 +305,6 @@ public class AlterSoupLongOperation extends LongOperation {
 
 	/**
 	 * Step 6: re-index soup for new indexes (optional step)
-	 * @param rowId
 	 */
 	protected void reIndexSoup() {
 		// Putting path--type of old index specs in a set
@@ -339,7 +335,6 @@ public class AlterSoupLongOperation extends LongOperation {
 
 	/**
 	 * Step 7: drop old soup table
-	 * @param rowId
 	 */
 	protected void dropOldTable() {
 		// Drop old table
