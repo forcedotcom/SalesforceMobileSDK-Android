@@ -64,9 +64,8 @@ public class AlterSoupLongOperation extends LongOperation {
      */
     public enum AlterSoupStep {
 		STARTING,
-		DROP_OLD_INDEXES,
-		REMOVE_OLD_SOUP_FROM_CACHE,
 		RENAME_OLD_SOUP_TABLE,
+		DROP_OLD_INDEXES,
 		REGISTER_SOUP_USING_TABLE_NAME,
 		COPY_TABLE,
 		RE_INDEX_SOUP,
@@ -201,15 +200,12 @@ public class AlterSoupLongOperation extends LongOperation {
 		
 		switch(afterStep) {
 		case STARTING:
-			dropOldIndexes();
-			if (toStep == AlterSoupStep.DROP_OLD_INDEXES) break;
-		case DROP_OLD_INDEXES:
-			removeOldSoupFromCache();
-			if (toStep == AlterSoupStep.REMOVE_OLD_SOUP_FROM_CACHE) break;
-		case REMOVE_OLD_SOUP_FROM_CACHE:
 			renameOldSoupTable();
 			if (toStep == AlterSoupStep.RENAME_OLD_SOUP_TABLE) break;
 		case RENAME_OLD_SOUP_TABLE:
+			dropOldIndexes();
+			if (toStep == AlterSoupStep.DROP_OLD_INDEXES) break;
+		case DROP_OLD_INDEXES:
 			registerSoupUsingTableName();
 			if (toStep == AlterSoupStep.REGISTER_SOUP_USING_TABLE_NAME) break;
 		case REGISTER_SOUP_USING_TABLE_NAME:
@@ -231,22 +227,7 @@ public class AlterSoupLongOperation extends LongOperation {
 
 
 	/**
-	 * Step 1: drop old indexes since we are about to create indexes with the same names
-	 */
-	protected void dropOldIndexes() {
-		// Removing db indexes on table (otherwise registerSoup will fail to create indexes with the same name)
-		for (int i=0; i<oldIndexSpecs.length; i++) {
-		    String indexName = soupTableName + "_" + i + "_idx";
-		    db.execSQL("DROP INDEX "  + indexName);
-		}
-	
-		// Update row in alter status table - auto commit
-		updateLongOperationDbRow(AlterSoupStep.DROP_OLD_INDEXES);
-	}
-
-
-	/**
-	 * Step 2: rename old table
+	 * Step 1: rename old table
 	 */
 	protected void renameOldSoupTable() {
 		// Rename backing table for soup
@@ -256,21 +237,35 @@ public class AlterSoupLongOperation extends LongOperation {
 		updateLongOperationDbRow(AlterSoupStep.RENAME_OLD_SOUP_TABLE);
 	}
 
-
 	/**
-	 * Step 3: remove old soup from cache since we about to register a soup with the same name
+	 * Step 2: drop old indexes / remove entries in soup_index_map / cleaanup cache
 	 */
-	protected void removeOldSoupFromCache() {
-		// Remove soup from cache
-		DBHelper.INSTANCE.removeFromCache(soupName);
-	
-		// Update row in alter status table - auto commit
-		updateLongOperationDbRow(AlterSoupStep.REMOVE_OLD_SOUP_FROM_CACHE);
+	protected void dropOldIndexes() {
+		// Removing db indexes on table (otherwise registerSoup will fail to create indexes with the same name)
+		for (int i=0; i<oldIndexSpecs.length; i++) {
+		    String indexName = soupTableName + "_" + i + "_idx";
+		    db.execSQL("DROP INDEX IF EXISTS "  + indexName);
+		}
+
+        try {
+            db.beginTransaction();
+            DBHelper.INSTANCE.delete(db, SmartStore.SOUP_INDEX_MAP_TABLE, SmartStore.SOUP_NAME_PREDICATE, soupName);
+
+            // Remove from cache
+            DBHelper.INSTANCE.removeFromCache(soupName);
+
+    		// Update row in alter status table - auto commit
+    		updateLongOperationDbRow(AlterSoupStep.DROP_OLD_INDEXES);
+
+            db.setTransactionSuccessful();
+        }
+        finally {
+            db.endTransaction();
+        }
 	}
 
-
 	/**
-	 * Step 4: register soup with new indexes
+	 * Step 3: register soup with new indexes
 	 */
 	protected void registerSoupUsingTableName() {
 		// Create new table for soup
@@ -282,7 +277,7 @@ public class AlterSoupLongOperation extends LongOperation {
 
 
 	/**
-	 * Step 5: copy data from old soup table to new soup table
+	 * Step 4: copy data from old soup table to new soup table
 	 */
 	protected void copyTable() {
 		db.beginTransaction();
@@ -304,7 +299,7 @@ public class AlterSoupLongOperation extends LongOperation {
 
 
 	/**
-	 * Step 6: re-index soup for new indexes (optional step)
+	 * Step 5: re-index soup for new indexes (optional step)
 	 */
 	protected void reIndexSoup() {
 		// Putting path--type of old index specs in a set
@@ -334,7 +329,7 @@ public class AlterSoupLongOperation extends LongOperation {
 
 
 	/**
-	 * Step 7: drop old soup table
+	 * Step 6: drop old soup table
 	 */
 	protected void dropOldTable() {
 		// Drop old table
