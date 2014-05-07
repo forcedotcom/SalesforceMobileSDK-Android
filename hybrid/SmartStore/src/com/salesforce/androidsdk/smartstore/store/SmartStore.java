@@ -443,7 +443,7 @@ public class SmartStore  {
 	}
 	
 	/**
-	 * Return indexSpecs of soup
+	 * Return indexSpecs of soup or [] if soup does not exist
 	 * 
 	 * @param soupName
 	 * @return
@@ -451,7 +451,7 @@ public class SmartStore  {
 	public IndexSpec[] getSoupIndexSpecs(String soupName) {
     	synchronized(SmartStore.class) {
 	        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
-	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
+	        if (soupTableName == null) return new IndexSpec[0];
 	        return DBHelper.INSTANCE.getIndexSpecs(db, soupName);
     	}
 	}
