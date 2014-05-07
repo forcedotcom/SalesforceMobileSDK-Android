@@ -1064,27 +1064,19 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 	}
 
 	/**
-	 * Test alter soup interrupted and resumed after step DROP_OLD_INDEXES
-	 * @throws JSONException
-	 */
-	public void testAlterSoupResumeAfterDropOldIndexed() throws JSONException {
-		tryAlterSoupInterruptResume(AlterSoupStep.DROP_OLD_INDEXES);
-	}
-
-	/**
-	 * Test alter soup interrupted and resumed after step REMOVE_OLD_SOUP_FROM_CACHE
-	 * @throws JSONException
-	 */
-	public void testAlterSoupResumeAfterRemoveOldSoupFromCache() throws JSONException {
-		tryAlterSoupInterruptResume(AlterSoupStep.REMOVE_OLD_SOUP_FROM_CACHE);
-	}
-
-	/**
 	 * Test alter soup interrupted and resumed after step RENAME_OLD_SOUP_TABLE
 	 * @throws JSONException
 	 */
 	public void testAlterSoupResumeAfterRenameOldSoupTable() throws JSONException {
 		tryAlterSoupInterruptResume(AlterSoupStep.RENAME_OLD_SOUP_TABLE);
+	}
+
+	/**
+	 * Test alter soup interrupted and resumed after step DROP_OLD_INDEXES
+	 * @throws JSONException
+	 */
+	public void testAlterSoupResumeAfterDropOldIndexed() throws JSONException {
+		tryAlterSoupInterruptResume(AlterSoupStep.DROP_OLD_INDEXES);
 	}
 
 	/**
@@ -1158,8 +1150,9 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			// Check last step completed
 			assertEquals("Wrong step", toStep, ((AlterSoupLongOperation) operations[0]).getLastStepCompleted());
 			
-			// Finish alter
-			operations[0].run();
+			// Simulate restart (clear cache and call resumeLongOperations)
+			DBHelper.INSTANCE.clearMemoryCache();
+			store.resumeLongOperations();
 			
 			// Check index specs
 			checkIndexSpecs(indexSpecsNew);
