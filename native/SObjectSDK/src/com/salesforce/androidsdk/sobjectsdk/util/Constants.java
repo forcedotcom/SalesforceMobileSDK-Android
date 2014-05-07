@@ -69,22 +69,5 @@ public class Constants {
     public static final String KNOWLEDGE_ARTICLE_VERSION = "KnowledgeArticleVersion";
     public static final String NOTE = "Note";
 
-    public static final String FEED_ITEM_KEY_PREFIX = "0D5";
     public static final String RECENTLY_VIEWED = "RecentlyViewed";
-
-    /**
-     * Group constants.
-     */
-    public static final String CAN_HAVE_GUESTS = "CanHaveGuests";
-    public static final String CAN_HAVE_CHATTER_GUESTS = "canHaveChatterGuests";
-
-    /**
-     * User constants.
-     */
-    public static final String CHATTER_GUEST = "ChatterGuest";
-    public static final String CHATTER_EXTERNAL_USER = "Chatter External User";
-    public static final String CSN_ONLY = "CsnOnly";
-    public static final String USER_TYPE = "UserType";
-    public static final String USER_TYPE_ALTERNATE = "userType";
-    public static final String PROFILE = "Profile";
 }

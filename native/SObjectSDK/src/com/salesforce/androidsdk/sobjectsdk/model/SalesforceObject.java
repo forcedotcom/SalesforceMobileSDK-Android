@@ -42,7 +42,6 @@ public class SalesforceObject {
     private String objectType;
     private String name;
     private String objectId;
-    private final boolean isExternal;
     private final JSONObject rawData;
 
     /**
@@ -68,7 +67,6 @@ public class SalesforceObject {
             }
         }
         rawData = object;
-        isExternal = isObjectExternal();
     }
 
     /**
@@ -125,17 +123,6 @@ public class SalesforceObject {
         return rawData;
     }
 
-    /**
-     * Returns if the object is external or not. This is applicable
-     * only to the user and group object types. For other types, this
-     * method will always return false.
-     *
-     * @return True - if external, False - otherwise.
-     */
-    public boolean isExternal() {
-        return isExternal;
-    }
-
     @Override
     public String toString() {
         return String.format("name: [%s], objectId: [%s], type: [%s], rawData: " +
@@ -165,38 +152,5 @@ public class SalesforceObject {
         int result = objectId.hashCode();
         result ^= rawData.hashCode() + result * 37;
         return result;
-    }
-
-    private boolean isObjectExternal() {
-        boolean isObjExternal = false;
-        if (objectType != null && rawData != null) {
-            if (!Constants.USER.equals(objectType)
-                    && !Constants.GROUP.equals(objectType)) {
-                return isObjExternal;
-            }
-            if (Constants.USER.equals(objectType)) {
-                String userType = rawData.optString(Constants.USER_TYPE);
-                if (userType == null || Constants.EMPTY_STRING.equals(userType)) {
-                    userType = rawData.optString(Constants.USER_TYPE_ALTERNATE);
-                }
-                if (userType != null && Constants.CSN_ONLY.equals(userType)) {
-                    final JSONObject profile = rawData.optJSONObject(Constants.PROFILE);
-                    if (profile != null) {
-                        final String profileName = profile.optString(Constants.NAME);
-                        if (profileName != null && Constants.CHATTER_EXTERNAL_USER.equals(profileName)) {
-                            isObjExternal = true;
-                        }
-                    }
-                } else if (Constants.CHATTER_GUEST.equals(userType)) {
-                    isObjExternal = true;
-                }
-            } else if (Constants.GROUP.equals(objectType)) {
-                isObjExternal = rawData.optBoolean(Constants.CAN_HAVE_GUESTS);
-                if (!isObjExternal) {
-                    isObjExternal = rawData.optBoolean(Constants.CAN_HAVE_CHATTER_GUESTS);
-                }
-            }
-        }
-        return isObjExternal;
     }
 }
