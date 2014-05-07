@@ -102,6 +102,17 @@ public class SOSLReturningBuilder {
     }
 
     /**
+     * Adds the 'withNetwork' clause.
+     *
+     * @param networkId Network ID.
+     * @return Instance with 'withNetwork' clause.
+     */
+    public SOSLReturningBuilder withNetwork(String networkId) {
+        properties.put("withNetwork", networkId);
+        return this;
+    }
+
+    /**
      * Builds the query.
      *
      * @return Query.
@@ -126,6 +137,11 @@ public class SOSLReturningBuilder {
             if (orderBy != null && orderBy.trim().length() > 0) {
                 query.append(" order by ");
                 query.append(orderBy);
+            }
+            final String withNetwork = (String) properties.get("withNetwork");
+            if (withNetwork != null && withNetwork.trim().length() > 0) {
+                query.append(" with network = ");
+                query.append(withNetwork);
             }
             final Integer limit = (Integer) properties.get("limit");
             if (limit != null && limit > 0) {
