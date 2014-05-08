@@ -348,10 +348,11 @@ public class PushService extends IntentService {
     	fields.put(CONNECTION_TOKEN, registrationId);
     	fields.put(SERVICE_TYPE, ANDROID_GCM);
     	try {
+    		final RestClient client = getRestClient(account);
         	final RestRequest req = RestRequest.getRequestForCreate(ApiVersionStrings.VERSION_NUMBER,
         			MOBILE_PUSH_SERVICE_DEVICE, fields);
-        	if (getRestClient(account) != null) {
-            	final RestResponse res = getRestClient(account).sendSync(req);
+        	if (client != null) {
+            	final RestResponse res = client.sendSync(req);
             	String id = null;
             	if (res.getStatusCode() == HttpStatus.SC_CREATED) {
             		final JSONObject obj = res.asJSONObject();
@@ -379,8 +380,9 @@ public class PushService extends IntentService {
     	final RestRequest req = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER,
     			MOBILE_PUSH_SERVICE_DEVICE, registeredId);
     	try {
-    		if (getRestClient(account) != null) {
-            	final RestResponse res = getRestClient(account).sendSync(req);
+    		final RestClient client = getRestClient(account);
+    		if (client != null) {
+            	final RestResponse res = client.sendSync(req);
             	if (res.getStatusCode() == HttpStatus.SC_NO_CONTENT) {
             		return true;
             	}
