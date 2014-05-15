@@ -1,3 +1,10 @@
+## Upgrade steps from v2.1.x to v2.2.0 for native and hybrid apps
+- Replace the existing `SalesforceSDK` project in Eclipse with the Mobile SDK 2.2.0 `SalesforceSDK` project.
+- If your app uses `SmartStore`, replace the existing `SmartStore` project in Eclipse with the new `SmartStore` project.
+- Right click your project and select `Properties`.
+- Click the `Android` tab and navigate to the library project section at the bottom and replace the existing `SalesforceSDK` entry with the new `SalesforceSDK` project in your workspace.
+- If your app uses `SmartStore`, repeat the previous step for the `SmartStore` project.
+
 ## Upgrade steps from v2.0.x to v2.1.0 for native and hybrid apps
 - Replace the existing `SalesforceSDK` project in Eclipse with the Mobile SDK 2.1.0 `SalesforceSDK` project.
 - If your app uses `SmartStore`, replace the existing `SmartStore` project in Eclipse with the new `SmartStore` project.
@@ -7,51 +14,3 @@
 - The Salesforce Mobile SDK Activity and Service declarations have now been moved from the app's `AndroidManifest.xml` file to the `AndroidManifest.xml` file of the `SalesforceSDK` project. These declarations are automatically merged into the app's manifest file if you enable the `manifestmerger` attribute. In order to use this, add `manifestmerger.enabled=true` to your app's `project.properties` file.
 	- NOTE:
 		- You are required to perform this step to use features that were added in Mobile SDK 2.1.0, such as push notifications.
-
-## Upgrade steps from v1.5.x to v2.0.0 for native apps
-- Swap the existing `SalesforceSDK` project in Eclipse with the new `SalesforceSDK` project (if your app uses `SmartStore`, replace the existing `SmartStore` project in Eclipse with the new `SmartStore` project).
-- Right click on your project and go to `Properties`.
-- Click on the `Android` tab and replace the existing `SalesforceSDK` entry at the bottom (in the library project section) with the new `SalesforceSDK` project in your workspace (repeat this step with the `SmartStore` project, if your app uses `SmartStore`).
-- Classes that extend `ForceApp` or `ForceAppWithSmartStore` should now extend `Application` instead. Let us call this class `SampleApp` for the purpose of this exercise.
-- Create a new class that implements `KeyInterface`, say `KeyImpl` for instance. Move the implementation of `getKey()` from `SampleApp` into `KeyImpl`.
-- `ForceApp` has been renamed to `SalesforceSDKManager` and `ForceAppWithSmartStore` has been renamed to `SalesforceSDKManagerWithSmartStore`.
-	- Replace all occurrences of `ForceApp` or `ForceAppWithSmartStore` with `SalesforceSDKManager` and `SalesforceSDKManagerWithSmartStore` respectively.
-	- Update the app's class imports to reflect this change.
-	- Replace all occurrences of `ForceApp.APP` or `ForceAppWithSmartStore.APP` with `SalesforceSDKManager.getInstance()` and `SalesforceSDKManagerWithSmartStore.getInstance()` respectively.
-- In the `onCreate()` method of `SampleApp`, add the following line of code.
-	- `SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(), <mainActivityClass>.class);`, where `<mainActivityClass>` is the class that should be launched once the login flow is complete.
-	- NOTE:
-		- If your app supplies its own login activity, this may be passed in as an additional argument to the `initNative()` method call (look at the available method signatures of `initNative()` in `SalesforceSDKManager`).
-		- If your app uses SmartStore, the aforementioned line of code should be replaced with `SalesforceSDKManagerWithSmartStore.initNative()` instead (look at the available method signatures of `initNative()` in `SalesforceSDKManagerWithSmartStore`).
-- Remove the overridden methods of `ForceApp` from `SampleApp`, such as `getKey()`, `getMainActivityClass()` and any other overridden methods.
-- It is not required to create `LoginOptions` through code and pass them in anymore. The Salesforce Mobile SDK now automatically reads these options from an XML file `bootconfig.xml`, which resides in the `res/values` folder of your project.
-	- Create a file called `bootconfig.xml` under the `res/values` folder of your project and move the app's login options from code to `bootconfig.xml` (look at `bootconfig.xml` under `res/values` of the SalesforceSDK project or one of the native sample apps for an example).
-- `NativeMainActivity` has been renamed to `SalesforceActivity` and moved to a new package `com.salesforce.androidsdk.ui.sfnative`.
-	- If any of your app's classes extend `NativeMainActivity`, replace all references to `NativeMainActivity` with `SalesforceActivity`.
-	- Update the app's class imports to reflect this change.
-- The SmartStore package has been changed to `com.salesforce.androidsdk.smartstore`. If you app uses the SmartStore project, update the app's class imports and other code references to reflect this change.
-
-## Upgrade steps from v1.5.x to v2.0.0 for hybrid apps
-- Swap the existing `SalesforceSDK` project in Eclipse with the new `SalesforceSDK` project (if your app uses `SmartStore`, replace the existing `SmartStore` project in Eclipse with the new `SmartStore` project).
-- Right click on your project and go to `Properties`.
-- Click on the `Android` tab and replace the existing `SalesforceSDK` entry at the bottom (in the library project section) with the new `SalesforceSDK` project in your workspace (repeat this step with the `SmartStore` project, if your app uses `SmartStore`).
-- Classes that extend `ForceApp` or `ForceAppWithSmartStore` should now extend `Application` instead. Let us call this class `SampleApp` for the purpose of this exercise.
-- Create a new class that implements `KeyInterface`, say `KeyImpl` for instance. Move the implementation of `getKey()` from `SampleApp` into `KeyImpl`.
-- `ForceApp` has been renamed to `SalesforceSDKManager` and `ForceAppWithSmartStore` has been renamed to `SalesforceSDKManagerWithSmartStore`.
-	- Replace all occurrences of `ForceApp` or `ForceAppWithSmartStore` with `SalesforceSDKManager` and `SalesforceSDKManagerWithSmartStore` respectively.
-	- Update the app's class imports to reflect this change.
-	- Replace all occurrences of `ForceApp.APP` or `ForceAppWithSmartStore.APP` with `SalesforceSDKManager.getInstance()` and `SalesforceSDKManagerWithSmartStore.getInstance()` respectively.
-- In the `onCreate()` method of `SampleApp`, add the following line of code.
-	- `SalesforceSDKManager.initHybrid(getApplicationContext(), new KeyImpl());`.
-	- NOTE:
-		- If your app supplies its own login activity, this may be passed in as an additional argument to the `initHybrid()` method call (look at the available method signatures of `initHybrid()` in `SalesforceSDKManager`).
-		- If your app uses SmartStore, the aforementioned line of code should be replaced with `SalesforceSDKManagerWithSmartStore.initHybrid()` instead (look at the available method signatures of `initHybrid()` in `SalesforceSDKManagerWithSmartStore`).
-- Remove the overridden methods of `ForceApp` from `SampleApp`, such as `getKey()`, `getMainActivityClass()` and any other overridden methods.
-- The SmartStore package has been changed to `com.salesforce.androidsdk.smartstore`. If you app uses the SmartStore project, update the app's class imports and other code references to reflect this change.
-- `bootconfig.js` has been replaced with `bootconfig.json`. Convert your existing `bootconfig.js` to the new `bootconfig.json` format (look at the sample apps for examples on how to do this).
-- The SalesforceSDK Cordova plugins, namely `SFHybridApp.js`, `SFSmartStorePlugin.js`, and `SalesforceOAuthPlugin.js` have been combined into a single file `cordova.force.js`.
-	- Replace these three Cordova plugin files with `cordova.force.js`.
-	- Replace all references of `SFHybridApp.js`, `SFSmartStorePlugin.js`, and `SalesforceOAuthPlugin.js`, with `cordova.force.js`.
-- `forcetk.js` has now been renamed to `forcetk.mobilesdk.js`. Replace the existing copy of `forcetk.js` with the latest version of `forcetk.mobilesdk.js` and update all references to `forcetk.js` to the new name.
-- `bootstrap.html` is no longer required and can be safely removed.
-- `SalesforceDroidGapActivity` and `SalesforceGapViewClient` have been moved to a new package, namely `com.salesforce.androidsdk.ui.sfhybrid`. If your app references these classes, update those references and class imports.
