@@ -389,12 +389,14 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             	 */
             	if (userAccounts != null) {
             		int numAccounts = userAccounts.size();
-            		for (int i = 0; i < numAccounts - 1; i++) {
-            			final UserAccount account = userAccounts.get(i);
-                    	userAccMgr.signoutUser(account, null, false);
+            		if (numAccounts > 0) {
+                		for (int i = 0; i < numAccounts - 1; i++) {
+                			final UserAccount account = userAccounts.get(i);
+                        	userAccMgr.signoutUser(account, null, false);
+                		}
+            			final UserAccount lastAccount = userAccounts.get(numAccounts - 1);
+                    	userAccMgr.signoutUser(lastAccount, PasscodeActivity.this);
             		}
-        			final UserAccount lastAccount = userAccounts.get(numAccounts);
-                	userAccMgr.signoutUser(lastAccount, PasscodeActivity.this);
             	} else {
             		userAccMgr.signoutCurrentUser(PasscodeActivity.this);
             	}
