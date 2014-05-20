@@ -427,7 +427,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         	final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
             URI instanceUrl = null;
             if (clientInfo != null) {
-            	instanceUrl = clientInfo.instanceUrl;
+            	instanceUrl = clientInfo.getInstanceUrl();
             }
             setVFCookies(instanceUrl);
     	}
@@ -453,7 +453,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         			return true;
         		}
         	});
-        	view.loadUrl(instanceUrl.toString() + "/visualforce/session?url=/apexpages/utils/ping.apexp&autoPrefixVFDomain=true");	
+        	view.loadUrl(instanceUrl.toString() + "/visualforce/session?url=/apexpages/utils/ping.apexp&autoPrefixVFDomain=true");
     	}
     }
 
@@ -485,10 +485,10 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
      * @return front-door url
      */
     public String getFrontDoorUrl(String url) {
-		String frontDoorUrl = client.getClientInfo().instanceUrl.toString() + "/secur/frontdoor.jsp?";
+		String frontDoorUrl = client.getClientInfo().getInstanceUrlAsString() + "/secur/frontdoor.jsp?";
 		List<NameValuePair> params = new LinkedList<NameValuePair>();
 		params.add(new BasicNameValuePair("sid", client.getAuthToken()));
-		params.add(new BasicNameValuePair("retURL", url));
+		params.add(new BasicNameValuePair("retURL", client.getClientInfo().resolveUrl(url).toString()));
 		params.add(new BasicNameValuePair("display", "touch"));
 		frontDoorUrl += URLEncodedUtils.format(params, "UTF-8");
     	return frontDoorUrl;
@@ -539,7 +539,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 	   final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
        URI instanceUrl = null;
        if (clientInfo != null) {
-    	   instanceUrl = clientInfo.instanceUrl;
+    	   instanceUrl = clientInfo.getInstanceUrl();
        }
        String host = null;
        if (instanceUrl != null) {

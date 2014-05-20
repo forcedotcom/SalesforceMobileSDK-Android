@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.rest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -220,13 +221,27 @@ public class RestClient {
 		public final URI instanceUrl;
 		public final URI loginUrl;
 		public final URI identityUrl;
-		public  final String accountName;
+		public final String accountName;
 		public final String username;
 		public final String userId;
 		public final String orgId;
 		public final String communityId;
 		public final String communityUrl;
-		
+
+		/**
+		 * Parameterized constructor.
+		 *
+		 * @param clientId Client ID.
+		 * @param instanceUrl Instance URL.
+		 * @param loginUrl Login URL.
+		 * @param identityUrl Identity URL.
+		 * @param accountName Account name.
+		 * @param username User name.
+		 * @param userId User ID.
+		 * @param orgId Org ID.
+		 * @param communityId Community ID.
+		 * @param communityUrl Community URL.
+		 */
 		public ClientInfo(String clientId, URI instanceUrl, URI loginUrl,
 				URI identityUrl, String accountName, String username,
 				String userId, String orgId, String communityId, String communityUrl) {
@@ -241,7 +256,8 @@ public class RestClient {
 			this.communityId = communityId;
 			this.communityUrl = communityUrl;
 		}
-		
+
+		@Override
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
 			sb.append("  ClientInfo: {\n")
@@ -257,15 +273,74 @@ public class RestClient {
 			  .append("  }\n");
 			return sb.toString();
 		}
-		
-		public URI resolveUrl(String path) {
-			// uri toString gives surprising answer, see http://stackoverflow.com/questions/2534124/java-uri-resolve
-			path = (instanceUrl.toString().endsWith("/") || path.startsWith("/") ? path : "/" + path); 
-			return instanceUrl.resolve(path);
+
+		/**
+		 * Returns a string representation of the instance URL. If this is a
+		 * community user, the community URL will be returned. If not, the
+		 * instance URL will be returned.
+		 *
+		 * @return Instance URL.
+		 */
+		public String getInstanceUrlAsString() {
+			if (communityUrl != null && !"".equals(communityUrl.trim())) {
+				return communityUrl;
+			}
+			return instanceUrl.toString();
 		}
-		
+
+		/**
+		 * Returns a URI representation of the instance URL. If this is a
+		 * community user, the community URL will be returned. If not, the
+		 * instance URL will be returned.
+		 *
+		 * @return Instance URL.
+		 */
+		public URI getInstanceUrl() {
+			if (communityUrl != null && !"".equals(communityUrl.trim())) {
+				URI uri = null;
+				try {
+					uri = new URI(communityUrl);
+				} catch (URISyntaxException e) {
+					Log.e("ClientInfo: getCommunityInstanceUrl",
+							"URISyntaxException thrown on URL: " + communityUrl);
+				}
+				return uri;
+			}
+			return instanceUrl;
+		}
+
+		/**
+		 * Resolves the given path against the community URL or the instance
+		 * URL, depending on whether the user is a community user or not.
+		 *
+		 * @param path Path.
+		 * @return Resolved URL.
+		 */
+		public URI resolveUrl(String path) {
+			final StringBuilder commInstanceUrl = new StringBuilder();
+			if (communityUrl != null && !"".equals(communityUrl.trim())) {
+				commInstanceUrl.append(communityUrl);
+			} else {
+				commInstanceUrl.append(instanceUrl.toString());
+			}
+			if (!commInstanceUrl.toString().endsWith("/")) {
+				commInstanceUrl.append("/");
+			}
+			if (path.startsWith("/")) {
+				path = path.substring(1);
+			}
+			commInstanceUrl.append(path);
+			URI uri = null;
+			try {
+				uri = new URI(commInstanceUrl.toString());
+			} catch (URISyntaxException e) {
+				Log.e("ClientInfo: resolveUrl",
+						"URISyntaxException thrown on URL: " + commInstanceUrl.toString());
+			}
+			return uri;
+		}
 	}
-	
+
 	/**
 	 * HttpStack for talking to Salesforce (sets oauth header and does oauth refresh when needed)
 	 */
