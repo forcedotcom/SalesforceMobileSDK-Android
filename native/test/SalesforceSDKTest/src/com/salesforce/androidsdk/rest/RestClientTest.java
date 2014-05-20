@@ -110,6 +110,33 @@ public class RestClientTest extends InstrumentationTestCase {
     	assertEquals("Wrong url", TestCredentials.INSTANCE_URL + "/a/b/", clientInfo.resolveUrl("/a/b/").toString());
     }
 
+    public void testClientInfoResolveUrlForCommunityUrl() throws Exception {
+        final ClientInfo info = new ClientInfo(TestCredentials.CLIENT_ID,
+        		new URI(TestCredentials.INSTANCE_URL),
+        		new URI(TestCredentials.LOGIN_URL),
+        		new URI(TestCredentials.IDENTITY_URL),
+        		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
+        		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
+        		TestCredentials.COMMUNITY_URL);
+    	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("a/b/").toString());
+    	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("/a/b/").toString());
+    }
+
+    public void testGetInstanceUrlForCommunity() throws Exception {
+        final ClientInfo info = new ClientInfo(TestCredentials.CLIENT_ID,
+        		new URI(TestCredentials.INSTANCE_URL),
+        		new URI(TestCredentials.LOGIN_URL),
+        		new URI(TestCredentials.IDENTITY_URL),
+        		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
+        		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
+        		TestCredentials.COMMUNITY_URL);
+        assertEquals("Wrong url", TestCredentials.COMMUNITY_URL, info.getInstanceUrlAsString());
+    }
+
+    public void testGetInstanceUrl() {
+        assertEquals("Wrong url", TestCredentials.INSTANCE_URL, clientInfo.getInstanceUrlAsString());
+    }
+
     /**
      * Testing getAuthToken
      */
@@ -437,7 +464,7 @@ public class RestClientTest extends InstrumentationTestCase {
         try {
             RestResponse searchResponse = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
             JSONArray matchingRows = searchResponse.asJSONArray();
-            for (int i=0; i<matchingRows.length(); i++) {
+            for (int i = 0; i < matchingRows.length(); i++) {
                 JSONObject matchingRow = matchingRows.getJSONObject(i);
                 String matchingRowType = matchingRow.getJSONObject("attributes").getString("type");
                 String matchingRowId = matchingRow.getString("Id");

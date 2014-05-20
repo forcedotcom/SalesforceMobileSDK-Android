@@ -476,8 +476,17 @@ public class PasscodeManager  {
     public void setMinPasscodeLength(int minPasscodeLength) {
     	if (minPasscodeLength > this.minPasscodeLength) {
             this.minPasscodeLength = minPasscodeLength;
-    		showLockActivity(SalesforceSDKManager.getInstance().getAppContext(),
-    				true);
+
+            /*
+             * This needs to happen only if a passcode exists, in order to trigger
+             * the 'Change Passcode' flow. Otherwise, we simply need to update
+             * the minimum length in memory. The 'Create Passcode' flow is
+             * triggered later from OAuthWebviewHelper.
+             */
+            if (hasStoredPasscode(SalesforceSDKManager.getInstance().getAppContext())) {
+        		showLockActivity(SalesforceSDKManager.getInstance().getAppContext(),
+        				true);
+            }
     	}
         this.minPasscodeLength = minPasscodeLength;
         storeMobilePolicy(SalesforceSDKManager.getInstance().getAppContext());
