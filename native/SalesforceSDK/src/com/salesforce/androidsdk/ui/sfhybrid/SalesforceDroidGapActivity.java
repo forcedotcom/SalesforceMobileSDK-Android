@@ -411,7 +411,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         	final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
             URI instanceUrl = null;
             if (clientInfo != null) {
-            	instanceUrl = clientInfo.instanceUrl;
+            	instanceUrl = clientInfo.getInstanceUrl();
             }
             setVFCookies(instanceUrl);
     	}
@@ -437,7 +437,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         			return true;
         		}
         	});
-        	view.loadUrl(instanceUrl.toString() + "/visualforce/session?url=/apexpages/utils/ping.apexp&autoPrefixVFDomain=true");	
+        	view.loadUrl(instanceUrl.toString() + "/visualforce/session?url=/apexpages/utils/ping.apexp&autoPrefixVFDomain=true");
     	}
     }
 
@@ -469,7 +469,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
      * @return front-door url
      */
     public String getFrontDoorUrl(String url) {
-		String frontDoorUrl = client.getClientInfo().instanceUrl.toString() + "/secur/frontdoor.jsp?";
+		String frontDoorUrl = client.getClientInfo().getInstanceUrlAsString() + "/secur/frontdoor.jsp?";
 		List<NameValuePair> params = new LinkedList<NameValuePair>();
 		params.add(new BasicNameValuePair("sid", client.getAuthToken()));
 		params.add(new BasicNameValuePair("retURL", url));
@@ -523,7 +523,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	   final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
        URI instanceUrl = null;
        if (clientInfo != null) {
-    	   instanceUrl = clientInfo.instanceUrl;
+    	   instanceUrl = clientInfo.getInstanceUrl();
        }
        String host = null;
        if (instanceUrl != null) {
