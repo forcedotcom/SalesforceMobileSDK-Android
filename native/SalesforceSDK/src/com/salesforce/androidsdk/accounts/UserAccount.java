@@ -61,7 +61,7 @@ public class UserAccount {
 	private static final String INTERNAL_COMMUNITY_PATH = "internal";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
-	private static final String INTERNAL_COMMUNITY_ID = "000000000000000";
+	private static final String INTERNAL_COMMUNITY_ID = "000000000000000000";
 
 	private String authToken;
 	private String refreshToken;
