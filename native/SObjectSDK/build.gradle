@@ -1,4 +1,5 @@
-apply plugin: 'android'
+
+apply plugin: 'android-library'
 
 dependencies {
   compile project(':native:SalesforceSDK')
@@ -6,11 +7,10 @@ dependencies {
 }
 
 android {
-  compileSdkVersion 8
+  compileSdkVersion 11
   buildToolsVersion "19.0.1"
 
   sourceSets {
-
     main {
       manifest.srcFile 'AndroidManifest.xml'
       java.srcDirs = ['src']
@@ -27,5 +27,5 @@ android {
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
   }
-
 }
+

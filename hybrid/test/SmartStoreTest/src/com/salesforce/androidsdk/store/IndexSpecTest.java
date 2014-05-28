@@ -26,10 +26,10 @@
  */
 package com.salesforce.androidsdk.store;
 
+import android.test.InstrumentationTestCase;
+
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-
-import android.test.InstrumentationTestCase;
 
 /**
  * Test class for IndexSpec
@@ -43,8 +43,6 @@ public class IndexSpecTest extends InstrumentationTestCase {
 	private static final IndexSpec keyStringSpecWithCol = new IndexSpec("key", Type.string, "COL_1");
 	private static final IndexSpec keyIntegerSpecWithCol = new IndexSpec("key", Type.integer, "COL_1");
 	private static final IndexSpec keyFloatingSpecWithCol = new IndexSpec("key", Type.floating, "COL_1");
-	private static final IndexSpec valueStringSpec = new IndexSpec("value", Type.string);
-	private static final IndexSpec otherValueStringSpec = new IndexSpec("otherValue", Type.string);
 
 	/**
 	 * TEST for equals with same index specs
@@ -90,44 +88,5 @@ public class IndexSpecTest extends InstrumentationTestCase {
 		assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.string, "COL_1").hashCode());
 		assertFalse(keyStringSpecWithCol.hashCode() == new IndexSpec("key", Type.string).hashCode());
 		assertFalse(keyStringSpecWithCol.hashCode() == new IndexSpec("key", Type.string, "COL_2").hashCode());
-	}
-	
-	
-	/**
-	 * TEST for getChangedOrNewIndexSpecs
-	 */
-	public void testGetChangedOrNewIndexSpecs() {
-		// No old specs
-		tryGetChangedOrNewIndexSpecs(new IndexSpec[] {keyStringSpec, valueStringSpec}, new IndexSpec[0], new IndexSpec[] {keyStringSpec, valueStringSpec});
-		// Old specs same as new specs
-		tryGetChangedOrNewIndexSpecs(new IndexSpec[0], new IndexSpec[] {keyStringSpec, valueStringSpec}, new IndexSpec[] {keyStringSpec, valueStringSpec});
-		// Old specs same as new specs but in a different order
-		tryGetChangedOrNewIndexSpecs(new IndexSpec[0], new IndexSpec[] {keyStringSpec, valueStringSpec}, new IndexSpec[] {valueStringSpec, keyStringSpec});
-		// Old specs same as new specs but with different column
-		tryGetChangedOrNewIndexSpecs(new IndexSpec[0], new IndexSpec[] {keyStringSpecWithCol}, new IndexSpec[] {keyStringSpec});
-		// Old specs same as new specs but with different column
-		tryGetChangedOrNewIndexSpecs(new IndexSpec[0], new IndexSpec[] {keyStringSpec}, new IndexSpec[] {keyStringSpecWithCol});
-		// Old specs same path as new specs but with type change
-		tryGetChangedOrNewIndexSpecs(new IndexSpec[] {keyFloatingSpec}, new IndexSpec[] {keyStringSpec}, new IndexSpec[] {keyFloatingSpec});
-		// Old specs subset of new specs
-		tryGetChangedOrNewIndexSpecs(new IndexSpec[] {otherValueStringSpec}, new IndexSpec[] {keyStringSpec, valueStringSpec}, new IndexSpec[] {keyStringSpec, valueStringSpec, otherValueStringSpec});
-		// Old specs interesects with new specs
-		tryGetChangedOrNewIndexSpecs(new IndexSpec[] {otherValueStringSpec}, new IndexSpec[] {keyStringSpec, valueStringSpec}, new IndexSpec[] {valueStringSpec, otherValueStringSpec});
-		// Old specs does not intersect with new specs
-		tryGetChangedOrNewIndexSpecs(new IndexSpec[] {otherValueStringSpec}, new IndexSpec[] {keyStringSpec, valueStringSpec}, new IndexSpec[] {otherValueStringSpec});
-	}
-	
-	/**
-	 * Helper method for testGetChangedOrNewIndexSpecs
-	 * @param expected
-	 * @param old
-	 */
-	private void tryGetChangedOrNewIndexSpecs(IndexSpec[] expectedSpecs, IndexSpec[] oldSpecs, IndexSpec[] newSpecs) {
-		IndexSpec[] actualSpecs = IndexSpec.getChangedOrNewIndexSpecs(oldSpecs, newSpecs);
-		
-		assertEquals("Arrays should have same length", expectedSpecs.length, actualSpecs.length);
-		for (int i = 0; i< expectedSpecs.length; i++) {
-			assertEquals("Wrong index spec at position " + i, expectedSpecs[i], actualSpecs[i]);
-		}
 	}
 }

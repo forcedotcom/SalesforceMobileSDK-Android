@@ -10,6 +10,7 @@ hybrid/SmartStore/bin/
 hybrid/test/ForcePluginsTest/bin/
 hybrid/test/SmartStoreTest/bin/
 native/SalesforceSDK/bin/
+native/SObjectSDK/bin/
 native/SampleApps/FileExplorer/bin/
 native/SampleApps/NativeSqlAggregator/bin/
 native/SampleApps/RestExplorer/bin/
@@ -30,6 +31,7 @@ hybrid/SmartStore/gen/
 hybrid/test/ForcePluginsTest/gen/
 hybrid/test/SmartStoreTest/gen/
 native/SalesforceSDK/gen/
+native/SObjectSDK/gen/
 native/SampleApps/FileExplorer/gen/
 native/SampleApps/NativeSqlAggregator/gen/
 native/SampleApps/RestExplorer/gen/
@@ -50,6 +52,7 @@ hybrid/SmartStore/proguard-project.txt
 hybrid/test/ForcePluginsTest/proguard-project.txt
 hybrid/test/SmartStoreTest/proguard-project.txt
 native/SalesforceSDK/proguard-project.txt
+native/SObjectSDK/proguard-project.txt
 native/SampleApps/FileExplorer/proguard-project.txt
 native/SampleApps/NativeSqlAggregator/proguard-project.txt
 native/SampleApps/RestExplorer/proguard-project.txt
@@ -70,6 +73,7 @@ hybrid/SmartStore/local.properties
 hybrid/test/ForcePluginsTest/local.properties
 hybrid/test/SmartStoreTest/local.properties
 native/SalesforceSDK/local.properties
+native/SObjectSDK/local.properties
 native/SampleApps/FileExplorer/local.properties
 native/SampleApps/NativeSqlAggregator/local.properties
 native/SampleApps/RestExplorer/local.properties
@@ -85,6 +89,7 @@ hybrid/SampleApps/SmartStoreExplorer/SmartStoreExplorer.iml
 hybrid/SampleApps/VFConnector/VFConnector.iml
 hybrid/SmartStore/SmartStore.iml
 native/SalesforceSDK/SalesforceSDK.iml
+native/SObjectSDK/SalesforceSDK.iml
 native/SampleApps/FileExplorer/FileExplorer.iml
 native/SampleApps/NativeSqlAggregator/NativeSqlAggregator.iml
 native/SampleApps/RestExplorer/RestExplorer.iml

@@ -195,7 +195,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      * TEST: Upsert MAX_NUMBER_ENTRIES entries into a soup and retrieve them back
      * @throws JSONException 
      */
-    public void testAddAndRetrieveManyEntries() throws JSONException {
+	public void testAddAndRetrieveManyEntries() throws JSONException {
     	Log.i("SmartStoreLoadTest", "In testAddAndRetrieveManyEntries");
 
     	List<Long> soupEntryIds = new ArrayList<Long>();
@@ -318,7 +318,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
     	alterSoup("Dropping two indexes / with re-indexing", true, new IndexSpec[] {new IndexSpec("key", Type.string)});
     }
     
-    private void alterSoup(String msg, boolean reIndexData, IndexSpec[] indexSpecs) {
+    private void alterSoup(String msg, boolean reIndexData, IndexSpec[] indexSpecs) throws JSONException {
         long start = System.currentTimeMillis();
         store.alterSoup(TEST_SOUP, indexSpecs, reIndexData);
         long duration = System.currentTimeMillis() - start;
