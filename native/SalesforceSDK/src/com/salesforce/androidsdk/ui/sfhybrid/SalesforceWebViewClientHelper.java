@@ -41,6 +41,8 @@ import android.net.Uri;
 import android.util.Log;
 import android.webkit.WebView;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UriFragmentParser;
@@ -59,6 +61,8 @@ public class SalesforceWebViewClientHelper {
     // Full and partial URLs to exclude from consideration when determining the home page URL.
     private static final List<String> RESERVED_URL_PATTERNS =
             Arrays.asList("/secur/frontdoor.jsp", "/secur/contentDoor");
+
+    private static final String LOGOUT_REDIRECT = "/secur/logout.jsp";
 
     /**
      * To be called from shouldOverrideUrlLoading.
@@ -145,6 +149,10 @@ public class SalesforceWebViewClientHelper {
      * @return null if this is not a login redirect and return the the value for startURL if this is a login redirect
      */
     private static String isLoginRedirect(String url) {
+    	final String commStartUrl = isCommunityLoginRedirect(url);
+    	if (commStartUrl != null) {
+    		return commStartUrl;
+    	}
     	final Uri uri = Uri.parse(url);
         final Map<String, String> params = UriFragmentParser.parse(uri);
     	final String ec = params.get("ec");
@@ -158,5 +166,19 @@ public class SalesforceWebViewClientHelper {
     	} else {
     		return null;
     	}
+    }
+
+    /**
+     * Checks if it is a community login redirect.
+     *
+     * @param url URL.
+     * @return Start URL for community.
+     */
+    private static String isCommunityLoginRedirect(String url) {
+    	if (url.contains(LOGOUT_REDIRECT)) {
+    		final BootConfig config = BootConfig.getBootConfig(SalesforceSDKManager.getInstance().getAppContext());
+    		return config.getStartPage();
+    	}
+    	return null;
     }
 }
