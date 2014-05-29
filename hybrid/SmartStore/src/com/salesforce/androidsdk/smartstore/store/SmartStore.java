@@ -153,7 +153,7 @@ public class SmartStore  {
     public static void createLongOperationsStatusTable(SQLiteDatabase db) {
     	synchronized(SmartStore.class) {
     		StringBuilder sb = new StringBuilder();
-	    	sb.append("CREATE TABLE ").append(LONG_OPERATIONS_STATUS_TABLE).append(" (")
+	    	sb.append("CREATE TABLE IF NOT EXISTS ").append(LONG_OPERATIONS_STATUS_TABLE).append(" (")
 	        .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
 	        .append(",").append(TYPE_COL).append(" TEXT")
 	        .append(",").append(DETAILS_COL).append(" TEXT")
