@@ -97,14 +97,14 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
      */
     private String isLoginRedirect(String url) {
     	final String commStartUrl = isCommunityLoginRedirect(url);
-    	if (commStartUrl != null) {
-    		return commStartUrl;
-    	}
     	final Uri uri = Uri.parse(url);
         final Map<String, String> params = UriFragmentParser.parse(uri);
     	final String ec = params.get("ec");
     	int ecInt = (ec != null ? Integer.parseInt(ec) : -1);
         final String startURL = params.get("startURL");
+        if (commStartUrl != null && startURL != null) {
+    		return commStartUrl;
+    	}
     	if (uri != null && uri.getPath() != null && uri.getPath().equals("/")
     			&& (ecInt == HttpStatus.SC_MOVED_PERMANENTLY
     			|| ecInt == HttpStatus.SC_MOVED_TEMPORARILY)
