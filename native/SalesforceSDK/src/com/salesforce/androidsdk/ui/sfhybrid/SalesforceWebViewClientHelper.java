@@ -175,6 +175,12 @@ public class SalesforceWebViewClientHelper {
      * @return Start URL for community.
      */
     private static String isCommunityLoginRedirect(String url) {
+
+        /*
+         * TODO: This piece of code has got to go at some point,
+         * once we standardize on the correct redirection for
+         * communities as well.
+         */
     	if (url.contains(LOGOUT_REDIRECT)) {
     		final BootConfig config = BootConfig.getBootConfig(SalesforceSDKManager.getInstance().getAppContext());
     		return config.getStartPage();
