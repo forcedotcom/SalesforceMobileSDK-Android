@@ -122,6 +122,12 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
      * @return Start URL for community.
      */
     private String isCommunityLoginRedirect(String url) {
+
+        /*
+         * TODO: This piece of code has got to go at some point,
+         * once we standardize on the correct redirection for
+         * communities as well.
+         */
     	if (url.contains(LOGOUT_REDIRECT)) {
     		final BootConfig config = BootConfig.getBootConfig(ctx);
     		return config.getStartPage();

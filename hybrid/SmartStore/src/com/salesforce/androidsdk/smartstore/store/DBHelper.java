@@ -340,12 +340,16 @@ public enum DBHelper  {
 		for (final SQLiteStatement prog : tableNameToNextIdStatementsMap.values()) {
 			prog.close();
 		}
+		for (final SQLiteStatement rawCountSql : rawCountSqlToStatementsMap.values()) {
+			rawCountSql.close();
+		}
 
 		// Clears all maps.
 		soupNameToTableNamesMap.clear();
 		soupNameToIndexSpecsMap.clear();
 		tableNameToInsertHelpersMap.clear();
 		tableNameToNextIdStatementsMap.clear();
+		rawCountSqlToStatementsMap.clear();
 	}
 
     /**
