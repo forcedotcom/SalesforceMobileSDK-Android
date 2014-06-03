@@ -1,1 +1,1 @@
-../../../../../external/shared/SampleApps/contactexplorer/inline.js
+../../../../../external/samples/hybrid/contactexplorer/inline.js

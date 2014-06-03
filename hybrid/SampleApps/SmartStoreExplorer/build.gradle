@@ -1,8 +1,8 @@
 apply plugin: 'android'
 
 dependencies {
+  compile project(':native:SalesforceSDK')
   compile project(':hybrid:SmartStore')
-
 }
 
 android {
@@ -21,7 +21,6 @@ android {
       assets.srcDirs = ['assets']
     }
   }
-
   packagingOptions {
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/LICENSE.txt'

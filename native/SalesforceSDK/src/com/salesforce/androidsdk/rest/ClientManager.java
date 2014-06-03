@@ -141,7 +141,7 @@ public class ClientManager {
     public RestClient peekRestClient(Account acc) {
         if (acc == null) {
             AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
-            Log.i("ClientManager:peekRestClient", "No user account found", e);
+            Log.i("ClientManager:peekRestClient", "No user account found");
             throw e;
         }
         if (SalesforceSDKManager.getInstance().isLoggingOut()) {
