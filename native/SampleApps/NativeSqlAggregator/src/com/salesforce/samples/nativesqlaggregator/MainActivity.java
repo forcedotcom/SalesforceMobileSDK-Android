@@ -41,6 +41,7 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 
@@ -116,18 +117,28 @@ public class MainActivity extends SalesforceActivity {
 	 * @param v View that was clicked.
 	 */
 	public void onLogoutClick(View v) {
-		SalesforceSDKManagerWithSmartStore.getInstance().logout(this);
+		 SalesforceSDKManagerWithSmartStore.getInstance().logout(this);
 	}
 
 	/**
-	 * Called when "Switch User" button is clicked.
+	 * Called when "Switch" button is clicked.
 	 *
 	 * @param v View that was clicked.
 	 */
-	public void onSwitchUserClick(View v) {
-		final Intent i = new Intent(this,
+	public void onSwitchClick(View v) {
+		final Intent i = new Intent(SalesforceSDKManager.getInstance().getAppContext(),
 				SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
 		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		SalesforceSDKManager.getInstance().getAppContext().startActivity(i);
+	}
+	
+	/**
+	 * Called when "Inspect" button is clicked.
+	 *
+	 * @param v View that was clicked.
+	 */
+	public void onInspectClick(View v) {
+		final Intent i = new Intent(this, SmartStoreInspectorActivity.class);
 		this.startActivity(i);
 	}
 

@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.phonegap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-import org.apache.cordova.api.CallbackContext;
+import org.apache.cordova.CallbackContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -94,7 +94,7 @@ public class TestRunnerPlugin extends ForcePlugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		String testName = arg0.getString(TEST_NAME);
 		boolean success = arg0.getBoolean(SUCCESS);
-		String message = arg0.getString(MESSAGE);
+		String message = stripHtml(arg0.getString(MESSAGE));
         int durationMsec =  arg0.getInt(DURATION);
         double duration = durationMsec / 1000.0;
         
@@ -107,6 +107,10 @@ public class TestRunnerPlugin extends ForcePlugin {
 		callbackContext.success();
 	}
 
+	private String stripHtml(String message) {
+		return message.replaceAll("<[^>]+>", "|").replaceAll("[|]+"," ");
+	}
+	
 	/**
 	 * Native implementation of onReadyForTests
 	 * @param args

@@ -1,1 +1,0 @@
-../../../../../external/shared/libs/smartsync.js

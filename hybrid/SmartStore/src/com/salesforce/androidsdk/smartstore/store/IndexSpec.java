@@ -26,6 +26,15 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
 /**
@@ -48,4 +57,103 @@ public class IndexSpec {
         this.columnName = columnName;
     }
 
+    @Override
+    public int hashCode() {
+        int result = 17;
+        result = 31 * result + path.hashCode();
+        result = 31 * result + type.hashCode();
+        if (columnName != null) 
+        	result = 31 * result + columnName.hashCode();
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null)
+            return false;
+        if (obj == this)
+            return true;
+        if (!(obj instanceof IndexSpec))
+            return false;
+
+        IndexSpec rhs = (IndexSpec) obj;
+        boolean result = true;
+        result  = result && path.equals(rhs.path);
+        result = result && type.equals(rhs.type);
+        if (columnName == null) 
+        	result = result && (columnName == rhs.columnName);
+    	else
+    		result = result && columnName.equals(rhs.columnName);
+        
+        return result;
+    }
+    
+    /**
+     * @return path | type
+     */
+    public String getPathType() {
+    	return path + "|" + type;
+    }
+
+	/**
+	 * @return JSONObject for this IndexSpec
+	 * @throws JSONException
+	 */
+	public JSONObject toJSON() throws JSONException {
+		JSONObject json = new JSONObject();
+		json.put("path", path);
+		json.put("type", type);
+		json.put("columnName", columnName);
+		return json;
+	}
+	
+	/**
+	 * @param indexSpecs
+	 * @return JSONArray for the array of IndexSpec's
+	 * @throws JSONException 
+	 */
+	public static JSONArray toJSON(IndexSpec[] indexSpecs) throws JSONException {
+		JSONArray json = new JSONArray();
+		for(IndexSpec indexSpec : indexSpecs) {
+			json.put(indexSpec.toJSON());
+		}
+		return json;
+	}
+	
+	/**
+	 * @param json
+	 * @return IndexSpec[] from a JSONArray
+	 * @throws JSONException
+	 */
+	public static IndexSpec[] fromJSON(JSONArray jsonArray) throws JSONException {
+		List<IndexSpec> list = new ArrayList<IndexSpec>();
+		for(int i=0; i<jsonArray.length(); i++) {
+			list.add(IndexSpec.fromJSON(jsonArray.getJSONObject(i)));
+		}
+		return list.toArray(new IndexSpec[0]);
+	}
+	
+	/**
+	 * Return IndexSpec given JSONObject
+	 * @param json
+	 * @return
+	 * @throws JSONException
+	 */
+	public static IndexSpec fromJSON(JSONObject json) throws JSONException {
+		return new IndexSpec(json.getString("path"), Type.valueOf(json.getString("type")), json.optString("columnName"));
+	}
+	
+	
+	/**
+	 * @param indexSpecs
+	 * @return map index spec path to index spec
+	 */
+	public static Map<String, IndexSpec> mapForIndexSpecs(IndexSpec[] indexSpecs) {
+		Map<String, IndexSpec> map = new HashMap<String, IndexSpec>();
+		for (IndexSpec indexSpec : indexSpecs) {
+			map.put(indexSpec.path, indexSpec);
+		}
+		return map;
+	}
+	
 }

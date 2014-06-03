@@ -1,1 +1,0 @@
-../../../../../external/shared/SampleApps/fileexplorer/auth.js

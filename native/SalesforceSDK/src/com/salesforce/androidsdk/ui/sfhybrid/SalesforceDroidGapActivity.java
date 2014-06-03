@@ -32,11 +32,11 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaActivity;
 import org.apache.cordova.CordovaChromeClient;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
-import org.apache.cordova.DroidGap;
-import org.apache.cordova.api.CallbackContext;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
@@ -77,7 +77,7 @@ import com.salesforce.androidsdk.util.UserSwitchReceiver;
 /**
  * Class that defines the main activity for a PhoneGap-based application.
  */
-public class SalesforceDroidGapActivity extends DroidGap {
+public class SalesforceDroidGapActivity extends CordovaActivity {
 
     // Keys in credentials map
     private static final String USER_AGENT = "userAgent";
@@ -143,7 +143,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
     @Override
     public void init(CordovaWebView webView, CordovaWebViewClient webViewClient, CordovaChromeClient webChromeClient) {
     	Log.i("SalesforceDroidGapActivity.init", "init called");
-        super.init(webView, new SalesforceGapViewClient(this, webView), webChromeClient);
+        super.init(webView, makeWebViewClient(webView), webChromeClient);
         final String uaStr = SalesforceSDKManager.getInstance().getUserAgent();
         if (null != this.appView) {
             WebSettings webSettings = this.appView.getSettings();
@@ -164,6 +164,22 @@ public class SalesforceDroidGapActivity extends DroidGap {
         }
     }
 
+    /**
+     * Construct the client for the default web view object.
+     *
+     * This is intended to be overridable by subclasses of CordovaIntent which
+     * require a more specialized web view.
+     *
+     * @param webView the default constructed web view object
+     */
+    protected CordovaWebViewClient makeWebViewClient(CordovaWebView webView) {
+        if(android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
+            return new SalesforceWebViewClient(this, webView);
+        } else {
+            return new SalesforceIceCreamWebViewClient(this, webView);
+        }
+    }
+    
     @Override
     public void onResume() {
         super.onResume();
@@ -284,7 +300,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 			// Offline
 			else {
 				// Has cached version
-				if (SalesforceGapViewClient.hasCachedAppHome(this)) {
+				if (SalesforceWebViewClientHelper.hasCachedAppHome(this)) {
 		        	Log.i("SalesforceDroidGapActivity.onResumeLoggedInNotLoaded", "Remote start page / offline / cached - loading cached web app");
 					loadCachedStartPage();
 				}
@@ -482,7 +498,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	 * Load cached start page
 	 */
 	private void loadCachedStartPage() {
-		String url = SalesforceGapViewClient.getAppHomeUrl(this);
+		String url = SalesforceWebViewClientHelper.getAppHomeUrl(this);
 		loadUrl(url);
     	webAppLoaded = true;
 	}

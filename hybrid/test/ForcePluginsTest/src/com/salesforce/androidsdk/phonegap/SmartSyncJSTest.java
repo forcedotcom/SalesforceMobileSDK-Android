@@ -201,7 +201,7 @@ public class SmartSyncJSTest extends JSTestCase {
         runTest("testFetchSObjects");
     }
 
-    public void testCollectionFetch() {
+    public void testSObjectCollectionFetch() {
         runTest("testSObjectCollectionFetch");
     }
 }
