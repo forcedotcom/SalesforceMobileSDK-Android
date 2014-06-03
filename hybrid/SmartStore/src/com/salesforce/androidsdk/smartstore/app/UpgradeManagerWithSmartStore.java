@@ -26,7 +26,13 @@
  */
 package com.salesforce.androidsdk.smartstore.app;
 
+import java.io.File;
+
+import android.text.TextUtils;
+
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.UpgradeManager;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 
 /**
  * This class handles upgrades from one version to another.
@@ -59,13 +65,21 @@ public class UpgradeManagerWithSmartStore extends UpgradeManager {
      * version to the current version.
      */
     public synchronized void upgradeSmartStore() {
-        final String installedVersion = getInstalledSmartStoreVersion();
+        String installedVersion = getInstalledSmartStoreVersion();
         if (installedVersion.equals(SalesforceSDKManagerWithSmartStore.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
         writeCurVersion(SMART_STORE_KEY, SalesforceSDKManagerWithSmartStore.SDK_VERSION);
+
+        /*
+         * We need to update this variable, since the app will not
+         * have this value set for a first time install.
+         */
+        if (TextUtils.isEmpty(installedVersion)) {
+            installedVersion = getInstalledSmartStoreVersion();
+        }
     }
 
     /**
@@ -75,5 +89,37 @@ public class UpgradeManagerWithSmartStore extends UpgradeManager {
      */
     public String getInstalledSmartStoreVersion() {
         return getInstalledVersion(SMART_STORE_KEY);
+    }
+
+    @Override
+    protected void upgradeTo2Dot2() {
+    	super.upgradeTo2Dot2();
+
+    	/*
+    	 * Checks if a database exists. If it does, renames the existing
+    	 * database to the new format for the current user.
+    	 * If not, nothing is done.
+    	 */
+    	final String oldDbName = String.format(DBOpenHelper.DB_NAME, "");
+    	if (SalesforceSDKManagerWithSmartStore.getInstance().getAppContext().getDatabasePath(oldDbName).exists()) {
+    		final UserAccount curAccount = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
+
+    		/*
+    		 * If no account exists at this point, there is nothing
+    		 * to be done here.
+    		 */
+    		if (curAccount != null) {
+        		final String dbPath = curAccount.getCommunityLevelFilenameSuffix(null);
+        		if (!TextUtils.isEmpty(dbPath)) {
+        			final String newDbName = String.format(DBOpenHelper.DB_NAME,
+        					dbPath);
+        			final String dbDir = SalesforceSDKManagerWithSmartStore.getInstance().getAppContext().getApplicationInfo().dataDir
+        					+ "/databases";
+        			final File from = new File(dbDir, oldDbName);
+        			final File to = new File(dbDir, newDbName);
+        			from.renameTo(to);
+        		}
+    		}
+    	}
     }
 }

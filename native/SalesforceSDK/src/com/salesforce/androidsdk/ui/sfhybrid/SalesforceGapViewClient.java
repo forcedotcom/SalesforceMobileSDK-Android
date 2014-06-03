@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.ui.sfhybrid;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.cordova.CordovaWebView;
@@ -44,6 +45,7 @@ import android.net.Uri;
 import android.util.Log;
 import android.webkit.WebView;
 
+import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UriFragmentParser;
@@ -53,6 +55,8 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
     public static String TAG = "SalesforceGapViewClient";
     public static final String SFDC_WEB_VIEW_CLIENT_SETTINGS = "sfdc_gapviewclient";
     public static final String APP_HOME_URL_PROP_KEY =  "app_home_url";
+
+    private static final String LOGOUT_REDIRECT = "/secur/logout.jsp";
 
     // Full and partial URLs to exclude from consideration when determining the home page URL.
     private static final List<String> RESERVED_URL_PATTERNS =
@@ -85,13 +89,17 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
         	return super.shouldOverrideUrlLoading(view,  url);
         }
     }
-    
+
     /**
      * Login redirect are of the form https://host/?ec=30x&startURL=xyz
      * @param url
      * @return null if this is not a login redirect and return the the value for startURL if this is a login redirect
      */
     private String isLoginRedirect(String url) {
+    	final String commStartUrl = isCommunityLoginRedirect(url);
+    	if (commStartUrl != null) {
+    		return commStartUrl;
+    	}
     	final Uri uri = Uri.parse(url);
         final Map<String, String> params = UriFragmentParser.parse(uri);
     	final String ec = params.get("ec");
@@ -106,7 +114,27 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
     		return null;
     	}
     }
-    
+
+    /**
+     * Checks if it is a community login redirect.
+     *
+     * @param url URL.
+     * @return Start URL for community.
+     */
+    private String isCommunityLoginRedirect(String url) {
+
+        /*
+         * TODO: This piece of code has got to go at some point,
+         * once we standardize on the correct redirection for
+         * communities as well.
+         */
+    	if (url.contains(LOGOUT_REDIRECT)) {
+    		final BootConfig config = BootConfig.getBootConfig(ctx);
+    		return config.getStartPage();
+    	}
+    	return null;
+    }
+
     /**
      * Notify the host application that a page has finished loading.
      *
@@ -119,16 +147,13 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
         // be considered the "app home URL", which can be loaded directly in the event that the app is offline.
         if (!this.foundHomeUrl && !isReservedUrl(url)) {
             Log.i(TAG,"Setting '" + url + "' as the home page URL for this app");
-
             SharedPreferences sp = ctx.getSharedPreferences(SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
             Editor e = sp.edit();
             e.putString(APP_HOME_URL_PROP_KEY, url);
             e.commit();
-
             this.foundHomeUrl = true;
             EventsObservable.get().notifyEvent(EventType.GapWebViewPageFinished, url);
         }
-
         super.onPageFinished(view, url);
     }
 
@@ -160,7 +185,7 @@ public class SalesforceGapViewClient extends CordovaWebViewClient {
         if (url == null || url.trim().equals(""))
             return false;
         for (String reservedUrlPattern : RESERVED_URL_PATTERNS) {
-            if (url.toLowerCase().contains(reservedUrlPattern.toLowerCase()))
+            if (url.toLowerCase(Locale.US).contains(reservedUrlPattern.toLowerCase(Locale.US)))
                 return true;
         }
         return false;

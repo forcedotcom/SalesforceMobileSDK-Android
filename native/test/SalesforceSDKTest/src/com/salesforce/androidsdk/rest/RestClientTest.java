@@ -61,6 +61,8 @@ import com.salesforce.androidsdk.rest.files.FileRequests;
 public class RestClientTest extends InstrumentationTestCase {
 
     private static final String ENTITY_NAME_PREFIX = "RestClientTest";
+    private static final String SEARCH_ENTITY_NAME = "RestClientSearchTest";
+    private static final String SEARCH_ENTITY_ID = "001S000000gxUx7IAE";
     private static final String BAD_TOKEN = "bad-token";
     private ClientInfo clientInfo;
     private HttpAccess httpAccess;
@@ -74,7 +76,12 @@ public class RestClientTest extends InstrumentationTestCase {
         httpAccess = new HttpAccess(null, null);
         TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
         authToken = refreshResponse.authToken;
-        clientInfo = new ClientInfo(TestCredentials.CLIENT_ID, new URI(TestCredentials.INSTANCE_URL), new URI(TestCredentials.LOGIN_URL), new URI(TestCredentials.IDENTITY_URL), TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME, TestCredentials.USER_ID, TestCredentials.ORG_ID);
+        clientInfo = new ClientInfo(TestCredentials.CLIENT_ID,
+        		new URI(TestCredentials.INSTANCE_URL),
+        		new URI(TestCredentials.LOGIN_URL),
+        		new URI(TestCredentials.IDENTITY_URL),
+        		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
+        		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null);
         restClient = new RestClient(clientInfo, authToken, httpAccess, null);
     }
 
@@ -101,6 +108,33 @@ public class RestClientTest extends InstrumentationTestCase {
     public void testClientInfoResolveUrl() {
     	assertEquals("Wrong url", TestCredentials.INSTANCE_URL + "/a/b/", clientInfo.resolveUrl("a/b/").toString());
     	assertEquals("Wrong url", TestCredentials.INSTANCE_URL + "/a/b/", clientInfo.resolveUrl("/a/b/").toString());
+    }
+
+    public void testClientInfoResolveUrlForCommunityUrl() throws Exception {
+        final ClientInfo info = new ClientInfo(TestCredentials.CLIENT_ID,
+        		new URI(TestCredentials.INSTANCE_URL),
+        		new URI(TestCredentials.LOGIN_URL),
+        		new URI(TestCredentials.IDENTITY_URL),
+        		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
+        		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
+        		TestCredentials.COMMUNITY_URL);
+    	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("a/b/").toString());
+    	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("/a/b/").toString());
+    }
+
+    public void testGetInstanceUrlForCommunity() throws Exception {
+        final ClientInfo info = new ClientInfo(TestCredentials.CLIENT_ID,
+        		new URI(TestCredentials.INSTANCE_URL),
+        		new URI(TestCredentials.LOGIN_URL),
+        		new URI(TestCredentials.IDENTITY_URL),
+        		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
+        		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
+        		TestCredentials.COMMUNITY_URL);
+        assertEquals("Wrong url", TestCredentials.COMMUNITY_URL, info.getInstanceUrlAsString());
+    }
+
+    public void testGetInstanceUrl() {
+        assertEquals("Wrong url", TestCredentials.INSTANCE_URL, clientInfo.getInstanceUrlAsString());
     }
 
     /**
@@ -309,16 +343,15 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws Exception
      */
     public void testSearch() throws Exception {
-        IdName newAccountIdName = createAccount();
-        RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + SEARCH_ENTITY_NAME + "}"));
         checkResponse(response, HttpStatus.SC_OK, true);
         JSONArray matchingRows = response.asJSONArray();
         assertEquals("Expected one row", 1, matchingRows.length());
         JSONObject matchingRow = matchingRows.getJSONObject(0);
         checkKeys(matchingRow, "attributes", "Id");
-        assertEquals("Wrong row returned", newAccountIdName.id, matchingRow.get("Id"));
+        assertEquals("Wrong row returned", SEARCH_ENTITY_ID, matchingRow.get("Id"));
     }
-    
+
     /**
      * Testing that calling resume more than once on a RestResponse doesn't throw an exception
      * @throws Exception 
@@ -431,7 +464,7 @@ public class RestClientTest extends InstrumentationTestCase {
         try {
             RestResponse searchResponse = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
             JSONArray matchingRows = searchResponse.asJSONArray();
-            for (int i=0; i<matchingRows.length(); i++) {
+            for (int i = 0; i < matchingRows.length(); i++) {
                 JSONObject matchingRow = matchingRows.getJSONObject(i);
                 String matchingRowType = matchingRow.getJSONObject("attributes").getString("type");
                 String matchingRowId = matchingRow.getString("Id");

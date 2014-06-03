@@ -78,6 +78,23 @@ native/TemplateApp/local.properties
 native/test/SalesforceSDKTest/local.properties
 native/test/TemplateAppTest/local.properties
 
-.gitignore
+hybrid/SampleApps/AccountEditor/AccountEditor.iml
+hybrid/SampleApps/ContactExplorer/ContactExplorer.iml
+hybrid/SampleApps/HybridFileExplorer/HybridFileExplorer.iml
+hybrid/SampleApps/SmartStoreExplorer/SmartStoreExplorer.iml
+hybrid/SampleApps/VFConnector/VFConnector.iml
+hybrid/SmartStore/SmartStore.iml
+native/SalesforceSDK/SalesforceSDK.iml
+native/SampleApps/FileExplorer/FileExplorer.iml
+native/SampleApps/NativeSqlAggregator/NativeSqlAggregator.iml
+native/SampleApps/RestExplorer/RestExplorer.iml
+gradle/gradle.iml
+SalesforceMobileSDK-Android.iml
 
+.gitignore
 .metadata/
+.idea/
+coverage.em
+coverage/
+.gradle/
+build/

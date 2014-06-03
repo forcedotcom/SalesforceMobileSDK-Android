@@ -42,9 +42,10 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 	 */
 	public void testGetForcePluginsFromXML() {
 		List<String> plugins = SDKInfoPlugin.getForcePluginsFromXML(getInstrumentation().getTargetContext());
-		assertEquals("Wrong number of force plugins", 2, plugins.size());
+		assertEquals("Wrong number of force plugins", 3, plugins.size());
 		assertTrue("oauth plugin should have been returned", plugins.contains("com.salesforce.oauth"));
 		assertTrue("sdkinfo plugin should have been returned", plugins.contains("com.salesforce.sdkinfo"));
+		assertTrue("sfaccountmanager plugin should have been returned", plugins.contains("com.salesforce.sfaccountmanager"));
 	}
 	
 }

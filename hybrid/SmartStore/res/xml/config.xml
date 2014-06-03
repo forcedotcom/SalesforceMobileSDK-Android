@@ -23,5 +23,6 @@
     <plugin name="Capture" value="org.apache.cordova.Capture"/>
     <plugin name="com.salesforce.oauth" value="com.salesforce.androidsdk.phonegap.SalesforceOAuthPlugin"/>
     <plugin name="com.salesforce.sdkinfo" value="com.salesforce.androidsdk.phonegap.SDKInfoPlugin"/>
+    <plugin name="com.salesforce.sfaccountmanager" value="com.salesforce.androidsdk.phonegap.SFAccountManagerPlugin"/>
     <plugin name="com.salesforce.smartstore" value="com.salesforce.androidsdk.smartstore.phonegap.SmartStorePlugin"/>
 </plugins>

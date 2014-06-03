@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -31,7 +31,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.os.Bundle;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.BootConfig;
 
 /**
@@ -48,6 +50,9 @@ public class PushMessaging {
 	// Public constants.
     public static final String UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesfore.mobilesdk.c2dm.UNREGISTERED";
     public static final String UNREGISTERED_EVENT = "com.salesfore.mobilesdk.c2dm.ACTUAL_UNREGISTERED";
+    public static final String ACCOUNT_BUNDLE_KEY = "account_bundle";
+    public static final String ALL_ACCOUNTS_BUNDLE_VALUE = "all_accounts";
+    public static final String GCM_PREFS = "gcm_prefs";
 
     // Private constants.
     private static final String SENDER = "sender";
@@ -59,28 +64,35 @@ public class PushMessaging {
     private static final String BACKOFF = "backoff";
     private static final String DEVICE_ID = "deviceId";
     private static final String IN_PROGRESS = "inprogress";
-    private static final long MILLISECONDS_IN_A_DAY = 86400000L;
-    private static final String GCM_PREFS = "gcm_prefs";
     private static final long DEFAULT_BACKOFF = 30000;
 
     /**
      * Initiates push registration, if the application is not already registered.
-     * If it has been more than a day since the registration occurred, this method
-     * initiates re-registration to the SFDC endpoint, in order to keep it alive.
+     * Otherwise, this method initiates registration/re-registration to the
+     * SFDC endpoint, in order to keep it alive, or to register a new account
+     * that just logged in.
      *
      * @param context Context.
+     * @param account User account.
      */
-    public static void register(Context context) {
-        if (!isRegistered(context)) {
-            setInProgress(context, true);
+    public static void register(Context context, UserAccount account) {
+
+    	/*
+    	 * Performs registration steps if it is a new account, or if the
+    	 * account hasn't been registered yet. Otherwise, performs
+    	 * re-registration at the SFDC endpoint, to keep it alive.
+    	 */
+        if (account != null && !isRegistered(context, account)) {
+            setInProgress(context, true, account);
             final Intent registrationIntent = new Intent(REQUEST_REGISTRATION_INTENT);
             registrationIntent.putExtra(EXTRA_APPLICATION_PENDING_INTENT,
                     PendingIntent.getBroadcast(context, 0, new Intent(), 0));
             registrationIntent.putExtra(SENDER,
             		BootConfig.getBootConfig(context).getPushNotificationClientId());
+            registrationIntent.putExtra(ACCOUNT_BUNDLE_KEY, account.toBundle());
             context.startService(registrationIntent);
-        } else if (hasBeenADaySinceLastSFDCRegistration(context)) {
-            registerSFDCPush(context);
+        } else {
+            registerSFDCPush(context, account);
         }
     }
 
@@ -88,25 +100,35 @@ public class PushMessaging {
      * Initiates push registration against the SFDC endpoint.
      *
      * @param context Context.
+     * @param account User account.
      */
-    public static void registerSFDCPush(Context context) {
-        if (isRegistered(context)) {
-            final Intent registrationIntent = new Intent(PushService.SFDC_REGISTRATION_RETRY_INTENT);
+    public static void registerSFDCPush(Context context, UserAccount account) {
+        final Intent registrationIntent = new Intent(PushService.SFDC_REGISTRATION_RETRY_INTENT);
+    	if (account == null) {
+    		final Bundle bundle = new Bundle();
+            bundle.putString(ACCOUNT_BUNDLE_KEY, ALL_ACCOUNTS_BUNDLE_VALUE);
+            registrationIntent.putExtra(ACCOUNT_BUNDLE_KEY, bundle);
+            PushService.runIntentInService(registrationIntent);
+    	} else if (isRegistered(context, account)) {
+            registrationIntent.putExtra(ACCOUNT_BUNDLE_KEY, account.toBundle());
             PushService.runIntentInService(registrationIntent);
         }
     }
 
     /**
-     * Performs GCM and SFDC un-registration from push notifications.
+     * Performs GCM and SFDC un-registration from push notifications for the
+     * specified user account.
      *
      * @param context Context.
+     * @param account User account.
      */
-    public static void unregister(Context context) {
-        if (isRegistered(context)) {
-            setInProgress(context, true);
+    public static void unregister(Context context, UserAccount account) {
+        if (isRegistered(context, account)) {
+            setInProgress(context, true, account);
             final Intent unregIntent = new Intent(REQUEST_UNREGISTRATION_INTENT);
             unregIntent.putExtra(EXTRA_APPLICATION_PENDING_INTENT,
                     PendingIntent.getBroadcast(context, 0, new Intent(), 0));
+            unregIntent.putExtra(ACCOUNT_BUNDLE_KEY, account.toBundle());
             context.startService(unregIntent);
         }
     }
@@ -115,10 +137,12 @@ public class PushMessaging {
      * Returns the current registration ID, or null, if registration
      * hasn't taken place yet.
      *
+     * @param context Context.
+     * @param account User account.
      * @return Registration ID.
      */
-    public static String getRegistrationId(Context context) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    public static String getRegistrationId(Context context, UserAccount account) {
+    	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         return prefs.getString(REGISTRATION_ID, null);
     }
@@ -128,9 +152,11 @@ public class PushMessaging {
      *
      * @param context Context.
      * @param registrationId Registration ID received from the GCM service.
+     * @param account User account.
      */
-    public static void setRegistrationId(Context context, String registrationId) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    public static void setRegistrationId(Context context, String registrationId,
+    		UserAccount account) {
+    	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         final Editor editor = prefs.edit();
         editor.putString(REGISTRATION_ID, registrationId);
@@ -139,13 +165,14 @@ public class PushMessaging {
     }
 
     /**
-     * Returns whether the application is currently registered or not.
+     * Returns whether the specified user account is currently registered or not.
      *
      * @param context Context.
-     * @return True - if the application is registered, False - otherwise.
+     * @param account User account.
+     * @return True - if the user account is registered, False - otherwise.
      */
-    public static boolean isRegistered(Context context) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    public static boolean isRegistered(Context context, UserAccount account) {
+    	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         return (prefs.getString(REGISTRATION_ID, null) != null);
     }
@@ -154,9 +181,10 @@ public class PushMessaging {
      * Clears the stored SFDC device ID.
      *
      * @param context Context.
+     * @param account User account.
      */
-    public static void clearSFDCRegistrationInfo(Context context) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    public static void clearSFDCRegistrationInfo(Context context, UserAccount account) {
+    	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         final Editor editor = prefs.edit();
         editor.remove(DEVICE_ID);
@@ -164,37 +192,42 @@ public class PushMessaging {
     }
 
     /**
-     * Returns whether the application is registered with SFDC or not.
+     * Returns whether the user account is registered with SFDC or not.
      *
      * @param context Context.
+     * @param account User account.
      * @return True - if registered, False - otherwise.
      */
-    public static boolean isRegisteredWithSFDC(Context context) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    public static boolean isRegisteredWithSFDC(Context context, UserAccount account) {
+    	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         return (prefs.getString(DEVICE_ID, null) != null);
     }
 
     /**
-     * Returns the SFDC registration ID.
+     * Returns the SFDC registration ID for the specified user account.
      *
      * @param context Context.
+     * @param account User account.
      * @return SFDC registration ID.
      */
-    public static String getDeviceId(Context context) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    public static String getDeviceId(Context context, UserAccount account) {
+    	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         return prefs.getString(DEVICE_ID, null);
     }
 
     /**
-     * Sets the last time SFDC registration was successful.
+     * Sets the last time SFDC registration was successful for the
+     * specified user account.
      *
      * @param context Context.
      * @param lastRegistrationTime Last registration time.
+     * @param account User account.
      */
-    public static void setLastRegistrationTime(Context context, long lastRegistrationTime) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    public static void setLastRegistrationTime(Context context, long lastRegistrationTime,
+    		UserAccount account) {
+    	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         final Editor editor = prefs.edit();
         editor.putLong(LAST_SFDC_REGISTRATION_TIME, lastRegistrationTime);
@@ -207,9 +240,11 @@ public class PushMessaging {
      *
      * @param context Context.
      * @param inProgress True - if in progress, False - otherwise.
+     * @param account User account.
      */
-    public static void setInProgress(Context context, boolean inProgress) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    public static void setInProgress(Context context, boolean inProgress,
+    		UserAccount account) {
+    	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         final Editor editor = prefs.edit();
         editor.putBoolean(IN_PROGRESS, inProgress);
@@ -220,10 +255,11 @@ public class PushMessaging {
      * Returns whether push notification registration/un-registration is in progress.
      *
      * @param context Context.
+     * @param account User account.
      * @return True - if in progress, False - otherwise.
      */
-    public static boolean isInProgress(Context context) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    public static boolean isInProgress(Context context, UserAccount account) {
+    	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         return prefs.getBoolean(IN_PROGRESS, false);
     }
@@ -232,9 +268,10 @@ public class PushMessaging {
      * Clears the stored registration information.
      *
      * @param context Context.
+     * @param account User account.
      */
-    public static void clearRegistrationInfo(Context context) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    public static void clearRegistrationInfo(Context context, UserAccount account) {
+    	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         final Editor editor = prefs.edit();
         editor.clear();
@@ -246,9 +283,10 @@ public class PushMessaging {
      *
      * @param context Context.
      * @return Backoff time.
+     * @param account User account.
      */
-    static long getBackoff(Context context) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    static long getBackoff(Context context, UserAccount account) {
+    	final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         return prefs.getLong(BACKOFF, DEFAULT_BACKOFF);
     }
@@ -258,9 +296,10 @@ public class PushMessaging {
      *
      * @param context Context.
      * @param backoff Backoff time to be used.
+     * @param account User account.
      */
-    static void setBackoff(Context context, long backoff) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    static void setBackoff(Context context, long backoff, UserAccount account) {
+        final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         final Editor editor = prefs.edit();
         editor.putLong(BACKOFF, backoff);
@@ -273,9 +312,11 @@ public class PushMessaging {
      * @param context Context.
      * @param registrationId GCM registration ID.
      * @param deviceId SFDC device ID.
+     * @param account User account.
      */
-    static void setRegistrationInfo(Context context, String registrationId, String deviceId) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
+    static void setRegistrationInfo(Context context, String registrationId,
+    		String deviceId, UserAccount account) {
+        final SharedPreferences prefs = context.getSharedPreferences(getSharedPrefFile(account),
         		Context.MODE_PRIVATE);
         final Editor editor = prefs.edit();
         editor.putString(REGISTRATION_ID, registrationId);
@@ -287,15 +328,16 @@ public class PushMessaging {
     }
 
     /**
-     * Returns whether it has been a day since the last SFDC registration.
+     * Returns the name of the shared pref file for the specified account.
      *
-     * @param context Context.
-     * @return True - if it has been a day, False - otherwise.
+     * @param account User account.
+     * @return Name of the shared pref file.
      */
-    private static boolean hasBeenADaySinceLastSFDCRegistration(Context context) {
-        final SharedPreferences prefs = context.getSharedPreferences(GCM_PREFS,
-        		Context.MODE_PRIVATE);
-        long lastRegistrationTimeStamp = prefs.getLong(LAST_SFDC_REGISTRATION_TIME, 0);
-        return ((System.currentTimeMillis() - lastRegistrationTimeStamp) > MILLISECONDS_IN_A_DAY);
+    private static String getSharedPrefFile(UserAccount account) {
+    	String sharedPrefFile = GCM_PREFS;
+    	if (account != null) {
+    		sharedPrefFile = sharedPrefFile + account.getUserLevelFilenameSuffix();
+    	}
+    	return sharedPrefFile;
     }
 }

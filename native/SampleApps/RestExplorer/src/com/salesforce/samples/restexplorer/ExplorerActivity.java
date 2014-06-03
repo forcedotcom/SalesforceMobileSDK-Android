@@ -49,6 +49,7 @@ import android.app.Dialog;
 import android.app.TabActivity;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.text.method.ScrollingMovementMethod;
@@ -62,6 +63,7 @@ import android.widget.RadioGroup;
 import android.widget.TabHost;
 import android.widget.TextView;
 
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -74,6 +76,7 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.TokenRevocationReceiver;
+import com.salesforce.androidsdk.util.UserSwitchReceiver;
 
 /**
  * Activity for explorer
@@ -90,6 +93,7 @@ public class ExplorerActivity extends TabActivity {
 	private TextView resultText;
 	AlertDialog logoutConfirmationDialog;
     private TokenRevocationReceiver tokenRevocationReceiver;
+    private UserSwitchReceiver userSwitchReceiver;
 
 	// Use for objectId fields auto-complete
 	private TreeSet<String> knownIds = new TreeSet<String>();
@@ -133,8 +137,10 @@ public class ExplorerActivity extends TabActivity {
 		// Make result area scrollable
 		resultText = (TextView) findViewById(R.id.result_text);
 		resultText.setMovementMethod(new ScrollingMovementMethod());
+        userSwitchReceiver = new ExplorerUserSwitchReceiver();
+        registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
 	}
-	
+
 	@Override 
 	public void onResume() {
 		super.onResume();
@@ -149,7 +155,9 @@ public class ExplorerActivity extends TabActivity {
 			String accountType = SalesforceSDKManager.getInstance().getAccountType();
 
 			// Get a rest client
-			new ClientManager(this, accountType, SalesforceSDKManager.getInstance().getLoginOptions(), SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+			new ClientManager(this, accountType, SalesforceSDKManager.getInstance().getLoginOptions(),
+					SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+
 				@Override
 				public void authenticatedRestClient(RestClient client) {
 					if (client == null) {
@@ -164,15 +172,20 @@ public class ExplorerActivity extends TabActivity {
 			});
 		}
 	}
-	
-	
+
     @Override
     public void onPause() {
     	super.onPause();
     	passcodeManager.onPause(this);
     	unregisterReceiver(tokenRevocationReceiver);
     }
-	
+
+    @Override
+    public void onDestroy() {
+    	unregisterReceiver(userSwitchReceiver);
+    	super.onDestroy();
+    }
+
 	@Override
 	public void onUserInteraction() {
 		passcodeManager.recordUserInteraction();
@@ -235,6 +248,17 @@ public class ExplorerActivity extends TabActivity {
 	 */
 	public void onGetVersionsClick(View v) {
 		sendRequest(RestRequest.getRequestForVersions());
+	}
+
+	/**
+	 * Called when "Switch Account" button is clicked.
+	 *
+	 * @param v View that was clicked.
+	 */
+	public void onSwitchAccClick(View v) {
+		final Intent i = new Intent(this, SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
+		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		this.startActivity(i);
 	}
 
 	/**
@@ -697,4 +721,39 @@ public class ExplorerActivity extends TabActivity {
 		}
 	}
 
+    /**
+     * Refreshes the client if the user has been switched.
+     */
+	private void refreshIfUserSwitched() {
+		if (passcodeManager.onResume(this)) {
+			final String accountType = SalesforceSDKManager.getInstance().getAccountType();
+
+			// Get a rest client
+			new ClientManager(this, accountType, SalesforceSDKManager.getInstance().getLoginOptions(),
+					SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
+
+				@Override
+				public void authenticatedRestClient(RestClient client) {
+					if (client == null) {
+						SalesforceSDKManager.getInstance().logout(ExplorerActivity.this);
+						return;
+					}
+					ExplorerActivity.this.client = client;			
+				}
+			});
+		}
+	}
+
+    /**
+     * Acts on the user switch event.
+     *
+     * @author bhariharan
+     */
+    private class ExplorerUserSwitchReceiver extends UserSwitchReceiver {
+
+		@Override
+		protected void onUserSwitch() {
+			refreshIfUserSwitched();
+		}
+    }
 }

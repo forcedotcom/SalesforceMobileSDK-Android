@@ -42,7 +42,9 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
 
+import android.annotation.TargetApi;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
@@ -53,6 +55,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -69,6 +72,7 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.TokenRevocationReceiver;
+import com.salesforce.androidsdk.util.UserSwitchReceiver;
 
 /**
  * Class that defines the main activity for a PhoneGap-based application.
@@ -85,6 +89,8 @@ public class SalesforceDroidGapActivity extends DroidGap {
     private static final String USER_ID = "userId";
     private static final String REFRESH_TOKEN = "refreshToken";
     private static final String ACCESS_TOKEN = "accessToken";
+    private static final String COMMUNITY_ID = "communityId";
+    private static final String COMMUNITY_URL = "communityUrl";
 	
     // Used in refresh REST call
     private static final String API_VERSION = ApiVersionStrings.VERSION_NUMBER;
@@ -97,6 +103,8 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	private BootConfig bootconfig;
     private PasscodeManager passcodeManager;
     private TokenRevocationReceiver tokenRevocationReceiver;
+    private UserSwitchReceiver userSwitchReceiver;
+    private boolean tokenRevocationRegistered;
 
 	// Web app loaded?
 	private boolean webAppLoaded = false;	
@@ -112,17 +120,12 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
         // Get clientManager
         clientManager = buildClientManager();
-		
-        // Get client (if already logged in)
-        try {
-			client = clientManager.peekRestClient();
-		} catch (AccountInfoNotFoundException e) {
-			client = null;
-		}
-        
+
         // Passcode manager
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         tokenRevocationReceiver = new TokenRevocationReceiver(this);
+        userSwitchReceiver = new DroidGapUserSwitchReceiver();
+        registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
 
         // Ensure we have a CookieSyncManager
         CookieSyncManager.createInstance(this);
@@ -164,8 +167,17 @@ public class SalesforceDroidGapActivity extends DroidGap {
     @Override
     public void onResume() {
         super.onResume();
-    	registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
+        if (!tokenRevocationRegistered) {
+            registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
+        }
     	if (passcodeManager.onResume(this)) {
+
+            // Get client (if already logged in)
+            try {
+    			client = clientManager.peekRestClient();
+    		} catch (AccountInfoNotFoundException e) {
+    			client = null;
+    		}
 
     		// Not logged in
         	if (client == null) {
@@ -188,6 +200,28 @@ public class SalesforceDroidGapActivity extends DroidGap {
         	}
         }
     }
+
+    /**
+     * Restarts the activity if the user has been switched.
+     */
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	private void restartIfUserSwitched() {
+		if (client != null) {
+            try {
+    			RestClient currentClient = clientManager.peekRestClient();
+    			if (currentClient != null && !currentClient.getClientInfo().userId.equals(client.getClientInfo().userId)) {
+    		        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.HONEYCOMB) {
+        				this.recreate();
+    		        } else {
+    		        	this.onDestroy();
+    		        	this.onCreate(null);
+    		        }
+    			}
+    		} catch (AccountInfoNotFoundException e) {
+            	Log.i("SalesforceDroidGapActivity.restartIfUserSwitched", "No user account found");
+    		}
+        }
+	}
 
 	/**
 	 * Called when resuming activity and user is not authenticated
@@ -269,7 +303,15 @@ public class SalesforceDroidGapActivity extends DroidGap {
         super.onPause();
         passcodeManager.onPause(this);
         CookieSyncManager.getInstance().stopSync();
-    	unregisterReceiver(tokenRevocationReceiver);
+        if (tokenRevocationRegistered) {
+        	unregisterReceiver(tokenRevocationReceiver);
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+    	unregisterReceiver(userSwitchReceiver);
+    	super.onDestroy();
     }
 
     @Override
@@ -369,7 +411,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         	final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
             URI instanceUrl = null;
             if (clientInfo != null) {
-            	instanceUrl = clientInfo.instanceUrl;
+            	instanceUrl = clientInfo.getInstanceUrl();
             }
             setVFCookies(instanceUrl);
     	}
@@ -395,7 +437,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
         			return true;
         		}
         	});
-        	view.loadUrl(instanceUrl.toString() + "/visualforce/session?url=/apexpages/utils/ping.apexp&autoPrefixVFDomain=true");	
+        	view.loadUrl(instanceUrl.toString() + "/visualforce/session?url=/apexpages/utils/ping.apexp&autoPrefixVFDomain=true");
     	}
     }
 
@@ -427,10 +469,10 @@ public class SalesforceDroidGapActivity extends DroidGap {
      * @return front-door url
      */
     public String getFrontDoorUrl(String url) {
-		String frontDoorUrl = client.getClientInfo().instanceUrl.toString() + "/secur/frontdoor.jsp?";
+		String frontDoorUrl = client.getClientInfo().getInstanceUrlAsString() + "/secur/frontdoor.jsp?";
 		List<NameValuePair> params = new LinkedList<NameValuePair>();
 		params.add(new BasicNameValuePair("sid", client.getAuthToken()));
-		params.add(new BasicNameValuePair("retURL", url));
+		params.add(new BasicNameValuePair("retURL", client.getClientInfo().resolveUrl(url).toString()));
 		params.add(new BasicNameValuePair("display", "touch"));
 		frontDoorUrl += URLEncodedUtils.format(params, "UTF-8");
     	return frontDoorUrl;
@@ -470,15 +512,30 @@ public class SalesforceDroidGapActivity extends DroidGap {
 
        // Android 3.0+ clients want to use the standard .[domain] format. Earlier clients will only work
        // with the [domain] format.  Set them both; each platform will leverage its respective format.
-       addSidCookieForDomain(cookieMgr,"salesforce.com", accessToken);
-       addSidCookieForDomain(cookieMgr,".salesforce.com", accessToken);
+       addSidCookieForInstance(cookieMgr,"salesforce.com", accessToken);
+       addSidCookieForInstance(cookieMgr,".salesforce.com", accessToken);
 
        // Log.i("SalesforceOAuthPlugin.setSidCookies", "accessToken=" + accessToken);
        cookieSyncMgr.sync();
    }
 
+   private void addSidCookieForInstance(CookieManager cookieMgr, String domain, String sid) {
+	   final ClientInfo clientInfo = SalesforceDroidGapActivity.this.client.getClientInfo();
+       URI instanceUrl = null;
+       if (clientInfo != null) {
+    	   instanceUrl = clientInfo.getInstanceUrl();
+       }
+       String host = null;
+       if (instanceUrl != null) {
+    	   host = instanceUrl.getHost();
+       }
+       if (host != null) {
+    	   addSidCookieForDomain(cookieMgr, host, sid);
+       }
+   }
+
    private void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
-       String cookieStr = "sid=" + sid;
+	   String cookieStr = "sid=" + sid;
        cookieMgr.setCookie(domain, cookieStr);
    }    
     
@@ -498,6 +555,8 @@ public class SalesforceDroidGapActivity extends DroidGap {
 	       data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
 	       data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
 	       data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent());
+	       data.put(COMMUNITY_ID, clientInfo.communityId);
+	       data.put(COMMUNITY_URL, clientInfo.communityUrl);
 	       return new JSONObject(data);
 	   } else {
 		   return null;
@@ -505,8 +564,7 @@ public class SalesforceDroidGapActivity extends DroidGap {
    }
 
     /**
-     * Exception thrown if initial web page load fails
-     *
+     * Exception thrown if initial web page load fails.
      */
     public static class HybridAppLoadException extends RuntimeException {
 
@@ -515,6 +573,18 @@ public class SalesforceDroidGapActivity extends DroidGap {
 		}
 
 		private static final long serialVersionUID = 1L;
-	
+    }
+
+    /**
+     * Acts on the user switch event.
+     *
+     * @author bhariharan
+     */
+    private class DroidGapUserSwitchReceiver extends UserSwitchReceiver {
+
+		@Override
+		protected void onUserSwitch() {
+			restartIfUserSwitched();
+		}
     }
 }

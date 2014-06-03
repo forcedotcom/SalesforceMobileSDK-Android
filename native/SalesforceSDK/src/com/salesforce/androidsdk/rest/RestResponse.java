@@ -27,7 +27,10 @@
 package com.salesforce.androidsdk.rest;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -37,6 +40,8 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import android.util.Log;
 
 import com.android.volley.NetworkResponse;
 
@@ -53,50 +58,69 @@ public class RestResponse {
 	// Populated when "consume" is called
 	private byte[] responseAsBytes;
 	private String responseCharSet;
-	
+
 	// Lazily computed
 	private String responseAsString;
 	private JSONObject responseAsJSONObject;
 	private JSONArray responseAsJSONArray;
+	private Map<String, String> headers;
 
 	/**
-	 * Constructor
-	 * @param response
+	 * Constructor (used by the sendSync() call).
+	 *
+	 * @param response HttpResponse object.
 	 */
 	public RestResponse(HttpResponse response) {
 		this.response = response;
 		this.statusCode = response.getStatusLine().getStatusCode();
+		final Header[] responseHeaders = response.getAllHeaders();
+		this.headers = new HashMap<String, String>();
+		if (responseHeaders != null) {
+			for (int i = 0; i < responseHeaders.length; i++) {
+				if (responseHeaders[i] != null) {
+					this.headers.put(responseHeaders[i].getName(),
+							responseHeaders[i].getValue());
+				}
+			}
+		}
 	}
-	
+
 	/**
-	 * Constructor
-	 * @param response
+	 * Constructor (used by the sendAsync() call).
+	 *
+	 * @param response NetworkResponse object.
 	 */
 	public RestResponse(NetworkResponse response) {
 		this.response = null;
 		this.statusCode = response.statusCode;
 		this.responseAsBytes = response.data;
-				
+		this.headers = response.headers;
 	}
-	
+
+	/**
+	 * Returns all headers associated with this response.
+	 *
+	 * @return Map containing all headers.
+	 */
+	public Map<String, String> getAllHeaders() {
+		return headers;
+	}
+
 	/**
 	 * @return HTTP status code of the response
 	 */
 	public int getStatusCode() {
 		return statusCode; 
 	}
-	
-	/**
-	 * @return the base HTTP response of the response. The can be useful for response that are not JSON, such as binary payloads.
-	 */
+
 	/**
 	 * @return true for response with 2xx status codes
 	 */
 	public boolean isSuccess() {
 		// 2xx success
-		return (statusCode >= HttpStatus.SC_OK && statusCode < HttpStatus.SC_MULTIPLE_CHOICES);	
+		return (statusCode >= HttpStatus.SC_OK && statusCode < HttpStatus.SC_MULTIPLE_CHOICES);
 	}
-	
+
 	/**
 	 * Fully consume response entity content and closes content stream
 	 * Must be called before returning control to the UI thread
@@ -107,13 +131,14 @@ public class RestResponse {
 			// already consumed
 			return;			
 		}
-		
-		HttpEntity entity = response.getEntity();
+		HttpEntity entity = null;
+		if (response != null) {
+			entity = response.getEntity();
+		}
 		if (entity != null) {
 			responseCharSet = EntityUtils.getContentCharSet(entity);		
 			responseAsBytes = EntityUtils.toByteArray(entity);
-		}
-		else {
+		} else {
 			responseAsBytes = new byte[0];
 		}
 	}
@@ -127,11 +152,11 @@ public class RestResponse {
 			consume();
 		}
 		return responseAsBytes;
-	}	
-	
+	}
+
 	/**
 	 * String is built the first time the method is called.
-	 * 
+	 *
 	 * @return string for entire response
 	 * @throws ParseException
 	 * @throws IOException
@@ -142,10 +167,10 @@ public class RestResponse {
 		}
 		return responseAsString;
 	}
-	
+
 	/**
 	 * JSONObject is built the first time the method is called.
-	 * 
+	 *
 	 * @return JSONObject for response
 	 * @throws ParseException
 	 * @throws JSONException
@@ -160,7 +185,7 @@ public class RestResponse {
 
 	/**
 	 * JSONArray is built the first time the method is called.
-	 * 
+	 *
 	 * @return JSONObject for response
 	 * @throws ParseException
 	 * @throws JSONException
@@ -172,14 +197,14 @@ public class RestResponse {
 		}
 		return responseAsJSONArray;
 	}
-	
-	
+
 	@Override
 	public String toString() {
 		try {
 			return asString();
 		} catch (Exception e) {
-			return response.toString();
+			Log.e("RestResponse: toString()", "Exception caught while calling asString()", e);
+			return ((response == null) ? "" : response.toString());
 		}
 	}
 }

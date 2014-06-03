@@ -47,7 +47,6 @@ import android.util.Log;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 
 /**
  * The service used for taking care of authentication for a Salesforce-based application.
@@ -66,6 +65,8 @@ public class AuthenticatorService extends Service {
     public static final String KEY_USERNAME = "username";
     public static final String KEY_ID_URL = "id";
     public static final String KEY_CLIENT_SECRET = "clientSecret";
+    public static final String KEY_COMMUNITY_ID = "communityId";
+    public static final String KEY_COMMUNITY_URL = "communityUrl";
 
     private Authenticator getAuthenticator() {
         if (authenticator == null)
@@ -125,9 +126,8 @@ public class AuthenticatorService extends Service {
                             Account account,
                             String authTokenType,
                             Bundle options) throws NetworkErrorException {
-            // Log.i("Authenticator:getAuthToken", "Get auth token for " + account.name);
             final AccountManager mgr = AccountManager.get(context);
-            final String passcodeHash = LoginOptions.fromBundle(options).passcodeHash;
+            final String passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
             final String refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), passcodeHash);
             final String loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), passcodeHash);
             final String clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
@@ -139,6 +139,18 @@ public class AuthenticatorService extends Service {
             String clientSecret = null;
             if (encClientSecret != null) {
                 clientSecret = SalesforceSDKManager.decryptWithPasscode(encClientSecret, passcodeHash);
+            }
+            final String encCommunityId = mgr.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
+            String communityId = null;
+            if (encCommunityId != null) {
+            	communityId = SalesforceSDKManager.decryptWithPasscode(encCommunityId,
+            			SalesforceSDKManager.getInstance().getPasscodeHash());
+            }
+            final String encCommunityUrl = mgr.getUserData(account, AuthenticatorService.KEY_COMMUNITY_URL);
+            String communityUrl = null;
+            if (encCommunityUrl != null) {
+            	communityUrl = SalesforceSDKManager.decryptWithPasscode(encCommunityUrl,
+            			SalesforceSDKManager.getInstance().getPasscodeHash());
             }
             final Bundle resBundle = new Bundle();
             try {
@@ -165,6 +177,16 @@ public class AuthenticatorService extends Service {
                     encrClientSecret = SalesforceSDKManager.encryptWithPasscode(clientSecret, passcodeHash);
                 }
                 resBundle.putString(AuthenticatorService.KEY_CLIENT_SECRET, encrClientSecret);
+                String encrCommunityId = null;
+                if (communityId != null) {
+                	encrCommunityId = SalesforceSDKManager.encryptWithPasscode(communityId, passcodeHash);
+                }
+                resBundle.putString(AuthenticatorService.KEY_COMMUNITY_ID, encrCommunityId);
+                String encrCommunityUrl = null;
+                if (communityUrl != null) {
+                	encrCommunityUrl = SalesforceSDKManager.encryptWithPasscode(communityUrl, passcodeHash);
+                }
+                resBundle.putString(AuthenticatorService.KEY_COMMUNITY_URL, encrCommunityUrl);
                 // Log.i("Authenticator:getAuthToken", "Returning auth bundle for " + account.name);
             } catch (ClientProtocolException e) {
                 Log.w("Authenticator:getAuthToken", "", e);

@@ -37,6 +37,7 @@
 	<!-- Passcode entry screen -->
 	<string name="sf__passcode_create_title">Create %s passcode</string>
 	<string name="sf__passcode_create_instructions">For increased security, please create a passcode that you will use to access %s when the session has timed out due to inactivity.</string>
+	<string name="sf__passcode_change_instructions">For increased security, your admininstrator requires you to change your passcode.</string>
 	<string name="sf__passcode_confirm_title">Re-enter your %s passcode</string>
 	<string name="sf__passcode_confirm_instructions">Confirm your mobile passcode for %s</string>
 	<string name="sf__passcode_enter_title">Enter %s Passcode</string>
@@ -52,4 +53,8 @@
 
 	<!-- Manage space activity -->
 	<string name="sf__manage_space_confirmation">Clearing user data will log the current user out. Are you sure you want to perform this action?</string>
+
+	<!-- Account switcher screen -->
+	<string name="sf__add_new_account">Add New Account</string>
+	<string name="sf__switch_account">Switch Account</string>
 </resources>

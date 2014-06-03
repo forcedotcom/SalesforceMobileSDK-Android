@@ -1,0 +1,42 @@
+
+apply plugin: 'android-library'
+
+dependencies {
+  compile project(':native:SalesforceSDK')
+  compile files('libs/sqlcipher.jar')
+}
+
+android {
+  compileSdkVersion 8
+  buildToolsVersion "19.0.1"
+
+  sourceSets {
+    main {
+      manifest.srcFile 'AndroidManifest.xml'
+      java.srcDirs = ['src']
+      resources.srcDirs = ['src']
+      aidl.srcDirs = ['src']
+      renderscript.srcDirs = ['src']
+      res.srcDirs = ['res']
+      assets.srcDirs = ['assets']
+      jniLibs.srcDir '../../external/sqlcipher/libs'
+    }
+    androidTest.setRoot('../test/SmartStoreTest')
+    androidTest {
+      java.srcDirs = ['../test/SmartStoreTest/src']
+      resources.srcDirs = ['../test/SmartStoreTest/src']
+      res.srcDirs = ['../test/SmartStoreTest/res']
+    }
+  }
+  defaultConfig {
+    testPackageName "com.salesforce.androidsdk.smartstore.tests"
+    testInstrumentationRunner "com.salesforce.androidsdk.util.JUnitReportTestRunner"
+  }
+  packagingOptions {
+    exclude 'META-INF/LICENSE'
+    exclude 'META-INF/LICENSE.txt'
+    exclude 'META-INF/DEPENDENCIES'
+    exclude 'META-INF/NOTICE'
+  }
+}
+

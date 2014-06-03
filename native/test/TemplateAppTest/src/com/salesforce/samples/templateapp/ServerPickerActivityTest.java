@@ -26,18 +26,24 @@
  */
 package com.salesforce.samples.templateapp;
 
-import com.salesforce.androidsdk.ui.ServerPickerActivity;
-import com.salesforce.androidsdk.util.BaseActivityInstrumentationTestCase;
-
+import android.test.ActivityInstrumentationTestCase2;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.ui.ServerPickerActivity;
+import com.salesforce.androidsdk.util.EventsListenerQueue;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
  * Tests for ServerPickerActivity
  */
 public class ServerPickerActivityTest extends
-		BaseActivityInstrumentationTestCase<ServerPickerActivity> {
+		ActivityInstrumentationTestCase2<ServerPickerActivity> {
 
+    private EventsListenerQueue eq;
 	private Button btnCustomEdit;
 	private Button btnCancel;
 	private Button btnApply;
@@ -45,41 +51,52 @@ public class ServerPickerActivityTest extends
 	private EditText txtUrl;
 
 	public ServerPickerActivityTest() {
-		super("com.salesforce.samples.templateapp", ServerPickerActivity.class);
+		super(ServerPickerActivity.class);
 	}
-	
+
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		setActivityInitialTouchMode(false);
+        setActivityInitialTouchMode(false);
+        eq = new EventsListenerQueue();
+
+        // Waits for app initialization to complete.
+        if (SalesforceSDKManager.getInstance() == null) {
+            eq.waitForEvent(EventType.AppCreateComplete, 5000);
+        }
+	}
+
+	@Override
+	public void tearDown() throws Exception {
+		if (eq != null) {
+            eq.tearDown();
+            eq = null;
+        }
+		super.tearDown();
 	}
 
 	/**
 	 * Test that the cancel button can be clicked and the URL not saved
-	 * 
+	 *
 	 * @throws Throwable
 	 */
 	public void testCancelButton() throws Throwable {
 		openCustomEditDialog();
-
 		clickView(btnCancel);
-
 		assertFalse("Custom URL dialog should be closed",
 				getActivity().urlEditDialog.isShowing());
 	}
 
 	/**
 	 * Test a valid URL can be entered and saved
-	 * 
+	 *
 	 * @throws Throwable
 	 */
 	public void testAddCustomInstance() throws Throwable {
 		String label = "My Custom URL";
 		String url = "https://valid.url.com";
 		addCustomUrl(label, url);
-
 		clickView(btnApply);
-
 		openCustomEditDialog();
 		assertTrue("Custom Label does not match Expected: " + label
 				+ " Actual: " + txtLabel.getEditableText().toString(), label
@@ -91,36 +108,30 @@ public class ServerPickerActivityTest extends
 
 	/**
 	 * Test that "https" is required
-	 * 
+	 *
 	 * @throws Throwable
 	 */
 	public void testAddInvalidUrl() throws Throwable {
 		String label = "My URL";
 		String url = "http://invalid.url.com";
 		addCustomUrl(label, url);
-
 		clickView(btnApply);
-
 		assertTrue("Custom URL dialog should still be open",
 				getActivity().urlEditDialog.isShowing());
 		assertTrue("URL field should still have focus", txtUrl.hasFocus());
-
 		url = "https://valid.url.com";
 		addCustomUrl(label, url);
-
 		clickView(btnApply);
-
 		assertFalse("Custom URL dialog should be closed",
 				getActivity().urlEditDialog.isShowing());
 	}
 
-	
 	private void openCustomEditDialog() throws Throwable {
 		btnCustomEdit = (Button) getActivity().findViewById(
 				R.id.sf__show_custom_url_edit);
 		assertNotNull("Custom URL Edit dialog does not exist", btnCustomEdit);
-
 		runTestOnUiThread(new Runnable() {
+
 			@Override
 			public void run() {
 				assertTrue("Unable to click open Custom URL Edit Dialog",
@@ -145,7 +156,6 @@ public class ServerPickerActivityTest extends
 		if (txtLabel.getEditableText().length() > 0) {
 			setText(txtLabel, "");
 		}
-
 		if (txtUrl.getEditableText().length() > 0) {
 			setText(txtUrl, "");
 		}
@@ -158,4 +168,55 @@ public class ServerPickerActivityTest extends
 		setFocus(txtUrl);
 		setText(txtUrl, url);
 	}
+
+    private void setText(final TextView v, final String text) {
+        try {
+            runTestOnUiThread(new Runnable() {
+
+                @Override
+                public void run() {
+                    v.setText(text);
+                    if (v instanceof EditText)
+                        ((EditText) v).setSelection(v.getText().length());
+                }
+            });
+        } catch (Throwable t) {
+            fail("Failed to set text " + text);
+        }
+    }
+
+    private void setFocus(View v) throws Throwable {
+        runTestOnUiThread(new Focuser(v));
+    }
+
+    /**
+     * A runnable that requests focus for the specified view.
+     */
+    private static class Focuser implements Runnable {
+
+        Focuser(View v) {
+            this.view = v;
+        }
+
+        private final View view;
+
+        @Override
+        public void run() {
+            view.requestFocus();
+        }
+    }
+
+    private void clickView(final View v) {
+        try {
+            runTestOnUiThread(new Runnable() {
+
+                @Override
+                public void run() {
+                    v.performClick();
+                }
+            });
+        } catch (Throwable t) {
+            fail("Failed to click view " + v);
+        }
+    }
 }

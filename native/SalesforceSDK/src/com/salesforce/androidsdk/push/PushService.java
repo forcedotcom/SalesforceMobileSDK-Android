@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,8 +27,10 @@
 package com.salesforce.androidsdk.push;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.http.HttpStatus;
@@ -45,12 +47,17 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.util.Log;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider;
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 
 /**
  * This class houses functionality related to push notifications.
@@ -93,7 +100,6 @@ public class PushService extends IntentService {
     private static PowerManager.WakeLock WAKE_LOCK;
 
     private Context context;
-    private RestClient restClient;
 
     /**
      * This method is called from the broadcast receiver, when a push notification
@@ -122,21 +128,65 @@ public class PushService extends IntentService {
 	public PushService() {
 		super(TAG);
 		context = SalesforceSDKManager.getInstance().getAppContext();
-		restClient = getRestClient();
 	}
 
 	@Override
 	protected void onHandleIntent(Intent intent) {
 		final Context context = SalesforceSDKManager.getInstance().getAppContext();
+
+		/*
+		 * Grabs the extras from the intent, and determines based on the
+		 * bundle whether to perform the operation for all accounts or
+		 * just the specified account that's passed in.
+		 */
+		final Bundle bundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
+		UserAccount account = null;
+		boolean allAccounts = false;
+		if (bundle != null) {
+			final String allAccountsValue = bundle.getString(PushMessaging.ACCOUNT_BUNDLE_KEY);
+			if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(allAccountsValue)) {
+				allAccounts = true;
+			} else {
+				account = new UserAccount(bundle);
+			}
+		}
+		final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+		final List<UserAccount> accounts = userAccMgr.getAuthenticatedUsers();
 		try {
             if (intent.getAction().equals(GCM_REGISTRATION_CALLBACK_INTENT)) {
-                handleRegistration(intent);
+            	if (allAccounts) {
+            		if (accounts != null) {
+                		for (final UserAccount userAcc : accounts) {
+                            handleRegistration(intent, userAcc);
+                		}
+            		}
+            	} else if (account != null) {
+                    handleRegistration(intent, account);
+            	} else {
+            		handleRegistration(intent, userAccMgr.getCurrentUser());
+            	}
             } else if (intent.getAction().equals(GCM_RECEIVE_INTENT)) {
                 onMessage(intent);
             } else if (intent.getAction().equals(SFDC_REGISTRATION_RETRY_INTENT)) {
-            	final String regId = PushMessaging.getRegistrationId(context);
-            	if (regId != null) {
-                    onRegistered(regId);
+            	if (allAccounts) {
+            		if (accounts != null) {
+                		for (final UserAccount userAcc : accounts) {
+                        	final String regId = PushMessaging.getRegistrationId(context,
+                        			account);
+                        	if (regId != null) {
+                                onRegistered(regId, userAcc);
+                        	}
+                		}
+            		}
+            	} else {
+            		if (account == null) {
+            			account = userAccMgr.getCurrentUser();
+            		}
+                	final String regId = PushMessaging.getRegistrationId(context,
+                			account);
+                	if (regId != null) {
+                        onRegistered(regId, account);
+                	}
             	}
             }
         } finally {
@@ -167,12 +217,13 @@ public class PushService extends IntentService {
      * Handles errors associated with registration or un-registration.
      *
      * @param error Error received from the GCM service.
+     * @param account User account.
      */
-    private void onError(String error) {
-        if (PushMessaging.isRegistered(context)) {
-            handleUnRegistrationError(error);
+    private void onError(String error, UserAccount account) {
+        if (PushMessaging.isRegistered(context, account)) {
+            handleUnRegistrationError(error, account);
         } else {
-            handleRegistrationError(error);
+            handleRegistrationError(error, account);
         }
     }
 
@@ -181,10 +232,11 @@ public class PushService extends IntentService {
      * bails out on other types of errors.
      *
      * @param error Error received from the GCM service.
+     * @param account User account.
      */
-    private void handleRegistrationError(String error) {
+    private void handleRegistrationError(String error, UserAccount account) {
     	if (error != null && ERR_SERVICE_NOT_AVAILABLE.equals(error)) {
-    		scheduleGCMRetry(true);
+    		scheduleGCMRetry(true, account);
     	}
     }
 
@@ -192,29 +244,32 @@ public class PushService extends IntentService {
      * Handles unregistration errors.
      *
      * @param error Error received from the GCM service.
+     * @param account User account.
      */
-    private void handleUnRegistrationError(String error) {
-    	if (PushMessaging.isRegisteredWithSFDC(context)) {
-    		final String id = PushMessaging.getDeviceId(context);
+    private void handleUnRegistrationError(String error, UserAccount account) {
+    	if (PushMessaging.isRegisteredWithSFDC(context, account)) {
+    		final String id = PushMessaging.getDeviceId(context, account);
     		if (id != null) {
-    			unregisterSFDCPushNotification(id);
+    			unregisterSFDCPushNotification(id, account);
     		}
     	}
         context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT));
-        scheduleGCMRetry(false);
+        scheduleGCMRetry(false, account);
     }
 
     /**
      * Schedules retry of GCM registration or un-registration.
      *
      * @param register True - for registration retry, False - for un-registration retry.
+     * @param account User account.
      */
-    private void scheduleGCMRetry(boolean register) {
-        long backoffTimeMs = PushMessaging.getBackoff(context);
+    private void scheduleGCMRetry(boolean register, UserAccount account) {
+        long backoffTimeMs = PushMessaging.getBackoff(context, account);
         final Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MILLISECOND, (int) backoffTimeMs);
         final Intent retryIntent = new Intent(context, register ? RetryRegistrationAlarmReceiver.class
                 : UnregisterRetryAlarmReceiver.class);
+        retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, account.toBundle());
         final PendingIntent retryPIntent = PendingIntent.getBroadcast(context,
         		1, retryIntent, PendingIntent.FLAG_ONE_SHOT);
         final AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -222,18 +277,20 @@ public class PushService extends IntentService {
 
         // Next retry should wait longer.
         backoffTimeMs *= 2;
-        PushMessaging.setBackoff(context, backoffTimeMs);
+        PushMessaging.setBackoff(context, backoffTimeMs, account);
     }
 
     /**
      * Schedules retry of SFDC registration.
      *
      * @param when When to retry.
+     * @param account User account.
      */
-    private void scheduleSFDCRegistrationRetry(long when) {
+    private void scheduleSFDCRegistrationRetry(long when, UserAccount account) {
         final Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MILLISECOND, (int) when);
         final Intent retryIntent = new Intent(context, SFDCRegistrationRetryAlarmReceiver.class);
+        retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, account.toBundle());
         final PendingIntent retryPIntent = PendingIntent.getBroadcast(context,
         		1, retryIntent, PendingIntent.FLAG_ONE_SHOT);
         final AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -244,55 +301,62 @@ public class PushService extends IntentService {
      * This method is called when registration with GCM is successful.
      *
      * @param registrationId Registration ID received from GCM service.
+     * @param account User account.
      */
-    private void onRegistered(String registrationId) {
+    private void onRegistered(String registrationId, UserAccount account) {
     	long retryInterval = SFDC_REGISTRATION_RETRY;
     	try {
-        	final String id = registerSFDCPushNotification(registrationId);
+        	final String id = registerSFDCPushNotification(registrationId, account);
         	if (id != null) {
         		retryInterval = MILLISECONDS_IN_SIX_DAYS;
-        		PushMessaging.setRegistrationInfo(context, registrationId, id);
+        		PushMessaging.setRegistrationInfo(context, registrationId, id,
+        				account);
         	} else {
-            	PushMessaging.setRegistrationId(context, registrationId);
+            	PushMessaging.setRegistrationId(context, registrationId, account);
         	}
     	} catch (Exception e) {
     		Log.e(TAG, "Error occurred during SFDC registration.", e);
     	} finally {
-            scheduleSFDCRegistrationRetry(retryInterval);
+            scheduleSFDCRegistrationRetry(retryInterval, account);
     	}
     }
 
     /**
      * This method is called when the device has been un-registered.
+     *
+     * @param account User account.
      */
-    private void onUnregistered() {
+    private void onUnregistered(UserAccount account) {
     	try {
-        	final String id = PushMessaging.getDeviceId(context);
-        	unregisterSFDCPushNotification(id);
+        	final String id = PushMessaging.getDeviceId(context, account);
+        	unregisterSFDCPushNotification(id, account);
     	} catch (Exception e) {
     		Log.e(TAG, "Error occurred during SFDC un-registration.", e);
     	} finally {
-        	PushMessaging.clearRegistrationInfo(context);
+        	PushMessaging.clearRegistrationInfo(context, account);
             context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT));
             context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_EVENT));
-    	}
+        }
     }
 
     /**
      * Hits the Salesforce endpoint to register for push notifications.
      *
      * @param registrationId Registration ID.
+     * @param account User account.
      * @return Salesforce ID that uniquely identifies the registered device.
      */
-    private String registerSFDCPushNotification(String registrationId) {
+    private String registerSFDCPushNotification(String registrationId,
+    		UserAccount account) {
     	final Map<String, Object> fields = new HashMap<String, Object>();
     	fields.put(CONNECTION_TOKEN, registrationId);
     	fields.put(SERVICE_TYPE, ANDROID_GCM);
     	try {
+    		final RestClient client = getRestClient(account);
         	final RestRequest req = RestRequest.getRequestForCreate(ApiVersionStrings.VERSION_NUMBER,
         			MOBILE_PUSH_SERVICE_DEVICE, fields);
-        	if (restClient != null) {
-            	final RestResponse res = restClient.sendSync(req);
+        	if (client != null) {
+            	final RestResponse res = client.sendSync(req);
             	String id = null;
             	if (res.getStatusCode() == HttpStatus.SC_CREATED) {
             		final JSONObject obj = res.asJSONObject();
@@ -312,14 +376,17 @@ public class PushService extends IntentService {
      * Hits the Salesforce endpoint to un-register from push notifications.
      *
      * @param registeredId Salesforce ID that uniquely identifies the registered device.
+     * @param account User account.
      * @return True - if un-registration was successful, False - otherwise.
      */
-    private boolean unregisterSFDCPushNotification(String registeredId) {
+    private boolean unregisterSFDCPushNotification(String registeredId,
+    		UserAccount account) {
     	final RestRequest req = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER,
     			MOBILE_PUSH_SERVICE_DEVICE, registeredId);
     	try {
-    		if (restClient != null) {
-            	final RestResponse res = restClient.sendSync(req);
+    		final RestClient client = getRestClient(account);
+    		if (client != null) {
+            	final RestResponse res = client.sendSync(req);
             	if (res.getStatusCode() == HttpStatus.SC_NO_CONTENT) {
             		return true;
             	}
@@ -333,16 +400,32 @@ public class PushService extends IntentService {
     /**
      * Gets an instance of RestClient.
      *
+     * @param account User account.
      * @return Instance of RestClient.
      */
-    private RestClient getRestClient() {
+    private RestClient getRestClient(UserAccount account) {
     	final ClientManager cm = new ClientManager(SalesforceSDKManager.getInstance().getAppContext(),
     			SalesforceSDKManager.getInstance().getAccountType(),
     			SalesforceSDKManager.getInstance().getLoginOptions(), true);
     	RestClient client = null;
+
+    	/*
+    	 * The reason we can't directly call 'peekRestClient()' here is because
+    	 * ClientManager does not hand out a rest client when a logout is in
+    	 * progress. Hence, we build a rest client here manually, with the
+    	 * available data in the 'account' object.
+    	 */
     	if (cm != null) {
     		try {
-            	client = cm.peekRestClient();
+    	        final AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(cm,
+    	        		account.getAuthToken(), account.getRefreshToken());
+    			final ClientInfo clientInfo = new ClientInfo(account.getClientId(),
+    					new URI(account.getInstanceServer()), new URI(account.getLoginServer()),
+    					new URI(account.getIdUrl()), account.getAccountName(), account.getUsername(),
+    	        		account.getUserId(), account.getOrgId(),
+    	        		account.getCommunityId(), account.getCommunityUrl());
+                client = new RestClient(clientInfo, account.getAuthToken(),
+                		HttpAccess.DEFAULT, authTokenProvider);
     		} catch (Exception e) {
     			Log.e(TAG, "Failed to get rest client.");
     		}
@@ -354,17 +437,18 @@ public class PushService extends IntentService {
      * Handles registration callback.
      *
      * @param intent Intent.
+     * @param account User account.
      */
-    private void handleRegistration(Intent intent) {
+    private void handleRegistration(Intent intent, UserAccount account) {
         final String registrationId = intent.getStringExtra(EXTRA_REGISTRATION_ID);
         final String error = intent.getStringExtra(EXTRA_ERROR);
         final String removed = intent.getStringExtra(EXTRA_UNREGISTERED);
         if (removed != null) {
-            onUnregistered();
+            onUnregistered(account);
         } else if (error != null) {
-            onError(error);
+            onError(error, account);
         } else {
-            onRegistered(registrationId);
+            onRegistered(registrationId, account);
         }
     }
 
@@ -377,7 +461,12 @@ public class PushService extends IntentService {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            PushMessaging.register(context);
+        	if (intent != null) {
+        		final Bundle accBundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
+        		if (accBundle != null) {
+                    PushMessaging.register(context, new UserAccount(accBundle));
+        		}
+        	}
         }
     }
 
@@ -390,7 +479,12 @@ public class PushService extends IntentService {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            PushMessaging.registerSFDCPush(context);
+        	if (intent != null) {
+        		final Bundle accBundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
+        		if (accBundle != null) {
+                    PushMessaging.registerSFDCPush(context, new UserAccount(accBundle));
+        		}
+        	}
         }
     }
 
@@ -403,7 +497,12 @@ public class PushService extends IntentService {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            PushMessaging.unregister(context);
+        	if (intent != null) {
+        		final Bundle accBundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
+        		if (accBundle != null) {
+                    PushMessaging.unregister(context, new UserAccount(accBundle));
+        		}
+        	}
         }
     }
 }

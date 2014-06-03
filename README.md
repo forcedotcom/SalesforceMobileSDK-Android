@@ -19,28 +19,27 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 2.1
+### What's New in 2.2
 
-**Push Notifications**
-- Registration and delivery of push notifications are now supported from a Salesforce org that enables push notifications.
+**Multi User Support**
+- The Salesforce Mobile SDK now supports the ability to log into multiple user accounts simultaneously.
+	- The different accounts could be different users on the same org, or different users on different orgs (such as production and sandbox, for instance).
+	- After sign-in the user's credentials are saved, so that the user can switch between accounts seamlessly without having to re-authenticate against the server.
+- Access to SmartStore is also now scoped by user account.
+- Push notifications are now supported across multiple users.
+- The ability to add multiple custom login endpoints has been added as well.
 
-**Networking Enhancements**
-- The underlying networking library has been replaced with Volley. Volley provides the ability to configure advanced features, such as managing the network queue and cancelation of requests.
+**Library Upgrades**
+- Upgraded the `SQLCipher` library to `v3.0.2`.
+- Upgraded the `Volley` networking library to `v4.4.2_r2`.
 
-**Files API Support**
-- The Salesforce Mobile SDK now provides convenience methods that build specialized REST requests for file upload/download and sharing operations.
-- A native sample app, `FileExplorer`, and a hybrid sample app, `HybridFileExplorer`, have been added to demonstrate these features.
-
-**SmartSync Enhancements**
-- You can now access custom endpoints using the `Force.RemoteObject` and `Force.RemoteObjectCollection` classes.
-- You can now access Apex REST endpoints using the `Force.ApexRestObject` and `Force.ApexRestObjectCollection` classes.
+**Build System Enhancements**
+- The Salesforce Mobile SDK now supports the Gradle build system. Our library projects have been updated to support Gradle.
+- The `Android Studio` IDE is now supported.
 - NOTE:
-	- This feature is only available on hybrid apps.
+	- You can continue to use the existing `ant` build system with `Eclipse` if you prefer that.
 
 **Other Technical Improvements**
-- Upgraded the `SQLCipher` library to `v2.2.2`, in order to support Android 4.3 (Jellybean) and Android 4.4 (Kit Kat).
-- Added the ability to merge Android Manifest files from the Mobile SDK library projects, using the `manifestmerger` attribute.
-- Added the ability for an app to supply a custom `PasscodeActivity`, using the `setPasscodeActivity()` method in `SalesforceSDKManager`.
 - Various bug fixes.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials
@@ -81,4 +80,4 @@ Documentation
 Discussion
 ==
 
-If you would like to make suggestions, have questions, or encounter any issues, we'd love to hear from you.  Post any feedback you have to the [Mobile Community Discussion Board](http://boards.developerforce.com/t5/Mobile/bd-p/mobile) on developerforce.com.
+If you would like to make suggestions, have questions, or encounter any issues, we'd love to hear from you.  Post any feedback you have on our [Google+ Community](https://plus.google.com/communities/114225252149514546445).

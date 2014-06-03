@@ -103,7 +103,7 @@
         <xpath input="${tested.project.absolute.dir}/AndroidManifest.xml"
                 expression="/manifest/@package" output="tested.manifest.package" />
 
-        <property name="files.dir" value="/data/data/${tested.manifest.package}/files"/>
+        <property name="files.dir" value="/data/data/${manifest.package}/files"/>
 
         <property name="emma.dump.file"
                 value="/data/data/${tested.manifest.package}/coverage.ec" />

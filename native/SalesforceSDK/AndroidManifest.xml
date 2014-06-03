@@ -2,8 +2,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk" 
-	android:versionCode="33"
-	android:versionName="2.1.1">
+	android:versionCode="34"
+	android:versionName="2.2.0">
 
     <application>
 
@@ -33,6 +33,11 @@
 
         <!-- Choose server activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.NoTitleBar" />
+
+        <!-- Account switcher activity -->
+        <activity android:name="com.salesforce.androidsdk.ui.AccountSwitcherActivity"
             android:excludeFromRecents="true"
             android:theme="@android:style/Theme.NoTitleBar" />
 

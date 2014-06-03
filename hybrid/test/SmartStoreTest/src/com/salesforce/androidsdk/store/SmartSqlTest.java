@@ -58,7 +58,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 
 	@Override
 	protected SQLiteDatabase getWritableDatabase() {
-		return DBOpenHelper.getOpenHelper(targetContext).getWritableDatabase("");
+		return DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase("");
 	}
 
 	@Override
@@ -195,7 +195,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	 */
 	public void testSmartQueryReturningOneRowWithTwoIntegers() throws JSONException {
 		loadData();
-		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select mgr.{employees:salary}, e.{employees:salary} from {employees} as mgr, {employees} as e where e.{employees:lastName} = 'Thompson'", 1), 0);
+		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select mgr.{employees:salary}, e.{employees:salary} from {employees} as mgr, {employees} as e where e.{employees:lastName} = 'Thompson' and mgr.{employees:employeeId} = e.{employees:managerId}", 1), 0);
 		assertSameJSONArray("Wrong result", new JSONArray("[[200000,120000]]"), result);
 	}
 	

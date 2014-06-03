@@ -27,10 +27,10 @@
 package com.salesforce.androidsdk.security;
 
 
-import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
-
 import android.content.Context;
 import android.test.InstrumentationTestCase;
+
+import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
 
 /**
  * Tests for PasscodeManager
@@ -58,7 +58,8 @@ public class PasscodeManagerTest extends InstrumentationTestCase {
     private class TestPasscodeManager extends PasscodeManager {
 
         TestPasscodeManager() {
-            super(getInstrumentation().getTargetContext(), TEST_HASH_CONFIG, TEST_HASH_CONFIG);
+            super(getInstrumentation().getTargetContext(), TEST_HASH_CONFIG,
+            		TEST_HASH_CONFIG);
             setTimeoutMs(TEST_TIMEOUT_MS);
             setEnabled(true);
             // start in a known state.
@@ -71,7 +72,7 @@ public class PasscodeManagerTest extends InstrumentationTestCase {
         }
 
         @Override
-        public void showLockActivity(Context ctx) {
+        public void showLockActivity(Context ctx, boolean changePasscodeFlow) {
             startedLockActivity = true;
         }
     }

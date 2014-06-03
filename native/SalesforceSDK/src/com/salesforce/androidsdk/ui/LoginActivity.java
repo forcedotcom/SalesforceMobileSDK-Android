@@ -283,4 +283,10 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	        super.onActivityResult(requestCode, resultCode, data);
 	    }
 	}
+
+	@Override
+	public void finish() {
+        SalesforceSDKManager.getInstance().getUserAccountManager().sendUserSwitchIntent();
+        super.finish();
+	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,8 +26,23 @@
  */
 package com.salesforce.androidsdk.app;
 
+import java.io.File;
+import java.util.Map;
+
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
+import android.text.TextUtils;
+import android.util.Log;
+
+import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.auth.AuthenticatorService;
+import com.salesforce.androidsdk.auth.LoginServerManager;
+import com.salesforce.androidsdk.push.PushMessaging;
+import com.salesforce.androidsdk.rest.AdminPrefsManager;
+import com.salesforce.androidsdk.security.PasscodeManager;
 
 /**
  * This class handles upgrades from one version to another.
@@ -65,13 +80,36 @@ public class UpgradeManager {
      * version to the current version.
      */
     public synchronized void upgradeAccMgr() {
-        final String installedVersion = getInstalledAccMgrVersion();
+        String installedVersion = getInstalledAccMgrVersion();
         if (installedVersion.equals(SalesforceSDKManager.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
         writeCurVersion(ACC_MGR_KEY, SalesforceSDKManager.SDK_VERSION);
+
+        /*
+         * We need to update this variable, since the app will not
+         * have this value set for a first time install.
+         */
+        if (TextUtils.isEmpty(installedVersion)) {
+            installedVersion = getInstalledAccMgrVersion();
+        }
+
+        /*
+         * If the installed version < v2.2.0, we need to store the current
+         * user's user ID and org ID in a shared preference file, to
+         * support fast user switching.
+         */
+        try {
+        	final String majorVersionNum = installedVersion.substring(0, 3);
+            double installedVerDouble = Double.parseDouble(majorVersionNum);
+            if (installedVerDouble < 2.2) {
+            	upgradeTo2Dot2();
+            }
+        } catch (NumberFormatException e) {
+        	Log.e("UpgradeManager:upgradeAccMgr", "Failed to parse installed version.");
+        }
     }
 
     /**
@@ -82,9 +120,7 @@ public class UpgradeManager {
      */
     protected synchronized void writeCurVersion(String key, String value) {
         final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
-        if (sp == null || !sp.contains(key)) {
-            sp.edit().putString(key, value).commit();
-        }
+        sp.edit().putString(key, value).commit();
     }
 
     /**
@@ -103,9 +139,75 @@ public class UpgradeManager {
      */
     protected String getInstalledVersion(String key) {
         final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(VERSION_SHARED_PREF, Context.MODE_PRIVATE);
-        if (sp == null || !sp.contains(key)) {
-            return "";
-        }
         return sp.getString(key, "");
+    }
+
+    /**
+     * Upgrade steps for older versions of the Mobile SDK to Mobile SDK 2.2.
+     */
+    protected void upgradeTo2Dot2() {
+
+    	// Creates the current user shared pref file.
+        final AccountManager accountManager = AccountManager.get(SalesforceSDKManager.getInstance().getAppContext());
+        final Account[] accounts = accountManager.getAccountsByType(SalesforceSDKManager.getInstance().getAccountType());
+        if (accounts != null && accounts.length > 0) {
+        	final Account account = accounts[0];
+            final String orgId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
+            		AuthenticatorService.KEY_ORG_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
+    		final String userId = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account,
+    				AuthenticatorService.KEY_USER_ID), SalesforceSDKManager.getInstance().getPasscodeHash());
+        	SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
+
+    		/*
+    		 * Renames push notification shared prefs file to new format,
+    		 * if the application is registered for push notifications.
+    		 */
+        	final String oldFilename = PushMessaging.GCM_PREFS + ".xml";
+    		final String sharedPrefDir = SalesforceSDKManager.getInstance().
+    				getAppContext().getApplicationInfo().dataDir
+    				+ "/shared_prefs";
+    		final File from = new File(sharedPrefDir, oldFilename);
+    		if (from.exists()) {
+    			final String newFilename = PushMessaging.GCM_PREFS + SalesforceSDKManager.getInstance().
+               		getUserAccountManager().buildUserAccount(account).getUserLevelFilenameSuffix() + ".xml";
+        		final File to = new File(sharedPrefDir, newFilename);
+        		from.renameTo(to);
+    		}
+
+    		/*
+    		 * Copies admin prefs for current account from old file to new file.
+    		 * We pass in a 'null' account in the getter, since we want the contents
+    		 * from the default storage path. We pass the correct account to
+    		 * the setter, to migrate the contents to the correct storage path.
+    		 */
+    		final Map<String, String> prefs = SalesforceSDKManager.getInstance().getAdminPrefsManager().getPrefs(null);
+    		SalesforceSDKManager.getInstance().getAdminPrefsManager().setPrefs(prefs,
+    				SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account));
+    		final SharedPreferences settings = SalesforceSDKManager.getInstance()
+        			.getAppContext().getSharedPreferences(AdminPrefsManager.ADMIN_PREFS,
+        			Context.MODE_PRIVATE);
+    		final Editor edit = settings.edit();
+    		edit.clear();
+    		edit.commit();
+
+    		/*
+    		 * Copies the passcode/PIN policies from the existing file to
+    		 * an org-specific file.
+    		 */
+    		final PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
+    		final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+    		int timeoutMs = passcodeManager.getTimeoutMs();
+    		int passcodeLength = passcodeManager.getMinPasscodeLength();
+    		passcodeManager.storeMobilePolicyForOrg(userAccMgr.getCurrentUser(),
+    				timeoutMs, passcodeLength);
+        }
+
+        // Removes the old shared pref file for custom URL.
+    	final SharedPreferences settings = SalesforceSDKManager.getInstance()
+    			.getAppContext().getSharedPreferences(LoginServerManager.LEGACY_SERVER_URL_PREFS_SETTINGS,
+    			Context.MODE_PRIVATE);
+		final Editor edit = settings.edit();
+		edit.clear();
+		edit.commit();
     }
 }
