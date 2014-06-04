@@ -2,11 +2,11 @@ apply plugin: 'android'
 
 dependencies {
   compile project(':native:SalesforceSDK')
-
+  compile project(':hybrid:SmartStore')
 }
 
 android {
-  compileSdkVersion 8
+  compileSdkVersion 11
   buildToolsVersion "19.0.1"
 
   sourceSets {
