@@ -2,11 +2,10 @@ apply plugin: 'android'
 
 dependencies {
   compile project(':native:SalesforceSDK')
-
 }
 
 android {
-  compileSdkVersion 12
+  compileSdkVersion 11
   buildToolsVersion "19.0.1"
 
   sourceSets {
