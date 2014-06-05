@@ -27,8 +27,9 @@
 package com.salesforce.androidsdk.sobjectsdk.model;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.salesforce.androidsdk.sobjectsdk.util.Constants;
 
 /**
  * This class contains metadata that can be used to
@@ -37,24 +38,6 @@ import org.json.JSONObject;
  * @author bhariharan
  */
 public class SalesforceObjectType {
-
-    public static final String SF_OBJECTYPE_KEYPREFIX_FIELD = "keyPrefix";
-    public static final String SF_OBJECTYPE_NAME_FIELD = "name";
-    public static final String SF_OBJECTYPE_LAST_VIEWED_DATE_FIELD_NAME = "LastViewedDate";
-    public static final String SF_OBJECTYPE_RECORD_TYPE_INFOS = "recordTypeInfos";
-    public static final String SF_OBJECTYPE_CHILD_RELATIONSHIPS = "childRelationships";
-    public static final String SF_OBJECTYPE_LABEL_FIELD = "label";
-    public static final String SF_OBJECTYPE_LABELPLURAL_FIELD = "labelPlural";
-    public static final String SF_OBJECTYPE_FIELDS_FIELD = "fields";
-    public static final String SF_OBJECTYPE_UPDATEABLE_FIELD = "updateable";
-    public static final String SF_OBJECTYPE_QUERYABLE_FIELD = "queryable";
-    public static final String SF_OBJECTYPE_LAYOUTABLE_FIELD = "layoutable";
-    public static final String SF_OBJECTYPE_SEARCHABLE_FIELD = "searchable";
-    public static final String SF_OBJECTYPE_FEEDENABLED_FIELD = "feedEnabled";
-    public static final String SF_OBJECTYPE_HIDDEN_FIELD = "deprecatedAndHidden";
-    public static final String SF_OBJECTTYPE_NAMEFIELD_FIELD = "nameField";
-    private static final String SF_OBJECTTYPE_NETWORKID_FIELD = "NetworkId";
-    private static final String SF_OBJECTTYPE_NETWORKSCOPE_FIELD = "NetworkScope";
 
     private String keyPrefix;
     private final String name;
@@ -91,57 +74,33 @@ public class SalesforceObjectType {
      * @param object Raw data for object.
      */
     public SalesforceObjectType(JSONObject object) {
-        this.keyPrefix = object.optString(SF_OBJECTYPE_KEYPREFIX_FIELD);
-        this.name = object.optString(SF_OBJECTYPE_NAME_FIELD);
-        this.label = object.optString(SF_OBJECTYPE_LABEL_FIELD);
-        this.labelPlural = object.optString(SF_OBJECTYPE_LABELPLURAL_FIELD);
-        if (this.label == null || this.label.trim().isEmpty()) {
+        keyPrefix = object.optString(Constants.KEYPREFIX_FIELD);
+        name = object.optString(Constants.NAME_FIELD);
+        label = object.optString(Constants.LABEL_FIELD);
+        labelPlural = object.optString(Constants.LABELPLURAL_FIELD);
+        if (label == null || Constants.EMPTY_STRING.equals(label)) {
             label = name;
         }
-        if (this.labelPlural == null || this.labelPlural.trim().isEmpty()) {
+        if (labelPlural == null || Constants.EMPTY_STRING.equals(labelPlural)) {
             labelPlural = label;
         }
         rawData = object;
-        fields = rawData.optJSONArray(SF_OBJECTYPE_FIELDS_FIELD);
+        fields = rawData.optJSONArray(Constants.FIELDS_FIELD);
 
         /*
-         * Extracts just the fields we care about - 'LastViewedDate', static field name constants,
-         * and those fields with 'nameField = true'. Dumps the other fields to improve performance.
-         * Parsing and caching unnecessary fields causes a significant drop in performance.
+         * Extracts a few flagship fields and sets them to instance variables
+         * for easy retrieval.
          */
-        final JSONArray fieldArray = new JSONArray();
         if (fields != null) {
-            final String[] fieldNameConstants = SalesforceObjectFieldNameConstants.getAllFieldNameConstants();
             for (int i = 0; i < fields.length(); i++) {
                 final JSONObject field = fields.optJSONObject(i);
                 if (field != null) {
-                    String nameStr = field.optString(SF_OBJECTYPE_NAME_FIELD);
-                    if (nameStr != null) {
-                        nameStr = nameStr.trim();
-                        if (nameStr.equals(SF_OBJECTYPE_LAST_VIEWED_DATE_FIELD_NAME)) {
-                            fieldArray.put(field);
-                        } else {
-
-                            /*
-                             * Checks if this field is one of the static fields we are interested in.
-                             * If so, adds it to the field array. If not, nothing happens.
-                             */
-                            for (int j = 0; j < fieldNameConstants.length; j++) {
-                                if (nameStr.equals(fieldNameConstants[j])) {
-                                    fieldArray.put(field);
-                                }
-                            }
-                        }
-                    }
-                    if (nameStr != null && nameStr.trim().equals(SF_OBJECTYPE_LAST_VIEWED_DATE_FIELD_NAME)) {
-                        fieldArray.put(field);
-                    } else if (nameStr != null
-                            && (SF_OBJECTTYPE_NETWORKID_FIELD.equals(nameStr.trim())
-                                    || SF_OBJECTTYPE_NETWORKSCOPE_FIELD
-                                    .equals(nameStr.trim()))) {
+                    final String nameStr = field.optString(Constants.NAME_FIELD);
+                    if (nameStr != null && (Constants.NETWORKID_FIELD.equals(nameStr)
+                                    || Constants.NETWORKSCOPE_FIELD.equals(nameStr))) {
                         networkFieldName = nameStr;
                     }
-                    boolean nameFieldPresent = field.optBoolean(SF_OBJECTTYPE_NAMEFIELD_FIELD);
+                    boolean nameFieldPresent = field.optBoolean(Constants.NAMEFIELD_FIELD);
                     if (nameFieldPresent) {
 
                         /*
@@ -152,38 +111,13 @@ public class SalesforceObjectType {
                          * not the last one. If it is already set, we won't
                          * overwrite it.
                          */
-                        if (nameField == null || nameField.trim().isEmpty()
-                                || "null".equals(nameField.trim())) {
-                            nameField = field.optString(SF_OBJECTYPE_NAME_FIELD);
+                        if (nameField == null || Constants.EMPTY_STRING.equals(nameField)
+                                || Constants.NULL_STRING.equals(nameField)) {
+                            nameField = field.optString(Constants.NAME_FIELD);
                         }
-                        fieldArray.put(field);
                     }
                 }
             }
-        }
-        if (fieldArray.length() > 0) {
-            fields = fieldArray;
-            try {
-                rawData.put(SF_OBJECTYPE_FIELDS_FIELD, fieldArray);
-            } catch (JSONException e) {
-                Log.e(TAG, "Error occurred while parsing JSON", e);
-            }
-        }
-
-        /*
-         * Dumps 'recordTypeInfos' and 'childRelationships' from the
-         * metadata since we don't care about them, to improve performance.
-         * This can be re-enabled at any point if we need this metadata.
-         */
-        try {
-            if (rawData.optJSONArray(SF_OBJECTYPE_RECORD_TYPE_INFOS) != null) {
-                rawData.put(SF_OBJECTYPE_RECORD_TYPE_INFOS, null);
-            }
-            if (rawData.optJSONArray(SF_OBJECTYPE_CHILD_RELATIONSHIPS) != null) {
-                rawData.put(SF_OBJECTYPE_CHILD_RELATIONSHIPS, null);
-            }
-        } catch (JSONException e) {
-            Log.e(TAG, "Error occurred while parsing JSON", e);
         }
     }
 
@@ -229,15 +163,15 @@ public class SalesforceObjectType {
      * @return Name field.
      */
     public String getNameField() {
-        if (nameField == null || nameField.trim().isEmpty()) {
-            final JSONArray dataFields = rawData.optJSONArray(SF_OBJECTYPE_FIELDS_FIELD);
+        if (nameField == null || Constants.EMPTY_STRING.equals(nameField)) {
+            final JSONArray dataFields = rawData.optJSONArray(Constants.FIELDS_FIELD);
             if (dataFields != null) {
                 for (int i = 0; i < dataFields.length(); i++) {
                     final JSONObject field = dataFields.optJSONObject(i);
                     if (field != null) {
-                        boolean nameFieldPresent = field.optBoolean(SF_OBJECTTYPE_NAMEFIELD_FIELD);
+                        boolean nameFieldPresent = field.optBoolean(Constants.NAMEFIELD_FIELD);
                         if (nameFieldPresent) {
-                            nameField = field.optString(SF_OBJECTYPE_NAME_FIELD);
+                            nameField = field.optString(Constants.NAME_FIELD);
                         }
                     }
                 }
@@ -252,8 +186,8 @@ public class SalesforceObjectType {
      * @return True - if searchable, False - otherwise.
      */
     public boolean isSearchable() {
-        return (rawData != null && !rawData.optBoolean(SF_OBJECTYPE_HIDDEN_FIELD)
-                && rawData.optBoolean(SF_OBJECTYPE_SEARCHABLE_FIELD));
+        return (rawData != null && !rawData.optBoolean(Constants.HIDDEN_FIELD)
+                && rawData.optBoolean(Constants.SEARCHABLE_FIELD));
     }
 
     /**
@@ -262,8 +196,8 @@ public class SalesforceObjectType {
      * @return True - if layoutable, False - otherwise.
      */
     public boolean isLayoutable() {
-        return (rawData != null && !rawData.optBoolean(SF_OBJECTYPE_HIDDEN_FIELD)
-                && rawData.optBoolean(SF_OBJECTYPE_LAYOUTABLE_FIELD));
+        return (rawData != null && !rawData.optBoolean(Constants.HIDDEN_FIELD)
+                && rawData.optBoolean(Constants.LAYOUTABLE_FIELD));
     }
 
     /**
@@ -273,7 +207,7 @@ public class SalesforceObjectType {
      */
     public JSONArray getFields() {
         if (fields == null || fields.length() == 0) {
-            fields = rawData.optJSONArray(SF_OBJECTYPE_FIELDS_FIELD);
+            fields = rawData.optJSONArray(Constants.FIELDS_FIELD);
         }
         return fields;
     }
@@ -309,7 +243,7 @@ public class SalesforceObjectType {
             return false;
         }
         final SalesforceObjectType obj = (SalesforceObjectType) object;
-        if (name == null || obj.getName() == null || !name.trim().equals(obj.getName().trim())) {
+        if (name == null || obj.getName() == null || !name.equals(obj.getName())) {
             return false;
         }
         if (rawData == null || obj.getRawData() == null || !rawData.equals(obj.getRawData())) {
