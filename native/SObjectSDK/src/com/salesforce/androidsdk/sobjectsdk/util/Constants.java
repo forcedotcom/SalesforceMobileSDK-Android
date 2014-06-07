@@ -70,4 +70,26 @@ public class Constants {
     public static final String NOTE = "Note";
 
     public static final String RECENTLY_VIEWED = "RecentlyViewed";
+
+    /**
+     * Salesforce object type field constants.
+     */
+    public static final String KEYPREFIX_FIELD = "keyPrefix";
+    public static final String NAME_FIELD = "name";
+    public static final String LAST_VIEWED_DATE_FIELD_NAME = "LastViewedDate";
+    public static final String RECORD_TYPE_INFOS = "recordTypeInfos";
+    public static final String CHILD_RELATIONSHIPS = "childRelationships";
+    public static final String LABEL_FIELD = "label";
+    public static final String LABELPLURAL_FIELD = "labelPlural";
+    public static final String FIELDS_FIELD = "fields";
+    public static final String UPDATEABLE_FIELD = "updateable";
+    public static final String QUERYABLE_FIELD = "queryable";
+    public static final String LAYOUTABLE_FIELD = "layoutable";
+    public static final String SEARCHABLE_FIELD = "searchable";
+    public static final String FEEDENABLED_FIELD = "feedEnabled";
+    public static final String HIDDEN_FIELD = "deprecatedAndHidden";
+    public static final String NAMEFIELD_FIELD = "nameField";
+    public static final String NETWORKID_FIELD = "NetworkId";
+    public static final String NETWORKSCOPE_FIELD = "NetworkScope";
+    
 }
