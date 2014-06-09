@@ -91,5 +91,18 @@ public class Constants {
     public static final String NAMEFIELD_FIELD = "nameField";
     public static final String NETWORKID_FIELD = "NetworkId";
     public static final String NETWORKSCOPE_FIELD = "NetworkScope";
-    
+
+    /**
+     * Salesforce object layout column field constants.
+     */
+    public static final String LAYOUT_NAME_FIELD = "name";
+    public static final String LAYOUT_FIELD_FIELD = "field";
+    public static final String LAYOUT_FORMAT_FIELD = "format";
+    public static final String LAYOUT_LABEL_FIELD = "label";
+
+    /**
+     * Salesforce object type layout field constants.
+     */
+    public static final String LAYOUT_LIMITS_FIELD = "limitRows";
+    public static final String LAYOUT_COLUMNS_FIELD = "searchColumns";
 }
