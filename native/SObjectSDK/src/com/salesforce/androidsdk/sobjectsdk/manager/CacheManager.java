@@ -50,13 +50,13 @@ import com.salesforce.androidsdk.sobjectsdk.util.Constants;
 
 /**
  * This class provides APIs to store and retrieve Salesforce object
- * metadata from a simple cache.
+ * metadata, object layouts and MRU objects from a simple cache.
  *
  * @author bhariharan
  */
 public class CacheManager {
 
-    private static final String TAG = "SearchSDK: CacheManagerImpl";
+    private static final String TAG = "SObjectSDK: CacheManager";
     private static final String CACHE_TIME_KEY = "cache_time_%s";
     private static final String CACHE_DATA_KEY = "cache_data_%s";
 
@@ -74,13 +74,13 @@ public class CacheManager {
      * @author bhariharan
      */
     public enum CachePolicy {
-        IgnoreCacheData, // Ignores cache data and always loads from server.
-        ReloadAndReturnCacheOnFailure, // Always reloads data and returns cache data only on failure.
-        ReturnCacheDataDontReload, // Returns cache data and does not refresh cache if cache exists.
-        ReloadAndReturnCacheData, // Reloads and returns cache data.
-        ReloadIfExpiredAndReturnCacheData, // Refreshes cache if the refresh time interval is up and returns cache data.
-        InvalidateCacheDontReload, // Invalidates the cache and does not refresh the cache.
-        InvalidateCacheAndReload; // Invalidates the cache and refreshes the cache.
+        IGNORE_CACHE_DATA, // Ignores cache data and always loads from server.
+        RELOAD_AND_RETURN_CACHE_ON_FAILURE, // Always reloads data and returns cache data only on failure.
+        RETURN_CACHE_DATA_DONT_RELOAD, // Returns cache data and does not refresh cache if cache exists.
+        RELOAD_AND_RETURN_CACHE_DATA, // Reloads and returns cache data.
+        RELOAD_IF_EXPIRED_AND_RETURN_CACHE_DATA, // Refreshes cache if the refresh time interval is up and returns cache data.
+        INVALIDATE_CACHE_DONT_RELOAD, // Invalidates the cache and does not refresh the cache.
+        INVALIDATE_CACHE_AND_RELOAD; // Invalidates the cache and refreshes the cache.
     }
 
     /**
@@ -96,11 +96,13 @@ public class CacheManager {
     }
 
     /**
-     * Resets the cache manager.
+     * Resets the cache manager. This method clears only the in memory cache,
+     * and does not clear the underlying cache in the database. In order to
+     * clear the cached data in the database, use the 'removeCache()' method.
      */
     public static void reset() {
         if (INSTANCE != null) {
-            INSTANCE.cleanCache();
+            INSTANCE.resetInMemoryCache();
             INSTANCE = null;
         }
     }
@@ -125,18 +127,6 @@ public class CacheManager {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Clears the cache and creates a new clean cache.
-     */
-    public void cleanCache() {
-        resetInMemoryCache();
-
-        // Checks to make sure SmartStore hasn't already been cleaned up.
-        if (SalesforceSDKManagerWithSmartStore.getInstance().hasSmartStore()) {
-            smartStore.dropAllSoups();
-        }
     }
 
     /**
@@ -173,14 +163,14 @@ public class CacheManager {
      */
     public boolean needToReloadCache(boolean cacheExists, CachePolicy cachePolicy,
             long lastCachedTime, long refreshIfOlderThan) {
-        if (cachePolicy == CachePolicy.IgnoreCacheData ||
-                cachePolicy == CachePolicy.ReturnCacheDataDontReload ||
-                cachePolicy == CachePolicy.InvalidateCacheDontReload) {
+        if (cachePolicy == CachePolicy.IGNORE_CACHE_DATA ||
+                cachePolicy == CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD ||
+                cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
             return false;
         }
-        if (cachePolicy == CachePolicy.ReloadAndReturnCacheData ||
-                cachePolicy == CachePolicy.ReloadAndReturnCacheOnFailure ||
-                cachePolicy == CachePolicy.InvalidateCacheAndReload) {
+        if (cachePolicy == CachePolicy.RELOAD_AND_RETURN_CACHE_DATA ||
+                cachePolicy == CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE ||
+                cachePolicy == CachePolicy.INVALIDATE_CACHE_AND_RELOAD) {
             return true;
         }
         if (!cacheExists || refreshIfOlderThan <= 0 || lastCachedTime <= 0) {
@@ -210,20 +200,12 @@ public class CacheManager {
             }
             final String smartSql = "SELECT {" + soupName + ":" + String.format(CACHE_TIME_KEY,
                     cacheKey) + "} FROM {" + soupName + "}";
-            QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 10);
-            int count = smartStore.countQuery(querySpec);
-            if (count == 0) {
-                return 0;
-            }
-            querySpec = QuerySpec.buildSmartQuerySpec(smartSql, count);
+            final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
                 final JSONArray array = results.optJSONArray(0);
                 if (array != null && array.length() > 0) {
-                    final String res = array.optString(0);
-                    if (res != null && !Constants.EMPTY_STRING.equals(res)) {
-                        return Long.parseLong(res);
-                    }
+                    return array.optLong(0);
                 }
             }
         } catch (IllegalStateException e) {
@@ -266,13 +248,8 @@ public class CacheManager {
         // Falls back on smart store cache if in memory cache is empty.
         final String smartSql = "SELECT {" + soupName + ":" + String.format(CACHE_DATA_KEY,
                 cacheKey) + "} FROM {" + soupName + "}";
-        QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 10);
         try {
-            int count = smartStore.countQuery(querySpec);
-            if (count == 0) {
-                return null;
-            }
-            querySpec = QuerySpec.buildSmartQuerySpec(smartSql, count);
+            final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
                 final JSONArray array = results.optJSONArray(0);
@@ -340,13 +317,8 @@ public class CacheManager {
         // Falls back on smart store cache if in memory cache is empty.
         final String smartSql = "SELECT {" + soupName + ":" + String.format(CACHE_DATA_KEY,
                 cacheKey) + "} FROM {" + soupName + "}";
-        QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 10);
         try {
-            int count = smartStore.countQuery(querySpec);
-            if (count == 0) {
-                return null;
-            }
-            querySpec = QuerySpec.buildSmartQuerySpec(smartSql, count);
+            final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
                 final JSONArray array = results.optJSONArray(0);
@@ -414,13 +386,8 @@ public class CacheManager {
         // Falls back on smart store cache if in memory cache is empty.
         final String smartSql = "SELECT {" + soupName + ":" + String.format(CACHE_DATA_KEY,
                 cacheKey) + "} FROM {" + soupName + "}";
-        QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 10);
         try {
-            int count = smartStore.countQuery(querySpec);
-            if (count == 0) {
-                return null;
-            }
-            querySpec = QuerySpec.buildSmartQuerySpec(smartSql, count);
+            final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
                 final JSONArray array = results.optJSONArray(0);
@@ -500,7 +467,7 @@ public class CacheManager {
             final JSONObject object = new JSONObject();
             try {
                 object.put(String.format(CACHE_DATA_KEY, cacheKey), data);
-                object.put(String.format(CACHE_TIME_KEY, cacheKey), "" + System.currentTimeMillis() + "");
+                object.put(String.format(CACHE_TIME_KEY, cacheKey), System.currentTimeMillis());
                 upsertData(soupName, object, cacheKey);
             } catch (JSONException e) {
                 Log.e(TAG, "JSONException occurred while attempting to cache data", e);
@@ -553,7 +520,7 @@ public class CacheManager {
             final JSONObject obj = new JSONObject();
             try {
                 obj.put(String.format(CACHE_DATA_KEY, cacheKey), data);
-                obj.put(String.format(CACHE_TIME_KEY, cacheKey), "" + System.currentTimeMillis() + "");
+                obj.put(String.format(CACHE_TIME_KEY, cacheKey), System.currentTimeMillis());
                 upsertData(soupName, obj, cacheKey);
             } catch (JSONException e) {
                 Log.e(TAG, "JSONException occurred while attempting to cache data", e);
@@ -599,7 +566,7 @@ public class CacheManager {
             final JSONObject obj = new JSONObject();
             try {
                 obj.put(String.format(CACHE_DATA_KEY, cacheKey), data);
-                obj.put(String.format(CACHE_TIME_KEY, cacheKey), "" + System.currentTimeMillis() + "");
+                obj.put(String.format(CACHE_TIME_KEY, cacheKey), System.currentTimeMillis());
                 upsertData(soupName, obj, cacheKey);
             } catch (JSONException e) {
                 Log.e(TAG, "JSONException occurred while attempting to cache data", e);
@@ -627,7 +594,7 @@ public class CacheManager {
         if (!doesCacheExist(soupName)) {
             final IndexSpec[] indexSpecs = {
                     new IndexSpec(String.format(CACHE_DATA_KEY, cacheKey), Type.string),
-                    new IndexSpec(String.format(CACHE_TIME_KEY, cacheKey), Type.string)
+                    new IndexSpec(String.format(CACHE_TIME_KEY, cacheKey), Type.integer)
             };
             smartStore.registerSoup(soupName, indexSpecs);
         }
