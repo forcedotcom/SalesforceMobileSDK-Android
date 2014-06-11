@@ -1,0 +1,1085 @@
+/*
+ * Copyright (c) 2014, salesforce.com, inc.
+ * All rights reserved.
+ * Redistribution and use of this software in source and binary forms, with or
+ * without modification, are permitted provided that the following conditions
+ * are met:
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of salesforce.com, inc. nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission of salesforce.com, inc.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
+package com.salesforce.androidsdk.sobjectsdk.manager;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import android.util.Log;
+
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.sobjectsdk.R;
+import com.salesforce.androidsdk.sobjectsdk.manager.CacheManager.CachePolicy;
+import com.salesforce.androidsdk.sobjectsdk.model.SalesforceObject;
+import com.salesforce.androidsdk.sobjectsdk.model.SalesforceObjectLayoutColumn;
+import com.salesforce.androidsdk.sobjectsdk.model.SalesforceObjectType;
+import com.salesforce.androidsdk.sobjectsdk.model.SalesforceObjectTypeLayout;
+import com.salesforce.androidsdk.sobjectsdk.util.Constants;
+import com.salesforce.androidsdk.sobjectsdk.util.SOQLBuilder;
+
+/**
+ * This class contains APIs to fetch Salesforce object metadata, recently used
+ * objects, and other object related data.
+ *
+ * @author bhariharan
+ */
+public class MetadataManager {
+
+    private static final String TAG = "SObjectSDK: MetadataManager";
+    private static final int MAX_QUERY_LIMIT = 200;
+    private static final long DEFAULT_METADATA_REFRESH_INTERVAL = 7 * 24 * 60 * 60 * 1000;
+
+    // Cache constants.
+    private static final String MRU_CACHE_TYPE = "recent_objects";
+    private static final String METADATA_CACHE_TYPE = "metadata";
+    private static final String LAYOUT_CACHE_TYPE = "layout";
+    private static final String SMART_SCOPES_CACHE_KEY = "smart_scopes";
+    private static final String MRU_BY_OBJECT_TYPE_CACHE_KEY = "mru_for_%s";
+    private static final String ALL_OBJECTS_CACHE_KEY = "all_objects";
+    private static final String OBJECT_BY_TYPE_CACHE_KEY = "object_info_%s";
+    private static final String OBJECT_LAYOUT_BY_TYPE_CACHE_KEY = "object_layout_%s";
+
+    // Other constants.
+    private static final String RECORD_TYPE_GLOBAL = "global";
+    private static final String REST_API_PATH = "services/data";
+    private static final String RECENTLY_VIEWED = "RecentlyViewed";
+
+    private static MetadataManager INSTANCE;
+
+    private String apiVersion;
+    private CacheManager cacheManager;
+    private NetworkManager networkManager;
+    private String communityId;
+
+    /**
+     * Returns a singleton instance of this class.
+     *
+     * @param client RestClient instance.
+     * @return Singleton instance of this class.
+     */
+    public static MetadataManager getInstance(RestClient client) {
+        if (INSTANCE == null) {
+            INSTANCE = new MetadataManager(client);
+        }
+        return INSTANCE;
+    }
+
+    /**
+     * Resets the metadata manager.
+     */
+    public static void reset() {
+        INSTANCE = null;
+    }
+
+    /**
+     * Private constructor.
+     *
+     * @param client RestClient instance.
+     */
+    private MetadataManager(RestClient client) {
+        apiVersion = ApiVersionStrings.VERSION_NUMBER;
+        cacheManager = CacheManager.getInstance();
+        networkManager = NetworkManager.getInstance(client);
+    }
+
+    /**
+     * Sets the network manager to be used.
+     *
+     * @param networkMgr NetworkManager instance.
+     */
+    public void setNetworkManager(NetworkManager networkMgr) {
+        networkManager = networkMgr;
+    }
+
+    /**
+     * Sets the cache manager to be used.
+     *
+     * @param cacheMgr CacheManager instance.
+     */
+    public void setCacheManager(CacheManager cacheMgr) {
+        cacheManager = cacheMgr;
+    }
+
+    /**
+     * Sets the API version to be used (for example, 'v29.0').
+     *
+     * @param apiVer API version to be used.
+     */
+    public void setApiVersion(String apiVer) {
+        apiVersion = apiVer;
+    }
+
+    /**
+     * Returns the API version being used.
+     *
+     * @return API version being used.
+     */
+    public String getApiVersion() {
+        return apiVersion;
+    }
+
+    /**
+     * Returns a list of smart scope object types.
+     *
+     * @param cachePolicy Cache policy.
+     * @param refreshCacheIfOlderThan Time interval to refresh cache.
+     * @return List of smart scope object types.
+     */
+    public List<SalesforceObjectType> loadSmartScopeObjectTypes(CachePolicy cachePolicy,
+            long refreshCacheIfOlderThan) {
+        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
+            cacheManager.removeCache(MRU_CACHE_TYPE, SMART_SCOPES_CACHE_KEY);
+            return null;
+        }
+        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_AND_RELOAD) {
+            cacheManager.removeCache(MRU_CACHE_TYPE, SMART_SCOPES_CACHE_KEY);
+        }
+
+        // Checks the cache for data.
+        long cachedTime = cacheManager.getLastCacheUpdateTime(MRU_CACHE_TYPE,
+        		SMART_SCOPES_CACHE_KEY);
+        final List<SalesforceObjectType> cachedData = getCachedObjectTypes(cachePolicy,
+                MRU_CACHE_TYPE, SMART_SCOPES_CACHE_KEY);
+
+        // Returns cache data if the cache policy explicitly states so.
+        if (cachePolicy == CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD) {
+            return cachedData;
+        }
+        if (cachedData != null && cachedData.size() > 0 &&
+                cachePolicy != CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE &&
+                !cacheManager.needToReloadCache((cachedData != null), cachePolicy,
+                        cachedTime, refreshCacheIfOlderThan)) {
+            return cachedData;
+        }
+
+        // Loads data from the server.
+        return loadSmartScopes(cachePolicy);
+    }
+
+    /**
+     * Returns a list of MRU objects based on object type.
+     *
+     * @param objectTypeName Object type name (set to 'null' for global MRU).
+     * @param limit Limit on number of objects (max is 'MAX_QUERY_LIMIT').
+     * @param cachePolicy Cache policy.
+     * @param refreshCacheIfOlderThan Time interval to refresh cache.
+     * @return List of recently accessed objects.
+     */
+    public List<SalesforceObject> loadMRUObjects(String objectTypeName,
+            int limit, CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
+        if (limit > MAX_QUERY_LIMIT || limit < 0) {
+            limit = MAX_QUERY_LIMIT;
+        }
+        String cacheKey;
+        boolean globalMRU = false;
+        if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
+            globalMRU = true;
+            cacheKey = String.format(MRU_BY_OBJECT_TYPE_CACHE_KEY, RECORD_TYPE_GLOBAL);
+        } else {
+            cacheKey = String.format(MRU_BY_OBJECT_TYPE_CACHE_KEY, objectTypeName);
+        }
+        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
+            cacheManager.removeCache(MRU_CACHE_TYPE, cacheKey);
+            return null;
+        }
+        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_AND_RELOAD) {
+            cacheManager.removeCache(MRU_CACHE_TYPE, cacheKey);
+        }
+
+        // Checks the cache for data.
+        long cachedTime = cacheManager.getLastCacheUpdateTime(MRU_CACHE_TYPE, cacheKey);
+        List<SalesforceObject> cachedData = getCachedObjects(cachePolicy,
+                MRU_CACHE_TYPE, cacheKey);
+
+        // Returns cache data if the cache policy explicitly states so.
+        if (cachePolicy == CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD) {
+            if (cachedData != null && limit > 0 && limit < cachedData.size()) {
+                cachedData = cachedData.subList(0, limit - 1);
+            }
+            return cachedData;
+        }
+        if (cachedData != null && cachedData.size() > 0 &&
+                cachePolicy != CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE &&
+                !cacheManager.needToReloadCache((cachedData != null), cachePolicy,
+                        cachedTime, refreshCacheIfOlderThan)) {
+            if (limit > 0 && limit < cachedData.size()) {
+                cachedData = cachedData.subList(0, limit - 1);
+            }
+            return cachedData;
+        }
+        return loadRecentObjects(objectTypeName, globalMRU, limit,
+                cachePolicy, cacheKey);
+    }
+
+    /**
+     * Returns a list of all object types.
+     *
+     * @param cachePolicy Cache policy.
+     * @param refreshCacheIfOlderThan Time interval to refresh cache.
+     * @return List of all object types.
+     */
+    public List<SalesforceObjectType> loadAllObjectTypes(CachePolicy cachePolicy,
+            long refreshCacheIfOlderThan) {
+        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
+            cacheManager.removeCache(METADATA_CACHE_TYPE, ALL_OBJECTS_CACHE_KEY);
+            return null;
+        }
+        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_AND_RELOAD) {
+            cacheManager.removeCache(METADATA_CACHE_TYPE, ALL_OBJECTS_CACHE_KEY);
+        }
+        long cachedTime = cacheManager.getLastCacheUpdateTime(METADATA_CACHE_TYPE,
+        		ALL_OBJECTS_CACHE_KEY);
+
+        // Checks if the cache needs to be refreshed.
+        final List<SalesforceObjectType> cachedData = getCachedObjectTypes(cachePolicy,
+                METADATA_CACHE_TYPE, ALL_OBJECTS_CACHE_KEY);
+
+        // Returns cache data if the cache policy explicitly states so.
+        if (cachePolicy == CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD) {
+            return cachedData;
+        }
+        if (cachedData != null && cachedData.size() > 0 &&
+                cachePolicy != CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE &&
+                !cacheManager.needToReloadCache((cachedData != null), cachePolicy,
+                        cachedTime, refreshCacheIfOlderThan)) {
+            return cachedData;
+        }
+
+        // Makes a live server call to fetch metadata.
+        final List<SalesforceObjectType> returnList = new ArrayList<SalesforceObjectType>();
+        final String path = String.format("%s/%s/sobjects", REST_API_PATH, apiVersion);
+        final RestResponse response = networkManager.makeRemoteGETRequest(path, null);
+        if (response != null && response.isSuccess()) {
+            try {
+                final JSONObject responseJSON = response.asJSONObject();
+                if (responseJSON != null) {
+                    final JSONArray objectTypes = responseJSON.optJSONArray("sobjects");
+                    if (objectTypes != null) {
+                        for (int i = 0; i < objectTypes.length(); i++) {
+                            final JSONObject metadata = objectTypes.optJSONObject(i);
+                            if (metadata != null) {
+                                final boolean hidden = metadata.optBoolean(
+                                        Constants.HIDDEN_FIELD, false);
+                                if (!hidden) {
+                                    final SalesforceObjectType objType = new SalesforceObjectType(metadata);
+                                    returnList.add(objType);
+                                }
+                            }
+                        }
+                        if (returnList.size() > 0 && shouldCacheData(cachePolicy)) {
+                            cacheObjectTypes(returnList, METADATA_CACHE_TYPE, ALL_OBJECTS_CACHE_KEY);
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "IOException occurred while reading data", e);
+            } catch (JSONException e) {
+                Log.e(TAG, "JSONException occurred while parsing", e);
+            }
+        } else if (shouldFallBackOnCache(cachePolicy)) {
+            return cachedData;
+        }
+        if (returnList.size() == 0) {
+            return null;
+        }
+        return returnList;
+    }
+
+    public SalesforceObjectType loadObjectType(String objectTypeName,
+            CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
+        if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
+            Log.e(TAG, "Cannot load recently accessed objects for invalid object type");
+            return null;
+        }
+        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
+            cacheManager.removeCache(METADATA_CACHE_TYPE, String.format(OBJECT_BY_TYPE_CACHE_KEY, objectTypeName));
+            return null;
+        }
+        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_AND_RELOAD) {
+            cacheManager.removeCache(METADATA_CACHE_TYPE, String.format(OBJECT_BY_TYPE_CACHE_KEY, objectTypeName));
+        }
+        long cachedTime = cacheManager.getLastCacheUpdateTime(METADATA_CACHE_TYPE,
+                String.format(OBJECT_BY_TYPE_CACHE_KEY, objectTypeName));
+
+        // Checks if the cache needs to be refreshed.
+        final SalesforceObjectType cachedData = getCachedObjectType(objectTypeName);
+
+        // Returns cache data if the cache policy explicitly states so.
+        if (cachePolicy == CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD) {
+            return cachedData;
+        }
+        if (cachedData != null && cachePolicy != CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE &&
+                !cacheManager.needToReloadCache((cachedData != null), cachePolicy,
+                        cachedTime, refreshCacheIfOlderThan)) {
+            return cachedData;
+        }
+
+        // Makes a live server call to fetch metadata.
+        final String path = String.format("%s/%s/sobjects/%s/describe", REST_API_PATH,
+                apiVersion, objectTypeName);
+        final RestResponse response = networkManager.makeRemoteGETRequest(path, null);
+        if (response != null && response.isSuccess()) {
+            try {
+                final JSONObject responseJSON = response.asJSONObject();
+                if (responseJSON != null) {
+                    final SalesforceObjectType objType = new SalesforceObjectType(responseJSON);
+                    if (shouldCacheData(cachePolicy)) {
+                        final List<SalesforceObjectType> objList = new ArrayList<SalesforceObjectType>();
+                        objList.add(objType);
+                        cacheObjectTypes(objList, METADATA_CACHE_TYPE,
+                                String.format(OBJECT_BY_TYPE_CACHE_KEY, objectTypeName));
+                    }
+                    return objType;
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "IOException occurred while reading data", e);
+            } catch (JSONException e) {
+                Log.e(TAG, "JSONException occurred while parsing", e);
+            }
+        } else if (shouldFallBackOnCache(cachePolicy)) {
+            return cachedData;
+        }
+        return null;
+    }
+
+    public SalesforceObjectTypeLayout cachedObjectLayout(SalesforceObjectType objectType) {
+        if (objectType == null) {
+            return null;
+        }
+        final String objectTypeName = objectType.getName();
+        if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
+            return null;
+        }
+        SalesforceObjectTypeLayout result = null;
+        final List<SalesforceObjectTypeLayout> objectTypes = getCachedObjectLayouts(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
+                LAYOUT_CACHE_TYPE, String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
+        if (objectTypes != null && objectTypes.size() > 0) {
+            result = objectTypes.get(0);
+        }
+        return result;
+    }
+
+    public List<SalesforceObjectType> loadObjectTypes(List<String> objectTypeNames,
+            CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
+        if (objectTypeNames == null || objectTypeNames.size() == 0) {
+            return null;
+        }
+        List<SalesforceObjectType> results = new ArrayList<SalesforceObjectType>();
+        for (final String objectTypeName : objectTypeNames) {
+            if (objectTypeName != null && !Constants.EMPTY_STRING.equals(objectTypeName)) {
+                final SalesforceObjectType object = loadObjectType(objectTypeName,
+                        cachePolicy, refreshCacheIfOlderThan);
+                if (object != null) {
+                    results.add(object);
+                }
+            }
+        }
+        if (results.size() == 0) {
+            results = null;
+        }
+        return results;
+    }
+
+    public String extraWhereClause(String objTypeName) {
+        String whereClause = null;
+        if (objTypeName != null) {
+            if (Constants.USER.equals(objTypeName)) {
+                whereClause = "isActive = true AND UserType IN ('Standard', 'CsnOnly')";
+            } else if (Constants.CONTENT_VERSION.equals(objTypeName)) {
+                whereClause = "IsLatest = true";
+            } else if (Constants.KNOWLEDGE_ARTICLE_VERSION.equals(objTypeName)) {
+                whereClause = "PublishStatus = 'Online' AND Language = 'en_US'";
+            }
+        }
+        return whereClause;
+    }
+
+    public List<String> extraReturnFieldsForObjectType(String objTypeName) {
+        if (objTypeName == null || Constants.EMPTY_STRING.equals(objTypeName)) {
+            return null;
+        }
+        List<String> results = null;
+        SalesforceObjectType objType = getCachedObjectType(objTypeName);
+        if (objType == null) {
+            objType = loadObjectType(objTypeName, CachePolicy.RELOAD_IF_EXPIRED_AND_RETURN_CACHE_DATA,
+                    DEFAULT_METADATA_REFRESH_INTERVAL);
+        }
+        if (objType != null && canLoadLayoutForObjectType(objType)) {
+            results = serverLayoutFieldsForObjectType(objType);
+        }
+        return results;
+    }
+
+    public boolean isObjectTypeSearchable(SalesforceObjectType objectType) {
+        if (objectType == null) {
+            return false;
+        }
+        final String objectName = ((objectType.getName() == null) ? "" : objectType.getName());
+        if (!Constants.EMPTY_STRING.equals(objectName)) {
+            if (objectType.getRawData() == null) {
+                objectType = loadObjectType(objectName, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, 0);
+            }
+            if (objectType != null) {
+                return (objectType.isSearchable());
+            }
+        }
+        return false;
+    }
+
+    public List<SalesforceObjectTypeLayout> loadObjectTypesLayout(List<SalesforceObjectType> objectTypes,
+            CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
+        if (objectTypes == null || objectTypes.size() == 0) {
+            return null;
+        }
+        List<SalesforceObjectTypeLayout> results = new ArrayList<SalesforceObjectTypeLayout>();
+        for (final SalesforceObjectType objectType : objectTypes) {
+            if (objectType != null) {
+
+                /*
+                 * Special treatment for 'ContentVersion', 'User', and 'Group'
+                 * objects, since they don't have a search layout.
+                 */
+            	final String objName = objectType.getName();
+                if (objName != null && (Constants.CONTENT_VERSION.equals(objName)
+                        || Constants.USER.equals(objName)
+                        || Constants.GROUP.equals(objName))) {
+                    continue;
+                }
+                final SalesforceObjectTypeLayout layout = loadObjectTypeLayout(objectType,
+                        cachePolicy, refreshCacheIfOlderThan);
+                if (layout != null) {
+                    results.add(layout);
+                }
+            }
+        }
+        if (results.size() == 0) {
+            results = null;
+        }
+        return results;
+    }
+
+    public int getColorResourceForObjectType(String objTypeName) {
+        int color = R.color.record_other;
+        if (objTypeName == null) {
+            return color;
+        }
+        if (Constants.ACCOUNT.equals(objTypeName)) {
+            color = R.color.record_account;
+        } else if (Constants.CONTACT.equals(objTypeName)) {
+            color = R.color.record_contact;
+        } else if (Constants.TASK.equals(objTypeName)) {
+            color = R.color.record_task;
+        } else if (Constants.CASE.equals(objTypeName)) {
+            color = R.color.record_case;
+        } else if (Constants.OPPORTUNITY.equals(objTypeName)) {
+            color = R.color.record_opportunity;
+        } else if (Constants.LEAD.equals(objTypeName)) {
+            color = R.color.record_lead;
+        } else if (Constants.CAMPAIGN.equals(objTypeName)) {
+            color = R.color.record_campaign;
+        }
+        return color;
+    }
+
+    public List<SalesforceObject> getFilteredRecentObjects(String filterTerm,
+            List<SalesforceObject> recentObjects) {
+        if (recentObjects == null || recentObjects.size() == 0) {
+            return null;
+        }
+        if (filterTerm == null || Constants.EMPTY_STRING.equals(filterTerm)) {
+            return recentObjects;
+        }
+        filterTerm = filterTerm.toLowerCase();
+        List<SalesforceObject> resultList = new ArrayList<SalesforceObject>();
+        for (final SalesforceObject obj : recentObjects) {
+            if (obj != null) {
+                String name = obj.getName();
+                if (name == null || Constants.EMPTY_STRING.equals(name)) {
+                    final String type = obj.getObjectType();
+                    if (type != null && !Constants.EMPTY_STRING.equals(type)) {
+                        final SalesforceObjectType objectType = loadObjectType(type,
+                                CachePolicy.RELOAD_IF_EXPIRED_AND_RETURN_CACHE_DATA,
+                                DEFAULT_METADATA_REFRESH_INTERVAL);
+                        if (objectType != null) {
+                            final String nameField = objectType.getNameField();
+                            final JSONObject rawData = obj.getRawData();
+                            if (nameField != null && !Constants.EMPTY_STRING.equals(nameField)
+                                    && rawData != null) {
+                                name = rawData.optString(nameField);
+                            }
+                        }
+                    }
+                }
+                if (name != null && !Constants.EMPTY_STRING.equals(name)) {
+                    name = name.toLowerCase();
+                    final String[] filterTermComponents = name.split(" ");
+                    for (final String namePart : filterTermComponents) {
+
+                        /*
+                         * If any word in the record name starts with the search
+                         * term, we add it.
+                         */
+                        if (namePart.startsWith(filterTerm)) {
+                            resultList.add(obj);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (resultList.size() == 0) {
+            resultList = null;
+        }
+        return resultList;
+    }
+
+    public String getCommunityId() {
+        return communityId;
+    }
+
+    public void setCommunityId(String communityId) {
+        this.communityId = communityId;
+    }
+
+    /**
+     * Returns whether a layout can be loaded for the specified object type.
+     *
+     * @param objType Object type.
+     * @return True - if layout can be loaded, False - otherwise.
+     */
+    private boolean canLoadLayoutForObjectType(SalesforceObjectType objType) {
+        if (objType == null) {
+            return false;
+        }
+        final String objName = (objType.getName() == null) ? "" : objType.getName();
+        if (Constants.CONTENT_VERSION.equals(objName) || Constants.USER.equals(objName) || Constants.GROUP.equals(objName)
+                || Constants.DASHBOARD.equals(objName)) {
+            return false;
+        }
+        return (isObjectTypeSearchable(objType) && objType.isLayoutable()
+                && objType.isSearchable());
+    }
+
+    /**
+     * Returns a list of layout fields for the specified object type.
+     *
+     * @param type Object type.
+     * @return List of return fields.
+     */
+    private List<String> serverLayoutFieldsForObjectType(SalesforceObjectType type) {
+        if (type == null) {
+            return null;
+        }
+        final SalesforceObjectTypeLayout layout = cachedObjectLayout(type);
+        if (layout == null) {
+            return null;
+        }
+        final List<SalesforceObjectLayoutColumn> columns = layout.getColumns();
+        if (columns == null || columns.size() == 0) {
+            return null;
+        }
+        final List<String> results = new ArrayList<String>();
+        for (final SalesforceObjectLayoutColumn col : columns) {
+            if (col != null) {
+                final String name = col.getName();
+                if (name != null && !Constants.EMPTY_STRING.equals(name)) {
+                    results.add(name);
+                }
+            }
+        }
+        if (results.size() == 0) {
+            return null;
+        }
+        return results;
+    }
+
+    /**
+     * Returns whether the data should be cached.
+     *
+     * @param cachePolicy Cache policy.
+     * @return True - if the data should be cached, False - otherwise.
+     */
+    private boolean shouldCacheData(CachePolicy cachePolicy) {
+        return ((cachePolicy != CachePolicy.IGNORE_CACHE_DATA)
+                && (cachePolicy != CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD)
+                && (cachePolicy != CachePolicy.INVALIDATE_CACHE_DONT_RELOAD));
+    }
+
+    /**
+     * Caches a list of objects.
+     *
+     * @param objects List of objects.
+     * @param cacheType Cache type.
+     * @param cacheKey Cache key.
+     */
+    private void cacheObjects(List<SalesforceObject> objects,
+    		String cacheType, String cacheKey) {
+        if (objects != null && objects.size() > 0 &&
+                cacheType != null && cacheKey != null) {
+            cacheManager.writeObjects(objects, cacheKey, cacheType);
+        }
+    }
+
+    /**
+     * Caches a list of object types.
+     *
+     * @param objectTypes List of object types.
+     * @param cacheType Cache type.
+     * @param cacheKey Cache key.
+     */
+    private void cacheObjectTypes(List<SalesforceObjectType> objectTypes,
+    		String cacheType, String cacheKey) {
+        if (objectTypes != null && objectTypes.size() > 0 &&
+                cacheType != null && cacheKey != null) {
+            cacheManager.writeObjectTypes(objectTypes, cacheKey, cacheType);
+        }
+    }
+
+    /**
+     * Caches a list of object layouts.
+     *
+     * @param objects List of object layouts.
+     * @param cacheType Cache type.
+     * @param cacheKey Cache key.
+     */
+    private void cacheObjectLayouts(List<SalesforceObjectTypeLayout> objects,
+    		String cacheType, String cacheKey) {
+        if (objects != null && objects.size() > 0 &&
+                cacheType != null && cacheKey != null) {
+            cacheManager.writeObjectLayouts(objects, cacheKey, cacheType);
+        }
+    }
+
+    /**
+     * Returns a list of cached objects.
+     *
+     * @param cachePolicy Cache policy.
+     * @param cacheType Cache type.
+     * @param cacheKey Cache key.
+     * @return List of cached objects.
+     */
+    private List<SalesforceObject> getCachedObjects(CachePolicy cachePolicy,
+            String cacheType, String cacheKey) {
+        if (cachePolicy == CachePolicy.IGNORE_CACHE_DATA ||
+                cachePolicy == CachePolicy.INVALIDATE_CACHE_AND_RELOAD ||
+                cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
+            return null;
+        }
+        return cacheManager.readObjects(cacheType, cacheKey);
+    }
+
+    /**
+     * Returns cached metadata for a specific object type.
+     *
+     * @param objectTypeName Object type name.
+     * @return Cached metadata for object type.
+     */
+    private SalesforceObjectType getCachedObjectType(String objectTypeName) {
+        if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
+            return null;
+        }
+        SalesforceObjectType result = null;
+        final List<SalesforceObjectType> objectTypes = getCachedObjectTypes(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
+                METADATA_CACHE_TYPE, String.format(OBJECT_BY_TYPE_CACHE_KEY, objectTypeName));
+        if (objectTypes != null && objectTypes.size() > 0) {
+            result = objectTypes.get(0);
+        }
+        return result;
+    }
+    
+    /**
+     * Returns a list of cached object types.
+     *
+     * @param cachePolicy Cache policy.
+     * @param cacheType Cache type.
+     * @param cacheKey Cache key.
+     * @return List of cached object types.
+     */
+    private List<SalesforceObjectType> getCachedObjectTypes(CachePolicy cachePolicy,
+            String cacheType, String cacheKey) {
+    	if (cachePolicy == CachePolicy.IGNORE_CACHE_DATA ||
+                cachePolicy == CachePolicy.INVALIDATE_CACHE_AND_RELOAD ||
+                cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
+            return null;
+        }
+        return cacheManager.readObjectTypes(cacheType, cacheKey);
+    }
+
+    /**
+     * Returns a list of cached object layouts.
+     *
+     * @param cachePolicy Cache policy.
+     * @param cacheType Cache type.
+     * @param cacheKey Cache key.
+     * @return List of cached object layouts.
+     */
+    private List<SalesforceObjectTypeLayout> getCachedObjectLayouts(CachePolicy cachePolicy,
+            String cacheType, String cacheKey) {
+    	if (cachePolicy == CachePolicy.IGNORE_CACHE_DATA ||
+                cachePolicy == CachePolicy.INVALIDATE_CACHE_AND_RELOAD ||
+                cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
+            return null;
+        }
+        return cacheManager.readObjectLayouts(cacheType, cacheKey);
+    }
+
+    /**
+     * Returns fields for the specified object type.
+     *
+     * @param objectTypeName Object type name.
+     * @return Fields for the object type.
+     */
+    private String returnFieldsForObjectType(String objectTypeName) {
+        if (objectTypeName == null) {
+            return null;
+        }
+        final SalesforceObjectType objectType = getCachedObjectType(objectTypeName);
+        final List<String> returnFields = new ArrayList<String>();
+        final List<String> extraValues = extraReturnFieldsForObjectType(objectTypeName);
+        if (extraValues != null && extraValues.size() > 0) {
+            for (final String extraValue : extraValues) {
+                if (extraValue != null && !Constants.EMPTY_STRING.equals(extraValue)) {
+                    returnFields.add(extraValue);
+                }
+            }
+        }
+        if (!returnFields.contains("Id")) {
+            returnFields.add("Id");
+        }
+        if (objectType != null) {
+            String nameField = objectType.getNameField();
+            if (nameField != null && !returnFields.contains(nameField)) {
+                returnFields.add(nameField);
+            }
+        }
+        final StringBuilder result = new StringBuilder();
+        result.append(returnFields.get(0));
+        for (int i = 1; i < returnFields.size(); i++) {
+            final String resultField = returnFields.get(i);
+            if (resultField != null && !Constants.EMPTY_STRING.equals(resultField)) {
+                result.append(",");
+                result.append(resultField);
+            }
+        }
+        if (Constants.EMPTY_STRING.equals(result.toString())) {
+            return null;
+        }
+        return result.toString();
+    }
+
+    /**
+     * Loads smart scopes using a REST call.
+     *
+     * @param cachePolicy Cache policy.
+     * @return List of object types.
+     */
+    private List<SalesforceObjectType> loadSmartScopes(CachePolicy cachePolicy) {
+        final String path = String.format("%s/%s/search/scopeOrder", REST_API_PATH, apiVersion);
+        final RestResponse response = networkManager.makeRemoteGETRequest(path, null);
+        List<SalesforceObjectType> recentItems = new ArrayList<SalesforceObjectType>();
+        if (response != null && response.isSuccess()) {
+            try {
+                final JSONArray responseJSON = response.asJSONArray();
+                if (responseJSON != null) {
+                    for (int i = 0; i < responseJSON.length(); i++) {
+                        final JSONObject object = responseJSON.optJSONObject(i);
+                        if (object != null) {
+                            final String name = object.optString("type");
+                            if (name != null && !Constants.EMPTY_STRING.equals(name)) {
+                                final SalesforceObjectType sfObj = new SalesforceObjectType(name);
+                                if (isObjectTypeSearchable(sfObj)) {
+                                    recentItems.add(sfObj);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "IOException occurred while reading data", e);
+            } catch (JSONException e) {
+                Log.e(TAG, "JSONException occurred while parsing", e);
+            }
+        } else if (shouldFallBackOnCache(cachePolicy)) {
+            recentItems = getCachedObjectTypes(cachePolicy, MRU_CACHE_TYPE,
+            		SMART_SCOPES_CACHE_KEY);
+        }
+        if (shouldCacheData(cachePolicy) && recentItems != null
+        		&& recentItems.size() > 0) {
+            cacheObjectTypes(recentItems, MRU_CACHE_TYPE,
+            		SMART_SCOPES_CACHE_KEY);
+        }
+        return recentItems;
+    }
+
+    /**
+     * Returns recently viewed objects.
+     *
+     * @param objectTypeName Object type name.
+     * @param globalMRU True - if global MRU, False - otherwise.
+     * @param limit Limit on number of items.
+     * @param cachePolicy Cache policy.
+     * @param cacheKey Cache key.
+     * @return List of recently viewed objects.
+     */
+    private List<SalesforceObject> loadRecentObjects(String objectTypeName,
+            boolean globalMRU, int limit, CachePolicy cachePolicy, String cacheKey) {
+        String communityId = getCommunityId();
+        final List<SalesforceObject> recentItems = new ArrayList<SalesforceObject>();
+        SOQLBuilder queryBuilder;
+        if (globalMRU) {
+            queryBuilder = SOQLBuilder.getInstanceWithFields("Id, Name, Type");
+            queryBuilder.from(RECENTLY_VIEWED);
+            String whereClause = "LastViewedDate != NULL";
+            if (communityId != null) {
+                whereClause = String.format("%s AND NetworkId = '%s'", whereClause, communityId);
+            }
+            queryBuilder.where(whereClause);
+            queryBuilder.limit(limit);
+        } else {
+            boolean objContainsLastViewedDate = false;
+            final SalesforceObjectType objType = loadObjectType(objectTypeName,
+                    CachePolicy.RELOAD_IF_EXPIRED_AND_RETURN_CACHE_DATA,
+                    DEFAULT_METADATA_REFRESH_INTERVAL);
+            if (objType != null) {
+                final JSONArray fields = objType.getFields();
+                if (fields != null) {
+                    for (int i = 0; i < fields.length(); i++) {
+                        final JSONObject obj = fields.optJSONObject(i);
+                        if (obj != null) {
+                            final String nameField = obj.optString("name");
+                            if (nameField != null && "LastViewedDate".equals(nameField)) {
+                                objContainsLastViewedDate = true;
+                            }
+                        }
+                    }
+                }
+            }
+            final String retFields = returnFieldsForObjectType(objectTypeName);
+            if (retFields != null && !Constants.EMPTY_STRING.equals(retFields)) {
+                queryBuilder = SOQLBuilder.getInstanceWithFields(retFields);
+            } else {
+                queryBuilder = SOQLBuilder.getInstanceWithFields("Id, Name, Type");
+            }
+            String whereClause;
+            if (objContainsLastViewedDate) {
+                queryBuilder.from(String.format("%s using MRU", objectTypeName));
+                whereClause = "LastViewedDate != NULL";
+                queryBuilder.orderBy("LastViewedDate DESC");
+                queryBuilder.limit(limit);
+            } else {
+                queryBuilder.from(RECENTLY_VIEWED);
+                whereClause = String.format("LastViewedDate != NULL and Type = '%s'", objectTypeName);
+                queryBuilder.limit(limit);
+            }
+            if (communityId != null) {
+                String networkFieldName = objType.getNetworkFieldName();
+                if (networkFieldName != null) {
+                    whereClause = String.format("%s AND %s = '%s'", whereClause, networkFieldName, communityId);
+                }
+            }
+            queryBuilder.where(whereClause);
+        }
+        final String query = queryBuilder.buildAndEncode();
+        final Map<String, Object> queryParams = new HashMap<String, Object>();
+        queryParams.put("q", query);
+        final String path = String.format("%s/%s/query/", REST_API_PATH, apiVersion);
+        final RestResponse response = networkManager.makeRemoteGETRequest(path, queryParams);
+        if (response != null && response.isSuccess()) {
+            try {
+                final JSONObject responseJSON = response.asJSONObject();
+                if (responseJSON != null) {
+                    final JSONArray records = responseJSON.optJSONArray("records");
+                    if (records != null) {
+                        for (int i = 0; i < records.length(); i++) {
+                            final JSONObject rec = records.optJSONObject(i);
+                            if (rec != null) {
+                                final SalesforceObject sfObj = new SalesforceObject(rec);
+                                if (globalMRU) {
+                                    if (sfObj != null && sfObj.getObjectType() != null
+                                            && sfObj.getObjectType().equals(Constants.CONTENT)) {
+                                        sfObj.setObjectType(Constants.CONTENT_VERSION);
+                                    }
+                                } else {
+                                    String sfObjName = null;
+                                    if (sfObj != null) {
+                                        sfObj.setObjectType(objectTypeName);
+                                        sfObjName = sfObj.getName();
+                                    }
+                                    if (sfObjName == null || Constants.EMPTY_STRING.equals(sfObjName)
+                                            || Constants.NULL_STRING.equals(sfObjName)) {
+                                        final SalesforceObjectType objType = getCachedObjectType(objectTypeName);
+                                        if (objType != null) {
+                                            final String nameField = objType.getNameField();
+                                            if (nameField != null && !Constants.EMPTY_STRING.equals(nameField)) {
+                                                final String scopedName = rec.optString(nameField);
+                                                if (sfObj != null && scopedName != null) {
+                                                    sfObj.setName(scopedName);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                recentItems.add(sfObj);
+                            }
+                        }
+                    }
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "IOException occurred while reading data", e);
+            } catch (JSONException e) {
+                Log.e(TAG, "JSONException occurred while parsing", e);
+            }
+            if (recentItems.size() > 0) {
+                if (shouldCacheData(cachePolicy)) {
+                    cacheObjects(recentItems, MRU_CACHE_TYPE, cacheKey);
+                }
+                return recentItems;
+            }
+        } else if (shouldFallBackOnCache(cachePolicy)) {
+            return getCachedObjects(cachePolicy, MRU_CACHE_TYPE, cacheKey);
+        }
+        return null;
+    }
+
+    /**
+     * Loads the object layout for the specified object type.
+     *
+     * @param objectType Object type.
+     * @param cachePolicy Cache policy.
+     * @param refreshCacheIfOlderThan Time interval to refresh cache.
+     * @return Object layout.
+     */
+    private SalesforceObjectTypeLayout loadObjectTypeLayout(SalesforceObjectType objectType,
+            CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
+        if (objectType == null) {
+            Log.e(TAG, "Cannot load object layout with an invalid object type");
+            return null;
+        }
+        final String objectTypeName = objectType.getName();
+        if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
+            Log.e(TAG, "Cannot load object layout with an invalid object type");
+            return null;
+        }
+        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
+            cacheManager.removeCache(LAYOUT_CACHE_TYPE,
+                    String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
+            return null;
+        }
+        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_AND_RELOAD) {
+            cacheManager.removeCache(LAYOUT_CACHE_TYPE,
+                    String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
+        }
+        long cachedTime = cacheManager.getLastCacheUpdateTime(LAYOUT_CACHE_TYPE,
+                String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
+
+        // Checks if the cache needs to be refreshed.
+        final List<SalesforceObjectTypeLayout> cachedData = getCachedObjectLayouts(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
+                LAYOUT_CACHE_TYPE, String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
+
+        // Returns cache data if the cache policy explicitly states so.
+        if (cachePolicy == CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD) {
+            if (cachedData != null && cachedData.size() > 0) {
+                return cachedData.get(0);
+            } else {
+                return null;
+            }
+        }
+        if (cachedData != null && cachedData.size() > 0 && cachePolicy != CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE &&
+                !cacheManager.needToReloadCache((cachedData != null), cachePolicy,
+                        cachedTime, refreshCacheIfOlderThan)) {
+            return cachedData.get(0);
+        }
+
+        // Checks if a layout can be loaded for this object type.
+        if (objectType.getRawData() == null) {
+            objectType = loadObjectType(objectTypeName, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, 0);
+        }
+        if (objectType == null || !objectType.isSearchable() || !objectType.isLayoutable()) {
+            return null;
+        }
+
+        // Makes a live server call to fetch the object layout.
+        final String path = String.format("%s/%s/search/layout", REST_API_PATH,
+                apiVersion);
+        final Map<String, Object> params = new HashMap<String, Object>();
+        params.put("q", objectTypeName);
+        final RestResponse response = networkManager.makeRemoteGETRequest(path, params);
+        if (response != null && response.isSuccess()) {
+            try {
+                final JSONArray responseJSON = response.asJSONArray();
+                if (responseJSON != null && responseJSON.length() > 0) {
+                    final JSONObject objJSON = responseJSON.optJSONObject(0);
+                    if (objJSON != null) {
+                        final SalesforceObjectTypeLayout objTypeLayout = new SalesforceObjectTypeLayout(objectTypeName,
+                                objJSON);
+                        if (shouldCacheData(cachePolicy)) {
+                            final List<SalesforceObjectTypeLayout> layoutList = new ArrayList<SalesforceObjectTypeLayout>();
+                            layoutList.add(objTypeLayout);
+                            cacheObjectLayouts(layoutList, LAYOUT_CACHE_TYPE,
+                                    String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
+                        }
+                        return objTypeLayout;
+                    }
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "IOException occurred while reading data", e);
+            } catch (JSONException e) {
+                Log.e(TAG, "JSONException occurred while parsing", e);
+            }
+        } else if (shouldFallBackOnCache(cachePolicy)) {
+            if (cachedData != null && cachedData.size() > 0) {
+                return cachedData.get(0);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns whether a method should fall back on cached data or return the
+     * empty data set from the server, in the event that a server error occurs
+     * or we do not receive a response from the server, for reasons such as loss
+     * of connectivity, for instance.
+     *
+     * @param cachePolicy Cache policy.
+     * @return True - if we should fall back on cached data, False - otherwise.
+     */
+    private boolean shouldFallBackOnCache(CachePolicy cachePolicy) {
+        return (cachePolicy == CachePolicy.RELOAD_AND_RETURN_CACHE_DATA
+                || cachePolicy == CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE
+                || cachePolicy == CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD
+                || cachePolicy == CachePolicy.RELOAD_IF_EXPIRED_AND_RETURN_CACHE_DATA);
+    }
+}
