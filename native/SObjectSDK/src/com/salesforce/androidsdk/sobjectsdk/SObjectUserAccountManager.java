@@ -56,7 +56,7 @@ public class SObjectUserAccountManager extends UserAccountManagerWithSmartStore 
 	public void switchToUser(UserAccount user) {
 		super.switchToUser(user);
 		/*
-		 * TODO: Clear SObject in memory cache.
+		 * TODO: Clear SObject in memory cache. Change network interface client.
 		 */
 	}
 
@@ -64,7 +64,7 @@ public class SObjectUserAccountManager extends UserAccountManagerWithSmartStore 
 	public void switchToNewUser() {
 		super.switchToNewUser();
 		/*
-		 * TODO: Clear SObject in memory cache.
+		 * TODO: Clear SObject in memory cache. Change network interface client.
 		 */
 	}
 }
