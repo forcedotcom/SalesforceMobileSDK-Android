@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.json.JSONArray;
@@ -278,7 +279,7 @@ public class MetadataManager {
             return cachedData;
         }
 
-        // Makes a live server call to fetch metadata.
+        // Makes a live server call to fetch object types.
         final List<SalesforceObjectType> returnList = new ArrayList<SalesforceObjectType>();
         final String path = String.format("%s/%s/sobjects", REST_API_PATH, apiVersion);
         final RestResponse response = networkManager.makeRemoteGETRequest(path, null);
@@ -318,6 +319,14 @@ public class MetadataManager {
         return returnList;
     }
 
+    /**
+     * Returns metadata for a specific object type.
+     *
+     * @param objectTypeName Object type name.
+     * @param cachePolicy Cache policy.
+     * @param refreshCacheIfOlderThan Time interval to refresh cache.
+     * @return Metadata for a specific object type.
+     */
     public SalesforceObjectType loadObjectType(String objectTypeName,
             CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
         if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
@@ -325,11 +334,13 @@ public class MetadataManager {
             return null;
         }
         if (cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
-            cacheManager.removeCache(METADATA_CACHE_TYPE, String.format(OBJECT_BY_TYPE_CACHE_KEY, objectTypeName));
+            cacheManager.removeCache(METADATA_CACHE_TYPE,
+            		String.format(OBJECT_BY_TYPE_CACHE_KEY, objectTypeName));
             return null;
         }
         if (cachePolicy == CachePolicy.INVALIDATE_CACHE_AND_RELOAD) {
-            cacheManager.removeCache(METADATA_CACHE_TYPE, String.format(OBJECT_BY_TYPE_CACHE_KEY, objectTypeName));
+            cacheManager.removeCache(METADATA_CACHE_TYPE,
+            		String.format(OBJECT_BY_TYPE_CACHE_KEY, objectTypeName));
         }
         long cachedTime = cacheManager.getLastCacheUpdateTime(METADATA_CACHE_TYPE,
                 String.format(OBJECT_BY_TYPE_CACHE_KEY, objectTypeName));
@@ -375,23 +386,14 @@ public class MetadataManager {
         return null;
     }
 
-    public SalesforceObjectTypeLayout cachedObjectLayout(SalesforceObjectType objectType) {
-        if (objectType == null) {
-            return null;
-        }
-        final String objectTypeName = objectType.getName();
-        if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
-            return null;
-        }
-        SalesforceObjectTypeLayout result = null;
-        final List<SalesforceObjectTypeLayout> objectTypes = getCachedObjectLayouts(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
-                LAYOUT_CACHE_TYPE, String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
-        if (objectTypes != null && objectTypes.size() > 0) {
-            result = objectTypes.get(0);
-        }
-        return result;
-    }
-
+    /**
+     * Returns metadata for the specified list of object types.
+     *
+     * @param objectTypeNames List of object type names.
+     * @param cachePolicy Cache policy.
+     * @param refreshCacheIfOlderThan Time interval to refresh cache.
+     * @return Metadata for the list of object types.
+     */
     public List<SalesforceObjectType> loadObjectTypes(List<String> objectTypeNames,
             CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
         if (objectTypeNames == null || objectTypeNames.size() == 0) {
@@ -413,36 +415,12 @@ public class MetadataManager {
         return results;
     }
 
-    public String extraWhereClause(String objTypeName) {
-        String whereClause = null;
-        if (objTypeName != null) {
-            if (Constants.USER.equals(objTypeName)) {
-                whereClause = "isActive = true AND UserType IN ('Standard', 'CsnOnly')";
-            } else if (Constants.CONTENT_VERSION.equals(objTypeName)) {
-                whereClause = "IsLatest = true";
-            } else if (Constants.KNOWLEDGE_ARTICLE_VERSION.equals(objTypeName)) {
-                whereClause = "PublishStatus = 'Online' AND Language = 'en_US'";
-            }
-        }
-        return whereClause;
-    }
-
-    public List<String> extraReturnFieldsForObjectType(String objTypeName) {
-        if (objTypeName == null || Constants.EMPTY_STRING.equals(objTypeName)) {
-            return null;
-        }
-        List<String> results = null;
-        SalesforceObjectType objType = getCachedObjectType(objTypeName);
-        if (objType == null) {
-            objType = loadObjectType(objTypeName, CachePolicy.RELOAD_IF_EXPIRED_AND_RETURN_CACHE_DATA,
-                    DEFAULT_METADATA_REFRESH_INTERVAL);
-        }
-        if (objType != null && canLoadLayoutForObjectType(objType)) {
-            results = serverLayoutFieldsForObjectType(objType);
-        }
-        return results;
-    }
-
+    /**
+     * Returns whether the specified object type is searchable or not.
+     *
+     * @param objectType Object type.
+     * @return True - if searchable, False - otherwise.
+     */
     public boolean isObjectTypeSearchable(SalesforceObjectType objectType) {
         if (objectType == null) {
             return false;
@@ -450,7 +428,8 @@ public class MetadataManager {
         final String objectName = ((objectType.getName() == null) ? "" : objectType.getName());
         if (!Constants.EMPTY_STRING.equals(objectName)) {
             if (objectType.getRawData() == null) {
-                objectType = loadObjectType(objectName, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, 0);
+                objectType = loadObjectType(objectName,
+                		CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, 0);
             }
             if (objectType != null) {
                 return (objectType.isSearchable());
@@ -459,6 +438,14 @@ public class MetadataManager {
         return false;
     }
 
+    /**
+     * Returns object type layouts for the specified list of object types.
+     *
+     * @param objectTypes List of object types.
+     * @param cachePolicy Cache policy.
+     * @param refreshCacheIfOlderThan Time interval to refresh cache.
+     * @return Object type layouts for the list of object types.
+     */
     public List<SalesforceObjectTypeLayout> loadObjectTypesLayout(List<SalesforceObjectType> objectTypes,
             CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
         if (objectTypes == null || objectTypes.size() == 0) {
@@ -467,17 +454,6 @@ public class MetadataManager {
         List<SalesforceObjectTypeLayout> results = new ArrayList<SalesforceObjectTypeLayout>();
         for (final SalesforceObjectType objectType : objectTypes) {
             if (objectType != null) {
-
-                /*
-                 * Special treatment for 'ContentVersion', 'User', and 'Group'
-                 * objects, since they don't have a search layout.
-                 */
-            	final String objName = objectType.getName();
-                if (objName != null && (Constants.CONTENT_VERSION.equals(objName)
-                        || Constants.USER.equals(objName)
-                        || Constants.GROUP.equals(objName))) {
-                    continue;
-                }
                 final SalesforceObjectTypeLayout layout = loadObjectTypeLayout(objectType,
                         cachePolicy, refreshCacheIfOlderThan);
                 if (layout != null) {
@@ -491,6 +467,12 @@ public class MetadataManager {
         return results;
     }
 
+    /**
+     * Returns the color resource associated with an object type.
+     *
+     * @param objTypeName Object type name.
+     * @return Color resource associated with the object type.
+     */
     public int getColorResourceForObjectType(String objTypeName) {
         int color = R.color.record_other;
         if (objTypeName == null) {
@@ -514,62 +496,21 @@ public class MetadataManager {
         return color;
     }
 
-    public List<SalesforceObject> getFilteredRecentObjects(String filterTerm,
-            List<SalesforceObject> recentObjects) {
-        if (recentObjects == null || recentObjects.size() == 0) {
-            return null;
-        }
-        if (filterTerm == null || Constants.EMPTY_STRING.equals(filterTerm)) {
-            return recentObjects;
-        }
-        filterTerm = filterTerm.toLowerCase();
-        List<SalesforceObject> resultList = new ArrayList<SalesforceObject>();
-        for (final SalesforceObject obj : recentObjects) {
-            if (obj != null) {
-                String name = obj.getName();
-                if (name == null || Constants.EMPTY_STRING.equals(name)) {
-                    final String type = obj.getObjectType();
-                    if (type != null && !Constants.EMPTY_STRING.equals(type)) {
-                        final SalesforceObjectType objectType = loadObjectType(type,
-                                CachePolicy.RELOAD_IF_EXPIRED_AND_RETURN_CACHE_DATA,
-                                DEFAULT_METADATA_REFRESH_INTERVAL);
-                        if (objectType != null) {
-                            final String nameField = objectType.getNameField();
-                            final JSONObject rawData = obj.getRawData();
-                            if (nameField != null && !Constants.EMPTY_STRING.equals(nameField)
-                                    && rawData != null) {
-                                name = rawData.optString(nameField);
-                            }
-                        }
-                    }
-                }
-                if (name != null && !Constants.EMPTY_STRING.equals(name)) {
-                    name = name.toLowerCase();
-                    final String[] filterTermComponents = name.split(" ");
-                    for (final String namePart : filterTermComponents) {
-
-                        /*
-                         * If any word in the record name starts with the search
-                         * term, we add it.
-                         */
-                        if (namePart.startsWith(filterTerm)) {
-                            resultList.add(obj);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        if (resultList.size() == 0) {
-            resultList = null;
-        }
-        return resultList;
-    }
-
+    /**
+     * Returns the community ID if set, returns null otherwise.
+     *
+     * @return Community ID, or null if not set.
+     */
     public String getCommunityId() {
         return communityId;
     }
 
+    /**
+     * Sets the community ID. All subsequent calls will query
+     * only within the given network.
+     *
+     * @param communityId ID to use for network aware calls.
+     */
     public void setCommunityId(String communityId) {
         this.communityId = communityId;
     }
@@ -584,13 +525,7 @@ public class MetadataManager {
         if (objType == null) {
             return false;
         }
-        final String objName = (objType.getName() == null) ? "" : objType.getName();
-        if (Constants.CONTENT_VERSION.equals(objName) || Constants.USER.equals(objName) || Constants.GROUP.equals(objName)
-                || Constants.DASHBOARD.equals(objName)) {
-            return false;
-        }
-        return (isObjectTypeSearchable(objType) && objType.isLayoutable()
-                && objType.isSearchable());
+        return (objType.isLayoutable() && objType.isSearchable());
     }
 
     /**
@@ -599,11 +534,11 @@ public class MetadataManager {
      * @param type Object type.
      * @return List of return fields.
      */
-    private List<String> serverLayoutFieldsForObjectType(SalesforceObjectType type) {
+    private List<String> getLayoutFieldsForObjectType(SalesforceObjectType type) {
         if (type == null) {
             return null;
         }
-        final SalesforceObjectTypeLayout layout = cachedObjectLayout(type);
+        final SalesforceObjectTypeLayout layout = getCachedObjectLayout(type);
         if (layout == null) {
             return null;
         }
@@ -739,6 +674,29 @@ public class MetadataManager {
     }
 
     /**
+     * Returns cached object layout for a specific object type.
+     *
+     * @param objectType Object type.
+     * @return Cached object layout.
+     */
+    private SalesforceObjectTypeLayout getCachedObjectLayout(SalesforceObjectType objectType) {
+        if (objectType == null) {
+            return null;
+        }
+        final String objectTypeName = objectType.getName();
+        if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
+            return null;
+        }
+        SalesforceObjectTypeLayout result = null;
+        final List<SalesforceObjectTypeLayout> objectTypes = getCachedObjectLayouts(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
+                LAYOUT_CACHE_TYPE, String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
+        if (objectTypes != null && objectTypes.size() > 0) {
+            result = objectTypes.get(0);
+        }
+        return result;
+    }
+
+    /**
      * Returns a list of cached object layouts.
      *
      * @param cachePolicy Cache policy.
@@ -762,13 +720,13 @@ public class MetadataManager {
      * @param objectTypeName Object type name.
      * @return Fields for the object type.
      */
-    private String returnFieldsForObjectType(String objectTypeName) {
+    private String getReturnFieldsForObjectType(String objectTypeName) {
         if (objectTypeName == null) {
             return null;
         }
         final SalesforceObjectType objectType = getCachedObjectType(objectTypeName);
         final List<String> returnFields = new ArrayList<String>();
-        final List<String> extraValues = extraReturnFieldsForObjectType(objectTypeName);
+        final List<String> extraValues = getLayoutReturnFieldsForObjectType(objectTypeName);
         if (extraValues != null && extraValues.size() > 0) {
             for (final String extraValue : extraValues) {
                 if (extraValue != null && !Constants.EMPTY_STRING.equals(extraValue)) {
@@ -776,11 +734,11 @@ public class MetadataManager {
                 }
             }
         }
-        if (!returnFields.contains("Id")) {
-            returnFields.add("Id");
+        if (!returnFields.contains(Constants.ID)) {
+            returnFields.add(Constants.ID);
         }
         if (objectType != null) {
-            String nameField = objectType.getNameField();
+            final String nameField = objectType.getNameField();
             if (nameField != null && !returnFields.contains(nameField)) {
                 returnFields.add(nameField);
             }
@@ -817,7 +775,7 @@ public class MetadataManager {
                     for (int i = 0; i < responseJSON.length(); i++) {
                         final JSONObject object = responseJSON.optJSONObject(i);
                         if (object != null) {
-                            final String name = object.optString("type");
+                            final String name = object.optString(Constants.TYPE.toLowerCase(Locale.US));
                             if (name != null && !Constants.EMPTY_STRING.equals(name)) {
                                 final SalesforceObjectType sfObj = new SalesforceObjectType(name);
                                 if (isObjectTypeSearchable(sfObj)) {
@@ -864,7 +822,8 @@ public class MetadataManager {
             queryBuilder.from(RECENTLY_VIEWED);
             String whereClause = "LastViewedDate != NULL";
             if (communityId != null) {
-                whereClause = String.format("%s AND NetworkId = '%s'", whereClause, communityId);
+                whereClause = String.format("%s AND NetworkId = '%s'",
+                		whereClause, communityId);
             }
             queryBuilder.where(whereClause);
             queryBuilder.limit(limit);
@@ -879,7 +838,7 @@ public class MetadataManager {
                     for (int i = 0; i < fields.length(); i++) {
                         final JSONObject obj = fields.optJSONObject(i);
                         if (obj != null) {
-                            final String nameField = obj.optString("name");
+                            final String nameField = obj.optString(Constants.NAME.toLowerCase(Locale.US));
                             if (nameField != null && "LastViewedDate".equals(nameField)) {
                                 objContainsLastViewedDate = true;
                             }
@@ -887,7 +846,7 @@ public class MetadataManager {
                     }
                 }
             }
-            final String retFields = returnFieldsForObjectType(objectTypeName);
+            final String retFields = getReturnFieldsForObjectType(objectTypeName);
             if (retFields != null && !Constants.EMPTY_STRING.equals(retFields)) {
                 queryBuilder = SOQLBuilder.getInstanceWithFields(retFields);
             } else {
@@ -907,7 +866,8 @@ public class MetadataManager {
             if (communityId != null) {
                 String networkFieldName = objType.getNetworkFieldName();
                 if (networkFieldName != null) {
-                    whereClause = String.format("%s AND %s = '%s'", whereClause, networkFieldName, communityId);
+                    whereClause = String.format("%s AND %s = '%s'",
+                    		whereClause, networkFieldName, communityId);
                 }
             }
             queryBuilder.where(whereClause);
@@ -1017,7 +977,8 @@ public class MetadataManager {
                 return null;
             }
         }
-        if (cachedData != null && cachedData.size() > 0 && cachePolicy != CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE &&
+        if (cachedData != null && cachedData.size() > 0 &&
+        		cachePolicy != CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE &&
                 !cacheManager.needToReloadCache((cachedData != null), cachePolicy,
                         cachedTime, refreshCacheIfOlderThan)) {
             return cachedData.get(0);
@@ -1049,7 +1010,8 @@ public class MetadataManager {
                             final List<SalesforceObjectTypeLayout> layoutList = new ArrayList<SalesforceObjectTypeLayout>();
                             layoutList.add(objTypeLayout);
                             cacheObjectLayouts(layoutList, LAYOUT_CACHE_TYPE,
-                                    String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
+                                    String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY,
+                                    		objectTypeName));
                         }
                         return objTypeLayout;
                     }
@@ -1065,6 +1027,30 @@ public class MetadataManager {
             }
         }
         return null;
+    }
+
+    /**
+     * Returns the return fields for the object type specified
+     * in the object layout, if a layout exists for this object type.
+     *
+     * @param objTypeName Object type name.
+     * @return Layout return fields for the object type.
+     */
+    private List<String> getLayoutReturnFieldsForObjectType(String objTypeName) {
+        if (objTypeName == null || Constants.EMPTY_STRING.equals(objTypeName)) {
+            return null;
+        }
+        List<String> results = null;
+        SalesforceObjectType objType = getCachedObjectType(objTypeName);
+        if (objType == null) {
+            objType = loadObjectType(objTypeName,
+            		CachePolicy.RELOAD_IF_EXPIRED_AND_RETURN_CACHE_DATA,
+                    DEFAULT_METADATA_REFRESH_INTERVAL);
+        }
+        if (objType != null && canLoadLayoutForObjectType(objType)) {
+            results = getLayoutFieldsForObjectType(objType);
+        }
+        return results;
     }
 
     /**
