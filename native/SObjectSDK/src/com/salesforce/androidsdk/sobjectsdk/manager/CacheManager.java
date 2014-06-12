@@ -98,13 +98,22 @@ public class CacheManager {
     }
 
     /**
-     * Resets the cache manager. This method clears only the in memory cache,
-     * and does not clear the underlying cache in the database. In order to
-     * clear the cached data in the database, use the 'removeCache()' method.
+     * Resets the cache manager. This method clears the in memory cache and
+     * the underlying cache in the database.
      */
-    public static void reset() {
+    public static void hardReset() {
         if (INSTANCE != null) {
             INSTANCE.cleanCache();
+            INSTANCE = null;
+        }
+    }
+
+    /**
+     * Resets the cache manager. This method clears only the in memory cache.
+     */
+    public static void softReset() {
+        if (INSTANCE != null) {
+            INSTANCE.resetInMemoryCache();
             INSTANCE = null;
         }
     }

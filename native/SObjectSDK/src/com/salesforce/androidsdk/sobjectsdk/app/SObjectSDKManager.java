@@ -33,6 +33,9 @@ import android.content.Context;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.sobjectsdk.SObjectUserAccountManager;
+import com.salesforce.androidsdk.sobjectsdk.manager.CacheManager;
+import com.salesforce.androidsdk.sobjectsdk.manager.MetadataManager;
+import com.salesforce.androidsdk.sobjectsdk.manager.NetworkManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -167,9 +170,14 @@ public class SObjectSDKManager extends SalesforceSDKManagerWithSmartStore {
 
     @Override
     protected void cleanUp(Activity frontActivity, Account account) {
+    	MetadataManager.reset();
+
     	/*
-    	 * TODO: Clean up SObject SDK cache, etc.
+    	 * We don't have to do a hard reset on the cache manager here, since
+    	 * the underlying database will be wiped in the super class.
     	 */
+    	CacheManager.softReset();
+    	NetworkManager.reset();
         super.cleanUp(frontActivity, account);
     }
 
