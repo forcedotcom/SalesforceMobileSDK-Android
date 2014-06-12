@@ -75,9 +75,12 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
- * Singleton class used as an interface to the various
- * functions provided by the Salesforce SDK. This class
- * should be instantiated in order to use the Salesforce SDK.
+ * This class serves as an interface to the various
+ * functions of the Salesforce SDK. In order to use the SDK,
+ * your app must first instantiate the singleton SalesforceSDKManager
+ * object by calling the static init() method. After calling init(),
+ * use the static getInstance() method to access the
+ * singleton SalesforceSDKManager object.
  */
 public class SalesforceSDKManager implements AccountRemoved {
 
@@ -112,14 +115,14 @@ public class SalesforceSDKManager implements AccountRemoved {
     protected Class<? extends Activity> mainActivityClass;
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
     protected Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
-    protected Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
+	protected Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
     protected AccountWatcher accWatcher;
     private String encryptionKey;
     private SalesforceR salesforceR = new SalesforceR();
     private PasscodeManager passcodeManager;
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
-    private boolean isLoggingOut = false;
+	private boolean isLoggingOut = false;
     private AdminPrefsManager adminPrefsManager;
     private PushNotificationInterface pushNotificationInterface;
     private volatile boolean loggedOut = false;
@@ -165,7 +168,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     	return mainActivityClass;
     }
 
-    /**
+	/**
      * Returns the class for the account switcher activity.
      *
      * @return The class for the account switcher activity.
@@ -188,7 +191,10 @@ public class SalesforceSDKManager implements AccountRemoved {
     public interface KeyInterface {
 
         /**
-         * This function must return the same value for name
+         * Defines a single function for retrieving the key
+         * associated with a given name.
+         *
+         * For the given name, this function must return the same key
          * even when the application is restarted. The value this
          * function returns must be Base64 encoded.
          *
@@ -210,7 +216,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * This function must return the same value for name
+     * For the given name, this function must return the same key
      * even when the application is restarted. The value this
      * function returns must be Base64 encoded.
      *
@@ -237,8 +243,10 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Before 1.3, SalesforceSDK was packaged as a jar, and project had to provide a subclass of SalesforceR.
-     * Since 1.3, SalesforceSDK is packaged as a library project and we no longer need to to that.
+     * Before Mobile SDK 1.3, SalesforceSDK was packaged as a jar, and each project had to provide
+     * a subclass of SalesforceR.
+     *
+     * Since 1.3, SalesforceSDK is packaged as a library project, so the SalesforceR subclass is no longer needed.
      * @return SalesforceR object which allows reference to resources living outside the SDK.
      */
     public SalesforceR getSalesforceR() {
@@ -269,13 +277,11 @@ public class SalesforceSDKManager implements AccountRemoved {
 	}
 
 	/**
-	 * Initializes components required for this class
-	 * to properly function. This method is for internal
-	 * usage by the Salesforce Mobile SDK.
+	 * For internal use only. Initializes required components.
 	 *
 	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
-     * @param mainActivity Activity that should be launched after the login flow.
+     * @param mainActivity Activity to be launched after the login flow.
      * @param loginActivity Login activity.
 	 */
     private static void init(Context context, KeyInterface keyImpl,
@@ -287,10 +293,8 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
 	/**
-	 * Initializes components required for this class
-	 * to properly function. This method is for internal
-	 * usage by the Salesforce Mobile SDK or by subclasses
-	 * of SalesforceSDKManager.
+	 * For internal use by Salesforce Mobile SDK or by subclasses
+	 * of SalesforceSDKManager. Initializes required components.
 	 *
 	 * @param context Application context.
 	 */
@@ -317,9 +321,8 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
 	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by hybrid apps using the Salesforce Mobile SDK.
+	 * Initializes required components. Hybrid apps must call one overload of
+     * this method before using the Salesforce Mobile SDK.
 	 *
 	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
@@ -329,9 +332,8 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
 	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by hybrid apps using the Salesforce Mobile SDK.
+	 * Initializes required components. Hybrid apps must call one overload of
+     * this method before using the Salesforce Mobile SDK.
 	 *
 	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
@@ -342,9 +344,8 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
 	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by hybrid apps that use a subclass of SalesforceDroidGapActivity.
+	 * Initializes required components. Hybrid apps must call one overload of
+     * this method before using the Salesforce Mobile SDK.
 	 *
 	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
@@ -357,9 +358,8 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
 	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by native apps using the Salesforce Mobile SDK.
+	 * Initializes required components. Native apps must call one overload of
+     * this method before using the Salesforce Mobile SDK.
 	 *
 	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
@@ -370,9 +370,8 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
 	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by native apps using the Salesforce Mobile SDK.
+	 * Initializes required components. Native apps must call one overload of
+     * this method before using the Salesforce Mobile SDK.
 	 *
 	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
@@ -385,9 +384,10 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Sets a custom sub-class of PasscodeActivity to be used.
+     * Sets a custom passcode activity class to be used instead of the default class.
+     * The custom class must subclass PasscodeActivity.
      *
-     * @param activity Sub-class of PasscodeActivity.
+     * @param activity Subclass of PasscodeActivity.
      */
     public void setPasscodeActivity(Class<? extends PasscodeActivity> activity) {
     	if (activity != null) {
@@ -396,21 +396,21 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Returns the custom sub-class of PasscodeActivity being used.
+     * Returns the descriptor of the passcode activity class that's currently in use.
      *
-     * @return Sub-class of PasscodeActivity.
+     * @return Passcode activity class descriptor.
      */
     public Class<? extends PasscodeActivity> getPasscodeActivity() {
     	return passcodeActivityClass;
     }
 
     /**
-     * Returns whether the SDK should automatically logout when the
-     * access token is revoked. This should be overridden to return
-     * false, if the app wants to handle cleanup by itself when the
+     * Indicates whether the SDK should automatically log out when the
+     * access token is revoked. If you override this method to return
+     * false, your app is responsible for handling its own cleanup when the
      * access token is revoked.
      *
-     * @return True - if the SDK should automatically logout, False - otherwise.
+     * @return True if the SDK should automatically logout.
      */
     public boolean shouldLogoutWhenTokenRevoked() {
     	return true;
@@ -427,7 +427,7 @@ public class SalesforceSDKManager implements AccountRemoved {
 
     @Override
     public void onAccountRemoved() {
-    	INSTANCE.cleanUp(null, null);
+        INSTANCE.cleanUp(null, null);
     }
 
     /**
@@ -452,7 +452,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Returns the configured receiver that handles received push notifications.
+     * Returns the receiver that's configured to handle incoming push notifications.
      *
      * @return Configured implementation of PushNotificationInterface.
      */
@@ -461,28 +461,28 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Returns the passcode manager associated with SalesforceSDKManager.
+     * Returns the passcode manager that's associated with SalesforceSDKManager.
      *
      * @return PasscodeManager instance.
      */
     public synchronized PasscodeManager getPasscodeManager() {
-    	if (passcodeManager == null) {
-    		passcodeManager = new PasscodeManager(context);
+        if (passcodeManager == null) {
+            passcodeManager = new PasscodeManager(context);
         }
         return passcodeManager;
     }
 
-    /**
-     * Returns an instance of the UserAccountManager class.
+	/**
+     * Returns the user account manager that's associated with SalesforceSDKManager.
      *
-     * @return Instance of the UserAccountManager class.
+     * @return UserAccountManager instance.
      */
     public UserAccountManager getUserAccountManager() {
     	return UserAccountManager.getInstance();
     }
 
     /**
-     * Returns the admin prefs manager associated with SalesforceSDKManager.
+     * Returns the administrator preferences manager that's associated with SalesforceSDKManager.
      *
      * @return AdminPrefsManager instance.
      */
@@ -510,11 +510,11 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Checks if the new passcode is different from the old passcode.
+     * Indicates whether the new passcode is different from the old passcode.
      *
      * @param oldPass Old passcode.
      * @param newPass New passcode.
-     * @return True - if the new passcode is different from the old passcode, False - otherwise.
+     * @return True if the new passcode is different from the old passcode.
      */
     protected boolean isNewPasscode(String oldPass, String newPass) {
         return !((oldPass == null && newPass == null)
@@ -567,7 +567,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     /**
      * Checks if network connectivity exists.
      *
-     * @return True - if network is available, False - otherwise.
+     * @return True if a network connection is available.
      */
     public boolean hasNetwork() {
     	return HttpAccess.DEFAULT.hasNetwork();
@@ -621,7 +621,7 @@ public class SalesforceSDKManager implements AccountRemoved {
         context.startActivity(i);
     }
 
-    /**
+	/**
      * Starts account switcher activity if an account has been removed.
      */
     protected void startSwitcherActivityIfRequired() {
@@ -648,11 +648,15 @@ public class SalesforceSDKManager implements AccountRemoved {
     		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     		context.startActivity(i);
         }
-    }
+	}
 
     /**
-     * Unregisters from push notifications (both GCM and SFDC), and waits for
-     * it to complete or timeout.
+     * Unregisters from push notifications for both GCM (Android) and SFDC, and waits either for
+     * unregistration to complete or for the operation to time out. The timeout period is defined
+     * in PUSH_UNREGISTER_TIMEOUT_MILLIS. 
+     *
+     * If timeout occurs while the user is logged in, this method attempts to unregister the push
+     * unregistration receiver, and then removes the user's account.
      *
      * @param clientMgr ClientManager instance.
      * @param showLoginPage True - if the login page should be shown, False - otherwise.
@@ -701,8 +705,10 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * This method is called either when push un-registration is complete, or
-     * a timeout occurred while waiting.
+     * This method is called either when unregistration for push notifications 
+     * is complete and the user has logged out, or when a timeout occurs while waiting. 
+     * If the user has not logged out, this method attempts to unregister the push 
+     * notification unregistration receiver, and then removes the user's account.
      *
      * @param pushReceiver Broadcast receiver.
      * @param clientMgr ClientManager instance.
@@ -728,8 +734,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Wipes out the stored authentication credentials (removes the account)
-     * and restarts the app, if specified.
+     * Destroys the stored authentication credentials (removes the account).
      *
      * @param frontActivity Front activity.
      */
@@ -738,8 +743,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Wipes out the stored authentication credentials (removes the account)
-     * and restarts the app, if specified.
+     * Destroys the stored authentication credentials (removes the account).
      *
      * @param account Account.
      * @param frontActivity Front activity.
@@ -749,11 +753,11 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Wipes out the stored authentication credentials (removes the account)
-     * and restarts the app, if specified.
+     * Destroys the stored authentication credentials (removes the account)
+     * and, if requested, restarts the app.
      *
      * @param frontActivity Front activity.
-     * @param showLoginPage True - if the login page should be shown, False - otherwise.
+     * @param showLoginPage If true, displays the login page after removing the account.
      */
     public void logout(Activity frontActivity, final boolean showLoginPage) {
         final ClientManager clientMgr = new ClientManager(context, getAccountType(),
@@ -763,12 +767,12 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Wipes out the stored authentication credentials (removes the account)
-     * and restarts the app, if specified.
+     * Destroys the stored authentication credentials (removes the account)
+     * and, if requested, restarts the app.
      *
      * @param account Account.
      * @param frontActivity Front activity.
-     * @param showLoginPage True - if the login page should be shown, False - otherwise.
+     * @param showLoginPage If true, displays the login page after removing the account.
      */
     public void logout(Account account, Activity frontActivity, final boolean showLoginPage) {
         final ClientManager clientMgr = new ClientManager(context, getAccountType(),
@@ -784,7 +788,7 @@ public class SalesforceSDKManager implements AccountRemoved {
 	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
 	        		AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
 	        loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
-	        		AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());	
+	        		AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());
 		}
 
 		/*
@@ -806,7 +810,7 @@ public class SalesforceSDKManager implements AccountRemoved {
      * Removes the account upon logout.
      *
      * @param clientMgr ClientManager instance.
-     * @param showLoginPage True - if the login page should be shown, False - otherwise.
+     * @param showLoginPage If true, displays the login page after removing the account.
      * @param refreshToken Refresh token.
      * @param clientId Client ID.
      * @param loginServer Login server.
@@ -823,7 +827,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     	}
     	cleanUp(frontActivity, account);
 
-    	// Removes the existing account, if any.
+    	// Removes the exisiting account, if any.
     	if (account == null) {
     		EventsObservable.get().notifyEvent(EventType.LogoutComplete);
     		if (showLoginPage) {
@@ -850,8 +854,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Returns a user agent string based on the mobile SDK version. We are building
-     * a user agent of the form:
+     * Returns a user agent string based on the Mobile SDK version. The user agent takes the following form:
      *   SalesforceMobileSDK/<salesforceSDK version> android/<android OS version> appName/appVersion <Native|Hybrid>
      *
      * @return The user agent string to use for all requests.
@@ -875,16 +878,16 @@ public class SalesforceSDKManager implements AccountRemoved {
 	}
 
 	/**
-	 * Returns whether the application is a hybrid application or not.
+	 * Indicates whether the application is a hybrid application.
 	 *
-	 * @return True - if this is an hybrid application, False - otherwise.
+	 * @return True if this is a hybrid application.
 	 */
 	public boolean isHybrid() {
 		return SalesforceDroidGapActivity.class.isAssignableFrom(getMainActivityClass());
 	}
 
     /**
-     * Returns the authentication account type (should match authenticator.xml).
+     * Returns the authentication account type (which should match authenticator.xml).
      *
      * @return Account type string.
      */
@@ -893,9 +896,9 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Returns whether the app is running on a tablet or not.
+     * Indicates whether the app is running on a tablet.
      *
-     * @return True - if application is running on a tablet, False - otherwise.
+     * @return True if the application is running on a tablet.
      */
     public static boolean isTablet() {
         if (Build.VERSION.SDK_INT <= GINGERBREAD_MR1) {
@@ -924,7 +927,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Encrypts the data using the passcode as the encryption key.
+     * Encrypts the given data using the given passcode as the encryption key.
      *
      * @param data Data to be encrypted.
      * @param passcode Encryption key.
@@ -935,7 +938,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Decrypts the data using the passcode as the decryption key.
+     * Decrypts the given data using the given passcode as the decryption key.
      *
      * @param data Data to be decrypted.
      * @param passcode Decryption key.
@@ -946,7 +949,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Simple AsyncTask to handle revocation of refresh token upon logout.
+     * Asynchronous task for revoking the refresh token on logout.
      *
      * @author bhariharan
      */
@@ -974,18 +977,18 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Returns whether the current run is a test run.
+     * Retrieves a property value that indicates whether the current run is a test run.
      *
-     * @return True - if it is a test run, False - otherwise.
+     * @return True if the current run is a test run.
      */
     public boolean getIsTestRun() {
     	return INSTANCE.isTestRun;
     }
 
     /**
-     * Specifies if the current run is a test run.
+     * Sets a property that indicates whether the current run is a test run.
      *
-     * @param isTestRun True - if it is a test run, False - otherwise.
+     * @param isTestRun True if the current run is a test run.
      */
     public void setIsTestRun(boolean isTestRun) {
     	INSTANCE.isTestRun = isTestRun;
@@ -996,9 +999,9 @@ public class SalesforceSDKManager implements AccountRemoved {
     }
 
     /**
-     * Returns whether a logout is in progress or not.
+     * Retrieves a property value that indicates whether logout is in progress.
      *
-     * @return True - if a logout is in progress, False - otherwise.
+     * @return True if logout is in progress.
      */
     public boolean isLoggingOut() {
     	return isLoggingOut;
