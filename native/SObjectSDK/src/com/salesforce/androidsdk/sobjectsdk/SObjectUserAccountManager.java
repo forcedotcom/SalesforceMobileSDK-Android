@@ -28,6 +28,9 @@ package com.salesforce.androidsdk.sobjectsdk;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManagerWithSmartStore;
+import com.salesforce.androidsdk.sobjectsdk.manager.CacheManager;
+import com.salesforce.androidsdk.sobjectsdk.manager.MetadataManager;
+import com.salesforce.androidsdk.sobjectsdk.manager.NetworkManager;
 
 /**
  * This class acts as a manager that provides methods to access
@@ -55,16 +58,16 @@ public class SObjectUserAccountManager extends UserAccountManagerWithSmartStore 
 	@Override
 	public void switchToUser(UserAccount user) {
 		super.switchToUser(user);
-		/*
-		 * TODO: Clear SObject in memory cache.
-		 */
+		CacheManager.softReset();
+		MetadataManager.reset();
+		NetworkManager.reset();
 	}
 
 	@Override
 	public void switchToNewUser() {
 		super.switchToNewUser();
-		/*
-		 * TODO: Clear SObject in memory cache.
-		 */
+		CacheManager.softReset();
+		MetadataManager.reset();
+		NetworkManager.reset();
 	}
 }
