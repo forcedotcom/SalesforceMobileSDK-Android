@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.sobjectsdk;
 
 import android.content.Context;
-import com.salesforce.androidsdk.tests.R;
+import com.salesforce.androidsdk.sobjectsdk.tests.R;
 
 /**
  * Authentication credentials used to make live server calls in tests.
