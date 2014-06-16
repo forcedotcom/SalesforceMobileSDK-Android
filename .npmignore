@@ -17,6 +17,7 @@ native/SampleApps/RestExplorer/bin/
 native/SampleApps/test/RestExplorerTest/bin/
 native/TemplateApp/bin/
 native/test/SalesforceSDKTest/bin/
+native/test/SObjectSDKTest/bin/
 native/test/TemplateAppTest/bin/
 
 hybrid/SampleApps/AccountEditor/gen/
@@ -38,6 +39,7 @@ native/SampleApps/RestExplorer/gen/
 native/SampleApps/test/RestExplorerTest/gen/
 native/TemplateApp/gen/
 native/test/SalesforceSDKTest/gen/
+native/test/SObjectSDKTest/gen/
 native/test/TemplateAppTest/gen/
 
 hybrid/SampleApps/AccountEditor/proguard-project.txt
@@ -59,6 +61,7 @@ native/SampleApps/RestExplorer/proguard-project.txt
 native/SampleApps/test/RestExplorerTest/proguard-project.txt
 native/TemplateApp/proguard-project.txt
 native/test/SalesforceSDKTest/proguard-project.txt
+native/test/SObjectSDKTest/proguard-project.txt
 native/test/TemplateAppTest/proguard-project.txt
 
 hybrid/SampleApps/AccountEditor/local.properties
@@ -80,6 +83,7 @@ native/SampleApps/RestExplorer/local.properties
 native/SampleApps/test/RestExplorerTest/local.properties
 native/TemplateApp/local.properties
 native/test/SalesforceSDKTest/local.properties
+native/test/SObjectSDKTest/local.properties
 native/test/TemplateAppTest/local.properties
 
 hybrid/SampleApps/AccountEditor/AccountEditor.iml

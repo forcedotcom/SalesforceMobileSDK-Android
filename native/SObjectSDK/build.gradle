@@ -20,6 +20,17 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
+
+    androidTest.setRoot('../test/SObjectSDKTest')
+    androidTest {
+      java.srcDirs = ['../test/SObjectSDKTest/src']
+      resources.srcDirs = ['../test/SObjectSDKTest/src']
+      res.srcDirs = ['../test/SObjectSDKTest/res']
+    }
+  }
+  defaultConfig {
+    testPackageName "com.salesforce.androidsdk.sobjectsdk.tests"
+    testInstrumentationRunner "com.salesforce.androidsdk.util.JUnitReportTestRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'
