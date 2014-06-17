@@ -43,6 +43,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+import com.salesforce.androidsdk.sobjectsdk.app.SObjectSDKManager;
 import com.salesforce.androidsdk.sobjectsdk.model.SalesforceObject;
 import com.salesforce.androidsdk.sobjectsdk.model.SalesforceObjectType;
 import com.salesforce.androidsdk.sobjectsdk.model.SalesforceObjectTypeLayout;
@@ -122,7 +123,7 @@ public class CacheManager {
      * Private constructor.
      */
     private CacheManager() {
-        smartStore = SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore();
+        smartStore = SObjectSDKManager.getInstance().getSmartStore();
         resetInMemoryCache();
     }
 

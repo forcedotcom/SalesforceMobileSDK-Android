@@ -24,24 +24,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.sobjectsdk;
+package com.salesforce.androidsdk.sobjectsdk.manager;
 
-import android.app.Application;
-
-import com.salesforce.androidsdk.sobjectsdk.app.SObjectSDKManager;
+import android.test.InstrumentationTestCase;
 
 /**
- * Test implementation of Application class that uses SalesforceSDKManager.
+ * Test class for CacheManager.
  *
  * @author bhariharan
  */
-public class TestForceApp extends Application {
+public class CacheManagerTest extends InstrumentationTestCase {
 
-    @Override
-    public void onCreate() {
-    	SObjectSDKManager.initNative(getApplicationContext(), new KeyImpl(),
-    			MainActivity.class);
-    	super.onCreate();
-    	SObjectSDKManager.getInstance().setIsTestRun(true);
-    }
 }
