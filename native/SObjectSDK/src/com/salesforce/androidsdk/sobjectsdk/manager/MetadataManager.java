@@ -516,6 +516,62 @@ public class MetadataManager {
     }
 
     /**
+     * Marks an object as viewed on the server.
+     *
+     * @param objectId Object ID.
+     * @param objectType Object type.
+     */
+    public void markObjectAsViewed(String objectId, String objectType) {
+        if (objectId == null || objectType == null
+                || Constants.EMPTY_STRING.equals(objectId)
+                || Constants.EMPTY_STRING.equals(objectType)
+                || Constants.CONTENT_VERSION.equals(objectType)
+                || Constants.CONTENT.equals(objectType)) {
+            Log.w(TAG, "Cannot mark object as viewed");
+            return;
+        }
+        final SalesforceObjectType result = loadObjectType(objectType,
+                CachePolicy.RELOAD_IF_EXPIRED_AND_RETURN_CACHE_DATA,
+                DEFAULT_METADATA_REFRESH_INTERVAL);
+        final SOQLBuilder queryBuilder = SOQLBuilder.getInstanceWithFields(Constants.ID).from(objectType);
+        try {
+            String whereClause;
+            if (result != null && isObjectTypeSearchable(result)) {
+                whereClause = String.format("Id = '%s' FOR VIEW", objectId);
+            } else {
+                whereClause = String.format("Id = '%s'", objectId);
+            }
+            final String communityId = getCommunityId();
+            if (communityId != null) {
+                final String networkFieldName = result.getNetworkFieldName();
+                if (networkFieldName != null) {
+                    whereClause = String.format("%s AND %s = '%s'", whereClause,
+                            networkFieldName, communityId);
+                }
+            }
+            queryBuilder.where(whereClause);
+            final String queryString = queryBuilder.buildAndEncode();
+            final String path = String.format("%s/%s/query/", REST_API_PATH, apiVersion);
+            final Map<String, Object> params = new HashMap<String, Object>();
+            params.put("q", queryString);
+            final RestResponse response = networkManager.makeRemoteGETRequest(path, params);
+            if (response != null && response.isSuccess()) {
+                final JSONObject responseJSON = response.asJSONObject();
+                if (responseJSON != null) {
+                    final JSONArray records = responseJSON.optJSONArray("records");
+                    if (records == null || records.length() == 0) {
+                        Log.e(TAG, "Failed to mark object " + objectId + " as viewed, since object no longer exists");
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Error occurred while attempting to mark object " + objectId + " as viewed", e);
+        } catch (IOException e) {
+            Log.e(TAG, "Error occurred while attempting to mark object " + objectId + " as viewed", e);
+        }
+    }
+
+    /**
      * Returns whether a layout can be loaded for the specified object type.
      *
      * @param objType Object type.

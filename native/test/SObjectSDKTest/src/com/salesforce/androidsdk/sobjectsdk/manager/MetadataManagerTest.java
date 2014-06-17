@@ -112,7 +112,7 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      */
     public void testLoadGlobalMRUObjectsFromServer() {
     	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(null,
-    			50, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	/*
     	 * TODO: assert against static data.
     	 */
@@ -123,7 +123,7 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      */
     public void testLoadAccountMRUObjectsFromServer() {
     	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(ACCOUNT,
-    			50, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	/*
     	 * TODO: assert against static data.
     	 */
@@ -134,7 +134,7 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      */
     public void testLoadCaseMRUObjectsFromServer() {
     	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(CASE,
-    			50, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	/*
     	 * TODO: assert against static data.
     	 */
@@ -208,12 +208,12 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      */
     public void testLoadGlobalMRUObjectsFromCache() {
     	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(null,
-    			50, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	/*
     	 * TODO: Turn off network and assert between live and cached data.
     	 */
     	final List<SalesforceObject> cachedMruObjects = metadataManager.loadMRUObjects(null,
-    			50, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
+    			1, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
     }
 
     /**
@@ -221,12 +221,12 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      */
     public void testLoadAccountMRUObjectsFromCache() {
     	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(ACCOUNT,
-    			50, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	/*
     	 * TODO: Turn off network and assert between live and cached data.
     	 */
     	final List<SalesforceObject> cachedMruObjects = metadataManager.loadMRUObjects(ACCOUNT,
-    			50, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
+    			1, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
     }
 
     /**
@@ -234,12 +234,12 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      */
     public void testLoadCaseMRUObjectsFromCache() {
     	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(CASE,
-    			50, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	/*
     	 * TODO: Turn off network and assert between live and cached data.
     	 */
     	final List<SalesforceObject> cachedMruObjects = metadataManager.loadMRUObjects(CASE,
-    			50, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
+    			1, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
     }
 
     /**
