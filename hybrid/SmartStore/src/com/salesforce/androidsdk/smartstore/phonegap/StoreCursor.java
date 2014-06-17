@@ -18,6 +18,7 @@ public class StoreCursor {
 	public  final int cursorId;
 	private final QuerySpec querySpec;
 	private final int totalPages;
+	private final int totalEntries;
 	
 	// Current page can change - by calling moveToPageIndex
 	private int currentPageIndex;
@@ -32,6 +33,7 @@ public class StoreCursor {
 		
 		this.cursorId = LAST_ID++;
 		this.querySpec = querySpec;
+		this.totalEntries = countRows;
 		this.totalPages = (int) Math.ceil( (double) countRows / querySpec.pageSize);
 		this.currentPageIndex = 0;
 	}
@@ -55,6 +57,7 @@ public class StoreCursor {
 		json.put(SmartStorePlugin.CURSOR_ID, cursorId);
 		json.put(SmartStorePlugin.CURRENT_PAGE_INDEX, currentPageIndex);
 		json.put(SmartStorePlugin.PAGE_SIZE, querySpec.pageSize);
+		json.put(SmartStorePlugin.TOTAL_ENTRIES, totalEntries);
 		json.put(SmartStorePlugin.TOTAL_PAGES, totalPages);
 		json.put(SmartStorePlugin.CURRENT_PAGE_ORDERED_ENTRIES, smartStore.query(querySpec, currentPageIndex));
 		return json;
