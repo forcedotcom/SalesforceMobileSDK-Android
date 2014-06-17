@@ -732,8 +732,8 @@ public class CacheManager {
     	}
     	final JSONObject object = new JSONObject();
     	try {
-        	object.put(SOUP_NAMES_KEY, soupNamesArr);
-            smartStore.upsert(soupName, object);
+    		object.put(SOUP_NAMES_KEY, soupNamesArr);
+            smartStore.upsert(SOUP_OF_SOUPS, object);
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while attempting to cache data", e);
         } catch (SmartStoreException e) {
@@ -759,7 +759,7 @@ public class CacheManager {
     	final JSONObject object = new JSONObject();
     	try {
         	object.put(SOUP_NAMES_KEY, soupNamesArr);
-            smartStore.upsert(soupName, object);
+            smartStore.upsert(SOUP_OF_SOUPS, object);
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while attempting to cache data", e);
         } catch (SmartStoreException e) {
