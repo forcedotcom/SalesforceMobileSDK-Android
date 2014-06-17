@@ -62,11 +62,12 @@ public class MetadataManagerTest extends InstrumentationTestCase {
 	private static final String ACCOUNT_1_ID = "001S000000fkJKm";
 	private static final String ACCOUNT_1_NAME = "Alpha4";
 	private static final String ACCOUNT_2_ID = "001S000000gyAaj";
-	private static final String ACCOUNT_2_NAME = "Alpha11";
 	private static final String OPPORTUNITY_1_ID = "006S0000007182b";
 	private static final String OPPORTUNITY_1_NAME = "Test";
 	private static final String OPPORTUNITY_2_ID = "006S0000007182l";
-	private static final String OPPORTUNITY_2_NAME = "Test2";
+	private static final String CASE_1_ID = "500S0000003s6Sf";
+	private static final String CASE_1_NAME = "00001007";
+	private static final String CASE_2_ID = "500S0000004O7fd";
 
     private Context targetContext;
     private EventsListenerQueue eq;
@@ -117,11 +118,19 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      * Test for global 'loadMRUObjects' (from the server).
      */
     public void testLoadGlobalMRUObjectsFromServer() {
+    	metadataManager.markObjectAsViewed(CASE_1_ID, Constants.CASE);
     	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(null,
     			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    	assertNotNull("MRU list should not be null", mruObjects);
+    	assertEquals("MRU list size should be 1", 1, mruObjects.size());
+    	assertEquals("Recently viewed object name is incorrect", CASE_1_NAME,
+    			mruObjects.get(0).getName());
+
     	/*
-    	 * TODO: assert against static data.
+    	 * This is to ensure that the next test run is actually
+    	 * altering the MRU from what it is currently.
     	 */
+    	metadataManager.markObjectAsViewed(CASE_2_ID, Constants.CASE);
     }
 
     /**
@@ -185,10 +194,10 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     }
 
     /**
-     * Test for opportunity 'loadObjectType' (from the server).
+     * Test for case 'loadObjectType' (from the server).
      */
-    public void testLoadOpportunityObjectTypeFromServer() {
-    	final SalesforceObjectType opportunity = metadataManager.loadObjectType(Constants.OPPORTUNITY,
+    public void testLoadCaseObjectTypeFromServer() {
+    	final SalesforceObjectType opportunity = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	/*
     	 * TODO: assert against static data.
@@ -229,13 +238,25 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      * Test for global 'loadMRUObjects' (from the cache).
      */
     public void testLoadGlobalMRUObjectsFromCache() {
+    	metadataManager.markObjectAsViewed(CASE_1_ID, Constants.CASE);
     	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(null,
     			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    	assertNotNull("MRU list should not be null", mruObjects);
+    	assertEquals("MRU list size should be 1", 1, mruObjects.size());
+    	assertEquals("Recently viewed object name is incorrect", CASE_1_NAME,
+    			mruObjects.get(0).getName());
+
     	/*
-    	 * TODO: Turn off network and assert between live and cached data.
+    	 * We mark CASE_2 as most recently viewed. However, the cache results
+    	 * should still return CASE_1 as most recently viewed.
     	 */
+    	metadataManager.markObjectAsViewed(CASE_2_ID, Constants.CASE);
     	final List<SalesforceObject> cachedMruObjects = metadataManager.loadMRUObjects(null,
     			1, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
+    	assertNotNull("MRU list should not be null", cachedMruObjects);
+    	assertEquals("MRU list size should be 1", 1, cachedMruObjects.size());
+    	assertEquals("Recently viewed object name is incorrect", CASE_1_NAME,
+    			mruObjects.get(0).getName());
     }
 
     /**
@@ -315,15 +336,15 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     }
 
     /**
-     * Test for opportunity 'loadObjectType' (from the cache).
+     * Test for case 'loadObjectType' (from the cache).
      */
-    public void testLoadOpportunityObjectTypeFromCache() {
-    	final SalesforceObjectType opportunity = metadataManager.loadObjectType(Constants.OPPORTUNITY,
+    public void testLoadCaseObjectTypeFromCache() {
+    	final SalesforceObjectType opportunity = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	/*
     	 * TODO: Turn off network and assert between live and cached data.
     	 */
-    	final SalesforceObjectType cachedOpportunity = metadataManager.loadObjectType(Constants.OPPORTUNITY,
+    	final SalesforceObjectType cachedOpportunity = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
     }
 
