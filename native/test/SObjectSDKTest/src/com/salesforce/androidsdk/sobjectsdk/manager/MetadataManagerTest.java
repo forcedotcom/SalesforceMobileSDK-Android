@@ -63,6 +63,10 @@ public class MetadataManagerTest extends InstrumentationTestCase {
 	private static final String ACCOUNT_1_NAME = "Alpha4";
 	private static final String ACCOUNT_2_ID = "001S000000gyAaj";
 	private static final String ACCOUNT_2_NAME = "Alpha11";
+	private static final String OPPORTUNITY_1_ID = "006S0000007182b";
+	private static final String OPPORTUNITY_1_NAME = "Test";
+	private static final String OPPORTUNITY_2_ID = "006S0000007182l";
+	private static final String OPPORTUNITY_2_NAME = "Test2";
 
     private Context targetContext;
     private EventsListenerQueue eq;
@@ -140,14 +144,22 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     }
 
     /**
-     * Test for case 'loadMRUObjects' (from the server).
+     * Test for opportunity 'loadMRUObjects' (from the server).
      */
-    public void testLoadCaseMRUObjectsFromServer() {
-    	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.CASE,
+    public void testLoadOpportunityMRUObjectsFromServer() {
+    	metadataManager.markObjectAsViewed(OPPORTUNITY_1_ID, Constants.OPPORTUNITY);
+    	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
     			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    	assertNotNull("MRU list should not be null", mruObjects);
+    	assertEquals("MRU list size should be 1", 1, mruObjects.size());
+    	assertEquals("Recently viewed object name is incorrect", OPPORTUNITY_1_NAME,
+    			mruObjects.get(0).getName());
+
     	/*
-    	 * TODO: assert against static data.
+    	 * This is to ensure that the next test run is actually
+    	 * altering the MRU from what it is currently.
     	 */
+    	metadataManager.markObjectAsViewed(OPPORTUNITY_2_ID, Constants.OPPORTUNITY);
     }
 
     /**
@@ -252,16 +264,28 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     }
 
     /**
-     * Test for case 'loadMRUObjects' (from the cache).
+     * Test for opportunity 'loadMRUObjects' (from the cache).
      */
-    public void testLoadCaseMRUObjectsFromCache() {
-    	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.CASE,
+    public void testLoadOpportunityMRUObjectsFromCache() {
+    	metadataManager.markObjectAsViewed(OPPORTUNITY_1_ID, Constants.OPPORTUNITY);
+    	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
     			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    	assertNotNull("MRU list should not be null", mruObjects);
+    	assertEquals("MRU list size should be 1", 1, mruObjects.size());
+    	assertEquals("Recently viewed object name is incorrect", OPPORTUNITY_1_NAME,
+    			mruObjects.get(0).getName());
+
     	/*
-    	 * TODO: Turn off network and assert between live and cached data.
+    	 * We mark OPPORTUNITY_2 as most recently viewed. However, the cache results
+    	 * should still return OPPORTUNITY_1 as most recently viewed.
     	 */
-    	final List<SalesforceObject> cachedMruObjects = metadataManager.loadMRUObjects(Constants.CASE,
+    	metadataManager.markObjectAsViewed(OPPORTUNITY_2_ID, Constants.OPPORTUNITY);
+    	final List<SalesforceObject> cachedMruObjects = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
     			1, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
+    	assertNotNull("MRU list should not be null", cachedMruObjects);
+    	assertEquals("MRU list size should be 1", 1, cachedMruObjects.size());
+    	assertEquals("Recently viewed object name is incorrect", OPPORTUNITY_1_NAME,
+    			mruObjects.get(0).getName());
     }
 
     /**
