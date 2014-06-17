@@ -77,6 +77,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	private static final String QUERY_SPEC = "querySpec";
 	private static final String QUERY_TYPE = "queryType";
 	private static final String SOUP_NAME = "soupName";
+	static final String TOTAL_ENTRIES = "totalEntries";
 	static final String TOTAL_PAGES = "totalPages";
 	private static final String TYPE = "type";
 	static final String RE_INDEX_DATA = "reIndexData";
