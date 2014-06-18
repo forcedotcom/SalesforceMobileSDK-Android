@@ -76,6 +76,8 @@ public class MetadataManagerTest extends InstrumentationTestCase {
 	private static final String CASE_LAYOUT_FILE = "case_layout.json";
 	private static final String OPPORTUNITY_LAYOUT_FILE = "opportunity_layout.json";
 	private static final String ALL_OBJECTS_FILE = "all_objects.json";
+	private static final String ACCOUNT_METADATA_FILE = "account_metadata.json";
+	private static final String CASE_METADATA_FILE = "case_metadata.json";
 
     private Context targetContext;
     private EventsListenerQueue eq;
@@ -198,20 +200,24 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     public void testLoadAccountObjectTypeFromServer() {
     	final SalesforceObjectType account = metadataManager.loadObjectType(Constants.ACCOUNT,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	/*
-    	 * TODO: assert against static data.
-    	 */
+    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ACCOUNT_METADATA_FILE);
+    	assertNotNull("Expected raw data should not be null", rawJson);
+    	final SalesforceObjectType expectedAccount = new SalesforceObjectType(rawJson);
+    	assertEquals("Account metadata should match expected metadata",
+    			expectedAccount, account);
     }
 
     /**
      * Test for case 'loadObjectType' (from the server).
      */
     public void testLoadCaseObjectTypeFromServer() {
-    	final SalesforceObjectType caseObj = metadataManager.loadObjectType(Constants.CASE,
+    	final SalesforceObjectType actualCase = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	/*
-    	 * TODO: assert against static data.
-    	 */
+    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, CASE_METADATA_FILE);
+    	assertNotNull("Expected raw data should not be null", rawJson);
+    	final SalesforceObjectType expectedCase = new SalesforceObjectType(rawJson);
+    	assertEquals("Case metadata should match expected metadata",
+    			expectedCase, actualCase);
     }
 
     /**
@@ -357,26 +363,30 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      * Test for account 'loadObjectType' (from the cache).
      */
     public void testLoadAccountObjectTypeFromCache() {
-    	final SalesforceObjectType account = metadataManager.loadObjectType(Constants.ACCOUNT,
+    	metadataManager.loadObjectType(Constants.ACCOUNT,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	/*
-    	 * TODO: Turn off network and assert between live and cached data.
-    	 */
-    	final SalesforceObjectType cachedAccount = metadataManager.loadObjectType(Constants.ACCOUNT,
+    	final SalesforceObjectType account = metadataManager.loadObjectType(Constants.ACCOUNT,
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
+    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ACCOUNT_METADATA_FILE);
+    	assertNotNull("Expected raw data should not be null", rawJson);
+    	final SalesforceObjectType expectedAccount = new SalesforceObjectType(rawJson);
+    	assertEquals("Account metadata should match expected metadata",
+    			expectedAccount, account);
     }
 
     /**
      * Test for case 'loadObjectType' (from the cache).
      */
     public void testLoadCaseObjectTypeFromCache() {
-    	final SalesforceObjectType caseObj = metadataManager.loadObjectType(Constants.CASE,
+    	metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	/*
-    	 * TODO: Turn off network and assert between live and cached data.
-    	 */
-    	final SalesforceObjectType cachedCaseObj = metadataManager.loadObjectType(Constants.CASE,
+    	final SalesforceObjectType actualCase = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
+    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, CASE_METADATA_FILE);
+    	assertNotNull("Expected raw data should not be null", rawJson);
+    	final SalesforceObjectType expectedCase = new SalesforceObjectType(rawJson);
+    	assertEquals("Case metadata should match expected metadata",
+    			expectedCase, actualCase);
     }
 
     /**
