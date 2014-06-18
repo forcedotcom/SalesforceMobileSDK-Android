@@ -130,10 +130,6 @@ public class SalesforceObjectLayoutColumn {
                 !label.equals(obj.getLabel())) {
             return false;
         }
-        if (rawData == null || obj.getRawData() == null ||
-        		!rawData.equals(obj.getRawData())) {
-            return false;
-        }
         return true;
     }
 

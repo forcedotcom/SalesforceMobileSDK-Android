@@ -72,6 +72,8 @@ public class MetadataManagerTest extends InstrumentationTestCase {
 	private static final String CASE_1_NAME = "00001007";
 	private static final String CASE_2_ID = "500S0000004O7fd";
 	private static final String ACCOUNT_LAYOUT_FILE = "account_layout.json";
+	private static final String CASE_LAYOUT_FILE = "case_layout.json";
+	private static final String OPPORTUNITY_LAYOUT_FILE = "opportunity_layout.json";
 
     private Context targetContext;
     private EventsListenerQueue eq;
@@ -211,7 +213,7 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     /**
      * Test for account, case, opportunity 'loadObjectTypesLayout' (from the server).
      */
-    public void testLoadAccountObjectTypeLayoutFromServer() {
+    public void testLoadObjectTypeLayoutsFromServer() {
     	final List<String> objectTypeNames = new ArrayList<String>();
     	objectTypeNames.add(Constants.ACCOUNT);
     	objectTypeNames.add(Constants.CASE);
@@ -225,9 +227,8 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     	for (final SalesforceObjectTypeLayout layout : objectLayouts) {
     		final String objType = layout.getObjectType();
     		assertNotNull("Object type should not be null", objType);
-			final JSONObject actualRawData = layout.getRawData();
-			assertNotNull("Raw data should not be null", actualRawData);
-			JSONObject expectedRawData = null;
+    		JSONObject expectedRawData = null;
+			SalesforceObjectTypeLayout expectedLayout = null;
     		if (Constants.ACCOUNT.equals(objType)) {
     			expectedRawData = JSONReader.readJSONObject(targetContext,
     					ACCOUNT_LAYOUT_FILE);
@@ -238,8 +239,10 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     			expectedRawData = JSONReader.readJSONObject(targetContext,
     					OPPORTUNITY_LAYOUT_FILE);
     		}
-    		assertEquals("Layout raw data should be equal to the expected raw data",
-    				expectedRawData, actualRawData);
+    		assertNotNull("Expected raw data should not be null", expectedRawData);
+			expectedLayout = new SalesforceObjectTypeLayout(objType, expectedRawData);
+    		assertEquals("Received layout should be equal to the expected layout",
+    				expectedLayout, layout);
     	}
     }
 
@@ -373,20 +376,39 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     /**
      * Test for account, case, opportunity 'loadObjectTypesLayout' (from the cache).
      */
-    public void testLoadAccountObjectTypeLayoutFromCache() {
+    public void testLoadObjectTypeLayoutsFromCache() {
     	final List<String> objectTypeNames = new ArrayList<String>();
     	objectTypeNames.add(Constants.ACCOUNT);
     	objectTypeNames.add(Constants.CASE);
     	objectTypeNames.add(Constants.OPPORTUNITY);
     	final List<SalesforceObjectType> objectTypes = metadataManager.loadObjectTypes(objectTypeNames,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	final List<SalesforceObjectTypeLayout> objectLayouts = metadataManager.loadObjectTypesLayout(objectTypes,
+    	metadataManager.loadObjectTypesLayout(objectTypes,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	/*
-    	 * TODO: Turn off network and assert between live and cached data.
-    	 */
-    	final List<SalesforceObjectTypeLayout> cachedObjectLayouts = metadataManager.loadObjectTypesLayout(objectTypes,
+    	final List<SalesforceObjectTypeLayout> objectLayouts = metadataManager.loadObjectTypesLayout(objectTypes,
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
+    	assertNotNull("Layout list should not be null", objectLayouts);
+    	assertEquals("Layout list size should be 3", 3, objectLayouts.size());
+    	for (final SalesforceObjectTypeLayout layout : objectLayouts) {
+    		final String objType = layout.getObjectType();
+    		assertNotNull("Object type should not be null", objType);
+    		JSONObject expectedRawData = null;
+			SalesforceObjectTypeLayout expectedLayout = null;
+    		if (Constants.ACCOUNT.equals(objType)) {
+    			expectedRawData = JSONReader.readJSONObject(targetContext,
+    					ACCOUNT_LAYOUT_FILE);
+    		} else if (Constants.CASE.equals(objType)) {
+    			expectedRawData = JSONReader.readJSONObject(targetContext,
+    					CASE_LAYOUT_FILE);
+    		} else if (Constants.OPPORTUNITY.equals(objType)) {
+    			expectedRawData = JSONReader.readJSONObject(targetContext,
+    					OPPORTUNITY_LAYOUT_FILE);
+    		}
+    		assertNotNull("Expected raw data should not be null", expectedRawData);
+			expectedLayout = new SalesforceObjectTypeLayout(objType, expectedRawData);
+    		assertEquals("Received layout should be equal to the expected layout",
+    				expectedLayout, layout);
+    	}
     }
 
     private RestClient initRestClient() throws Exception {

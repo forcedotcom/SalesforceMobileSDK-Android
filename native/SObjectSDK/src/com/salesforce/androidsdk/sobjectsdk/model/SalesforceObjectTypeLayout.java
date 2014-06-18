@@ -128,14 +128,38 @@ public class SalesforceObjectTypeLayout {
                 !objectType.equals(obj.getObjectType())) {
             return false;
         }
-        if (rawData == null || obj.getRawData() == null || !rawData.equals(obj.getRawData())) {
-            return false;
-        }
-        return true;
+        return compareColumns(obj);
     }
 
     @Override
     public int hashCode() {
         return objectType.hashCode();
+    }
+
+    /**
+     * Returns whether the two objects have the same columns.
+     *
+     * @param object SalesforceObjectTypeLayout instance.
+     * @return True - if the columns are the same, False - otherwise.
+     */
+    private boolean compareColumns(SalesforceObjectTypeLayout object) {
+    	if (object == null) {
+    		return false;
+    	}
+    	final List<SalesforceObjectLayoutColumn> objColumns = object.getColumns();
+    	if ((objColumns == null || objColumns.size() == 0)
+    			&& (columns == null || columns.size() == 0)) {
+    		return true;
+    	}
+    	int objColumnSize = objColumns.size();
+    	if (objColumnSize != columns.size()) {
+    		return false;
+    	}
+    	for (final SalesforceObjectLayoutColumn objColumn : objColumns) {
+    		if (!columns.contains(objColumn)) {
+    			return false;
+    		}
+    	}
+    	return true;
     }
 }
