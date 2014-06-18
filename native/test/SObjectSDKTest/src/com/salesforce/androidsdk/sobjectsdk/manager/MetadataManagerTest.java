@@ -30,6 +30,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONObject;
+
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
@@ -48,6 +50,7 @@ import com.salesforce.androidsdk.sobjectsdk.model.SalesforceObject;
 import com.salesforce.androidsdk.sobjectsdk.model.SalesforceObjectType;
 import com.salesforce.androidsdk.sobjectsdk.model.SalesforceObjectTypeLayout;
 import com.salesforce.androidsdk.sobjectsdk.util.Constants;
+import com.salesforce.androidsdk.sobjectsdk.util.JSONReader;
 import com.salesforce.androidsdk.util.EventsListenerQueue;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -68,6 +71,7 @@ public class MetadataManagerTest extends InstrumentationTestCase {
 	private static final String CASE_1_ID = "500S0000003s6Sf";
 	private static final String CASE_1_NAME = "00001007";
 	private static final String CASE_2_ID = "500S0000004O7fd";
+	private static final String ACCOUNT_LAYOUT_FILE = "account_layout.json";
 
     private Context targetContext;
     private EventsListenerQueue eq;
@@ -197,7 +201,7 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      * Test for case 'loadObjectType' (from the server).
      */
     public void testLoadCaseObjectTypeFromServer() {
-    	final SalesforceObjectType opportunity = metadataManager.loadObjectType(Constants.CASE,
+    	final SalesforceObjectType caseObj = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	/*
     	 * TODO: assert against static data.
@@ -216,9 +220,27 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	final List<SalesforceObjectTypeLayout> objectLayouts = metadataManager.loadObjectTypesLayout(objectTypes,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	/*
-    	 * TODO: assert against static data.
-    	 */
+    	assertNotNull("Layout list should not be null", objectLayouts);
+    	assertEquals("Layout list size should be 3", 3, objectLayouts.size());
+    	for (final SalesforceObjectTypeLayout layout : objectLayouts) {
+    		final String objType = layout.getObjectType();
+    		assertNotNull("Object type should not be null", objType);
+			final JSONObject actualRawData = layout.getRawData();
+			assertNotNull("Raw data should not be null", actualRawData);
+			JSONObject expectedRawData = null;
+    		if (Constants.ACCOUNT.equals(objType)) {
+    			expectedRawData = JSONReader.readJSONObject(targetContext,
+    					ACCOUNT_LAYOUT_FILE);
+    		} else if (Constants.CASE.equals(objType)) {
+    			expectedRawData = JSONReader.readJSONObject(targetContext,
+    					CASE_LAYOUT_FILE);
+    		} else if (Constants.OPPORTUNITY.equals(objType)) {
+    			expectedRawData = JSONReader.readJSONObject(targetContext,
+    					OPPORTUNITY_LAYOUT_FILE);
+    		}
+    		assertEquals("Layout raw data should be equal to the expected raw data",
+    				expectedRawData, actualRawData);
+    	}
     }
 
     /**
@@ -339,12 +361,12 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      * Test for case 'loadObjectType' (from the cache).
      */
     public void testLoadCaseObjectTypeFromCache() {
-    	final SalesforceObjectType opportunity = metadataManager.loadObjectType(Constants.CASE,
+    	final SalesforceObjectType caseObj = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	/*
     	 * TODO: Turn off network and assert between live and cached data.
     	 */
-    	final SalesforceObjectType cachedOpportunity = metadataManager.loadObjectType(Constants.CASE,
+    	final SalesforceObjectType cachedCaseObj = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
     }
 
