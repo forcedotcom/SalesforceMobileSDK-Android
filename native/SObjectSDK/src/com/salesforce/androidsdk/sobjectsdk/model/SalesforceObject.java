@@ -141,7 +141,7 @@ public class SalesforceObject {
         if (name == null || obj.getName() == null || !name.equals(obj.getName())) {
             return false;
         }
-        if (rawData == null || obj.getRawData() == null || !rawData.equals(obj.getRawData())) {
+        if (objectType == null || obj.getObjectType() == null || !objectType.equals(obj.getObjectType())) {
             return false;
         }
         return true;
