@@ -469,6 +469,101 @@ public class MetadataManager {
     }
 
     /**
+     * Loads the object layout for the specified object type.
+     *
+     * @param objectType Object type.
+     * @param cachePolicy Cache policy.
+     * @param refreshCacheIfOlderThan Time interval to refresh cache.
+     * @return Object layout.
+     */
+    public SalesforceObjectTypeLayout loadObjectTypeLayout(SalesforceObjectType objectType,
+            CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
+        if (objectType == null) {
+            Log.e(TAG, "Cannot load object layout with an invalid object type");
+            return null;
+        }
+        final String objectTypeName = objectType.getName();
+        if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
+            Log.e(TAG, "Cannot load object layout with an invalid object type");
+            return null;
+        }
+        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
+            cacheManager.removeCache(LAYOUT_CACHE_TYPE,
+                    String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
+            return null;
+        }
+        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_AND_RELOAD) {
+            cacheManager.removeCache(LAYOUT_CACHE_TYPE,
+                    String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
+        }
+        long cachedTime = cacheManager.getLastCacheUpdateTime(LAYOUT_CACHE_TYPE,
+                String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
+
+        // Checks if the cache needs to be refreshed.
+        final List<SalesforceObjectTypeLayout> cachedData = getCachedObjectLayouts(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
+                LAYOUT_CACHE_TYPE, String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
+
+        // Returns cache data if the cache policy explicitly states so.
+        if (cachePolicy == CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD) {
+            if (cachedData != null && cachedData.size() > 0) {
+                return cachedData.get(0);
+            } else {
+                return null;
+            }
+        }
+        if (cachedData != null && cachedData.size() > 0 &&
+        		cachePolicy != CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE &&
+                !cacheManager.needToReloadCache((cachedData != null), cachePolicy,
+                        cachedTime, refreshCacheIfOlderThan)) {
+            return cachedData.get(0);
+        }
+
+        // Checks if a layout can be loaded for this object type.
+        if (objectType.getRawData() == null) {
+            objectType = loadObjectType(objectTypeName, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, 0);
+        }
+        if (objectType == null || !objectType.isSearchable() || !objectType.isLayoutable()) {
+            return null;
+        }
+
+        // Makes a live server call to fetch the object layout.
+        final String path = String.format("%s/%s/search/layout", REST_API_PATH,
+                apiVersion);
+        final Map<String, Object> params = new HashMap<String, Object>();
+        params.put("q", objectTypeName);
+        final RestResponse response = networkManager.makeRemoteGETRequest(path, params);
+        if (response != null && response.isSuccess()) {
+            try {
+                final JSONArray responseJSON = response.asJSONArray();
+                if (responseJSON != null && responseJSON.length() > 0) {
+                    final JSONObject objJSON = responseJSON.optJSONObject(0);
+                    if (objJSON != null) {
+                        final SalesforceObjectTypeLayout objTypeLayout = new SalesforceObjectTypeLayout(objectTypeName,
+                                objJSON);
+                        if (shouldCacheData(cachePolicy)) {
+                            final List<SalesforceObjectTypeLayout> layoutList = new ArrayList<SalesforceObjectTypeLayout>();
+                            layoutList.add(objTypeLayout);
+                            cacheObjectLayouts(layoutList, LAYOUT_CACHE_TYPE,
+                                    String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY,
+                                    		objectTypeName));
+                        }
+                        return objTypeLayout;
+                    }
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "IOException occurred while reading data", e);
+            } catch (JSONException e) {
+                Log.e(TAG, "JSONException occurred while parsing", e);
+            }
+        } else if (shouldFallBackOnCache(cachePolicy)) {
+            if (cachedData != null && cachedData.size() > 0) {
+                return cachedData.get(0);
+            }
+        }
+        return null;
+    }
+
+    /**
      * Returns the color resource associated with an object type.
      *
      * @param objTypeName Object type name.
@@ -987,101 +1082,6 @@ public class MetadataManager {
             }
         } else if (shouldFallBackOnCache(cachePolicy)) {
             return getCachedObjects(cachePolicy, MRU_CACHE_TYPE, cacheKey);
-        }
-        return null;
-    }
-
-    /**
-     * Loads the object layout for the specified object type.
-     *
-     * @param objectType Object type.
-     * @param cachePolicy Cache policy.
-     * @param refreshCacheIfOlderThan Time interval to refresh cache.
-     * @return Object layout.
-     */
-    private SalesforceObjectTypeLayout loadObjectTypeLayout(SalesforceObjectType objectType,
-            CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
-        if (objectType == null) {
-            Log.e(TAG, "Cannot load object layout with an invalid object type");
-            return null;
-        }
-        final String objectTypeName = objectType.getName();
-        if (objectTypeName == null || Constants.EMPTY_STRING.equals(objectTypeName)) {
-            Log.e(TAG, "Cannot load object layout with an invalid object type");
-            return null;
-        }
-        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_DONT_RELOAD) {
-            cacheManager.removeCache(LAYOUT_CACHE_TYPE,
-                    String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
-            return null;
-        }
-        if (cachePolicy == CachePolicy.INVALIDATE_CACHE_AND_RELOAD) {
-            cacheManager.removeCache(LAYOUT_CACHE_TYPE,
-                    String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
-        }
-        long cachedTime = cacheManager.getLastCacheUpdateTime(LAYOUT_CACHE_TYPE,
-                String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
-
-        // Checks if the cache needs to be refreshed.
-        final List<SalesforceObjectTypeLayout> cachedData = getCachedObjectLayouts(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
-                LAYOUT_CACHE_TYPE, String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY, objectTypeName));
-
-        // Returns cache data if the cache policy explicitly states so.
-        if (cachePolicy == CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD) {
-            if (cachedData != null && cachedData.size() > 0) {
-                return cachedData.get(0);
-            } else {
-                return null;
-            }
-        }
-        if (cachedData != null && cachedData.size() > 0 &&
-        		cachePolicy != CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE &&
-                !cacheManager.needToReloadCache((cachedData != null), cachePolicy,
-                        cachedTime, refreshCacheIfOlderThan)) {
-            return cachedData.get(0);
-        }
-
-        // Checks if a layout can be loaded for this object type.
-        if (objectType.getRawData() == null) {
-            objectType = loadObjectType(objectTypeName, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, 0);
-        }
-        if (objectType == null || !objectType.isSearchable() || !objectType.isLayoutable()) {
-            return null;
-        }
-
-        // Makes a live server call to fetch the object layout.
-        final String path = String.format("%s/%s/search/layout", REST_API_PATH,
-                apiVersion);
-        final Map<String, Object> params = new HashMap<String, Object>();
-        params.put("q", objectTypeName);
-        final RestResponse response = networkManager.makeRemoteGETRequest(path, params);
-        if (response != null && response.isSuccess()) {
-            try {
-                final JSONArray responseJSON = response.asJSONArray();
-                if (responseJSON != null && responseJSON.length() > 0) {
-                    final JSONObject objJSON = responseJSON.optJSONObject(0);
-                    if (objJSON != null) {
-                        final SalesforceObjectTypeLayout objTypeLayout = new SalesforceObjectTypeLayout(objectTypeName,
-                                objJSON);
-                        if (shouldCacheData(cachePolicy)) {
-                            final List<SalesforceObjectTypeLayout> layoutList = new ArrayList<SalesforceObjectTypeLayout>();
-                            layoutList.add(objTypeLayout);
-                            cacheObjectLayouts(layoutList, LAYOUT_CACHE_TYPE,
-                                    String.format(OBJECT_LAYOUT_BY_TYPE_CACHE_KEY,
-                                    		objectTypeName));
-                        }
-                        return objTypeLayout;
-                    }
-                }
-            } catch (IOException e) {
-                Log.e(TAG, "IOException occurred while reading data", e);
-            } catch (JSONException e) {
-                Log.e(TAG, "JSONException occurred while parsing", e);
-            }
-        } else if (shouldFallBackOnCache(cachePolicy)) {
-            if (cachedData != null && cachedData.size() > 0) {
-                return cachedData.get(0);
-            }
         }
         return null;
     }

@@ -142,18 +142,6 @@ public class CacheManager {
     }
 
     /**
-     * Clears the cache and creates a new clean cache.
-     */
-    public void cleanCache() {
-        resetInMemoryCache();
-
-        // Checks to make sure SmartStore hasn't already been cleaned up.
-        if (SalesforceSDKManagerWithSmartStore.getInstance().hasSmartStore()) {
-        	clearAllSoups();
-        }
-    }
-
-    /**
      * Removes existing data from the specified cache.
      *
      * @param cacheType Cache type.
@@ -794,5 +782,17 @@ public class CacheManager {
         objectCacheMap = new HashMap<String, List<SalesforceObject>>();
         objectTypeCacheMap = new HashMap<String, List<SalesforceObjectType>>();
         objectTypeLayoutCacheMap = new HashMap<String, List<SalesforceObjectTypeLayout>>();
+    }
+
+    /**
+     * Clears the cache and creates a new clean cache.
+     */
+    private void cleanCache() {
+        resetInMemoryCache();
+
+        // Checks to make sure SmartStore hasn't already been cleaned up.
+        if (SalesforceSDKManagerWithSmartStore.getInstance().hasSmartStore()) {
+        	clearAllSoups();
+        }
     }
 }
