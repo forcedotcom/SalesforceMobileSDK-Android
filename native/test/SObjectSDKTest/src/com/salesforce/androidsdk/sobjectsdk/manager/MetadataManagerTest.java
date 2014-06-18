@@ -30,6 +30,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import android.app.Application;
@@ -74,6 +75,9 @@ public class MetadataManagerTest extends InstrumentationTestCase {
 	private static final String ACCOUNT_LAYOUT_FILE = "account_layout.json";
 	private static final String CASE_LAYOUT_FILE = "case_layout.json";
 	private static final String OPPORTUNITY_LAYOUT_FILE = "opportunity_layout.json";
+	private static final String ALL_OBJECTS_FILE = "all_objects.json";
+	private static final String ACCOUNT_METADATA_FILE = "account_metadata.json";
+	private static final String CASE_METADATA_FILE = "case_metadata.json";
 
     private Context targetContext;
     private EventsListenerQueue eq;
@@ -108,17 +112,6 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     	CacheManager.hardReset();
         super.tearDown();
     }
-    
-    /**
-     * Test for 'loadSmartScopeObjectTypes' (from the server).
-     */
-    public void testLoadSmartScopeTypesFromServer() {
-    	final List<SalesforceObjectType> smartScopes = metadataManager.loadSmartScopeObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
-    			REFRESH_INTERVAL);
-    	/*
-    	 * TODO: assert against static data.
-    	 */
-    }
 
     /**
      * Test for global 'loadMRUObjects' (from the server).
@@ -131,12 +124,6 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     	assertEquals("MRU list size should be 1", 1, mruObjects.size());
     	assertEquals("Recently viewed object name is incorrect", CASE_1_NAME,
     			mruObjects.get(0).getName());
-
-    	/*
-    	 * This is to ensure that the next test run is actually
-    	 * altering the MRU from what it is currently.
-    	 */
-    	metadataManager.markObjectAsViewed(CASE_2_ID, Constants.CASE);
     }
 
     /**
@@ -150,12 +137,6 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     	assertEquals("MRU list size should be 1", 1, mruObjects.size());
     	assertEquals("Recently viewed object name is incorrect", ACCOUNT_1_NAME,
     			mruObjects.get(0).getName());
-
-    	/*
-    	 * This is to ensure that the next test run is actually
-    	 * altering the MRU from what it is currently.
-    	 */
-    	metadataManager.markObjectAsViewed(ACCOUNT_2_ID, Constants.ACCOUNT);
     }
 
     /**
@@ -169,12 +150,6 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     	assertEquals("MRU list size should be 1", 1, mruObjects.size());
     	assertEquals("Recently viewed object name is incorrect", OPPORTUNITY_1_NAME,
     			mruObjects.get(0).getName());
-
-    	/*
-    	 * This is to ensure that the next test run is actually
-    	 * altering the MRU from what it is currently.
-    	 */
-    	metadataManager.markObjectAsViewed(OPPORTUNITY_2_ID, Constants.OPPORTUNITY);
     }
 
     /**
@@ -183,9 +158,11 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     public void testLoadAllObjectTypesFromServer() {
     	final List<SalesforceObjectType> objectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
     			REFRESH_INTERVAL);
-    	/*
-    	 * TODO: assert against static data.
-    	 */
+    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ALL_OBJECTS_FILE);
+    	assertNotNull("Expected raw data should not be null", rawJson);
+    	final List<SalesforceObjectType> expectedObjectTypes = parseObjectTypes(rawJson);
+    	assertEquals("List of object types should match expected list",
+    			expectedObjectTypes, objectTypes);
     }
 
     /**
@@ -194,20 +171,24 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     public void testLoadAccountObjectTypeFromServer() {
     	final SalesforceObjectType account = metadataManager.loadObjectType(Constants.ACCOUNT,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	/*
-    	 * TODO: assert against static data.
-    	 */
+    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ACCOUNT_METADATA_FILE);
+    	assertNotNull("Expected raw data should not be null", rawJson);
+    	final SalesforceObjectType expectedAccount = new SalesforceObjectType(rawJson);
+    	assertEquals("Account metadata should match expected metadata",
+    			expectedAccount, account);
     }
 
     /**
      * Test for case 'loadObjectType' (from the server).
      */
     public void testLoadCaseObjectTypeFromServer() {
-    	final SalesforceObjectType caseObj = metadataManager.loadObjectType(Constants.CASE,
+    	final SalesforceObjectType actualCase = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	/*
-    	 * TODO: assert against static data.
-    	 */
+    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, CASE_METADATA_FILE);
+    	assertNotNull("Expected raw data should not be null", rawJson);
+    	final SalesforceObjectType expectedCase = new SalesforceObjectType(rawJson);
+    	assertEquals("Case metadata should match expected metadata",
+    			expectedCase, actualCase);
     }
 
     /**
@@ -244,19 +225,6 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     		assertEquals("Received layout should be equal to the expected layout",
     				expectedLayout, layout);
     	}
-    }
-
-    /**
-     * Test for 'loadSmartScopeObjectTypes' (from the cache).
-     */
-    public void testLoadSmartScopeTypesFromCache() {
-    	final List<SalesforceObjectType> smartScopes = metadataManager.loadSmartScopeObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
-    			REFRESH_INTERVAL);
-    	/*
-    	 * TODO: Turn off network and assert between live and cached data.
-    	 */
-    	final List<SalesforceObjectType> cachedSmartScopes = metadataManager.loadSmartScopeObjectTypes(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
-    			REFRESH_INTERVAL);
     }
 
     /**
@@ -338,39 +306,45 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      * Test for 'loadAllObjectTypes' (from the cache).
      */
     public void testLoadAllObjectTypesFromCache() {
-    	final List<SalesforceObjectType> objectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
+    	metadataManager.loadAllObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
     			REFRESH_INTERVAL);
-    	/*
-    	 * TODO: Turn off network and assert between live and cached data.
-    	 */
-    	final List<SalesforceObjectType> cachedObjectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
+    	final List<SalesforceObjectType> objectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
     			REFRESH_INTERVAL);
+    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ALL_OBJECTS_FILE);
+    	assertNotNull("Expected raw data should not be null", rawJson);
+    	final List<SalesforceObjectType> expectedObjectTypes = parseObjectTypes(rawJson);
+    	assertEquals("List of object types should match expected list",
+    			expectedObjectTypes, objectTypes);
     }
 
     /**
      * Test for account 'loadObjectType' (from the cache).
      */
     public void testLoadAccountObjectTypeFromCache() {
-    	final SalesforceObjectType account = metadataManager.loadObjectType(Constants.ACCOUNT,
+    	metadataManager.loadObjectType(Constants.ACCOUNT,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	/*
-    	 * TODO: Turn off network and assert between live and cached data.
-    	 */
-    	final SalesforceObjectType cachedAccount = metadataManager.loadObjectType(Constants.ACCOUNT,
+    	final SalesforceObjectType account = metadataManager.loadObjectType(Constants.ACCOUNT,
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
+    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ACCOUNT_METADATA_FILE);
+    	assertNotNull("Expected raw data should not be null", rawJson);
+    	final SalesforceObjectType expectedAccount = new SalesforceObjectType(rawJson);
+    	assertEquals("Account metadata should match expected metadata",
+    			expectedAccount, account);
     }
 
     /**
      * Test for case 'loadObjectType' (from the cache).
      */
     public void testLoadCaseObjectTypeFromCache() {
-    	final SalesforceObjectType caseObj = metadataManager.loadObjectType(Constants.CASE,
+    	metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	/*
-    	 * TODO: Turn off network and assert between live and cached data.
-    	 */
-    	final SalesforceObjectType cachedCaseObj = metadataManager.loadObjectType(Constants.CASE,
+    	final SalesforceObjectType actualCase = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
+    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, CASE_METADATA_FILE);
+    	assertNotNull("Expected raw data should not be null", rawJson);
+    	final SalesforceObjectType expectedCase = new SalesforceObjectType(rawJson);
+    	assertEquals("Case metadata should match expected metadata",
+    			expectedCase, actualCase);
     }
 
     /**
@@ -411,6 +385,11 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     	}
     }
 
+    /**
+     * Initializes and returns a RestClient instance used for live calls by tests.
+     *
+     * @return RestClient instance.
+     */
     private RestClient initRestClient() throws Exception {
         httpAccess = new HttpAccess(null, null);
         final TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
@@ -424,5 +403,32 @@ public class MetadataManagerTest extends InstrumentationTestCase {
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null);
         return new RestClient(clientInfo, authToken, httpAccess, null);
+    }
+
+    /**
+     * Parses and returns object types from raw data.
+     *
+     * @param rawData Raw JSON data.
+     * @return List of object types.
+     */
+    private List<SalesforceObjectType> parseObjectTypes(JSONObject rawData) {
+        final List<SalesforceObjectType> returnList = new ArrayList<SalesforceObjectType>();
+        final JSONArray objectTypes = rawData.optJSONArray("sobjects");
+        if (objectTypes != null) {
+            for (int i = 0; i < objectTypes.length(); i++) {
+                final JSONObject metadata = objectTypes.optJSONObject(i);
+                if (metadata != null) {
+                    final boolean hidden = metadata.optBoolean(Constants.HIDDEN_FIELD, false);
+                    if (!hidden) {
+                    	final SalesforceObjectType objType = new SalesforceObjectType(metadata);
+                        returnList.add(objType);
+                    }
+                }
+            }
+        }
+        if (returnList.size() == 0) {
+            return null;
+        }
+        return returnList;
     }
 }

@@ -425,7 +425,8 @@ public class MetadataManager {
         if (objectType == null) {
             return false;
         }
-        final String objectName = ((objectType.getName() == null) ? "" : objectType.getName());
+        final String objectName = ((objectType.getName() == null) ?
+        		Constants.EMPTY_STRING : objectType.getName());
         if (!Constants.EMPTY_STRING.equals(objectName)) {
             if (objectType.getRawData() == null) {
                 objectType = loadObjectType(objectName,

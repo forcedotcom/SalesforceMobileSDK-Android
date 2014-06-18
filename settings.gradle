@@ -1,5 +1,6 @@
 include 'native:SalesforceSDK'
 include 'hybrid:SmartStore'
+include 'native:SObjectSDK'
 include 'native:SampleApps:RestExplorer'
 include 'native:SampleApps:NativeSqlAggregator'
 include 'native:SampleApps:FileExplorer'
