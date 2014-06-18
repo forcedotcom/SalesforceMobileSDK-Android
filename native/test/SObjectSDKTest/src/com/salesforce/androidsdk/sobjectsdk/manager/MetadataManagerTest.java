@@ -135,12 +135,6 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     	assertEquals("MRU list size should be 1", 1, mruObjects.size());
     	assertEquals("Recently viewed object name is incorrect", CASE_1_NAME,
     			mruObjects.get(0).getName());
-
-    	/*
-    	 * This is to ensure that the next test run is actually
-    	 * altering the MRU from what it is currently.
-    	 */
-    	metadataManager.markObjectAsViewed(CASE_2_ID, Constants.CASE);
     }
 
     /**
@@ -154,12 +148,6 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     	assertEquals("MRU list size should be 1", 1, mruObjects.size());
     	assertEquals("Recently viewed object name is incorrect", ACCOUNT_1_NAME,
     			mruObjects.get(0).getName());
-
-    	/*
-    	 * This is to ensure that the next test run is actually
-    	 * altering the MRU from what it is currently.
-    	 */
-    	metadataManager.markObjectAsViewed(ACCOUNT_2_ID, Constants.ACCOUNT);
     }
 
     /**
@@ -173,12 +161,6 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     	assertEquals("MRU list size should be 1", 1, mruObjects.size());
     	assertEquals("Recently viewed object name is incorrect", OPPORTUNITY_1_NAME,
     			mruObjects.get(0).getName());
-
-    	/*
-    	 * This is to ensure that the next test run is actually
-    	 * altering the MRU from what it is currently.
-    	 */
-    	metadataManager.markObjectAsViewed(OPPORTUNITY_2_ID, Constants.OPPORTUNITY);
     }
 
     /**
