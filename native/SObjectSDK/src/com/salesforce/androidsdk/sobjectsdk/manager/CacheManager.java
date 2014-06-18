@@ -659,10 +659,7 @@ public class CacheManager {
      */
     private boolean doesMasterSoupContainSoup(String soupName) {
         final List<String> soupNames = getAllSoupNames();
-        if (soupNames != null) {
-        	return soupNames.contains(soupName);
-        }
-        return false;
+        return soupNames.contains(soupName);
     }
 
     /**
@@ -680,7 +677,7 @@ public class CacheManager {
 	        if (results != null && results.length() > 0) {
 	        	final JSONArray soupNamesArr = results.optJSONArray(0);
 	        	if (soupNamesArr != null) {
-	        		int length =  soupNamesArr.length();
+	        		int length = soupNamesArr.length();
 	        		for (int i = 0; i < length; i++) {
 		        		final String soupName = soupNamesArr.optString(i);
 		        		if (soupName != null) {
@@ -694,9 +691,6 @@ public class CacheManager {
 		} catch (SmartStoreException e) {
             Log.e(TAG, "SmartStoreException occurred while attempting to read cached data", e);
         }
-		if (soupNames.size() == 0) {
-			soupNames = null;
-		}
 		return soupNames;
     }
 
@@ -709,15 +703,12 @@ public class CacheManager {
     	if (doesMasterSoupContainSoup(soupName)) {
     		return;
     	}
-    	List<String> existingSoupNames = getAllSoupNames();
-    	if (existingSoupNames == null) {
-    		existingSoupNames = new ArrayList<String>();
-    	}
-    	existingSoupNames.add(soupName);
+    	final List<String> existingSoupNames = getAllSoupNames();
     	final JSONArray soupNamesArr = new JSONArray();
     	for (final String soup : existingSoupNames) {
-    		soupNamesArr.put(soup);
-    	}
+        	soupNamesArr.put(soup);
+        }
+    	soupNamesArr.put(soupName);
     	final JSONObject object = new JSONObject();
     	try {
     		object.put(SOUP_NAMES_KEY, soupNamesArr);
@@ -767,10 +758,8 @@ public class CacheManager {
      */
     private void clearAllSoups() {
     	final List<String> soupNames = getAllSoupNames();
-    	if (soupNames != null) {
-    		for (final String soupName : soupNames) {
-    			 smartStore.dropSoup(soupName);
-    		}
+    	for (final String soupName : soupNames) {
+    		 smartStore.dropSoup(soupName);
     	}
     	clearMasterSoup();
     }
