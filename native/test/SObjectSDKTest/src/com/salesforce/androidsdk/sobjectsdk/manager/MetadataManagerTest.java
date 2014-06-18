@@ -30,6 +30,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import android.app.Application;
@@ -74,6 +75,7 @@ public class MetadataManagerTest extends InstrumentationTestCase {
 	private static final String ACCOUNT_LAYOUT_FILE = "account_layout.json";
 	private static final String CASE_LAYOUT_FILE = "case_layout.json";
 	private static final String OPPORTUNITY_LAYOUT_FILE = "opportunity_layout.json";
+	private static final String ALL_OBJECTS_FILE = "all_objects.json";
 
     private Context targetContext;
     private EventsListenerQueue eq;
@@ -183,9 +185,11 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     public void testLoadAllObjectTypesFromServer() {
     	final List<SalesforceObjectType> objectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
     			REFRESH_INTERVAL);
-    	/*
-    	 * TODO: assert against static data.
-    	 */
+    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ALL_OBJECTS_FILE);
+    	assertNotNull("Expected raw data should not be null", rawJson);
+    	final List<SalesforceObjectType> expectedObjectTypes = parseObjectTypes(rawJson);
+    	assertEquals("List of object types should match expected list",
+    			expectedObjectTypes, objectTypes);
     }
 
     /**
@@ -338,13 +342,15 @@ public class MetadataManagerTest extends InstrumentationTestCase {
      * Test for 'loadAllObjectTypes' (from the cache).
      */
     public void testLoadAllObjectTypesFromCache() {
-    	final List<SalesforceObjectType> objectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
+    	metadataManager.loadAllObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
     			REFRESH_INTERVAL);
-    	/*
-    	 * TODO: Turn off network and assert between live and cached data.
-    	 */
-    	final List<SalesforceObjectType> cachedObjectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
+    	final List<SalesforceObjectType> objectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
     			REFRESH_INTERVAL);
+    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ALL_OBJECTS_FILE);
+    	assertNotNull("Expected raw data should not be null", rawJson);
+    	final List<SalesforceObjectType> expectedObjectTypes = parseObjectTypes(rawJson);
+    	assertEquals("List of object types should match expected list",
+    			expectedObjectTypes, objectTypes);
     }
 
     /**
@@ -429,5 +435,32 @@ public class MetadataManagerTest extends InstrumentationTestCase {
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null);
         return new RestClient(clientInfo, authToken, httpAccess, null);
+    }
+
+    /**
+     * Parses and returns object types from raw data.
+     *
+     * @param rawData Raw JSON data.
+     * @return List of object types.
+     */
+    private List<SalesforceObjectType> parseObjectTypes(JSONObject rawData) {
+        final List<SalesforceObjectType> returnList = new ArrayList<SalesforceObjectType>();
+        final JSONArray objectTypes = rawData.optJSONArray("sobjects");
+        if (objectTypes != null) {
+            for (int i = 0; i < objectTypes.length(); i++) {
+                final JSONObject metadata = objectTypes.optJSONObject(i);
+                if (metadata != null) {
+                    final boolean hidden = metadata.optBoolean(Constants.HIDDEN_FIELD, false);
+                    if (!hidden) {
+                    	final SalesforceObjectType objType = new SalesforceObjectType(metadata);
+                        returnList.add(objType);
+                    }
+                }
+            }
+        }
+        if (returnList.size() == 0) {
+            return null;
+        }
+        return returnList;
     }
 }
