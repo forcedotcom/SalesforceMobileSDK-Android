@@ -411,6 +411,11 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     	}
     }
 
+    /**
+     * Initializes and returns a RestClient instance used for live calls by tests.
+     *
+     * @return RestClient instance.
+     */
     private RestClient initRestClient() throws Exception {
         httpAccess = new HttpAccess(null, null);
         final TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
