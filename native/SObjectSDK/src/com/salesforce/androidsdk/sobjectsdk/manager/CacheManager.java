@@ -658,8 +658,14 @@ public class CacheManager {
      * @return True - if it exists, False - otherwise.
      */
     private boolean doesMasterSoupContainSoup(String soupName) {
-        final List<String> soupNames = getAllSoupNames();
-        return soupNames.contains(soupName);
+        final JSONArray soupNames = getAllSoupNames();
+        for (int i = 0; i < soupNames.length(); i++) {
+        	final String name = soupNames.optString(i);
+        	if (soupName.equals(name)) {
+        		return true;
+        	}
+        }
+        return false;
     }
 
     /**
@@ -667,31 +673,25 @@ public class CacheManager {
      *
      * @return List of soup names.
      */
-    private List<String> getAllSoupNames() {
+    private JSONArray getAllSoupNames() {
     	final String smartSql = "SELECT {" + SOUP_OF_SOUPS + ":" +
         		SOUP_NAMES_KEY + "} FROM {" + SOUP_OF_SOUPS + "}";
         final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
-        List<String> soupNames = new ArrayList<String>();
-		try {
+        JSONArray soupNamesArr = null;
+        try {
 			final JSONArray results = smartStore.query(querySpec, 0);
 	        if (results != null && results.length() > 0) {
-	        	final JSONArray soupNamesArr = results.optJSONArray(0);
-	        	if (soupNamesArr != null) {
-	        		int length = soupNamesArr.length();
-	        		for (int i = 0; i < length; i++) {
-		        		final String soupName = soupNamesArr.optString(i);
-		        		if (soupName != null) {
-		        			soupNames.add(soupName);
-		        		}
-	        		}
-	        	}
+	        	soupNamesArr = results.optJSONArray(0);
 	        }
 		} catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while attempting to read cached data", e);
 		} catch (SmartStoreException e) {
             Log.e(TAG, "SmartStoreException occurred while attempting to read cached data", e);
         }
-		return soupNames;
+        if (soupNamesArr == null) {
+    		soupNamesArr = new JSONArray();
+    	}
+		return soupNamesArr;
     }
 
     /**
@@ -703,16 +703,12 @@ public class CacheManager {
     	if (doesMasterSoupContainSoup(soupName)) {
     		return;
     	}
-    	final List<String> existingSoupNames = getAllSoupNames();
-    	final JSONArray soupNamesArr = new JSONArray();
-    	for (final String soup : existingSoupNames) {
-        	soupNamesArr.put(soup);
-        }
-    	soupNamesArr.put(soupName);
+    	final JSONArray existingSoupNames = getAllSoupNames();
+    	existingSoupNames.put(soupName);
     	final JSONObject object = new JSONObject();
     	try {
-    		object.put(SOUP_NAMES_KEY, soupNamesArr);
-            smartStore.upsert(SOUP_OF_SOUPS, object);
+    		object.put(SOUP_NAMES_KEY, existingSoupNames);
+        	smartStore.upsert(SOUP_OF_SOUPS, object);
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while attempting to cache data", e);
         } catch (SmartStoreException e) {
@@ -729,16 +725,18 @@ public class CacheManager {
     	if (!doesMasterSoupContainSoup(soupName)) {
     		return;
     	}
-    	List<String> existingSoupNames = getAllSoupNames();
-    	existingSoupNames.remove(soupName);
-    	final JSONArray soupNamesArr = new JSONArray();
-    	for (final String soup : existingSoupNames) {
-    		soupNamesArr.put(soup);
+    	final JSONArray existingSoupNames = getAllSoupNames();
+    	final JSONArray newSoupNames = new JSONArray();
+    	for (int i = 0; i < existingSoupNames.length(); i++) {
+    		final String name = existingSoupNames.optString(i);
+        	if (!soupName.equals(name)) {
+        		newSoupNames.put(soupName);
+        	}
     	}
     	final JSONObject object = new JSONObject();
     	try {
-        	object.put(SOUP_NAMES_KEY, soupNamesArr);
-            smartStore.upsert(SOUP_OF_SOUPS, object);
+        	object.put(SOUP_NAMES_KEY, newSoupNames);
+        	smartStore.upsert(SOUP_OF_SOUPS, object);
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while attempting to cache data", e);
         } catch (SmartStoreException e) {
@@ -757,9 +755,12 @@ public class CacheManager {
      * Clears all soups used by this class and the master soup.
      */
     private void clearAllSoups() {
-    	final List<String> soupNames = getAllSoupNames();
-    	for (final String soupName : soupNames) {
-    		 smartStore.dropSoup(soupName);
+    	final JSONArray soupNames = getAllSoupNames();
+    	for (int i = 0; i < soupNames.length(); i++) {
+    		final String name = soupNames.optString(i);
+    		if (name != null) {
+    			smartStore.dropSoup(name);
+    		}
     	}
     	clearMasterSoup();
     }
