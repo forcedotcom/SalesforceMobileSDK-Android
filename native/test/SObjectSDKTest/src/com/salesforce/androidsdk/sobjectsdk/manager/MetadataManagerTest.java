@@ -112,17 +112,6 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     	CacheManager.hardReset();
         super.tearDown();
     }
-    
-    /**
-     * Test for 'loadSmartScopeObjectTypes' (from the server).
-     */
-    public void testLoadSmartScopeTypesFromServer() {
-    	final List<SalesforceObjectType> smartScopes = metadataManager.loadSmartScopeObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
-    			REFRESH_INTERVAL);
-    	/*
-    	 * TODO: assert against static data.
-    	 */
-    }
 
     /**
      * Test for global 'loadMRUObjects' (from the server).
@@ -236,19 +225,6 @@ public class MetadataManagerTest extends InstrumentationTestCase {
     		assertEquals("Received layout should be equal to the expected layout",
     				expectedLayout, layout);
     	}
-    }
-
-    /**
-     * Test for 'loadSmartScopeObjectTypes' (from the cache).
-     */
-    public void testLoadSmartScopeTypesFromCache() {
-    	final List<SalesforceObjectType> smartScopes = metadataManager.loadSmartScopeObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
-    			REFRESH_INTERVAL);
-    	/*
-    	 * TODO: Turn off network and assert between live and cached data.
-    	 */
-    	final List<SalesforceObjectType> cachedSmartScopes = metadataManager.loadSmartScopeObjectTypes(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
-    			REFRESH_INTERVAL);
     }
 
     /**
