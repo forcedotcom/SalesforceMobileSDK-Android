@@ -246,7 +246,13 @@ public class SalesforceObjectType {
         if (name == null || obj.getName() == null || !name.equals(obj.getName())) {
             return false;
         }
-        if (rawData == null || obj.getRawData() == null || !rawData.equals(obj.getRawData())) {
+        if (keyPrefix == null || obj.getKeyPrefix() == null || !keyPrefix.equals(obj.getKeyPrefix())) {
+            return false;
+        }
+        if (label == null || obj.getLabel() == null || !label.equals(obj.getLabel())) {
+            return false;
+        }
+        if (labelPlural == null || obj.getLabelPlural() == null || !labelPlural.equals(obj.getLabelPlural())) {
             return false;
         }
         return true;
