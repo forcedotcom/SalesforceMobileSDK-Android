@@ -64,9 +64,9 @@ public class MetadataManager {
     private static final long DEFAULT_METADATA_REFRESH_INTERVAL = 7 * 24 * 60 * 60 * 1000;
 
     // Cache constants.
-    private static final String MRU_CACHE_TYPE = "recent_objects";
-    private static final String METADATA_CACHE_TYPE = "metadata";
-    private static final String LAYOUT_CACHE_TYPE = "layout";
+    private static final String MRU_CACHE_TYPE = "recent_objects_";
+    private static final String METADATA_CACHE_TYPE = "metadata_";
+    private static final String LAYOUT_CACHE_TYPE = "layout_";
     private static final String SMART_SCOPES_CACHE_KEY = "smart_scopes";
     private static final String MRU_BY_OBJECT_TYPE_CACHE_KEY = "mru_for_%s";
     private static final String ALL_OBJECTS_CACHE_KEY = "all_objects";

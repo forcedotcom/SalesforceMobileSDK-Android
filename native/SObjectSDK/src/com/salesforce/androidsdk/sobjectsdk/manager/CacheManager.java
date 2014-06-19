@@ -660,9 +660,12 @@ public class CacheManager {
     private boolean doesMasterSoupContainSoup(String soupName) {
         final JSONArray soupNames = getAllSoupNames();
         for (int i = 0; i < soupNames.length(); i++) {
-        	final String name = soupNames.optString(i);
-        	if (soupName.equals(name)) {
-        		return true;
+        	final JSONArray names = soupNames.optJSONArray(i);
+        	if (names != null && names.length() > 0) {
+                final String name = names.optString(0);
+                if (soupName.equals(name)) {
+                	return true;
+                }
         	}
         }
         return false;
@@ -676,22 +679,21 @@ public class CacheManager {
     private JSONArray getAllSoupNames() {
     	final String smartSql = "SELECT {" + SOUP_OF_SOUPS + ":" +
         		SOUP_NAMES_KEY + "} FROM {" + SOUP_OF_SOUPS + "}";
-        final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
-        JSONArray soupNamesArr = null;
+        JSONArray results = null;
+    	QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
         try {
-			final JSONArray results = smartStore.query(querySpec, 0);
-	        if (results != null && results.length() > 0) {
-	        	soupNamesArr = results.optJSONArray(0);
-	        }
+            int count = smartStore.countQuery(querySpec);
+            querySpec = QuerySpec.buildSmartQuerySpec(smartSql, count);
+			results = smartStore.query(querySpec, 0);
 		} catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while attempting to read cached data", e);
 		} catch (SmartStoreException e) {
             Log.e(TAG, "SmartStoreException occurred while attempting to read cached data", e);
         }
-        if (soupNamesArr == null) {
-    		soupNamesArr = new JSONArray();
+        if (results == null) {
+    		results = new JSONArray();
     	}
-		return soupNamesArr;
+		return results;
     }
 
     /**
@@ -703,11 +705,9 @@ public class CacheManager {
     	if (doesMasterSoupContainSoup(soupName)) {
     		return;
     	}
-    	final JSONArray existingSoupNames = getAllSoupNames();
-    	existingSoupNames.put(soupName);
     	final JSONObject object = new JSONObject();
     	try {
-    		object.put(SOUP_NAMES_KEY, existingSoupNames);
+    		object.put(SOUP_NAMES_KEY, soupName);
         	smartStore.upsert(SOUP_OF_SOUPS, object);
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while attempting to cache data", e);
@@ -725,20 +725,10 @@ public class CacheManager {
     	if (!doesMasterSoupContainSoup(soupName)) {
     		return;
     	}
-    	final JSONArray existingSoupNames = getAllSoupNames();
-    	final JSONArray newSoupNames = new JSONArray();
-    	for (int i = 0; i < existingSoupNames.length(); i++) {
-    		final String name = existingSoupNames.optString(i);
-        	if (!soupName.equals(name)) {
-        		newSoupNames.put(soupName);
-        	}
-    	}
-    	final JSONObject object = new JSONObject();
     	try {
-        	object.put(SOUP_NAMES_KEY, newSoupNames);
-        	smartStore.upsert(SOUP_OF_SOUPS, object);
-        } catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while attempting to cache data", e);
+        	long soupEntryId = smartStore.lookupSoupEntryId(SOUP_OF_SOUPS,
+        			SOUP_NAMES_KEY, soupName);
+        	smartStore.delete(SOUP_OF_SOUPS, soupEntryId);
         } catch (SmartStoreException e) {
             Log.e(TAG, "SmartStoreException occurred while attempting to cache data", e);
         }
@@ -757,11 +747,14 @@ public class CacheManager {
     private void clearAllSoups() {
     	final JSONArray soupNames = getAllSoupNames();
     	for (int i = 0; i < soupNames.length(); i++) {
-    		final String name = soupNames.optString(i);
-    		if (name != null) {
-    			smartStore.dropSoup(name);
-    		}
-    	}
+        	final JSONArray names = soupNames.optJSONArray(i);
+        	if (names != null && names.length() > 0) {
+                final String name = names.optString(0);
+                if (name != null) {
+        			smartStore.dropSoup(name);
+                }
+        	}
+        }
     	clearMasterSoup();
     }
 
