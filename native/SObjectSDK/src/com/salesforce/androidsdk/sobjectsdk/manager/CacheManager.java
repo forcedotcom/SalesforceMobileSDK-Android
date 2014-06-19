@@ -142,18 +142,6 @@ public class CacheManager {
     }
 
     /**
-     * Clears the cache and creates a new clean cache.
-     */
-    public void cleanCache() {
-        resetInMemoryCache();
-
-        // Checks to make sure SmartStore hasn't already been cleaned up.
-        if (SalesforceSDKManagerWithSmartStore.getInstance().hasSmartStore()) {
-        	clearAllSoups();
-        }
-    }
-
-    /**
      * Removes existing data from the specified cache.
      *
      * @param cacheType Cache type.
@@ -670,9 +658,15 @@ public class CacheManager {
      * @return True - if it exists, False - otherwise.
      */
     private boolean doesMasterSoupContainSoup(String soupName) {
-        final List<String> soupNames = getAllSoupNames();
-        if (soupNames != null) {
-        	return soupNames.contains(soupName);
+        final JSONArray soupNames = getAllSoupNames();
+        for (int i = 0; i < soupNames.length(); i++) {
+        	final JSONArray names = soupNames.optJSONArray(i);
+        	if (names != null && names.length() > 0) {
+                final String name = names.optString(0);
+                if (soupName.equals(name)) {
+                	return true;
+                }
+        	}
         }
         return false;
     }
@@ -682,34 +676,24 @@ public class CacheManager {
      *
      * @return List of soup names.
      */
-    private List<String> getAllSoupNames() {
+    private JSONArray getAllSoupNames() {
     	final String smartSql = "SELECT {" + SOUP_OF_SOUPS + ":" +
         		SOUP_NAMES_KEY + "} FROM {" + SOUP_OF_SOUPS + "}";
-        final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
-        List<String> soupNames = new ArrayList<String>();
-		try {
-			final JSONArray results = smartStore.query(querySpec, 0);
-	        if (results != null && results.length() > 0) {
-	        	final JSONArray soupNamesArr = results.optJSONArray(0);
-	        	if (soupNamesArr != null) {
-	        		int length =  soupNamesArr.length();
-	        		for (int i = 0; i < length; i++) {
-		        		final String soupName = soupNamesArr.optString(i);
-		        		if (soupName != null) {
-		        			soupNames.add(soupName);
-		        		}
-	        		}
-	        	}
-	        }
+        JSONArray results = null;
+    	QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
+        try {
+            int count = smartStore.countQuery(querySpec);
+            querySpec = QuerySpec.buildSmartQuerySpec(smartSql, count);
+			results = smartStore.query(querySpec, 0);
 		} catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while attempting to read cached data", e);
 		} catch (SmartStoreException e) {
             Log.e(TAG, "SmartStoreException occurred while attempting to read cached data", e);
         }
-		if (soupNames.size() == 0) {
-			soupNames = null;
-		}
-		return soupNames;
+        if (results == null) {
+    		results = new JSONArray();
+    	}
+		return results;
     }
 
     /**
@@ -721,19 +705,10 @@ public class CacheManager {
     	if (doesMasterSoupContainSoup(soupName)) {
     		return;
     	}
-    	List<String> existingSoupNames = getAllSoupNames();
-    	if (existingSoupNames == null) {
-    		existingSoupNames = new ArrayList<String>();
-    	}
-    	existingSoupNames.add(soupName);
-    	final JSONArray soupNamesArr = new JSONArray();
-    	for (final String soup : existingSoupNames) {
-    		soupNamesArr.put(soup);
-    	}
     	final JSONObject object = new JSONObject();
     	try {
-    		object.put(SOUP_NAMES_KEY, soupNamesArr);
-            smartStore.upsert(SOUP_OF_SOUPS, object);
+    		object.put(SOUP_NAMES_KEY, soupName);
+        	smartStore.upsert(SOUP_OF_SOUPS, object);
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while attempting to cache data", e);
         } catch (SmartStoreException e) {
@@ -750,18 +725,10 @@ public class CacheManager {
     	if (!doesMasterSoupContainSoup(soupName)) {
     		return;
     	}
-    	List<String> existingSoupNames = getAllSoupNames();
-    	existingSoupNames.remove(soupName);
-    	final JSONArray soupNamesArr = new JSONArray();
-    	for (final String soup : existingSoupNames) {
-    		soupNamesArr.put(soup);
-    	}
-    	final JSONObject object = new JSONObject();
     	try {
-        	object.put(SOUP_NAMES_KEY, soupNamesArr);
-            smartStore.upsert(SOUP_OF_SOUPS, object);
-        } catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while attempting to cache data", e);
+        	long soupEntryId = smartStore.lookupSoupEntryId(SOUP_OF_SOUPS,
+        			SOUP_NAMES_KEY, soupName);
+        	smartStore.delete(SOUP_OF_SOUPS, soupEntryId);
         } catch (SmartStoreException e) {
             Log.e(TAG, "SmartStoreException occurred while attempting to cache data", e);
         }
@@ -778,12 +745,16 @@ public class CacheManager {
      * Clears all soups used by this class and the master soup.
      */
     private void clearAllSoups() {
-    	final List<String> soupNames = getAllSoupNames();
-    	if (soupNames != null) {
-    		for (final String soupName : soupNames) {
-    			 smartStore.dropSoup(soupName);
-    		}
-    	}
+    	final JSONArray soupNames = getAllSoupNames();
+    	for (int i = 0; i < soupNames.length(); i++) {
+        	final JSONArray names = soupNames.optJSONArray(i);
+        	if (names != null && names.length() > 0) {
+                final String name = names.optString(0);
+                if (name != null) {
+        			smartStore.dropSoup(name);
+                }
+        	}
+        }
     	clearMasterSoup();
     }
 
@@ -794,5 +765,17 @@ public class CacheManager {
         objectCacheMap = new HashMap<String, List<SalesforceObject>>();
         objectTypeCacheMap = new HashMap<String, List<SalesforceObjectType>>();
         objectTypeLayoutCacheMap = new HashMap<String, List<SalesforceObjectTypeLayout>>();
+    }
+
+    /**
+     * Clears the cache and creates a new clean cache.
+     */
+    private void cleanCache() {
+        resetInMemoryCache();
+
+        // Checks to make sure SmartStore hasn't already been cleaned up.
+        if (SalesforceSDKManagerWithSmartStore.getInstance().hasSmartStore()) {
+        	clearAllSoups();
+        }
     }
 }
