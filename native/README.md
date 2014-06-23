@@ -22,12 +22,14 @@ For the rest of this document, we assume that you have setup three shell variabl
 Inside the $NATIVE_DIR, you will find several projects:
 
 1. **SalesforceSDK**: The Salesforce SDK library project which provides support for OAuth2, REST API calls, pin screen (driven by mobile policy)
-2. **TemplateApp**: Template used when creating new native application using SalesforceSDK
-3. **test/SalesforceSDKTest**: Test project for SalesforceSDK
-4. **test/TemplateAppTest**: Test project for the TemplateApp project
-5. **SampleApps/RestExplorer**: An app using SalesforceSDK to explore the REST API calls
-6. **SampleApps/test/RestExplorerTest**: Test project for the RestExplorer project
-7. **SampleApps/NativeSqlAggregator**: An app using SalesforceSDK and SmartStore to demonstrate complex aggregate smart SQL queries
+2. **SmartSync**: The SmartSync library project which provides support for Salesforce object metadata API calls, layout API calls, MRU API calls, caching
+3. **TemplateApp**: Template used when creating new native application using SalesforceSDK
+4. **test/SalesforceSDKTest**: Test project for SalesforceSDK
+5. **test/SmartSyncTest**: Test project for SmartSync
+6. **test/TemplateAppTest**: Test project for the TemplateApp project
+7. **SampleApps/RestExplorer**: An app using SalesforceSDK to explore the REST API calls
+8. **SampleApps/test/RestExplorerTest**: Test project for the RestExplorer project
+9. **SampleApps/NativeSqlAggregator**: An app using SalesforceSDK and SmartStore to demonstrate complex aggregate smart SQL queries
 
 # Running sample apps from Eclipse
 
