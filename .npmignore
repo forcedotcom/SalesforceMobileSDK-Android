@@ -10,14 +10,14 @@ hybrid/SmartStore/bin/
 hybrid/test/ForcePluginsTest/bin/
 hybrid/test/SmartStoreTest/bin/
 native/SalesforceSDK/bin/
-native/SObjectSDK/bin/
+native/SmartSync/bin/
 native/SampleApps/FileExplorer/bin/
 native/SampleApps/NativeSqlAggregator/bin/
 native/SampleApps/RestExplorer/bin/
 native/SampleApps/test/RestExplorerTest/bin/
 native/TemplateApp/bin/
 native/test/SalesforceSDKTest/bin/
-native/test/SObjectSDKTest/bin/
+native/test/SmartSyncTest/bin/
 native/test/TemplateAppTest/bin/
 
 hybrid/SampleApps/AccountEditor/gen/
@@ -32,14 +32,14 @@ hybrid/SmartStore/gen/
 hybrid/test/ForcePluginsTest/gen/
 hybrid/test/SmartStoreTest/gen/
 native/SalesforceSDK/gen/
-native/SObjectSDK/gen/
+native/SmartSync/gen/
 native/SampleApps/FileExplorer/gen/
 native/SampleApps/NativeSqlAggregator/gen/
 native/SampleApps/RestExplorer/gen/
 native/SampleApps/test/RestExplorerTest/gen/
 native/TemplateApp/gen/
 native/test/SalesforceSDKTest/gen/
-native/test/SObjectSDKTest/gen/
+native/test/SmartSyncTest/gen/
 native/test/TemplateAppTest/gen/
 
 hybrid/SampleApps/AccountEditor/proguard-project.txt
@@ -54,14 +54,14 @@ hybrid/SmartStore/proguard-project.txt
 hybrid/test/ForcePluginsTest/proguard-project.txt
 hybrid/test/SmartStoreTest/proguard-project.txt
 native/SalesforceSDK/proguard-project.txt
-native/SObjectSDK/proguard-project.txt
+native/SmartSync/proguard-project.txt
 native/SampleApps/FileExplorer/proguard-project.txt
 native/SampleApps/NativeSqlAggregator/proguard-project.txt
 native/SampleApps/RestExplorer/proguard-project.txt
 native/SampleApps/test/RestExplorerTest/proguard-project.txt
 native/TemplateApp/proguard-project.txt
 native/test/SalesforceSDKTest/proguard-project.txt
-native/test/SObjectSDKTest/proguard-project.txt
+native/test/SmartSyncTest/proguard-project.txt
 native/test/TemplateAppTest/proguard-project.txt
 
 hybrid/SampleApps/AccountEditor/local.properties
@@ -76,14 +76,14 @@ hybrid/SmartStore/local.properties
 hybrid/test/ForcePluginsTest/local.properties
 hybrid/test/SmartStoreTest/local.properties
 native/SalesforceSDK/local.properties
-native/SObjectSDK/local.properties
+native/SmartSync/local.properties
 native/SampleApps/FileExplorer/local.properties
 native/SampleApps/NativeSqlAggregator/local.properties
 native/SampleApps/RestExplorer/local.properties
 native/SampleApps/test/RestExplorerTest/local.properties
 native/TemplateApp/local.properties
 native/test/SalesforceSDKTest/local.properties
-native/test/SObjectSDKTest/local.properties
+native/test/SmartSyncTest/local.properties
 native/test/TemplateAppTest/local.properties
 
 hybrid/SampleApps/AccountEditor/AccountEditor.iml
@@ -93,7 +93,7 @@ hybrid/SampleApps/SmartStoreExplorer/SmartStoreExplorer.iml
 hybrid/SampleApps/VFConnector/VFConnector.iml
 hybrid/SmartStore/SmartStore.iml
 native/SalesforceSDK/SalesforceSDK.iml
-native/SObjectSDK/SalesforceSDK.iml
+native/SmartSync/SalesforceSDK.iml
 native/SampleApps/FileExplorer/FileExplorer.iml
 native/SampleApps/NativeSqlAggregator/NativeSqlAggregator.iml
 native/SampleApps/RestExplorer/RestExplorer.iml
