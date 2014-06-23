@@ -2,7 +2,7 @@
 apply plugin: 'android-library'
 
 dependencies {
-  compile project(':native:SalesforceSDK')
+  compile project(':libs:SalesforceSDK')
   compile files('libs/sqlcipher.jar')
 }
 

@@ -1,6 +1,11 @@
 # Introduction
 
-This folder contains the native sample projects that can be used to exercise the SDK, and test projects associated with those sample projects.
+This folder contains the library projects provided in the Salesforce Mobile SDK, and the test projects associated with them.
+
+### SDK notes
+
+* The SDK is supported and tested for Android 2.2 and above.
+* The SalesforceSDK project is built with the Android 3.0 (Honeycomb) library.  The primary reason for this is that we want to be able to make a conditional check at runtime for file system encryption capabilities.  This check is guarded from being called on earlier Android platforms, the net result being that you can still use the SalesforceSDK in earlier Android application versions, down to the mininum-supported Android 2.2.
 
 # Setting up your development environment
 
@@ -10,18 +15,18 @@ For the rest of this document, we assume that you have setup three shell variabl
 
 1. ANDROID_SDK_DIR pointing to the Android SDK directory
 2. SALESFORCE_SDK_DIR pointing to your clone of the Salesforce Mobile SDK repository e.g. `/home/jon/SalesforceMobileSDK-Android`.
-3. NATIVE_DIR pointing to $SALESFORCE_SDK_DIR/native
-4. LIBS_DIR pointing to $SALESFORCE_SDK_DIR/libs
+3. LIBS_DIR pointing to $SALESFORCE_SDK_DIR/libs
 
-**If you haven't, just make sure to replace $ANDROID_SDK_DIR, $SALESFORCE_SDK_DIR, $NATIVE_DIR and $LIBS_DIR in the snippets below with the actual paths.**
+**If you haven't, just make sure to replace $ANDROID_SDK_DIR, $SALESFORCE_SDK_DIR and $LIBS_DIR in the snippets below with the actual paths.**
 
 Inside the $NATIVE_DIR, you will find several projects:
 
-1. **TemplateApp**: Template used when creating new native application using SalesforceSDK
-2. **test/TemplateAppTest**: Test project for the TemplateApp project
-3. **SampleApps/RestExplorer**: An app using SalesforceSDK to explore the REST API calls
-4. **SampleApps/test/RestExplorerTest**: Test project for the RestExplorer project
-5. **SampleApps/NativeSqlAggregator**: An app using SalesforceSDK and SmartStore to demonstrate complex aggregate smart SQL queries
+1. **SalesforceSDK**: The Salesforce SDK library project which provides support for OAuth2, REST API calls, pin screen (driven by mobile policy)
+2. **SmartSync**: The SmartSync library project which provides support for Salesforce object metadata API calls, layout API calls, MRU API calls, caching
+3. **SmartStore**: Library project which provides the SmartStore functionality
+4. **test/SalesforceSDKTest**: Test project for SalesforceSDK
+5. **test/SmartSyncTest**: Test project for SmartSync
+6. **test/SmartStoreTest**: Test project for SmartStore
 
 # Running sample apps from Eclipse
 
