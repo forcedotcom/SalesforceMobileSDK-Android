@@ -1,8 +1,8 @@
 apply plugin: 'android'
 
 dependencies {
-  compile project(':native:SalesforceSDK')
-  compile project(':hybrid:SmartStore')
+  compile project(':libs:SalesforceSDK')
+  compile project(':libs:SmartStore')
 }
 
 android {
