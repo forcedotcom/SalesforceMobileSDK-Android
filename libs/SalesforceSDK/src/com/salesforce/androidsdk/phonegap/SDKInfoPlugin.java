@@ -43,6 +43,7 @@ import android.content.res.XmlResourceParser;
 import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.BootConfig;
 
 /**
  * PhoneGap plugin for SDK info.
@@ -53,6 +54,7 @@ public class SDKInfoPlugin extends ForcePlugin {
     private static final String APP_NAME = "appName";
     private static final String APP_VERSION = "appVersion";
 	private static final String FORCE_PLUGINS_AVAILABLE = "forcePluginsAvailable";
+	private static final String BOOT_CONFIG = "bootConfig";
     	
 	// Cached 
 	private static List<String> forcePlugins;
@@ -116,6 +118,7 @@ public class SDKInfoPlugin extends ForcePlugin {
        data.put(APP_NAME, appName);
        data.put(APP_VERSION, appVersion);
        data.put(FORCE_PLUGINS_AVAILABLE, new JSONArray(getForcePlugins(ctx)));
+       data.put(BOOT_CONFIG, BootConfig.getBootConfig(ctx).asJSON());
        return data;
    }
 
