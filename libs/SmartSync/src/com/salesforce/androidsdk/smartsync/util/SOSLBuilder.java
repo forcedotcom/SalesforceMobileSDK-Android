@@ -171,12 +171,12 @@ public class SOSLBuilder {
     public String build() {
         final StringBuilder query = new StringBuilder();
         final String searchTerm = (String) properties.get("searchTerm");
-        if (searchTerm == null || searchTerm.trim().length() == 0) {
+        if (searchTerm == null || searchTerm.length() == 0) {
             return null;
         }
         query.append(String.format("find {%s}", searchTerm));
         final String searchGroup = (String) properties.get("searchGroup");
-        if (searchGroup != null && searchGroup.trim().length() > 0) {
+        if (searchGroup != null && searchGroup.length() > 0) {
             query.append(" in ");
             query.append(searchGroup);
         }
@@ -189,12 +189,12 @@ public class SOSLBuilder {
             }
         }
         final String divisionFilter = (String) properties.get("divisionFilter");
-        if (divisionFilter != null && divisionFilter.trim().length() > 0) {
+        if (divisionFilter != null && divisionFilter.length() > 0) {
             query.append(" with ");
             query.append(divisionFilter);
         }
         final String dataCategory = (String) properties.get("dataCategory");
-        if (dataCategory != null && dataCategory.trim().length() > 0) {
+        if (dataCategory != null && dataCategory.length() > 0) {
             query.append(" with data category ");
             query.append(dataCategory);
         }
@@ -207,7 +207,7 @@ public class SOSLBuilder {
     }
 
     private SOSLBuilder searchTerm(String searchTerm) {
-        String searchValue = (searchTerm == null) ? "" : searchTerm.trim();
+        String searchValue = (searchTerm == null) ? "" : searchTerm;
 
         // Escapes special characters from search term.
         if (!searchValue.equals("")) {
