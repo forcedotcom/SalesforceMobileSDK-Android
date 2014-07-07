@@ -120,26 +120,26 @@ public class SOSLReturningBuilder {
     public String build() {
         final StringBuilder query = new StringBuilder();
         final String objectName = (String) properties.get("objectName");
-        if (objectName == null || objectName.trim().length() == 0) {
+        if (objectName == null || objectName.length() == 0) {
             return null;
         }
         query.append(" ");
         query.append(objectName);
         final String fields = (String) properties.get("fields");
-        if (fields != null && fields.trim().length() > 0) {
+        if (fields != null && fields.length() > 0) {
             query.append(String.format("(%s", fields));
             final String where = (String) properties.get("where");
-            if (where != null && where.trim().length() > 0) {
+            if (where != null && where.length() > 0) {
                 query.append(" where ");
                 query.append(where);
             }
             final String orderBy = (String) properties.get("orderBy");
-            if (orderBy != null && orderBy.trim().length() > 0) {
+            if (orderBy != null && orderBy.length() > 0) {
                 query.append(" order by ");
                 query.append(orderBy);
             }
             final String withNetwork = (String) properties.get("withNetwork");
-            if (withNetwork != null && withNetwork.trim().length() > 0) {
+            if (withNetwork != null && withNetwork.length() > 0) {
                 query.append(" with network = ");
                 query.append(withNetwork);
             }

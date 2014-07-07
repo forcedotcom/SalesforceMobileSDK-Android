@@ -201,34 +201,34 @@ public class SOQLBuilder {
     public String build() {
         final StringBuilder query = new StringBuilder();
         final String fieldList = (String) properties.get("fields");
-        if (fieldList == null || fieldList.trim().length() == 0) {
+        if (fieldList == null || fieldList.length() == 0) {
             return null;
         }
         query.append("select ");
         query.append(fieldList);
         final String from = (String) properties.get("from");
-        if (from == null || from.trim().length() == 0) {
+        if (from == null || from.length() == 0) {
             return null;
         }
         query.append(" from ");
         query.append(from);
         final String where = (String) properties.get("where");
-        if (where != null && where.trim().length() > 0) {
+        if (where != null && where.length() > 0) {
             query.append(" where ");
             query.append(where);
         }
         final String groupBy = (String) properties.get("groupBy");
-        if (groupBy != null && groupBy.trim().length() > 0) {
+        if (groupBy != null && groupBy.length() > 0) {
             query.append(" group by ");
             query.append(groupBy);
         }
         final String having = (String) properties.get("having");
-        if (having != null && having.trim().length() > 0) {
+        if (having != null && having.length() > 0) {
             query.append(" having ");
             query.append(having);
         }
         final String orderBy = (String) properties.get("orderBy");
-        if (orderBy != null && orderBy.trim().length() > 0) {
+        if (orderBy != null && orderBy.length() > 0) {
             query.append(" order by ");
             query.append(orderBy);
         }
