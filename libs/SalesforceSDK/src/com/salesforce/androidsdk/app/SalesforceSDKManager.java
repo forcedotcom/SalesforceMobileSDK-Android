@@ -34,6 +34,8 @@ import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningAppProcessInfo;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -312,8 +314,14 @@ public class SalesforceSDKManager implements AccountRemoved {
         // Ensures that we have a CookieSyncManager instance.
         CookieSyncManager.createInstance(context);
 
-        // Initializes an AccountWatcher instance.
-        INSTANCE.accWatcher = new AccountWatcher(context, INSTANCE);
+        /*
+         * Initializes an AccountWatcher instance, only if the current instance
+         * is NOT running in the auth process. This prevents multiple
+         * callbacks when an account is removed from settings.
+         */
+        if (!INSTANCE.isRunningInAuthProcess()) {
+            INSTANCE.accWatcher = new AccountWatcher(context, INSTANCE);
+        }
 
         // Upgrades to the latest version.
         UpgradeManager.getInstance().upgradeAccMgr();
@@ -1005,5 +1013,34 @@ public class SalesforceSDKManager implements AccountRemoved {
      */
     public boolean isLoggingOut() {
     	return isLoggingOut;
+    }
+
+    /**
+     * Returns whether this instance is running in the auth process or not.
+     *
+     * @return True - if auth process, False - otherwise.
+     */
+    private boolean isRunningInAuthProcess() {
+    	try {
+        	String procName = "";
+            int pid = android.os.Process.myPid();
+            final ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+            final List<RunningAppProcessInfo> processInfos = manager.getRunningAppProcesses();
+            if (processInfos != null) {
+                for (final RunningAppProcessInfo procInfo : processInfos) {
+                    if (procInfo != null && procInfo.pid == pid) {
+                    	procName = procInfo.processName;
+                    	break;
+                    }
+                }
+            }
+            if (procName.endsWith(":auth")) {
+            	return true;
+            }
+    	} catch (Exception e) {
+    		Log.e("SalesforceSDKManager:isRunningInAuthProcess",
+    				"Exception occurred while getting process name.", e);
+    	}
+    	return false;
     }
 }
