@@ -1026,6 +1026,7 @@ public class SalesforceSDKManager implements AccountRemoved {
                 for (final RunningAppProcessInfo procInfo : processInfos) {
                     if (procInfo != null && procInfo.pid == pid) {
                     	procName = procInfo.processName;
+                    	break;
                     }
                 }
             }
