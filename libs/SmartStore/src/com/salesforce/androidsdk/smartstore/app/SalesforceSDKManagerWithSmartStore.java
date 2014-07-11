@@ -180,9 +180,19 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     	if (account != null) {
     		final UserAccount userAccount = getUserAccountManager().buildUserAccount(account);
     		if (userAccount != null && hasSmartStore(userAccount)) {
-            	DBHelper.INSTANCE.reset(INSTANCE.getAppContext(), userAccount);
+            	DBHelper.INSTANCE.reset(getAppContext(), userAccount);
     		}
     	}
+
+        /*
+         * Checks how many accounts are left that are authenticated. If only one
+         * account is left, this is the account that is being removed. In this
+         * case, we can safely reset all DBs.
+         */
+        final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
+        if (users == null || users.size() <= 1) {
+        	DBHelper.INSTANCE.reset(getAppContext());
+        }
         super.cleanUp(frontActivity, account);
     }
 
