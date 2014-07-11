@@ -40,6 +40,7 @@ import android.view.Window;
 import android.webkit.WebView;
 import android.widget.TextView;
 
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
@@ -104,11 +105,10 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 		webviewHelper.loadLoginPage();
 	}
 
-	protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback, LoginOptions loginOptions, WebView webView, Bundle savedInstanceState) {
+	protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback,
+			LoginOptions loginOptions, WebView webView, Bundle savedInstanceState) {
 		return new OAuthWebviewHelper(callback, loginOptions, webView, savedInstanceState);
 	}
-
-
 
 	@Override
 	protected void onResume() {
@@ -129,9 +129,23 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
-			wasBackgrounded = true;
-			moveTaskToBack(true);
-			return true;
+
+			/*
+			 * If there are no accounts signed in, we need the login screen
+			 * to go away, and go back to the home screen. However, if the
+			 * login screen has been brought up from the switcher screen,
+			 * the back button should take the user back to the previous screen.
+			 */
+			final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+			if (accMgr.getAuthenticatedUsers() == null) {
+				wasBackgrounded = true;
+				moveTaskToBack(true);
+				return true;
+			} else {
+				wasBackgrounded = true;
+				finish();
+				return true;
+			}
 		}
 		return super.onKeyDown(keyCode, event);
 	}

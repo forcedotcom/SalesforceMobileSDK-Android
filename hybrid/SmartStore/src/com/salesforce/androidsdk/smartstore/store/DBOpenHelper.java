@@ -36,6 +36,7 @@ import net.sqlcipher.database.SQLiteDatabaseHook;
 import net.sqlcipher.database.SQLiteOpenHelper;
 import android.content.Context;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 
@@ -146,45 +147,50 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 */
 	public static void deleteDatabase(Context ctx, UserAccount account,
 			String communityId) {
-		if (account != null) {
-			String uniqueId = account.getUserId();
-			if (!TextUtils.isEmpty(communityId)) {
-				uniqueId = uniqueId + communityId;
+		try {
+			if (account != null) {
+				String uniqueId = account.getUserId();
+				if (!TextUtils.isEmpty(communityId)) {
+					uniqueId = uniqueId + communityId;
+				}
+				if (openHelpers != null) {
+					final DBOpenHelper helper = openHelpers.get(uniqueId);
+					if (helper != null) {
+						helper.close();
+						openHelpers.remove(uniqueId);
+					}
+				}
+			} else if (defaultHelper != null) {
+				defaultHelper.close();
+				defaultHelper = null;
 			}
-			if (openHelpers != null) {
-				final DBOpenHelper helper = openHelpers.get(uniqueId);
-				if (helper != null) {
-					helper.close();
-					openHelpers.remove(uniqueId);
+			String dbName = String.format(DB_NAME, "");
+			if (account != null) {
+				final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
+				if (!TextUtils.isEmpty(dbPath)) {
+					dbName = String.format(DB_NAME, dbPath);
 				}
 			}
-		} else if (defaultHelper != null) {
-			defaultHelper.close();
-			defaultHelper = null;
-		}
-		String dbName = String.format(DB_NAME, "");
-		if (account != null) {
-			final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
-			if (!TextUtils.isEmpty(dbPath)) {
-				dbName = String.format(DB_NAME, dbPath);
-			}
-		}
-		ctx.deleteDatabase(dbName);
+			ctx.deleteDatabase(dbName);
 
-    	// Deletes the community databases associated with this user account.
-    	final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
-    	final File dir = new File(dbPath);
-    	if (dir != null) {
-        	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(dbName);
-        	final File[] fileList = dir.listFiles();
-        	if (fileList != null) {
-            	for (final File file : fileList) {
-            		if (file != null && fileFilter.accept(dir, file.getName())) {
-            			file.delete();
-            		}
-            	}
-        	}
-    	}
+	    	// Deletes the community databases associated with this user account.
+	    	final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
+	    	final File dir = new File(dbPath);
+	    	if (dir != null) {
+	        	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(dbName);
+	        	final File[] fileList = dir.listFiles();
+	        	if (fileList != null) {
+	            	for (final File file : fileList) {
+	            		if (file != null && fileFilter.accept(dir, file.getName())) {
+	            			file.delete();
+	            		}
+	            	}
+	        	}
+	    	}
+		} catch (Exception e) {
+        	Log.e("DBOpenHelper:deleteDatabase",
+        			"Exception occurred while attempting to delete database.", e);
+		}
 	}
 
 	static class DBHook implements SQLiteDatabaseHook {
