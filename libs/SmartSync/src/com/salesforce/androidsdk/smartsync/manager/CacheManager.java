@@ -119,6 +119,17 @@ public class CacheManager {
     }
 
     /**
+     * Switches the context of the cache to the current account, by
+     * re-instantiating this class.
+     *
+     * @return Instance of this class.
+     */
+    public static CacheManager switchUserAccount() {
+        INSTANCE = new CacheManager();
+        return INSTANCE;
+    }
+
+    /**
      * Private constructor.
      */
     private CacheManager() {
@@ -586,14 +597,6 @@ public class CacheManager {
                 Log.e(TAG, "SmartStoreException occurred while attempting to cache data", e);
             }
         }
-    }
-
-    /**
-     * Switches the context of the cache to the current account, by
-     * re-instantiating this class.
-     */
-    public void switchUserAccount() {
-        INSTANCE = new CacheManager();
     }
 
     /**

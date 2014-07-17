@@ -107,7 +107,7 @@ public class CacheManagerTest extends InstrumentationTestCase {
      */
     public void testRemoveMRUCache() {
     	metadataManager.loadMRUObjects(null, 25,
-    			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
     	List<SalesforceObject> objects = cacheManager.readObjects(MRU_CACHE_TYPE,
     			String.format(MRU_BY_OBJECT_TYPE_CACHE_KEY, RECORD_TYPE_GLOBAL));
     	assertNotNull("List of objects should not be null", objects);
@@ -126,7 +126,7 @@ public class CacheManagerTest extends InstrumentationTestCase {
      */
     public void testSoftReset() {
     	metadataManager.loadMRUObjects(null, 25,
-    			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
     	List<SalesforceObject> objects = cacheManager.readObjects(MRU_CACHE_TYPE,
     			String.format(MRU_BY_OBJECT_TYPE_CACHE_KEY, RECORD_TYPE_GLOBAL));
     	assertNotNull("List of objects should not be null", objects);
@@ -145,7 +145,7 @@ public class CacheManagerTest extends InstrumentationTestCase {
      */
     public void testHardReset() {
     	metadataManager.loadMRUObjects(null, 25,
-    			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
     	List<SalesforceObject> objects = cacheManager.readObjects(MRU_CACHE_TYPE,
     			String.format(MRU_BY_OBJECT_TYPE_CACHE_KEY, RECORD_TYPE_GLOBAL));
     	assertNotNull("List of objects should not be null", objects);
@@ -179,7 +179,7 @@ public class CacheManagerTest extends InstrumentationTestCase {
      */
     public void testReadObjects() {
     	metadataManager.loadMRUObjects(null, 25,
-    			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
+    			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
     	final List<SalesforceObject> objects = cacheManager.readObjects(MRU_CACHE_TYPE,
     			String.format(MRU_BY_OBJECT_TYPE_CACHE_KEY, RECORD_TYPE_GLOBAL));
     	assertNotNull("List of objects should not be null", objects);
