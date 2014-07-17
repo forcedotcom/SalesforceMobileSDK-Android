@@ -197,10 +197,12 @@ public class MetadataManager {
      * @param limit Limit on number of objects (max is 'MAX_QUERY_LIMIT').
      * @param cachePolicy Cache policy.
      * @param refreshCacheIfOlderThan Time interval to refresh cache.
+     * @param networkFieldName Network field name for this object type.
      * @return List of recently accessed objects.
      */
     public List<SalesforceObject> loadMRUObjects(String objectTypeName,
-            int limit, CachePolicy cachePolicy, long refreshCacheIfOlderThan) {
+            int limit, CachePolicy cachePolicy, long refreshCacheIfOlderThan,
+            String networkFieldName) {
         if (limit > MAX_QUERY_LIMIT || limit < 0) {
             limit = MAX_QUERY_LIMIT;
         }
@@ -242,7 +244,7 @@ public class MetadataManager {
             return cachedData;
         }
         return loadRecentObjects(objectTypeName, globalMRU, limit,
-                cachePolicy, cacheKey);
+                cachePolicy, cacheKey, networkFieldName);
     }
 
     /**
@@ -616,8 +618,10 @@ public class MetadataManager {
      *
      * @param objectId Object ID.
      * @param objectType Object type.
+     * @param networkFieldName Network field name for this object type.
      */
-    public void markObjectAsViewed(String objectId, String objectType) {
+    public void markObjectAsViewed(String objectId, String objectType,
+    		String networkFieldName) {
         if (objectId == null || objectType == null
                 || Constants.EMPTY_STRING.equals(objectId)
                 || Constants.EMPTY_STRING.equals(objectType)
@@ -637,13 +641,9 @@ public class MetadataManager {
             } else {
                 whereClause = String.format("Id = '%s'", objectId);
             }
-            final String communityId = getCommunityId();
-            if (communityId != null) {
-                final String networkFieldName = result.getNetworkFieldName();
-                if (networkFieldName != null) {
-                    whereClause = String.format("%s AND %s = '%s'", whereClause,
-                            networkFieldName, communityId);
-                }
+            if (communityId != null && networkFieldName != null) {
+            	whereClause = String.format("%s AND %s = '%s'", whereClause,
+                        networkFieldName, communityId);
             }
             queryBuilder.where(whereClause);
             final String queryString = queryBuilder.buildAndEncode();
@@ -962,11 +962,12 @@ public class MetadataManager {
      * @param limit Limit on number of items.
      * @param cachePolicy Cache policy.
      * @param cacheKey Cache key.
+     * @param networkFieldName Network field name for this object type.
      * @return List of recently viewed objects.
      */
     private List<SalesforceObject> loadRecentObjects(String objectTypeName,
-            boolean globalMRU, int limit, CachePolicy cachePolicy, String cacheKey) {
-        String communityId = getCommunityId();
+            boolean globalMRU, int limit, CachePolicy cachePolicy, String cacheKey,
+            String networkFieldName) {
         final List<SalesforceObject> recentItems = new ArrayList<SalesforceObject>();
         SOQLBuilder queryBuilder;
         if (globalMRU) {
@@ -1016,7 +1017,6 @@ public class MetadataManager {
                 queryBuilder.limit(limit);
             }
             if (communityId != null) {
-                String networkFieldName = objType.getNetworkFieldName();
                 if (networkFieldName != null) {
                     whereClause = String.format("%s AND %s = '%s'",
                     		whereClause, networkFieldName, communityId);

@@ -46,7 +46,6 @@ public class SalesforceObjectType {
     private String nameField;
     private JSONArray fields;
     private JSONObject rawData;
-    private String networkFieldName = "NetworkId";
 
     /**
      * Parameterized constructor.
@@ -95,11 +94,6 @@ public class SalesforceObjectType {
             for (int i = 0; i < fields.length(); i++) {
                 final JSONObject field = fields.optJSONObject(i);
                 if (field != null) {
-                    final String nameStr = field.optString(Constants.NAME_FIELD);
-                    if (nameStr != null && (Constants.NETWORKID_FIELD.equals(nameStr)
-                                    || Constants.NETWORKSCOPE_FIELD.equals(nameStr))) {
-                        networkFieldName = nameStr;
-                    }
                     boolean nameFieldPresent = field.optBoolean(Constants.NAMEFIELD_FIELD);
                     if (nameFieldPresent) {
 
@@ -219,15 +213,6 @@ public class SalesforceObjectType {
      */
     public JSONObject getRawData() {
         return rawData;
-    }
-
-    /**
-     * Returns the name of the field used for network aware queries and searches.
-     *
-     * @return Network field name.
-     */
-    public String getNetworkFieldName() {
-        return networkFieldName;
     }
 
     @Override
