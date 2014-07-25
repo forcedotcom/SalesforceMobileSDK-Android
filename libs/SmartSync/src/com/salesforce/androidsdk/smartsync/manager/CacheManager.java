@@ -35,8 +35,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.text.TextUtils;
 import android.util.Log;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -62,7 +65,7 @@ public class CacheManager {
     private static final String SOUP_OF_SOUPS = "master_soup";
     private static final String SOUP_NAMES_KEY = "soup_names";
 
-    private static CacheManager INSTANCE;
+    private static Map<String, CacheManager> INSTANCES;
 
     private final SmartStore smartStore;
 
@@ -86,54 +89,136 @@ public class CacheManager {
     }
 
     /**
-     * Returns a singleton instance of this class.
+     * Returns the instance of this class associated with this user account.
      *
-     * @return Singleton instance of this class.
-     */
-    public static CacheManager getInstance() {
-        if (INSTANCE == null) {
-            INSTANCE = new CacheManager();
-        }
-        return INSTANCE;
-    }
-
-    /**
-     * Resets the cache manager. This method clears the in memory cache and
-     * the underlying cache in the database.
-     */
-    public static void hardReset() {
-        if (INSTANCE != null) {
-            INSTANCE.cleanCache();
-            INSTANCE = null;
-        }
-    }
-
-    /**
-     * Resets the cache manager. This method clears only the in memory cache.
-     */
-    public static void softReset() {
-        if (INSTANCE != null) {
-            INSTANCE.resetInMemoryCache();
-            INSTANCE = null;
-        }
-    }
-
-    /**
-     * Switches the context of the cache to the current account, by
-     * re-instantiating this class.
-     *
+     * @param account User account.
      * @return Instance of this class.
      */
-    public static CacheManager switchUserAccount() {
-        INSTANCE = new CacheManager();
-        return INSTANCE;
+    public static CacheManager getInstance(UserAccount account) {
+        return getInstance(account, null);
     }
 
     /**
-     * Private constructor.
+     * Returns the instance of this class associated with this user and community.
+     *
+     * @param account User account.
+     * @param communityId Community ID.
+     * @return Instance of this class.
      */
-    private CacheManager() {
-        smartStore = SmartSyncSDKManager.getInstance().getSmartStore();
+    public static CacheManager getInstance(UserAccount account, String communityId) {
+        if (account == null) {
+            account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
+        }
+        if (account == null) {
+            return null;
+        }
+        String uniqueId = account.getUserId();
+        if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
+            communityId = null;
+        }
+        if (!TextUtils.isEmpty(communityId)) {
+            uniqueId = uniqueId + communityId;
+        }
+        CacheManager instance = null;
+        if (INSTANCES == null) {
+            INSTANCES = new HashMap<String, CacheManager>();
+            instance = new CacheManager(account, communityId);
+            INSTANCES.put(uniqueId, instance);
+        } else {
+            instance = INSTANCES.get(uniqueId);
+        }
+        if (instance == null) {
+            instance = new CacheManager(account, communityId);
+            INSTANCES.put(uniqueId, instance);
+        }
+        instance.resetInMemoryCache();
+        return instance;
+    }
+
+    /**
+     * Resets the cache manager for this user account. This method clears
+     * only the in memory cache.
+     *
+     * @param account User account.
+     */
+    public static void softReset(UserAccount account) {
+        softReset(account, null);
+    }
+
+    /**
+     * Resets the cache manager for this user account. This method clears
+     * only the in memory cache.
+     *
+     * @param account User account.
+     * @param communityId Community ID.
+     */
+    public static void softReset(UserAccount account, String communityId) {
+        if (account == null) {
+            account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
+        }
+        if (account != null) {
+            String uniqueId = account.getUserId();
+            if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
+                communityId = null;
+            }
+            if (!TextUtils.isEmpty(communityId)) {
+                uniqueId = uniqueId + communityId;
+            }
+            if (getInstance(account, communityId) != null) {
+                getInstance(account, communityId).resetInMemoryCache();
+                if (INSTANCES != null) {
+                    INSTANCES.remove(uniqueId);
+                }
+            }
+        }
+    }
+
+    /**
+     * Resets the cache manager for this user account. This method clears
+     * the in memory cache and the underlying cache in the database.
+     *
+     * @param account User account.
+     */
+    public static void hardReset(UserAccount account) {
+        hardReset(account, null);
+    }
+
+    /**
+     * Resets the cache manager for this user account. This method clears
+     * the in memory cache and the underlying cache in the database.
+     *
+     * @param account User account.
+     * @param communityId Community ID.
+     */
+    public static void hardReset(UserAccount account, String communityId) {
+        if (account == null) {
+            account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
+        }
+        if (account != null) {
+            String uniqueId = account.getUserId();
+            if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
+                communityId = null;
+            }
+            if (!TextUtils.isEmpty(communityId)) {
+                uniqueId = uniqueId + communityId;
+            }
+            if (getInstance(account, communityId) != null) {
+                getInstance(account, communityId).cleanCache();
+                if (INSTANCES != null) {
+                    INSTANCES.remove(uniqueId);
+                }
+            }
+        }
+    }
+
+    /**
+     * Private parameterized constructor.
+     *
+     * @param account User account.
+     * @param communityId Community ID.
+     */
+    private CacheManager(UserAccount account, String communityId) {
+        smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
         resetInMemoryCache();
     }
 

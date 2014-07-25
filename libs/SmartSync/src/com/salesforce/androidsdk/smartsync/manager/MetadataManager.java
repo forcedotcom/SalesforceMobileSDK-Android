@@ -37,11 +37,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.text.TextUtils;
 import android.util.Log;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
-import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.smartsync.R;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager.CachePolicy;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
@@ -78,7 +80,7 @@ public class MetadataManager {
     private static final String REST_API_PATH = "services/data";
     private static final String RECENTLY_VIEWED = "RecentlyViewed";
 
-    private static MetadataManager INSTANCE;
+    private static Map<String, MetadataManager> INSTANCES;
 
     private String apiVersion;
     private CacheManager cacheManager;
@@ -86,34 +88,95 @@ public class MetadataManager {
     private String communityId;
 
     /**
-     * Returns a singleton instance of this class.
+     * Returns the instance of this class associated with this user account.
      *
-     * @param client RestClient instance.
-     * @return Singleton instance of this class.
+     * @param account User account.
+     * @return Instance of this class.
      */
-    public static MetadataManager getInstance(RestClient client) {
-        if (INSTANCE == null) {
-            INSTANCE = new MetadataManager(client);
+    public static MetadataManager getInstance(UserAccount account) {
+        return getInstance(account, null);
+    }
+
+    /**
+     * Returns the instance of this class associated with this user and community.
+     *
+     * @param account User account.
+     * @param communityId Community ID.
+     * @return Instance of this class.
+     */
+    public static MetadataManager getInstance(UserAccount account, String communityId) {
+        if (account == null) {
+            account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
         }
-        return INSTANCE;
+        if (account == null) {
+            return null;
+        }
+        String uniqueId = account.getUserId();
+        if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
+            communityId = null;
+        }
+        if (!TextUtils.isEmpty(communityId)) {
+            uniqueId = uniqueId + communityId;
+        }
+        MetadataManager instance = null;
+        if (INSTANCES == null) {
+            INSTANCES = new HashMap<String, MetadataManager>();
+            instance = new MetadataManager(account, communityId);
+            INSTANCES.put(uniqueId, instance);
+        } else {
+            instance = INSTANCES.get(uniqueId);
+        }
+        if (instance == null) {
+            instance = new MetadataManager(account, communityId);
+            INSTANCES.put(uniqueId, instance);
+        }
+        return instance;
     }
 
     /**
-     * Resets the metadata manager.
-     */
-    public static void reset() {
-        INSTANCE = null;
-    }
-
-    /**
-     * Private constructor.
+     * Resets the metadata manager associated with this user account.
      *
-     * @param client RestClient instance.
+     * @param account User account.
      */
-    private MetadataManager(RestClient client) {
+    public static void reset(UserAccount account) {
+        reset(account, null);
+    }
+
+    /**
+     * Resets the metadata manager associated with this user and community.
+     *
+     * @param account User account.
+     * @param communityId Community ID.
+     */
+    public static void reset(UserAccount account, String communityId) {
+        if (account == null) {
+            account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
+        }
+        if (account != null) {
+            String uniqueId = account.getUserId();
+            if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
+                communityId = null;
+            }
+            if (!TextUtils.isEmpty(communityId)) {
+                uniqueId = uniqueId + communityId;
+            }
+            if (INSTANCES != null) {
+                INSTANCES.remove(uniqueId);
+            }
+        }
+    }
+
+    /**
+     * Private parameterized constructor.
+     *
+     * @param account User account.
+     * @param communityId Community ID.
+     */
+    private MetadataManager(UserAccount account, String communityId) {
         apiVersion = ApiVersionStrings.VERSION_NUMBER;
-        cacheManager = CacheManager.getInstance();
-        networkManager = NetworkManager.getInstance(client);
+        this.communityId = communityId;
+        cacheManager = CacheManager.getInstance(account, communityId);
+        networkManager = NetworkManager.getInstance(account, communityId);
     }
 
     /**
@@ -129,9 +192,9 @@ public class MetadataManager {
      * Sets the cache manager to be used.
      *
      * @param cacheMgr CacheManager instance.
-     */
+     */   
     public void setCacheManager(CacheManager cacheMgr) {
-        cacheManager = cacheMgr;
+    	cacheManager = cacheMgr;
     }
 
     /**

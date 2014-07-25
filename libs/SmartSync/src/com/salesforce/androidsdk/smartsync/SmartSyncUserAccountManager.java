@@ -58,16 +58,17 @@ public class SmartSyncUserAccountManager extends UserAccountManagerWithSmartStor
 	@Override
 	public void switchToUser(UserAccount user) {
 		super.switchToUser(user);
-		CacheManager.softReset();
-		MetadataManager.reset();
-		NetworkManager.reset();
+		CacheManager.softReset(user);
+		MetadataManager.reset(user);
+		NetworkManager.reset(user);
 	}
 
 	@Override
 	public void switchToNewUser() {
 		super.switchToNewUser();
-		CacheManager.softReset();
-		MetadataManager.reset();
-		NetworkManager.reset();
+    	final UserAccount userAccount = SmartSyncUserAccountManager.getInstance().getCurrentUser();
+		CacheManager.softReset(userAccount);
+		MetadataManager.reset(userAccount);
+		NetworkManager.reset(userAccount);
 	}
 }

@@ -37,7 +37,9 @@ import android.test.InstrumentationTestCase;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.smartsync.TestCredentials;
 import com.salesforce.androidsdk.smartsync.TestForceApp;
@@ -64,6 +66,9 @@ public class CacheManagerTest extends InstrumentationTestCase {
     private static final String ALL_OBJECTS_CACHE_KEY = "all_objects";
     private static final String OBJECT_LAYOUT_BY_TYPE_CACHE_KEY = "object_layout_%s";
     private static final String RECORD_TYPE_GLOBAL = "global";
+	private static final String[] TEST_SCOPES = new String[] {"web"};
+	private static final String TEST_CALLBACK_URL = "test://callback";
+	private static final String TEST_AUTH_TOKEN = "test_auth_token";
 
     private Context targetContext;
     private EventsListenerQueue eq;
@@ -83,10 +88,23 @@ public class CacheManagerTest extends InstrumentationTestCase {
         if (SmartSyncSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
-    	MetadataManager.reset();
-    	CacheManager.hardReset();
-        metadataManager = MetadataManager.getInstance(initRestClient());
-        cacheManager = CacheManager.getInstance();
+        final LoginOptions loginOptions = new LoginOptions(TestCredentials.LOGIN_URL,
+        		null, TEST_CALLBACK_URL, TestCredentials.CLIENT_ID, TEST_SCOPES);
+        final ClientManager clientManager = new ClientManager(targetContext,
+        		TestCredentials.ACCOUNT_TYPE, loginOptions, true);
+        clientManager.createNewAccount(TestCredentials.ACCOUNT_NAME,
+        		TestCredentials.USERNAME, TestCredentials.REFRESH_TOKEN,
+        		TEST_AUTH_TOKEN, TestCredentials.INSTANCE_URL,
+        		TestCredentials.LOGIN_URL, TestCredentials.IDENTITY_URL,
+        		TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
+        		TestCredentials.USER_ID, null);
+    	MetadataManager.reset(null);
+    	CacheManager.hardReset(null);
+        metadataManager = MetadataManager.getInstance(null);
+        cacheManager = CacheManager.getInstance(null);
+        final NetworkManager networkManager = NetworkManager.getInstance(null);
+        networkManager.setRestClient(null, initRestClient());
+        metadataManager.setNetworkManager(networkManager);
     }
 
     @Override
@@ -96,8 +114,8 @@ public class CacheManagerTest extends InstrumentationTestCase {
             eq = null;
         }
     	httpAccess.resetNetwork();
-    	MetadataManager.reset();
-    	CacheManager.hardReset();
+    	MetadataManager.reset(null);
+    	CacheManager.hardReset(null);
         super.tearDown();
     }
 
@@ -132,7 +150,7 @@ public class CacheManagerTest extends InstrumentationTestCase {
     	assertNotNull("List of objects should not be null", objects);
     	assertTrue("List of objects should have 1 or more objects",
     			objects.size() > 0);
-    	CacheManager.softReset();
+    	CacheManager.softReset(null);
     	objects = cacheManager.readObjects(MRU_CACHE_TYPE,
     			String.format(MRU_BY_OBJECT_TYPE_CACHE_KEY, RECORD_TYPE_GLOBAL));
     	assertNotNull("List of objects should not be null", objects);
@@ -151,7 +169,7 @@ public class CacheManagerTest extends InstrumentationTestCase {
     	assertNotNull("List of objects should not be null", objects);
     	assertTrue("List of objects should have 1 or more objects",
     			objects.size() > 0);
-    	CacheManager.hardReset();
+    	CacheManager.hardReset(null);
     	objects = cacheManager.readObjects(MRU_CACHE_TYPE,
     			String.format(MRU_BY_OBJECT_TYPE_CACHE_KEY, RECORD_TYPE_GLOBAL));
     	assertNull("List of objects should be null", objects);
