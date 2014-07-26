@@ -28,17 +28,27 @@ package com.salesforce.androidsdk.smartsync.manager;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.http.entity.StringEntity;
 
+import android.text.TextUtils;
 import android.util.Log;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 
 /**
  * This class has APIs to perform HTTP requests against a Salesforce endpoint.
@@ -49,37 +59,115 @@ public class NetworkManager {
 
     private static final String TAG = "SmartSync: NetworkManager";
 
-    private static NetworkManager INSTANCE;
+    private static Map<String, NetworkManager> INSTANCES;
 
     private RestClient client;
 
     /**
-     * Returns a singleton instance of this class.
+     * Returns the instance of this class associated with this user account.
      *
-     * @param client Instance of RestClient.
-     * @return Singleton instance of this class.
+     * @param account User account.
+     * @return Instance of this class.
      */
-    public static NetworkManager getInstance(RestClient client) {
-        if (INSTANCE == null) {
-            INSTANCE = new NetworkManager(client);
+    public static NetworkManager getInstance(UserAccount account) {
+        return getInstance(account, null);
+    }
+
+    /**
+     * Returns the instance of this class associated with this user and community.
+     *
+     * @param account User account.
+     * @param communityId Community ID.
+     * @return Instance of this class.
+     */
+    public static NetworkManager getInstance(UserAccount account,
+            String communityId) {
+        if (account == null) {
+            account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
         }
-        return INSTANCE;
+        if (account == null) {
+            return null;
+        }
+        String uniqueId = account.getUserId();
+        if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
+            communityId = null;
+        }
+        if (!TextUtils.isEmpty(communityId)) {
+            uniqueId = uniqueId + communityId;
+        }
+        NetworkManager instance = null;
+        if (INSTANCES == null) {
+            INSTANCES = new HashMap<String, NetworkManager>();
+            instance = new NetworkManager(account, communityId);
+            INSTANCES.put(uniqueId, instance);
+        } else {
+            instance = INSTANCES.get(uniqueId);
+        }
+        if (instance == null) {
+            instance = new NetworkManager(account, communityId);
+            INSTANCES.put(uniqueId, instance);
+        }
+        return instance;
     }
 
     /**
-     * Resets the network manager.
-     */
-    public static void reset() {
-        INSTANCE = null;
-    }
-
-    /**
-     * Private constructor.
+     * Resets the network manager associated with this user account.
      *
-     * @param client RestClient instance.
+     * @param account User account.
      */
-    private NetworkManager(RestClient client) {
-        this.client = client;
+    public static void reset(UserAccount account) {
+        reset(account, null);
+    }
+
+    /**
+     * Resets the network manager associated with this user and community.
+     *
+     * @param account User account.
+     * @param communityId Community ID.
+     */
+    public static void reset(UserAccount account, String communityId) {
+        if (account == null) {
+            account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
+        }
+        if (account != null) {
+            String uniqueId = account.getUserId();
+            if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
+                communityId = null;
+            }
+            if (!TextUtils.isEmpty(communityId)) {
+                uniqueId = uniqueId + communityId;
+            }
+            if (INSTANCES != null) {
+                INSTANCES.remove(uniqueId);
+            }
+        }
+    }
+
+    /**
+     * Private parameterized constructor.
+     *
+     * @param account User account.
+     * @param communityId Community ID.
+     */
+    private NetworkManager(UserAccount account, String communityId) {
+        try {
+            final ClientManager clientManager = new ClientManager(SalesforceSDKManagerWithSmartStore.getInstance().getAppContext(),
+                    SalesforceSDKManagerWithSmartStore.getInstance().getAccountType(),
+                    SalesforceSDKManagerWithSmartStore.getInstance().getLoginOptions(),
+                    true);
+            final AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(clientManager,
+                    account.getAuthToken(), account.getRefreshToken());
+            final ClientInfo clientInfo = new ClientInfo(account.getClientId(),
+                    new URI(account.getInstanceServer()), new URI(account.getLoginServer()),
+                    new URI(account.getIdUrl()), account.getAccountName(),
+                    account.getUsername(), account.getUserId(), account.getOrgId(),
+                    account.getCommunityId(), account.getCommunityUrl());
+            client = new RestClient(clientInfo, account.getAuthToken(),
+                    HttpAccess.DEFAULT, authTokenProvider);
+        } catch (URISyntaxException e) {
+            Log.e(TAG, "Exception occurred while instantiating NetworkServiceManager", e);
+            client = null;
+        }
     }
 
     /**
@@ -171,11 +259,13 @@ public class NetworkManager {
     }
 
     /**
-     * Sets the RestClient instance associated with this network interface.
+     * Sets the RestClient instance associated with this user account.
+     * This is primarily used only by tests.
      *
+     * @param account User account.
      * @param client RestClient instance.
      */
-    public void setRestClient(RestClient client) {
-        INSTANCE.client = client;
+    public void setRestClient(UserAccount account, RestClient client) {
+        getInstance(account).client = client;
     }
 }

@@ -56,12 +56,12 @@ public class UserAccount {
 	public static final String CLIENT_ID = "clientId";
 	public static final String COMMUNITY_ID = "communityId";
 	public static final String COMMUNITY_URL = "communityUrl";
+	public static final String INTERNAL_COMMUNITY_ID = "000000000000000000";
 
 	private static final String TAG = "UserAccount";
 	private static final String INTERNAL_COMMUNITY_PATH = "internal";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
-	private static final String INTERNAL_COMMUNITY_ID = "000000000000000000";
 
 	private String authToken;
 	private String refreshToken;

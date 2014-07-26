@@ -41,7 +41,9 @@ import android.test.InstrumentationTestCase;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.smartsync.TestCredentials;
 import com.salesforce.androidsdk.smartsync.TestForceApp;
@@ -78,6 +80,9 @@ public class MetadataManagerTest extends InstrumentationTestCase {
 	private static final String ALL_OBJECTS_FILE = "all_objects.json";
 	private static final String ACCOUNT_METADATA_FILE = "account_metadata.json";
 	private static final String CASE_METADATA_FILE = "case_metadata.json";
+	private static final String[] TEST_SCOPES = new String[] {"web"};
+	private static final String TEST_CALLBACK_URL = "test://callback";
+	private static final String TEST_AUTH_TOKEN = "test_auth_token";
 
     private Context targetContext;
     private EventsListenerQueue eq;
@@ -96,9 +101,22 @@ public class MetadataManagerTest extends InstrumentationTestCase {
         if (SmartSyncSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
-    	MetadataManager.reset();
-    	CacheManager.hardReset();
-        metadataManager = MetadataManager.getInstance(initRestClient());
+        final LoginOptions loginOptions = new LoginOptions(TestCredentials.LOGIN_URL,
+        		null, TEST_CALLBACK_URL, TestCredentials.CLIENT_ID, TEST_SCOPES);
+        final ClientManager clientManager = new ClientManager(targetContext,
+        		TestCredentials.ACCOUNT_TYPE, loginOptions, true);
+        clientManager.createNewAccount(TestCredentials.ACCOUNT_NAME,
+        		TestCredentials.USERNAME, TestCredentials.REFRESH_TOKEN,
+        		TEST_AUTH_TOKEN, TestCredentials.INSTANCE_URL,
+        		TestCredentials.LOGIN_URL, TestCredentials.IDENTITY_URL,
+        		TestCredentials.CLIENT_ID, TestCredentials.ORG_ID,
+        		TestCredentials.USER_ID, null);
+    	MetadataManager.reset(null);
+    	CacheManager.hardReset(null);
+        metadataManager = MetadataManager.getInstance(null);
+        final NetworkManager networkManager = NetworkManager.getInstance(null);
+        networkManager.setRestClient(null, initRestClient());
+        metadataManager.setNetworkManager(networkManager);
     }
 
     @Override
@@ -108,8 +126,8 @@ public class MetadataManagerTest extends InstrumentationTestCase {
             eq = null;
         }
     	httpAccess.resetNetwork();
-    	MetadataManager.reset();
-    	CacheManager.hardReset();
+    	MetadataManager.reset(null);
+    	CacheManager.hardReset(null);
         super.tearDown();
     }
 

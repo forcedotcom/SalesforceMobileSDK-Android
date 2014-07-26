@@ -30,6 +30,7 @@ import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.smartsync.SmartSyncUserAccountManager;
@@ -170,14 +171,15 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
 
     @Override
     protected void cleanUp(Activity frontActivity, Account account) {
-    	MetadataManager.reset();
+    	final UserAccount userAccount = SmartSyncUserAccountManager.getInstance().buildUserAccount(account);
+    	MetadataManager.reset(userAccount);
 
     	/*
     	 * We don't have to do a hard reset on the cache manager here, since
     	 * the underlying database will be wiped in the super class.
     	 */
-    	CacheManager.softReset();
-    	NetworkManager.reset();
+    	CacheManager.softReset(userAccount);
+    	NetworkManager.reset(userAccount);
         super.cleanUp(frontActivity, account);
     }
 
