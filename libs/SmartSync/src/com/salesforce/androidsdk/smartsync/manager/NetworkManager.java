@@ -69,7 +69,7 @@ public class NetworkManager {
      * @param account User account.
      * @return Instance of this class.
      */
-    public static NetworkManager getInstance(UserAccount account) {
+    public static synchronized NetworkManager getInstance(UserAccount account) {
         return getInstance(account, null);
     }
 
@@ -80,7 +80,7 @@ public class NetworkManager {
      * @param communityId Community ID.
      * @return Instance of this class.
      */
-    public static NetworkManager getInstance(UserAccount account,
+    public static synchronized NetworkManager getInstance(UserAccount account,
             String communityId) {
         if (account == null) {
             account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
@@ -115,7 +115,7 @@ public class NetworkManager {
      *
      * @param account User account.
      */
-    public static void reset(UserAccount account) {
+    public static synchronized void reset(UserAccount account) {
         reset(account, null);
     }
 
@@ -125,7 +125,7 @@ public class NetworkManager {
      * @param account User account.
      * @param communityId Community ID.
      */
-    public static void reset(UserAccount account, String communityId) {
+    public static synchronized void reset(UserAccount account, String communityId) {
         if (account == null) {
             account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
         }

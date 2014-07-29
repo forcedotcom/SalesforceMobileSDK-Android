@@ -94,7 +94,7 @@ public class CacheManager {
      * @param account User account.
      * @return Instance of this class.
      */
-    public static CacheManager getInstance(UserAccount account) {
+    public static synchronized CacheManager getInstance(UserAccount account) {
         return getInstance(account, null);
     }
 
@@ -105,7 +105,7 @@ public class CacheManager {
      * @param communityId Community ID.
      * @return Instance of this class.
      */
-    public static CacheManager getInstance(UserAccount account, String communityId) {
+    public static synchronized CacheManager getInstance(UserAccount account, String communityId) {
         if (account == null) {
             account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
         }
@@ -141,7 +141,7 @@ public class CacheManager {
      *
      * @param account User account.
      */
-    public static void softReset(UserAccount account) {
+    public static synchronized void softReset(UserAccount account) {
         softReset(account, null);
     }
 
@@ -152,7 +152,7 @@ public class CacheManager {
      * @param account User account.
      * @param communityId Community ID.
      */
-    public static void softReset(UserAccount account, String communityId) {
+    public static synchronized void softReset(UserAccount account, String communityId) {
         if (account == null) {
             account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
         }
@@ -179,7 +179,7 @@ public class CacheManager {
      *
      * @param account User account.
      */
-    public static void hardReset(UserAccount account) {
+    public static synchronized void hardReset(UserAccount account) {
         hardReset(account, null);
     }
 
@@ -190,7 +190,7 @@ public class CacheManager {
      * @param account User account.
      * @param communityId Community ID.
      */
-    public static void hardReset(UserAccount account, String communityId) {
+    public static synchronized void hardReset(UserAccount account, String communityId) {
         if (account == null) {
             account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
         }

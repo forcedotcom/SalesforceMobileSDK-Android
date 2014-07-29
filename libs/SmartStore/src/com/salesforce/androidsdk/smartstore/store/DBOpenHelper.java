@@ -144,7 +144,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param ctx Context.
 	 * @param account User account.
 	 */
-	public static void deleteDatabase(Context ctx, UserAccount account) {
+	public static synchronized void deleteDatabase(Context ctx, UserAccount account) {
 		deleteDatabase(ctx, account, null);
 	}
 
@@ -155,7 +155,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param account User account.
 	 * @param communityId Community ID.
 	 */
-	public static void deleteDatabase(Context ctx, UserAccount account,
+	public static synchronized void deleteDatabase(Context ctx, UserAccount account,
 			String communityId) {
 		try {
 			if (account != null) {
