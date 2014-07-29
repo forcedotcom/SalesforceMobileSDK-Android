@@ -54,12 +54,12 @@ public class UserAccountManagerWithSmartStore extends UserAccountManager {
 	@Override
 	public void switchToUser(UserAccount user) {
 		super.switchToUser(user);
-		DBHelper.INSTANCE.clearMemoryCache();
+		DBHelper.getInstance().clearMemoryCache();
 	}
 
 	@Override
 	public void switchToNewUser() {
 		super.switchToNewUser();
-		DBHelper.INSTANCE.clearMemoryCache();
+		DBHelper.getInstance().clearMemoryCache();
 	}
 }

@@ -180,7 +180,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     	if (account != null) {
     		final UserAccount userAccount = getUserAccountManager().buildUserAccount(account);
     		if (userAccount != null && hasSmartStore(userAccount)) {
-            	DBHelper.INSTANCE.reset(getAppContext(), userAccount);
+            	DBHelper.getInstance().reset(getAppContext(), userAccount);
     		}
     	}
 
@@ -191,7 +191,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
          */
         final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
         if (users == null || users.size() <= 1) {
-        	DBHelper.INSTANCE.reset(getAppContext());
+        	DBHelper.getInstance().reset(getAppContext());
         }
         super.cleanUp(frontActivity, account);
     }

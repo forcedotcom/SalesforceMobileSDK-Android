@@ -52,8 +52,12 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
  * It also caches a number of of things to speed things up (e.g. soup table name, index specs, insert helpers etc)
  */
 public enum DBHelper  {
-	
+
 	INSTANCE;
+
+	public static synchronized DBHelper getInstance() {
+		return INSTANCE;
+	}
 
 	// Some queries
 	private static final String COUNT_SELECT = "SELECT count(*) FROM %s %s";
