@@ -121,7 +121,7 @@ public enum SmartSqlHelper  {
 	private String getColumnNameForPathForSmartSql(SQLiteDatabase db, String soupName, String path, int position) {
 		String columnName = null;
 		try {
-			columnName = DBHelper.INSTANCE.getColumnNameForPath(db, soupName, path);
+			columnName = DBHelper.getInstance().getColumnNameForPath(db, soupName, path);
 		}
 		catch (SmartStoreException e) {
 			reportSmartSqlError(e.getMessage(), position);
@@ -130,7 +130,7 @@ public enum SmartSqlHelper  {
 	}
 
 	private String getSoupTableNameForSmartSql(SQLiteDatabase db, String soupName, int position) {
-		String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+		String soupTableName = DBHelper.getInstance().getSoupTableName(db, soupName);
 		if (soupTableName == null) {
 			reportSmartSqlError("Unknown soup " + soupName, position);
 		}

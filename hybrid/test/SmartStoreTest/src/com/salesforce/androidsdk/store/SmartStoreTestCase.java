@@ -53,7 +53,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		DBHelper.INSTANCE.reset(targetContext, null); // start clean
+		DBHelper.getInstance().reset(targetContext, null); // start clean
 		db = getWritableDatabase();
 		store = new SmartStore(db);
 	}
@@ -75,7 +75,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	protected boolean hasTable(String tableName) {
 		Cursor c = null;
 		try {
-			c = DBHelper.INSTANCE.query(db, "sqlite_master", null, null, null, "type = ? and name = ?", "table", tableName);
+			c = DBHelper.getInstance().query(db, "sqlite_master", null, null, null, "type = ? and name = ?", "table", tableName);
 			return c.getCount() == 1;
 		}
 		finally {
@@ -194,6 +194,6 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	 * @return table name for soup
 	 */
 	protected String getSoupTableName(String soupName) {
-		return DBHelper.INSTANCE.getSoupTableName(db, soupName);
+		return DBHelper.getInstance().getSoupTableName(db, soupName);
 	}
 }
