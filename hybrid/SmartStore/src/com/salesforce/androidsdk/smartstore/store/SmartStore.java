@@ -202,69 +202,65 @@ public class SmartStore  {
 	 * @param soupTableName
 	 */
     protected void registerSoupUsingTableName(String soupName, IndexSpec[] indexSpecs, String soupTableName) {
-    	synchronized(SmartStore.class) {
 
-	        // Prepare SQL for creating soup table and its indices
-	        StringBuilder createTableStmt = new StringBuilder();          // to create new soup table
-	        List<String> createIndexStmts = new ArrayList<String>();      // to create indices on new soup table
-	        List<ContentValues> soupIndexMapInserts = new ArrayList<ContentValues>();  // to be inserted in soup index map table
-	
-	        createTableStmt.append("CREATE TABLE ").append(soupTableName).append(" (")
-	                        .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
-	                        .append(", ").append(SOUP_COL).append(" TEXT")
-	                        .append(", ").append(CREATED_COL).append(" INTEGER")
-	                        .append(", ").append(LAST_MODIFIED_COL).append(" INTEGER");
-	
-	        int i = 0;
-	        IndexSpec[] indexSpecsToCache = new IndexSpec[indexSpecs.length];
-	        for (IndexSpec indexSpec : indexSpecs) {
-	            // for create table
-	            String columnName = soupTableName + "_" + i;
-	            String columnType = indexSpec.type.getColumnType();
-	            createTableStmt.append(", ").append(columnName).append(" ").append(columnType);
-	
-	            // for insert
-	            ContentValues values = new ContentValues();
-	            values.put(SOUP_NAME_COL, soupName);
-	            values.put(PATH_COL, indexSpec.path);
-	            values.put(COLUMN_NAME_COL, columnName);
-	            values.put(COLUMN_TYPE_COL, indexSpec.type.toString());
-	            soupIndexMapInserts.add(values);
-	
-	            // for create index
-	            String indexName = soupTableName + "_" + i + "_idx";
-	            createIndexStmts.add(String.format("CREATE INDEX %s on %s ( %s )", indexName, soupTableName, columnName));;
-	
-	            // for the cache
-	            indexSpecsToCache[i] = new IndexSpec(indexSpec.path, indexSpec.type, columnName);
-	
-	            i++;
-	        }
-	        createTableStmt.append(")");
-	
-	        // Run SQL for creating soup table and its indices
-	        db.execSQL(createTableStmt.toString());
-	        for (String createIndexStmt : createIndexStmts) {
-	            db.execSQL(createIndexStmt.toString());
-	        }
-	
-	        try {
-	            db.beginTransaction();
-	            for (ContentValues values : soupIndexMapInserts) {
-	                DBHelper.INSTANCE.insert(db, SOUP_INDEX_MAP_TABLE, values);
-	            }
-	            db.setTransactionSuccessful();
-	
-	            // Add to soupNameToTableNamesMap
-	            DBHelper.INSTANCE.cacheTableName(soupName, soupTableName);
-	
-	            // Add to soupNameToIndexSpecsMap
-	            DBHelper.INSTANCE.cacheIndexSpecs(soupName, indexSpecsToCache);
-	        }
-	        finally {
-	            db.endTransaction();
-	        }
-    	}
+        // Prepare SQL for creating soup table and its indices
+        StringBuilder createTableStmt = new StringBuilder();          // to create new soup table
+        List<String> createIndexStmts = new ArrayList<String>();      // to create indices on new soup table
+        List<ContentValues> soupIndexMapInserts = new ArrayList<ContentValues>();  // to be inserted in soup index map table
+
+        createTableStmt.append("CREATE TABLE ").append(soupTableName).append(" (")
+                        .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
+                        .append(", ").append(SOUP_COL).append(" TEXT")
+                        .append(", ").append(CREATED_COL).append(" INTEGER")
+                        .append(", ").append(LAST_MODIFIED_COL).append(" INTEGER");
+
+        int i = 0;
+        IndexSpec[] indexSpecsToCache = new IndexSpec[indexSpecs.length];
+        for (IndexSpec indexSpec : indexSpecs) {
+            // for create table
+            String columnName = soupTableName + "_" + i;
+            String columnType = indexSpec.type.getColumnType();
+            createTableStmt.append(", ").append(columnName).append(" ").append(columnType);
+
+            // for insert
+            ContentValues values = new ContentValues();
+            values.put(SOUP_NAME_COL, soupName);
+            values.put(PATH_COL, indexSpec.path);
+            values.put(COLUMN_NAME_COL, columnName);
+            values.put(COLUMN_TYPE_COL, indexSpec.type.toString());
+            soupIndexMapInserts.add(values);
+
+            // for create index
+            String indexName = soupTableName + "_" + i + "_idx";
+            createIndexStmts.add(String.format("CREATE INDEX %s on %s ( %s )", indexName, soupTableName, columnName));;
+
+            // for the cache
+            indexSpecsToCache[i] = new IndexSpec(indexSpec.path, indexSpec.type, columnName);
+
+            i++;
+        }
+        createTableStmt.append(")");
+
+        // Run SQL for creating soup table and its indices
+        db.execSQL(createTableStmt.toString());
+        for (String createIndexStmt : createIndexStmts) {
+            db.execSQL(createIndexStmt.toString());
+        }
+        try {
+            db.beginTransaction();
+            for (ContentValues values : soupIndexMapInserts) {
+                DBHelper.INSTANCE.insert(db, SOUP_INDEX_MAP_TABLE, values);
+            }
+            db.setTransactionSuccessful();
+
+            // Add to soupNameToTableNamesMap
+            DBHelper.INSTANCE.cacheTableName(soupName, soupTableName);
+
+            // Add to soupNameToIndexSpecsMap
+            DBHelper.INSTANCE.cacheIndexSpecs(soupName, indexSpecsToCache);
+        } finally {
+            db.endTransaction();
+        }
     }
     
 	/**
