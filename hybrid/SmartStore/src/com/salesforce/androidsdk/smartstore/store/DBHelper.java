@@ -307,7 +307,7 @@ public enum DBHelper  {
 	 *
 	 * @param ctx Context.
 	 */
-	public void reset(Context ctx) {
+	public synchronized void reset(Context ctx) {
 		clearMemoryCache();
 		final List<UserAccount> accounts = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getAuthenticatedUsers();
 		if (accounts != null) {
@@ -323,7 +323,7 @@ public enum DBHelper  {
 	 * @param ctx Context.
 	 * @param account User account.
 	 */
-	public void reset(Context ctx, UserAccount account) {
+	public synchronized void reset(Context ctx, UserAccount account) {
 		clearMemoryCache();
 		DBOpenHelper.deleteDatabase(ctx, account);
 	}
@@ -331,7 +331,7 @@ public enum DBHelper  {
 	/**
 	 * Resets all cached data from memory.
 	 */
-	public void clearMemoryCache() {
+	public synchronized void clearMemoryCache() {
 
 		// Closes all statements.
 		for (final InsertHelper  ih : tableNameToInsertHelpersMap.values()) {

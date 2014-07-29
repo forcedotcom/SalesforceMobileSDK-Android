@@ -202,6 +202,7 @@ public class SmartStore  {
 	 * @param soupTableName
 	 */
     protected void registerSoupUsingTableName(String soupName, IndexSpec[] indexSpecs, String soupTableName) {
+
         // Prepare SQL for creating soup table and its indices
         StringBuilder createTableStmt = new StringBuilder();          // to create new soup table
         List<String> createIndexStmts = new ArrayList<String>();      // to create indices on new soup table
@@ -245,7 +246,6 @@ public class SmartStore  {
         for (String createIndexStmt : createIndexStmts) {
             db.execSQL(createIndexStmt.toString());
         }
-
         try {
             db.beginTransaction();
             for (ContentValues values : soupIndexMapInserts) {
@@ -258,8 +258,7 @@ public class SmartStore  {
 
             // Add to soupNameToIndexSpecsMap
             DBHelper.INSTANCE.cacheIndexSpecs(soupName, indexSpecsToCache);
-        }
-        finally {
+        } finally {
             db.endTransaction();
         }
     }
@@ -271,8 +270,10 @@ public class SmartStore  {
      * @return true if soup exists, false otherwise
      */
     public boolean hasSoup(String soupName) {
+    	synchronized(SmartStore.class) {
     		return DBHelper.INSTANCE.getSoupTableName(db, soupName) != null;
     	}
+    }
 
     /**
      * Destroy a soup
