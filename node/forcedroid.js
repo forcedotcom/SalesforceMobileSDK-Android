@@ -39,6 +39,10 @@ var outputColors = require('../external/shared/node/outputColors');
 var commandLineUtils = require('../external/shared/node/commandLineUtils');
 var shelljs = require('shelljs') ;
 var fs = require('fs'); 
+var cordovaHelper = require('../external/shared/node/cordovaHelper');
+var miscUtils = require('../external/shared/node/utils');
+
+var minimumCordovaVersion = '3.5';
 
 // Calling main
 main(process.argv);
@@ -159,6 +163,20 @@ function createApp(config) {
 function createHybridApp(config) {
     config.projectDir = path.join(config.targetdir, config.appname);
     // console.log("Config:" + JSON.stringify(config, null, 2));
+
+    // Make sure the Cordova CLI client exists.
+    var cordovaCliVersion = cordovaHelper.getCordovaCliVersion();
+    if (cordovaCliVersion === null) {
+        console.log('cordova command line tool could not be found.  Make sure you install the cordova CLI from https://www.npmjs.org/package/cordova.');
+        process.exit(6);
+    }
+
+    var minimumCordovaVersionNum = miscUtils.getVersionNumberFromString(minimumCordovaVersion);
+    var cordovaCliVersionNum = miscUtils.getVersionNumberFromString(cordovaCliVersion);
+    if (cordovaCliVersionNum < minimumCordovaVersionNum) {
+        console.log('Installed cordova command line tool version (' + cordovaCliVersion + ') is less than the minimum required version (' + minimumCordovaVersion + ').  Please update your version of Cordova.');
+        process.exit(7);
+    }
 
     shelljs.exec('cordova create ' + config.projectDir + ' ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
