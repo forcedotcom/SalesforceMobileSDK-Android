@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -63,10 +63,12 @@ import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
  */
 public class RestClient {
 
+	private static Map<String, RequestQueue> REQUEST_QUEUES;
+
 	private ClientInfo clientInfo;
 	private RequestQueue requestQueue;
 	private SalesforceHttpStack httpStack;
-	
+
 	/** 
 	 * AuthTokenProvider interface.
 	 * RestClient will call its authTokenProvider to refresh its authToken once it has expired. 
@@ -105,10 +107,31 @@ public class RestClient {
 	public RestClient(ClientInfo clientInfo, SalesforceHttpStack httpStack) {
 		this.clientInfo = clientInfo;
 		this.httpStack = httpStack;
-		this.requestQueue = new RequestQueue(new NoCache(), new BasicNetwork(httpStack));
-		this.requestQueue.start();
+		setRequestQueue();
 	}
-	
+
+	/**
+	 * Sets the request queue associated with this user account. The request
+	 * queues are cached in a map and reused as and when a user account
+	 * switch occurs, to prevent multiple threads being spawned unnecessarily.
+	 */
+	private synchronized void setRequestQueue() {
+		if (REQUEST_QUEUES == null) {
+			REQUEST_QUEUES = new HashMap<String, RequestQueue>();
+		}
+		final String uniqueId = clientInfo.userId + clientInfo.orgId;
+		RequestQueue queue = null;
+		if (uniqueId != null) {
+			queue = REQUEST_QUEUES.get(uniqueId);
+			if (queue == null) {
+				queue = new RequestQueue(new NoCache(), new BasicNetwork(httpStack));
+				queue.start();
+				REQUEST_QUEUES.put(uniqueId, queue);
+			}
+		}
+		this.requestQueue = queue;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -121,7 +144,7 @@ public class RestClient {
 		  .append("}\n");
 		return sb.toString();
 	}
-	
+
 	/**
 	 * @return The authToken for this RestClient.
 	 */
