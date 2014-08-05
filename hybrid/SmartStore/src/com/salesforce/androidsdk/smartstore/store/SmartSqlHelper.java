@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,7 +26,9 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,9 +42,27 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException
  * 
  * Singleton class that provides helpful methods for converting/running "smart" sql
  */
-public enum SmartSqlHelper  {
-	
-	INSTANCE;
+public class SmartSqlHelper  {
+
+	private static Map<SQLiteDatabase, SmartSqlHelper> INSTANCES;
+
+	/**
+	 * Returns the instance of this class associated with the database specified.
+	 *
+	 * @param db Database.
+	 * @return Instance of this class.
+	 */
+	public static synchronized SmartSqlHelper getInstance(SQLiteDatabase db) {
+		if (INSTANCES == null) {
+			INSTANCES = new HashMap<SQLiteDatabase, SmartSqlHelper>();
+		}
+		SmartSqlHelper instance = INSTANCES.get(db);
+		if (instance == null) {
+			instance = new SmartSqlHelper();
+			INSTANCES.put(db, instance);
+		}
+		return instance;
+	}
 
     public static final String SOUP = "_soup";
 	
@@ -60,13 +80,13 @@ public enum SmartSqlHelper  {
 	 */
 	public String convertSmartSql(SQLiteDatabase db, String smartSql) {
 		Log.i("SmartSqlHelper.convertSmartSql", "smart sql = " + smartSql);
-		
+
 		// Select's only
 		String smartSqlLowerCase = smartSql.toLowerCase(Locale.getDefault()).trim();
 		if (smartSqlLowerCase.startsWith("insert") || smartSqlLowerCase.startsWith("update") || smartSqlLowerCase.startsWith("delete")) {
 			throw new SmartSqlException("Only SELECT are supported");
 		}
-		
+
 		// Replacing {soupName} and {soupName:path}
 		Pattern pattern  = Pattern.compile("\\{([^}]+)\\}");
 		StringBuffer sql = new StringBuffer();
@@ -75,7 +95,6 @@ public enum SmartSqlHelper  {
 			String fullMatch = matcher.group();
 			String match = matcher.group(1);
 			int position = matcher.start();
-
 			String[] parts = match.split(":");
 			String soupName = parts[0];
 			String soupTableName = getSoupTableNameForSmartSql(db, soupName, position);
@@ -105,32 +124,29 @@ public enum SmartSqlHelper  {
 					String columnName = getColumnNameForPathForSmartSql(db, soupName, path, position);
 					matcher.appendReplacement(sql, columnName);
 				}
-			}
-			else if (parts.length > 2) {
+			} else if (parts.length > 2) {
 				reportSmartSqlError("Invalid soup/path reference " + fullMatch, position);
 			}
 		}
 		matcher.appendTail(sql);
-		
+
 		// Done
 		Log.i("SmartSqlHelper.convertSmartSql", "sql = " + sql);
-		
 		return sql.toString();
 	}
 	
 	private String getColumnNameForPathForSmartSql(SQLiteDatabase db, String soupName, String path, int position) {
 		String columnName = null;
 		try {
-			columnName = DBHelper.INSTANCE.getColumnNameForPath(db, soupName, path);
-		}
-		catch (SmartStoreException e) {
+			columnName = DBHelper.getInstance(db).getColumnNameForPath(db, soupName, path);
+		} catch (SmartStoreException e) {
 			reportSmartSqlError(e.getMessage(), position);
 		}
 		return columnName;
 	}
 
 	private String getSoupTableNameForSmartSql(SQLiteDatabase db, String soupName, int position) {
-		String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+		String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 		if (soupTableName == null) {
 			reportSmartSqlError("Unknown soup " + soupName, position);
 		}
@@ -140,8 +156,6 @@ public enum SmartSqlHelper  {
 	private void reportSmartSqlError(String message, int position) {
 		throw new SmartSqlException(message + " at character " + position);
 	}
-		
-
     
     /**
      * Exception thrown when smart sql failed to be parsed
@@ -154,5 +168,4 @@ public enum SmartSqlHelper  {
     		super(message);
     	}
     }
-	
 }

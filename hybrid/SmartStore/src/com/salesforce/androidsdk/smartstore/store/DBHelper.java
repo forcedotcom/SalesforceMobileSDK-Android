@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -51,31 +51,48 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
  * Singleton class that provides helpful methods for accessing the database underneath the SmartStore
  * It also caches a number of of things to speed things up (e.g. soup table name, index specs, insert helpers etc)
  */
-public enum DBHelper  {
-	
-	INSTANCE;
+public class DBHelper {
+
+	private static Map<SQLiteDatabase, DBHelper> INSTANCES;
+
+	/**
+	 * Returns the instance of this class associated with the database specified.
+	 *
+	 * @param db Database.
+	 * @return Instance of this class.
+	 */
+	public static synchronized DBHelper getInstance(SQLiteDatabase db) {
+		if (INSTANCES == null) {
+			INSTANCES = new HashMap<SQLiteDatabase, DBHelper>();
+		}
+		DBHelper instance = INSTANCES.get(db);
+		if (instance == null) {
+			instance = new DBHelper();
+			INSTANCES.put(db, instance);
+		}
+		return instance;
+	}
 
 	// Some queries
 	private static final String COUNT_SELECT = "SELECT count(*) FROM %s %s";
 	private static final String SEQ_SELECT = "SELECT seq FROM SQLITE_SEQUENCE WHERE name = ?";
 	private static final String LIMIT_SELECT = "SELECT * FROM (%s) LIMIT %s";
-	
+
 	// Cache of soup name to soup table names
 	private Map<String, String> soupNameToTableNamesMap = new HashMap<String, String>();
-	
+
 	// Cache of soup name to index specs
 	private Map<String, IndexSpec[]> soupNameToIndexSpecsMap = new HashMap<String, IndexSpec[]>();
-	
+
 	// Cache of table name to get-next-id compiled statements
 	private Map<String, SQLiteStatement> tableNameToNextIdStatementsMap = new HashMap<String, SQLiteStatement>();
-	
+
 	// Cache of table name to insert helpers
 	private Map<String, InsertHelper> tableNameToInsertHelpersMap = new HashMap<String, InsertHelper>();
-	
+
 	// Cache of raw count sql to compiled statements
 	private Map<String, SQLiteStatement> rawCountSqlToStatementsMap = new HashMap<String, SQLiteStatement>();
-	
-	
+
 	/**
 	 * @param soupName
 	 * @param tableName
@@ -83,7 +100,7 @@ public enum DBHelper  {
 	public void cacheTableName(String soupName, String tableName) {
 		soupNameToTableNamesMap.put(soupName, tableName);
 	}
-	
+
 	/**
 	 * @param soupName
 	 * @return
@@ -91,7 +108,7 @@ public enum DBHelper  {
 	public String getCachedTableName(String soupName) {
 		return soupNameToTableNamesMap.get(soupName);
 	}
-	
+
 	/**
 	 * @param soupName
 	 * @param tableName
@@ -107,7 +124,7 @@ public enum DBHelper  {
 	public IndexSpec[] getCachedIndexSpecs(String soupName) {
 		return soupNameToIndexSpecsMap.get(soupName);
 	}
-	
+
 	/**
 	 * @param soupName
 	 */
@@ -143,7 +160,7 @@ public enum DBHelper  {
 			rawCountSqlToStatementsMap.remove(countSql);
 		}
 	}
-	
+
 	/**
 	 * Get next id for a table
 	 * 
@@ -158,7 +175,6 @@ public enum DBHelper  {
 			prog.bindString(1, tableName);
 			tableNameToNextIdStatementsMap.put(tableName, prog);
 		}
-		
 		try {
 			return prog.simpleQueryForLong() + 1;
 		} catch (SQLiteDoneException e) {
@@ -174,7 +190,6 @@ public enum DBHelper  {
 	 */
 	public InsertHelper getInsertHelper(SQLiteDatabase db, String table) {
 		InsertHelper insertHelper = tableNameToInsertHelpersMap.get(table);
-
 		if (insertHelper == null) {
 			insertHelper = new InsertHelper(db, table);
 			tableNameToInsertHelpersMap.put(table, insertHelper);
@@ -195,7 +210,7 @@ public enum DBHelper  {
 		String sql = String.format(COUNT_SELECT, table, selectionStr);
 		return db.rawQuery(sql, whereArgs);
 	}
-	
+
 	/**
 	 * Does a limit for a raw query
 	 * @param db
@@ -222,14 +237,11 @@ public enum DBHelper  {
 			prog = db.compileStatement(countSql);
 			rawCountSqlToStatementsMap.put(countSql, prog);
 		}
-		
-		
 		if (whereArgs != null) {
 			for (int i=0; i<whereArgs.length; i++) {
 				prog.bindString(i+1, whereArgs[i]);
 			}
 		}
-		
 		try {
 			int count =  (int) prog.simpleQueryForLong();
 			prog.clearBindings();
@@ -238,7 +250,7 @@ public enum DBHelper  {
 			return -1;
 		}
 	}
-	
+
 	/**
 	 * Does a count for a raw query
 	 * @param db
@@ -250,7 +262,7 @@ public enum DBHelper  {
 		String countSql = String.format(COUNT_SELECT, "", "(" + sql + ")");
 		return countRawCountQuery(db, countSql, whereArgs);
 	}
-	
+
 	/**
 	 * Runs a query
 	 * @param db
@@ -290,7 +302,7 @@ public enum DBHelper  {
 	public int update(SQLiteDatabase db, String table, ContentValues contentValues, String whereClause, String... whereArgs) {
 		return db.update(table, contentValues, whereClause, whereArgs);
 	}
-	
+
 	/**
 	 * Does a delete (after first logging the delete statement)
 	 * @param db
@@ -366,8 +378,8 @@ public enum DBHelper  {
             }
         }
         throw new SmartStoreException(String.format("%s does not have an index on %s", soupName, path));
-    }	
-	
+    }
+
     /**
      * Read index specs back from the soup index map table
      * @param db
@@ -380,7 +392,6 @@ public enum DBHelper  {
             indexSpecs = getIndexSpecsFromDb(db, soupName);
             cacheIndexSpecs(soupName, indexSpecs);
         }
-
         return indexSpecs;
     }
 
@@ -393,23 +404,20 @@ public enum DBHelper  {
             if (!cursor.moveToFirst()) {
                 throw new SmartStoreException(String.format("%s does not have any indices", soupName));
             }
-
             List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
             do {
                 String path = cursor.getString(cursor.getColumnIndex(SmartStore.PATH_COL));
                 String columnName = cursor.getString(cursor.getColumnIndex(SmartStore.COLUMN_NAME_COL));
                 Type columnType = Type.valueOf(cursor.getString(cursor.getColumnIndex(SmartStore.COLUMN_TYPE_COL)));
                 indexSpecs.add(new IndexSpec(path, columnType, columnName));
-            }
-            while (cursor.moveToNext());
-
+            } while (cursor.moveToNext());
             return indexSpecs.toArray(new IndexSpec[0]);
         }
         finally {
             safeClose(cursor);
         }
     }
-    
+
     /**
      * Return table name for a given soup or null if the soup doesn't exist
      * @param db
@@ -426,7 +434,6 @@ public enum DBHelper  {
            // Note: if you ask twice about a non-existing soup, we go to the database both times
            //       we could optimize for that scenario but it doesn't seem very important
        }
-
        return soupTableName;
    }
 
@@ -438,13 +445,12 @@ public enum DBHelper  {
                return null;
            }
            return SmartStore.getSoupTableName(cursor.getLong(cursor.getColumnIndex(SmartStore.ID_COL)));
-       }
-       finally {
+       	}
+       	finally {
            safeClose(cursor);
-       }
-   }
-    
-    
+       	}
+   	}
+
     /**
      * @param cursor
      */
