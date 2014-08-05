@@ -180,11 +180,10 @@ public class SmartStore  {
 	        soupMapValues.put(SOUP_NAME_COL, soupName);
 	        try {
 	            db.beginTransaction();
-	            long soupId = DBHelper.INSTANCE.insert(db, SOUP_NAMES_TABLE, soupMapValues);
+	            long soupId = DBHelper.getInstance(db).insert(db, SOUP_NAMES_TABLE, soupMapValues);
 	            soupTableName = getSoupTableName(soupId);
 	            db.setTransactionSuccessful();
-	        }
-	        finally {
+	        } finally {
 	            db.endTransaction();
 	        }
 	        
@@ -249,15 +248,15 @@ public class SmartStore  {
         try {
             db.beginTransaction();
             for (ContentValues values : soupIndexMapInserts) {
-                DBHelper.INSTANCE.insert(db, SOUP_INDEX_MAP_TABLE, values);
+                DBHelper.getInstance(db).insert(db, SOUP_INDEX_MAP_TABLE, values);
             }
             db.setTransactionSuccessful();
 
             // Add to soupNameToTableNamesMap
-            DBHelper.INSTANCE.cacheTableName(soupName, soupTableName);
+            DBHelper.getInstance(db).cacheTableName(soupName, soupTableName);
 
             // Add to soupNameToIndexSpecsMap
-            DBHelper.INSTANCE.cacheIndexSpecs(soupName, indexSpecsToCache);
+            DBHelper.getInstance(db).cacheIndexSpecs(soupName, indexSpecsToCache);
         } finally {
             db.endTransaction();
         }
@@ -271,7 +270,7 @@ public class SmartStore  {
      */
     public boolean hasSoup(String soupName) {
     	synchronized(SmartStore.class) {
-    		return DBHelper.INSTANCE.getSoupTableName(db, soupName) != null;
+    		return DBHelper.getInstance(db).getSoupTableName(db, soupName) != null;
     	}
     }
 
@@ -284,17 +283,17 @@ public class SmartStore  {
      */
     public void dropSoup(String soupName) {
     	synchronized(SmartStore.class) {
-	        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName != null) {
 	            db.execSQL("DROP TABLE IF EXISTS " + soupTableName);
 	            try {
 	                db.beginTransaction();
-	                DBHelper.INSTANCE.delete(db, SOUP_NAMES_TABLE, SOUP_NAME_PREDICATE, soupName);
-	                DBHelper.INSTANCE.delete(db, SOUP_INDEX_MAP_TABLE, SOUP_NAME_PREDICATE, soupName);
+	                DBHelper.getInstance(db).delete(db, SOUP_NAMES_TABLE, SOUP_NAME_PREDICATE, soupName);
+	                DBHelper.getInstance(db).delete(db, SOUP_INDEX_MAP_TABLE, SOUP_NAME_PREDICATE, soupName);
 	                db.setTransactionSuccessful();
 	
 	                // Remove from cache
-	                DBHelper.INSTANCE.removeFromCache(soupName);
+	                DBHelper.getInstance(db).removeFromCache(soupName);
 	            }
 	            finally {
 	                db.endTransaction();
@@ -323,7 +322,7 @@ public class SmartStore  {
 	    	List<String> soupNames = new ArrayList<String>();
 	        Cursor cursor = null;
 	        try {
-	            cursor = DBHelper.INSTANCE.query(db, SOUP_NAMES_TABLE, new String[] {SOUP_NAME_COL}, null, null, null);
+	            cursor = DBHelper.getInstance(db).query(db, SOUP_NAMES_TABLE, new String[] {SOUP_NAME_COL}, null, null, null);
 	            if (cursor.moveToFirst()) {
 	                do {
 	                    soupNames.add(cursor.getString(0));
@@ -357,9 +356,7 @@ public class SmartStore  {
 	    	
 	    	Cursor cursor = null;
 	    	try {
-	
-	    		cursor = DBHelper.INSTANCE.limitRawQuery(db, sql, limit, querySpec.getArgs());
-	
+	    		cursor = DBHelper.getInstance(db).limitRawQuery(db, sql, limit, querySpec.getArgs());
 	            JSONArray results = new JSONArray();
 	            if (cursor.moveToFirst()) {
 	                do {
@@ -371,13 +368,10 @@ public class SmartStore  {
 	                	else {
 	                		results.put(new JSONObject(cursor.getString(0)));
 	                	}
-	                }
-	                while (cursor.moveToNext());
+	                } while (cursor.moveToNext());
 	            }
-	
 	            return results;
-	    	}
-	    	finally {
+	    	} finally {
 	    		safeClose(cursor);
 	    	}
     	}
@@ -437,7 +431,7 @@ public class SmartStore  {
 	public int countQuery(QuerySpec querySpec) {
     	synchronized(SmartStore.class) {
 			String countSql = convertSmartSql(querySpec.countSmartSql);
-			return DBHelper.INSTANCE.countRawCountQuery(db, countSql, querySpec.getArgs());
+			return DBHelper.getInstance(db).countRawCountQuery(db, countSql, querySpec.getArgs());
     	}
 	}
 
@@ -447,7 +441,7 @@ public class SmartStore  {
 	 */
 	public String convertSmartSql(String smartSql) {
     	synchronized(SmartStore.class) {
-    		return SmartSqlHelper.INSTANCE.convertSmartSql(db, smartSql);
+    		return SmartSqlHelper.getInstance(db).convertSmartSql(db, smartSql);
     	}
 	}
 
@@ -476,9 +470,9 @@ public class SmartStore  {
      */
     public JSONObject create(String soupName, JSONObject soupElt, boolean handleTx) throws JSONException {
     	synchronized(SmartStore.class) {
-	        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
-	        IndexSpec[] indexSpecs = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
+	        IndexSpec[] indexSpecs = DBHelper.getInstance(db).getIndexSpecs(db, soupName);
 	
 	        try {
 	            if (handleTx) {
@@ -486,7 +480,7 @@ public class SmartStore  {
 	            }
 	
 	            long now = System.currentTimeMillis();
-	            long soupEntryId = DBHelper.INSTANCE.getNextId(db, soupTableName);
+	            long soupEntryId = DBHelper.getInstance(db).getNextId(db, soupTableName);
 	
 	            // Adding fields to soup element
 	            soupElt.put(SOUP_ENTRY_ID, soupEntryId);
@@ -502,7 +496,7 @@ public class SmartStore  {
 	            }
 	
 	            // Inserting into database
-	            boolean success = DBHelper.INSTANCE.insert(db, soupTableName, contentValues) == soupEntryId;
+	            boolean success = DBHelper.getInstance(db).insert(db, soupTableName, contentValues) == soupEntryId;
 	
 	            // Commit if successful
 	            if (success) {
@@ -510,12 +504,10 @@ public class SmartStore  {
 	                    db.setTransactionSuccessful();
 	                }
 	                return soupElt;
-	            }
-	            else {
+	            } else {
 	                return null;
 	            }
-	        }
-	        finally {
+	        } finally {
 	            if (handleTx) {
 	                db.endTransaction();
 	            }
@@ -549,12 +541,12 @@ public class SmartStore  {
      */
     public JSONArray retrieve(String soupName, Long... soupEntryIds) throws JSONException {
     	synchronized(SmartStore.class) {
-	        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 	        Cursor cursor = null;
 	        try {
 	            JSONArray result = new JSONArray();
-	            cursor = DBHelper.INSTANCE.query(db, soupTableName, new String[] {SOUP_COL}, null, null, getSoupEntryIdsPredicate(soupEntryIds), (String[]) null);
+	            cursor = DBHelper.getInstance(db).query(db, soupTableName, new String[] {SOUP_COL}, null, null, getSoupEntryIdsPredicate(soupEntryIds), (String[]) null);
 	            if (!cursor.moveToFirst()) {
 	                return result;
 	            }
@@ -599,9 +591,9 @@ public class SmartStore  {
      */
     public JSONObject update(String soupName, JSONObject soupElt, long soupEntryId, boolean handleTx) throws JSONException {
     	synchronized(SmartStore.class) {
-	        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
-	        IndexSpec[] indexSpecs = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
+	        IndexSpec[] indexSpecs = DBHelper.getInstance(db).getIndexSpecs(db, soupName);
 	
 	        long now = System.currentTimeMillis();
 	
@@ -622,18 +614,16 @@ public class SmartStore  {
 	            if (handleTx) {
 	                db.beginTransaction();
 	            }
-	            boolean success = DBHelper.INSTANCE.update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "") == 1;
+	            boolean success = DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "") == 1;
 	            if (success) {
 	                if (handleTx) {
 	                    db.setTransactionSuccessful();
 	                }
 	                return soupElt;
-	            }
-	            else {
+	            } else {
 	                return null;
 	            }
-	        }
-	        finally {
+	        } finally {
 	            if (handleTx) {
 	                db.endTransaction();
 	            }
@@ -684,8 +674,7 @@ public class SmartStore  {
 	            if (soupElt.has(SOUP_ENTRY_ID)) {
 	                entryId = soupElt.getLong(SOUP_ENTRY_ID);
 	            }
-	        }
-	        else {
+	        } else {
 	            Object externalIdObj = project(soupElt, externalIdPath);
 	            if (externalIdObj != null) {
 	                entryId = lookupSoupEntryId(soupName, externalIdPath, externalIdObj + "");
@@ -695,8 +684,7 @@ public class SmartStore  {
 	        // If we have an entryId, let's do an update, otherwise let's do a create
 	        if (entryId != -1) {
 	            return update(soupName, soupElt, entryId, handleTx);
-	        }
-	        else {
+	        } else {
 	            return create(soupName, soupElt, handleTx);
 	        }
     	}
@@ -715,9 +703,9 @@ public class SmartStore  {
      */
     public long lookupSoupEntryId(String soupName, String fieldPath, String fieldValue) {
     	synchronized(SmartStore.class) {
-	        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
-	        String columnName = DBHelper.INSTANCE.getColumnNameForPath(db, soupName, fieldPath);
+	        String columnName = DBHelper.getInstance(db).getColumnNameForPath(db, soupName, fieldPath);
 	
 	        Cursor cursor = null;
 	        try {
@@ -727,12 +715,10 @@ public class SmartStore  {
 	            }
 	            if (cursor.moveToFirst()) {
 	                return cursor.getLong(0);
-	            }
-	            else {
+	            } else {
 	                return -1; // not found
 	            }
-	        }
-	        finally {
+	        } finally {
 	            safeClose(cursor);
 	        }
     	}
@@ -757,20 +743,17 @@ public class SmartStore  {
      */
     public void delete(String soupName, Long[] soupEntryIds, boolean handleTx) {
     	synchronized(SmartStore.class) {
-	        String soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
-	
 	        if (handleTx) {
 	            db.beginTransaction();
 	        }
-	
 	        try {
 	            db.delete(soupTableName, getSoupEntryIdsPredicate(soupEntryIds), (String []) null);
 	            if (handleTx) {
 	                db.setTransactionSuccessful();
 	            }
-	        }
-	        finally {
+	        } finally {
 	            if (handleTx) {
 	                db.endTransaction();
 	            }
@@ -815,7 +798,6 @@ public class SmartStore  {
         if (path == null || path.equals("")) {
             return soup;
         }
-
         String[] pathElements = path.split("[.]");
         Object o = soup;
         for (String pathElement : pathElements) {
@@ -856,5 +838,4 @@ public class SmartStore  {
         private static final long serialVersionUID = -6369452803270075464L;
 
     }
-
 }
