@@ -212,9 +212,10 @@ public class SmartStoreInspectorActivityTest extends
 	}
 
 	private void createStore() {
-		DBHelper.INSTANCE.reset(targetContext, null); // start clean
+		DBOpenHelper.deleteDatabase(targetContext, null);
 		SQLiteDatabase db = DBOpenHelper.getOpenHelper(targetContext, null)
 				.getWritableDatabase("");
+		DBHelper.getInstance(db).clearMemoryCache();
 		store = new SmartStore(db);
 	}
 
