@@ -36,9 +36,7 @@ import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.accounts.UserAccountManagerWithSmartStore;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -180,7 +178,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     	if (account != null) {
     		final UserAccount userAccount = getUserAccountManager().buildUserAccount(account);
     		if (userAccount != null && hasSmartStore(userAccount)) {
-            	DBHelper.INSTANCE.reset(getAppContext(), userAccount);
+    			DBOpenHelper.deleteDatabase(getAppContext(), userAccount);
     		}
     	}
 
@@ -190,15 +188,10 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
          * case, we can safely reset all DBs.
          */
         final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
-        if (users == null || users.size() <= 1) {
-        	DBHelper.INSTANCE.reset(getAppContext());
+        if (users != null && users.size() == 1) {
+			DBOpenHelper.deleteDatabase(getAppContext(), users.get(0));
         }
         super.cleanUp(frontActivity, account);
-    }
-
-    @Override
-    public UserAccountManager getUserAccountManager() {
-    	return UserAccountManagerWithSmartStore.getInstance();
     }
 
     @Override

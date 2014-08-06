@@ -186,7 +186,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = getSoupTableName(TEST_SOUP);
-			c = DBHelper.INSTANCE.query(db, soupTableName, null, null, null, null);
+			c = DBHelper.getInstance(db).query(db, soupTableName, null, null, null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected one soup element only", 1, c.getCount());
 			assertEquals("Wrong id", idOf(soupEltCreated), c.getLong(c.getColumnIndex("id")));
@@ -224,7 +224,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
 			assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
 			
-			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
+			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -283,7 +283,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = getSoupTableName(TEST_SOUP);			
-			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
+			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -335,7 +335,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = getSoupTableName(TEST_SOUP);			
-			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
+			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -387,7 +387,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = getSoupTableName(TEST_SOUP);			
-			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
+			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -503,7 +503,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = getSoupTableName(TEST_SOUP);
-			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
+			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 2, c.getCount());
 			
@@ -544,7 +544,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		Cursor c = null;
 		try {
 			String soupTableName = getSoupTableName(TEST_SOUP);
-			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
+			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertFalse("Expected no soup element", c.moveToFirst());
 		}
 		finally {
@@ -773,7 +773,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		try {
 			String soupTableName = getSoupTableName(FOURTH_TEST_SOUP);
 			String amountColumnName = store.getSoupIndexSpecs(FOURTH_TEST_SOUP)[0].columnName;
-			c = DBHelper.INSTANCE.query(db, soupTableName, new String[] { amountColumnName }, null, null, "id = " + id);
+			c = DBHelper.getInstance(db).query(db, soupTableName, new String[] { amountColumnName }, null, null, "id = " + id);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected one soup element", 1, c.getCount());
 			if (fieldType == Type.integer)
@@ -945,7 +945,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
 			assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
 			
-			c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
+			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
 			
@@ -1151,7 +1151,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			assertEquals("Wrong step", toStep, ((AlterSoupLongOperation) operations[0]).getLastStepCompleted());
 			
 			// Simulate restart (clear cache and call resumeLongOperations)
-			DBHelper.INSTANCE.clearMemoryCache();
+			DBHelper.getInstance(db).clearMemoryCache();
 			store.resumeLongOperations();
 			
 			// Check index specs
@@ -1163,7 +1163,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 				assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
 				assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
 				
-				c = DBHelper.INSTANCE.query(db, soupTableName, null, "id ASC", null, null);
+				c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 				assertTrue("Expected a soup element", c.moveToFirst());
 				assertEquals("Expected three soup elements", 2, c.getCount());
 				

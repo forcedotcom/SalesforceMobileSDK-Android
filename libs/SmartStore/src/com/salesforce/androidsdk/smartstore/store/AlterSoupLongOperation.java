@@ -132,7 +132,7 @@ public class AlterSoupLongOperation extends LongOperation {
     		this.soupName = soupName;
     		
 			// Get backing table for soup
-	        this.soupTableName = DBHelper.INSTANCE.getSoupTableName(db, soupName);
+	        this.soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 	        
 	        // Setting newIndexSpecs field
@@ -142,7 +142,7 @@ public class AlterSoupLongOperation extends LongOperation {
 	        this.reIndexData = reIndexData;
 	        
 	        // Get old indexSpecs
-	        this.oldIndexSpecs = DBHelper.INSTANCE.getIndexSpecs(db, soupName);
+	        this.oldIndexSpecs = DBHelper.getInstance(db).getIndexSpecs(db, soupName);
 
     		// Create row in alter status table - auto commit
     		this.rowId = createLongOperationDbRow();
@@ -249,10 +249,10 @@ public class AlterSoupLongOperation extends LongOperation {
 
         try {
             db.beginTransaction();
-            DBHelper.INSTANCE.delete(db, SmartStore.SOUP_INDEX_MAP_TABLE, SmartStore.SOUP_NAME_PREDICATE, soupName);
+            DBHelper.getInstance(db).delete(db, SmartStore.SOUP_INDEX_MAP_TABLE, SmartStore.SOUP_NAME_PREDICATE, soupName);
 
             // Remove from cache
-            DBHelper.INSTANCE.removeFromCache(soupName);
+            DBHelper.getInstance(db).removeFromCache(soupName);
 
     		// Update row in alter status table - auto commit
     		updateLongOperationDbRow(AlterSoupStep.DROP_OLD_INDEXES);
@@ -357,7 +357,7 @@ public class AlterSoupLongOperation extends LongOperation {
     	contentValues.put(SmartStore.CREATED_COL, now);
     	contentValues.put(SmartStore.LAST_MODIFIED_COL, now);
     	Log.i("SmartStore.trackAlterStatus", soupName + " " + status);
-		return DBHelper.INSTANCE.insert(db, SmartStore.LONG_OPERATIONS_STATUS_TABLE, contentValues);
+		return DBHelper.getInstance(db).insert(db, SmartStore.LONG_OPERATIONS_STATUS_TABLE, contentValues);
 	}
 
 	/* (non-Javadoc)
@@ -383,14 +383,14 @@ public class AlterSoupLongOperation extends LongOperation {
 	 */
 	protected void updateLongOperationDbRow(AlterSoupStep newStatus) {
 		if (newStatus == AlterSoupStep.LAST) {
-	    	DBHelper.INSTANCE.delete(db, SmartStore.LONG_OPERATIONS_STATUS_TABLE, SmartStore.ID_PREDICATE, rowId + "");
+	    	DBHelper.getInstance(db).delete(db, SmartStore.LONG_OPERATIONS_STATUS_TABLE, SmartStore.ID_PREDICATE, rowId + "");
 		}
 		else {
 	    	Long now = System.currentTimeMillis();
 			ContentValues contentValues = new ContentValues();
 	    	contentValues.put(SmartStore.STATUS_COL, newStatus.toString());
 	    	contentValues.put(SmartStore.LAST_MODIFIED_COL, now);
-	    	DBHelper.INSTANCE.update(db, SmartStore.LONG_OPERATIONS_STATUS_TABLE, contentValues, SmartStore.ID_PREDICATE, rowId + "");
+	    	DBHelper.getInstance(db).update(db, SmartStore.LONG_OPERATIONS_STATUS_TABLE, contentValues, SmartStore.ID_PREDICATE, rowId + "");
 		}
     	Log.i("SmartStore.trackAlterStatus", soupName + " " + newStatus);
 	}

@@ -27,7 +27,7 @@
 package com.salesforce.androidsdk.smartsync;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManagerWithSmartStore;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.manager.NetworkManager;
@@ -39,7 +39,7 @@ import com.salesforce.androidsdk.smartsync.manager.NetworkManager;
  *
  * @author bhariharan
  */
-public class SmartSyncUserAccountManager extends UserAccountManagerWithSmartStore {
+public class SmartSyncUserAccountManager extends UserAccountManager {
 
 	private static SmartSyncUserAccountManager INSTANCE;
 
