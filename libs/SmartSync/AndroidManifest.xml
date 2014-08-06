@@ -5,8 +5,6 @@
     android:versionCode="37"
     android:versionName="2.3.0.unstable">
 
-    <application />
-
     <uses-sdk android:minSdkVersion="8" />
 
     <application />
