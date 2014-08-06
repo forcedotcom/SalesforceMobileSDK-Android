@@ -71,10 +71,10 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		DBHelper.getInstance(db).reset(targetContext, null); // start clean
+		DBHelper.getInstance(db).clearMemoryCache();
+		DBHelper.getInstance(db).reset(targetContext, null);
 		db = getWritableDatabase();
 		store = new SmartStore(db);
-		
 		assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
 		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
 		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
