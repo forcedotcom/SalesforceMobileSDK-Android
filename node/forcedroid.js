@@ -178,10 +178,12 @@ function createHybridApp(config) {
         process.exit(7);
     }
 
+    //console.log('cordova create ' + config.projectDir + ' ' + config.packagename + ' ' + config.appname);
     shelljs.exec('cordova create ' + config.projectDir + ' ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android');
     shelljs.exec('cordova plugin add https://github.com/wmathurin/SalesforceMobileSDK-CordovaPlugin');
+    //console.log('node plugins/com.salesforce/tools/postinstall-android.js ' + config.targetandroidapi + ' ' + config.usesmartstore)
     shelljs.exec('node plugins/com.salesforce/tools/postinstall-android.js ' + config.targetandroidapi + ' ' + config.usesmartstore);
 
     var bootconfig = {
@@ -198,6 +200,7 @@ function createHybridApp(config) {
     // console.log("Bootconfig:" + JSON.stringify(bootconfig, null, 2));
 
     fs.writeFileSync('www/bootconfig.json', JSON.stringify(bootconfig, null, 2));
+    shelljs.exec('cordova prepare android');
     shelljs.popd();
 
     // Inform the user of next steps.
@@ -214,7 +217,7 @@ function createHybridApp(config) {
          '',
          outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
          '   - Use ' + config.targetdir + ' as your workspace,',
-         '   - Choose Import -> Existing Android into Workspace,',
+         '   - Choose Import -> Android -> Existing Android Code into Workspace,',
          '   - Choose ' + config.targetdir + ' as the root directory',
          '   - Pick the following projects: platforms/android, platforms/android/CordovaLib, plugins/com.salesforce/android/hybrid/SmartStore and plugins/com.salesforce/android/native/SalesforceSDK',
          '   - For platforms/android, click on the project name, and change it to ' + config.appname,
@@ -437,7 +440,10 @@ function createArgsProcessorList() {
 
     // Use SmartStore
     addProcessorFor(argProcessorList, 'usesmartstore', 'Do you want to use SmartStore in your app? [yes/NO] (\'No\' by default)', 'Use smartstore must be yes or no.',
-                    function(val) { return ['yes', 'no'].indexOf(val.toLowerCase()) >= 0; },
+                    function(val) {
+                        if (val.trim() === '') return true;
+                        return ['yes', 'no'].indexOf(val.toLowerCase()) >= 0;
+                    },
                     undefined,
                     function(val) { return (val.toLowerCase() === 'yes'); });
 
