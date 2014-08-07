@@ -26,15 +26,13 @@
  */
 package com.salesforce.androidsdk.ui.sfhybrid;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaResourceApi;
+import org.apache.cordova.CordovaResourceApi.OpenForReadResult;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.IceCreamCordovaWebViewClient;
-import org.apache.cordova.LOG;
-import org.apache.cordova.CordovaResourceApi.OpenForReadResult;
 
 import android.annotation.TargetApi;
 import android.net.Uri;
@@ -83,24 +81,24 @@ public class SalesforceIceCreamWebViewClient extends IceCreamCordovaWebViewClien
     
     @Override
     public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
-    	Uri origUri = Uri.parse(url);
-		if (origUri.getHost().equals("localhost")) {
-            CordovaResourceApi resourceApi = cordovaWebView.getResourceApi();
-            Uri remappedUri = Uri.parse("file:///android_asset/www" + origUri.getPath());
-            OpenForReadResult result;
-			try {
-				result = resourceApi.openForRead(remappedUri, true);
-	            return new WebResourceResponse(result.mimeType, "UTF-8", result.inputStream);
-			} catch (IOException e) {
-	            if (!(e instanceof FileNotFoundException)) {
-	                LOG.e("SalesforceIceCreamWebViewClient", "Error occurred while loading a file (returning a 404).", e);
-	            }
-	            // Results in a 404.
-	            return new WebResourceResponse("text/plain", "UTF-8", null);
-			}
-		}
-		else {
-			return super.shouldInterceptRequest(view, url);
-		}
+    	WebResourceResponse response = null;
+    	response =super.shouldInterceptRequest(view, url);
+
+    	if (response == null) {
+    		Uri origUri = Uri.parse(url);
+    		if (origUri.getHost().equals("localhost")) {
+    			CordovaResourceApi resourceApi = cordovaWebView.getResourceApi();
+    			Uri remappedUri = Uri.parse("file:///android_asset/www" + origUri.getPath());
+    			OpenForReadResult result;
+    			try {
+    				result = resourceApi.openForRead(remappedUri, true);
+    				response = new WebResourceResponse(result.mimeType, "UTF-8", result.inputStream);
+    			} catch (IOException e) {    	
+    				// Results in a 404.
+    				response = new WebResourceResponse("text/plain", "UTF-8", null);
+    			}
+    		}
+    	}
+    	return response;
     }
 }
