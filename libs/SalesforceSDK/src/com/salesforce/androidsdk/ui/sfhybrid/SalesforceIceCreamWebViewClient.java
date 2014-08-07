@@ -26,18 +26,30 @@
  */
 package com.salesforce.androidsdk.ui.sfhybrid;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 import org.apache.cordova.CordovaInterface;
+import org.apache.cordova.CordovaResourceApi;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.IceCreamCordovaWebViewClient;
+import org.apache.cordova.LOG;
+import org.apache.cordova.CordovaResourceApi.OpenForReadResult;
 
+import android.annotation.TargetApi;
+import android.net.Uri;
+import android.os.Build;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 
+@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class SalesforceIceCreamWebViewClient extends IceCreamCordovaWebViewClient {
 
     // The first non-reserved URL that's loaded will be considered the app's "home page", for caching purposes.
     protected boolean foundHomeUrl = false;
 
     protected SalesforceDroidGapActivity ctx;
+    protected CordovaWebView cordovaWebView;
 
     /**
      * Constructor.
@@ -48,6 +60,7 @@ public class SalesforceIceCreamWebViewClient extends IceCreamCordovaWebViewClien
     public SalesforceIceCreamWebViewClient(CordovaInterface cordova, CordovaWebView view) {
         super(cordova, view);
         this.ctx = (SalesforceDroidGapActivity) cordova.getActivity();
+        this.cordovaWebView = view;
     }
 
     @Override
@@ -66,5 +79,28 @@ public class SalesforceIceCreamWebViewClient extends IceCreamCordovaWebViewClien
         }
 
         super.onPageFinished(view, url);
+    }
+    
+    @Override
+    public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+    	Uri origUri = Uri.parse(url);
+		if (origUri.getHost().equals("localhost")) {
+            CordovaResourceApi resourceApi = cordovaWebView.getResourceApi();
+            Uri remappedUri = Uri.parse("file:///android_asset/www" + origUri.getPath());
+            OpenForReadResult result;
+			try {
+				result = resourceApi.openForRead(remappedUri, true);
+	            return new WebResourceResponse(result.mimeType, "UTF-8", result.inputStream);
+			} catch (IOException e) {
+	            if (!(e instanceof FileNotFoundException)) {
+	                LOG.e("SalesforceIceCreamWebViewClient", "Error occurred while loading a file (returning a 404).", e);
+	            }
+	            // Results in a 404.
+	            return new WebResourceResponse("text/plain", "UTF-8", null);
+			}
+		}
+		else {
+			return super.shouldInterceptRequest(view, url);
+		}
     }
 }
