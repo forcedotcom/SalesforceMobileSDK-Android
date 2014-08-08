@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.ui.sfhybrid;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.cordova.CordovaInterface;
@@ -87,15 +88,17 @@ public class SalesforceIceCreamWebViewClient extends IceCreamCordovaWebViewClien
     	if (response == null) {
     		Uri origUri = Uri.parse(url);
     		if (origUri.getHost().equals("localhost")) {
-    			CordovaResourceApi resourceApi = cordovaWebView.getResourceApi();
-    			Uri remappedUri = Uri.parse("file:///android_asset/www" + origUri.getPath());
-    			OpenForReadResult result;
+    			
+    			File wwwDir = new File("file:///android_asset/www");
+    			File localFile = new File(wwwDir.getPath() + origUri.getPath());
     			try {
-    				result = resourceApi.openForRead(remappedUri, true);
-    				response = new WebResourceResponse(result.mimeType, "UTF-8", result.inputStream);
-    			} catch (IOException e) {    	
-    				// Results in a 404.
-    				response = new WebResourceResponse("text/plain", "UTF-8", null);
+    				if (localFile.getCanonicalPath().indexOf(wwwDir.getCanonicalPath()) == 0) {
+    					CordovaResourceApi resourceApi = cordovaWebView.getResourceApi();
+    					OpenForReadResult result = resourceApi.openForRead(Uri.fromFile(localFile), true);
+    					response = new WebResourceResponse(result.mimeType, "UTF-8", result.inputStream);
+    				} catch (IOException e) {    	
+    					// Results in a 404.
+    				}
     			}
     		}
     	}
