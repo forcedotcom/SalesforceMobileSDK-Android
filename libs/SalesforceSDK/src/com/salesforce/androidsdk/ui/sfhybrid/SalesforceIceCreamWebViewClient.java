@@ -38,12 +38,15 @@ import org.apache.cordova.IceCreamCordovaWebViewClient;
 import android.annotation.TargetApi;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Log;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class SalesforceIceCreamWebViewClient extends IceCreamCordovaWebViewClient {
 
+	static final String WWW_DIR = "/android_asset/www";
+	
     // The first non-reserved URL that's loaded will be considered the app's "home page", for caching purposes.
     protected boolean foundHomeUrl = false;
 
@@ -82,26 +85,43 @@ public class SalesforceIceCreamWebViewClient extends IceCreamCordovaWebViewClien
     
     @Override
     public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
-    	WebResourceResponse response = null;
-    	response =super.shouldInterceptRequest(view, url);
+    	WebResourceResponse response = super.shouldInterceptRequest(view, url);
 
-    	if (response == null) {
-    		Uri origUri = Uri.parse(url);
-    		if (origUri.getHost().equals("localhost")) {
-    			
-    			File wwwDir = new File("file:///android_asset/www");
-    			File localFile = new File(wwwDir.getPath() + origUri.getPath());
-    			try {
-    				if (localFile.getCanonicalPath().indexOf(wwwDir.getCanonicalPath()) == 0) {
-    					CordovaResourceApi resourceApi = cordovaWebView.getResourceApi();
-    					OpenForReadResult result = resourceApi.openForRead(Uri.fromFile(localFile), true);
-    					response = new WebResourceResponse(result.mimeType, "UTF-8", result.inputStream);
-    				} catch (IOException e) {    	
-    					// Results in a 404.
-    				}
-    			}
-    		}
+    	// Already intercepted (e.g. if url is not whitelisted)
+    	if (response != null) {
+    		return response;
     	}
-    	return response;
+
+    	// Not a localhost request
+		Uri origUri = Uri.parse(url);
+		if (!origUri.getHost().equals("localhost")) {
+			return null;
+		}
+			
+		// Localhost request
+		try {
+			String localPath = WWW_DIR + origUri.getPath();
+			// Trying to access file outside assets/www
+			if (!isFileUnder(localPath, WWW_DIR)) {
+				throw new IOException("Trying to access file outside assets/www");
+			}
+			else {
+				Uri localUri = Uri.parse("file://" + localPath);
+				CordovaResourceApi resourceApi = cordovaWebView.getResourceApi();
+				OpenForReadResult result = resourceApi.openForRead(localUri, true);
+				Log.i("SalesforceIceCreamWebViewClient.shouldInterceptRequest", "Loading local file:" + localUri);
+				return new WebResourceResponse(result.mimeType, "UTF-8", result.inputStream);
+			}
+			
+		} catch (IOException e) {    	
+			Log.e("SalesforceIceCreamWebViewClient.shouldInterceptRequest", "Invalid localhost url:" + url, e);
+			return new WebResourceResponse("text/plain", "UTF-8", null); 
+		}
+    }
+    
+    private boolean isFileUnder(String filePath, String dirPath) throws IOException {
+    	File file = new File(filePath);
+    	File dir = new File(dirPath);
+    	return file.getCanonicalPath().indexOf(dir.getCanonicalPath()) == 0;
     }
 }
