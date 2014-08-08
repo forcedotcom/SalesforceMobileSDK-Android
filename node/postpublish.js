@@ -37,7 +37,7 @@ var readmeBackupPath = readmePath + '.orig';
 console.log('Moving original repo README file back into place.');
 exec('mv "' + readmeBackupPath + '" "' + readmePath + '"', function (error, stdout, stderr) {
 	if (error) {
-		console.log('WARNING: Could not move ' + read + ' to ' + readmePath + '.');
+		console.log('WARNING: Could not move ' + readmeBackupPath + ' to ' + readmePath + ': ' + error);
 	}
 
 	// Revert symlinks from the root of the git repo.

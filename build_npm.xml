@@ -1,12 +1,24 @@
 <project name="SalesforceMobileSDK-Android-Package" basedir="." default="makeNpm">
-    
     <target name="makeNpm">
+        
+        <!-- Create the temporary working folder. -->
+        <tempfile property="packageTempDir" destdir="/tmp" prefix="sdkNpmBuild" />
+        <mkdir dir="${packageTempDir}" />
+        
         <!-- Make the npm package -->
         <echo>--- Creating the npm package ---</echo>
-        <exec executable="npm" failonerror="true" logError="true">
+        <exec executable="npm" dir="${packageTempDir}" failonerror="true" logError="true">
             <arg value="pack" />
-            <arg file="." />
+            <arg file="${basedir}" />
         </exec>
+        
+        <!-- Move the package to the root folder. -->
+        <move todir="${basedir}" overwrite="true">
+            <fileset dir="${packageTempDir}">
+                <include name="forcedroid*" />
+            </fileset>
+        </move>
+        <delete dir="${packageTempDir}" />
         
         <!-- Reset the repo (post-publish) -->
         <echo>--- Reverting the symbolic links ---</echo>
