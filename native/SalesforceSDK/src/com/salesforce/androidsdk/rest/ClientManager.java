@@ -523,26 +523,23 @@ public class ClientManager {
                 } else {
                     newAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
                     if (newAuthToken == null) {
-                        final Intent loginFlowIntent = bundle.getParcelable(AccountManager.KEY_INTENT);
-                        if (loginFlowIntent != null) {
-                            if (clientManager.revokedTokenShouldLogout) {
+                        if (clientManager.revokedTokenShouldLogout) {
 
-                            	// Check if a looper exists before trying to prepare another one.
-                            	if (Looper.myLooper() == null) {
-                                    Looper.prepare();	
-                            	}
-                                SalesforceSDKManager.getInstance().logout(null, false);
-                            }
-
-                            // Broadcasts an intent that the access token has been revoked.
-                            final Intent revokeIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
-                            SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(revokeIntent);
-                        } else {
-
-                            // Broadcasts an intent that the access token has been refreshed.
-                            final Intent refreshIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
-                            SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(refreshIntent);
+                        	// Check if a looper exists before trying to prepare another one.
+                        	if (Looper.myLooper() == null) {
+                                Looper.prepare();	
+                        	}
+                            SalesforceSDKManager.getInstance().logout(null, false);
                         }
+
+                        // Broadcasts an intent that the access token has been revoked.
+                        final Intent revokeIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
+                        SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(revokeIntent);
+                    } else {
+
+                        // Broadcasts an intent that the access token has been refreshed.
+                        final Intent refreshIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
+                        SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(refreshIntent);
                     }
                 }
             } catch (Exception e) {
