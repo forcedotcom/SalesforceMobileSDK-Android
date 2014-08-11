@@ -324,7 +324,7 @@ function createNativeApp(config, showNextSteps) {
     shelljs.exec('android update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), salesforceSDKRelativePath));
 
     // Copy Cordova library project into the app folder as well, if it's not already there.
-    // copy <Android Package>/external/cordova/framework <App Folder>/forcedroid/external/cordova/framework
+    // copy <Android Package>/external/cordova/framework -> <App Folder>/forcedroid/external/cordova/framework
     var cordovaRelativePath = path.join('external', 'cordova');
     var destCordovaDir = path.join(config.targetdir, path.basename(packageSdkRootDir), cordovaRelativePath);
     copyFromSDK(packageSdkRootDir, config.targetdir, path.join(cordovaRelativePath, 'framework'));
@@ -334,8 +334,8 @@ function createNativeApp(config, showNextSteps) {
     console.log('update done');
 
     // Copy SmartStore library project into the app folder as well, if it's not already there - if required.
-    // copy <Android Package>/libs/SmartStore <App Folder>/forcedroid/libs/SmartStore
-    // copy <Android Package>/external/sqlcipher <App Folder>/forcedroid/external/sqlcipher
+    // copy <Android Package>/libs/SmartStore -> <App Folder>/forcedroid/libs/SmartStore
+    // copy <Android Package>/external/sqlcipher -> <App Folder>/forcedroid/external/sqlcipher
     if (config.usesmartstore) {
         var smartStoreRelativePath = path.join('libs', 'SmartStore');
         copyFromSDK(packageSdkRootDir, config.targetdir, smartStoreRelativePath);
