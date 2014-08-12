@@ -90,7 +90,7 @@ public class SmartStore  {
      * @param newKey New encryption key.
      */
     public static synchronized void changeKey(SQLiteDatabase db, String newKey) {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 	        if (newKey != null && !newKey.trim().equals("")) {
 	            db.execSQL("PRAGMA rekey = '" + newKey + "'");
 	        }
@@ -105,7 +105,7 @@ public class SmartStore  {
      * @param db
      */
     public static void createMetaTables(SQLiteDatabase db) {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 	        // Create soup_index_map table
 	        StringBuilder sb = new StringBuilder();
 	        sb.append("CREATE TABLE ").append(SOUP_INDEX_MAP_TABLE).append(" (")
@@ -169,7 +169,7 @@ public class SmartStore  {
      * @param indexSpecs
      */
     public void registerSoup(String soupName, IndexSpec[] indexSpecs) {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 	        if (soupName == null) throw new SmartStoreException("Bogus soup name:" + soupName);
 	        if (indexSpecs.length == 0) throw new SmartStoreException("No indexSpecs specified for soup: " + soupName);
 	        if (hasSoup(soupName)) return; // soup already exist - do nothing
@@ -269,7 +269,7 @@ public class SmartStore  {
      * @return true if soup exists, false otherwise
      */
     public boolean hasSoup(String soupName) {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
     		return DBHelper.getInstance(db).getSoupTableName(db, soupName) != null;
     	}
     }
@@ -282,7 +282,7 @@ public class SmartStore  {
      * @param soupName
      */
     public void dropSoup(String soupName) {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName != null) {
 	            db.execSQL("DROP TABLE IF EXISTS " + soupTableName);
@@ -306,7 +306,7 @@ public class SmartStore  {
      * Destroy all the soups in the smartstore
      */
     public void dropAllSoups() {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 	    	List<String> soupNames = getAllSoupNames();
 	        for(String soupName : soupNames) {
 	            dropSoup(soupName);
@@ -318,7 +318,7 @@ public class SmartStore  {
      * @return all soup names in the smartstore
      */
     public List<String> getAllSoupNames() {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 	    	List<String> soupNames = new ArrayList<String>();
 	        Cursor cursor = null;
 	        try {
@@ -344,7 +344,7 @@ public class SmartStore  {
      * @throws JSONException 
 	 */
 	public JSONArray query(QuerySpec querySpec, int pageIndex) throws JSONException {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 			QueryType qt = querySpec.queryType;
 	    	String sql = convertSmartSql(querySpec.smartSql);
 	
@@ -429,7 +429,7 @@ public class SmartStore  {
 	 * @return count of results for a "smart" query
 	 */
 	public int countQuery(QuerySpec querySpec) {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 			String countSql = convertSmartSql(querySpec.countSmartSql);
 			return DBHelper.getInstance(db).countRawCountQuery(db, countSql, querySpec.getArgs());
     	}
@@ -440,7 +440,7 @@ public class SmartStore  {
 	 * @return
 	 */
 	public String convertSmartSql(String smartSql) {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
     		return SmartSqlHelper.getInstance(db).convertSmartSql(db, smartSql);
     	}
 	}
@@ -455,7 +455,7 @@ public class SmartStore  {
      * @throws JSONException
      */
     public JSONObject create(String soupName, JSONObject soupElt) throws JSONException {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
     		return create(soupName, soupElt, true);
     	}
     }
@@ -469,7 +469,7 @@ public class SmartStore  {
      * @throws JSONException
      */
     public JSONObject create(String soupName, JSONObject soupElt, boolean handleTx) throws JSONException {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 	        IndexSpec[] indexSpecs = DBHelper.getInstance(db).getIndexSpecs(db, soupName);
@@ -540,7 +540,7 @@ public class SmartStore  {
      * @throws JSONException
      */
     public JSONArray retrieve(String soupName, Long... soupEntryIds) throws JSONException {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 	        Cursor cursor = null;
@@ -575,7 +575,7 @@ public class SmartStore  {
      * @throws JSONException
      */
     public JSONObject update(String soupName, JSONObject soupElt, long soupEntryId) throws JSONException {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
     		return update(soupName, soupElt, soupEntryId, true);
     	}
     }
@@ -590,7 +590,7 @@ public class SmartStore  {
      * @throws JSONException
      */
     public JSONObject update(String soupName, JSONObject soupElt, long soupEntryId, boolean handleTx) throws JSONException {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 	        IndexSpec[] indexSpecs = DBHelper.getInstance(db).getIndexSpecs(db, soupName);
@@ -640,7 +640,7 @@ public class SmartStore  {
      * @throws JSONException
      */
     public JSONObject upsert(String soupName, JSONObject soupElt, String externalIdPath) throws JSONException {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
     		return upsert(soupName, soupElt, externalIdPath, true);
     	}
     }
@@ -653,7 +653,7 @@ public class SmartStore  {
      * @throws JSONException
      */
     public JSONObject upsert(String soupName, JSONObject soupElt) throws JSONException {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
     		return upsert(soupName, soupElt, SOUP_ENTRY_ID);
     	}
     }
@@ -668,7 +668,7 @@ public class SmartStore  {
      * @throws JSONException
      */
     public JSONObject upsert(String soupName, JSONObject soupElt, String externalIdPath, boolean handleTx) throws JSONException {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 	        long entryId = -1;
 	        if (externalIdPath.equals(SOUP_ENTRY_ID)) {
 	            if (soupElt.has(SOUP_ENTRY_ID)) {
@@ -702,7 +702,7 @@ public class SmartStore  {
      * @param fieldValue
      */
     public long lookupSoupEntryId(String soupName, String fieldPath, String fieldValue) {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 	        String columnName = DBHelper.getInstance(db).getColumnNameForPath(db, soupName, fieldPath);
@@ -730,7 +730,7 @@ public class SmartStore  {
      * @param soupEntryIds
      */
     public void delete(String soupName, Long... soupEntryIds) {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
     		delete(soupName, soupEntryIds, true);
     	}
     }
@@ -742,7 +742,7 @@ public class SmartStore  {
      * @param handleTx
      */
     public void delete(String soupName, Long[] soupEntryIds, boolean handleTx) {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 	        if (handleTx) {
