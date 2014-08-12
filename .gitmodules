@@ -4,6 +4,3 @@
 [submodule "external/cordova"]
 	path = external/cordova
 	url = https://github.com/apache/cordova-android.git
-[submodule "external/samples"]
-	path = external/samples
-	url = https://github.com/forcedotcom/SalesforceMobileSDK-Samples.git
