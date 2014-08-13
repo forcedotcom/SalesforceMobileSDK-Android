@@ -252,20 +252,6 @@ public class Encryptor {
     private static byte[] encrypt(byte[] data, byte[] key) throws GeneralSecurityException,
             InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
 
-        // must be a multiple of a block length (16 bytes)
-        int length = data == null ? 0 : data.length;
-        int len = (length + 15) & ~15;
-
-        //pad with the number of pad bytes
-        byte paddingValue = (byte) (len - length);
-        byte[] padded = new byte[len];
-        System.arraycopy(data, 0, padded, 0, length);
-        for (int i = length; i < len; i++)
-            padded[i] = paddingValue;
-
-        // update length to be what we will actually send
-        length = len;
-
         // encrypt
         Cipher cipher = getBestCipher();
         SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
@@ -274,7 +260,7 @@ public class Encryptor {
         byte[] initVector = generateInitVector();
         IvParameterSpec ivSpec = new IvParameterSpec(initVector);
         cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
-        byte[] meat = cipher.doFinal(padded);
+        byte[] meat = cipher.doFinal(data);
 
         //prepend the IV to the encoded data (first 16 bytes / 128 bits )
         byte[] result = new byte[initVector.length + meat.length];
