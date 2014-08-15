@@ -34,8 +34,6 @@ import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
 import android.app.Activity;
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningAppProcessInfo;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -53,8 +51,6 @@ import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.auth.AccountWatcher;
-import com.salesforce.androidsdk.auth.AccountWatcher.AccountRemoved;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.LoginServerManager;
@@ -84,7 +80,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  * use the static getInstance() method to access the
  * singleton SalesforceSDKManager object.
  */
-public class SalesforceSDKManager implements AccountRemoved {
+public class SalesforceSDKManager {
 
     /**
      * Current version of this SDK.
@@ -117,8 +113,7 @@ public class SalesforceSDKManager implements AccountRemoved {
     protected Class<? extends Activity> mainActivityClass;
     protected Class<? extends Activity> loginActivityClass = LoginActivity.class;
     protected Class<? extends PasscodeActivity> passcodeActivityClass = PasscodeActivity.class;
-	protected Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
-    protected AccountWatcher accWatcher;
+    protected Class<? extends AccountSwitcherActivity> switcherActivityClass = AccountSwitcherActivity.class;
     private String encryptionKey;
     private SalesforceR salesforceR = new SalesforceR();
     private PasscodeManager passcodeManager;
@@ -314,15 +309,6 @@ public class SalesforceSDKManager implements AccountRemoved {
         // Ensures that we have a CookieSyncManager instance.
         CookieSyncManager.createInstance(context);
 
-        /*
-         * Initializes an AccountWatcher instance, only if the current instance
-         * is NOT running in the auth process. This prevents multiple
-         * callbacks when an account is removed from settings.
-         */
-        if (!INSTANCE.isRunningInAuthProcess()) {
-            INSTANCE.accWatcher = new AccountWatcher(context, INSTANCE);
-        }
-
         // Upgrades to the latest version.
         UpgradeManager.getInstance().upgradeAccMgr();
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
@@ -431,11 +417,6 @@ public class SalesforceSDKManager implements AccountRemoved {
      */
     public Context getAppContext() {
     	return context;
-    }
-
-    @Override
-    public void onAccountRemoved() {
-        INSTANCE.cleanUp(null, null);
     }
 
     /**
@@ -829,10 +810,6 @@ public class SalesforceSDKManager implements AccountRemoved {
     		String refreshToken, String clientId, String loginServer,
     		Account account, Activity frontActivity) {
     	loggedOut = true;
-        if (accWatcher != null) {
-    		accWatcher.remove();
-    		accWatcher = null;
-    	}
     	cleanUp(frontActivity, account);
 
     	// Removes the exisiting account, if any.
@@ -1000,10 +977,6 @@ public class SalesforceSDKManager implements AccountRemoved {
      */
     public void setIsTestRun(boolean isTestRun) {
     	INSTANCE.isTestRun = isTestRun;
-    	if (accWatcher != null) {
-    		accWatcher.remove();
-    	}
-    	accWatcher = null;
     }
 
     /**
@@ -1013,34 +986,5 @@ public class SalesforceSDKManager implements AccountRemoved {
      */
     public boolean isLoggingOut() {
     	return isLoggingOut;
-    }
-
-    /**
-     * Returns whether this instance is running in the auth process or not.
-     *
-     * @return True - if auth process, False - otherwise.
-     */
-    private boolean isRunningInAuthProcess() {
-    	try {
-        	String procName = "";
-            int pid = android.os.Process.myPid();
-            final ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-            final List<RunningAppProcessInfo> processInfos = manager.getRunningAppProcesses();
-            if (processInfos != null) {
-                for (final RunningAppProcessInfo procInfo : processInfos) {
-                    if (procInfo != null && procInfo.pid == pid) {
-                    	procName = procInfo.processName;
-                    	break;
-                    }
-                }
-            }
-            if (procName.endsWith(":auth")) {
-            	return true;
-            }
-    	} catch (Exception e) {
-    		Log.e("SalesforceSDKManager:isRunningInAuthProcess",
-    				"Exception occurred while getting process name.", e);
-    	}
-    	return false;
     }
 }
