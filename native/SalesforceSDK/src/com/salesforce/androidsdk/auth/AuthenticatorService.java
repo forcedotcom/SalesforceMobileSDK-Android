@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.auth;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 
 import org.apache.http.client.ClientProtocolException;
 
@@ -37,7 +38,9 @@ import android.accounts.Account;
 import android.accounts.AccountAuthenticatorResponse;
 import android.accounts.AccountManager;
 import android.accounts.NetworkErrorException;
+import android.app.ActivityManager;
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -88,6 +91,9 @@ public class AuthenticatorService extends Service {
      */
     private static class Authenticator extends AbstractAccountAuthenticator {
 
+    	private static final String SETTINGS_PACKAGE_NAME = "com.android.settings";
+    	private static final String ANDROID_PACKAGE_NAME = "androidPackageName";
+
         private final Context context;
 
         Authenticator(Context ctx) {
@@ -112,8 +118,39 @@ public class AuthenticatorService extends Service {
 
         private boolean isAddFromSettings(Bundle options) {
 			// Is there a better way? 
-        	return options.containsKey("androidPackageName") && options.getString("androidPackageName").equals("com.android.settings");
+        	return options.containsKey(ANDROID_PACKAGE_NAME) && options.getString(ANDROID_PACKAGE_NAME).equals(SETTINGS_PACKAGE_NAME);
 		}
+
+        @Override
+        public Bundle getAccountRemovalAllowed(AccountAuthenticatorResponse response, Account account) {
+            final Bundle result = new Bundle();
+            final ActivityManager manager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
+
+            /*
+             * Allowing account removal from the Settings app is quite messy,
+             * since we don't know which account is being removed. Hence, we
+             * check which package the account removal call is coming from,
+             * and decide whether to allow it or not. Unfortunately, the only
+             * way to do this is the convoluted way used below, which basically
+             * gets a list of running tasks and get the topmost activity on
+             * the task in focus. If the call is coming from the Settings app,
+             * the topmost activity's package will be the Settings app.
+             */
+            boolean isNotRemoveFromSettings = true;
+            if (manager != null) {
+                final List<ActivityManager.RunningTaskInfo> task = manager.getRunningTasks(1);
+                if (task != null && task.size() > 0) {
+                    final ComponentName componentInfo = task.get(0).topActivity;
+                    if (componentInfo != null) {
+                        if (SETTINGS_PACKAGE_NAME.equals(componentInfo.getPackageName())) {
+                            isNotRemoveFromSettings = false;
+                        }
+                    }
+                }
+            }
+            result.putBoolean(AccountManager.KEY_BOOLEAN_RESULT, isNotRemoveFromSettings);
+            return result;
+        }
 
 		/**
          * Uses the refresh token to get a new access token.
