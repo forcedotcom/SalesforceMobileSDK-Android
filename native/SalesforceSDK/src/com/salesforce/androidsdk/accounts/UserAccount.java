@@ -126,8 +126,8 @@ public class UserAccount {
 			userId = object.optString(USER_ID, null);
 			username = object.optString(USERNAME, null);
 			clientId = object.optString(CLIENT_ID, null);
-			if (!TextUtils.isEmpty(username)) {
-				accountName = String.format("%s (%s)", username,
+			if (!TextUtils.isEmpty(username) && !TextUtils.isEmpty(instanceServer)) {
+				accountName = String.format("%s (%s) (%s)", username, instanceServer,
 						SalesforceSDKManager.getInstance().getApplicationName());
 			}
 			communityId = object.optString(communityId, null);
