@@ -7,7 +7,7 @@
         <item>api</item>
     </string-array>
     <string name="androidPushNotificationClientId"></string>
-    <string name="account_name">sdktest@cs1.com (test)</string>
+    <string name="account_name">sdktest@cs1.com (https://cs1.salesforce.com) (test)</string>
     <string name="account_type">com.salesforce.androidsdk.smartstoretest.login</string>
     <string name="encoding">UTF-8</string>
     <string name="instance_url">https://cs1.salesforce.com</string>

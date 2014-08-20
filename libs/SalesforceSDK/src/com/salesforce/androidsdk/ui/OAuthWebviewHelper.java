@@ -390,9 +390,9 @@ public class OAuthWebviewHelper {
                 		accountOptions.refreshToken, loginOptions.loginUrl,
                 		accountOptions.identityUrl, accountOptions.instanceUrl,
                 		accountOptions.orgId, accountOptions.userId,
-                		accountOptions.username, buildAccountName(accountOptions.username),
-                		loginOptions.clientSecret, accountOptions.communityId,
-                		accountOptions.communityUrl);
+                		accountOptions.username, buildAccountName(accountOptions.username,
+                		accountOptions.instanceUrl), loginOptions.clientSecret,
+                		accountOptions.communityId, accountOptions.communityUrl);
                 if (id.adminPrefs != null) {
                     final AdminPrefsManager prefManager = SalesforceSDKManager.getInstance().getAdminPrefsManager();
                     prefManager.setPrefs(id.adminPrefs, account);
@@ -473,7 +473,8 @@ public class OAuthWebviewHelper {
         		loginOptions, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
 
         // Create account name (shown in Settings -> Accounts & sync)
-        String accountName = buildAccountName(accountOptions.username);
+        String accountName = buildAccountName(accountOptions.username,
+        		accountOptions.instanceUrl);
 
         // New account
         Bundle extras = clientManager.createNewAccount(accountName,
@@ -514,8 +515,9 @@ public class OAuthWebviewHelper {
     /**
      * @return name to be shown for account in Settings -> Accounts & Sync
      */
-    protected String buildAccountName(String username) {
-        return String.format("%s (%s)", username, SalesforceSDKManager.getInstance().getApplicationName());
+    protected String buildAccountName(String username, String instanceServer) {
+        return String.format("%s (%s) (%s)", username, instanceServer,
+        		SalesforceSDKManager.getInstance().getApplicationName());
     }
 
     /**
