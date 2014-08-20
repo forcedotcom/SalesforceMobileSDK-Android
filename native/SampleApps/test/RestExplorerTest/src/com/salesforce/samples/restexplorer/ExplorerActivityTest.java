@@ -75,12 +75,12 @@ public class ExplorerActivityTest extends
     private static final String TEST_USER_ID = "test_user_id";
     private static final String TEST_CLIENT_ID = "test_client_d";
     private static final String TEST_LOGIN_URL = "https://test.salesforce.com";
-    private static final String TEST_INSTANCE_URL = "https://tapp0.salesforce.com";
+    private static final String TEST_INSTANCE_URL = "https://cs1.salesforce.com";
     private static final String TEST_IDENTITY_URL = "https://test.salesforce.com";
     private static final String TEST_ACCESS_TOKEN = "test_access_token";
     private static final String TEST_REFRESH_TOKEN = "test_refresh_token";
     private static final String TEST_USERNAME = "test_username";
-    private static final String TEST_ACCOUNT_NAME = "test_account_name";
+    private static final String TEST_ACCOUNT_NAME = "test_account_name (https://cs1.salesforce.com) (RestExplorerTest)";
 
     private static final int VERSIONS_TAB = 0;
     private static final int RESOURCES_TAB = 1;
