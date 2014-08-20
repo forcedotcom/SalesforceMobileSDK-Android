@@ -80,7 +80,7 @@ public class ExplorerActivityTest extends
     private static final String TEST_ACCESS_TOKEN = "test_access_token";
     private static final String TEST_REFRESH_TOKEN = "test_refresh_token";
     private static final String TEST_USERNAME = "test_username";
-    private static final String TEST_ACCOUNT_NAME = "test_account_name";
+    private static final String TEST_ACCOUNT_NAME = "test_account_name (https://cs1.salesforce.com) (RestExplorerTest)";
 
     private static final int VERSIONS_TAB = 0;
     private static final int RESOURCES_TAB = 1;
