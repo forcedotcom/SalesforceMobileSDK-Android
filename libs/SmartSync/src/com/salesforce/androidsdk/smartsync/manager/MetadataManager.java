@@ -198,7 +198,7 @@ public class MetadataManager {
     }
 
     /**
-     * Sets the API version to be used (for example, 'v29.0').
+     * Sets the API version to be used (for example, 'v31.0').
      *
      * @param apiVer API version to be used.
      */
