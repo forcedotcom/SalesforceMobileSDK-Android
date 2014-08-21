@@ -82,7 +82,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "2.2.2";
+    public static final String SDK_VERSION = "2.2.3";
 
     /**
      * Last phone version.
