@@ -71,7 +71,6 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
 
 /**
@@ -102,9 +101,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     // Config
 	private BootConfig bootconfig;
     private PasscodeManager passcodeManager;
-    private TokenRevocationReceiver tokenRevocationReceiver;
     private UserSwitchReceiver userSwitchReceiver;
-    private boolean tokenRevocationRegistered;
 
 	// Web app loaded?
 	private boolean webAppLoaded = false;	
@@ -123,7 +120,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
         // Passcode manager
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-        tokenRevocationReceiver = new TokenRevocationReceiver(this);
         userSwitchReceiver = new DroidGapUserSwitchReceiver();
         registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
 
@@ -183,9 +179,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     @Override
     public void onResume() {
         super.onResume();
-        if (!tokenRevocationRegistered) {
-            registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
-        }
     	if (passcodeManager.onResume(this)) {
 
             // Get client (if already logged in)
@@ -319,9 +312,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         super.onPause();
         passcodeManager.onPause(this);
         CookieSyncManager.getInstance().stopSync();
-        if (tokenRevocationRegistered) {
-        	unregisterReceiver(tokenRevocationReceiver);
-        }
     }
 
     @Override

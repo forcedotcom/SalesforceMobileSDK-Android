@@ -39,7 +39,6 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
 
 /**
@@ -50,7 +49,6 @@ import com.salesforce.androidsdk.util.UserSwitchReceiver;
 public abstract class SalesforceExpandableListActivity extends ExpandableListActivity {
 
 	private PasscodeManager passcodeManager;
-    private TokenRevocationReceiver tokenRevocationReceiver;
     private UserSwitchReceiver userSwitchReceiver;
 
 	/**
@@ -66,7 +64,6 @@ public abstract class SalesforceExpandableListActivity extends ExpandableListAct
 
 		// Gets an instance of the passcode manager.
 		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-		tokenRevocationReceiver = new TokenRevocationReceiver(this);
         userSwitchReceiver = new ActivityUserSwitchReceiver();
         registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
 
@@ -77,7 +74,6 @@ public abstract class SalesforceExpandableListActivity extends ExpandableListAct
 	@Override 
 	public void onResume() {
 		super.onResume();
-		registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
 
 		// Brings up the passcode screen if needed.
 		if (passcodeManager.onResume(this)) {
@@ -113,7 +109,6 @@ public abstract class SalesforceExpandableListActivity extends ExpandableListAct
     public void onPause() {
         super.onPause();
     	passcodeManager.onPause(this);
-    	unregisterReceiver(tokenRevocationReceiver);
     }
 
     @Override
