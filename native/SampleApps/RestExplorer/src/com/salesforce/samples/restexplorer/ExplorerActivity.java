@@ -75,7 +75,6 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.TokenRevocationReceiver;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
 
 /**
@@ -92,7 +91,6 @@ public class ExplorerActivity extends TabActivity {
 	private RestClient client;
 	private TextView resultText;
 	AlertDialog logoutConfirmationDialog;
-    private TokenRevocationReceiver tokenRevocationReceiver;
     private UserSwitchReceiver userSwitchReceiver;
 
 	// Use for objectId fields auto-complete
@@ -108,7 +106,6 @@ public class ExplorerActivity extends TabActivity {
 
 		// Passcode manager
 		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-		tokenRevocationReceiver = new TokenRevocationReceiver(this);
 		
 		// ApiVersion
 		apiVersion = getString(R.string.api_version);
@@ -144,7 +141,6 @@ public class ExplorerActivity extends TabActivity {
 	@Override 
 	public void onResume() {
 		super.onResume();
-		registerReceiver(tokenRevocationReceiver, new IntentFilter(ClientManager.ACCESS_TOKEN_REVOKE_INTENT));
 		
 		// Hide everything until we are logged in
 		findViewById(R.id.root).setVisibility(View.INVISIBLE);
@@ -177,7 +173,6 @@ public class ExplorerActivity extends TabActivity {
     public void onPause() {
     	super.onPause();
     	passcodeManager.onPause(this);
-    	unregisterReceiver(tokenRevocationReceiver);
     }
 
     @Override
