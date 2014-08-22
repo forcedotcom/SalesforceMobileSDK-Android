@@ -32,9 +32,8 @@ var path = require('path');
 var fs = require('fs');
 var repoUtils = require('../external/shared/node/repoUtils');
 
-var symLinkData = getSymLinkInput();
-var symLinkEntries = symLinkData.entries;
-var fullInputPath = symLinkData.inputPath;
+var fullInputPath = path.resolve(path.join(__dirname, 'changed_symlink_files'));
+var symLinkEntries = getSymLinkInput(fullInputPath);
 
 // Move the original README back into place.
 var absGitRepoPath = path.resolve(path.join(__dirname, '..'));
@@ -55,8 +54,7 @@ exec('mv "' + readmeBackupPath + '" "' + readmePath + '"', function (error, stdo
 	});
 });
 
-function getSymLinkInput() {
-	var inputFile = path.resolve(path.join(__dirname, 'changed_symlink_files'));
+function getSymLinkInput(inputFile) {
 	if (!fs.existsSync(inputFile)) {
 		console.log('Input file at ' + inputFile + ' does not exist.');
 		process.exit(1);
@@ -64,7 +62,7 @@ function getSymLinkInput() {
 
 	var symLinkFilesString = fs.readFileSync(inputFile, { 'encoding': 'utf8' });
 	var symLinkFiles = JSON.parse(symLinkFilesString);
-	return { 'entries' : symLinkFiles, 'inputPath' : inputFile };
+	return symLinkFiles;
 }
 
 function gitRevertSymLinks(symLinkEntries, callback) {
