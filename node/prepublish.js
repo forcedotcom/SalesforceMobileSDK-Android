@@ -60,8 +60,8 @@ exec('mv "' + readmePath + '" "' + readmeBackupPath + '"', function (error, stdo
 
 		// Make hard copies of symlink files.  npm does not pack symlinks.
 		var symLinkFileEntries = repoUtils.getSymLinkFiles(absGitRepoPath);
-		fs.writeFileSync(path.join(__dirname, 'changed_symlink_files'), JSON.stringify(symLinkFileEntries), { 'encoding': 'utf8' });
-		resolveSymLinks(symLinkFileEntries, function(success, msg) {
+		repoUtils.writeSymLinkOutput(symLinkFileEntries, path.join(__dirname, 'changed_symlink_files'));
+		repoUtils.resolveSymLinks(symLinkFileEntries, function(success, msg) {
 			if (msg) console.log(msg);
 			if (!success) {
 				process.exit(2);
@@ -69,27 +69,3 @@ exec('mv "' + readmePath + '" "' + readmeBackupPath + '"', function (error, stdo
 		});
 	});
 });
-
-function resolveSymLinks(symLinkFileEntries, callback) {
-	if (symLinkFileEntries.length === 0) {
-		return callback(true, 'Successfully copied symlink files.');
-	}
-
-	// Remove the destination link, then copy the source file or directory to the destination file.
-	var filesObj = symLinkFileEntries.shift();
-	try {
-		fs.unlinkSync(filesObj.destFile);
-	} catch (err) {
-		return callback(false, 'FATAL: Could not remove existing symlink file \'' + filesObj.destFile + '\'.');
-	}
-
-	console.log('Copying \'' + filesObj.sourceFile + '\' to \'' + filesObj.destFile + '\'.');
-	exec('cp -R "' + filesObj.sourceFile + '" "' + filesObj.destFile + '"', function (error, stdout, stderr) {
-		if (error) {
-			return callback(false, 'FATAL: Could not copy \'' + filesObj.sourceFile + '\' to \'' + filesObj.destFile + '\'.');
-		} else {
-			// Next!
-			resolveSymLinks(symLinkFileEntries, callback);
-		}
-	});
-}

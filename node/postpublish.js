@@ -33,7 +33,7 @@ var fs = require('fs');
 var repoUtils = require('../external/shared/node/repoUtils');
 
 var fullInputPath = path.resolve(path.join(__dirname, 'changed_symlink_files'));
-var symLinkEntries = getSymLinkInput(fullInputPath);
+var symLinkEntries = repoUtils.readSymLinkInput(fullInputPath);
 
 // Move the original README back into place.
 var absGitRepoPath = path.resolve(path.join(__dirname, '..'));
@@ -48,36 +48,8 @@ exec('mv "' + readmeBackupPath + '" "' + readmePath + '"', function (error, stdo
 	// Revert symlinks from the root of the git repo.
 	process.chdir(absGitRepoPath);
 
-	gitRevertSymLinks(symLinkEntries, function() {
+	repoUtils.revertSymLinks(symLinkEntries, absGitRepoPath, function() {
 		console.log('Finished reverting symlink files in git.');
 		fs.unlinkSync(fullInputPath);
 	});
 });
-
-function getSymLinkInput(inputFile) {
-	if (!fs.existsSync(inputFile)) {
-		console.log('Input file at ' + inputFile + ' does not exist.');
-		process.exit(1);
-	}
-
-	var symLinkFilesString = fs.readFileSync(inputFile, { 'encoding': 'utf8' });
-	var symLinkFiles = JSON.parse(symLinkFilesString);
-	return symLinkFiles;
-}
-
-function gitRevertSymLinks(symLinkEntries, callback) {
-	if (symLinkEntries.length === 0) {  // We're done.
-		return callback();
-	}
-
-	var destFilePath = symLinkEntries.shift().destFile;
-	destFilePath = path.relative(process.cwd(), destFilePath);
-	var destFileDir = path.dirname(destFilePath);
-	var destFileName = path.basename(destFilePath);
-	exec('git checkout -- "' + destFileName + '"', { 'cwd': destFileDir }, function (error, stdout, stderr) {
-		if (error) {
-			console.log('WARNING: Could not revert file \'' + destFilePath + '\' in git: ' + error);
-		}
-		gitRevertSymLinks(symLinkEntries, callback);
-	});
-}
