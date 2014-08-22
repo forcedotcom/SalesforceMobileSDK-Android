@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2013-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -29,10 +29,16 @@
 
 var exec = require('child_process').exec;
 var path = require('path');
-var publishUtils = require('./publishutils');
+var fs = require('fs');
+var repoUtils = require('../external/shared/node/repoUtils');
+
+var symLinkData = getSymLinkInput();
+var symLinkEntries = symLinkData.entries;
+var fullInputPath = symLinkData.inputPath;
 
 // Move the original README back into place.
-var readmePath = path.resolve(path.join(__dirname, '..', 'README.md'));
+var absGitRepoPath = path.resolve(path.join(__dirname, '..'));
+var readmePath = path.join(absGitRepoPath, 'README.md');
 var readmeBackupPath = readmePath + '.orig';
 console.log('Moving original repo README file back into place.');
 exec('mv "' + readmeBackupPath + '" "' + readmePath + '"', function (error, stdout, stderr) {
@@ -41,14 +47,25 @@ exec('mv "' + readmeBackupPath + '" "' + readmePath + '"', function (error, stdo
 	}
 
 	// Revert symlinks from the root of the git repo.
-	var absGitRepoPath = path.resolve(__dirname, '..');
 	process.chdir(absGitRepoPath);
 
-	var symLinkEntries = publishUtils.getSymLinkFiles();
 	gitRevertSymLinks(symLinkEntries, function() {
 		console.log('Finished reverting symlink files in git.');
+		fs.unlinkSync(fullInputPath);
 	});
 });
+
+function getSymLinkInput() {
+	var inputFile = path.resolve(path.join(__dirname, 'changed_symlink_files'));
+	if (!fs.existsSync(inputFile)) {
+		console.log('Input file at ' + inputFile + ' does not exist.');
+		process.exit(1);
+	}
+
+	var symLinkFilesString = fs.readFileSync(inputFile, { 'encoding': 'utf8' });
+	var symLinkFiles = JSON.parse(symLinkFilesString);
+	return { 'entries' : symLinkFiles, 'inputPath' : inputFile };
+}
 
 function gitRevertSymLinks(symLinkEntries, callback) {
 	if (symLinkEntries.length === 0) {  // We're done.

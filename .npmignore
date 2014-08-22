@@ -1,4 +1,9 @@
-external/samples/
+external/shared/samples/accounteditor/
+external/shared/samples/contactexplorer/
+external/shared/samples/fileexplorer/
+external/shared/samples/smartstoreexplorer/
+external/shared/samples/userandgroupsearch/
+external/shared/samples/usersearch/
 
 external/cordova/bin/
 external/cordova/framework/bin/
@@ -17,6 +22,7 @@ native/TemplateApp/gen/
 
 hybrid/SampleApps/
 native/SampleApps/
+external/shared/test/
 hybrid/test/
 native/test/
 libs/test/

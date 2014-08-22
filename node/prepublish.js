@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2013-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -38,12 +38,13 @@
 var fs = require('fs');
 var path = require('path');
 var exec = require('child_process').exec;
-var publishUtils = require('./publishutils');
+var repoUtils = require('../external/shared/node/repoUtils');
 
 // Use npm.md as the README for the package.
-var readmePath = path.resolve(path.join(__dirname, '..', 'README.md'));
+var absGitRepoPath = path.resolve(path.join(__dirname, '..'));
+var readmePath = path.join(absGitRepoPath, 'README.md');
 var readmeBackupPath = readmePath + '.orig';
-var npmMdPath = path.resolve(path.join(__dirname, '..', 'npm.md'));
+var npmMdPath = path.join(absGitRepoPath, 'npm.md');
 console.log('Using ' + npmMdPath + ' as the README.md file for the package.');
 exec('mv "' + readmePath + '" "' + readmeBackupPath + '"', function (error, stdout, stderr) {
 	if (error) {
@@ -58,7 +59,8 @@ exec('mv "' + readmePath + '" "' + readmeBackupPath + '"', function (error, stdo
 		}
 
 		// Make hard copies of symlink files.  npm does not pack symlinks.
-		var symLinkFileEntries = publishUtils.getSymLinkFiles();
+		var symLinkFileEntries = repoUtils.getSymLinkFiles(absGitRepoPath);
+		fs.writeFileSync(path.join(__dirname, 'changed_symlink_files'), JSON.stringify(symLinkFileEntries), { 'encoding': 'utf8' });
 		resolveSymLinks(symLinkFileEntries, function(success, msg) {
 			if (msg) console.log(msg);
 			if (!success) {
