@@ -178,13 +178,20 @@ function createHybridApp(config) {
         process.exit(7);
     }
 
-    //console.log('cordova create ' + config.projectDir + ' ' + config.packagename + ' ' + config.appname);
     shelljs.exec('cordova create ' + config.projectDir + ' ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android');
     shelljs.exec('cordova plugin add https://github.com/wmathurin/SalesforceMobileSDK-CordovaPlugin');
-    //console.log('node plugins/com.salesforce/tools/postinstall-android.js ' + config.targetandroidapi + ' ' + config.usesmartstore)
     shelljs.exec('node plugins/com.salesforce/tools/postinstall-android.js ' + config.targetandroidapi + ' ' + config.usesmartstore);
+
+    // Remove the default Cordova app.
+    shelljs.rm('-rf', path.join('www', '*'));
+
+    // Copy the sample app, if a local app was selected.
+    if (config.apptype === 'hybrid_local') {
+        var sampleAppFolder = path.join(__dirname, '..', 'external', 'shared', 'samples', 'userlist');
+        shelljs.cp('-R', path.join(sampleAppFolder, '*'), 'www');
+    }
 
     var bootconfig = {
         "remoteAccessConsumerKey": "3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa",
