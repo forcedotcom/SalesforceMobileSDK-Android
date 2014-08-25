@@ -613,7 +613,7 @@ public class SalesforceSDKManager {
 	/**
      * Starts account switcher activity if an account has been removed.
      */
-    protected void startSwitcherActivityIfRequired() {
+    public void startSwitcherActivityIfRequired() {
 
         // Clears cookies.
         CookieSyncManager.createInstance(context);
