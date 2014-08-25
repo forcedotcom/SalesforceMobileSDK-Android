@@ -128,7 +128,8 @@ public class RestResponse {
 	 */
 	public void consume() throws IOException {
 		if (responseAsBytes != null) {
-			// already consumed
+
+			// Already consumed.
 			return;			
 		}
 		HttpEntity entity = null;
@@ -136,8 +137,15 @@ public class RestResponse {
 			entity = response.getEntity();
 		}
 		if (entity != null) {
-			responseCharSet = EntityUtils.getContentCharSet(entity);		
-			responseAsBytes = EntityUtils.toByteArray(entity);
+			try {
+				responseCharSet = EntityUtils.getContentCharSet(entity);		
+				responseAsBytes = EntityUtils.toByteArray(entity);
+			} catch (IllegalStateException ex) {
+
+				// Content has already been consumed, but 'responseAsBytes' is probably not set yet.
+				Log.e("RestResponse: consume()", "Content has already been consumed", ex);
+				responseAsBytes = new byte[0];
+			}
 		} else {
 			responseAsBytes = new byte[0];
 		}
