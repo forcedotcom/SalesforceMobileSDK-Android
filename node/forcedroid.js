@@ -29,7 +29,7 @@
 
 // node.js application for working with projects that use the Salesforce Mobile
 // SDK for Android.  Currently supports the creation of new apps from different
-// app templates and running sample apps.
+// app templates.
 
 //
 // External modules
@@ -42,6 +42,7 @@ var fs = require('fs');
 var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
+var version = '2.3.0';
 var minimumCordovaVersion = '3.5';
 
 // Calling main
@@ -58,13 +59,13 @@ function main(args) {
     var commandHandler = null;
 
     switch (command || '') {
+    case 'version':
+        console.log('forcedroid version ' + version);
+        process.exit(0);
+        break;
     case 'create': 
         processorList = createArgsProcessorList(); 
         commandHandler = createApp;
-        break;
-    case 'samples': 
-        processorList = samplesArgsProcessorList(); 
-        commandHandler = fetchSamples;
         break;
     default:
         usage();
@@ -79,7 +80,7 @@ function main(args) {
 //
 function usage() {
     console.log(outputColors.cyan + 'Usage:');
-    console.log('\n');
+    console.log();
     console.log(outputColors.magenta + 'forcedroid create');
     console.log('    --apptype=<Application Type> (native, hybrid_remote, hybrid_local)');
     console.log('    --appname=<Application Name>');
@@ -89,56 +90,8 @@ function usage() {
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
     console.log('    [--usesmartstore=<Whether or not to use SmartStore> (\'true\' or \'false\'. false by default)]');
     console.log(outputColors.cyan + '\nOR\n');
-    console.log(outputColors.magenta + 'forcedroid samples');
-    console.log('    --targetdir=<Target Samples Folder>');
-    console.log('    --targetandroidapi=<Target Api e.g. 19 for KitKat>' + outputColors.reset);
+    console.log(outputColors.magenta + 'forcedroid version' + outputColors.reset);
 }
-
-//
-// Helper to 'samples' command
-//
-function fetchSamples(config) {
-    // Map of sample app name to boolean indicating if it uses smartstore
-    var sampleApps = {'FileExplorer':false, 'NativeSqlAggregator':true, 'RestExplorer': false};
-
-    // Generating sample app projects
-    for (var appname in sampleApps) {
-        sampleNativeApp(config, appname, sampleApps[appname]);
-    }
-
-    // Inform the user of next steps.
-    var nextStepsOutput = ['',
-                           outputColors.green + 'Your sample applications projects are ready in ' + config.targetdir + '.',
-                           '',
-                           'To build from the command line do the following:' + outputColors.reset,
-                           '   - cd ' + path.join(config.targetdir, '<SampleApp>'),
-                           '   - ant clean debug',
-                           '',
-                           outputColors.cyan + 'To run the application, start an emulator or plug in your device and run:' + outputColors.reset,
-                           '   - ant installd',
-                           '',
-                           outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
-                           '   - Set ' + config.targetdir + ' as your workspace',
-                           '   - Go to Import -> Existing project and select ' + config.targetdir + ' as the root and import all the projects shown',
-                           '   - Choose \'Build All\' from the Project menu',
-                           '   - Run your application by choosing "Run as Android application"',
-                           ''].join('\n');
-    console.log(nextStepsOutput);
-}
-
-function sampleNativeApp(config, appname, usesmartstore) {
-   createNativeApp({targetdir: config.targetdir,
-                     targetandroidapi: config.targetandroidapi,
-                     apptype: 'native',
-                     appname: appname,
-                     packagename: 'com.salesforce.samples.' + appname.toLowerCase(),
-                     usesmartstore: usesmartstore,
-                     relativeTemplateDir: 'native/SampleApps/' + appname,
-                     templateAppName: appname,
-                     templatePackageName: 'com.salesforce.samples.' + appname.toLowerCase()},
-                   false);
-}
-
 
 //
 // Helper for 'create' command
@@ -470,16 +423,6 @@ function createArgsProcessorList() {
                     undefined,
                     function(val) { return (val.toLowerCase() === 'yes'); });
 
-    return argProcessorList;
-}
-
-//
-// Processor list for 'samples' command
-//
-function samplesArgsProcessorList() {
-    var argProcessorList = new commandLineUtils.ArgProcessorList();
-    addProcessorFor(argProcessorList, 'targetdir', 'Enter the target directory of samples:', 'Invalid value for target dir: \'$val\'.',  /\S+/);
-    addProcessorForAndroidApi(argProcessorList);
     return argProcessorList;
 }
 
