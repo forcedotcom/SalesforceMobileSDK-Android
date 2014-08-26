@@ -22,11 +22,9 @@ For the rest of this document, we assume that you have setup three shell variabl
 Inside the $NATIVE_DIR, you will find several projects:
 
 1. **SalesforceSDK**: The Salesforce SDK library project which provides support for OAuth2, REST API calls, pin screen (driven by mobile policy)
-2. **SmartSync**: The SmartSync library project which provides support for Salesforce object metadata API calls, layout API calls, MRU API calls, caching
-3. **SmartStore**: Library project which provides the SmartStore functionality
-4. **test/SalesforceSDKTest**: Test project for SalesforceSDK
-5. **test/SmartSyncTest**: Test project for SmartSync
-6. **test/SmartStoreTest**: Test project for SmartStore
+2. **SmartStore**: Library project which provides the SmartStore functionality
+3. **test/SalesforceSDKTest**: Test project for SalesforceSDK
+4. **test/SmartStoreTest**: Test project for SmartStore
 
 # Running sample apps from Eclipse
 

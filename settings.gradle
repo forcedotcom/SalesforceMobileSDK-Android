@@ -1,6 +1,5 @@
 include 'libs:SalesforceSDK'
 include 'libs:SmartStore'
-include 'libs:SmartSync'
 include 'native:SampleApps:RestExplorer'
 include 'native:SampleApps:NativeSqlAggregator'
 include 'native:SampleApps:FileExplorer'
