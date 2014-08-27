@@ -42,7 +42,7 @@ var fs = require('fs');
 var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
-var version = '2.3.0';
+var version = '3.0.0';
 var minimumCordovaVersion = '3.5';
 
 // Calling main
