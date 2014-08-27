@@ -1,8 +1,7 @@
 apply plugin: 'android'
 
 dependencies {
-  compile project(':native:SalesforceSDK')
-
+  compile project(':libs:SalesforceSDK')
 }
 
 android {

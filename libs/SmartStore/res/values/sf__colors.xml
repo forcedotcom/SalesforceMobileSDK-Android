@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="sf__inspector_button_background_color">#ccc</color>
+    <color name="sf__inspector_text_background_color">#eeeeee</color>
+    <color name="sf__inspector_text_color">#00aa00</color>
+    <color name="sf__inspector_cell_background_color">#eeeeee</color>
+    <color name="sf__inspector_cell_text_color">#000000</color>
+</resources>

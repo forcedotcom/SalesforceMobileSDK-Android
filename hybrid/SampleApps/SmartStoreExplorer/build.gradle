@@ -1,12 +1,12 @@
 apply plugin: 'android'
 
 dependencies {
-  compile project(':hybrid:SmartStore')
-
+  compile project(':libs:SalesforceSDK')
+  compile project(':libs:SmartStore')
 }
 
 android {
-  compileSdkVersion 8
+  compileSdkVersion 11
   buildToolsVersion "20.0.0"
 
   sourceSets {
@@ -21,7 +21,6 @@ android {
       assets.srcDirs = ['assets']
     }
   }
-
   packagingOptions {
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/LICENSE.txt'

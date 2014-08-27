@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+    <dimen name="sf__inspector_margin">1dp</dimen>
+    <dimen name="sf__inspector_grid_cell_spacing">1dp</dimen>
+    <dimen name="sf__inspector_text_size">10sp</dimen>
+    <dimen name="sf__inspector_cell_text_size">10sp</dimen>
+    <dimen name="sf__inspector_query_field_height">36dp</dimen>
+    
+</resources>

@@ -1,1 +1,1 @@
-../../../../../external/shared/SampleApps/smartstoreexplorer/smartstoreexplorer.js
+../../../../../external/shared/samples/smartstoreexplorer/smartstoreexplorer.js

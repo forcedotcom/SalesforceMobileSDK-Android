@@ -1,13 +1,11 @@
-
 apply plugin: 'android'
 
 dependencies {
-  compile project(':native:SalesforceSDK')
-
+  compile project(':libs:SalesforceSDK')
 }
 
 android {
-  compileSdkVersion 8
+  compileSdkVersion 11
   buildToolsVersion "20.0.0"
 
   sourceSets {
@@ -22,10 +20,12 @@ android {
       assets.srcDirs = ['assets']
     }
   }
+
   packagingOptions {
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/LICENSE.txt'
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
   }
+
 }

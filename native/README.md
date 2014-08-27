@@ -1,11 +1,6 @@
 # Introduction
 
-This folder contains the native libraries of the Salesforce SDK, as well as test and sample projects that can be used to exercise the SDK.
-
-### SDK notes
-
-* The SDK is supported and tested for Android 2.2 and above.
-* The SalesforceSDK project is built with the Android 3.0 (Honeycomb) library.  The primary reason for this is that we want to be able to make a conditional check at runtime for file system encryption capabilities.  This check is guarded from being called on earlier Android platforms, the net result being that you can still use the SalesforceSDK in earlier Android application versions, down to the mininum-supported Android 2.2.
+This folder contains the native sample projects that can be used to exercise the SDK, and test projects associated with those sample projects.
 
 # Setting up your development environment
 
@@ -16,18 +11,17 @@ For the rest of this document, we assume that you have setup three shell variabl
 1. ANDROID_SDK_DIR pointing to the Android SDK directory
 2. SALESFORCE_SDK_DIR pointing to your clone of the Salesforce Mobile SDK repository e.g. `/home/jon/SalesforceMobileSDK-Android`.
 3. NATIVE_DIR pointing to $SALESFORCE_SDK_DIR/native
+4. LIBS_DIR pointing to $SALESFORCE_SDK_DIR/libs
 
-**If you haven't, just make sure to replace $ANDROID_SDK_DIR, $SALESFORCE_SDK_DIR and $NATIVE_DIR in the snippets below with the actual paths.**
+**If you haven't, just make sure to replace $ANDROID_SDK_DIR, $SALESFORCE_SDK_DIR, $NATIVE_DIR and $LIBS_DIR in the snippets below with the actual paths.**
 
 Inside the $NATIVE_DIR, you will find several projects:
 
-1. **SalesforceSDK**: The Salesforce SDK library project which provides support for OAuth2, REST API calls, pin screen (driven by mobile policy)
-2. **TemplateApp**: Template used when creating new native application using SalesforceSDK
-3. **test/SalesforceSDKTest**: Test project for SalesforceSDK
-4. **test/TemplateAppTest**: Test project for the TemplateApp project
-5. **SampleApps/RestExplorer**: An app using SalesforceSDK to explore the REST API calls
-6. **SampleApps/test/RestExplorerTest**: Test project for the RestExplorer project
-7. **SampleApps/NativeSqlAggregator**: An app using SalesforceSDK and SmartStore to demonstrate complex aggregate smart SQL queries
+1. **TemplateApp**: Template used when creating new native application using SalesforceSDK
+2. **test/TemplateAppTest**: Test project for the TemplateApp project
+3. **SampleApps/RestExplorer**: An app using SalesforceSDK to explore the REST API calls
+4. **SampleApps/test/RestExplorerTest**: Test project for the RestExplorer project
+5. **SampleApps/NativeSqlAggregator**: An app using SalesforceSDK and SmartStore to demonstrate complex aggregate smart SQL queries
 
 # Running sample apps from Eclipse
 
@@ -60,7 +54,7 @@ Where:
 * only pass -Duse.smartstore=true if you want SmartStore support
 
 If it's your first time build an application with the Salesforce SDK, do the following:
-cd $NATIVE_DIR/SalesforceSDK
+cd $LIBS_DIR/SalesforceSDK
 $ANDROID_SDK_DIR/android update project -p .
 
 To build the new application, do the following:
@@ -84,6 +78,6 @@ $TARGET_DIR/res/values/rest.xml
 
 1. Launch Eclipse
 2. Go to File -> Import and select General -> Existing Projects into Workspace.
-3. Import the $SALESFORCE_SDK_DIR/native/SalesforceSDK library project and your newly created project $TARGET_DIR into the workspace
+3. Import the $SALESFORCE_SDK_DIR/libs/SalesforceSDK library project and your newly created project $TARGET_DIR into the workspace
 4. Right click on the your project and choose Run As -> Android Application
 

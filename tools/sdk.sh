@@ -1,7 +1,9 @@
 #!/bin/bash
 TOP=`pwd`
+LIBS_TOP=$TOP/libs/
 NATIVE_TOP=$TOP/native/
 HYBRID_TOP=$TOP/hybrid/
+CORDOVA_TOP=$TOP/external/cordova/
 TRUE=0
 FALSE=1
 TARGETS=""
@@ -45,18 +47,19 @@ usage ()
     echo "        all"
     echo "        SalesforceSDK"
     echo "        SmartStore"
+    echo "        Cordova"
     echo "        RestExplorer"
     echo "        NativeSqlAggregator"
     echo "        FileExplorer"
     echo "        TemplateApp"
     echo "        AccountEditor"
-    echo "        HybridFileExplorer"
     echo "        ContactExplorer"
-    echo "        VFConnector"
     echo "        SmartStoreExplorer"
+    echo "        VFConnector"
     echo "        SalesforceSDKTest"
-    echo "        RestExplorerTest"
+    echo "        SmartStoreTest"
     echo "        TemplateAppTest"
+    echo "        RestExplorerTest"
     echo "        ForcePluginsTest"
     echo "    <test_target> can be "
     echo "        all"
@@ -151,27 +154,27 @@ then
 else
     process_args $@
 
-    build_project_if_requested "SalesforceSDK" $NATIVE_TOP/SalesforceSDK 11
-    build_project_if_requested "SmartStore" $HYBRID_TOP/SmartStore
+    build_project_if_requested "Cordova" $CORDOVA_TOP/framework 19
+    build_project_if_requested "SalesforceSDK" $LIBS_TOP/SalesforceSDK 11
+    build_project_if_requested "SmartStore" $LIBS_TOP/SmartStore
     build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp
     build_project_if_requested "RestExplorer" $NATIVE_TOP/SampleApps/RestExplorer
     build_project_if_requested "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator
     build_project_if_requested "FileExplorer" $NATIVE_TOP/SampleApps/FileExplorer
     build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor
-    build_project_if_requested "HybridFileExplorer" $HYBRID_TOP/SampleApps/HybridFileExplorer
     build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer
     build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer
     build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector
 
-    build_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/test/SalesforceSDKTest .
+    build_test_project_if_requested "SalesforceSDKTest" $LIBS_TOP/test/SalesforceSDKTest .
+    build_test_project_if_requested "SmartStoreTest" $LIBS_TOP/test/SmartStoreTest .
     build_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/test/TemplateAppTest ../../TemplateApp
     build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/SampleApps/test/RestExplorerTest ../../RestExplorer
     build_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest .
-    build_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest .
 
-    run_test_project_if_requested "SalesforceSDKTest" $NATIVE_TOP/test/SalesforceSDKTest
+    run_test_project_if_requested "SalesforceSDKTest" $LIBS_TOP/test/SalesforceSDKTest
+    run_test_project_if_requested "SmartStoreTest" $LIBS_TOP/test/SmartStoreTest
     run_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/test/TemplateAppTest
     run_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/SampleApps/test/RestExplorerTest
     run_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest
-    run_test_project_if_requested "SmartStoreTest" $HYBRID_TOP/test/SmartStoreTest
 fi

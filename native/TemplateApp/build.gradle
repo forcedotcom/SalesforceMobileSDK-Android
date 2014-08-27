@@ -1,0 +1,41 @@
+apply plugin: 'android'
+
+dependencies {
+  compile project(':libs:SalesforceSDK')
+}
+
+android {
+  compileSdkVersion 11
+  buildToolsVersion "19.0.1"
+
+  sourceSets {
+
+    main {
+      manifest.srcFile 'AndroidManifest.xml'
+      java.srcDirs = ['src']
+      resources.srcDirs = ['src']
+      aidl.srcDirs = ['src']
+      renderscript.srcDirs = ['src']
+      res.srcDirs = ['res']
+      assets.srcDirs = ['assets']
+    }
+    
+    androidTest.setRoot('../test/TemplateAppTest')
+    androidTest {
+      java.srcDirs = ['../test/TemplateAppTest/src']
+      resources.srcDirs = ['../test/TemplateAppTest/src']
+      res.srcDirs = ['../test/TemplateAppTest/res']
+    }
+  }
+  defaultConfig {
+    testPackageName "com.salesforce.samples.templateapp"
+    testInstrumentationRunner "com.salesforce.androidsdk.util.JUnitReportTestRunner"
+  }
+  packagingOptions {
+    exclude 'META-INF/LICENSE'
+    exclude 'META-INF/LICENSE.txt'
+    exclude 'META-INF/DEPENDENCIES'
+    exclude 'META-INF/NOTICE'
+  }
+
+}

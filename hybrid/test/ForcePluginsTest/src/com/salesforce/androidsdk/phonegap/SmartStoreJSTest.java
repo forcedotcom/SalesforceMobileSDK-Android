@@ -42,9 +42,47 @@ public class SmartStoreJSTest extends JSTestCase {
 
     @Override
     public List<String> getTestNames() {
-    	return Arrays.asList(new String[] {"testSmartQueryWithCount", "testSmartQueryWithSpecialFields", "testArbitrarySoupNames", "testCompoundQueryPath", "testEmptyQuerySpec", "testIntegerQuerySpec", "testLikeQueryInnerText", "testLikeQuerySpecEndsWith", "testLikeQuerySpecStartsWith", "testManipulateCursor", "testMoveCursorToNextPageFromLastPage", "testMoveCursorToPreviousPageFromFirstPage", "testQuerySoup", "testQuerySoupBadQuerySpec", "testQuerySoupBeginKeyNoEndKey", "testQuerySoupDescending", "testQuerySoupEndKeyNoBeginKey", "testQuerySpecFactories", "testRegisterBogusSoup", "testRegisterRemoveSoup", "testRegisterSoupNoIndices", "testRemoveFromSoup", "testRetrieveSoupEntries", "testUpsertSoupEntries", "testUpsertSoupEntriesWithExternalId", "testUpsertToNonexistentSoup"});
-    }
+		return Arrays.asList(new String[] { "testGetDatabaseSize",
+                                            "testRegisterRemoveSoup",
+                                            "testRegisterBogusSoup",
+                                            "testRegisterSoupNoIndices",
+                                            "testUpsertSoupEntries",
+                                            "testUpsertSoupEntriesWithExternalId",
+                                            "testUpsertToNonexistentSoup",
+                                            "testRetrieveSoupEntries",
+                                            "testRemoveFromSoup",
+                                            "testQuerySoup",
+                                            "testQuerySoupDescending",
+                                            "testQuerySoupBadQuerySpec",
+                                            "testQuerySoupEndKeyNoBeginKey",
+                                            "testQuerySoupBeginKeyNoEndKey",
+                                            "testManipulateCursor",
+                                            "testMoveCursorToPreviousPageFromFirstPage",
+                                            "testMoveCursorToNextPageFromLastPage",
+                                            "testArbitrarySoupNames",
+                                            "testQuerySpecFactories",
+                                            "testLikeQuerySpecStartsWith",
+                                            "testLikeQuerySpecEndsWith",
+                                            "testLikeQueryInnerText",
+                                            "testCompoundQueryPath",
+                                            "testEmptyQuerySpec",
+                                            "testIntegerQuerySpec",
+                                            "testSmartQueryWithCount",
+                                            "testSmartQueryWithSpecialFields",
+                                            "testGetSoupIndexSpecs",
+                                            "testGetSoupIndexSpecsWithBogusSoupName",
+                                            "testAlterSoupNoReIndexing",
+                                            "testAlterSoupWithReIndexing",
+                                            "testAlterSoupWithBogusSoupName",
+                                            "testReIndexSoup",
+                                            "testClearSoup"});
+	}
     
+
+    public void testGetDatabaseSize() {
+    	runTest("testGetDatabaseSize");
+    }
+
     public void testRegisterRemoveSoup()  {
         runTest("testRegisterRemoveSoup");
     }
@@ -147,5 +185,34 @@ public class SmartStoreJSTest extends JSTestCase {
 
     public void testSmartQueryWithSpecialFields() {
     	runTest("testSmartQueryWithSpecialFields");
+    }
+
+    public void testGetSoupIndexSpecs() {
+    	runTest("testGetSoupIndexSpecs");
+    }
+    
+    public void testGetSoupIndexSpecsWithBogusSoupName() {
+    	runTest("testGetSoupIndexSpecsWithBogusSoupName");
+    }
+    
+
+    public void testAlterSoupNoReIndexing() {
+        runTest("testAlterSoupNoReIndexing");
+    }
+
+    public void testAlterSoupWithReIndexing() {
+        runTest("testAlterSoupWithReIndexing");
+    }
+
+    public void testAlterSoupWithBogusSoupName() {
+        runTest("testAlterSoupWithBogusSoupName");
+    }
+
+    public void testReIndexSoup() {
+        runTest("testReIndexSoup");
+    }
+
+    public void testClearSoup() {
+        runTest("testClearSoup");
     }
 }
