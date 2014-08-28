@@ -22,19 +22,20 @@ Introduction
 ### What's New in 2.3
 
 **Push Notifications**
-- The Salesforce Mobile SDK now supports the ability to register and receive push notifications from within a hybrid local application.
+- Salesforce Mobile SDK now supports the ability to register and receive push notifications from within a hybrid local or remote application.
 
 **SmartStore Enhancements**
-- The Salesforce Mobile SDK now supports the ability to add and/or remove index specs for an existing soup.
-- A new API to return data size has been added.
-- A new tool called `SmartStoreInspector` has been added that provides the ability to easily inspect the contents of SmartStore.
+SmartStore now supports:
+- The ability to add and/or remove index specs for an existing soup.
+- A new API to return data size.
+- A new tool, `SmartStoreInspector`, that lets you easily inspect the contents of SmartStore.
 
 **Library Upgrades**
 - Upgraded the `Cordova` library to `v3.5`.
 
 **Other Technical Improvements**
 - Various bug fixes.
-- Support for serving local Javascript resources through `localhost` in a hybrid remote application has been added.
+- Support for serving local JavaScript resources through `localhost` in a hybrid remote application.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials
 
