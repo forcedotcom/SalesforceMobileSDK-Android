@@ -134,7 +134,7 @@ function createHybridApp(config) {
     shelljs.exec('cordova create ' + config.projectDir + ' ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android');
-    shelljs.exec('cordova plugin add https://github.com/wmathurin/SalesforceMobileSDK-CordovaPlugin');
+    shelljs.exec('cordova plugin add https://github.com/forcedotcom/SalesforceMobileSDK-CordovaPlugin');
     shelljs.exec('node plugins/com.salesforce/tools/postinstall-android.js ' + config.targetandroidapi + ' ' + config.usesmartstore);
 
     // Remove the default Cordova app.
