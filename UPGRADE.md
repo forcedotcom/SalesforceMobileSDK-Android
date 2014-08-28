@@ -11,11 +11,3 @@
 
 ## Upgrade steps from v. 2.2.x to v. 2.3.0 for hybrid apps
 - TODO:
-
-## Upgrade steps from v. 2.1.x to v. 2.2.0 for native and hybrid apps
-- Replace the existing `SalesforceSDK` project in Eclipse with the Mobile SDK 2.2.0 `SalesforceSDK` project.
-- If your app uses `SmartStore`, replace the existing `SmartStore` project in Eclipse with the new `SmartStore` project.
-- Right click your project and select `Properties`.
-- Click the `Android` tab and navigate to the library project section at the bottom.
-- Replace the existing `SalesforceSDK` entry with the new `SalesforceSDK` project in your workspace.
-- If your app uses `SmartStore`, repeat the previous step for the `SmartStore` project.
