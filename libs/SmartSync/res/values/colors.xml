@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="record_account">#ff3e80c3</color>
+    <color name="record_campaign">#ffedb93b</color>
+    <color name="record_case">#ffc4b250</color>
+    <color name="record_contact">#ff8172ad</color>
+    <color name="record_lead">#ffffa525</color>
+    <color name="record_opportunity">#fff9cb2c</color>
+    <color name="record_task">#ff1bb68c</color>
+    <color name="record_other">#ffbbbbbb</color>
+</resources>
