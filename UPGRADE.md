@@ -13,14 +13,14 @@
 
 The 2.3 version of the Mobile SDK uses Cordova 3.5, which represents both a significant upgrade from the previous Cordova 2.3, and a signficant change in how you bootstrap your application.  Please follow the instructions below to migrate your hybrid app to the Cordova 3.5 paradigm.
 
-#### Prerequisites
-- You will need to install the `cordova` command line tool from [https://www.npmjs.org/package/cordova](https://www.npmjs.org/package/cordova).  The `forceios` package depends on the `cordova` tool to create hybrid apps.  Make sure you have version 3.5 or greater installed.
+### Prerequisites
+- You will need to install the `cordova` command line tool from [https://www.npmjs.org/package/cordova](https://www.npmjs.org/package/cordova).  The `forcedroid` package depends on the `cordova` tool to create hybrid apps.  Make sure you have version 3.5 or greater installed.
 - You will also need to install the `forcedroid` npm package from [https://www.npmjs.org/package/forceidroid](https://www.npmjs.org/package/forcedroid), to create your new hybrid app.
 
-#### Create your new hybrid app
+### Create your new hybrid app
 Follow the instructions in the [forcedroid package](https://www.npmjs.org/package/forcedroid) to create your new hybrid app.  You'll choose either a `hybrid_remote` or `hybrid_local` app, depending on the type of hybrid app you've developed.
 
-+#### Migrate your old app artifacts to the new project
+### Migrate your old app artifacts to the new project
 1. Once you've created your new app, `cd` into the top level folder of the new app you've created.
 2. Run `cordova plugin add [Cordova plugin used in your app]` for every plugin that your app uses.  **Note:** You do not need to do this for the Mobile SDK plugins, as the `forcedroid` app creation process will automatically add those plugins to your app.
 3. Remove everything from the `www/` folder, and replace its contents with all of your HTML, CSS, (non-Cordova) JS files, and `bootconfig.json` from your old app.  Basically, copy everything from your old `www/` folder except for the Cordova and Cordova plugin JS files.  Cordova is responsible for pushing all of the Cordova-specific JS files, plugin files, etc., into your www/ folder when the app is deployed (see below).
