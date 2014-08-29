@@ -10,12 +10,14 @@ external/cordova/framework/bin/
 external/cordova/test/bin/
 libs/SalesforceSDK/bin/
 libs/SmartStore/bin/
+libs/SmartSync/bin/
 native/TemplateApp/bin/
 
 external/cordova/framework/gen/
 external/cordova/test/gen/
 libs/SalesforceSDK/gen/
 libs/SmartStore/gen/
+libs/SmartSync/gen/
 native/TemplateApp/gen/
 
 hybrid/SampleApps/
@@ -25,14 +27,17 @@ hybrid/test/
 native/test/
 libs/test/
 
+libs/SmartSync/proguard-project.txt
 libs/SmartStore/proguard-project.txt
 libs/SalesforceSDK/proguard-project.txt
 native/TemplateApp/proguard-project.txt
 
+libs/SmartSync/local.properties
 libs/SmartStore/local.properties
 libs/SalesforceSDK/local.properties
 native/TemplateApp/local.properties
 
+libs/SmartSync/SmartSync.iml
 libs/SmartStore/SmartStore.iml
 libs/SalesforceSDK/SalesforceSDK.iml
 gradle/gradle.iml
