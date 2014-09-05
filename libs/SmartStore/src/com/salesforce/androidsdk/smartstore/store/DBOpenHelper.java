@@ -123,11 +123,31 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {
+
+		/*
+		 * SQLCipher manages locking on the DB at a low level. However,
+		 * we explicitly lock on the DB as well, for all SmartStore
+		 * operations. This can lead to deadlocks or ReentrantLock
+		 * exceptions where a thread is waiting for itself. Hence, we
+		 * set the default SQLCipher locking to 'false', since we
+		 * manage locking at our level anyway.
+		 */
+		db.setLockingEnabled(false);
 		SmartStore.createMetaTables(db);
 	}
 
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+
+		/*
+		 * SQLCipher manages locking on the DB at a low level. However,
+		 * we explicitly lock on the DB as well, for all SmartStore
+		 * operations. This can lead to deadlocks or ReentrantLock
+		 * exceptions where a thread is waiting for itself. Hence, we
+		 * set the default SQLCipher locking to 'false', since we
+		 * manage locking at our level anyway.
+		 */
+		db.setLockingEnabled(false);
 		if (oldVersion == 1) {
 			SmartStore.createLongOperationsStatusTable(db);
 		}
