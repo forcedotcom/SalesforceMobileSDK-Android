@@ -13,5 +13,5 @@
         android:name="com.salesforce.androidsdk.util.JUnitReportTestRunner" 
         android:label="Tests for RestExplorer" />
 
-	<uses-sdk android:minSdkVersion="8" />	
+	<uses-sdk android:minSdkVersion="17" />	
 </manifest>

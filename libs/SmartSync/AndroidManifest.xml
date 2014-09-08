@@ -5,7 +5,7 @@
     android:versionCode="39"
     android:versionName="3.0.0.unstable">
 
-    <uses-sdk android:minSdkVersion="8" />
+    <uses-sdk android:minSdkVersion="17" />
 
     <application />
 </manifest>
