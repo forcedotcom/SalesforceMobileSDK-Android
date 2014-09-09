@@ -8,8 +8,8 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
 	android:id="@+id/sf__layout_root"
 	android:orientation="vertical"
-	android:layout_width="fill_parent"
-	android:layout_height="fill_parent"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
 	android:padding="@dimen/sf__server_layout_padding"
 	android:focusable="true"
 	android:focusableInTouchMode="true">

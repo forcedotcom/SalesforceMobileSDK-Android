@@ -159,7 +159,7 @@ public class CustomServerUrlEditor extends Dialog {
 			}
 		});
 		final LayoutParams params = getWindow().getAttributes();
-		params.width = (width != 0 ? width : LayoutParams.FILL_PARENT);
+		params.width = (width != 0 ? width : LayoutParams.MATCH_PARENT);
 		getWindow().setAttributes(params);
 	}
 
