@@ -22,26 +22,26 @@
 
         <!-- Login activity -->
         <activity android:name="com.salesforce.androidsdk.ui.LoginActivity"
-            android:theme="@android:style/Theme.NoTitleBar" />
+            android:theme="@style/SalesforceSDK.ActionBarTheme" />
 
         <!-- Passcode activity -->
         <activity android:name="com.salesforce.androidsdk.ui.PasscodeActivity"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+            android:theme="@style/SalesforceSDK.ActionBarTheme" />
 
         <!-- Manage space activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ManageSpaceActivity"
             android:excludeFromRecents="true"
-            android:theme="@android:style/Theme.NoTitleBar" />
+            android:theme="@style/SalesforceSDK.ActionBarTheme" />
 
         <!-- Choose server activity -->
         <activity android:name="com.salesforce.androidsdk.ui.ServerPickerActivity"
             android:excludeFromRecents="true"
-            android:theme="@android:style/Theme.NoTitleBar" />
+            android:theme="@style/SalesforceSDK.ActionBarTheme" />
 
         <!-- Account switcher activity -->
         <activity android:name="com.salesforce.androidsdk.ui.AccountSwitcherActivity"
             android:excludeFromRecents="true"
-            android:theme="@android:style/Theme.NoTitleBar" />
+            android:theme="@style/SalesforceSDK.ActionBarTheme" />
 
         <!--
             Push notification services and receivers. The 'category' attribute
