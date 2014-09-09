@@ -88,11 +88,6 @@ public class SalesforceSDKManager {
     public static final String SDK_VERSION = "3.0.0.unstable";
 
     /**
-     * Last phone version.
-     */
-    private static final int GINGERBREAD_MR1 = 10;
-
-    /**
      * Default app name.
      */
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
@@ -886,9 +881,7 @@ public class SalesforceSDKManager {
      * @return True if the application is running on a tablet.
      */
     public static boolean isTablet() {
-        if (Build.VERSION.SDK_INT <= GINGERBREAD_MR1) {
-            return false;
-        } else if ((INSTANCE.context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
+        if ((INSTANCE.context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
             return true;
         }
         return false;

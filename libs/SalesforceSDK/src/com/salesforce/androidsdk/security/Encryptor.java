@@ -40,11 +40,9 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
-import android.annotation.TargetApi;
 import android.app.Service;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
-import android.os.Build;
 import android.util.Base64;
 import android.util.Log;
 
@@ -65,17 +63,11 @@ public class Encryptor {
      * @return true if the cryptographic module was successfully initialized
      * @throws GeneralSecurityException
      */
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     public static boolean init(Context ctx) {
-        // Check if file system encryption is available and active
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB) {
-            isFileSystemEncrypted = false;
-        } else {
-            DevicePolicyManager devicePolicyManager = (DevicePolicyManager) ctx.getSystemService(Service.DEVICE_POLICY_SERVICE);
-
-            // Note: Following method only exists if linking to an android.jar api 11 and above.
-            isFileSystemEncrypted = devicePolicyManager.getStorageEncryptionStatus() == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE;
-        }
+  
+    	// Checks if file system encryption is available and active.
+        DevicePolicyManager devicePolicyManager = (DevicePolicyManager) ctx.getSystemService(Service.DEVICE_POLICY_SERVICE);
+        isFileSystemEncrypted = devicePolicyManager.getStorageEncryptionStatus() == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE;
 
         // Make sure the cryptographic transformations we want to use are available.
         bestCipherAvailable = null;
@@ -83,7 +75,7 @@ public class Encryptor {
             getBestCipher();
         } catch (GeneralSecurityException gex) {
         }
-        if (null == bestCipherAvailable) {
+        if (bestCipherAvailable == null) {
             return false;
         }
         try {
@@ -97,17 +89,18 @@ public class Encryptor {
 
     public static Cipher getBestCipher() throws GeneralSecurityException {
         Cipher cipher = null;
-        if (null != bestCipherAvailable) {
+        if (bestCipherAvailable != null) {
             return Cipher.getInstance(bestCipherAvailable, "BC");
         }
         try {
             cipher = Cipher.getInstance(PREFER_CIPHER_TRANSFORMATION, "BC");
-            if (null != cipher)
+            if (cipher != null) {
                 bestCipherAvailable = PREFER_CIPHER_TRANSFORMATION;
+            }
         } catch (GeneralSecurityException gex1) {
             // Preferred combo not available.
         }
-        if (null == bestCipherAvailable) {
+        if (bestCipherAvailable == null) {
             Log.e(TAG, "No cipher transformation available");
         }
         return cipher;
