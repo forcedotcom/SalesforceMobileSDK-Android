@@ -158,17 +158,17 @@ else
     process_args $@
 
     build_project_if_requested "Cordova" $CORDOVA_TOP/framework 19
-    build_project_if_requested "SalesforceSDK" $LIBS_TOP/SalesforceSDK 11
-    build_project_if_requested "SmartStore" $LIBS_TOP/SmartStore
-    build_project_if_requested "SmartSync" $LIBS_TOP/SmartSync
-    build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp
-    build_project_if_requested "RestExplorer" $NATIVE_TOP/SampleApps/RestExplorer
-    build_project_if_requested "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator
-    build_project_if_requested "FileExplorer" $NATIVE_TOP/SampleApps/FileExplorer
-    build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor
-    build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer
-    build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer
-    build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector
+    build_project_if_requested "SalesforceSDK" $LIBS_TOP/SalesforceSDK 17
+    build_project_if_requested "SmartStore" $LIBS_TOP/SmartStore 17
+    build_project_if_requested "SmartSync" $LIBS_TOP/SmartSync 17
+    build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp 17
+    build_project_if_requested "RestExplorer" $NATIVE_TOP/SampleApps/RestExplorer 17
+    build_project_if_requested "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator 17
+    build_project_if_requested "FileExplorer" $NATIVE_TOP/SampleApps/FileExplorer 17
+    build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor 17
+    build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer 17
+    build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer 17
+    build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector 17
 
     build_test_project_if_requested "SalesforceSDKTest" $LIBS_TOP/test/SalesforceSDKTest .
     build_test_project_if_requested "SmartStoreTest" $LIBS_TOP/test/SmartStoreTest .

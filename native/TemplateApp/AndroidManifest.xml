@@ -22,7 +22,7 @@
 		</activity>
 	</application>
 
-	<uses-sdk android:minSdkVersion="8" />
+	<uses-sdk android:minSdkVersion="17" />
 
     <!--
         GCM permission to ensure that only this application can
