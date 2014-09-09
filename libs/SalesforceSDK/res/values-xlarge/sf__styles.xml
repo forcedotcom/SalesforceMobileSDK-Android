@@ -57,21 +57,21 @@
     
     <style name="SalesforceSDK.Header.Container">
         <item name="android:orientation">horizontal</item>
-        <item name="android:layout_width">fill_parent</item>
+        <item name="android:layout_width">match_parent</item>
 		<item name="android:layout_height">@dimen/sf__header_height</item>
 		<item name="android:background">@drawable/sf__toolbar_background</item>    
     </style>
     
     <style name="SalesforceSDK.Header.SeparatorLine">
 		<item name="android:layout_width">@dimen/sf__header_separator_width</item>
-		<item name="android:layout_height">fill_parent</item>
+		<item name="android:layout_height">match_parent</item>
     </style>
     
     <style name="SalesforceSDK.Header.Separator">
         <item name="android:layout_marginRight">@dimen/sf__header_separator_margin_right</item>
         <item name="android:orientation">horizontal</item>
         <item name="android:layout_width">@dimen/sf__header_separator_layout_width</item>
-        <item name="android:layout_height">fill_parent</item>
+        <item name="android:layout_height">match_parent</item>
     </style>
     
     <style name="SalesforceSDK.Header.Text">
@@ -100,7 +100,7 @@
     </style>
     
     <style name="SalesforceSDK.Header.Reload">
-        <item name="android:layout_height">fill_parent</item>
+        <item name="android:layout_height">match_parent</item>
         <item name="android:layout_width">@dimen/sf__image_view_width</item>
         <item name="android:src">@drawable/sf__header_refresh_states</item>
 		<item name="android:scaleType">fitCenter</item>

@@ -2,13 +2,13 @@
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
-	android:layout_width="fill_parent"
+	android:layout_width="match_parent"
 	android:layout_height="@dimen/sf__header_layout_height">
 
 	<LinearLayout style="@style/SalesforceSDK.Header.Container">
 
         <RelativeLayout android:layout_width="wrap_content"
-            android:layout_height="fill_parent">
+            android:layout_height="match_parent">
 
             <TextView android:id="@+id/sf__clear_server_url"
                 android:text="@string/sf__server_url_reset"

@@ -35,14 +35,11 @@ import org.apache.cordova.CordovaResourceApi.OpenForReadResult;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.IceCreamCordovaWebViewClient;
 
-import android.annotation.TargetApi;
 import android.net.Uri;
-import android.os.Build;
 import android.util.Log;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 
-@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 public class SalesforceIceCreamWebViewClient extends IceCreamCordovaWebViewClient {
 
 	static final String WWW_DIR = "/android_asset/www";

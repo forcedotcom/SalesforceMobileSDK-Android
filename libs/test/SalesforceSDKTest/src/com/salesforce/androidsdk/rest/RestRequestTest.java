@@ -39,6 +39,8 @@ import junit.framework.TestCase;
 
 import org.apache.http.util.EntityUtils;
 
+import android.util.Log;
+
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
 public class RestRequestTest extends TestCase {
@@ -51,7 +53,6 @@ public class RestRequestTest extends TestCase {
 	private static final String TEST_QUERY = "testQuery";
 	private static final String TEST_SEARCH = "testSearch";
 	private static final String TEST_FIELDS_STRING = "{\"fieldX\":\"value with spaces\",\"name\":\"testAccount\"}";
-	private static final String TEST_FIELDS_LIST_STRING = URLEncoder.encode("name,fieldX");
 	private static final List<String> TEST_FIELDS_LIST = Collections.unmodifiableList(Arrays.asList(new String[]{"name", "fieldX"}));
 	
 	private static Map<String, Object> TEST_FIELDS;
@@ -140,7 +141,13 @@ public class RestRequestTest extends TestCase {
 	public void testGetRequestForRetrieve() throws UnsupportedEncodingException {
 		RestRequest request = RestRequest.getRequestForRetrieve(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID, TEST_FIELDS_LIST);
 		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
-		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_OBJECT_ID + "?fields=" + TEST_FIELDS_LIST_STRING, request.getPath());
+		String testFieldsListStr = null;
+		try {
+			testFieldsListStr = URLEncoder.encode("name,fieldX", "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			Log.e("UriFragmentParser:parse", "Unsupported encoding", e);
+		}
+		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_OBJECT_ID + "?fields=" + testFieldsListStr, request.getPath());
 		assertNull("Wrong request entity", request.getRequestEntity());
 		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}

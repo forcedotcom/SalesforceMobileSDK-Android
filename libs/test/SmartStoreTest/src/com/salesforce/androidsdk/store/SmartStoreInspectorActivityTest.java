@@ -65,8 +65,7 @@ public class SmartStoreInspectorActivityTest extends
 	private SmartStore store;
 
 	public SmartStoreInspectorActivityTest() {
-		super("com.salesforce.samples.templateapp",
-				SmartStoreInspectorActivity.class);
+		super(SmartStoreInspectorActivity.class);
 	}
 
 	@Override
