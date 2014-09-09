@@ -27,11 +27,13 @@
 
 package com.salesforce.androidsdk.util;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Map;
 
 import android.net.Uri;
+import android.util.Log;
 
 /**
  * This parses a Uri fragment that uses a queryString style foo=bar&bar=foo
@@ -64,8 +66,12 @@ public class UriFragmentParser {
 		String[] params = fragmentString.split("&");
 		for (String param : params) {
 			String[] parts = param.split("=");
-			res.put(URLDecoder.decode(parts[0]),
-					parts.length > 1 ? URLDecoder.decode(parts[1]) : "");
+			try {
+				res.put(URLDecoder.decode(parts[0], "UTF-8"),
+						parts.length > 1 ? URLDecoder.decode(parts[1], "UTF-8") : "");
+			} catch (UnsupportedEncodingException e) {
+				Log.e("UriFragmentParser:parse", "Unsupported encoding", e);
+			}
 		}
 		return res;
 	}
