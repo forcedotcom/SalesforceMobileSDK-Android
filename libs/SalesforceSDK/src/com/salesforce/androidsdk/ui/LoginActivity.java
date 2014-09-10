@@ -158,54 +158,24 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(salesforceR.menuLogin(), menu);
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-
-        /*
-         * The only way to customize the title of a menu item is to do
-         * it through code. While this is a dirty hack, there appears to
-         * be no other way to ellipsize the title of a menu item.
-         * The overflow occurs only when the locale is German, and hence,
-         * the text is ellipsized just for the German locale.
-         */
-        final Locale locale = getResources().getConfiguration().locale;
-        if (locale.equals(Locale.GERMANY) || locale.equals(Locale.GERMAN)) {
-                for (int i = 0; i < menu.size(); i++) {
-                final MenuItem item = menu.getItem(i);
-                final String fullTitle = item.getTitle().toString();
-                if (fullTitle != null && fullTitle.length() > 8) {
-                    item.setTitle(fullTitle.substring(0, 8) + "...");
-                }
-            }
-        }
-        return true;
-    }
-
-    /**
-     * handle main menu clicks
-     */
-    @Override
-    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+    public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
 		if (itemId == salesforceR.idItemClearCookies()) {
         	onClearCookiesClick(null);
         	return true;
-        }
-        else if (itemId == salesforceR.idItemPickServer()) {
+        } else if (itemId == salesforceR.idItemPickServer()) {
         	onPickServerClick(null);
         	return true;
-        }
-        else if (itemId == salesforceR.idItemReload()) {
+        } else if (itemId == salesforceR.idItemReload()) {
         	onReloadClick(null);
         	return true;
-        }
-        else {
-            return super.onMenuItemSelected(featureId, item);
+        } else {
+            return super.onOptionsItemSelected(item);
         }
     }
 
