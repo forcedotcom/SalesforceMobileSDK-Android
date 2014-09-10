@@ -135,12 +135,7 @@ public class ServerPickerActivity extends Activity implements
     @Override
     protected Dialog onCreateDialog(int id) {
         if (id == SERVER_DIALOG_ID) {
-            if (SalesforceSDKManager.isTablet()) {
-                urlEditDialog = new CustomServerUrlEditor(this, findViewById(
-                        salesforceR.idAuthContainer()).getLayoutParams().width);
-            } else {
-                urlEditDialog = new CustomServerUrlEditor(this, 0);
-            }
+            urlEditDialog = new CustomServerUrlEditor(this, 0);
             urlEditDialog.setOnDismissListener(this);
             urlEditDialog.setOnCancelListener(this);
             return urlEditDialog;

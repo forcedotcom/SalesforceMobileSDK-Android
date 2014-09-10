@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import java.util.Locale;
-
 import android.accounts.AccountAuthenticatorActivity;
 import android.app.Activity;
 import android.content.Intent;
@@ -38,7 +36,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.webkit.WebView;
-import android.widget.TextView;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -64,8 +61,6 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
     private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
 	private OAuthWebviewHelper webviewHelper;
-	private View loadSpinner;
-	private View loadSeparator;
 
     /**************************************************************************************************
      *
@@ -89,8 +84,6 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
 		// Setup content view
 		setContentView(salesforceR.layoutLogin());
-        loadSpinner = findViewById(salesforceR.idLoadSpinner());
-        loadSeparator = findViewById(salesforceR.idLoadSeparator());
 
 		// Setup the WebView.
 		WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
@@ -187,22 +180,15 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
 	@Override
 	public void loadingLoginPage(String loginUrl) {
-        TextView serverName = (TextView) findViewById(salesforceR.idServerName());
-        if (serverName != null) {
-                serverName.setText(loginUrl);
-        }
+		/*
+		 * TODO: Display current server name here on ActionBar.
+		 */
 	}
 
 	@Override
 	public void onLoadingProgress(int totalProgress) {
 		onIndeterminateProgress(false);
 		setProgress(totalProgress);
-		if (loadSpinner != null) {
-			loadSpinner.setVisibility(totalProgress < Window.PROGRESS_END ? View.VISIBLE : View.GONE);
-		}
-		if (loadSeparator != null) {
-			loadSeparator.setVisibility(totalProgress < Window.PROGRESS_END ? View.VISIBLE : View.GONE);
-		}
 	}
 
 	@Override
