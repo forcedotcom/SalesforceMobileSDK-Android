@@ -135,12 +135,7 @@ public class ServerPickerActivity extends Activity implements
     @Override
     protected Dialog onCreateDialog(int id) {
         if (id == SERVER_DIALOG_ID) {
-            if (SalesforceSDKManager.isTablet()) {
-                urlEditDialog = new CustomServerUrlEditor(this, findViewById(
-                        salesforceR.idAuthContainer()).getLayoutParams().width);
-            } else {
-                urlEditDialog = new CustomServerUrlEditor(this, 0);
-            }
+            urlEditDialog = new CustomServerUrlEditor(this, 0);
             urlEditDialog.setOnDismissListener(this);
             urlEditDialog.setOnCancelListener(this);
             return urlEditDialog;
@@ -150,9 +145,8 @@ public class ServerPickerActivity extends Activity implements
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(salesforceR.menuClearCustomUrl(), menu);
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
@@ -161,12 +155,12 @@ public class ServerPickerActivity extends Activity implements
     }
 
     @Override
-    public boolean onMenuItemSelected(int featureId, MenuItem item) {
-        if(item.getItemId() == salesforceR.idMenuClearCustomUrl()) {
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == salesforceR.idMenuClearCustomUrl()) {
             clearCustomUrlSetting();
             return true;
         } else {
-            return super.onMenuItemSelected(featureId, item);
+            return super.onOptionsItemSelected(item);
         }
     }
 

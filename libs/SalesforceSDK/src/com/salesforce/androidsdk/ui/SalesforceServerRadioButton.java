@@ -33,8 +33,6 @@ import android.text.SpannableStringBuilder;
 import android.text.style.TextAppearanceSpan;
 import android.widget.RadioButton;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-
 /**
  * Custom radio button implementation to represent a Salesforce
  * custom server endpoint. Classes using this radio button should use
@@ -45,7 +43,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 public class SalesforceServerRadioButton extends RadioButton {
 
 	private Context context;
-	private SalesforceR salesforceR;
 	private String name;
 	private String url;
 	private boolean isCustom;
@@ -62,7 +59,6 @@ public class SalesforceServerRadioButton extends RadioButton {
 			boolean isCustom) {
 		super(context);
 		this.context = context;
-		salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
 		this.name = name;
 		this.url = url;
 		this.isCustom = isCustom;
@@ -77,13 +73,11 @@ public class SalesforceServerRadioButton extends RadioButton {
 		if (name != null && url != null) {
 	        final SpannableString titleSpan = new SpannableString(name);
 	        titleSpan.setSpan(new TextAppearanceSpan(context,
-	                SalesforceSDKManager.isTablet() ? salesforceR.styleTextHostName()
-	                : android.R.style.TextAppearance_Medium), 0, name.length(),
+	                android.R.style.TextAppearance_Medium), 0, name.length(),
 	                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 	        final SpannableString urlSpan = new SpannableString(url);
 	        urlSpan.setSpan(new TextAppearanceSpan(context,
-	                SalesforceSDKManager.isTablet() ? salesforceR.styleTextHostUrl()
-	                : android.R.style.TextAppearance_Small), 0, url.length(),
+	                android.R.style.TextAppearance_Small), 0, url.length(),
 	                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 	        result.append(titleSpan);
 	        result.append(System.getProperty("line.separator"));

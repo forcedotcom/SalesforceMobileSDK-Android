@@ -34,7 +34,6 @@ import android.text.style.TextAppearanceSpan;
 import android.widget.RadioButton;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * Custom radio button implementation to represent a Salesforce account.
@@ -46,7 +45,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 public class SalesforceAccountRadioButton extends RadioButton {
 
 	private Context context;
-	private SalesforceR salesforceR;
 	private UserAccount account;
 
 	/**
@@ -58,7 +56,6 @@ public class SalesforceAccountRadioButton extends RadioButton {
 	public SalesforceAccountRadioButton(Context context, UserAccount account) {
 		super(context);
 		this.context = context;
-		salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
 		this.account = account;
 		setText();
 	}
@@ -73,13 +70,11 @@ public class SalesforceAccountRadioButton extends RadioButton {
 			final String loginServer = account.getLoginServer();
 	        final SpannableString titleSpan = new SpannableString(username);
 	        titleSpan.setSpan(new TextAppearanceSpan(context,
-	                SalesforceSDKManager.isTablet() ? salesforceR.styleTextHostName()
-	                : android.R.style.TextAppearance_Medium), 0, username.length(),
+	                android.R.style.TextAppearance_Medium), 0, username.length(),
 	                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 	        final SpannableString urlSpan = new SpannableString(loginServer);
 	        urlSpan.setSpan(new TextAppearanceSpan(context,
-	                SalesforceSDKManager.isTablet() ? salesforceR.styleTextHostUrl()
-	                : android.R.style.TextAppearance_Small), 0, loginServer.length(),
+	                android.R.style.TextAppearance_Small), 0, loginServer.length(),
 	                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 	        result.append(titleSpan);
 	        result.append(System.getProperty("line.separator"));
