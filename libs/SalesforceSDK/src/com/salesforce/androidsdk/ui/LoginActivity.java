@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.ui;
 
 import android.accounts.AccountAuthenticatorActivity;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -180,9 +181,8 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
 	@Override
 	public void loadingLoginPage(String loginUrl) {
-		/*
-		 * TODO: Display current server name here on ActionBar.
-		 */
+		final ActionBar ab = getActionBar();
+		ab.setTitle(loginUrl);
 	}
 
 	@Override
