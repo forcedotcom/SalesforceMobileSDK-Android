@@ -43,7 +43,7 @@ public class SmartStoreLoadJSTest extends JSTestCase {
     
     @Override
     public List<String> getTestNames() {
-    	return Arrays.asList(new String[] {"testNumerousFields", "testIncreasingFieldLength", "testAddAndRetrieveManyEntries", "testUpsertManyEntries", "testUpsertAndQueryEntries"});
+    	return Arrays.asList(new String[] {"testNumerousFields", "testIncreasingFieldLength", "testAddAndRetrieveManyEntries", "testUpsertManyEntries", "testUpsertAndQueryEntries", "testUpsertConcurrentEntries" });
     }
     
     public void testNumerousFields()  {
@@ -64,5 +64,9 @@ public class SmartStoreLoadJSTest extends JSTestCase {
     
     public void testUpsertAndQueryEntries()  {
     	runTest("testUpsertAndQueryEntries");
-    }    
+    }
+    
+    public void testUpsertConcurrentEntries() {
+    	runTest("testUpsertConcurrentEntries");
+    }
 }
