@@ -503,13 +503,8 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
        cookieMgr.removeSessionCookie();
        SystemClock.sleep(250); // removeSessionCookies kicks out a thread - let it finish
        String accessToken = client.getAuthToken();
-
-       // Android 3.0+ clients want to use the standard .[domain] format. Earlier clients will only work
-       // with the [domain] format.  Set them both; each platform will leverage its respective format.
-       addSidCookieForInstance(cookieMgr,"salesforce.com", accessToken);
        addSidCookieForInstance(cookieMgr,".salesforce.com", accessToken);
-
-       // Log.i("SalesforceOAuthPlugin.setSidCookies", "accessToken=" + accessToken);
+       addSidCookieForInstance(cookieMgr,".force.com", accessToken);
        cookieSyncMgr.sync();
    }
 
@@ -531,8 +526,8 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
    private void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
 	   String cookieStr = "sid=" + sid;
        cookieMgr.setCookie(domain, cookieStr);
-   }    
-    
+   }
+
    /**
     * @return credentials as JSONObject
     */

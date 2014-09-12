@@ -190,6 +190,9 @@ public class HttpAccess extends BroadcastReceiver {
             // typically in this case isFailover() is going to be true from the last failover, so we don't reset the
             // network in that case. We also have the default HttpAccess instance created early on
             // so that this initial receive can be processed before we try and make any calls.
+            /*
+             * TODO: Remove 2.2 conditional here.
+             */
             if (mobileInfo.isFailover()) {
                 if (!mobileInfo.isConnected()) {
                     setHasNetwork(false, "No active data connection");
