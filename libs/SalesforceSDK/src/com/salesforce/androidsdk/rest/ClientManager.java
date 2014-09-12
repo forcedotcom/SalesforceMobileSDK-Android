@@ -429,18 +429,10 @@ public class ClientManager {
 
         @Override
         public void run(AccountManagerFuture<Bundle> f) {
-
             RestClient client = null;
-
             try {
                 f.getResult();
-
-                // the O.S. strips the auth_token from the response bundle on
-                // 2.2, given that we might as well just use peekClient to build
-                // the client from the data in the AccountManager, rather than
-                // trying to build it from the bundle.
                 client = peekRestClient();
-
             } catch (AccountsException e) {
                 Log.w("AccMgrCallback:run", "", e);
             } catch (IOException e) {
