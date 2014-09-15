@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -84,7 +84,7 @@ public class ServerPickerActivityTest extends
 		openCustomEditDialog();
 		clickView(btnCancel);
 		assertFalse("Custom URL dialog should be closed",
-				getActivity().urlEditDialog.isShowing());
+				getActivity().getCustomServerUrlEditor().getDialog().isShowing());
 	}
 
 	/**
@@ -117,13 +117,13 @@ public class ServerPickerActivityTest extends
 		addCustomUrl(label, url);
 		clickView(btnApply);
 		assertTrue("Custom URL dialog should still be open",
-				getActivity().urlEditDialog.isShowing());
+				getActivity().getCustomServerUrlEditor().getDialog().isShowing());
 		assertTrue("URL field should still have focus", txtUrl.hasFocus());
 		url = "https://valid.url.com";
 		addCustomUrl(label, url);
 		clickView(btnApply);
 		assertFalse("Custom URL dialog should be closed",
-				getActivity().urlEditDialog.isShowing());
+				getActivity().getCustomServerUrlEditor().getDialog().isShowing());
 	}
 
 	private void openCustomEditDialog() throws Throwable {
@@ -138,14 +138,14 @@ public class ServerPickerActivityTest extends
 						btnCustomEdit.performClick());
 				if (btnApply == null || btnCancel == null || txtLabel == null
 						|| txtUrl == null) {
-					btnApply = (Button) getActivity().urlEditDialog
-							.findViewById(R.id.sf__apply_button);
-					btnCancel = (Button) getActivity().urlEditDialog
-							.findViewById(R.id.sf__cancel_button);
-					txtLabel = (EditText) getActivity().urlEditDialog
-							.findViewById(R.id.sf__picker_custom_label);
-					txtUrl = (EditText) getActivity().urlEditDialog
-							.findViewById(R.id.sf__picker_custom_url);
+					btnApply = (Button) getActivity().getCustomServerUrlEditor()
+							.getRootView().findViewById(R.id.sf__apply_button);
+					btnCancel = (Button) getActivity().getCustomServerUrlEditor()
+							.getRootView().findViewById(R.id.sf__cancel_button);
+					txtLabel = (EditText) getActivity().getCustomServerUrlEditor()
+							.getRootView().findViewById(R.id.sf__picker_custom_label);
+					txtUrl = (EditText) getActivity().getCustomServerUrlEditor()
+							.getRootView().findViewById(R.id.sf__picker_custom_url);
 				}
 				txtLabel.requestFocus();
 			}

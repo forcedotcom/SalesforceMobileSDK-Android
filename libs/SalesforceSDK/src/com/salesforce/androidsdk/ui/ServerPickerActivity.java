@@ -29,10 +29,7 @@ package com.salesforce.androidsdk.ui;
 import java.util.List;
 
 import android.app.Activity;
-import android.app.Dialog;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnCancelListener;
-import android.content.DialogInterface.OnDismissListener;
+import android.app.FragmentManager;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -51,12 +48,11 @@ import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
  * @author bhariharan
  */
 public class ServerPickerActivity extends Activity implements
-        OnDismissListener, OnCancelListener,
         android.widget.RadioGroup.OnCheckedChangeListener {
 
-    private static final int SERVER_DIALOG_ID = 0;
+    private static final String SERVER_DIALOG_NAME = "custom_server_dialog";
 
-    public CustomServerUrlEditor urlEditDialog;
+    private CustomServerUrlEditor urlEditDialog;
     private SalesforceR salesforceR;
     private LoginServerManager loginServerManager;
 
@@ -133,25 +129,9 @@ public class ServerPickerActivity extends Activity implements
     }
 
     @Override
-    protected Dialog onCreateDialog(int id) {
-        if (id == SERVER_DIALOG_ID) {
-            urlEditDialog = new CustomServerUrlEditor(this, 0);
-            urlEditDialog.setOnDismissListener(this);
-            urlEditDialog.setOnCancelListener(this);
-            return urlEditDialog;
-        }
-        return super.onCreateDialog(id);
-    }
-
-    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(salesforceR.menuClearCustomUrl(), menu);
         return super.onCreateOptionsMenu(menu);
-    }
-
-    @Override
-    public void onDismiss(DialogInterface dialog) {
-    	rebuildDisplay();
     }
 
     @Override
@@ -181,13 +161,20 @@ public class ServerPickerActivity extends Activity implements
      * @param v View.
      */
     public void showCustomUrlDialog(View v) {
-        showDialog(SERVER_DIALOG_ID);
+    	final FragmentManager fragMgr = getFragmentManager();
+    	urlEditDialog = new CustomServerUrlEditor();
+    	urlEditDialog.setRetainInstance(true);
+    	urlEditDialog.show(fragMgr, SERVER_DIALOG_NAME);
     }
 
-	@Override
-	public void onCancel(DialogInterface dialog) {
-		rebuildDisplay();
-	}
+    /**
+     * Returns the custom URL editor dialog.
+     *
+     * @return Custom URL editor dialog.
+     */
+    public CustomServerUrlEditor getCustomServerUrlEditor() {
+        return urlEditDialog;
+    }
 
     /**
      * Sets the radio state.
@@ -217,7 +204,7 @@ public class ServerPickerActivity extends Activity implements
     /**
      * Rebuilds the display.
      */
-    private void rebuildDisplay() {
+    public void rebuildDisplay() {
         final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
         radioGroup.removeAllViews();
         setupRadioButtons();
