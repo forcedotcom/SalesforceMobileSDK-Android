@@ -304,6 +304,10 @@ public class PushService extends IntentService {
      * @param account User account.
      */
     private void onRegistered(String registrationId, UserAccount account) {
+    	if (account == null) {
+    		Log.e(TAG, "Account is null. Will retry registration later.");
+    		return;
+    	}
     	long retryInterval = SFDC_REGISTRATION_RETRY;
     	try {
         	final String id = registerSFDCPushNotification(registrationId, account);
@@ -327,6 +331,10 @@ public class PushService extends IntentService {
      * @param account User account.
      */
     private void onUnregistered(UserAccount account) {
+    	if (account == null) {
+    		Log.e(TAG, "Account is null. Cannot un-register.");
+    		return;
+    	}
     	try {
         	final String id = PushMessaging.getDeviceId(context, account);
         	unregisterSFDCPushNotification(id, account);
