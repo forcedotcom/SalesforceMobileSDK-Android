@@ -504,7 +504,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
        SystemClock.sleep(250); // removeSessionCookies kicks out a thread - let it finish
        String accessToken = client.getAuthToken();
        addSidCookieForInstance(cookieMgr,".salesforce.com", accessToken);
-       addSidCookieForInstance(cookieMgr,".force.com", accessToken);
        cookieSyncMgr.sync();
    }
 
