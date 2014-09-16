@@ -88,6 +88,7 @@ public class ExplorerActivity extends Activity {
 	private TextView resultText;
     private UserSwitchReceiver userSwitchReceiver;
     private TabHost tabHost;
+    private LogoutDialogFragment logoutConfirmationDialog;
 
 	// Use for objectId fields auto-complete.
 	private TreeSet<String> knownIds = new TreeSet<String>();
@@ -123,6 +124,7 @@ public class ExplorerActivity extends Activity {
 		resultText.setMovementMethod(new ScrollingMovementMethod());
         userSwitchReceiver = new ExplorerUserSwitchReceiver();
         registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
+        logoutConfirmationDialog = new LogoutDialogFragment();
 	}
 
 	@Override 
@@ -170,6 +172,15 @@ public class ExplorerActivity extends Activity {
 	@Override
 	public void onUserInteraction() {
 		passcodeManager.recordUserInteraction();
+	}
+
+	/**
+	 * Returns the logout dialog fragment (used mainly by tests).
+	 *
+	 * @return Logout dialog fragment.
+	 */
+	public LogoutDialogFragment getLogoutConfirmationDialog() {
+		return logoutConfirmationDialog;
 	}
 
 	private void addTab(String tag, int titleId, int tabId) {
@@ -458,7 +469,7 @@ public class ExplorerActivity extends Activity {
 	 * @param v View that was clicked.
 	 */
 	public void onLogoutClick(View v) {
-		new LogoutDialogFragment().show(getFragmentManager(), "LogoutDialog");
+		logoutConfirmationDialog.show(getFragmentManager(), "LogoutDialog");
 	}
 
 	/**

@@ -157,16 +157,16 @@ public class ExplorerActivityTest extends
         clickView(getActivity().findViewById(R.id.logout_button));
 
         // Check that confirmation dialog is shown
-        assertTrue("Logout confirmation dialog showing", getActivity().logoutConfirmationDialog.isShowing());
+        assertTrue("Logout confirmation dialog showing", getActivity().getLogoutConfirmationDialog().getDialog().isShowing());
 
         // Click no
-        clickView(getActivity().logoutConfirmationDialog.getButton(AlertDialog.BUTTON_NEGATIVE));
+        clickView(((AlertDialog) (getActivity().getLogoutConfirmationDialog().getDialog())).getButton(AlertDialog.BUTTON_NEGATIVE));
 
         // Wait for dialog to go
         waitSome();
 
         // Check that confirmation dialog is no longer shown
-        assertFalse("Logout confirmation dialog should no longer be showing", getActivity().logoutConfirmationDialog.isShowing());
+        assertFalse("Logout confirmation dialog should no longer be showing", getActivity().getLogoutConfirmationDialog().getDialog().isShowing());
     }
 
     /**
@@ -178,13 +178,13 @@ public class ExplorerActivityTest extends
         clickView(getActivity().findViewById(R.id.logout_button));
 
         // Check that confirmation dialog is shown
-        assertTrue("Logout confirmation dialog showing", getActivity().logoutConfirmationDialog.isShowing());
+        assertTrue("Logout confirmation dialog showing", getActivity().getLogoutConfirmationDialog().getDialog().isShowing());
         final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
         UserAccount curUser = userAccMgr.getCurrentUser();
         assertNotNull("Current user should not be null", curUser);
 
         // Click yes
-        clickView(getActivity().logoutConfirmationDialog.getButton(AlertDialog.BUTTON_POSITIVE));
+        clickView(((AlertDialog) (getActivity().getLogoutConfirmationDialog().getDialog())).getButton(AlertDialog.BUTTON_POSITIVE));
         final EventsListenerQueue eq = new EventsListenerQueue();
         eq.waitForEvent(EventType.LogoutComplete, 30000);
         curUser = userAccMgr.getCurrentUser();
