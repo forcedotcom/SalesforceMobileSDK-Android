@@ -45,10 +45,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.app.Dialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -84,15 +81,14 @@ public class ExplorerActivity extends Activity {
 
 	private static final String DOUBLE_LINE = "==============================================================================";
 	private static final String SINGLE_LINE = "------------------------------------------------------------------------------";
-	private static final int LOGOUT_CONFIRMATION_DIALOG_ID = 0;
 
 	private PasscodeManager passcodeManager;
 	private String apiVersion;
 	private RestClient client;
 	private TextView resultText;
-	AlertDialog logoutConfirmationDialog;
     private UserSwitchReceiver userSwitchReceiver;
     private TabHost tabHost;
+    private LogoutDialogFragment logoutConfirmationDialog;
 
 	// Use for objectId fields auto-complete.
 	private TreeSet<String> knownIds = new TreeSet<String>();
@@ -128,6 +124,7 @@ public class ExplorerActivity extends Activity {
 		resultText.setMovementMethod(new ScrollingMovementMethod());
         userSwitchReceiver = new ExplorerUserSwitchReceiver();
         registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
+        logoutConfirmationDialog = new LogoutDialogFragment();
 	}
 
 	@Override 
@@ -177,25 +174,13 @@ public class ExplorerActivity extends Activity {
 		passcodeManager.recordUserInteraction();
 	}
 
-	@Override
-	protected Dialog onCreateDialog(int id) {
-		if (id == LOGOUT_CONFIRMATION_DIALOG_ID) {
-			logoutConfirmationDialog = new AlertDialog.Builder(this)
-				.setTitle(R.string.logout_title)
-				.setPositiveButton(R.string.logout_yes,
-						new DialogInterface.OnClickListener() {
-
-							@Override
-							public void onClick(DialogInterface dialog,
-									int which) {
-								SalesforceSDKManager.getInstance().logout(ExplorerActivity.this);
-							}
-						})
-				.setNegativeButton(R.string.logout_cancel, null)
-				.create();
-			return logoutConfirmationDialog;
-		}
-		return super.onCreateDialog(id);
+	/**
+	 * Returns the logout dialog fragment (used mainly by tests).
+	 *
+	 * @return Logout dialog fragment.
+	 */
+	public LogoutDialogFragment getLogoutConfirmationDialog() {
+		return logoutConfirmationDialog;
 	}
 
 	private void addTab(String tag, int titleId, int tabId) {
@@ -478,13 +463,13 @@ public class ExplorerActivity extends Activity {
 	}
 
 	/**
-	 * Called when "Logout" button is clicked. Brings up the logout confirmation
-	 * dialog.
+	 * Called when "Logout" button is clicked. Brings up the
+	 * logout confirmation dialog.
 	 *
 	 * @param v View that was clicked.
 	 */
 	public void onLogoutClick(View v) {
-		showDialog(LOGOUT_CONFIRMATION_DIALOG_ID);
+		logoutConfirmationDialog.show(getFragmentManager(), "LogoutDialog");
 	}
 
 	/**
