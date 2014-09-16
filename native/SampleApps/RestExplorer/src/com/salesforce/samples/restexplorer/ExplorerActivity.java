@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -44,9 +44,9 @@ import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.TabActivity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -78,9 +78,9 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
 
 /**
- * Activity for explorer
+ * Main activity for REST explorer.
  */
-public class ExplorerActivity extends TabActivity {
+public class ExplorerActivity extends Activity {
 
 	private static final String DOUBLE_LINE = "==============================================================================";
 	private static final String SINGLE_LINE = "------------------------------------------------------------------------------";
@@ -92,46 +92,38 @@ public class ExplorerActivity extends TabActivity {
 	private TextView resultText;
 	AlertDialog logoutConfirmationDialog;
     private UserSwitchReceiver userSwitchReceiver;
+    private TabHost tabHost;
 
-	// Use for objectId fields auto-complete
+	// Use for objectId fields auto-complete.
 	private TreeSet<String> knownIds = new TreeSet<String>();
 
 	RestClient getClient() {
 		return client;
 	}
-	
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
-		// Passcode manager
 		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-		
-		// ApiVersion
 		apiVersion = getString(R.string.api_version);
-
-		// Setup view
 		setContentView(R.layout.explorer);
-		
-		// Setup tabs
-		TabHost tabHost = (TabHost) findViewById(android.R.id.tabhost);
-		addTab(tabHost, "versions", R.string.versions_tab, R.id.versions_tab);
-		addTab(tabHost, "resources", R.string.resources_tab, R.id.resources_tab);
-		addTab(tabHost, "describe_global", R.string.describe_global_tab,
-				R.id.describe_global_tab);
-		addTab(tabHost, "metadata", R.string.metadata_tab, R.id.metadata_tab);
-		addTab(tabHost, "describe", R.string.describe_tab, R.id.describe_tab);
-		addTab(tabHost, "create", R.string.create_tab, R.id.create_tab);
-		addTab(tabHost, "retrieve", R.string.retrieve_tab, R.id.retrieve_tab);
-		addTab(tabHost, "update", R.string.update_tab, R.id.update_tab);
-		addTab(tabHost, "upsert", R.string.upsert_tab, R.id.upsert_tab);
-		addTab(tabHost, "delete", R.string.delete_tab, R.id.delete_tab);
-		addTab(tabHost, "query", R.string.query_tab, R.id.query_tab);
-		addTab(tabHost, "search", R.string.search_tab, R.id.search_tab);
-		addTab(tabHost, "manual", R.string.manual_request_tab,
-				R.id.manual_request_tab);
+		tabHost = (TabHost) findViewById(android.R.id.tabhost);
+		tabHost.setup();
+		addTab("versions", R.string.versions_tab, R.id.versions_tab);
+		addTab("resources", R.string.resources_tab, R.id.resources_tab);
+		addTab("describe_global", R.string.describe_global_tab, R.id.describe_global_tab);
+		addTab("metadata", R.string.metadata_tab, R.id.metadata_tab);
+		addTab("describe", R.string.describe_tab, R.id.describe_tab);
+		addTab("create", R.string.create_tab, R.id.create_tab);
+		addTab("retrieve", R.string.retrieve_tab, R.id.retrieve_tab);
+		addTab("update", R.string.update_tab, R.id.update_tab);
+		addTab("upsert", R.string.upsert_tab, R.id.upsert_tab);
+		addTab("delete", R.string.delete_tab, R.id.delete_tab);
+		addTab("query", R.string.query_tab, R.id.query_tab);
+		addTab("search", R.string.search_tab, R.id.search_tab);
+		addTab("manual", R.string.manual_request_tab, R.id.manual_request_tab);
 
-		// Make result area scrollable
+		// Makes the result area scrollable.
 		resultText = (TextView) findViewById(R.id.result_text);
 		resultText.setMovementMethod(new ScrollingMovementMethod());
         userSwitchReceiver = new ExplorerUserSwitchReceiver();
@@ -142,15 +134,14 @@ public class ExplorerActivity extends TabActivity {
 	public void onResume() {
 		super.onResume();
 		
-		// Hide everything until we are logged in
+		// Hides everything until we are logged in.
 		findViewById(R.id.root).setVisibility(View.INVISIBLE);
 		
-		// Bring up passcode screen if needed
+		// Brings up the passcode screen if needed.
 		if (passcodeManager.onResume(this)) {
-			// Login options
 			String accountType = SalesforceSDKManager.getInstance().getAccountType();
 
-			// Get a rest client
+			// Gets a rest client.
 			new ClientManager(this, accountType, SalesforceSDKManager.getInstance().getLoginOptions(),
 					SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 
@@ -162,7 +153,7 @@ public class ExplorerActivity extends TabActivity {
 					}
 					ExplorerActivity.this.client = client;
 					
-					// Show everything
+					// Shows everything.
 					findViewById(R.id.root).setVisibility(View.VISIBLE);				
 				}
 			});
@@ -193,6 +184,7 @@ public class ExplorerActivity extends TabActivity {
 				.setTitle(R.string.logout_title)
 				.setPositiveButton(R.string.logout_yes,
 						new DialogInterface.OnClickListener() {
+
 							@Override
 							public void onClick(DialogInterface dialog,
 									int which) {
@@ -205,9 +197,8 @@ public class ExplorerActivity extends TabActivity {
 		}
 		return super.onCreateDialog(id);
 	}
-	
-	
-	private void addTab(TabHost tabHost, String tag, int titleId, int tabId) {
+
+	private void addTab(String tag, int titleId, int tabId) {
 		tabHost.addTab(tabHost.newTabSpec(tag).setIndicator(getString(titleId))
 				.setContent(tabId));
 	}
@@ -219,34 +210,34 @@ public class ExplorerActivity extends TabActivity {
 	 **************************************************************************************************/
 
 	/**
-	 * Called when "print info" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "print info" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onPrintInfoClick(View v) {
 		printInfo();
 	}
 
 	/**
-	 * Called when "clear" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "clear" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onClearClick(View v) {
 		resultText.setText("");
 	}
 
 	/**
-	 * Called when "get versions" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "get versions" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onGetVersionsClick(View v) {
 		sendRequest(RestRequest.getRequestForVersions());
 	}
 
 	/**
-	 * Called when "Switch Account" button is clicked.
+	 * Called when the "Switch Account" button is clicked.
 	 *
 	 * @param v View that was clicked.
 	 */
@@ -257,55 +248,54 @@ public class ExplorerActivity extends TabActivity {
 	}
 
 	/**
-	 * Called when "get resources" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "get resources" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onGetResourcesClick(View v) {
 		sendRequest(RestRequest.getRequestForResources(apiVersion));
 	}
 
 	/**
-	 * Called when "describe global" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "describe global" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onDescribeGlobalClick(View v) {
 		sendRequest(RestRequest.getRequestForDescribeGlobal(apiVersion));
 	}
 
 	/**
-	 * Called when "get metadata" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "metadata" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onGetMetadataClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.metadata_object_type_text))
+		final String objectType = ((EditText) findViewById(R.id.metadata_object_type_text))
 				.getText().toString();
 		sendRequest(RestRequest.getRequestForMetadata(apiVersion, objectType));
 	}
 
 	/**
-	 * Called when "describe" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "describe" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onDescribeClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.describe_object_type_text))
+		final String objectType = ((EditText) findViewById(R.id.describe_object_type_text))
 				.getText().toString();
 		sendRequest(RestRequest.getRequestForDescribe(apiVersion, objectType));
 	}
 
 	/**
-	 * Called when "create" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "create" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onCreateClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.create_object_type_text))
+		final String objectType = ((EditText) findViewById(R.id.create_object_type_text))
 				.getText().toString();
-		Map<String, Object> fields = parseFieldMap(R.id.create_fields_text);
-
+		final Map<String, Object> fields = parseFieldMap(R.id.create_fields_text);
 		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForCreate(apiVersion, objectType,
@@ -319,17 +309,16 @@ public class ExplorerActivity extends TabActivity {
 	}
 
 	/**
-	 * Called when "retrieve" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "retrieve" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onRetrieveClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.retrieve_object_type_text))
+		final String objectType = ((EditText) findViewById(R.id.retrieve_object_type_text))
 				.getText().toString();
-		String objectId = ((EditText) findViewById(R.id.retrieve_object_id_text))
+		final String objectId = ((EditText) findViewById(R.id.retrieve_object_id_text))
 				.getText().toString();
-		List<String> fieldList = parseFieldList(R.id.retrieve_field_list_text);
-
+		final List<String> fieldList = parseFieldList(R.id.retrieve_field_list_text);
 		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForRetrieve(apiVersion, objectType,
@@ -343,17 +332,16 @@ public class ExplorerActivity extends TabActivity {
 	}
 
 	/**
-	 * Called when "update" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "update" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onUpdateClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.update_object_type_text))
+		final String objectType = ((EditText) findViewById(R.id.update_object_type_text))
 				.getText().toString();
-		String objectId = ((EditText) findViewById(R.id.update_object_id_text))
+		final String objectId = ((EditText) findViewById(R.id.update_object_id_text))
 				.getText().toString();
-		Map<String, Object> fields = parseFieldMap(R.id.update_fields_text);
-
+		final Map<String, Object> fields = parseFieldMap(R.id.update_fields_text);
 		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForUpdate(apiVersion, objectType,
@@ -367,19 +355,18 @@ public class ExplorerActivity extends TabActivity {
 	}
 
 	/**
-	 * Called when "upsert" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "upsert" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onUpsertClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.upsert_object_type_text))
+		final String objectType = ((EditText) findViewById(R.id.upsert_object_type_text))
 				.getText().toString();
-		String externalIdField = ((EditText) findViewById(R.id.upsert_external_id_field_text))
+		final String externalIdField = ((EditText) findViewById(R.id.upsert_external_id_field_text))
 				.getText().toString();
-		String externalId = ((EditText) findViewById(R.id.upsert_external_id_text))
+		final String externalId = ((EditText) findViewById(R.id.upsert_external_id_text))
 				.getText().toString();
-		Map<String, Object> fields = parseFieldMap(R.id.upsert_fields_text);
-
+		final Map<String, Object> fields = parseFieldMap(R.id.upsert_fields_text);
 		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForUpsert(apiVersion, objectType,
@@ -393,27 +380,26 @@ public class ExplorerActivity extends TabActivity {
 	}
 
 	/**
-	 * Called when "delete" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "delete" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onDeleteClick(View v) {
-		String objectType = ((EditText) findViewById(R.id.delete_object_type_text))
+		final String objectType = ((EditText) findViewById(R.id.delete_object_type_text))
 				.getText().toString();
-		String objectId = ((EditText) findViewById(R.id.delete_object_id_text))
+		final String objectId = ((EditText) findViewById(R.id.delete_object_id_text))
 				.getText().toString();
-
 		sendRequest(RestRequest.getRequestForDelete(apiVersion, objectType,
 				objectId));
 	}
 
 	/**
-	 * Called when "query" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "query" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onQueryClick(View v) {
-		String soql = ((EditText) findViewById(R.id.query_soql_text)).getText()
+		final String soql = ((EditText) findViewById(R.id.query_soql_text)).getText()
 				.toString();
 		RestRequest request = null;
 		try {
@@ -423,17 +409,16 @@ public class ExplorerActivity extends TabActivity {
 			printException(e);
 			return;
 		}
-
 		sendRequest(request);
 	}
 
 	/**
-	 * Called when "search" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "search" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onSearchClick(View v) {
-		String sosl = ((EditText) findViewById(R.id.search_sosl_text))
+		final String sosl = ((EditText) findViewById(R.id.search_sosl_text))
 				.getText().toString();
 		RestRequest request = null;
 		try {
@@ -443,14 +428,13 @@ public class ExplorerActivity extends TabActivity {
 			printException(e);
 			return;
 		}
-
 		sendRequest(request);
 	}
 
 	/**
-	 * Called when "manual" button is clicked.
-	 * 
-	 * @param v
+	 * Called when the "manual" button is clicked.
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onManualRequestClick(View v) {
 		RestRequest request = null;
@@ -460,23 +444,17 @@ public class ExplorerActivity extends TabActivity {
 					getResources().getString(R.string.api_version));
 			editText.setHint(hintText);
 			final String path = editText.getText().toString();
-			HttpEntity paramsEntity = getParamsEntity(R.id.manual_request_params_text);
-			RestMethod method = getMethod(R.id.manual_request_method_radiogroup);
+			final HttpEntity paramsEntity = getParamsEntity(R.id.manual_request_params_text);
+			final RestMethod method = getMethod(R.id.manual_request_method_radiogroup);
 			request = new RestRequest(method, path, paramsEntity);
 		} catch (UnsupportedEncodingException e) {
 			printHeader("Could not build manual request");
 			printException(e);
 			return;
 		}
-
 		sendRequest(request);
 	}
 
-	/**
-	 * @param manualRequestParamsText
-	 * @return
-	 * @throws UnsupportedEncodingException
-	 */
 	private HttpEntity getParamsEntity(int manualRequestParamsText)
 			throws UnsupportedEncodingException {
 		Map<String, Object> params = parseFieldMap(R.id.manual_request_params_text);
@@ -491,10 +469,6 @@ public class ExplorerActivity extends TabActivity {
 		return new UrlEncodedFormEntity(paramsList);
 	}
 
-	/**
-	 * @param methodRadioGroup
-	 * @return
-	 */
 	private RestMethod getMethod(int methodRadioGroup) {
 		RadioGroup radioGroup = (RadioGroup) findViewById(methodRadioGroup);
 		RadioButton radioButton = (RadioButton) findViewById(radioGroup
@@ -506,18 +480,18 @@ public class ExplorerActivity extends TabActivity {
 	/**
 	 * Called when "Logout" button is clicked. Brings up the logout confirmation
 	 * dialog.
-	 * 
-	 * @param v
+	 *
+	 * @param v View that was clicked.
 	 */
 	public void onLogoutClick(View v) {
 		showDialog(LOGOUT_CONFIRMATION_DIALOG_ID);
 	}
 
 	/**
-	 * Helper to read json string representing field name-value map
-	 * 
-	 * @param jsonTextField
-	 * @return
+	 * Helper to read a JSON string representing field name-value map.
+	 *
+	 * @param jsonTextField Text field.
+	 * @return Map of JSON.
 	 */
 	private Map<String, Object> parseFieldMap(int jsonTextField) {
 		String fieldsString = ((EditText) findViewById(jsonTextField))
@@ -525,7 +499,6 @@ public class ExplorerActivity extends TabActivity {
 		if (fieldsString.length() == 0) {
 			return null;
 		}
-
 		try {
 			JSONObject fieldsJson = new JSONObject(fieldsString);
 			Map<String, Object> fields = new HashMap<String, Object>();
@@ -535,7 +508,6 @@ public class ExplorerActivity extends TabActivity {
 				fields.put(name, fieldsJson.get(name));
 			}
 			return fields;
-
 		} catch (Exception e) {
 			printHeader("Could not parse: " + fieldsString);
 			printException(e);
@@ -543,10 +515,6 @@ public class ExplorerActivity extends TabActivity {
 		}
 	}
 
-	/**
-	 * @param retrieveFieldsListText
-	 * @return
-	 */
 	private List<String> parseFieldList(int retrieveFieldsListText) {
 		String fieldsCsv = ((EditText) findViewById(retrieveFieldsListText))
 				.getText().toString();
@@ -554,28 +522,26 @@ public class ExplorerActivity extends TabActivity {
 	}
 
 	/**
-	 * Helper that sends request to server and print result in text field
-	 * 
-	 * @param request
+	 * Helper that sends a request to the server and prints the result in a text field.
+	 *
+	 * @param request REST request.
 	 */
 	private void sendRequest(RestRequest request) {
 		hideKeyboard();
-
 		println("");
 		printHeader(request);
-
 		try {
 			sendFromUIThread(request);
-			// response is printed by RestCallTask:onPostExecute
 		} catch (Exception e) {
 			printException(e);
 		}
 	}
 
 	/**
-	 * Send restRequest using RestClient's sendAsync method.
-	 * Note: Synchronous calls are not allowed from code running on the UI thread. 
-	 * @param restRequest
+	 * Sends a REST request using RestClient's sendAsync method.
+	 * Note: Synchronous calls are not allowed from code running on the UI thread.
+	 *
+	 * @param restRequest REST request.
 	 */
 	private void sendFromUIThread(RestRequest restRequest) {
 		client.sendAsync(restRequest, new AsyncRequestCallback() {
@@ -606,14 +572,13 @@ public class ExplorerActivity extends TabActivity {
 	}
 
 	/**
-	 * Helper method to hide soft keyboard
+	 * Helper method to hide the soft keyboard.
 	 */
 	private void hideKeyboard() {
-		InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+		final InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
 		imm.hideSoftInputFromWindow(resultText.getWindowToken(), 0);
 	}
-	
-	
+
 	/**************************************************************************************************
 	 * 
 	 * Pretty printing helpers
@@ -639,15 +604,15 @@ public class ExplorerActivity extends TabActivity {
 	}
 
 	/**
-	 * Helper method to pretty print object in the result_text field
-	 * 
-	 * @param object
+	 * Helper method to pretty print objects in the result_text field.
+	 *
+	 * @param object Object to print.
 	 */
 	private void println(Object object) {
-		if (resultText == null)
+		if (resultText == null) {
 			return;
-
-		StringBuffer sb = new StringBuffer(resultText.getText());
+		}
+		final StringBuffer sb = new StringBuffer(resultText.getText());
 		String text;
 		if (object == null) {
 			text = "null";
@@ -657,7 +622,7 @@ public class ExplorerActivity extends TabActivity {
 		sb.append(text).append("\n");
 		resultText.setText(sb);
 
-		// Auto scroll to bottom if needed
+		// Auto scrolls to the bottom if needed.
 		if (resultText.getLayout() != null) {
 			int scroll = resultText.getLayout().getLineTop(
 					resultText.getLineCount())
@@ -665,9 +630,9 @@ public class ExplorerActivity extends TabActivity {
 			resultText.scrollTo(0, scroll > 0 ? scroll : 0);
 		}
 	}
-	
+
 	/**
-	 * Dump info about app and rest client 
+	 * Dumps info about the app and rest client.
 	 */
 	private void printInfo() {
 		printHeader("Info");
@@ -683,8 +648,9 @@ public class ExplorerActivity extends TabActivity {
 	public void showHide(boolean show, int... resIds) {
 		for (int resId : resIds) {
 			View v = findViewById(resId);
-			if (v != null)
+			if (v != null) {
 				v.setVisibility(show ? View.VISIBLE : View.GONE);
+			}
 		}
 	}
 
@@ -723,7 +689,7 @@ public class ExplorerActivity extends TabActivity {
 		if (passcodeManager.onResume(this)) {
 			final String accountType = SalesforceSDKManager.getInstance().getAccountType();
 
-			// Get a rest client
+			// Gets a rest client.
 			new ClientManager(this, accountType, SalesforceSDKManager.getInstance().getLoginOptions(),
 					SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked()).getRestClient(this, new RestClientCallback() {
 
