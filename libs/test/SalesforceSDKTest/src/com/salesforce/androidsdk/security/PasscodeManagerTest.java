@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.security;
 
 
 import android.content.Context;
+import android.os.Looper;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.security.PasscodeManager.HashConfig;
@@ -46,6 +47,9 @@ public class PasscodeManagerTest extends InstrumentationTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
+        if (Looper.myLooper() == null) {
+            Looper.prepare();	
+    	}
         this.now = System.currentTimeMillis();
         this.pm = new TestPasscodeManager();
     }
