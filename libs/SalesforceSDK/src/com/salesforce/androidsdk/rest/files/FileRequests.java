@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2013-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,19 +26,27 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.List;
+import java.util.Map;
 
+import org.apache.http.Consts;
 import org.apache.http.HttpEntity;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.entity.mime.*;
-import org.apache.http.entity.mime.content.*;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.protocol.HTTP;
 
 import android.text.TextUtils;
 
 import com.google.common.collect.Maps;
-import com.salesforce.androidsdk.rest.*;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
 /**
@@ -247,14 +255,23 @@ public class FileRequests extends ApiRequests {
      * 
      * @throws UnsupportedEncodingException
      */
-    public static RestRequest uploadFile(File theFile, String name, String description, String mimeType) throws UnsupportedEncodingException {
-        MultipartEntity mpe = new MultipartEntity(HttpMultipartMode.STRICT);
-        FileBody bin = mimeType == null ? new FileBody(theFile) : new FileBody(theFile, mimeType);
-        if (name != null)
-            mpe.addPart("title", new StringBody(name));
-        if (description != null)
-            mpe.addPart("desc", new StringBody(description));
-        mpe.addPart("fileData", bin);
-        return new RestRequest(RestMethod.POST, base("users").appendPath("me/files").toString(), mpe, HTTP_HEADERS);
+    public static RestRequest uploadFile(File theFile, String name, String description,
+    		String mimeType) throws UnsupportedEncodingException {
+    	final MultipartEntityBuilder mpeBuilder = MultipartEntityBuilder.create();
+    	mpeBuilder.setMode(HttpMultipartMode.STRICT);
+        final FileBody bin = (mimeType == null ? new FileBody(theFile)
+        		: new FileBody(theFile, ContentType.create(mimeType)));
+        if (name != null) {
+            mpeBuilder.addPart("title", new StringBody(name,
+            		ContentType.create("text/plain", Consts.ASCII)));
+        }
+        if (description != null) {
+            mpeBuilder.addPart("desc", new StringBody(description,
+            		ContentType.create("text/plain", Consts.ASCII)));
+        }
+        mpeBuilder.addPart("fileData", bin);
+        final HttpEntity mpe = mpeBuilder.build();
+        return new RestRequest(RestMethod.POST, base("users").appendPath("me/files").toString(),
+        		mpe, HTTP_HEADERS);
     }
 }
