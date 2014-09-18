@@ -120,6 +120,11 @@ public class SalesforceSDKManager {
     private volatile boolean loggedOut = false;
 
     /**
+     * PasscodeManager object lock.
+     */
+    private Object passcodeManagerLock = new Object();
+
+    /**
      * Returns a singleton instance of this class.
      *
      * @param context Application context.
@@ -449,11 +454,13 @@ public class SalesforceSDKManager {
      *
      * @return PasscodeManager instance.
      */
-    public synchronized PasscodeManager getPasscodeManager() {
-        if (passcodeManager == null) {
-            passcodeManager = new PasscodeManager(context);
-        }
-        return passcodeManager;
+    public PasscodeManager getPasscodeManager() {
+    	synchronized (passcodeManagerLock) {
+            if (passcodeManager == null) {
+                passcodeManager = new PasscodeManager(context);
+            }
+            return passcodeManager;
+		}
     }
 
 	/**
