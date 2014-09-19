@@ -55,7 +55,8 @@ public class SmartSyncPlugin extends ForcePlugin {
 	 */
 	enum Action {
 		syncUp,
-		syncDown
+		syncDown,
+		getSyncStatus
 	}
 	
 	private static int lastSyncId = 0;
@@ -83,6 +84,7 @@ public class SmartSyncPlugin extends ForcePlugin {
 		        		switch(action) {
 		        		  case syncUp:             syncUp(args, callbackContext); break;
 		        		  case syncDown:		   syncDown(args, callbackContext); break;
+		        		  case getSyncStatus:	   getSyncStatus(args, callbackContext); break;
 		                  default: throw new RuntimeException("No handler for action " + action);
 		    	    	}
 	        		}
@@ -109,8 +111,10 @@ public class SmartSyncPlugin extends ForcePlugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		JSONObject target = arg0.getJSONObject(TARGET);
 		String soupName = arg0.getString(SOUP_NAME);
-		// JSONObject options = arg0.getJSONObject(OPTIONS);
-		
+		JSONObject options = arg0.getJSONObject(OPTIONS);
+
+		// to do record sync with SyncManager and kick it off on another thread
+
 		JSONObject message = new JSONObject();
 		message.put(SYNC_ID, lastSyncId++);
 		message.put(STATUS, STARTED);
@@ -129,13 +133,30 @@ public class SmartSyncPlugin extends ForcePlugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		JSONObject target = arg0.getJSONObject(TARGET);
 		String soupName = arg0.getString(SOUP_NAME);
-		// JSONObject options = arg0.getJSONObject(OPTIONS);
+		JSONObject options = arg0.getJSONObject(OPTIONS);
+		
+		// to do record sync with SyncManager and kick it off on another thread
 		
 		JSONObject message = new JSONObject();
 		message.put(SYNC_ID, lastSyncId++);
 		message.put(STATUS, STARTED);
 		
 		callbackContext.success(message);
+	}
+	
+	/**
+	 * Native implementation of getSyncStatus
+	 * @param args
+	 * @param callbackContext
+	 * @throws JSONException 
+	 */	
+	private void getSyncStatus(JSONArray args, CallbackContext callbackContext) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		
+		// TBD
+		
+		callbackContext.success();
 	}
 	
 	private SmartStore getSmartStore() {
