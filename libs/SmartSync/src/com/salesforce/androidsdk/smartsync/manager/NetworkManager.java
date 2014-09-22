@@ -268,4 +268,11 @@ public class NetworkManager {
     public void setRestClient(UserAccount account, RestClient client) {
         getInstance(account).client = client;
     }
+    
+    /**
+     * @return RestClient instance used by this NetworkManager
+     */
+    RestClient getRestClient() {
+    	return client;
+    }
 }
