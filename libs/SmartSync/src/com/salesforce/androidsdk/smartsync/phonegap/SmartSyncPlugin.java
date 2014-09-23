@@ -35,8 +35,8 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.phonegap.ForcePlugin;
 import com.salesforce.androidsdk.phonegap.JavaScriptPluginVersion;
-import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 
 /**
  * PhoneGap plugin for smart sync.
@@ -47,8 +47,6 @@ public class SmartSyncPlugin extends ForcePlugin {
 	static final String SOUP_NAME = "soupName";
 	static final String OPTIONS = "options";
 	static final String SYNC_ID = "syncId";
-	static final String STATUS = "status";
-	static final String STARTED = "started";
 
 	/**
 	 * Supported plugin actions that the client can take.
@@ -59,8 +57,6 @@ public class SmartSyncPlugin extends ForcePlugin {
 		getSyncStatus
 	}
 	
-	private static int lastSyncId = 0;
-
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
     	final long start = System.currentTimeMillis();
@@ -111,15 +107,14 @@ public class SmartSyncPlugin extends ForcePlugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		JSONObject target = arg0.getJSONObject(TARGET);
 		String soupName = arg0.getString(SOUP_NAME);
-		JSONObject options = arg0.getJSONObject(OPTIONS);
+		//JSONObject options = arg0.optJSONObject(OPTIONS);
 
-		// to do record sync with SyncManager and kick it off on another thread
-
-		JSONObject message = new JSONObject();
-		message.put(SYNC_ID, lastSyncId++);
-		message.put(STATUS, STARTED);
+		SyncManager syncManager = SyncManager.getInstance(null);
+		JSONObject sync = syncManager.recordSync(SyncManager.Type.SYNC_UP, target, soupName);
+		callbackContext.success(sync);
 		
-		callbackContext.success(message);
+		// Async
+		syncManager.runSync(sync.getLong(SmartStore.SOUP_ENTRY_ID));
 	}
 
 	/**
@@ -133,15 +128,14 @@ public class SmartSyncPlugin extends ForcePlugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		JSONObject target = arg0.getJSONObject(TARGET);
 		String soupName = arg0.getString(SOUP_NAME);
-		JSONObject options = arg0.getJSONObject(OPTIONS);
+		//JSONObject options = arg0.optJSONObject(OPTIONS);
 		
-		// to do record sync with SyncManager and kick it off on another thread
+		SyncManager syncManager = SyncManager.getInstance(null);
+		JSONObject sync = syncManager.recordSync(SyncManager.Type.SYNC_DOWN, target, soupName);
+		callbackContext.success(sync);
 		
-		JSONObject message = new JSONObject();
-		message.put(SYNC_ID, lastSyncId++);
-		message.put(STATUS, STARTED);
-		
-		callbackContext.success(message);
+		// Async
+		syncManager.runSync(sync.getLong(SmartStore.SOUP_ENTRY_ID));
 	}
 	
 	/**
@@ -153,13 +147,11 @@ public class SmartSyncPlugin extends ForcePlugin {
 	private void getSyncStatus(JSONArray args, CallbackContext callbackContext) throws JSONException {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
+		long syncId = arg0.getLong(SYNC_ID);
 		
-		// TBD
+		SyncManager syncManager = SyncManager.getInstance(null);
+		JSONObject sync = syncManager.getSyncStatus(syncId);
 		
-		callbackContext.success();
-	}
-	
-	private SmartStore getSmartStore() {
-		return SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore();
+		callbackContext.success(sync);
 	}
 }
