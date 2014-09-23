@@ -125,7 +125,6 @@ public class MetadataManagerTest extends InstrumentationTestCase {
             eq.tearDown();
             eq = null;
         }
-    	httpAccess.resetNetwork();
     	MetadataManager.reset(null);
     	CacheManager.hardReset(null);
         super.tearDown();

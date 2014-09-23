@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,20 +27,24 @@
 package com.salesforce.samples.templateapp;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.util.NativeInstrumentationTestCase;
 
 /**
- * Tests for TemplateApp
+ * Tests for TemplateApp.
  */
 public class TemplateAppTest extends NativeInstrumentationTestCase {
 
 	/**
-	 * Check the user agent used by http access
+	 * Checks the user agent used by http access.
 	 */
 	public void testUserAgentOfHttpAccess() {
-		String userAgent = SalesforceSDKManager.getInstance().getUserAgent();
-		assertTrue("User agent should start with SalesforceMobileSDK/<version>", userAgent.startsWith("SalesforceMobileSDK/" + SalesforceSDKManager.SDK_VERSION));
-		assertTrue("User agent should contain Template/1.0 Native", userAgent.contains("Template/1.0 Native"));
+		final HttpAccess http = new HttpAccess(SalesforceSDKManager.getInstance().getAppContext(),
+				SalesforceSDKManager.getInstance().getUserAgent());
+		final String userAgent = http.getUserAgent();
+		assertTrue("User agent should start with SalesforceMobileSDK/<version>",
+				userAgent.startsWith("SalesforceMobileSDK/" + SalesforceSDKManager.SDK_VERSION));
+		assertTrue("User agent should contain Template/1.0 Native",
+				userAgent.contains("Template/1.0 Native"));
 	}
-	
 }

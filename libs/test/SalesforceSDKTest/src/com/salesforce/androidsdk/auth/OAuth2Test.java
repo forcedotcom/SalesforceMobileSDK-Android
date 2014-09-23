@@ -60,12 +60,7 @@ public class OAuth2Test extends InstrumentationTestCase {
 		TestCredentials.init(getInstrumentation().getContext());
 		httpAccess = new HttpAccess(null, "dummy-agent");		
 	}
-	
-	@Override
-	public void tearDown() throws Exception {
-		httpAccess.resetNetwork();
-	}
-	
+
 	/**
 	 * Testing getAuthorizationUrl
 	 * @throws URISyntaxException 
