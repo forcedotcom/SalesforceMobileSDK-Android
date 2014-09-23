@@ -75,7 +75,7 @@ public class SyncManager {
 	private static final String QUERY = "query";
 
 	// Server response
-	private static final String RECORDS = null;
+	private static final String RECORDS = "records";
 	private static final String ID = "Id";
 	private static final String NEXT_RECORDS_URL = "NEXT_RECORDS_URL";
 	
@@ -188,7 +188,7 @@ public class SyncManager {
 		smartStore.registerSoup(SYNCS_SOUP, indexSpecs);
     }
     
-    public JSONObject recordSync(Type type, JSONObject target, String soupName, Status status) throws JSONException {
+    public JSONObject recordSync(Type type, JSONObject target, String soupName) throws JSONException {
     	JSONObject sync = new JSONObject();
     	sync.put(SYNC_TYPE, type.name());
     	sync.put(SYNC_TARGET, target);
@@ -283,10 +283,10 @@ public class SyncManager {
 		case MRU:
 			break;
 			*/
-		case SOQL:
+		case soql:
 			request = RestRequest.getRequestForQuery(apiVersion, query);
 			break;
-		case SOSL:
+		case sosl:
 			request = RestRequest.getRequestForSearch(apiVersion, query);
 			break;
 		default:
@@ -337,9 +337,9 @@ public class SyncManager {
      * Enum for query type
      */
     public enum QueryType {
-    	MRU,
-    	SOSL,
-    	SOQL
+    	mru,
+    	sosl,
+    	soql
     }
     
     /**
