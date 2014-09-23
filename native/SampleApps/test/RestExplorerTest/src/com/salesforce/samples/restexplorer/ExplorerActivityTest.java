@@ -27,20 +27,18 @@
 package com.salesforce.samples.restexplorer;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.ProtocolVersion;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
-import org.apache.http.util.EntityUtils;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -410,22 +408,23 @@ public class ExplorerActivityTest extends
      * Mock http access
      */
     private static class MockHttpAccess extends HttpAccess {
+
         protected MockHttpAccess(Context app) {
             super(app, null);
         }
 
         public final BlockingQueue<String> q = new ArrayBlockingQueue<String>(1);
 
-        protected Execution execute(HttpRequestBase req) throws ClientProtocolException, IOException {
+        protected Execution execute(HttpURLConnection httpConn, HttpEntity reqEntity) throws IOException {
             HttpResponse res = new BasicHttpResponse(new BasicStatusLine(new ProtocolVersion("http", 1, 1), HttpStatus.SC_OK, null), null, null);
             String body = "";
-            if (req instanceof HttpEntityEnclosingRequestBase) {
-                body = " " + EntityUtils.toString(((HttpEntityEnclosingRequestBase) req).getEntity());
+            if (reqEntity != null) {
+            	body = reqEntity.toString();
             }
-            String mockResponse = "[" + req.getMethod() + " " + req.getURI() + body + "]";
+            String mockResponse = "[" + httpConn.getRequestMethod() + " " + httpConn.getURL() + body + "]";
             q.add(mockResponse);
             res.setEntity(new StringEntity(mockResponse));
-            return new Execution(req, res);
+            return new Execution(res);
         }
     }
 
