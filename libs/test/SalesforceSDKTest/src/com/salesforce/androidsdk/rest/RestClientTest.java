@@ -87,8 +87,7 @@ public class RestClientTest extends InstrumentationTestCase {
 
     @Override
     public void tearDown() throws Exception {
-        cleanup(); // try to remove any entities the test created
-        httpAccess.resetNetwork();
+        cleanup();
     }
 
     /**

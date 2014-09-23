@@ -63,12 +63,7 @@ public class HttpAccessTest extends InstrumentationTestCase {
 		headers.put("Authorization", "OAuth " + refreshResponse.authToken);
 		resourcesUri = new URI(TestCredentials.INSTANCE_URL + "/services/data/" + TestCredentials.API_VERSION + "/");
 	}
-	
-	@Override
-	public void tearDown() throws Exception {
-		httpAccess.resetNetwork();
-	}
-	
+
 	/**
 	 * Testing sending a GET request to /services/data - Check status code and response body
 	 * @throws IOException 
