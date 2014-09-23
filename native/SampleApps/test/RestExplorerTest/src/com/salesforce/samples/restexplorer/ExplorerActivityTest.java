@@ -57,6 +57,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.util.EventsListenerQueue;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -385,16 +386,21 @@ public class ExplorerActivityTest extends
      * @param expectedResponse
      */
     private void gotoTabAndRunAction(int tabIndex, int goButtonId, String goButtonLabel, Runnable extraSetup, String expectedResponse) {
+
         // Go to tab
-        TabHost tabHost = (TabHost) getActivity().findViewById(android.R.id.tabhost);
+        final ExplorerActivity activity = getActivity();
+        assertNotNull("Activity should not be null", activity);
+        TabHost tabHost = (TabHost) activity.findViewById(android.R.id.tabhost);
         clickTab(tabHost, tabIndex);
 
         // Check UI
-        Button runButton = (Button) getActivity().findViewById(goButtonId);
+        Button runButton = (Button) activity.findViewById(goButtonId);
         assertEquals(goButtonLabel + " button has wrong label", goButtonLabel, runButton.getText());
 
         // Plug our mock access
-        getActivity().getClient().setHttpAccessor(mockHttpAccessor);
+        final RestClient client = activity.getClient();
+        assertNotNull("Rest client should not be null", client);
+        client.setHttpAccessor(mockHttpAccessor);
 
         // Do any extra setup
         if (extraSetup != null) {
@@ -417,7 +423,7 @@ public class ExplorerActivityTest extends
 
         // Check result area
         waitForRender();
-        TextView resultText = (TextView) getActivity().findViewById(R.id.result_text);
+        TextView resultText = (TextView) activity.findViewById(R.id.result_text);
         assertTrue("Response not found in text area", resultText.getText().toString().indexOf(expectedResponse) > 0);
     }
 
