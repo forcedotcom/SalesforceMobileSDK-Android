@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -39,6 +39,7 @@ import org.apache.http.ProtocolVersion;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
+import org.apache.http.util.EntityUtils;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -151,20 +152,28 @@ public class ExplorerActivityTest extends
      * Test clicking logout and then canceling out.
      */
     public void testClickLogoutThenCancel() {
+
         // Click on logout
         clickView(getActivity().findViewById(R.id.logout_button));
+        waitSome();
 
         // Check that confirmation dialog is shown
-        assertTrue("Logout confirmation dialog showing", getActivity().getLogoutConfirmationDialog().getDialog().isShowing());
+        final ExplorerActivity activity = getActivity();
+        assertNotNull("Activity should not be null", activity);
+        final LogoutDialogFragment logoutFrag = activity.getLogoutConfirmationDialog();
+        assertNotNull("Logout dialog fragment should not be null", logoutFrag);
+        final AlertDialog dialog = (AlertDialog) logoutFrag.getDialog();
+        assertNotNull("Logout dialog should not be null", dialog);
+        assertTrue("Logout confirmation dialog should be showing", dialog.isShowing());
 
         // Click no
-        clickView(((AlertDialog) (getActivity().getLogoutConfirmationDialog().getDialog())).getButton(AlertDialog.BUTTON_NEGATIVE));
+        clickView(dialog.getButton(AlertDialog.BUTTON_NEGATIVE));
 
         // Wait for dialog to go
         waitSome();
 
         // Check that confirmation dialog is no longer shown
-        assertFalse("Logout confirmation dialog should no longer be showing", getActivity().getLogoutConfirmationDialog().getDialog().isShowing());
+        assertFalse("Logout confirmation dialog should no longer be showing", dialog.isShowing());
     }
 
     /**
@@ -172,17 +181,25 @@ public class ExplorerActivityTest extends
      * the account.
      */
     public void testClickLogoutThenConfirm() {
+
         // Click on logout
         clickView(getActivity().findViewById(R.id.logout_button));
+        waitSome();
 
         // Check that confirmation dialog is shown
-        assertTrue("Logout confirmation dialog showing", getActivity().getLogoutConfirmationDialog().getDialog().isShowing());
+        final ExplorerActivity activity = getActivity();
+        assertNotNull("Activity should not be null", activity);
+        final LogoutDialogFragment logoutFrag = activity.getLogoutConfirmationDialog();
+        assertNotNull("Logout dialog fragment should not be null", logoutFrag);
+        final AlertDialog dialog = (AlertDialog) logoutFrag.getDialog();
+        assertNotNull("Logout dialog should not be null", dialog);
+        assertTrue("Logout confirmation dialog should be showing", dialog.isShowing());
         final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
         UserAccount curUser = userAccMgr.getCurrentUser();
         assertNotNull("Current user should not be null", curUser);
 
         // Click yes
-        clickView(((AlertDialog) (getActivity().getLogoutConfirmationDialog().getDialog())).getButton(AlertDialog.BUTTON_POSITIVE));
+        clickView(dialog.getButton(AlertDialog.BUTTON_POSITIVE));
         final EventsListenerQueue eq = new EventsListenerQueue();
         eq.waitForEvent(EventType.LogoutComplete, 30000);
         curUser = userAccMgr.getCurrentUser();
@@ -419,7 +436,7 @@ public class ExplorerActivityTest extends
             HttpResponse res = new BasicHttpResponse(new BasicStatusLine(new ProtocolVersion("http", 1, 1), HttpStatus.SC_OK, null), null, null);
             String body = "";
             if (reqEntity != null) {
-            	body = reqEntity.toString();
+                body = " " + EntityUtils.toString(reqEntity);
             }
             String mockResponse = "[" + httpConn.getRequestMethod() + " " + httpConn.getURL() + body + "]";
             q.add(mockResponse);
