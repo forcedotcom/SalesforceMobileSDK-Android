@@ -33,6 +33,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.http.Header;
@@ -201,7 +202,17 @@ public class HttpAccess extends BroadcastReceiver {
      * @throws IOException
      */
     public Execution doPatch(Map<String, String> headers, URI uri, HttpEntity requestEntity) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, "PATCH");
+    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpPost.METHOD_NAME);
+
+    	/*
+    	 * HttpUrlConnection does not support PATCH out of the box. Hence, we
+    	 * need to set a custom header to override the HTTP method being used,
+    	 * and trick HttpUrlConnection into thinking this is a regular POST.
+    	 */
+    	if (headers == null) {
+    		headers = new HashMap<String, String>();
+    	}
+    	headers.put("X-HTTP-Method-Override", "PATCH");
     	addHeaders(httpConn, headers);
     	return execute(httpConn, requestEntity);
     }
@@ -276,59 +287,50 @@ public class HttpAccess extends BroadcastReceiver {
     		return null;
     	}
     	Execution exec = null;
-    	try {
-        	if (reqEntity != null) {
-        		final Header contentType = reqEntity.getContentType();
-        		if (contentType != null) {
-            		httpConn.setRequestProperty(contentType.getName(), contentType.getValue());
-        		}
-        		final Header contentEncoding = reqEntity.getContentEncoding();
-        		if (contentEncoding != null) {
-            		httpConn.setRequestProperty(contentEncoding.getName(), contentEncoding.getValue());
-        		}
-        		final long contentLen = reqEntity.getContentLength();
-        		if (contentLen > 0) {
-            		httpConn.setRequestProperty("Content-Length", Long.toString(contentLen));
-        		}
-        		final InputStream contentStream = reqEntity.getContent();
-        		byte[] content = new byte[(int) contentLen];
-        		contentStream.read(content);
-        		final OutputStream outputStream = httpConn.getOutputStream();
-        		if (outputStream != null) {
-            		outputStream.write(content);
-        		}
-        	}
-            final int statusCode = httpConn.getResponseCode();
-            final String reasonPhrase = httpConn.getResponseMessage();
-            final ProtocolVersion protocolVersion = new HttpVersion(1, 1);
-            final StatusLine statusLine = new BasicStatusLine(protocolVersion,
-            		statusCode, reasonPhrase);
-            final HttpResponse response = new BasicHttpResponse(statusLine);
-        	InputStream responseInputStream = null;
-
-        	/*
-        	 * Tries to read the response stream here. If it fails with a
-        	 * FileNotFoundException, tries to read the error stream instead.
-        	 */
-            try {
-            	responseInputStream = httpConn.getInputStream();
-            } catch (FileNotFoundException e) {
-            	responseInputStream = httpConn.getErrorStream();
-            }
-            if (responseInputStream != null) {
-                final BasicHttpEntity entity = new BasicHttpEntity();
-                entity.setContent(responseInputStream);
-                response.setEntity(entity);
-                responseInputStream.close();
-            }
-            exec = new Execution(response);
-            httpConn.disconnect();
-    	} catch (Exception e) {
-    		httpConn.disconnect();
-    		if (e instanceof IOException) {
-    			throw new IOException(e);
+    	if (reqEntity != null) {
+    		final Header contentType = reqEntity.getContentType();
+    		if (contentType != null) {
+        		httpConn.setRequestProperty(contentType.getName(), contentType.getValue());
+    		}
+    		final Header contentEncoding = reqEntity.getContentEncoding();
+    		if (contentEncoding != null) {
+        		httpConn.setRequestProperty(contentEncoding.getName(), contentEncoding.getValue());
+    		}
+    		final long contentLen = reqEntity.getContentLength();
+    		if (contentLen > 0) {
+        		httpConn.setRequestProperty("Content-Length", Long.toString(contentLen));
+    		}
+    		final InputStream contentStream = reqEntity.getContent();
+    		byte[] content = new byte[(int) contentLen];
+    		contentStream.read(content);
+    		final OutputStream outputStream = httpConn.getOutputStream();
+    		if (outputStream != null) {
+        		outputStream.write(content);
     		}
     	}
+        final int statusCode = httpConn.getResponseCode();
+        final String reasonPhrase = httpConn.getResponseMessage();
+        final ProtocolVersion protocolVersion = new HttpVersion(1, 1);
+        final StatusLine statusLine = new BasicStatusLine(protocolVersion,
+        		statusCode, reasonPhrase);
+        final HttpResponse response = new BasicHttpResponse(statusLine);
+    	InputStream responseInputStream = null;
+
+    	/*
+    	 * Tries to read the response stream here. If it fails with a
+    	 * FileNotFoundException, tries to read the error stream instead.
+    	 */
+        try {
+        	responseInputStream = httpConn.getInputStream();
+        } catch (FileNotFoundException e) {
+        	responseInputStream = httpConn.getErrorStream();
+        }
+        if (responseInputStream != null) {
+            final BasicHttpEntity entity = new BasicHttpEntity();
+            entity.setContent(responseInputStream);
+            response.setEntity(entity);
+        }
+        exec = new Execution(response);
     	return exec;
     }
 
