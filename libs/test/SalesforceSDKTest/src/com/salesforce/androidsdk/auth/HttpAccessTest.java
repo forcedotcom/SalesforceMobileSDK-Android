@@ -116,14 +116,7 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 */
 	public void testSendPatch() throws IOException {
 		Execution execution = httpAccess.doPatch(headers, resourcesUri, null);
-
-		/*
-		 * The reason we check that the response is "POST not allowed", as
-		 * opposed to "PATCH not allowed" is because HttpUrlConnection does
-		 * not support PATCH out of the box. We trick it by sending a POST
-		 * and overriding the HTTP method to PATCH in the request header.
-		 */
-		checkResponse(execution,  HttpStatus.SC_METHOD_NOT_ALLOWED, "'POST' not allowed");
+		checkResponse(execution,  HttpStatus.SC_METHOD_NOT_ALLOWED, "'PATCH' not allowed");
 	}
 	
 	/**
