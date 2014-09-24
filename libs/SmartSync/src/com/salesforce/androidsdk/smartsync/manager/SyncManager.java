@@ -35,10 +35,12 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.Intent;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -46,9 +48,8 @@ import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 
 /**
@@ -59,35 +60,41 @@ public class SyncManager {
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 	
     private String apiVersion;
-    private CacheManager cacheManager;
-    private NetworkManager networkManager;
-    private String communityId;
 	private SmartStore smartStore;
 	private RestClient restClient;
 	
 	// SmartStore
-    private static final String SYNCS_SOUP = "syncs_soup";
-	private static final String SYNC_TYPE = "type";
-	private static final String SYNC_TARGET = "target";
-	private static final String SYNC_SOUP_NAME = "soupName";
-	private static final String SYNC_STATUS = "status";
-	private static final String SYNC_PROGRESS = "progress";
+	public static final String SYNCS_SOUP = "syncs_soup";
+    
+    // Sync
+	public static final String SYNC_TYPE = "type";
+	public static final String SYNC_TARGET = "target";
+	public static final String SYNC_SOUP_NAME = "soupName";
+	public static final String SYNC_OPTIONS = "options";
+	public static final String SYNC_STATUS = "status";
+	public static final String SYNC_PROGRESS = "progress";
+	private static final String SYNC_FIELDLIST = "fieldlist";
 	
 	// Target
 	private static final String QUERY_TYPE = "type";
 	private static final String QUERY = "query";
 
 	// Server response
-	private static final String RECORDS = "records";
-	private static final String ID = "Id";
-	private static final String NEXT_RECORDS_URL = "nextRecordsUrl";
-	private static final String TOTAL_SIZE = "totalSize";
+	public static final String RECORDS = "records";
+	public static final String ID = "Id";
+	public static final String SOBJECT_TYPE = "attributes.type";
+	public static final String NEXT_RECORDS_URL = "nextRecordsUrl";
+	public static final String TOTAL_SIZE = "totalSize";
 	
 	// Local fields
-	private static final String LOCALLY_CREATED = "__locally_created__";
-	private static final String LOCALLY_UPDATED = "__locally_updated__";
-	private static final String LOCALLY_DELETED = "__locally_deleted__";
-	private static final String LOCAL = "__local__";
+	public static final String LOCALLY_CREATED = "__locally_created__";
+	public static final String LOCALLY_UPDATED = "__locally_updated__";
+	public static final String LOCALLY_DELETED = "__locally_deleted__";
+	public static final String LOCAL = "__local__";
+
+	// Broadcast
+	public static final String SYNC_AS_STRING = "syncAsString";
+	public static final String SYNC_INTENT_ACTION = "com.salesforce.androidsdk.smartsync.manager.SyncManager.UPDATE_SYNC";
 	
 	/**
      * Returns the instance of this class associated with this user account.
@@ -176,11 +183,8 @@ public class SyncManager {
      */
     private SyncManager(UserAccount account, String communityId) {
         apiVersion = ApiVersionStrings.VERSION_NUMBER;
-        this.communityId = communityId;
-        cacheManager = CacheManager.getInstance(account, communityId);
-        networkManager = NetworkManager.getInstance(account, communityId);
-        smartStore = cacheManager.getSmartStore();
-        restClient = networkManager.getRestClient();
+        smartStore = CacheManager.getInstance(account, communityId).getSmartStore();
+        restClient = NetworkManager.getInstance(account, communityId).getRestClient();
         
     	setupSyncsSoupIfNeeded();
     }
@@ -198,11 +202,12 @@ public class SyncManager {
 		smartStore.registerSoup(SYNCS_SOUP, indexSpecs);
     }
     
-    public JSONObject recordSync(Type type, JSONObject target, String soupName) throws JSONException {
+    public JSONObject recordSync(Type type, JSONObject target, String soupName, JSONObject options) throws JSONException {
     	JSONObject sync = new JSONObject();
     	sync.put(SYNC_TYPE, type.name());
     	sync.put(SYNC_TARGET, target);
     	sync.put(SYNC_SOUP_NAME, soupName);
+    	sync.put(SYNC_OPTIONS, options);
     	sync.put(SYNC_STATUS, Status.NEW.name());
 
     	sync = smartStore.upsert(SYNCS_SOUP, sync);
@@ -219,7 +224,6 @@ public class SyncManager {
     }
 
     public void runSync(final long syncId) throws JSONException {
-    	
     	JSONArray syncs = smartStore.retrieve(SYNCS_SOUP, syncId);
     	
     	if (syncs == null || syncs.length() == 0) 
@@ -237,10 +241,10 @@ public class SyncManager {
 			public void run() {
 				try {
 			    	switch (type) {
-					case SYNC_DOWN:
+					case syncDown:
 						syncDown(sync);
 						break;
-					case SYNC_UP:
+					case syncUp:
 						syncUp(sync);
 						break;
 					default:
@@ -266,23 +270,99 @@ public class SyncManager {
     		sync.put(SYNC_STATUS, status.name());
 			sync.put(SYNC_PROGRESS, progress);
 	    	smartStore.update(SYNCS_SOUP, sync, syncId);
-	    	EventsObservable.get().notifyEvent(EventType.Sync, sync);
+	    	
+	    	Intent intent = new Intent();
+	    	intent.setAction(SYNC_INTENT_ACTION);
+	    	intent.putExtra(SYNC_AS_STRING, sync.toString());
+			SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
     	}
     	catch (JSONException e) {
     		Log.e("SmartSyncManager:updateSync", "Unexpected json error for sync: " + syncId, e);
     	}
-    	
-    	// TBD notify plugin
     }
     
-    private void syncUp(JSONObject sync) {
-    	// TODO Auto-generated method stub
+    private void syncUp(JSONObject sync) throws Exception {
+		JSONObject target = sync.getJSONObject(SYNC_TARGET);
+		String soupName = sync.getString(SYNC_SOUP_NAME);
+		JSONObject options = sync.getJSONObject(SYNC_OPTIONS);
+		JSONArray fieldlist = options.getJSONArray(SYNC_FIELDLIST);
+		QuerySpec querySpec = QuerySpec.fromJSON(soupName, target);
+		
+		// Call smartstore
+		JSONArray records = smartStore.query(querySpec, 0);
+		for (int i = 0; i <records.length(); i++) {
+			JSONObject record = records.getJSONObject(i);
+			
+			// Do we need to do a create, update or delete
+			Action action = null;
+			if (record.getBoolean(LOCALLY_DELETED)) 
+				action = Action.delete;
+			else if (record.getBoolean(LOCALLY_CREATED))
+				action = Action.create;
+			else if (record.getBoolean(LOCALLY_UPDATED))
+				action = Action.update;
+			
+			if (action == null) {
+				// Nothing to do for this record
+				continue;
+			}
+
+			// Getting type and id
+			String objectType = (String) SmartStore.project(record, SOBJECT_TYPE);
+			String objectId = record.getString(ID);
+			
+			// Fields to save (in the case of create or update)
+			Map<String, Object> fields = new HashMap<String, Object>();
+			if (action == Action.create || action == Action.update) {
+				for (int j=0; j<fieldlist.length(); j++) {
+					String fieldName = fieldlist.getString(j);
+					if (!fieldName.equals(ID)) {
+						fields.put(fieldName, record.get(fieldName));
+					}
+				}
+			}
+			
+			// Building create/update/delete request
+			RestRequest request = null;
+			switch (action) {
+			case create: request = RestRequest.getRequestForCreate(soupName, objectType, fields); break;
+			case delete: request = RestRequest.getRequestForDelete(apiVersion, objectType, objectId);
+			case update: request = RestRequest.getRequestForUpdate(apiVersion, objectType, objectId, fields); break;
+			default:
+				break;
+			
+			}
+			
+			// Call server
+			RestResponse sendSync = restClient.sendSync(request);
+			boolean successful = sendSync.getStatusCode() < 300;
+			
+			
+			// Update smartstore
+			if (successful) {
+				record.put(LOCAL, false);
+				record.put(LOCALLY_CREATED, false);
+				record.put(LOCALLY_UPDATED, false);
+				record.put(LOCALLY_DELETED, false);
+			}
+			
+			if (successful && action == Action.delete) {
+				smartStore.delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));				
+			}
+			else {
+				smartStore.upsert(soupName, record, ID);				
+			}
+			
+			// Updating status
+			this.updateSync(sync, Status.RUNNING, i / records.length());
+		}
 	}
 
 	private void syncDown(JSONObject sync) throws Exception {
     	JSONObject target = sync.getJSONObject(SYNC_TARGET);
     	String soupName = sync.getString(SYNC_SOUP_NAME);	
-		QueryType queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
+
+    	QueryType queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
 		String query = target.getString(QUERY);
 		RestRequest request = null;
 		
@@ -346,8 +426,8 @@ public class SyncManager {
      * Enum for sync type
      */
     public enum Type {
-        SYNC_DOWN,
-        SYNC_UP
+        syncDown,
+        syncUp
     }
     
     /**
@@ -368,6 +448,16 @@ public class SyncManager {
     	mru,
     	sosl,
     	soql
+    }
+    
+    /**
+     * Enum for action
+     *
+     */
+    public enum Action {
+    	create,
+    	update,
+    	delete
     }
     
     /**

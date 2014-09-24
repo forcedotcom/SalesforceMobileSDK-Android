@@ -45,7 +45,6 @@ public class EventsObservable extends Observable<EventsObserver> {
     	GapWebViewPageFinished,
     	LogoutComplete,
     	RenditionComplete,
-    	Sync,
     	Other
     }
 
