@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.smartsync.SmartSyncUserAccountManager;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.manager.NetworkManager;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
@@ -180,6 +181,7 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
     	 */
     	CacheManager.softReset(userAccount);
     	NetworkManager.reset(userAccount);
+    	SyncManager.reset(userAccount);
         super.cleanUp(frontActivity, account);
     }
 
