@@ -33,7 +33,6 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.http.Header;
@@ -63,6 +62,8 @@ import android.net.NetworkInfo;
  * and {@link OAuth2}. This class watches network changes as well.
  */
 public class HttpAccess extends BroadcastReceiver {
+
+	private static final String PATCH = "PATCH";
 
     // Fields to keep track of network.
     private boolean hasNetwork = true;
@@ -202,17 +203,7 @@ public class HttpAccess extends BroadcastReceiver {
      * @throws IOException
      */
     public Execution doPatch(Map<String, String> headers, URI uri, HttpEntity requestEntity) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpPost.METHOD_NAME);
-
-    	/*
-    	 * HttpUrlConnection does not support PATCH out of the box. Hence, we
-    	 * need to set a custom header to override the HTTP method being used,
-    	 * and trick HttpUrlConnection into thinking this is a regular POST.
-    	 */
-    	if (headers == null) {
-    		headers = new HashMap<String, String>();
-    	}
-    	headers.put("X-HTTP-Method-Override", "PATCH");
+    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, PATCH);
     	addHeaders(httpConn, headers);
     	return execute(httpConn, requestEntity);
     }
@@ -360,8 +351,13 @@ public class HttpAccess extends BroadcastReceiver {
     private HttpURLConnection createHttpUrlConnection(URI uri, String requestMethod) throws IOException {
     	HttpURLConnection httpConn = null;
     	if (uri != null) {
-    		final URL url = uri.toURL();
+    		URL url = uri.toURL();
     		if (url != null) {
+    			if (PATCH.equals(requestMethod)) {
+    				final String urlString = url.toString() + "?_HttpMethod=PATCH";
+    				url = new URL(urlString);
+    				requestMethod = HttpPost.METHOD_NAME;
+    			}
     			httpConn = (HttpURLConnection) url.openConnection();
     			httpConn.setRequestMethod(requestMethod);
     			httpConn.setRequestProperty("User-Agent", userAgent);
