@@ -33,27 +33,59 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.util.Log;
 
 import com.salesforce.androidsdk.phonegap.ForcePlugin;
 import com.salesforce.androidsdk.phonegap.JavaScriptPluginVersion;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.util.EventsObservable;
-import com.salesforce.androidsdk.util.EventsObservable.Event;
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
-import com.salesforce.androidsdk.util.EventsObserver;
 
 /**
  * PhoneGap plugin for smart sync.
  */
-public class SmartSyncPlugin extends ForcePlugin implements EventsObserver {
+public class SmartSyncPlugin extends ForcePlugin {
 	// Keys in json from/to javascript
 	static final String TARGET = "target";
 	static final String SOUP_NAME = "soupName";
 	static final String OPTIONS = "options";
 	static final String SYNC_ID = "syncId";
 
+	// Event
+	private static final String SYNC_EVENT_TYPE = "sync";
+	private static final String DETAIL = "detail";
+	
+	// Receiver
+	class SyncReceiver extends BroadcastReceiver {
+
+		private Activity ctx;
+
+		SyncReceiver(Activity ctx) {
+			this.ctx = ctx;
+		}
+		
+		@Override
+		public void onReceive(Context context, final Intent intent) {
+            ctx.runOnUiThread(new Runnable() {
+                public void run() {
+                	try {
+                		String syncAsString = intent.getStringExtra(SyncManager.SYNC_AS_STRING);
+	                	String js = "javascript:document.dispatchEvent(new CustomEvent(\"" + SYNC_EVENT_TYPE + "\", { \"" + DETAIL + "\": " + syncAsString + "}))";
+	                	webView.loadUrl(js);
+                	}
+                	catch (Exception e) {
+                		Log.e("SyncReceiver.onReceive", "Failed to dispatch event", e);
+                	}
+                }
+            });
+		}
+		
+	}
+	
 	/**
 	 * Supported plugin actions that the client can take.
 	 */
@@ -66,20 +98,9 @@ public class SmartSyncPlugin extends ForcePlugin implements EventsObserver {
 	@Override
 	public void initialize(CordovaInterface cordova, CordovaWebView webView) {
 		super.initialize(cordova, webView);
-		EventsObservable.get().registerObserver(this);		
+		cordova.getActivity().registerReceiver(new SyncReceiver(cordova.getActivity()), new IntentFilter(SyncManager.SYNC_INTENT_ACTION));
 	}
 
-	@Override
-	public void onEvent(final Event evt) {
-		if (evt.getType() == EventType.Sync) {
-            cordova.getActivity().runOnUiThread(new Runnable() {
-                public void run() {
-        			// FIXME webView.loadUrl("javascript:document.dispatchEvent(new CustomEvent({detail: " + ((JSONObject) evt.getData()).toString() + "}))");
-                }
-            });
-		}
-	}	
-	
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
     	final long start = System.currentTimeMillis();
@@ -130,10 +151,10 @@ public class SmartSyncPlugin extends ForcePlugin implements EventsObserver {
 		JSONObject arg0 = args.getJSONObject(0);
 		JSONObject target = arg0.getJSONObject(TARGET);
 		String soupName = arg0.getString(SOUP_NAME);
-		//JSONObject options = arg0.optJSONObject(OPTIONS);
+		JSONObject options = arg0.optJSONObject(OPTIONS);
 
 		SyncManager syncManager = SyncManager.getInstance(null);
-		JSONObject sync = syncManager.recordSync(SyncManager.Type.SYNC_UP, target, soupName);
+		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncUp, target, soupName, options);
 		callbackContext.success(sync);
 		
 		// Async
@@ -151,10 +172,10 @@ public class SmartSyncPlugin extends ForcePlugin implements EventsObserver {
 		JSONObject arg0 = args.getJSONObject(0);
 		JSONObject target = arg0.getJSONObject(TARGET);
 		String soupName = arg0.getString(SOUP_NAME);
-		//JSONObject options = arg0.optJSONObject(OPTIONS);
+		JSONObject options = arg0.optJSONObject(OPTIONS);
 		
 		SyncManager syncManager = SyncManager.getInstance(null);
-		JSONObject sync = syncManager.recordSync(SyncManager.Type.SYNC_DOWN, target, soupName);
+		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncDown, target, soupName, options);
 		callbackContext.success(sync);
 		
 		// Async
