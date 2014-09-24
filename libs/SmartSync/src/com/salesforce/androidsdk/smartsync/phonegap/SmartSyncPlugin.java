@@ -27,6 +27,8 @@
 package com.salesforce.androidsdk.smartsync.phonegap;
 
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaInterface;
+import org.apache.cordova.CordovaWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,11 +39,15 @@ import com.salesforce.androidsdk.phonegap.ForcePlugin;
 import com.salesforce.androidsdk.phonegap.JavaScriptPluginVersion;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.Event;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.EventsObserver;
 
 /**
  * PhoneGap plugin for smart sync.
  */
-public class SmartSyncPlugin extends ForcePlugin {
+public class SmartSyncPlugin extends ForcePlugin implements EventsObserver {
 	// Keys in json from/to javascript
 	static final String TARGET = "target";
 	static final String SOUP_NAME = "soupName";
@@ -56,6 +62,23 @@ public class SmartSyncPlugin extends ForcePlugin {
 		syncDown,
 		getSyncStatus
 	}
+	
+	@Override
+	public void initialize(CordovaInterface cordova, CordovaWebView webView) {
+		super.initialize(cordova, webView);
+		EventsObservable.get().registerObserver(this);		
+	}
+
+	@Override
+	public void onEvent(final Event evt) {
+		if (evt.getType() == EventType.Sync) {
+            cordova.getActivity().runOnUiThread(new Runnable() {
+                public void run() {
+        			// FIXME webView.loadUrl("javascript:document.dispatchEvent(new CustomEvent({detail: " + ((JSONObject) evt.getData()).toString() + "}))");
+                }
+            });
+		}
+	}	
 	
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, final JSONArray args, final CallbackContext callbackContext) throws JSONException {

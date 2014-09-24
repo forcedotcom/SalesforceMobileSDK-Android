@@ -47,6 +47,8 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 
 /**
@@ -54,7 +56,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
  */
 public class SyncManager {
 	private static Map<String, SyncManager> INSTANCES;
-    private final ExecutorService threadPool = Executors.newCachedThreadPool();
+    private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 	
     private String apiVersion;
     private CacheManager cacheManager;
@@ -69,6 +71,7 @@ public class SyncManager {
 	private static final String SYNC_TARGET = "target";
 	private static final String SYNC_SOUP_NAME = "soupName";
 	private static final String SYNC_STATUS = "status";
+	private static final String SYNC_PROGRESS = "progress";
 	
 	// Target
 	private static final String QUERY_TYPE = "type";
@@ -77,7 +80,14 @@ public class SyncManager {
 	// Server response
 	private static final String RECORDS = "records";
 	private static final String ID = "Id";
-	private static final String NEXT_RECORDS_URL = "NEXT_RECORDS_URL";
+	private static final String NEXT_RECORDS_URL = "nextRecordsUrl";
+	private static final String TOTAL_SIZE = "totalSize";
+	
+	// Local fields
+	private static final String LOCALLY_CREATED = "__locally_created__";
+	private static final String LOCALLY_UPDATED = "__locally_updated__";
+	private static final String LOCALLY_DELETED = "__locally_deleted__";
+	private static final String LOCAL = "__local__";
 	
 	/**
      * Returns the instance of this class associated with this user account.
@@ -217,17 +227,9 @@ public class SyncManager {
     	
     	final JSONObject sync = syncs.getJSONObject(0);
     	final Type type = Type.valueOf(sync.getString(SYNC_TYPE));
-    	final JSONObject target = sync.getJSONObject(SYNC_TARGET);
-    	final String soupName = sync.getString(SYNC_SOUP_NAME);
-    	Status status = Status.valueOf(sync.getString(SYNC_STATUS)); 
-
     	
-    	// Make sure it's not already running
-    	if (status == Status.STARTED)
-    		throw new SmartSyncException("Sync already running: " + syncId);
-    	
-    	// Update status to started
-		updateSync(syncId, sync, Status.STARTED);
+    	// Update status to running
+		updateSync(sync, Status.RUNNING, 0);
 
     	// Run (on a separate thread)
 		threadPool.execute(new Runnable() {
@@ -236,31 +238,35 @@ public class SyncManager {
 				try {
 			    	switch (type) {
 					case SYNC_DOWN:
-						syncDown(target, soupName);
+						syncDown(sync);
 						break;
 					case SYNC_UP:
-						syncUp(target, soupName);
+						syncUp(sync);
 						break;
 					default:
 						throw new SmartSyncException("Unknown sync type: " + type);
 			    	}
 			    	
 			    	// Update status to done
-					updateSync(syncId, sync, Status.DONE);
+					updateSync(sync, Status.DONE, 100);
 				}
 				catch (Exception e) {
 					Log.e("SmartSyncManager:runSync", "Error during sync: " + syncId, e);
 					// Update status to failed
-					updateSync(syncId, sync, Status.FAILED);
+					updateSync(sync, Status.FAILED, 0);
 				}
 			}
 		});
     }
 
-    private void updateSync(long syncId, JSONObject sync, Status status) {
+    private void updateSync(JSONObject sync, Status status, int progress) {
+    	long syncId = -1;
     	try {
-			sync.put(SYNC_STATUS, status.name());
+        	syncId = sync.getLong(SmartStore.SOUP_ENTRY_ID);
+    		sync.put(SYNC_STATUS, status.name());
+			sync.put(SYNC_PROGRESS, progress);
 	    	smartStore.update(SYNCS_SOUP, sync, syncId);
+	    	EventsObservable.get().notifyEvent(EventType.Sync, sync);
     	}
     	catch (JSONException e) {
     		Log.e("SmartSyncManager:updateSync", "Unexpected json error for sync: " + syncId, e);
@@ -269,11 +275,13 @@ public class SyncManager {
     	// TBD notify plugin
     }
     
-    private void syncUp(JSONObject target, String soupName) {
+    private void syncUp(JSONObject sync) {
     	// TODO Auto-generated method stub
 	}
 
-	private void syncDown(JSONObject target, String soupName) throws Exception {
+	private void syncDown(JSONObject sync) throws Exception {
+    	JSONObject target = sync.getJSONObject(SYNC_TARGET);
+    	String soupName = sync.getString(SYNC_SOUP_NAME);	
 		QueryType queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
 		String query = target.getString(QUERY);
 		RestRequest request = null;
@@ -296,17 +304,37 @@ public class SyncManager {
 		// Call server
 		RestResponse response = restClient.sendSync(request);
 
+		// Counting records
+		int countFetched = 0;
+		
 		while(response != null) {
 			// Parse response
 			JSONObject responseJson = response.asJSONObject();
 			JSONArray records = responseJson.getJSONArray(RECORDS);
+			int totalSize = responseJson.getInt(TOTAL_SIZE);
+			
+			// No records returned
+			if (totalSize == 0) 
+				break;
 			
 			// Save to SmartStore
 			smartStore.beginTransaction();
 			for (int i = 0; i < records.length(); i++) {
+				JSONObject record = records.getJSONObject(i);
+				record.put(LOCAL, false);
+				record.put(LOCALLY_CREATED, false);
+				record.put(LOCALLY_UPDATED, false);
+				record.put(LOCALLY_DELETED, false);
 				smartStore.upsert(soupName, records.getJSONObject(i), ID, false);
 			}
+			smartStore.setTransactionSuccessful();
 			smartStore.endTransaction();
+
+			// Updating count fetched
+			countFetched += records.length();
+			
+			// Updating status
+			updateSync(sync, Status.RUNNING, countFetched*100/totalSize);
 			
 			// Fetch next records if any
 			String nextRecordsUrl = responseJson.optString(NEXT_RECORDS_URL, null);
@@ -328,7 +356,7 @@ public class SyncManager {
      */
     public enum Status {
     	NEW,
-    	STARTED,
+    	RUNNING,
     	DONE,
     	FAILED
     }
