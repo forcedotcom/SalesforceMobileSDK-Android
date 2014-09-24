@@ -45,7 +45,6 @@ import com.salesforce.androidsdk.phonegap.JavaScriptPluginVersion;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
@@ -56,26 +55,26 @@ import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
  */
 public class SmartStorePlugin extends ForcePlugin {
 	// Keys in json from/to javascript
-	private static final String BEGIN_KEY = "beginKey";
+	public static final String BEGIN_KEY = "beginKey";
 	static final String CURRENT_PAGE_INDEX = "currentPageIndex";
 	static final String CURRENT_PAGE_ORDERED_ENTRIES = "currentPageOrderedEntries";
 	static final String CURSOR_ID = "cursorId";
-	private static final String END_KEY = "endKey";
+	public static final String END_KEY = "endKey";
 	private static final String ENTRIES = "entries";
 	private static final String ENTRY_IDS = "entryIds";
 	private static final String INDEX = "index";
 	private static final String INDEXES = "indexes";
-	private static final String INDEX_PATH = "indexPath";
-	private static final String LIKE_KEY = "likeKey";
-	private static final String MATCH_KEY = "matchKey";
-	private static final String SMART_SQL = "smartSql";
+	public static final String INDEX_PATH = "indexPath";
+	public static final String LIKE_KEY = "likeKey";
+	public static final String MATCH_KEY = "matchKey";
+	public static final String SMART_SQL = "smartSql";
 	private static final String EXTERNAL_ID_PATH = "externalIdPath";
-	private static final String ORDER = "order";
-	static final String PAGE_SIZE = "pageSize";
+	public static final String ORDER = "order";
+	public static final String PAGE_SIZE = "pageSize";
 	private static final String PATH = "path";
 	private static final String PATHS = "paths";
 	private static final String QUERY_SPEC = "querySpec";
-	private static final String QUERY_TYPE = "queryType";
+	public static final String QUERY_TYPE = "queryType";
 	private static final String SOUP_NAME = "soupName";
 	static final String TOTAL_ENTRIES = "totalEntries";
 	static final String TOTAL_PAGES = "totalPages";
@@ -359,23 +358,10 @@ public class SmartStorePlugin extends ForcePlugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
 		JSONObject querySpecJson = arg0.getJSONObject(QUERY_SPEC);
-		QueryType queryType = QueryType.valueOf(querySpecJson.getString(QUERY_TYPE));
-		String path = querySpecJson.isNull(INDEX_PATH) ? null : querySpecJson.getString(INDEX_PATH);
-		String matchKey = querySpecJson.isNull(MATCH_KEY) ? null : querySpecJson.getString(MATCH_KEY);
-		String beginKey = querySpecJson.isNull(BEGIN_KEY) ? null : querySpecJson.getString(BEGIN_KEY);
-		String endKey = querySpecJson.isNull(END_KEY) ? null : querySpecJson.getString(END_KEY);
-		String likeKey = querySpecJson.isNull(LIKE_KEY) ? null : querySpecJson.getString(LIKE_KEY);
-		Order order = Order.valueOf(querySpecJson.optString(ORDER, "ascending"));
-		int pageSize = querySpecJson.getInt(PAGE_SIZE); 
-
-		// Building query spec
-		QuerySpec querySpec = null;
-		switch (queryType) {
-        case exact:   querySpec = QuerySpec.buildExactQuerySpec(soupName, path, matchKey, pageSize); break;
-        case range:   querySpec = QuerySpec.buildRangeQuerySpec(soupName, path, beginKey, endKey, order, pageSize); break;
-        case like:    querySpec = QuerySpec.buildLikeQuerySpec(soupName, path, likeKey, order, pageSize); break;
-        case smart: throw new RuntimeException("Smart queries can only be run through runSmartQuery");
-        default: throw new RuntimeException("Fell through switch: " + queryType);
+		QuerySpec querySpec = QuerySpec.fromJSON(soupName, querySpecJson);
+		
+		if (querySpec.queryType == QueryType.smart) {
+			throw new RuntimeException("Smart queries can only be run through runSmartQuery");
 		}
 		
 		// Run query
@@ -391,14 +377,11 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		JSONObject querySpecJson = arg0.getJSONObject(QUERY_SPEC);
-		QueryType queryType = QueryType.valueOf(querySpecJson.getString(QUERY_TYPE));
-		String smartSql = querySpecJson.getString(SMART_SQL);
-		int pageSize = querySpecJson.getInt(PAGE_SIZE); 
+		QuerySpec querySpec = QuerySpec.fromJSON(null, querySpecJson);
 		
-		if (queryType != QueryType.smart) throw new RuntimeException("runSmartQuery can only run smart queries");
-		
-		// Building smart query spec
-		QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, pageSize);
+		if (querySpec.queryType != QueryType.smart) {
+			throw new RuntimeException("runSmartQuery can only run smart queries");
+		}
 		
 		// Run query
 		runQuery(querySpec, callbackContext);
