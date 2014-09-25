@@ -113,6 +113,8 @@ public class ServerPickerActivity extends Activity implements
         setContentView(salesforceR.layoutServerPicker());
         final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(this);
+    	urlEditDialog = new CustomServerUrlEditor();
+    	urlEditDialog.setRetainInstance(true);
     }
 
     @Override
@@ -125,6 +127,7 @@ public class ServerPickerActivity extends Activity implements
     public void onDestroy() {
         final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(null);
+        urlEditDialog = null;
         super.onDestroy();
     }
 
@@ -162,8 +165,6 @@ public class ServerPickerActivity extends Activity implements
      */
     public void showCustomUrlDialog(View v) {
     	final FragmentManager fragMgr = getFragmentManager();
-    	urlEditDialog = new CustomServerUrlEditor();
-    	urlEditDialog.setRetainInstance(true);
     	urlEditDialog.show(fragMgr, SERVER_DIALOG_NAME);
     }
 
