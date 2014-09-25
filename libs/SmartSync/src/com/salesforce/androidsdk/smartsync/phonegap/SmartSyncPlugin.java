@@ -149,12 +149,11 @@ public class SmartSyncPlugin extends ForcePlugin {
 	private void syncUp(JSONArray args, CallbackContext callbackContext) throws JSONException {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
-		JSONObject target = arg0.getJSONObject(TARGET);
 		String soupName = arg0.getString(SOUP_NAME);
 		JSONObject options = arg0.optJSONObject(OPTIONS);
 
 		SyncManager syncManager = SyncManager.getInstance(null);
-		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncUp, target, soupName, options);
+		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncUp, null, soupName, options);
 		callbackContext.success(sync);
 		
 		// Async
