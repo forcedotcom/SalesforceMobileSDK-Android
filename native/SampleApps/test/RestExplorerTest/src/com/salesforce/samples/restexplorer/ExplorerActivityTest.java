@@ -28,9 +28,6 @@ package com.salesforce.samples.restexplorer;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -100,6 +97,7 @@ public class ExplorerActivityTest extends
     private Context targetContext;
     private ClientManager clientManager;
     private MockHttpAccess mockHttpAccessor;
+    public static volatile String RESPONSE = null;
 
     public ExplorerActivityTest() {
         super(ExplorerActivity.class);
@@ -121,6 +119,13 @@ public class ExplorerActivityTest extends
                 TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, null);
         mockHttpAccessor = new MockHttpAccess(SalesforceSDKManager.getInstance().getAppContext());
         SalesforceSDKManager.getInstance().getPasscodeManager().setTimeoutMs(0 /* disabled */);
+
+        // Plug our mock HTTP accessor.
+        final ExplorerActivity activity = getActivity();
+        assertNotNull("Activity should not be null", activity);
+        final RestClient client = activity.getClient();
+        assertNotNull("Rest client should not be null", client);
+        client.setHttpAccessor(mockHttpAccessor);
     }
 
 	@Override
@@ -129,6 +134,8 @@ public class ExplorerActivityTest extends
             eq.tearDown();
             eq = null;
         }
+		RESPONSE = null;
+		mockHttpAccessor = null;
 		super.tearDown();
 	}
 
@@ -296,7 +303,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.update_fields_text, "{\"field1\":\"update1\",\"field2\":\"update2\"}");
             }
         };
-        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Update", extraSetup, "[PATCH " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpdate/objIdUpdate {\"field1\":\"update1\",\"field2\":\"update2\"}]");
+        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Update", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpdate/objIdUpdate?_HttpMethod=PATCH {\"field1\":\"update1\",\"field2\":\"update2\"}]");
     }
 
     /**
@@ -312,7 +319,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.upsert_fields_text, "{\"field1\":\"upsert1\",\"field2\":\"upsert2\"}");
             }
         };
-        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Upsert", extraSetup, "[PATCH " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpsert/extIdField/extId {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
+        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Upsert", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpsert/extIdField/extId?_HttpMethod=PATCH {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
     }
 
     /**
@@ -397,11 +404,6 @@ public class ExplorerActivityTest extends
         Button runButton = (Button) activity.findViewById(goButtonId);
         assertEquals(goButtonLabel + " button has wrong label", goButtonLabel, runButton.getText());
 
-        // Plug our mock access
-        final RestClient client = activity.getClient();
-        assertNotNull("Rest client should not be null", client);
-        client.setHttpAccessor(mockHttpAccessor);
-
         // Do any extra setup
         if (extraSetup != null) {
             extraSetup.run();
@@ -411,15 +413,13 @@ public class ExplorerActivityTest extends
         clickView(runButton);
 
         // Wait for call to complete
-        String mockResponse = null;
-        try {
-            mockResponse = mockHttpAccessor.q.poll(5, TimeUnit.SECONDS);
+        long curTime = System.currentTimeMillis();
+        while (RESPONSE == null) {
+        	if (System.currentTimeMillis() - curTime > 5000) {
+        		break;
+        	}
         }
-        catch (InterruptedException e) {
-            fail("Test interrupted");
-        }
-        assertEquals("Wrong request executed", expectedResponse, mockResponse);
-
+        assertEquals("Wrong request executed", expectedResponse, RESPONSE);
 
         // Check result area
         waitForRender();
@@ -436,8 +436,7 @@ public class ExplorerActivityTest extends
             super(app, null);
         }
 
-        public final BlockingQueue<String> q = new ArrayBlockingQueue<String>(1);
-
+        @Override
         protected Execution execute(HttpURLConnection httpConn, HttpEntity reqEntity) throws IOException {
             HttpResponse res = new BasicHttpResponse(new BasicStatusLine(new ProtocolVersion("http", 1, 1), HttpStatus.SC_OK, null), null, null);
             String body = "";
@@ -445,8 +444,8 @@ public class ExplorerActivityTest extends
                 body = " " + EntityUtils.toString(reqEntity);
             }
             String mockResponse = "[" + httpConn.getRequestMethod() + " " + httpConn.getURL() + body + "]";
-            q.add(mockResponse);
             res.setEntity(new StringEntity(mockResponse));
+            RESPONSE = mockResponse;
             return new Execution(res);
         }
     }
@@ -495,6 +494,7 @@ public class ExplorerActivityTest extends
     private void clickView(final View v) {
         try {
             runTestOnUiThread(new Runnable() {
+
                 @Override
                 public void run() {
                     v.performClick();
