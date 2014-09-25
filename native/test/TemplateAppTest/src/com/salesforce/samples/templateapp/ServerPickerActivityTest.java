@@ -33,6 +33,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.ui.CustomServerUrlEditor;
 import com.salesforce.androidsdk.ui.ServerPickerActivity;
 import com.salesforce.androidsdk.util.EventsListenerQueue;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -49,6 +50,8 @@ public class ServerPickerActivityTest extends
 	private Button btnApply;
 	private EditText txtLabel;
 	private EditText txtUrl;
+	private ServerPickerActivity activity;
+	private CustomServerUrlEditor customServerUrlEditor;
 
 	public ServerPickerActivityTest() {
 		super(ServerPickerActivity.class);
@@ -64,6 +67,11 @@ public class ServerPickerActivityTest extends
         if (SalesforceSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
+        activity = getActivity();
+        assertNotNull("Activity should not be null", activity);
+        customServerUrlEditor = activity.getCustomServerUrlEditor();
+        assertNotNull("Custom server URL editor should not be null",
+        		customServerUrlEditor);
 	}
 
 	@Override
@@ -72,6 +80,8 @@ public class ServerPickerActivityTest extends
             eq.tearDown();
             eq = null;
         }
+		customServerUrlEditor = null;
+		activity = null;
 		super.tearDown();
 	}
 
@@ -84,7 +94,7 @@ public class ServerPickerActivityTest extends
 		openCustomEditDialog();
 		clickView(btnCancel);
 		assertFalse("Custom URL dialog should be closed",
-				getActivity().getCustomServerUrlEditor().getDialog().isShowing());
+				customServerUrlEditor.getDialog().isShowing());
 	}
 
 	/**
@@ -117,34 +127,33 @@ public class ServerPickerActivityTest extends
 		addCustomUrl(label, url);
 		clickView(btnApply);
 		assertTrue("Custom URL dialog should still be open",
-				getActivity().getCustomServerUrlEditor().getDialog().isShowing());
+				customServerUrlEditor.getDialog().isShowing());
 		assertTrue("URL field should still have focus", txtUrl.hasFocus());
 		url = "https://valid.url.com";
 		addCustomUrl(label, url);
 		clickView(btnApply);
 		assertFalse("Custom URL dialog should be closed",
-				getActivity().getCustomServerUrlEditor().getDialog().isShowing());
+				customServerUrlEditor.getDialog().isShowing());
 	}
 
 	private void openCustomEditDialog() throws Throwable {
-		btnCustomEdit = (Button) getActivity().findViewById(
+		btnCustomEdit = (Button) activity.findViewById(
 				R.id.sf__show_custom_url_edit);
 		assertNotNull("Custom URL Edit dialog does not exist", btnCustomEdit);
+		clickView(btnCustomEdit);
 		runTestOnUiThread(new Runnable() {
 
 			@Override
 			public void run() {
-				assertTrue("Unable to click open Custom URL Edit Dialog",
-						btnCustomEdit.performClick());
 				if (btnApply == null || btnCancel == null || txtLabel == null
 						|| txtUrl == null) {
-					btnApply = (Button) getActivity().getCustomServerUrlEditor()
+					btnApply = (Button) customServerUrlEditor
 							.getRootView().findViewById(R.id.sf__apply_button);
-					btnCancel = (Button) getActivity().getCustomServerUrlEditor()
+					btnCancel = (Button) customServerUrlEditor
 							.getRootView().findViewById(R.id.sf__cancel_button);
-					txtLabel = (EditText) getActivity().getCustomServerUrlEditor()
+					txtLabel = (EditText) customServerUrlEditor
 							.getRootView().findViewById(R.id.sf__picker_custom_label);
-					txtUrl = (EditText) getActivity().getCustomServerUrlEditor()
+					txtUrl = (EditText) customServerUrlEditor
 							.getRootView().findViewById(R.id.sf__picker_custom_url);
 				}
 				txtLabel.requestFocus();
