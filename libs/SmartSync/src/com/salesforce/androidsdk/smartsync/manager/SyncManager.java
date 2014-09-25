@@ -282,14 +282,13 @@ public class SyncManager {
     }
     
     private void syncUp(JSONObject sync) throws Exception {
-		JSONObject target = sync.getJSONObject(SYNC_TARGET);
 		String soupName = sync.getString(SYNC_SOUP_NAME);
 		JSONObject options = sync.getJSONObject(SYNC_OPTIONS);
 		JSONArray fieldlist = options.getJSONArray(SYNC_FIELDLIST);
-		QuerySpec querySpec = QuerySpec.fromJSON(soupName, target);
+		QuerySpec querySpec = QuerySpec.buildExactQuerySpec(soupName, LOCAL, "true", 2000); // XXX that could use a lot of memory
 		
 		// Call smartstore
-		JSONArray records = smartStore.query(querySpec, 0);
+		JSONArray records = smartStore.query(querySpec, 0); // TBD deal with more than 2000 locally modified records
 		for (int i = 0; i <records.length(); i++) {
 			JSONObject record = records.getJSONObject(i);
 			
