@@ -683,6 +683,13 @@ public class CacheManager {
             }
         }
     }
+    
+    /**
+     * @return SmartStore instance used by this CacheManager
+     */
+    SmartStore getSmartStore() {
+    	return smartStore;
+    }
 
     /**
      * Helper method that registers a soup with index specs.

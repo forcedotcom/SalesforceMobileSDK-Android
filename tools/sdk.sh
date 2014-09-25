@@ -55,6 +55,7 @@ usage ()
     echo "        TemplateApp"
     echo "        AccountEditor"
     echo "        ContactExplorer"
+    echo "        SimpleSync"
     echo "        SmartStoreExplorer"
     echo "        VFConnector"
     echo "        SalesforceSDKTest"
@@ -167,6 +168,7 @@ else
     build_project_if_requested "FileExplorer" $NATIVE_TOP/SampleApps/FileExplorer 17
     build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor 17
     build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer 17
+    build_project_if_requested "SimpleSync" $HYBRID_TOP/SampleApps/SimpleSync 17
     build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer 17
     build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector 17
 

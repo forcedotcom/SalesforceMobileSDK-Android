@@ -26,6 +26,10 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.salesforce.androidsdk.smartstore.phonegap.SmartStorePlugin;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 
 /**
@@ -266,6 +270,37 @@ public class QuerySpec {
     }
 
     /**
+	 * @param soupName
+	 * @param querySpecJson
+	 * @return
+	 * @throws JSONException
+	 */
+	public static QuerySpec fromJSON(String soupName, JSONObject querySpecJson)
+			throws JSONException {
+		QueryType queryType = QueryType.valueOf(querySpecJson.getString(SmartStorePlugin.QUERY_TYPE));
+		String path = querySpecJson.optString(SmartStorePlugin.INDEX_PATH, null);
+		String matchKey = querySpecJson.optString(SmartStorePlugin.MATCH_KEY, null);
+		String beginKey = querySpecJson.optString(SmartStorePlugin.BEGIN_KEY, null);
+		String endKey = querySpecJson.optString(SmartStorePlugin.END_KEY, null);
+		String likeKey = querySpecJson.optString(SmartStorePlugin.LIKE_KEY, null);
+		String smartSql = querySpecJson.optString(SmartStorePlugin.SMART_SQL, null);
+		
+		Order order = Order.valueOf(querySpecJson.optString(SmartStorePlugin.ORDER, "ascending"));
+		int pageSize = querySpecJson.getInt(SmartStorePlugin.PAGE_SIZE); 
+	
+		// Building query spec
+		QuerySpec querySpec = null;
+		switch (queryType) {
+	    case exact:   querySpec = buildExactQuerySpec(soupName, path, matchKey, pageSize); break;
+	    case range:   querySpec = buildRangeQuerySpec(soupName, path, beginKey, endKey, order, pageSize); break;
+	    case like:    querySpec = buildLikeQuerySpec(soupName, path, likeKey, order, pageSize); break;
+	    case smart:   querySpec = buildSmartQuerySpec(smartSql, pageSize); break;
+	    default: throw new RuntimeException("Fell through switch: " + queryType);
+		}
+		return querySpec;
+	}
+
+	/**
      * Query type enum
      */
     public enum QueryType {
