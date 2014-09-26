@@ -49,6 +49,7 @@ import com.salesforce.androidsdk.smartsync.manager.SyncManager;
  * PhoneGap plugin for smart sync.
  */
 public class SmartSyncPlugin extends ForcePlugin {
+
 	// Keys in json from/to javascript
 	static final String TARGET = "target";
 	static final String SOUP_NAME = "soupName";
@@ -58,7 +59,9 @@ public class SmartSyncPlugin extends ForcePlugin {
 	// Event
 	private static final String SYNC_EVENT_TYPE = "sync";
 	private static final String DETAIL = "detail";
-	
+
+	private BroadcastReceiver syncReceiver;
+
 	// Receiver
 	class SyncReceiver extends BroadcastReceiver {
 
@@ -98,7 +101,13 @@ public class SmartSyncPlugin extends ForcePlugin {
 	@Override
 	public void initialize(CordovaInterface cordova, CordovaWebView webView) {
 		super.initialize(cordova, webView);
-		cordova.getActivity().registerReceiver(new SyncReceiver(cordova.getActivity()), new IntentFilter(SyncManager.SYNC_INTENT_ACTION));
+		syncReceiver = new SyncReceiver(cordova.getActivity());
+		cordova.getActivity().registerReceiver(syncReceiver, new IntentFilter(SyncManager.SYNC_INTENT_ACTION));
+	}
+
+	@Override
+	public void onDestroy() {
+		cordova.getActivity().unregisterReceiver(syncReceiver);
 	}
 
     @Override
