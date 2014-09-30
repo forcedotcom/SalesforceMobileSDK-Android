@@ -30,6 +30,7 @@ import java.util.Formatter;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,7 +56,9 @@ import com.salesforce.androidsdk.util.JSONTestHelper;
  */
 public class SyncManagerTest extends ManagerTestCase {
 	
-    private static final String ACCOUNTS_SOUP = "accounts";
+    private static final String RECORDS = "records";
+	private static final String FIELDLIST = "fieldlist";
+	private static final String ACCOUNTS_SOUP = "accounts";
 	private static final String NAME = "Name";
 	private static final String ID = "Id";
 	private static final int COUNT_TEST_ACCOUNTS = 10;
@@ -93,6 +96,71 @@ public class SyncManagerTest extends ManagerTestCase {
 	 * Sync down the test accounts, check smart store, check status during sync
 	 */
 	public void testSyncDown() throws Exception {
+		// first sync down
+		trySyncDown();
+
+		
+		// Check that db was correctly populated
+		String idsClause = "('" + Joiner.on("', '").join(idToNames.keySet()) + "')";
+		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:Id}, {accounts:Name} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, COUNT_TEST_ACCOUNTS);
+		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+		JSONObject idToNamesFromDb = new JSONObject();
+		for (int i=0; i<accountsFromDb.length(); i++) {
+			JSONArray row = accountsFromDb.getJSONArray(i);
+			idToNamesFromDb.put(row.getString(0), row.getString(1));
+		}
+		JSONTestHelper.assertSameJSONObject("Wrong data in db", new JSONObject(idToNames), idToNamesFromDb);
+	}
+
+	/**
+	 * Sync down the test accounts, modify a few, sync up, check that server side was updated
+	 */
+	public void testSyncUpWithLocallyUpdatedRecords() throws Exception {
+		// First sync down
+		trySyncDown();
+		
+		// Update a few entries locally
+		Map<String, String> idToNamesLocallyUpdated = new HashMap<String, String>();
+		String[] allIds = idToNames.keySet().toArray(new String[0]);
+		String[] ids = new String[] { allIds[0], allIds[1], allIds[2] };
+		for (int i = 0; i < ids.length; i++) {
+			String id = ids[i];
+			idToNamesLocallyUpdated.put(id, idToNames.get(id) + "_updated");
+		}
+		updateAccounts(idToNamesLocallyUpdated);
+		
+		// Sync up
+		trySyncUp(3);
+		
+		// Check that db doesn't show entries as locally modified anymore
+		String idsClause = "('" + Joiner.on("', '").join(ids) + "')";
+		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup}, {accounts:Name} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, ids.length);
+		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+		for (int i=0; i<accountsFromDb.length(); i++) {
+			JSONArray row = accountsFromDb.getJSONArray(i);
+			JSONObject soupElt = row.getJSONObject(0);
+			assertEquals("Wrong local flag", false, soupElt.getBoolean(SyncManager.LOCAL));
+			assertEquals("Wrong local flag", false, soupElt.getBoolean(SyncManager.LOCALLY_UPDATED));
+		}
+		
+		// Check that server got updates
+		String soql = "SELECT Id, Name FROM Account WHERE Id IN " + idsClause;
+		RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.VERSION_NUMBER, soql);
+		JSONObject idToNamesFromServer = new JSONObject();
+		RestResponse response = restClient.sendSync(request);
+		JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
+		for (int i=0; i<records.length(); i++) {
+			JSONObject row = records.getJSONObject(i);
+			idToNamesFromServer.put(row.getString(ID), row.getString(NAME));
+		}
+		JSONTestHelper.assertSameJSONObject("Wrong data on server", new JSONObject(idToNamesLocallyUpdated), idToNamesFromServer);
+	}
+
+	/**
+	 * Sync down helper
+	 * @throws JSONException
+	 */
+	private void trySyncDown() throws JSONException {
 		// Ids clause
 		String idsClause = "('" + Joiner.on("', '").join(idToNames.keySet()) + "')";
 		
@@ -103,43 +171,72 @@ public class SyncManagerTest extends ManagerTestCase {
 		target.put(SyncManager.QUERY, soqlQuery);
 		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncDown, target, ACCOUNTS_SOUP, null);
 		long syncId = getSyncId(sync);
-		checkStatus(sync, SyncManager.Type.syncDown, syncId, target, SyncManager.Status.NEW, 0);
+		checkStatus(sync, SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.NEW, 0);
 		
 		// Run sync
 		syncManager.runSync(syncId);
-		checkStatus(syncManager.getSyncStatus(syncId), SyncManager.Type.syncDown, syncId, target, SyncManager.Status.RUNNING, 0);
+		checkStatus(syncManager.getSyncStatus(syncId), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.RUNNING, 0);
+	
+		// Wait for running broadcast
+		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.RUNNING, 0);
 
-		// Wait for initial update
-		Intent intent = broadcastQueue.getNextBroadcast();
-		JSONObject syncFromIntent = new JSONObject(intent.getStringExtra(SyncManager.SYNC_AS_STRING));
-		checkStatus(syncFromIntent, SyncManager.Type.syncDown, syncId, target, SyncManager.Status.RUNNING, 0);
+		// Wait for done broadcast
+		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.DONE, 100);
+	}
+
+	/**
+	 * Sync up helper
+	 * @param numberChanges
+	 * @throws JSONException
+	 */
+	private void trySyncUp(int numberChanges) throws JSONException {
+		// Create sync
+		JSONObject options = new JSONObject();
+		JSONArray fieldlist = new JSONArray();
+		fieldlist.put(NAME);
+		options.put(FIELDLIST, fieldlist);
+		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncUp, null, ACCOUNTS_SOUP, options);
+		long syncId = getSyncId(sync);
+		checkStatus(sync, SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.NEW, 0);
 		
-		// Wait for next update
-		intent = broadcastQueue.getNextBroadcast();
-		syncFromIntent = new JSONObject(intent.getStringExtra(SyncManager.SYNC_AS_STRING));
-		checkStatus(syncFromIntent, SyncManager.Type.syncDown, syncId, target, SyncManager.Status.RUNNING, 100);
-
-		// Wait for last update
-		intent = broadcastQueue.getNextBroadcast();
-		syncFromIntent = new JSONObject(intent.getStringExtra(SyncManager.SYNC_AS_STRING));
-		checkStatus(syncFromIntent, SyncManager.Type.syncDown, syncId, target, SyncManager.Status.DONE, 100);
-
+		// Run sync
+		syncManager.runSync(syncId);
+		checkStatus(syncManager.getSyncStatus(syncId), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, 0);
 		
-		// Check that db was correctly populated
-		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:Id}, {accounts:Name} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, COUNT_TEST_ACCOUNTS);
-		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
-		JSONObject idToNamesFromDb = new JSONObject();
-		for (int i=0; i<accountsFromDb.length(); i++) {
-			JSONArray row = accountsFromDb.getJSONArray(i);
-			idToNamesFromDb.put(row.getString(0), row.getString(1));
+		for (int i=0; i<numberChanges; i++) {
+			checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, i*100/numberChanges);
 		}
-		JSONTestHelper.assertSameJSONObject("Wrong data in db", new JSONObject(idToNames), idToNamesFromDb);
+		
+		// Wait for done update
+		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.DONE, 100);
+	}
+
+	/**
+	 * Blocks until next sync broadcast
+	 * @return sync from broadcast
+	 * @throws JSONException
+	 */
+	private JSONObject waitForNextBroadcast() throws JSONException {
+		Intent intent = broadcastQueue.getNextBroadcast();
+		return new JSONObject(intent.getStringExtra(SyncManager.SYNC_AS_STRING));
 	}
 	
-	private void checkStatus(JSONObject sync, Type expectedType, long expectedId, JSONObject expectedTarget, SyncManager.Status expectedStatus, int expectedProgress) throws JSONException {
+	/**
+	 * Helper method to check sync state
+	 * @param sync
+	 * @param expectedType
+	 * @param expectedId
+	 * @param expectedTarget
+	 * @param expectedOptions
+	 * @param expectedStatus
+	 * @param expectedProgress
+	 * @throws JSONException
+	 */
+	private void checkStatus(JSONObject sync, Type expectedType, long expectedId, JSONObject expectedTarget, JSONObject expectedOptions, SyncManager.Status expectedStatus, int expectedProgress) throws JSONException {
 		assertEquals("Wrong type", expectedType.name(), sync.getString(SyncManager.SYNC_TYPE));
 		assertEquals("Wrong id", expectedId, sync.getLong(SmartStore.SOUP_ENTRY_ID));
-		JSONTestHelper.assertSameJSON("Wrong target", expectedTarget, sync.getJSONObject(SyncManager.SYNC_TARGET));
+		JSONTestHelper.assertSameJSON("Wrong target", expectedTarget, sync.optJSONObject(SyncManager.SYNC_TARGET));
+		JSONTestHelper.assertSameJSON("Wrong options", expectedOptions, sync.optJSONObject(SyncManager.SYNC_OPTIONS));
 		assertEquals("Wrong status", expectedStatus.name(), sync.getString(SyncManager.SYNC_STATUS));
 		assertEquals("Wrong progress", expectedProgress, sync.optInt(SyncManager.SYNC_PROGRESS, 0));
 	}
@@ -200,7 +297,8 @@ public class SyncManagerTest extends ManagerTestCase {
 	private void createAccountsSoup() {
     	final IndexSpec[] indexSpecs = {
     			new IndexSpec(ID, SmartStore.Type.string),
-    			new IndexSpec(NAME, SmartStore.Type.string)
+    			new IndexSpec(NAME, SmartStore.Type.string),
+    			new IndexSpec(SyncManager.LOCAL, SmartStore.Type.string)
     	};    	
     	smartStore.registerSoup(ACCOUNTS_SOUP, indexSpecs);
 	}
@@ -243,5 +341,22 @@ public class SyncManagerTest extends ManagerTestCase {
 	 */
 	private long getSyncId(JSONObject sync) throws JSONException {
 		return sync.getLong(SmartStore.SOUP_ENTRY_ID);
+	}
+
+	/**
+	 * Update accounts locally
+	 * @param id
+	 * @throws JSONException
+	 */
+	private void updateAccounts(Map<String, String> idToNamesLocallyUpdated) throws JSONException {
+		for (Entry<String, String> idAndName : idToNamesLocallyUpdated.entrySet()) {
+			String id = idAndName.getKey();
+			String updatedName = idAndName.getValue();
+			JSONObject account = smartStore.retrieve(ACCOUNTS_SOUP, smartStore.lookupSoupEntryId(ACCOUNTS_SOUP, ID, id)).getJSONObject(0);
+			account.put(NAME, updatedName);
+			account.put(SyncManager.LOCAL, true);
+			account.put(SyncManager.LOCALLY_UPDATED, true);
+			smartStore.upsert(ACCOUNTS_SOUP, account);
+		}
 	}
 }

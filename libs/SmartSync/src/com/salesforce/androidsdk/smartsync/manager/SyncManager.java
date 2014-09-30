@@ -353,7 +353,10 @@ public class SyncManager {
 			}
 			
 			// Updating status
-			this.updateSync(sync, Status.RUNNING, i / records.length());
+			int progress = (i+1)*100 / records.length();
+			if (progress < 100) {
+				this.updateSync(sync, Status.RUNNING, progress);
+			}
 		}
 	}
 
@@ -413,7 +416,10 @@ public class SyncManager {
 			countFetched += records.length();
 			
 			// Updating status
-			updateSync(sync, Status.RUNNING, countFetched*100/totalSize);
+			int progress = countFetched*100/totalSize;
+			if (progress < 100) {
+				updateSync(sync, Status.RUNNING, progress);
+			}
 			
 			// Fetch next records if any
 			String nextRecordsUrl = responseJson.optString(NEXT_RECORDS_URL, null);
