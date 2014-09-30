@@ -32,6 +32,6 @@
     </application>
 
     <instrumentation android:targetPackage="com.salesforce.androidsdk.tests"
-        android:name="com.salesforce.androidsdk.util.JUnitReportTestRunner"
+        android:name="com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
         android:label="Tests for Force Plugins" />
 </manifest>

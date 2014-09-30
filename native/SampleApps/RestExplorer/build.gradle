@@ -29,7 +29,7 @@ android {
   }
   defaultConfig {
     testPackageName "com.salesforce.samples.restexplorer"
-    testInstrumentationRunner "com.salesforce.androidsdk.util.JUnitReportTestRunner"
+    testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'
