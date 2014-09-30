@@ -47,20 +47,26 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.Type;
-import com.salesforce.androidsdk.util.test.BroadcastListenerQueue;
-import com.salesforce.androidsdk.util.test.JSONTestHelper;
+import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.util.BroadcastListenerQueue;
+import com.salesforce.androidsdk.util.JSONTestHelper;
 
 
 /**
  * Test class for SyncManager.
  */
 public class SyncManagerTest extends ManagerTestCase {
-	
-    private static final String RECORDS = "records";
+
+	private static final String TYPE = "type";
+	private static final String RECORDS = "records";
+	private static final String LID = "id"; // lower case id in create response
+
+	// Local
+	private static final String LOCAL_ID_PREFIX = "local_";
 	private static final String FIELDLIST = "fieldlist";
 	private static final String ACCOUNTS_SOUP = "accounts";
-	private static final String NAME = "Name";
-	private static final String ID = "Id";
+	
+	// Misc
 	private static final int COUNT_TEST_ACCOUNTS = 10;
 	
 	private Map<String, String> idToNames;
@@ -71,12 +77,12 @@ public class SyncManagerTest extends ManagerTestCase {
     	super.setUp();
     	broadcastQueue = setupBroadcastListenerQueue();
     	createAccountsSoup();
-    	idToNames = createTestAccounts(COUNT_TEST_ACCOUNTS);
+    	idToNames = createTestAccountsOnServer(COUNT_TEST_ACCOUNTS);
     }
     
     @Override 
     public void tearDown() throws Exception {
-    	deleteTestAccounts(idToNames);
+    	deleteTestAccountsOnServer(idToNames);
     	dropAccountsSoup();
     	deleteSyncs();
     	tearDownBroadcastListenerQueue(broadcastQueue);
@@ -113,7 +119,7 @@ public class SyncManagerTest extends ManagerTestCase {
 	}
 
 	/**
-	 * Sync down the test accounts, modify a few, sync up, check that server side was updated
+	 * Sync down the test accounts, modify a few, sync up, check smartstore and server afterwards
 	 */
 	public void testSyncUpWithLocallyUpdatedRecords() throws Exception {
 		// First sync down
@@ -127,14 +133,14 @@ public class SyncManagerTest extends ManagerTestCase {
 			String id = ids[i];
 			idToNamesLocallyUpdated.put(id, idToNames.get(id) + "_updated");
 		}
-		updateAccounts(idToNamesLocallyUpdated);
+		updateAccountsLocally(idToNamesLocallyUpdated);
 		
 		// Sync up
 		trySyncUp(3);
 		
 		// Check that db doesn't show entries as locally modified anymore
 		String idsClause = "('" + Joiner.on("', '").join(ids) + "')";
-		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup}, {accounts:Name} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, ids.length);
+		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, ids.length);
 		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
 		for (int i=0; i<accountsFromDb.length(); i++) {
 			JSONArray row = accountsFromDb.getJSONArray(i);
@@ -143,7 +149,7 @@ public class SyncManagerTest extends ManagerTestCase {
 			assertEquals("Wrong local flag", false, soupElt.getBoolean(SyncManager.LOCALLY_UPDATED));
 		}
 		
-		// Check that server got updates
+		// Check server
 		String soql = "SELECT Id, Name FROM Account WHERE Id IN " + idsClause;
 		RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.VERSION_NUMBER, soql);
 		JSONObject idToNamesFromServer = new JSONObject();
@@ -151,11 +157,82 @@ public class SyncManagerTest extends ManagerTestCase {
 		JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
 		for (int i=0; i<records.length(); i++) {
 			JSONObject row = records.getJSONObject(i);
-			idToNamesFromServer.put(row.getString(ID), row.getString(NAME));
+			idToNamesFromServer.put(row.getString(Constants.ID), row.getString(Constants.NAME));
 		}
 		JSONTestHelper.assertSameJSONObject("Wrong data on server", new JSONObject(idToNamesLocallyUpdated), idToNamesFromServer);
 	}
 
+	/**
+	 * Create accounts locally, sync up, check smartstore and server afterwards
+	 */
+	public void testSyncUpWithLocallyCreatedRecords() throws Exception {
+		// Create a few entries locally
+		String[] names = new String[] { createAccountName(), createAccountName(), createAccountName() };  
+		createAccountsLocally(names);
+		
+		// Sync up
+		trySyncUp(3);
+		
+		// Check that db doesn't show entries as locally created anymore and that they use sfdc id
+		String namesClause = "('" + Joiner.on("', '").join(names) + "')";
+		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup} FROM {accounts} WHERE {accounts:Name} IN " + namesClause, names.length);
+		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+		Map<String, String> idToNamesCreated = new HashMap<String, String>();
+		for (int i=0; i<accountsFromDb.length(); i++) {
+			JSONArray row = accountsFromDb.getJSONArray(i);
+			JSONObject soupElt = row.getJSONObject(0);
+			String id = soupElt.getString(Constants.ID);
+			idToNamesCreated .put(id, soupElt.getString(Constants.NAME));
+			assertEquals("Wrong local flag", false, soupElt.getBoolean(SyncManager.LOCAL));
+			assertEquals("Wrong local flag", false, soupElt.getBoolean(SyncManager.LOCALLY_CREATED));
+			assertEquals("Id was not udpated", false, id.startsWith(LOCAL_ID_PREFIX));
+		}
+		
+		// Check server
+		String soql = "SELECT Id, Name FROM Account WHERE Name IN " + namesClause;
+		RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.VERSION_NUMBER, soql);
+		JSONObject idToNamesFromServer = new JSONObject();
+		RestResponse response = restClient.sendSync(request);
+		JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
+		for (int i=0; i<records.length(); i++) {
+			JSONObject row = records.getJSONObject(i);
+			idToNamesFromServer.put(row.getString(Constants.ID), row.getString(Constants.NAME));
+		}
+		JSONTestHelper.assertSameJSONObject("Wrong data on server", new JSONObject(idToNamesCreated), idToNamesFromServer);
+		
+		// Adding to idToNames so that they get deleted in tearDown
+		idToNames.putAll(idToNamesCreated);
+	}
+	
+	/**
+	 * Sync down the test accounts, delete a few, sync up, check smartstore and server afterwards
+	 */
+	public void testSyncUpWithLocallyDeletedRecords() throws Exception {
+		// First sync down
+		trySyncDown();
+		
+		// Delete a few entries locally
+		String[] allIds = idToNames.keySet().toArray(new String[0]);
+		String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
+		deleteAccountsLocally(idsLocallyDeleted);
+		
+		// Sync up
+		trySyncUp(3);
+		
+		// Check that db doesn't contain those entries anymore
+		String idsClause = "('" + Joiner.on("', '").join(idsLocallyDeleted) + "')";
+		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup}, {accounts:Name} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, idsLocallyDeleted.length);
+		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+		assertEquals("No accounts should have been returned from smartstore", 0, accountsFromDb.length());
+		
+		// Check server
+		String soql = "SELECT Id, Name FROM Account WHERE Id IN " + idsClause;
+		RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.VERSION_NUMBER, soql);
+		RestResponse response = restClient.sendSync(request);
+		JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
+		assertEquals("No accounts should have been returned from server", 0, records.length());
+	}
+	
 	/**
 	 * Sync down helper
 	 * @throws JSONException
@@ -193,7 +270,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		// Create sync
 		JSONObject options = new JSONObject();
 		JSONArray fieldlist = new JSONArray();
-		fieldlist.put(NAME);
+		fieldlist.put(Constants.NAME);
 		options.put(FIELDLIST, fieldlist);
 		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncUp, null, ACCOUNTS_SOUP, options);
 		long syncId = getSyncId(sync);
@@ -247,18 +324,17 @@ public class SyncManagerTest extends ManagerTestCase {
 	 * @return map of id to name for the created accounts
 	 * @throws Exception
 	 */
-	private Map<String, String> createTestAccounts(int count) throws Exception {
+	private Map<String, String> createTestAccountsOnServer(int count) throws Exception {
 		Map<String, String> idToNames = new HashMap<String, String>();
-		Map<String, Object> fields = new HashMap<String, Object>();
-		int base = (int) (Math.random()*1000000);
 		for (int i=0; i<count; i++) {
 			// Request
-			String name = createAccountName(base, i);
-			fields.put(NAME, name);
-			RestRequest request = RestRequest.getRequestForCreate(ApiVersionStrings.VERSION_NUMBER, "Account", fields);
+			String name = createAccountName();
+			Map<String, Object> fields = new HashMap<String, Object>();
+			fields.put(Constants.NAME, name);
+			RestRequest request = RestRequest.getRequestForCreate(ApiVersionStrings.VERSION_NUMBER, Constants.ACCOUNT, fields);
 			// Response
 			RestResponse response = restClient.sendSync(request);
-			String id = response.asJSONObject().getString("id");
+			String id = response.asJSONObject().getString(LID);
 			idToNames.put(id, name);
 		}
 		return idToNames;
@@ -269,24 +345,34 @@ public class SyncManagerTest extends ManagerTestCase {
 	 * @param idToNames
 	 * @throws Exception
 	 */
-	private void deleteTestAccounts(Map<String, String> idToNames) throws Exception {
+	private void deleteTestAccountsOnServer(Map<String, String> idToNames) throws Exception {
 		for (String id : idToNames.keySet()) {
-			RestRequest request = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER, "Account", id);
+			RestRequest request = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER, Constants.ACCOUNT, id);
 			restClient.sendSync(request);
 		}
 	}
 
 	
 	/**
-	 * @param base
-	 * @param i
-	 * @return account name of the form SyncManagerTest<base + i left-padded to be 7 digits long>
+	 * @return account name of the form SyncManagerTest<random number left-padded to be 8 digits long>
 	 */
 	@SuppressWarnings("resource")
-	private String createAccountName(int base, int i) {
+	private String createAccountName() {
 		StringBuilder sb = new StringBuilder();
 		Formatter formatter = new Formatter(sb, Locale.US);
-		formatter.format("SyncManagerTest%07d", base + i);
+		formatter.format("SyncManagerTest%08d", (int) (Math.random()*10000000));
+		String name = sb.toString();
+		return name;
+	}
+
+	/**
+	 * @return local id of the form local_<random number left-padded to be 8 digits long>
+	 */
+	@SuppressWarnings("resource")
+	private String createLocalId() {
+		StringBuilder sb = new StringBuilder();
+		Formatter formatter = new Formatter(sb, Locale.US);
+		formatter.format(LOCAL_ID_PREFIX + "%08d", (int) (Math.random()*10000000));
 		String name = sb.toString();
 		return name;
 	}
@@ -296,8 +382,8 @@ public class SyncManagerTest extends ManagerTestCase {
 	 */
 	private void createAccountsSoup() {
     	final IndexSpec[] indexSpecs = {
-    			new IndexSpec(ID, SmartStore.Type.string),
-    			new IndexSpec(NAME, SmartStore.Type.string),
+    			new IndexSpec(Constants.ID, SmartStore.Type.string),
+    			new IndexSpec(Constants.NAME, SmartStore.Type.string),
     			new IndexSpec(SyncManager.LOCAL, SmartStore.Type.string)
     	};    	
     	smartStore.registerSoup(ACCOUNTS_SOUP, indexSpecs);
@@ -344,18 +430,58 @@ public class SyncManagerTest extends ManagerTestCase {
 	}
 
 	/**
+	 * Create accounts locally
+	 * @param names
+	 * @throws JSONException 
+	 */
+	private void createAccountsLocally(String[] names) throws JSONException {
+		JSONObject attributes = new JSONObject();
+		attributes.put(TYPE, Constants.ACCOUNT);
+
+		for (String name : names) {
+			JSONObject account = new JSONObject();
+			account.put(Constants.ID, createLocalId());
+			account.put(Constants.NAME, name);
+			account.put(Constants.ATTRIBUTES, attributes);
+			account.put(SyncManager.LOCAL, true);
+			account.put(SyncManager.LOCALLY_CREATED, true);
+			account.put(SyncManager.LOCALLY_DELETED, false);
+			account.put(SyncManager.LOCALLY_UPDATED, false);
+			smartStore.create(ACCOUNTS_SOUP, account);
+		}
+	}
+
+	/**
 	 * Update accounts locally
 	 * @param id
 	 * @throws JSONException
 	 */
-	private void updateAccounts(Map<String, String> idToNamesLocallyUpdated) throws JSONException {
+	private void updateAccountsLocally(Map<String, String> idToNamesLocallyUpdated) throws JSONException {
 		for (Entry<String, String> idAndName : idToNamesLocallyUpdated.entrySet()) {
 			String id = idAndName.getKey();
 			String updatedName = idAndName.getValue();
-			JSONObject account = smartStore.retrieve(ACCOUNTS_SOUP, smartStore.lookupSoupEntryId(ACCOUNTS_SOUP, ID, id)).getJSONObject(0);
-			account.put(NAME, updatedName);
+			JSONObject account = smartStore.retrieve(ACCOUNTS_SOUP, smartStore.lookupSoupEntryId(ACCOUNTS_SOUP, Constants.ID, id)).getJSONObject(0);
+			account.put(Constants.NAME, updatedName);
 			account.put(SyncManager.LOCAL, true);
+			account.put(SyncManager.LOCALLY_CREATED, false);
+			account.put(SyncManager.LOCALLY_DELETED, false);
 			account.put(SyncManager.LOCALLY_UPDATED, true);
+			smartStore.upsert(ACCOUNTS_SOUP, account);
+		}
+	}
+
+	/**
+	 * Delete accounts locally
+	 * @param idsLocallyDeleted
+	 * @throws JSONException 
+	 */
+	private void deleteAccountsLocally(String[] idsLocallyDeleted) throws JSONException {
+		for (String id : idsLocallyDeleted) {
+			JSONObject account = smartStore.retrieve(ACCOUNTS_SOUP, smartStore.lookupSoupEntryId(ACCOUNTS_SOUP, Constants.ID, id)).getJSONObject(0);
+			account.put(SyncManager.LOCAL, true);
+			account.put(SyncManager.LOCALLY_CREATED, false);
+			account.put(SyncManager.LOCALLY_DELETED, true);
+			account.put(SyncManager.LOCALLY_UPDATED, false);
 			smartStore.upsert(ACCOUNTS_SOUP, account);
 		}
 	}
