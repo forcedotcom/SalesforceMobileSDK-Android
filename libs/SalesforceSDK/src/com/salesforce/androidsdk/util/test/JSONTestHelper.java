@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.androidsdk.util;
+package com.salesforce.androidsdk.util.test;
 
 import junit.framework.Assert;
 

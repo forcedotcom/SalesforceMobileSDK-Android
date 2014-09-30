@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.util;
 
+import com.salesforce.androidsdk.util.test.EventsObserver;
+
 import android.database.Observable;
 
 /**

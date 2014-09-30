@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2012, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,46 +24,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.util;
+package com.salesforce.androidsdk.util.test;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
- * This tracks broadcasts using a queue, allowing for tests to wait for certain broadcast to turn up.
+ * Super class for tests of native application
  */
-public class BroadcastListenerQueue extends BroadcastReceiver {
-
-	private BlockingQueue<Intent> broadcasts; 
+public abstract class NativeInstrumentationTestCase extends ForceAppInstrumentationTestCase {
 	
-	public BroadcastListenerQueue() {
-		broadcasts = new ArrayBlockingQueue<Intent>(10);
+	protected void login() {
+		super.login();
+		waitForEvent(EventType.RenditionComplete).getData();
 	}
-	
-	@Override
-	public void onReceive(Context context, final Intent intent) {
-		broadcasts.offer(intent);
-	}
-	
-    // remove any events in the queue
-    public void clearQueue() {
-    	broadcasts.clear();
-    }
-
-    /** will return the next event in the queue, waiting if needed for a reasonable amount of time */
-    public Intent getNextBroadcast() {
-        try {
-        	Intent broadcast = broadcasts.poll(30, TimeUnit.SECONDS);
-            if (broadcast == null)
-                throw new RuntimeException("Failure ** Timeout waiting for a broadcast ");
-            return broadcast;
-        } catch (InterruptedException ex) {
-            throw new RuntimeException("Was interrupted waiting for broadcast");
-        }
-    }
 }

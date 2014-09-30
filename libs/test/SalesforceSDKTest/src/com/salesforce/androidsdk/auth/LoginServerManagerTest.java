@@ -36,8 +36,8 @@ import android.test.InstrumentationTestCase;
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
-import com.salesforce.androidsdk.util.EventsListenerQueue;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
 /**
  * Tests for LoginServerManager.
