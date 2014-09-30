@@ -42,6 +42,11 @@ public class Constants {
     public static final String TYPE = "Type";
     public static final String ATTRIBUTES = "attributes";
     public static final String RECENTLY_VIEWED = "RecentlyViewed";
+    public static final String RECORDS = "records";
+	public static final String LID = "id"; // lower case id in create response
+	public static final String SOBJECT_TYPE = "attributes.type";
+	public static final String NEXT_RECORDS_URL = "nextRecordsUrl";
+	public static final String TOTAL_SIZE = "totalSize";
 
     /**
      * Salesforce object types.
