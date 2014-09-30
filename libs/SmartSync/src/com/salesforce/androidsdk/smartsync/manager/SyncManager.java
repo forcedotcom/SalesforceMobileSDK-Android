@@ -50,6 +50,7 @@ import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartSto
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 
 
 /**
@@ -79,14 +80,6 @@ public class SyncManager {
 	public static final String QUERY_TYPE = "type";
 	public static final String QUERY = "query";
 
-	// Server response
-	public static final String RECORDS = "records";
-	public static final String ID = "Id";
-	public static final String LID = "id"; // lower case id in create response
-	public static final String SOBJECT_TYPE = "attributes.type";
-	public static final String NEXT_RECORDS_URL = "nextRecordsUrl";
-	public static final String TOTAL_SIZE = "totalSize";
-	
 	// Local fields
 	public static final String LOCALLY_CREATED = "__locally_created__";
 	public static final String LOCALLY_UPDATED = "__locally_updated__";
@@ -308,15 +301,15 @@ public class SyncManager {
 			}
 
 			// Getting type and id
-			String objectType = (String) SmartStore.project(record, SOBJECT_TYPE);
-			String objectId = record.getString(ID);
+			String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
+			String objectId = record.getString(Constants.ID);
 			
 			// Fields to save (in the case of create or update)
 			Map<String, Object> fields = new HashMap<String, Object>();
 			if (action == Action.create || action == Action.update) {
 				for (int j=0; j<fieldlist.length(); j++) {
 					String fieldName = fieldlist.getString(j);
-					if (!fieldName.equals(ID)) {
+					if (!fieldName.equals(Constants.ID)) {
 						fields.put(fieldName, record.get(fieldName));
 					}
 				}
@@ -335,14 +328,11 @@ public class SyncManager {
 			
 			// Call server
 			RestResponse response = restClient.sendSync(request);
-			boolean successful = response.getStatusCode() < 300;
-			
-			
 			// Update smartstore
-			if (successful) {
+			if (response.isSuccess()) {
 				// Replace id with server id during create
 				if (action == Action.create) {
-					record.put(ID, response.asJSONObject().get(LID));
+					record.put(Constants.ID, response.asJSONObject().get(Constants.LID));
 				}
 				// Set local flags to false
 				record.put(LOCAL, false);
@@ -402,8 +392,8 @@ public class SyncManager {
 		while(response != null) {
 			// Parse response
 			JSONObject responseJson = response.asJSONObject();
-			JSONArray records = responseJson.getJSONArray(RECORDS);
-			int totalSize = responseJson.getInt(TOTAL_SIZE);
+			JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
+			int totalSize = responseJson.getInt(Constants.TOTAL_SIZE);
 			
 			// No records returned
 			if (totalSize == 0) 
@@ -417,7 +407,7 @@ public class SyncManager {
 				record.put(LOCALLY_CREATED, false);
 				record.put(LOCALLY_UPDATED, false);
 				record.put(LOCALLY_DELETED, false);
-				smartStore.upsert(soupName, records.getJSONObject(i), ID, false);
+				smartStore.upsert(soupName, records.getJSONObject(i), Constants.ID, false);
 			}
 			smartStore.setTransactionSuccessful();
 			smartStore.endTransaction();
@@ -432,7 +422,7 @@ public class SyncManager {
 			}
 			
 			// Fetch next records if any
-			String nextRecordsUrl = responseJson.optString(NEXT_RECORDS_URL, null);
+			String nextRecordsUrl = responseJson.optString(Constants.NEXT_RECORDS_URL, null);
 			response = nextRecordsUrl == null ? null : restClient.sendSync(RestMethod.GET, nextRecordsUrl, null);
 		}
 	}
