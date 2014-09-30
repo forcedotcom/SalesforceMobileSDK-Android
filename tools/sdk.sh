@@ -51,6 +51,7 @@ usage ()
     echo "        Cordova"
     echo "        RestExplorer"
     echo "        NativeSqlAggregator"
+    echo "        SmartSyncExplorer"
     echo "        FileExplorer"
     echo "        TemplateApp"
     echo "        AccountEditor"
@@ -165,6 +166,7 @@ else
     build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp 17
     build_project_if_requested "RestExplorer" $NATIVE_TOP/SampleApps/RestExplorer 17
     build_project_if_requested "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator 17
+    build_project_if_requested "SmartSyncExplorer" $NATIVE_TOP/SampleApps/SmartSyncExplorer 17
     build_project_if_requested "FileExplorer" $NATIVE_TOP/SampleApps/FileExplorer 17
     build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor 17
     build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer 17
