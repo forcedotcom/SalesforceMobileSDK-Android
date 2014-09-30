@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.phonegap;
 import java.util.Arrays;
 import java.util.List;
 
-import com.salesforce.androidsdk.util.JSTestCase;
+import com.salesforce.androidsdk.util.test.JSTestCase;
 
 /**
  * Running javascript tests for SmartStore plugin

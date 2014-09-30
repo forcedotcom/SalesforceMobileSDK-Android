@@ -28,7 +28,7 @@ package com.salesforce.samples.templateapp;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.util.NativeInstrumentationTestCase;
+import com.salesforce.androidsdk.util.test.NativeInstrumentationTestCase;
 
 /**
  * Tests for TemplateApp.
