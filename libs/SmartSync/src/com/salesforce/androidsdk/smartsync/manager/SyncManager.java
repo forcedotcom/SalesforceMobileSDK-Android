@@ -82,6 +82,7 @@ public class SyncManager {
 	// Server response
 	public static final String RECORDS = "records";
 	public static final String ID = "Id";
+	public static final String LID = "id"; // lower case id in create response
 	public static final String SOBJECT_TYPE = "attributes.type";
 	public static final String NEXT_RECORDS_URL = "nextRecordsUrl";
 	public static final String TOTAL_SIZE = "totalSize";
@@ -325,7 +326,7 @@ public class SyncManager {
 			RestRequest request = null;
 			switch (action) {
 			case create: request = RestRequest.getRequestForCreate(apiVersion, objectType, fields); break;
-			case delete: request = RestRequest.getRequestForDelete(apiVersion, objectType, objectId);
+			case delete: request = RestRequest.getRequestForDelete(apiVersion, objectType, objectId); break;
 			case update: request = RestRequest.getRequestForUpdate(apiVersion, objectType, objectId, fields); break;
 			default:
 				break;
@@ -333,31 +334,40 @@ public class SyncManager {
 			}
 			
 			// Call server
-			RestResponse sendSync = restClient.sendSync(request);
-			boolean successful = sendSync.getStatusCode() < 300;
+			RestResponse response = restClient.sendSync(request);
+			boolean successful = response.getStatusCode() < 300;
 			
 			
 			// Update smartstore
 			if (successful) {
+				// Replace id with server id during create
+				if (action == Action.create) {
+					record.put(ID, response.asJSONObject().get(LID));
+				}
+				// Set local flags to false
 				record.put(LOCAL, false);
 				record.put(LOCALLY_CREATED, false);
 				record.put(LOCALLY_UPDATED, false);
 				record.put(LOCALLY_DELETED, false);
+				
+				// Remove entry on delete
+				if (action == Action.delete) {
+					smartStore.delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));				
+				}
+				// Update entry otherwise
+				else {
+					smartStore.update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID));				
+				}
 			}
 			
-			if (successful && action == Action.delete) {
-				smartStore.delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));				
-			}
-			else {
-				smartStore.upsert(soupName, record, ID);				
-			}
 			
 			// Updating status
 			int progress = (i+1)*100 / records.length();
 			if (progress < 100) {
 				this.updateSync(sync, Status.RUNNING, progress);
-			}
+			}			
 		}
+
 	}
 
 	private void syncDown(JSONObject sync) throws Exception {
