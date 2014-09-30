@@ -26,11 +26,11 @@
  */
 package com.salesforce.androidsdk.store;
 
-import net.sqlcipher.database.SQLiteDatabase;
-
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import net.sqlcipher.database.SQLiteDatabase;
+
 
 import android.content.Context;
 import android.database.Cursor;
@@ -94,106 +94,19 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	}
 
 	/**
-	 * @param soupElt
-	 * @return _soupEntryId field value
-	 * @throws JSONException
-	 */
-	protected long idOf(JSONObject soupElt) throws JSONException {
-		return soupElt.getLong(SmartStore.SOUP_ENTRY_ID);
-	}
-
-	/**
-	 * Compare two JSON
-	 * @param message
-	 * @param expected
-	 * @param actual
-	 * @throws JSONException
-	 */
-	protected void assertSameJSON(String message, Object expected, Object actual) throws JSONException {
-		// At least one null
-		if (expected == null || actual == null) {
-			// Both null
-			if (expected == null && actual == null) {
-				return;
-			}
-			// One null, not the other
-			else {
-				assertTrue(message, false);
-			}
-		}
-		// Both arrays
-		else if (expected instanceof JSONArray && actual instanceof JSONArray) {
-			assertSameJSONArray(message, (JSONArray) expected, (JSONArray) actual); 
-		}
-		// Both maps
-		else if (expected instanceof JSONObject && actual instanceof JSONObject) {
-			assertSameJSONObject(message, (JSONObject) expected, (JSONObject) actual); 
-		}
-		// Atomic types
-		else {
-			// Comparing string representations, to avoid things like new Long(n) != new Integer(n) 
-			assertEquals(message, expected.toString(), actual.toString());
-		}
-	}
-	
-	/**
-	 * Compare two JSON arrays
-	 * @param message
-	 * @param expected
-	 * @param actual
-	 * @throws JSONException
-	 */
-	protected void assertSameJSONArray(String message, JSONArray expected, JSONArray actual) throws JSONException {
-		// First compare length
-		assertEquals(message, expected.length(), actual.length());
-		
-		// If string value match we are done
-		if (expected.toString().equals(actual.toString())) {
-			// Done
-			return;
-		}
-		// If string values don't match, it might still be the same object (toString does not sort fields of maps)
-		else {
-			// Compare values
-			for (int i=0; i<expected.length(); i++) {
-				assertSameJSON(message, expected.get(i), actual.get(i));
-			}
-		}
-	}
-	
-	/**
-	 * Compare two JSON maps
-	 * @param message
-	 * @param expected
-	 * @param actual
-	 * @throws JSONException
-	 */
-	protected void assertSameJSONObject(String message, JSONObject expected, JSONObject actual) throws JSONException {
-		// First compare length
-		assertEquals(message, expected.length(), actual.length());
-		
-		// If string value match we are done
-		if (expected.toString().equals(actual.toString())) {
-			// Done
-			return;
-		}
-		// If string values don't match, it might still be the same object (toString does not sort fields of maps)
-		else {
-			// Compare keys / values
-			JSONArray expectedNames = expected.names();
-			JSONArray actualNames = actual.names();
-			assertEquals(message, expectedNames.length(), actualNames.length());
-			JSONArray expectedValues = expected.toJSONArray(expectedNames);
-			JSONArray actualValues = actual.toJSONArray(expectedNames);
-			assertSameJSONArray(message, expectedValues, actualValues);
-		}
-	}
-
-	/**
 	 * @param soupName
 	 * @return table name for soup
 	 */
 	protected String getSoupTableName(String soupName) {
 		return DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	}
+
+	/**
+	 * @param soupElt
+	 * @return _soupEntryId field value
+	 * @throws JSONException
+	 */
+	public static long idOf(JSONObject soupElt) throws JSONException {
+		return soupElt.getLong(SmartStore.SOUP_ENTRY_ID);
+	}	
 }

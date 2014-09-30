@@ -73,11 +73,11 @@ public class SyncManager {
 	public static final String SYNC_OPTIONS = "options";
 	public static final String SYNC_STATUS = "status";
 	public static final String SYNC_PROGRESS = "progress";
-	private static final String SYNC_FIELDLIST = "fieldlist";
+	public static final String SYNC_FIELDLIST = "fieldlist";
 	
 	// Target
-	private static final String QUERY_TYPE = "type";
-	private static final String QUERY = "query";
+	public static final String QUERY_TYPE = "type";
+	public static final String QUERY = "query";
 
 	// Server response
 	public static final String RECORDS = "records";
@@ -324,7 +324,7 @@ public class SyncManager {
 			// Building create/update/delete request
 			RestRequest request = null;
 			switch (action) {
-			case create: request = RestRequest.getRequestForCreate(soupName, objectType, fields); break;
+			case create: request = RestRequest.getRequestForCreate(apiVersion, objectType, fields); break;
 			case delete: request = RestRequest.getRequestForDelete(apiVersion, objectType, objectId);
 			case update: request = RestRequest.getRequestForUpdate(apiVersion, objectType, objectId, fields); break;
 			default:
@@ -353,7 +353,10 @@ public class SyncManager {
 			}
 			
 			// Updating status
-			this.updateSync(sync, Status.RUNNING, i / records.length());
+			int progress = (i+1)*100 / records.length();
+			if (progress < 100) {
+				this.updateSync(sync, Status.RUNNING, progress);
+			}
 		}
 	}
 
@@ -413,7 +416,10 @@ public class SyncManager {
 			countFetched += records.length();
 			
 			// Updating status
-			updateSync(sync, Status.RUNNING, countFetched*100/totalSize);
+			int progress = countFetched*100/totalSize;
+			if (progress < 100) {
+				updateSync(sync, Status.RUNNING, progress);
+			}
 			
 			// Fetch next records if any
 			String nextRecordsUrl = responseJson.optString(NEXT_RECORDS_URL, null);
@@ -470,5 +476,16 @@ public class SyncManager {
         }
 
 		private static final long serialVersionUID = 1L;
-    }    
+    }
+    
+
+    /**
+     * Sets the network manager to be used.
+     * This is primarily used only by tests.
+     * 
+     * @param networkMgr
+     */
+    public void setNetworkManager(NetworkManager networkMgr) {
+        restClient = networkMgr.getRestClient();
+    }
 }
