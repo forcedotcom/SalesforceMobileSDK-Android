@@ -6,4 +6,6 @@
 	<string name="app_package">com.salesforce.samples.smartsyncexplorer</string>
 	<string name="logout_button">Logout</string>
 	<string name="switch_user_button">Switch User</string>
+	<string name="action_search">Search</string>
+	<string name="action_refresh">Refresh</string>
 </resources>

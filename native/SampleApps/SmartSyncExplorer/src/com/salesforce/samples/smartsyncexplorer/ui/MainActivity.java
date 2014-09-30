@@ -27,11 +27,13 @@
 package com.salesforce.samples.smartsyncexplorer.ui;
 
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
-import com.salesforce.samples.smartsyncexplorer.R.layout;
 
 /**
  * Main activity.
@@ -57,5 +59,34 @@ public class MainActivity extends SalesforceActivity {
 	public void onResume(RestClient client) {
         this.client = client;
         // TODO:
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+	    final MenuInflater inflater = getMenuInflater();
+	    inflater.inflate(R.menu.action_bar_menu, menu);
+	    return super.onCreateOptionsMenu(menu);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+	    switch (item.getItemId()) {
+	        case R.id.action_search:
+	            doSearch();
+	            return true;
+	        case R.id.action_refresh:
+	            refreshList();
+	            return true;
+	        default:
+	            return super.onOptionsItemSelected(item);
+	    }
+	}
+
+	private void doSearch() {
+		// TODO:
+	}
+
+	private void refreshList() {
+		// TODO:
 	}
 }
