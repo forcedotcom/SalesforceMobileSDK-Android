@@ -47,8 +47,8 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.Type;
-import com.salesforce.androidsdk.util.BroadcastListenerQueue;
-import com.salesforce.androidsdk.util.JSONTestHelper;
+import com.salesforce.androidsdk.util.test.BroadcastListenerQueue;
+import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 
 /**

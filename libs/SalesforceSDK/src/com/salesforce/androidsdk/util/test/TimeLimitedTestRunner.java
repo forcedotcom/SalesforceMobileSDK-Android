@@ -24,17 +24,47 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.util;
 
-import com.salesforce.androidsdk.util.EventsObservable.EventType;
+package com.salesforce.androidsdk.util.test;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import android.test.AndroidTestRunner;
+import android.util.Log;
 
 /**
- * Super class for tests of native application
+ * A TestRunner that limits the lifetime of the test run.
  */
-public abstract class NativeInstrumentationTestCase extends ForceAppInstrumentationTestCase {
-	
-	protected void login() {
-		super.login();
-		waitForEvent(EventType.RenditionComplete).getData();
-	}
+public class TimeLimitedTestRunner extends AndroidTestRunner {
+    public TimeLimitedTestRunner(int maxRuntime, TimeUnit maxUnits) {
+        this.maxRuntime = maxRuntime;
+        this.maxRuntimeUnit = maxUnits;
+    }
+
+    private final long maxRuntime;
+    private final TimeUnit maxRuntimeUnit;
+
+    @Override
+    public void runTest() {
+        ExecutorService exec = Executors.newSingleThreadExecutor();
+        Future<Boolean> f = exec.submit(new Callable<Boolean>() {
+            @Override
+            public Boolean call() {
+                TimeLimitedTestRunner.super.runTest();
+                return true;
+            }
+        });
+        try {
+            f.get(maxRuntime, maxRuntimeUnit);
+        } catch (TimeoutException ex) {
+           Log.e("TimeLimitedTestRunner.runTest", String.format("TestRunner has timed out after: %d %s.", maxRuntime, maxRuntimeUnit.name()), ex);
+        } catch (Exception ex){
+            Log.e("TimeLimitedTestRunner.runTest", "TestRunner did not complete successfully, check the exception logged above.", ex);
+        }
+    }
 }

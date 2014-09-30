@@ -52,8 +52,8 @@ import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.security.Encryptor;
-import com.salesforce.androidsdk.util.EventsListenerQueue;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
 public class ClientManagerTest extends InstrumentationTestCase {
 

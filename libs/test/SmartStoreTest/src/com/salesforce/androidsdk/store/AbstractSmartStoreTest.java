@@ -45,7 +45,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-import com.salesforce.androidsdk.util.JSONTestHelper;
+import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 /**
  * Abstract super class for plain and encrypted smart store tests
