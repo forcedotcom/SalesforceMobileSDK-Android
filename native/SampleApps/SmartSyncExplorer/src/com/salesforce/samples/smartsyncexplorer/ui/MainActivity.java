@@ -27,12 +27,15 @@
 package com.salesforce.samples.smartsyncexplorer.ui;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ListView;
 
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
+import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
 
 /**
@@ -40,7 +43,7 @@ import com.salesforce.samples.smartsyncexplorer.R;
  *
  * @author bhariharan
  */
-public class MainActivity extends SalesforceActivity {
+public class MainActivity extends SalesforceListActivity {
 
     private RestClient client;
 
@@ -52,13 +55,13 @@ public class MainActivity extends SalesforceActivity {
 
 	@Override
 	protected void refreshIfUserSwitched() {
-		// TODO: User switch.
+		// TODO: User switch. Change 'client' and reload list.
 	}
 
 	@Override
 	public void onResume(RestClient client) {
         this.client = client;
-        // TODO:
+        // TODO: Load list.
 	}
 
 	@Override
@@ -82,11 +85,16 @@ public class MainActivity extends SalesforceActivity {
 	    }
 	}
 
+	@Override public void onListItemClick(ListView l, View v, int position, long id) {
+        // Insert desired behavior here.
+        Log.i("LoaderCustom", "Item clicked: " + id);
+    }
+
 	private void doSearch() {
 		// TODO:
 	}
 
 	private void refreshList() {
-		// TODO:
+		// TODO: Reload list.
 	}
 }

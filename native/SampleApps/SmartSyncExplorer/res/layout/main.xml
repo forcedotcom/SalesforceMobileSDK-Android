@@ -1,19 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:orientation="vertical"
-	android:layout_width="match_parent"
-	android:layout_height="match_parent"
-	android:background="#454545"
-	android:id="@+id/root">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#454545"
+    android:id="@+id/root">
 
-	<ScrollView android:layout_height="wrap_content"
-	    android:layout_width="match_parent">
+    <ListView android:id="@android:id/list"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent" />
 
-	   <LinearLayout android:orientation="vertical"
-	       android:layout_width="match_parent"
-	       android:layout_height="wrap_content">
-
-	   </LinearLayout>
-	</ScrollView>
-</LinearLayout>
+    <TextView android:id="@android:id/empty"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:text="@string/no_data_available"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:textSize="18dp" />
+</LinearLayout> 
