@@ -26,21 +26,28 @@
  */
 package com.salesforce.samples.smartsyncexplorer.ui;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.app.LoaderManager;
 import android.content.Context;
 import android.content.Loader;
-import android.database.Cursor;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
 import android.widget.SearchView;
 import android.widget.SearchView.OnCloseListener;
 import android.widget.SearchView.OnQueryTextListener;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
+import com.salesforce.samples.smartsyncexplorer.loaders.MRUAsyncTaskLoader;
 
 /**
  * Main activity.
@@ -48,15 +55,20 @@ import com.salesforce.samples.smartsyncexplorer.R;
  * @author bhariharan
  */
 public class MainActivity extends SalesforceListActivity implements
-		OnQueryTextListener, OnCloseListener, LoaderManager.LoaderCallbacks<Cursor> {
+		OnQueryTextListener, OnCloseListener, LoaderManager.LoaderCallbacks<List<SalesforceObject>> {
 
-    private RestClient client;
+	private static final int MRU_LOADER_ID = 1;
+
     private SearchView searchView;
+    private MRUListAdapter listAdapter;
+    private UserAccount curAccount;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
+		listAdapter = new MRUListAdapter(this, android.R.id.empty);
+		getListView().setAdapter(listAdapter);
 	}
 
 	@Override
@@ -66,8 +78,14 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public void onResume(RestClient client) {
-        this.client = client;
-        // TODO: Load list.
+		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+		getLoaderManager().initLoader(MRU_LOADER_ID, null, this).forceLoad();
+    }
+
+	@Override
+	public void onPause() {
+		getLoaderManager().destroyLoader(MRU_LOADER_ID);
+		super.onPause();
 	}
 
 	@Override
@@ -86,7 +104,7 @@ public class MainActivity extends SalesforceListActivity implements
 	public boolean onOptionsItemSelected(MenuItem item) {
 	    switch (item.getItemId()) {
 	        case R.id.action_refresh:
-	            refreshList();
+	            refreshList(null); // TODO:
 	            return true;
 	        default:
 	            return super.onOptionsItemSelected(item);
@@ -100,21 +118,19 @@ public class MainActivity extends SalesforceListActivity implements
     }
 
 	@Override
-	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-		// TODO Auto-generated method stub
-		return null;
+	public Loader<List<SalesforceObject>> onCreateLoader(int id, Bundle args) {
+		return new MRUAsyncTaskLoader(this, curAccount, "");
 	}
 
 	@Override
-	public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-		// TODO Auto-generated method stub
-		
+	public void onLoaderReset(Loader<List<SalesforceObject>> loader) {
+		listAdapter.setData(new ArrayList<SalesforceObject>());
 	}
 
 	@Override
-	public void onLoaderReset(Loader<Cursor> loader) {
-		// TODO Auto-generated method stub
-		
+	public void onLoadFinished(Loader<List<SalesforceObject>> loader,
+			List<SalesforceObject> data) {
+		refreshList(data);
 	}
 
 	@Override
@@ -129,10 +145,10 @@ public class MainActivity extends SalesforceListActivity implements
 		return false;
 	}
 
-	private void refreshList() {
-		// TODO: Reload list.
+	private void refreshList(List<SalesforceObject> data) {
+		listAdapter.setData(data);
 	}
-
+	
 	/**
 	 * Custom search view that clears the search term when dismissed.
 	 *
@@ -150,4 +166,35 @@ public class MainActivity extends SalesforceListActivity implements
             super.onActionViewCollapsed();
         }
     }
+
+	/**
+	 * Custom array adapter to supply data to the list view.
+	 *
+	 * @author bhariharan
+	 */
+	public static class MRUListAdapter extends ArrayAdapter<SalesforceObject> {
+
+		/**
+		 * Parameterized constructor.
+		 *
+		 * @param context Context.
+		 * @param textViewResourceId Text view resource ID.
+		 */
+		public MRUListAdapter(Context context, int textViewResourceId) {
+			super(context, textViewResourceId);
+		}
+
+		/**
+		 * Sets data to this adapter.
+		 *
+		 * @param data Data.
+		 */
+		public void setData(List<SalesforceObject> data) {
+			if (data != null) {
+				clear();
+				addAll(data);
+				notifyDataSetChanged();
+			}
+		}
+	}
 }

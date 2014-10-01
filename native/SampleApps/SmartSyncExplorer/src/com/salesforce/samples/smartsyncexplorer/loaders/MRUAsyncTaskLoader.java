@@ -24,40 +24,48 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartsyncexplorer.asynctasks;
+package com.salesforce.samples.smartsyncexplorer.loaders;
 
 import java.util.List;
 
-import android.os.AsyncTask;
+import android.content.AsyncTaskLoader;
+import android.content.Context;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.smartsync.manager.CacheManager;
+import com.salesforce.androidsdk.smartsync.manager.CacheManager.CachePolicy;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
 
 /**
- * A simple AsyncTask to load MRU for a Salesforce object.
+ * A simple AsyncTaskLoader to load MRU for a Salesforce object.
  *
  * @author bhariharan
  */
-public class MRUAsyncTask extends AsyncTask<Void, Void, List<SalesforceObject>> {
+public class MRUAsyncTaskLoader extends AsyncTaskLoader<List<SalesforceObject>> {
 
-	private UserAccount account;
+	private static final long REFRESH_INTERVAL = 24 * 60 * 60 * 1000;
+	private static final int LIMIT = 250;
+
+	private String objectName;
 	private MetadataManager metadataMgr;
-	private CacheManager cacheMgr;
 
 	/**
-	 * Default constructor.
+	 * Parameterized constructor.
+	 *
+	 * @param context Context.
+	 * @param account User account.
+	 * @param objName Object name.
 	 */
-	public MRUAsyncTask(UserAccount account) {
-		this.account = account;
-		cacheMgr = CacheManager.getInstance(account);
+	public MRUAsyncTaskLoader(Context context, UserAccount account, String objName) {
+		super(context);
+		objectName = objName;
 		metadataMgr = MetadataManager.getInstance(account);
 	}
 
 	@Override
-	protected List<SalesforceObject> doInBackground(Void... params) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<SalesforceObject> loadInBackground() {
+		return metadataMgr.loadMRUObjects(objectName, LIMIT,
+				CachePolicy.RELOAD_IF_EXPIRED_AND_RETURN_CACHE_DATA,
+				REFRESH_INTERVAL, null);
 	}
 }
