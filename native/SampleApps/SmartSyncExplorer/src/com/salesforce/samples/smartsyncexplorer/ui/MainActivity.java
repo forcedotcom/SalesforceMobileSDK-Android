@@ -26,7 +26,6 @@
  */
 package com.salesforce.samples.smartsyncexplorer.ui;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import android.app.LoaderManager;
@@ -107,7 +106,7 @@ public class MainActivity extends SalesforceListActivity implements
 	public boolean onOptionsItemSelected(MenuItem item) {
 	    switch (item.getItemId()) {
 	        case R.id.action_refresh:
-	            refreshList(null); // TODO:
+	        	getLoaderManager().restartLoader(MRU_LOADER_ID, null, this);
 	            return true;
 	        default:
 	            return super.onOptionsItemSelected(item);
@@ -127,7 +126,7 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public void onLoaderReset(Loader<List<SalesforceObject>> loader) {
-		listAdapter.setData(new ArrayList<SalesforceObject>());
+		refreshList(null);
 	}
 
 	@Override
@@ -151,7 +150,7 @@ public class MainActivity extends SalesforceListActivity implements
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		final SalesforceObject sObject = listAdapter.getItem(position);
-	    Toast.makeText(this, sObject.getName() + " selected", Toast.LENGTH_LONG).show();
+		// TODO: Show detail screen.
 	}
 
 	private void refreshList(List<SalesforceObject> data) {
@@ -199,8 +198,8 @@ public class MainActivity extends SalesforceListActivity implements
 		 * @param data Data.
 		 */
 		public void setData(List<SalesforceObject> data) {
+			clear();
 			if (data != null) {
-				clear();
 				addAll(data);
 				notifyDataSetChanged();
 			}
