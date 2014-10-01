@@ -26,13 +26,18 @@
  */
 package com.salesforce.samples.smartsyncexplorer.ui;
 
+import android.app.LoaderManager;
+import android.content.Context;
+import android.content.CursorLoader;
+import android.content.Loader;
+import android.database.Cursor;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.ListView;
+import android.widget.SearchView;
+import android.widget.SearchView.OnCloseListener;
+import android.widget.SearchView.OnQueryTextListener;
 
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
@@ -43,9 +48,11 @@ import com.salesforce.samples.smartsyncexplorer.R;
  *
  * @author bhariharan
  */
-public class MainActivity extends SalesforceListActivity {
+public class MainActivity extends SalesforceListActivity implements
+		OnQueryTextListener, OnCloseListener, LoaderManager.LoaderCallbacks<Cursor> {
 
     private RestClient client;
+    private SearchView searchView;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -68,15 +75,17 @@ public class MainActivity extends SalesforceListActivity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 	    final MenuInflater inflater = getMenuInflater();
 	    inflater.inflate(R.menu.action_bar_menu, menu);
+	    final MenuItem searchItem = menu.findItem(R.id.action_search);
+	    searchView = new SalesforceSearchView(this);
+        searchView.setOnQueryTextListener(this);
+        searchView.setOnCloseListener(this);
+        searchItem.setActionView(searchView);
 	    return super.onCreateOptionsMenu(menu);
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 	    switch (item.getItemId()) {
-	        case R.id.action_search:
-	            doSearch();
-	            return true;
 	        case R.id.action_refresh:
 	            refreshList();
 	            return true;
@@ -85,16 +94,69 @@ public class MainActivity extends SalesforceListActivity {
 	    }
 	}
 
-	@Override public void onListItemClick(ListView l, View v, int position, long id) {
-        // Insert desired behavior here.
-        Log.i("LoaderCustom", "Item clicked: " + id);
+	@Override
+	public boolean onQueryTextChange(String newText) {
+        // TODO: search.
+		return true;
     }
 
-	private void doSearch() {
-		// TODO:
+	@Override
+	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+		final CursorLoader loader = new CursorLoader(this,
+				SOME_CONTENT_URI,
+				projection,
+				selection,
+				selectionArgs,
+				sortOrder);
+				return loader;
+
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onLoaderReset(Loader<Cursor> loader) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean onClose() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean onQueryTextSubmit(String query) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 	private void refreshList() {
 		// TODO: Reload list.
 	}
+
+	/**
+	 * Custom search view that clears the search term when dismissed.
+	 *
+	 * @author bhariharan
+	 */
+	public static class SalesforceSearchView extends SearchView {
+
+        public SalesforceSearchView(Context context) {
+            super(context);
+        }
+
+        @Override
+        public void onActionViewCollapsed() {
+            setQuery("", false);
+            super.onActionViewCollapsed();
+        }
+    }
 }
