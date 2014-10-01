@@ -14,9 +14,9 @@
     <TextView android:id="@android:id/empty"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="@string/no_data_available"
+        android:text="@string/no_results_found"
         android:textColor="@android:color/white"
         android:textStyle="bold"
         android:gravity="center"
-        android:textSize="18dp" />
+        android:textSize="18sp" />
 </LinearLayout> 

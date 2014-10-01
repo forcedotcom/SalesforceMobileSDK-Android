@@ -36,10 +36,13 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.SearchView.OnCloseListener;
 import android.widget.SearchView.OnQueryTextListener;
+import android.widget.Toast;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -67,7 +70,7 @@ public class MainActivity extends SalesforceListActivity implements
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		listAdapter = new MRUListAdapter(this, android.R.id.empty);
+		listAdapter = new MRUListAdapter(this, android.R.layout.simple_list_item_1);
 		getListView().setAdapter(listAdapter);
 	}
 
@@ -143,6 +146,12 @@ public class MainActivity extends SalesforceListActivity implements
 	public boolean onQueryTextSubmit(String query) {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	protected void onListItemClick(ListView l, View v, int position, long id) {
+		final SalesforceObject sObject = listAdapter.getItem(position);
+	    Toast.makeText(this, sObject.getName() + " selected", Toast.LENGTH_LONG).show();
 	}
 
 	private void refreshList(List<SalesforceObject> data) {
