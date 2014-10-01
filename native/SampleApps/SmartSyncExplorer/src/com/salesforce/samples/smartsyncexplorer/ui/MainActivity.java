@@ -28,7 +28,6 @@ package com.salesforce.samples.smartsyncexplorer.ui;
 
 import android.app.LoaderManager;
 import android.content.Context;
-import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -102,14 +101,6 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-		final CursorLoader loader = new CursorLoader(this,
-				SOME_CONTENT_URI,
-				projection,
-				selection,
-				selectionArgs,
-				sortOrder);
-				return loader;
-
 		// TODO Auto-generated method stub
 		return null;
 	}
