@@ -52,6 +52,7 @@ import android.widget.TextView;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.smartsync.manager.CacheManager.CachePolicy;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
@@ -72,6 +73,8 @@ public class MainActivity extends SalesforceListActivity implements
     private MRUListAdapter listAdapter;
     private UserAccount curAccount;
 	private NameFieldFilter nameFilter;
+	private CachePolicy cachePolicy;
+	private List<SalesforceObject> originalData;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -79,7 +82,7 @@ public class MainActivity extends SalesforceListActivity implements
 		setContentView(R.layout.main);
 		listAdapter = new MRUListAdapter(this, android.R.layout.simple_list_item_1);
 		getListView().setAdapter(listAdapter);
-		nameFilter = new NameFieldFilter(listAdapter);
+		nameFilter = new NameFieldFilter(listAdapter, originalData);
 	}
 
 	@Override
@@ -90,6 +93,7 @@ public class MainActivity extends SalesforceListActivity implements
 	@Override
 	public void onResume(RestClient client) {
 		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+		cachePolicy = CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE;
 		getLoaderManager().initLoader(MRU_LOADER_ID, null, this).forceLoad();
     }
 
@@ -104,8 +108,8 @@ public class MainActivity extends SalesforceListActivity implements
 	    final MenuInflater inflater = getMenuInflater();
 	    inflater.inflate(R.menu.action_bar_menu, menu);
 	    final MenuItem searchItem = menu.findItem(R.id.action_search);
-	    searchView = new SalesforceSearchView(this);
-        searchView.setOnQueryTextListener(this);
+	    searchView = new SearchView(this);
+	    searchView.setOnQueryTextListener(this);
         searchView.setOnCloseListener(this);
         searchItem.setActionView(searchView);
 	    return super.onCreateOptionsMenu(menu);
@@ -115,7 +119,7 @@ public class MainActivity extends SalesforceListActivity implements
 	public boolean onOptionsItemSelected(MenuItem item) {
 	    switch (item.getItemId()) {
 	        case R.id.action_refresh:
-	        	getLoaderManager().restartLoader(MRU_LOADER_ID, null, this);
+	        	refreshList(originalData);
 	            return true;
 	        default:
 	            return super.onOptionsItemSelected(item);
@@ -130,7 +134,7 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public Loader<List<SalesforceObject>> onCreateLoader(int id, Bundle args) {
-		return new MRUAsyncTaskLoader(this, curAccount, Constants.USER);
+		return new MRUAsyncTaskLoader(this, curAccount, Constants.USER, cachePolicy);
 	}
 
 	@Override
@@ -141,12 +145,14 @@ public class MainActivity extends SalesforceListActivity implements
 	@Override
 	public void onLoadFinished(Loader<List<SalesforceObject>> loader,
 			List<SalesforceObject> data) {
+		originalData = data;
+		nameFilter.setOrigData(originalData);
 		refreshList(data);
 	}
 
 	@Override
 	public boolean onClose() {
-    	getLoaderManager().restartLoader(MRU_LOADER_ID, null, this);
+		refreshList(originalData);
 		return true;
 	}
 
@@ -172,24 +178,6 @@ public class MainActivity extends SalesforceListActivity implements
 		}
 		nameFilter.filter(filterTerm);
 	}
-
-	/**
-	 * Custom search view that clears the search term when dismissed.
-	 *
-	 * @author bhariharan
-	 */
-	private static class SalesforceSearchView extends SearchView {
-
-        public SalesforceSearchView(Context context) {
-            super(context);
-        }
-
-        @Override
-        public void onActionViewCollapsed() {
-            setQuery("", false);
-            super.onActionViewCollapsed();
-        }
-    }
 
 	/**
 	 * Custom array adapter to supply data to the list view.
@@ -249,30 +237,47 @@ public class MainActivity extends SalesforceListActivity implements
 	private static class NameFieldFilter extends Filter {
 
 		private MRUListAdapter adpater;
+		private List<SalesforceObject> origList;
 
 		/**
 		 * Parameterized constructor.
 		 *
 		 * @param adapter List adapter.
+		 * @param origList List to perform filtering against.
 		 */
-		public NameFieldFilter(MRUListAdapter adapter) {
+		public NameFieldFilter(MRUListAdapter adapter, List<SalesforceObject> origList) {
 			this.adpater = adapter;
+			this.origList = origList;
+		}
+
+		/**
+		 * Sets the original data set.
+		 *
+		 * @param origData Original data set.
+		 */
+		public void setOrigData(List<SalesforceObject> origData) {
+			origList = origData;
 		}
 
 		@Override
 		protected FilterResults performFiltering(CharSequence constraint) {
-			if (TextUtils.isEmpty(constraint) || adpater == null) {
+			if (origList == null) {
 				return null;
 			}
-			final String filterString = constraint.toString().toLowerCase();
 			final FilterResults results = new FilterResults();
-			int count = adpater.getCount();
+			if (TextUtils.isEmpty(constraint)) {
+				results.values = origList;
+				results.count = origList.size();
+				return results;
+			}
+			final String filterString = constraint.toString().toLowerCase();
+			int count = origList.size();
 			String filterableString;
 			final List<SalesforceObject> resultSet = new ArrayList<SalesforceObject>();
 			for (int i = 0; i < count; i++) {
-				filterableString = adpater.getItem(i).getName();
+				filterableString = origList.get(i).getName();
 				if (filterableString.toLowerCase().contains(filterString)) {
-					resultSet.add(adpater.getItem(i));
+					resultSet.add(origList.get(i));
 				}
 			}
 			results.values = resultSet;
@@ -283,7 +288,9 @@ public class MainActivity extends SalesforceListActivity implements
 		@SuppressWarnings("unchecked")
 		@Override
 		protected void publishResults(CharSequence constraint, FilterResults results) {
-			adpater.setData((List<SalesforceObject>) results.values);
+			if (results != null && results.values != null) {
+				adpater.setData((List<SalesforceObject>) results.values);
+			}
 		}
 	}
 }

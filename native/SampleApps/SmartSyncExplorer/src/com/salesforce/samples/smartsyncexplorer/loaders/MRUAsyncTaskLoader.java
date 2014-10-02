@@ -48,6 +48,7 @@ public class MRUAsyncTaskLoader extends AsyncTaskLoader<List<SalesforceObject>> 
 
 	private String objectName;
 	private MetadataManager metadataMgr;
+	private CachePolicy cachePolicy;
 
 	/**
 	 * Parameterized constructor.
@@ -55,17 +56,19 @@ public class MRUAsyncTaskLoader extends AsyncTaskLoader<List<SalesforceObject>> 
 	 * @param context Context.
 	 * @param account User account.
 	 * @param objName Object name.
+	 * @param policy Cache policy.
 	 */
-	public MRUAsyncTaskLoader(Context context, UserAccount account, String objName) {
+	public MRUAsyncTaskLoader(Context context, UserAccount account,
+			String objName, CachePolicy policy) {
 		super(context);
 		objectName = objName;
+		cachePolicy = policy;
 		metadataMgr = MetadataManager.getInstance(account);
 	}
 
 	@Override
 	public List<SalesforceObject> loadInBackground() {
 		return metadataMgr.loadMRUObjects(objectName, LIMIT,
-				CachePolicy.RELOAD_IF_EXPIRED_AND_RETURN_CACHE_DATA,
-				REFRESH_INTERVAL, null);
+				cachePolicy, REFRESH_INTERVAL, null);
 	}
 }
