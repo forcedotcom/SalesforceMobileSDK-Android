@@ -172,7 +172,7 @@ public class PushService extends IntentService {
             		if (accounts != null) {
                 		for (final UserAccount userAcc : accounts) {
                         	final String regId = PushMessaging.getRegistrationId(context,
-                        			account);
+                        			userAcc);
                         	if (regId != null) {
                                 onRegistered(regId, userAcc);
                         	}
@@ -290,7 +290,11 @@ public class PushService extends IntentService {
         final Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MILLISECOND, (int) when);
         final Intent retryIntent = new Intent(context, SFDCRegistrationRetryAlarmReceiver.class);
-        retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, account.toBundle());
+        if (account == null) {
+            retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE);
+        } else {
+            retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, account.toBundle());
+        }
         final PendingIntent retryPIntent = PendingIntent.getBroadcast(context,
         		1, retryIntent, PendingIntent.FLAG_ONE_SHOT);
         final AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -304,10 +308,10 @@ public class PushService extends IntentService {
      * @param account User account.
      */
     private void onRegistered(String registrationId, UserAccount account) {
-    	if (account == null) {
-    		Log.e(TAG, "Account is null. Will retry registration later.");
-    		return;
-    	}
+        if (account == null) {
+            Log.e(TAG, "Account is null. Will retry registration later");
+            return;
+        }
     	long retryInterval = SFDC_REGISTRATION_RETRY;
     	try {
         	final String id = registerSFDCPushNotification(registrationId, account);
@@ -321,7 +325,7 @@ public class PushService extends IntentService {
     	} catch (Exception e) {
     		Log.e(TAG, "Error occurred during SFDC registration.", e);
     	} finally {
-            scheduleSFDCRegistrationRetry(retryInterval, account);
+            scheduleSFDCRegistrationRetry(retryInterval, null);
     	}
     }
 
@@ -331,10 +335,6 @@ public class PushService extends IntentService {
      * @param account User account.
      */
     private void onUnregistered(UserAccount account) {
-    	if (account == null) {
-    		Log.e(TAG, "Account is null. Cannot un-register.");
-    		return;
-    	}
     	try {
         	final String id = PushMessaging.getDeviceId(context, account);
         	unregisterSFDCPushNotification(id, account);
@@ -473,8 +473,13 @@ public class PushService extends IntentService {
         		final Bundle accBundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
         		if (accBundle != null) {
                     PushMessaging.register(context, new UserAccount(accBundle));
-        		}
-        	}
+                } else {
+                    if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(intent
+                            .getStringExtra(PushMessaging.ACCOUNT_BUNDLE_KEY))) {
+                        PushMessaging.register(context, null);
+                    }
+                }
+            }
         }
     }
 
@@ -491,8 +496,13 @@ public class PushService extends IntentService {
         		final Bundle accBundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
         		if (accBundle != null) {
                     PushMessaging.registerSFDCPush(context, new UserAccount(accBundle));
-        		}
-        	}
+                } else {
+                    if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(intent
+                            .getStringExtra(PushMessaging.ACCOUNT_BUNDLE_KEY))) {
+                        PushMessaging.registerSFDCPush(context, null);
+                    }
+                }
+            }
         }
     }
 
