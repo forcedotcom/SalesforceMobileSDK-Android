@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+	package="com.salesforce.samples.smartsyncexplorer"
+	android:versionCode="1"
+	android:versionName="1.0"
+	android:installLocation="internalOnly">
+
+	<application android:icon="@drawable/sf__icon"
+	    android:label="@string/app_name"
+		android:name=".SmartSyncExplorerApp"
+		android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
+
+		<!-- Launcher screen -->
+		<activity android:name="com.salesforce.samples.smartsyncexplorer.ui.MainActivity"
+		    android:label="@string/app_name"
+			android:theme="@style/SalesforceSDK.ActionBarTheme">
+			<intent-filter>
+				<action android:name="android.intent.action.MAIN" />
+				<category android:name="android.intent.category.LAUNCHER" />
+			</intent-filter>
+		</activity>
+    </application>
+
+    <uses-sdk android:minSdkVersion="17" />
+
+    <!--
+        GCM permission to ensure that only this application can
+        receive the messages and registration result. This must be of
+        the format <app-package-name>.C2D_MESSAGE for it to work.
+    -->
+    <permission android:name="com.salesforce.samples.nativesqlaggregator.C2D_MESSAGE"
+        android:protectionLevel="signature" />
+
+    <uses-permission android:name="com.salesforce.samples.nativesqlaggregator.C2D_MESSAGE" />
+</manifest>
