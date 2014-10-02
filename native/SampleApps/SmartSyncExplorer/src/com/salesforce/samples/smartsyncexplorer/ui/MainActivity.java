@@ -26,27 +26,34 @@
  */
 package com.salesforce.samples.smartsyncexplorer.ui;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import android.app.LoaderManager;
 import android.content.Context;
 import android.content.Loader;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.Filter;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.SearchView.OnCloseListener;
 import android.widget.SearchView.OnQueryTextListener;
-import android.widget.Toast;
+import android.widget.TextView;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
 import com.salesforce.samples.smartsyncexplorer.loaders.MRUAsyncTaskLoader;
@@ -64,6 +71,7 @@ public class MainActivity extends SalesforceListActivity implements
     private SearchView searchView;
     private MRUListAdapter listAdapter;
     private UserAccount curAccount;
+	private NameFieldFilter nameFilter;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -71,11 +79,12 @@ public class MainActivity extends SalesforceListActivity implements
 		setContentView(R.layout.main);
 		listAdapter = new MRUListAdapter(this, android.R.layout.simple_list_item_1);
 		getListView().setAdapter(listAdapter);
+		nameFilter = new NameFieldFilter(listAdapter);
 	}
 
 	@Override
 	protected void refreshIfUserSwitched() {
-		// TODO: User switch. Change 'client' and reload list.
+		// TODO: User switch. Change 'client' and reload list. Also add logout functionality.
 	}
 
 	@Override
@@ -115,13 +124,13 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public boolean onQueryTextChange(String newText) {
-        // TODO: search.
+		filterList(newText);
 		return true;
     }
 
 	@Override
 	public Loader<List<SalesforceObject>> onCreateLoader(int id, Bundle args) {
-		return new MRUAsyncTaskLoader(this, curAccount, "");
+		return new MRUAsyncTaskLoader(this, curAccount, Constants.USER);
 	}
 
 	@Override
@@ -137,14 +146,14 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public boolean onClose() {
-		// TODO Auto-generated method stub
-		return false;
+    	getLoaderManager().restartLoader(MRU_LOADER_ID, null, this);
+		return true;
 	}
 
 	@Override
 	public boolean onQueryTextSubmit(String query) {
-		// TODO Auto-generated method stub
-		return false;
+		filterList(query);
+		return true;
 	}
 
 	@Override
@@ -156,13 +165,20 @@ public class MainActivity extends SalesforceListActivity implements
 	private void refreshList(List<SalesforceObject> data) {
 		listAdapter.setData(data);
 	}
-	
+
+	private void filterList(String filterTerm) {
+		if (TextUtils.isEmpty(filterTerm)) {
+			return;
+		}
+		nameFilter.filter(filterTerm);
+	}
+
 	/**
 	 * Custom search view that clears the search term when dismissed.
 	 *
 	 * @author bhariharan
 	 */
-	public static class SalesforceSearchView extends SearchView {
+	private static class SalesforceSearchView extends SearchView {
 
         public SalesforceSearchView(Context context) {
             super(context);
@@ -180,7 +196,10 @@ public class MainActivity extends SalesforceListActivity implements
 	 *
 	 * @author bhariharan
 	 */
-	public static class MRUListAdapter extends ArrayAdapter<SalesforceObject> {
+	private static class MRUListAdapter extends ArrayAdapter<SalesforceObject> {
+
+		private int textViewId;
+		private List<SalesforceObject> sObjects;
 
 		/**
 		 * Parameterized constructor.
@@ -190,6 +209,7 @@ public class MainActivity extends SalesforceListActivity implements
 		 */
 		public MRUListAdapter(Context context, int textViewResourceId) {
 			super(context, textViewResourceId);
+			textViewId = textViewResourceId;
 		}
 
 		/**
@@ -199,10 +219,71 @@ public class MainActivity extends SalesforceListActivity implements
 		 */
 		public void setData(List<SalesforceObject> data) {
 			clear();
+			sObjects = data;
 			if (data != null) {
 				addAll(data);
 				notifyDataSetChanged();
 			}
+		}
+
+		@Override
+		public View getView (int position, View convertView, ViewGroup parent) {
+			if (convertView == null) {
+				convertView = LayoutInflater.from(getContext()).inflate(textViewId,
+						parent, false);
+			}
+			final TextView tv = (TextView) convertView;
+			if (tv != null && sObjects != null) {
+				tv.setText(sObjects.get(position).getName());
+	            tv.setTextColor(Color.GREEN);
+			}
+			return tv;
+		}
+	}
+
+	/**
+	 * A simple utility class to implement filtering.
+	 *
+	 * @author bhariharan
+	 */
+	private static class NameFieldFilter extends Filter {
+
+		private MRUListAdapter adpater;
+
+		/**
+		 * Parameterized constructor.
+		 *
+		 * @param adapter List adapter.
+		 */
+		public NameFieldFilter(MRUListAdapter adapter) {
+			this.adpater = adapter;
+		}
+
+		@Override
+		protected FilterResults performFiltering(CharSequence constraint) {
+			if (TextUtils.isEmpty(constraint) || adpater == null) {
+				return null;
+			}
+			final String filterString = constraint.toString().toLowerCase();
+			final FilterResults results = new FilterResults();
+			int count = adpater.getCount();
+			String filterableString;
+			final List<SalesforceObject> resultSet = new ArrayList<SalesforceObject>();
+			for (int i = 0; i < count; i++) {
+				filterableString = adpater.getItem(i).getName();
+				if (filterableString.toLowerCase().contains(filterString)) {
+					resultSet.add(adpater.getItem(i));
+				}
+			}
+			results.values = resultSet;
+			results.count = resultSet.size();
+			return results;
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		protected void publishResults(CharSequence constraint, FilterResults results) {
+			adpater.setData((List<SalesforceObject>) results.values);
 		}
 	}
 }
