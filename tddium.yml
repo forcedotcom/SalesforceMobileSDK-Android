@@ -1,0 +1,4 @@
+:tddium:
+  :java:
+    :java_version: java-7-openjdk
+    :gradle_version: '1.10'
