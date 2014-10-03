@@ -1,6 +1,16 @@
 :tddium:
+  :environment:
+    'ANDROID_SDK': '~/android-sdk-linux'
+  :hooks:
+    :pre_setup: './pre_setup.sh'
+    :worker_setup: './worker_setup.sh'
+  :cache:
+    :save_paths:
+      - ~/android-sdk-linux
   :java:
     :java_version: java-7-openjdk
-    :gradle_version: '1.10'
   :tests:
-  - gradle
+    - echo NOOP
+  :collect:
+    :repro:
+      - native/SampleApps/FileExplorer/bin/*.apk
