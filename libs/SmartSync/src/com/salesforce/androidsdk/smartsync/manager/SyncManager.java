@@ -362,26 +362,20 @@ public class SyncManager {
 
 	private void syncDown(JSONObject sync) throws Exception {
     	JSONObject target = sync.getJSONObject(SYNC_TARGET);
-    	String soupName = sync.getString(SYNC_SOUP_NAME);	
-
     	QueryType queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
-		String query = target.getString(QUERY);
-		RestRequest request = null;
 		
 		switch(queryType) {
-		/*
-		case MRU:
-			break;
-			*/
-		case soql:
-			request = RestRequest.getRequestForQuery(apiVersion, query);
-			break;
-		case sosl:
-			request = RestRequest.getRequestForSearch(apiVersion, query);
-			break;
-		default:
-			throw new SmartSyncException("Unknown query type: " + queryType);
+		case soql: syncDownSoql(sync); break;
+		case sosl: syncDownSosl(sync); break;
+		default: throw new SmartSyncException("Unknown query type: " + queryType);
 		}
+	}
+	
+	private void syncDownSoql(JSONObject sync) throws Exception {
+    	JSONObject target = sync.getJSONObject(SYNC_TARGET);
+		String query = target.getString(QUERY);
+    	String soupName = sync.getString(SYNC_SOUP_NAME);	
+		RestRequest request = RestRequest.getRequestForQuery(apiVersion, query);
 
 		// Call server
 		RestResponse response = restClient.sendSync(request);
@@ -399,18 +393,8 @@ public class SyncManager {
 			if (totalSize == 0) 
 				break;
 			
-			// Save to SmartStore
-			smartStore.beginTransaction();
-			for (int i = 0; i < records.length(); i++) {
-				JSONObject record = records.getJSONObject(i);
-				record.put(LOCAL, false);
-				record.put(LOCALLY_CREATED, false);
-				record.put(LOCALLY_UPDATED, false);
-				record.put(LOCALLY_DELETED, false);
-				smartStore.upsert(soupName, records.getJSONObject(i), Constants.ID, false);
-			}
-			smartStore.setTransactionSuccessful();
-			smartStore.endTransaction();
+			// Save to smartstore
+			saveRecordsToSmartStore(soupName, records);
 
 			// Updating count fetched
 			countFetched += records.length();
@@ -425,6 +409,43 @@ public class SyncManager {
 			String nextRecordsUrl = responseJson.optString(Constants.NEXT_RECORDS_URL, null);
 			response = nextRecordsUrl == null ? null : restClient.sendSync(RestMethod.GET, nextRecordsUrl, null);
 		}
+	}
+
+	private void syncDownSosl(JSONObject sync) throws Exception {
+    	JSONObject target = sync.getJSONObject(SYNC_TARGET);
+		String query = target.getString(QUERY);
+    	String soupName = sync.getString(SYNC_SOUP_NAME);	
+		RestRequest request = RestRequest.getRequestForSearch(apiVersion, query);
+
+		// Call server
+		RestResponse response = restClient.sendSync(request);
+
+		// Parse response
+		JSONArray records = response.asJSONArray();
+			
+		// No records returned
+		if (records.length() == 0) 
+			return;
+			
+		// Save to smartstore
+		saveRecordsToSmartStore(soupName, records);
+	}
+
+	
+	private void saveRecordsToSmartStore(String soupName, JSONArray records)
+			throws JSONException {
+		// Save to SmartStore
+		smartStore.beginTransaction();
+		for (int i = 0; i < records.length(); i++) {
+			JSONObject record = records.getJSONObject(i);
+			record.put(LOCAL, false);
+			record.put(LOCALLY_CREATED, false);
+			record.put(LOCALLY_UPDATED, false);
+			record.put(LOCALLY_DELETED, false);
+			smartStore.upsert(soupName, records.getJSONObject(i), Constants.ID, false);
+		}
+		smartStore.setTransactionSuccessful();
+		smartStore.endTransaction();
 	}
     
     /**
@@ -450,7 +471,6 @@ public class SyncManager {
      * Enum for query type
      */
     public enum QueryType {
-    	mru,
     	sosl,
     	soql
     }
