@@ -254,6 +254,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		syncManager.runSync(syncId);
 
 		// Check status updates
+		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
 		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.RUNNING, 0, idToNames.size());
 		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.DONE, 100, idToNames.size());
 	}
@@ -277,6 +278,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		syncManager.runSync(syncId);
 		
 		// Check status updates
+		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
 		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, 0, numberChanges);
 		for (int i=1; i<numberChanges; i++) {
 			checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, i*100/numberChanges, numberChanges);

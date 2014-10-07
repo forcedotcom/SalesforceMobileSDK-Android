@@ -237,7 +237,8 @@ public class SyncManager {
 			@Override
 			public void run() {
 				try {
-			    	switch (type) {
+					updateSync(sync, Status.RUNNING, 0, -1 /* don't change */);
+					switch (type) {
 					case syncDown: syncDown(sync); break;
 					case syncUp:   syncUp(sync); break;
 					default: throw new SmartSyncException("Unknown sync type: " + type);
