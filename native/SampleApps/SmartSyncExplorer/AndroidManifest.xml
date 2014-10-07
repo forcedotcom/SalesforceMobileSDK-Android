@@ -20,6 +20,14 @@
 				<category android:name="android.intent.category.LAUNCHER" />
 			</intent-filter>
 		</activity>
+
+		<!-- Detail screen -->
+        <activity android:name="com.salesforce.samples.smartsyncexplorer.ui.DetailActivity"
+            android:theme="@style/SalesforceSDK.ActionBarTheme">
+            <intent-filter>
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
     </application>
 
     <uses-sdk android:minSdkVersion="17" />

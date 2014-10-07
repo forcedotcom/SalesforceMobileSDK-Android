@@ -9,4 +9,5 @@
 	<string name="action_search">Search</string>
 	<string name="action_refresh">Refresh</string>
     <string name="no_results_found">No results found</string>
+    <string name="main_activity_title">Global MRU</string>
 </resources>

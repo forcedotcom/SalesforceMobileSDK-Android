@@ -31,6 +31,7 @@ import java.util.List;
 
 import android.app.LoaderManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.Loader;
 import android.graphics.Color;
 import android.os.Bundle;
@@ -68,6 +69,9 @@ import com.salesforce.samples.smartsyncexplorer.loaders.MRUAsyncTaskLoader;
 public class MainActivity extends SalesforceListActivity implements
 		OnQueryTextListener, OnCloseListener, LoaderManager.LoaderCallbacks<List<SalesforceObject>> {
 
+	public static final String OBJECT_ID_KEY = "object_id";
+	public static final String OBJECT_TYPE_KEY = "object_type";
+	public static final String OBJECT_NAME_KEY = "object_name";
 	private static final int MRU_LOADER_ID = 1;
 
     private SearchView searchView;
@@ -81,6 +85,7 @@ public class MainActivity extends SalesforceListActivity implements
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
+		getActionBar().setTitle(R.string.main_activity_title);
 		listAdapter = new MRUListAdapter(this, R.layout.list_item);
 		getListView().setAdapter(listAdapter);
 		nameFilter = new NameFieldFilter(listAdapter, originalData);
@@ -140,6 +145,7 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public void onLoaderReset(Loader<List<SalesforceObject>> loader) {
+		originalData = null;
 		refreshList(null);
 	}
 
@@ -166,7 +172,12 @@ public class MainActivity extends SalesforceListActivity implements
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		final SalesforceObject sObject = listAdapter.getItem(position);
-		// TODO: Show detail screen.
+		final Intent detailIntent = new Intent(this, DetailActivity.class);
+		detailIntent.addCategory(Intent.CATEGORY_DEFAULT);
+		detailIntent.putExtra(OBJECT_ID_KEY, sObject.getObjectId());
+		detailIntent.putExtra(OBJECT_TYPE_KEY, sObject.getObjectType());
+		detailIntent.putExtra(OBJECT_NAME_KEY, sObject.getName());
+		startActivity(detailIntent);
 	}
 
 	private void refreshList(List<SalesforceObject> data) {
