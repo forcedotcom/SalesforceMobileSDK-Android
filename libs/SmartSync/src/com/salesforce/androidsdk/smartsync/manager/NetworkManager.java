@@ -259,6 +259,32 @@ public class NetworkManager {
     }
 
     /**
+     * Makes a remote request and returns the response received.
+     *
+     * @param request Request to be made.
+     * @return Response received.
+     */
+    public RestResponse makeRemoteRequest(RestRequest request) {
+        RestResponse response = null;
+        try {
+        	response = client.sendSync(request);
+        } catch (UnsupportedEncodingException e) {
+            Log.e(TAG, "Exception occurred while encoding POST data", e);
+        } catch (IOException e) {
+            Log.e(TAG, "IOException occurred while making network request", e);
+        } finally {
+            if (response != null) {
+                try {
+                    response.consume();
+                } catch (IOException e) {
+                    Log.e(TAG, "IOException occurred while making network request", e);
+                }
+            }
+        }
+        return response;
+    }
+
+    /**
      * Sets the RestClient instance associated with this user account.
      * This is primarily used only by tests.
      *
@@ -268,11 +294,13 @@ public class NetworkManager {
     public void setRestClient(UserAccount account, RestClient client) {
         getInstance(account).client = client;
     }
-    
+
     /**
-     * @return RestClient instance used by this NetworkManager
+     * Gets the RestClient instance being used by this NetworkManager instance.
+     *
+     * @return RestClient instance used by this NetworkManager instance.
      */
-    RestClient getRestClient() {
+    public RestClient getRestClient() {
     	return client;
     }
 }
