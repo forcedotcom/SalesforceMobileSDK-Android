@@ -12,5 +12,5 @@
   :tests:
     - echo NOOP
   :collect:
-    :repro:
+    :repo:
       - native/SampleApps/FileExplorer/bin
