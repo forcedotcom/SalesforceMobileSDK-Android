@@ -26,7 +26,9 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -75,7 +77,7 @@ public class SyncManager {
 	public static final String SYNC_STATUS = "status";
 	public static final String SYNC_PROGRESS = "progress";
 	public static final String SYNC_FIELDLIST = "fieldlist";
-	
+	private static final String SYNC_SOBJECT_TYPE = "sobjectType";	
 	// Target
 	public static final String QUERY_TYPE = "type";
 	public static final String QUERY = "query";
@@ -235,14 +237,9 @@ public class SyncManager {
 			public void run() {
 				try {
 			    	switch (type) {
-					case syncDown:
-						syncDown(sync);
-						break;
-					case syncUp:
-						syncUp(sync);
-						break;
-					default:
-						throw new SmartSyncException("Unknown sync type: " + type);
+					case syncDown: syncDown(sync); break;
+					case syncUp:   syncUp(sync); break;
+					default: throw new SmartSyncException("Unknown sync type: " + type);
 			    	}
 			    	
 			    	// Update status to done
@@ -365,10 +362,57 @@ public class SyncManager {
     	QueryType queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
 		
 		switch(queryType) {
+		case mru:  syncDownMru(sync); break;
 		case soql: syncDownSoql(sync); break;
 		case sosl: syncDownSosl(sync); break;
 		default: throw new SmartSyncException("Unknown query type: " + queryType);
 		}
+	}
+	
+	private void syncDownMru(JSONObject sync) throws Exception {
+    	JSONObject target = sync.getJSONObject(SYNC_TARGET);
+		String sobjectType = target.getString(SYNC_SOBJECT_TYPE);
+		List<String>fieldlist = toArray(target.getJSONArray(SYNC_FIELDLIST));
+    	String soupName = sync.getString(SYNC_SOUP_NAME);
+    	
+    	// Get recent items ids from server
+		RestRequest request = RestRequest.getRequestForMetadata(apiVersion, sobjectType);
+		RestResponse response = restClient.sendSync(request);
+		List<String> recentItems = pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
+
+		// Building SOQL query to get requested at
+		String soql = "SELECT " + TextUtils.join(", ", fieldlist) + " FROM " + sobjectType + " WHERE Id IN ('" + TextUtils.join("', '", recentItems) + "')";
+
+		// Get recent items attributes from server
+		request = RestRequest.getRequestForQuery(apiVersion, soql);
+		response = restClient.sendSync(request);
+		JSONObject responseJson = response.asJSONObject();
+		JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
+
+		// No records returned
+		if (records.length() == 0) 
+			return;
+			
+		// Save to smartstore
+		saveRecordsToSmartStore(soupName, records);
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> List<T> toArray(JSONArray jsonArray) throws JSONException {
+		List<T> arr = new ArrayList<T>();
+		for (int i=0; i<jsonArray.length(); i++) {
+			arr.add((T) jsonArray.get(i));
+		}
+		return arr;
+	}
+
+	@SuppressWarnings("unchecked")
+	private <T> List<T> pluck(JSONArray jsonArray, String key) throws JSONException {
+		List<T> arr = new ArrayList<T>();
+		for (int i=0; i<jsonArray.length(); i++) {
+			arr.add((T) jsonArray.getJSONObject(i).get(key));
+		}
+		return arr;
 	}
 	
 	private void syncDownSoql(JSONObject sync) throws Exception {
@@ -471,6 +515,7 @@ public class SyncManager {
      * Enum for query type
      */
     public enum QueryType {
+    	mru,
     	sosl,
     	soql
     }
