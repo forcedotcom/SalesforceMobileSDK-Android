@@ -248,17 +248,15 @@ public class SyncManagerTest extends ManagerTestCase {
 		target.put(SyncManager.QUERY, soqlQuery);
 		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncDown, target, ACCOUNTS_SOUP, null);
 		long syncId = getSyncId(sync);
-		checkStatus(sync, SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.NEW, 0);
+		checkStatus(sync, SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.NEW, 0, -1);
 		
 		// Run sync
 		syncManager.runSync(syncId);
-		checkStatus(syncManager.getSyncStatus(syncId), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.RUNNING, 0);
-	
-		// Wait for running broadcast
-		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.RUNNING, 0);
 
-		// Wait for done broadcast
-		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.DONE, 100);
+		// Check status updates
+		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
+		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.RUNNING, 0, idToNames.size());
+		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.DONE, 100, idToNames.size());
 	}
 
 	/**
@@ -274,18 +272,18 @@ public class SyncManagerTest extends ManagerTestCase {
 		options.put(FIELDLIST, fieldlist);
 		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncUp, null, ACCOUNTS_SOUP, options);
 		long syncId = getSyncId(sync);
-		checkStatus(sync, SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.NEW, 0);
+		checkStatus(sync, SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.NEW, 0, -1);
 		
 		// Run sync
 		syncManager.runSync(syncId);
-		checkStatus(syncManager.getSyncStatus(syncId), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, 0);
 		
-		for (int i=0; i<numberChanges; i++) {
-			checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, i*100/numberChanges);
+		// Check status updates
+		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
+		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, 0, numberChanges);
+		for (int i=1; i<numberChanges; i++) {
+			checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, i*100/numberChanges, numberChanges);
 		}
-		
-		// Wait for done update
-		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.DONE, 100);
+		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.DONE, 100, numberChanges);
 	}
 
 	/**
@@ -309,13 +307,14 @@ public class SyncManagerTest extends ManagerTestCase {
 	 * @param expectedProgress
 	 * @throws JSONException
 	 */
-	private void checkStatus(JSONObject sync, Type expectedType, long expectedId, JSONObject expectedTarget, JSONObject expectedOptions, SyncManager.Status expectedStatus, int expectedProgress) throws JSONException {
+	private void checkStatus(JSONObject sync, Type expectedType, long expectedId, JSONObject expectedTarget, JSONObject expectedOptions, SyncManager.Status expectedStatus, int expectedProgress, int expectedTotalSize) throws JSONException {
 		assertEquals("Wrong type", expectedType.name(), sync.getString(SyncManager.SYNC_TYPE));
 		assertEquals("Wrong id", expectedId, sync.getLong(SmartStore.SOUP_ENTRY_ID));
 		JSONTestHelper.assertSameJSON("Wrong target", expectedTarget, sync.optJSONObject(SyncManager.SYNC_TARGET));
 		JSONTestHelper.assertSameJSON("Wrong options", expectedOptions, sync.optJSONObject(SyncManager.SYNC_OPTIONS));
 		assertEquals("Wrong status", expectedStatus.name(), sync.getString(SyncManager.SYNC_STATUS));
 		assertEquals("Wrong progress", expectedProgress, sync.optInt(SyncManager.SYNC_PROGRESS, 0));
+		assertEquals("Wrong total size", expectedTotalSize, sync.optInt(SyncManager.SYNC_TOTAL_SIZE, -1));
 	}
 	
 	/**
