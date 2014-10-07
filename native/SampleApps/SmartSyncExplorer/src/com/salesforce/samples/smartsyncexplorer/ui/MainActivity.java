@@ -71,6 +71,7 @@ public class MainActivity extends SalesforceListActivity implements
 
 	public static final String OBJECT_ID_KEY = "object_id";
 	public static final String OBJECT_TYPE_KEY = "object_type";
+	public static final String OBJECT_NAME_KEY = "object_name";
 	private static final int MRU_LOADER_ID = 1;
 
     private SearchView searchView;
@@ -84,6 +85,7 @@ public class MainActivity extends SalesforceListActivity implements
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
+		getActionBar().setTitle(R.string.main_activity_title);
 		listAdapter = new MRUListAdapter(this, R.layout.list_item);
 		getListView().setAdapter(listAdapter);
 		nameFilter = new NameFieldFilter(listAdapter, originalData);
@@ -174,6 +176,7 @@ public class MainActivity extends SalesforceListActivity implements
 		detailIntent.addCategory(Intent.CATEGORY_DEFAULT);
 		detailIntent.putExtra(OBJECT_ID_KEY, sObject.getObjectId());
 		detailIntent.putExtra(OBJECT_TYPE_KEY, sObject.getObjectType());
+		detailIntent.putExtra(OBJECT_NAME_KEY, sObject.getName());
 		startActivity(detailIntent);
 	}
 

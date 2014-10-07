@@ -66,6 +66,8 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 		if (launchIntent != null) {
 			objectId = launchIntent.getStringExtra(MainActivity.OBJECT_ID_KEY);
 			objectType = launchIntent.getStringExtra(MainActivity.OBJECT_TYPE_KEY);
+			getActionBar().setTitle(launchIntent.getStringExtra(MainActivity.OBJECT_NAME_KEY));
+			getActionBar().setSubtitle(objectType);
 		}
 	}
 
