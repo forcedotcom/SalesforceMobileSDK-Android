@@ -76,8 +76,10 @@ public class SyncManager {
 	public static final String SYNC_OPTIONS = "options";
 	public static final String SYNC_STATUS = "status";
 	public static final String SYNC_PROGRESS = "progress";
+	public static final String SYNC_TOTAL_SIZE = "totalSize";
 	public static final String SYNC_FIELDLIST = "fieldlist";
-	private static final String SYNC_SOBJECT_TYPE = "sobjectType";	
+	public static final String SYNC_SOBJECT_TYPE = "sobjectType";	
+	
 	// Target
 	public static final String QUERY_TYPE = "type";
 	public static final String QUERY = "query";
@@ -205,6 +207,8 @@ public class SyncManager {
     	sync.put(SYNC_SOUP_NAME, soupName);
     	sync.put(SYNC_OPTIONS, options);
     	sync.put(SYNC_STATUS, Status.NEW.name());
+    	sync.put(SYNC_PROGRESS, 0);
+    	sync.put(SYNC_TOTAL_SIZE, -1);
 
     	sync = smartStore.upsert(SYNCS_SOUP, sync);
     	return sync;
@@ -228,9 +232,6 @@ public class SyncManager {
     	final JSONObject sync = syncs.getJSONObject(0);
     	final Type type = Type.valueOf(sync.getString(SYNC_TYPE));
     	
-    	// Update status to running
-		updateSync(sync, Status.RUNNING, 0);
-
     	// Run (on a separate thread)
 		threadPool.execute(new Runnable() {
 			@Override
@@ -241,25 +242,32 @@ public class SyncManager {
 					case syncUp:   syncUp(sync); break;
 					default: throw new SmartSyncException("Unknown sync type: " + type);
 			    	}
-			    	
 			    	// Update status to done
-					updateSync(sync, Status.DONE, 100);
+					updateSync(sync, Status.DONE, 100, -1 /* don't change */);
 				}
 				catch (Exception e) {
 					Log.e("SmartSyncManager:runSync", "Error during sync: " + syncId, e);
 					// Update status to failed
-					updateSync(sync, Status.FAILED, 0);
+					updateSync(sync, Status.FAILED,  -1 /* don't change*/, -1 /* don't change */);
 				}
 			}
 		});
     }
 
-    private void updateSync(JSONObject sync, Status status, int progress) {
+    /**
+     * Update sync with new status, progress, totalSize
+     * @param sync 
+     * @param status
+     * @param progress pass -1 to keep the current value
+     * @param totalSize pass -1 to keep the current value
+     */
+    private void updateSync(JSONObject sync, Status status, int progress, int totalSize) {
     	long syncId = -1;
     	try {
         	syncId = sync.getLong(SmartStore.SOUP_ENTRY_ID);
     		sync.put(SYNC_STATUS, status.name());
-			sync.put(SYNC_PROGRESS, progress);
+			if (progress >=0) sync.put(SYNC_PROGRESS, progress);
+			if (totalSize >= 0) sync.put(SYNC_TOTAL_SIZE, totalSize);
 	    	smartStore.update(SYNCS_SOUP, sync, syncId);
 	    	
 	    	Intent intent = new Intent();
@@ -280,7 +288,9 @@ public class SyncManager {
 		
 		// Call smartstore
 		JSONArray records = smartStore.query(querySpec, 0); // TBD deal with more than 2000 locally modified records
-		for (int i = 0; i <records.length(); i++) {
+		int totalSize = records.length();
+		updateSync(sync, Status.RUNNING, 0, totalSize);
+		for (int i = 0; i < totalSize; i++) {
 			JSONObject record = records.getJSONObject(i);
 			
 			// Do we need to do a create, update or delete
@@ -349,12 +359,11 @@ public class SyncManager {
 			
 			
 			// Updating status
-			int progress = (i+1)*100 / records.length();
+			int progress = (i+1)*100 / totalSize;
 			if (progress < 100) {
-				this.updateSync(sync, Status.RUNNING, progress);
+				updateSync(sync, Status.RUNNING, progress, -1 /* don't change */);
 			}			
 		}
-
 	}
 
 	private void syncDown(JSONObject sync) throws Exception {
@@ -388,13 +397,62 @@ public class SyncManager {
 		response = restClient.sendSync(request);
 		JSONObject responseJson = response.asJSONObject();
 		JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
-
-		// No records returned
-		if (records.length() == 0) 
-			return;
-			
+		int totalSize = records.length();
+		
 		// Save to smartstore
-		saveRecordsToSmartStore(soupName, records);
+		updateSync(sync, Status.RUNNING, 0, totalSize);
+		if (totalSize > 0)
+			saveRecordsToSmartStore(soupName, records);
+	}
+
+	private void syncDownSoql(JSONObject sync) throws Exception {
+		JSONObject target = sync.getJSONObject(SYNC_TARGET);
+		String query = target.getString(QUERY);
+		String soupName = sync.getString(SYNC_SOUP_NAME);	
+		RestRequest request = RestRequest.getRequestForQuery(apiVersion, query);
+	
+		// Call server
+		RestResponse response = restClient.sendSync(request);
+		JSONObject responseJson = response.asJSONObject();
+
+		int countSaved = 0;
+		int totalSize = responseJson.getInt(Constants.TOTAL_SIZE);
+		updateSync(sync, Status.RUNNING, 0, totalSize);
+		
+		do {
+			JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
+			// Save to smartstore
+			saveRecordsToSmartStore(soupName, records);
+			countSaved += records.length();
+			
+			// Update sync status
+			if (countSaved < totalSize)
+				updateSync(sync, Status.RUNNING, countSaved*100 / totalSize, -1 /* don't change */);
+
+			// Fetch next records if any
+			String nextRecordsUrl = responseJson.optString(Constants.NEXT_RECORDS_URL, null);
+			responseJson = nextRecordsUrl == null ? null : restClient.sendSync(RestMethod.GET, nextRecordsUrl, null).asJSONObject();
+		}
+		while (responseJson != null);
+	}
+
+	private void syncDownSosl(JSONObject sync) throws Exception {
+		JSONObject target = sync.getJSONObject(SYNC_TARGET);
+		String query = target.getString(QUERY);
+		String soupName = sync.getString(SYNC_SOUP_NAME);	
+		RestRequest request = RestRequest.getRequestForSearch(apiVersion, query);
+	
+		// Call server
+		RestResponse response = restClient.sendSync(request);
+	
+		// Parse response
+		JSONArray records = response.asJSONArray();
+		int totalSize = records.length();
+		
+		// Save to smartstore
+		updateSync(sync, Status.RUNNING, 0, totalSize);
+		if (totalSize > 0)
+			saveRecordsToSmartStore(soupName, records);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -414,67 +472,6 @@ public class SyncManager {
 		}
 		return arr;
 	}
-	
-	private void syncDownSoql(JSONObject sync) throws Exception {
-    	JSONObject target = sync.getJSONObject(SYNC_TARGET);
-		String query = target.getString(QUERY);
-    	String soupName = sync.getString(SYNC_SOUP_NAME);	
-		RestRequest request = RestRequest.getRequestForQuery(apiVersion, query);
-
-		// Call server
-		RestResponse response = restClient.sendSync(request);
-
-		// Counting records
-		int countFetched = 0;
-		
-		while(response != null) {
-			// Parse response
-			JSONObject responseJson = response.asJSONObject();
-			JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
-			int totalSize = responseJson.getInt(Constants.TOTAL_SIZE);
-			
-			// No records returned
-			if (totalSize == 0) 
-				break;
-			
-			// Save to smartstore
-			saveRecordsToSmartStore(soupName, records);
-
-			// Updating count fetched
-			countFetched += records.length();
-			
-			// Updating status
-			int progress = countFetched*100/totalSize;
-			if (progress < 100) {
-				updateSync(sync, Status.RUNNING, progress);
-			}
-			
-			// Fetch next records if any
-			String nextRecordsUrl = responseJson.optString(Constants.NEXT_RECORDS_URL, null);
-			response = nextRecordsUrl == null ? null : restClient.sendSync(RestMethod.GET, nextRecordsUrl, null);
-		}
-	}
-
-	private void syncDownSosl(JSONObject sync) throws Exception {
-    	JSONObject target = sync.getJSONObject(SYNC_TARGET);
-		String query = target.getString(QUERY);
-    	String soupName = sync.getString(SYNC_SOUP_NAME);	
-		RestRequest request = RestRequest.getRequestForSearch(apiVersion, query);
-
-		// Call server
-		RestResponse response = restClient.sendSync(request);
-
-		// Parse response
-		JSONArray records = response.asJSONArray();
-			
-		// No records returned
-		if (records.length() == 0) 
-			return;
-			
-		// Save to smartstore
-		saveRecordsToSmartStore(soupName, records);
-	}
-
 	
 	private void saveRecordsToSmartStore(String soupName, JSONArray records)
 			throws JSONException {
