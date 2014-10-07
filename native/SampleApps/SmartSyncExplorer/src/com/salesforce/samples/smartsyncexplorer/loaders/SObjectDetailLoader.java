@@ -74,6 +74,10 @@ public class SObjectDetailLoader extends AsyncTaskLoader<SalesforceObject> {
 
 	@Override
 	public SalesforceObject loadInBackground() {
+		/*
+		 * TODO: Replace this with RestRequest helper method and add a
+		 * method in NetworkManager that takes in a RestRequest.
+		 */
 		final String path = String.format(SOBJECT_DETAIL_PATH,
 				objectType, objectId);
 		final RestResponse response = networkMgr.makeRemoteGETRequest(path, null);
