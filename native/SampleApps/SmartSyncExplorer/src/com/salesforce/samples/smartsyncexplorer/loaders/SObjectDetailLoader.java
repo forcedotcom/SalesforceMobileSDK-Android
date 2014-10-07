@@ -27,6 +27,7 @@
 package com.salesforce.samples.smartsyncexplorer.loaders;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,6 +38,7 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.NetworkManager;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
@@ -49,8 +51,6 @@ import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
 public class SObjectDetailLoader extends AsyncTaskLoader<SalesforceObject> {
 
     private static final String TAG = "SmartSyncExplorer: SObjectDetailLoader";
-	private static final String SOBJECT_DETAIL_PATH =
-			ApiVersionStrings.BASE_SOBJECT_PATH + "%s/id/%s";
 
 	private String objectId;
 	private String objectType;
@@ -74,25 +74,26 @@ public class SObjectDetailLoader extends AsyncTaskLoader<SalesforceObject> {
 
 	@Override
 	public SalesforceObject loadInBackground() {
-		/*
-		 * TODO: Replace this with RestRequest helper method and add a
-		 * method in NetworkManager that takes in a RestRequest.
-		 */
-		final String path = String.format(SOBJECT_DETAIL_PATH,
-				objectType, objectId);
-		final RestResponse response = networkMgr.makeRemoteGETRequest(path, null);
     	SalesforceObject sObject = null;
-		if (response != null && response.isSuccess()) {
-            try {
-                final JSONObject responseJSON = response.asJSONObject();
-                if (responseJSON != null) {
-                	sObject = new SalesforceObject(responseJSON);
-                }
-            } catch (IOException e) {
-                Log.e(TAG, "IOException occurred while reading data", e);
-            } catch (JSONException e) {
-                Log.e(TAG, "JSONException occurred while parsing", e);
-            }
+		try {
+			final RestRequest request = RestRequest.getRequestForRetrieve(
+					ApiVersionStrings.VERSION_NUMBER,
+					objectType, objectId, null);
+			final RestResponse response = networkMgr.makeRemoteRequest(request);
+			if (response != null && response.isSuccess()) {
+	            try {
+	                final JSONObject responseJSON = response.asJSONObject();
+	                if (responseJSON != null) {
+	                	sObject = new SalesforceObject(responseJSON);
+	                }
+	            } catch (IOException ex) {
+	                Log.e(TAG, "IOException occurred while reading data", ex);
+	            } catch (JSONException ex) {
+	                Log.e(TAG, "JSONException occurred while parsing", ex);
+	            }
+	        }
+		} catch (UnsupportedEncodingException e) {
+            Log.e(TAG, "UnsupportedEncodingException occurred while making request", e);
         }
 		return sObject;
 	}
