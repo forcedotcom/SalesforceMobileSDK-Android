@@ -13,4 +13,4 @@
     - echo NOOP
   :collect:
     :repro:
-      - native/SampleApps/FileExplorer/bin/*.apk
+      - native/SampleApps/FileExplorer/bin
