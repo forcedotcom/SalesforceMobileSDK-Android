@@ -30,6 +30,7 @@ import android.app.LoaderManager;
 import android.content.Intent;
 import android.content.Loader;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -37,7 +38,11 @@ import android.view.MenuItem;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.smartsync.manager.CacheManager.CachePolicy;
+import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
+import com.salesforce.androidsdk.smartsync.model.SalesforceObjectType;
+import com.salesforce.androidsdk.smartsync.model.SalesforceObjectTypeLayout;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
 import com.salesforce.samples.smartsyncexplorer.loaders.SObjectDetailLoader;
@@ -49,6 +54,7 @@ import com.salesforce.samples.smartsyncexplorer.loaders.SObjectDetailLoader;
  */
 public class DetailActivity extends SalesforceActivity implements LoaderManager.LoaderCallbacks<SalesforceObject> {
 
+	private static final long REFRESH_INTERVAL = 24 * 60 * 60 * 1000;
 	private static final int SOBJECT_DETAIL_LOADER_ID = 2;
 
     private UserAccount curAccount;
@@ -130,8 +136,42 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	}
 
 	private void refreshScreen() {
+		Log.v("***********", "Obj: " + sObject);
+		(new Thread(new SObjectLayoutLoader(sObject, curAccount))).start();
 		/*
 		 * TODO: Refresh screen with sObject values.
 		 */
+	}
+
+	/**
+	 * A simple thread that fetches object layout.
+	 *
+	 * @author bhariharan
+	 */
+	private static class SObjectLayoutLoader implements Runnable {
+
+		private SalesforceObject object;
+		private UserAccount curAccount;
+
+		/**
+		 * Parameterized constructor.
+		 *
+		 * @param obj Salesforce object.
+		 */
+		public SObjectLayoutLoader(SalesforceObject obj, UserAccount account) {
+			object = obj;
+			curAccount = account;
+		}
+
+		@Override
+		public void run() {
+			final MetadataManager metaMgr = MetadataManager.getInstance(curAccount);
+			final CachePolicy cachePolicy = CachePolicy.RELOAD_IF_EXPIRED_AND_RETURN_CACHE_DATA;
+			final SalesforceObjectType objType = metaMgr.loadObjectType(
+					object.getObjectType(), cachePolicy, REFRESH_INTERVAL);
+			final SalesforceObjectTypeLayout objLayout = metaMgr.loadObjectTypeLayout(
+					objType, cachePolicy, REFRESH_INTERVAL);
+			Log.v("*************", "Layout: " + objLayout);
+		}
 	}
 }
