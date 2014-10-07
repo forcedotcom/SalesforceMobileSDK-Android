@@ -43,6 +43,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Filter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.SearchView.OnCloseListener;
@@ -53,8 +54,8 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager.CachePolicy;
+import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
-import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
 import com.salesforce.samples.smartsyncexplorer.loaders.MRUAsyncTaskLoader;
@@ -80,7 +81,7 @@ public class MainActivity extends SalesforceListActivity implements
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		listAdapter = new MRUListAdapter(this, android.R.layout.simple_list_item_1);
+		listAdapter = new MRUListAdapter(this, R.layout.list_item);
 		getListView().setAdapter(listAdapter);
 		nameFilter = new NameFieldFilter(listAdapter, originalData);
 	}
@@ -134,7 +135,7 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public Loader<List<SalesforceObject>> onCreateLoader(int id, Bundle args) {
-		return new MRUAsyncTaskLoader(this, curAccount, Constants.USER, cachePolicy);
+		return new MRUAsyncTaskLoader(this, curAccount, null, cachePolicy);
 	}
 
 	@Override
@@ -186,18 +187,18 @@ public class MainActivity extends SalesforceListActivity implements
 	 */
 	private static class MRUListAdapter extends ArrayAdapter<SalesforceObject> {
 
-		private int textViewId;
+		private int listItemLayoutId;
 		private List<SalesforceObject> sObjects;
 
 		/**
 		 * Parameterized constructor.
 		 *
 		 * @param context Context.
-		 * @param textViewResourceId Text view resource ID.
+		 * @param listItemLayoutId List item view resource ID.
 		 */
-		public MRUListAdapter(Context context, int textViewResourceId) {
-			super(context, textViewResourceId);
-			textViewId = textViewResourceId;
+		public MRUListAdapter(Context context, int listItemLayoutId) {
+			super(context, listItemLayoutId);
+			this.listItemLayoutId = listItemLayoutId;
 		}
 
 		/**
@@ -217,15 +218,33 @@ public class MainActivity extends SalesforceListActivity implements
 		@Override
 		public View getView (int position, View convertView, ViewGroup parent) {
 			if (convertView == null) {
-				convertView = LayoutInflater.from(getContext()).inflate(textViewId,
-						parent, false);
+				convertView = LayoutInflater.from(getContext()).inflate(listItemLayoutId, null);
+		    }
+			if (sObjects != null) {
+				final SalesforceObject sObject = sObjects.get(position);
+				if (sObject != null) {
+			        final TextView objName = (TextView) convertView.findViewById(R.id.obj_name);
+			        final TextView objType = (TextView) convertView.findViewById(R.id.obj_type);
+					final ImageView objImage = (ImageView) convertView.findViewById(R.id.obj_image);
+			        if (objName != null) {
+			        	objName.setText(sObject.getName());
+			        	objName.setTextColor(Color.GREEN);
+			        }
+			        if (objType != null) {
+			        	objType.setText(sObject.getObjectType());
+			        	objType.setTextColor(Color.RED);
+			        }
+			        if (objImage != null) {
+			    		final MetadataManager metadataMgr = MetadataManager.getInstance(
+			    				SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
+			    		if (metadataMgr != null) {
+			    			int color = metadataMgr.getColorResourceForObjectType(sObject.getObjectType());
+			    			objImage.setImageResource(color);
+			    		}
+			        }
+				}
 			}
-			final TextView tv = (TextView) convertView;
-			if (tv != null && sObjects != null) {
-				tv.setText(sObjects.get(position).getName());
-	            tv.setTextColor(Color.GREEN);
-			}
-			return tv;
+		    return convertView;
 		}
 	}
 

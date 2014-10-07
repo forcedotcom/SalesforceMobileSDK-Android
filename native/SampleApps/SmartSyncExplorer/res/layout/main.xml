@@ -9,7 +9,9 @@
 
     <ListView android:id="@android:id/list"
         android:layout_height="wrap_content"
-        android:layout_width="match_parent" />
+        android:layout_width="match_parent"
+        android:scrollbarStyle="insideInset"
+        android:divider="@android:color/transparent" />
 
     <TextView android:id="@android:id/empty"
         android:layout_width="match_parent"
