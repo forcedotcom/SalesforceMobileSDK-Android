@@ -133,12 +133,6 @@ public class MainActivity extends SalesforceListActivity implements
 	}
 
 	@Override
-	public boolean onQueryTextChange(String newText) {
-		filterList(newText);
-		return true;
-    }
-
-	@Override
 	public Loader<List<SalesforceObject>> onCreateLoader(int id, Bundle args) {
 		return new MRUAsyncTaskLoader(this, curAccount, null, cachePolicy);
 	}
@@ -170,6 +164,12 @@ public class MainActivity extends SalesforceListActivity implements
 	}
 
 	@Override
+	public boolean onQueryTextChange(String newText) {
+		filterList(newText);
+		return true;
+    }
+
+	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		final SalesforceObject sObject = listAdapter.getItem(position);
 		final Intent detailIntent = new Intent(this, DetailActivity.class);
@@ -185,9 +185,6 @@ public class MainActivity extends SalesforceListActivity implements
 	}
 
 	private void filterList(String filterTerm) {
-		if (TextUtils.isEmpty(filterTerm)) {
-			return;
-		}
 		nameFilter.filter(filterTerm);
 	}
 
