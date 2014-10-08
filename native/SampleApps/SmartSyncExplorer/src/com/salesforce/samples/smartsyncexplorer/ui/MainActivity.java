@@ -104,9 +104,9 @@ public class MainActivity extends SalesforceListActivity implements
     }
 
 	@Override
-	public void onPause() {
+	public void onDestroy() {
 		getLoaderManager().destroyLoader(MRU_LOADER_ID);
-		super.onPause();
+		super.onDestroy();
 	}
 
 	@Override
