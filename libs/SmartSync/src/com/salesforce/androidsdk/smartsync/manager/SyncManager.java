@@ -274,6 +274,7 @@ public class SyncManager {
 	    	Intent intent = new Intent();
 	    	intent.setAction(SYNC_INTENT_ACTION);
 	    	intent.putExtra(SYNC_AS_STRING, sync.toString());
+	    	intent.putExtra(SYNC_STATUS, status.name());
 			SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
     	}
     	catch (JSONException e) {
