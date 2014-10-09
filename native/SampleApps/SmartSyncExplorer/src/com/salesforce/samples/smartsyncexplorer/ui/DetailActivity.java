@@ -33,6 +33,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.EditText;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -131,7 +132,26 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 
 	private void refreshScreen() {
 		if (sObject != null) {
-			// TODO: Layout.
+			setText((EditText) findViewById(R.id.first_name_field),
+					sObject.getFirstName());
+			setText((EditText) findViewById(R.id.last_name_field),
+					sObject.getLastName());
+			setText((EditText) findViewById(R.id.title_field),
+					sObject.getTitle());
+			setText((EditText) findViewById(R.id.phone_field),
+					sObject.getPhone());
+			setText((EditText) findViewById(R.id.email_field),
+					sObject.getEmail());
+			setText((EditText) findViewById(R.id.department_field),
+					sObject.getDepartment());
+			setText((EditText) findViewById(R.id.home_phone_field),
+					sObject.getHomePhone());
+		}
+	}
+
+	private void setText(EditText textField, String text) {
+		if (textField != null) {
+			textField.setText(text);
 		}
 	}
 }
