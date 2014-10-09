@@ -53,6 +53,7 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 
 
 /**
@@ -392,7 +393,7 @@ public class SyncManager {
 		List<String> recentItems = pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
 
 		// Building SOQL query to get requested at
-		String soql = "SELECT " + TextUtils.join(", ", fieldlist) + " FROM " + sobjectType + " WHERE Id IN ('" + TextUtils.join("', '", recentItems) + "')";
+		String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(sobjectType).where("Id IN ('" + TextUtils.join("', '", recentItems) + "')").build();
 
 		// Get recent items attributes from server
 		request = RestRequest.getRequestForQuery(apiVersion, soql);

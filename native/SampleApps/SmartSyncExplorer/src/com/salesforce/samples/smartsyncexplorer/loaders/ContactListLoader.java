@@ -31,7 +31,6 @@ import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import android.content.AsyncTaskLoader;
 import android.content.Context;
@@ -51,19 +50,11 @@ import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
  */
 public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 
-	public static final String CONTACT_FIELDS_STR = "Id, Name, FirstName,"
-			+ " LastName, Title, Phone, Email, Department, HomePhone";
 	public static final String CONTACT_SOUP = "contacts";
 	public static final Integer LIMIT = 4000;
     private static final String TAG = "SmartSyncExplorer: ContactListLoader";
-	private static final String CONTACT_QUERY = "SELECT " + getSelectQuery()
-			+ " FROM {" + CONTACT_SOUP + "}";
-	private static final String CURLY_BRACE_LEFT = "{";
-	private static final String CURLY_BRACE_RIGHT = "}";
-	private static final String COLON = ":";
-	private static final String COMMA = ",";
 
-	private SmartStore smartStore;
+    private SmartStore smartStore;
 
 	/**
 	 * Parameterized constructor.
@@ -81,53 +72,19 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 		if (!smartStore.hasSoup(CONTACT_SOUP)) {
 			return null;
 		}
-		final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(CONTACT_QUERY,
-				LIMIT);
+		final QuerySpec querySpec = QuerySpec.buildAllQuerySpec(CONTACT_SOUP, ContactObject.LAST_NAME, QuerySpec.Order.ascending, LIMIT);
 		JSONArray results = null;
+		List<ContactObject> contacts = new ArrayList<ContactObject>();
 		try {
 			results = smartStore.query(querySpec, 0);
+			for (int i = 0; i < results.length(); i++) {
+				contacts.add(new ContactObject(results.getJSONObject(i)));
+			}
 		} catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
 		} catch (SmartSqlException e) {
             Log.e(TAG, "SmartSqlException occurred while fetching data", e);
 		}
-		List<ContactObject> contacts = new ArrayList<ContactObject>();
-		if (results != null) {
-			for (int i = 0; i < results.length(); i++) {
-				final JSONArray obj = results.optJSONArray(i);
-				if (obj != null) {
-					contacts.add(buildSObject(obj));
-				}
-			}
-		}
 		return contacts;
-	}
-
-	private static String getSelectQuery() {
-		final StringBuilder sb = new StringBuilder();
-		for (final String str : ContactObject.CONTACT_FIELDS) {
-			sb.append(CURLY_BRACE_LEFT);
-			sb.append(CONTACT_SOUP);
-			sb.append(COLON);
-			sb.append(str);
-			sb.append(CURLY_BRACE_RIGHT);
-			sb.append(COMMA);
-		}
-		sb.deleteCharAt(sb.lastIndexOf(COMMA));
-		return sb.toString();
-	}
-
-	private ContactObject buildSObject(JSONArray array) {
-		final JSONObject object = new JSONObject();
-		try {
-			for (int i = 0; i < ContactObject.CONTACT_FIELDS.length; i++) {
-				final String key = ContactObject.CONTACT_FIELDS[i];
-				final String value = array.optString(i);
-				object.put(key, value);
-			}
-		} catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while parsing", e);
-		}
-		return new ContactObject(object);
 	}
 }
