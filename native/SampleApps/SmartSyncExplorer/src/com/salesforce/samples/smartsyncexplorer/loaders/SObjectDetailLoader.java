@@ -28,7 +28,6 @@ package com.salesforce.samples.smartsyncexplorer.loaders;
 
 import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import android.content.AsyncTaskLoader;
 import android.content.Context;
@@ -36,9 +35,10 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 /**
@@ -49,9 +49,6 @@ import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 public class SObjectDetailLoader extends AsyncTaskLoader<ContactObject> {
 
     private static final String TAG = "SmartSyncExplorer: SObjectDetailLoader";
-    private static final String DETAIL_QUERY = "SELECT * FROM {" +
-    		ContactListLoader.CONTACT_SOUP + "} WHERE {" +
-    		ContactListLoader.CONTACT_SOUP + ":Id} = '%s'";
 
 	private String objectId;
 	private SmartStore smartStore;
@@ -76,30 +73,18 @@ public class SObjectDetailLoader extends AsyncTaskLoader<ContactObject> {
 		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
 			return null;
 		}
-		final String query = String.format(DETAIL_QUERY, objectId);
-		final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(query, 1);
+		final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(
+				ContactListLoader.CONTACT_SOUP, Constants.ID, objectId, 1);
 		JSONArray results = null;
 		try {
 			results = smartStore.query(querySpec, 0);
 			if (results != null) {
-				sObject = buildSObject(results);
+				sObject = new ContactObject(results.getJSONObject(0));
 			}
 		} catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
 		} catch (SmartSqlException e) {
             Log.e(TAG, "SmartSqlException occurred while fetching data", e);
-		}
-		return sObject;
-	}
-
-	private ContactObject buildSObject(JSONArray array) {
-		ContactObject sObject = null;
-		final JSONArray arr = array.optJSONArray(0);
-		if (arr != null) {
-			final JSONObject obj = arr.optJSONObject(1);
-			if (obj != null) {
-				sObject = new ContactObject(obj);
-			}
 		}
 		return sObject;
 	}
