@@ -27,8 +27,10 @@
 package com.salesforce.androidsdk.smartsync.util;
 
 import java.util.HashMap;
+import java.util.List;
 
 import android.net.Uri;
+import android.text.TextUtils;
 
 /**
  * Helper class to build a SOQL statement.
@@ -40,7 +42,7 @@ public class SOQLBuilder {
     private final HashMap<String, Object> properties;
 
     /**
-     * Returns an instance of this class based on the fields.
+     * Returns an instance of this class based on the fields passed as a comma separated string.
      *
      * @param fields Fields.
      * @return Instance of this class.
@@ -52,7 +54,28 @@ public class SOQLBuilder {
         instance.offset(0);
         return instance;
     }
+    
+    /**
+     * Returns an instance of this class based on the fields passed as an array of strings.
+     *
+     * @param fields Fields.
+     * @return Instance of this class.
+     */
+    public static SOQLBuilder getInstanceWithFields(String[] fields) {
+    	return getInstanceWithFields(TextUtils.join(", ", fields));
+    }
+    
+    /**
+     * Returns an instance of this class based on the fields passed as a list of strings.
+     *
+     * @param fields Fields.
+     * @return Instance of this class.
+     */
+    public static SOQLBuilder getInstanceWithFields(List<String> fields) {
+    	return getInstanceWithFields(TextUtils.join(", ", fields));
+    }
 
+    
     /**
      * Private constructor.
      */

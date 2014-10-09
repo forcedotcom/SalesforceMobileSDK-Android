@@ -38,8 +38,8 @@ import org.json.JSONObject;
 
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.text.TextUtils;
 
-import com.google.common.base.Joiner;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -107,7 +107,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
 		
 		// Check that db was correctly populated
-		String idsClause = "('" + Joiner.on("', '").join(idToNames.keySet()) + "')";
+		String idsClause = "('" + TextUtils.join("', '", idToNames.keySet()) + "')";
 		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:Id}, {accounts:Name} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, COUNT_TEST_ACCOUNTS);
 		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
 		JSONObject idToNamesFromDb = new JSONObject();
@@ -139,7 +139,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		trySyncUp(3);
 		
 		// Check that db doesn't show entries as locally modified anymore
-		String idsClause = "('" + Joiner.on("', '").join(ids) + "')";
+		String idsClause = "('" + TextUtils.join("', '", ids) + "')";
 		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, ids.length);
 		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
 		for (int i=0; i<accountsFromDb.length(); i++) {
@@ -174,7 +174,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		trySyncUp(3);
 		
 		// Check that db doesn't show entries as locally created anymore and that they use sfdc id
-		String namesClause = "('" + Joiner.on("', '").join(names) + "')";
+		String namesClause = "('" + TextUtils.join("', '", names) + "')";
 		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup} FROM {accounts} WHERE {accounts:Name} IN " + namesClause, names.length);
 		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
 		Map<String, String> idToNamesCreated = new HashMap<String, String>();
@@ -220,7 +220,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		trySyncUp(3);
 		
 		// Check that db doesn't contain those entries anymore
-		String idsClause = "('" + Joiner.on("', '").join(idsLocallyDeleted) + "')";
+		String idsClause = "('" + TextUtils.join("', '", idsLocallyDeleted) + "')";
 		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup}, {accounts:Name} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, idsLocallyDeleted.length);
 		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
 		assertEquals("No accounts should have been returned from smartstore", 0, accountsFromDb.length());
@@ -239,7 +239,7 @@ public class SyncManagerTest extends ManagerTestCase {
 	 */
 	private void trySyncDown() throws JSONException {
 		// Ids clause
-		String idsClause = "('" + Joiner.on("', '").join(idToNames.keySet()) + "')";
+		String idsClause = "('" + TextUtils.join("', '", idToNames.keySet()) + "')";
 		
 		// Create sync
 		JSONObject target = new JSONObject();

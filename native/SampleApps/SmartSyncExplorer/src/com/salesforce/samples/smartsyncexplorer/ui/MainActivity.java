@@ -57,6 +57,7 @@ import android.widget.SearchView.OnCloseListener;
 import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
 
+import com.google.common.base.Joiner;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -227,7 +228,7 @@ public class MainActivity extends SalesforceListActivity implements
 		try {
 			final JSONObject target = new JSONObject();
 			target.put(SyncManager.QUERY_TYPE, SyncManager.QueryType.soql);
-			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactListLoader.CONTACT_FIELDS_STR)
+			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
 					.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
 			target.put(SyncManager.QUERY, soqlQuery);
 			final JSONObject sync = syncMgr.recordSync(SyncManager.Type.syncDown,
