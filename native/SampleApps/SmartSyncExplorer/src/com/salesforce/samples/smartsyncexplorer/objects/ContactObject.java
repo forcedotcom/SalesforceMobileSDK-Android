@@ -40,11 +40,12 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
  */
 public class ContactObject extends SalesforceObject {
 
+	public static final String LAST_NAME = "LastName";
 	public static final String[] CONTACT_FIELDS = {
 		"Id",
 		"Name",
 		"FirstName",
-		"LastName",
+		LAST_NAME,
 		"Title",
 		"Phone",
 		"Email",
@@ -52,6 +53,7 @@ public class ContactObject extends SalesforceObject {
 		"HomePhone"
 	};
 
+	
 	/**
 	 * Parameterized constructor.
 	 *
