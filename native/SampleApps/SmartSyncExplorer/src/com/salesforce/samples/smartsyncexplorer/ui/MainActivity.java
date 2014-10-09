@@ -29,13 +29,19 @@ package com.salesforce.samples.smartsyncexplorer.ui;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.app.LoaderManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.Loader;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -53,13 +59,19 @@ import android.widget.TextView;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
-import com.salesforce.androidsdk.smartsync.manager.CacheManager.CachePolicy;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager.Status;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
+import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
-import com.salesforce.samples.smartsyncexplorer.loaders.MRUAsyncTaskLoader;
+import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 
 /**
  * Main activity.
@@ -72,14 +84,26 @@ public class MainActivity extends SalesforceListActivity implements
 	public static final String OBJECT_ID_KEY = "object_id";
 	public static final String OBJECT_TYPE_KEY = "object_type";
 	public static final String OBJECT_NAME_KEY = "object_name";
-	private static final int MRU_LOADER_ID = 1;
+    private static final String TAG = "SmartSyncExplorer: MainActivity";
+	private static final int CONTACT_LOADER_ID = 1;
+	private static IndexSpec[] CONTACTS_INDEX_SPEC = {
+		new IndexSpec("FirstName", Type.string),
+		new IndexSpec("LastName", Type.string),
+		new IndexSpec("Title", Type.string),
+		new IndexSpec("Phone", Type.string),
+		new IndexSpec("Email", Type.string),
+		new IndexSpec("Department", Type.string),
+		new IndexSpec("HomePhone", Type.string)
+	};
 
     private SearchView searchView;
     private MRUListAdapter listAdapter;
     private UserAccount curAccount;
 	private NameFieldFilter nameFilter;
-	private CachePolicy cachePolicy;
 	private List<SalesforceObject> originalData;
+	private SyncReceiver syncReceiver;
+	private SyncManager syncMgr;
+	private SmartStore smartStore;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -89,6 +113,8 @@ public class MainActivity extends SalesforceListActivity implements
 		listAdapter = new MRUListAdapter(this, R.layout.list_item);
 		getListView().setAdapter(listAdapter);
 		nameFilter = new NameFieldFilter(listAdapter, originalData);
+		syncReceiver = new SyncReceiver();
+		registerReceiver(syncReceiver, new IntentFilter(SyncManager.SYNC_INTENT_ACTION));
 	}
 
 	@Override
@@ -99,13 +125,16 @@ public class MainActivity extends SalesforceListActivity implements
 	@Override
 	public void onResume(RestClient client) {
 		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
-		cachePolicy = CachePolicy.RELOAD_AND_RETURN_CACHE_ON_FAILURE;
-		getLoaderManager().initLoader(MRU_LOADER_ID, null, this).forceLoad();
+		syncMgr = SyncManager.getInstance(curAccount);
+		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
+		syncDownContacts();
+		getLoaderManager().initLoader(CONTACT_LOADER_ID, null, this);
     }
 
 	@Override
 	public void onDestroy() {
-		getLoaderManager().destroyLoader(MRU_LOADER_ID);
+		unregisterReceiver(syncReceiver);
+		getLoaderManager().destroyLoader(CONTACT_LOADER_ID);
 		super.onDestroy();
 	}
 
@@ -134,7 +163,7 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public Loader<List<SalesforceObject>> onCreateLoader(int id, Bundle args) {
-		return new MRUAsyncTaskLoader(this, curAccount, null, cachePolicy);
+		return new ContactListLoader(this, curAccount);
 	}
 
 	@Override
@@ -186,6 +215,26 @@ public class MainActivity extends SalesforceListActivity implements
 
 	private void filterList(String filterTerm) {
 		nameFilter.filter(filterTerm);
+	}
+
+	private void syncDownContacts() {
+		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
+			smartStore.registerSoup(ContactListLoader.CONTACT_SOUP,
+					CONTACTS_INDEX_SPEC);
+		}
+		try {
+			final JSONObject target = new JSONObject();
+			target.put(SyncManager.QUERY_TYPE, SyncManager.QueryType.soql);
+			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactListLoader.CONTACT_FIELDS_STR)
+					.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
+			target.put(SyncManager.QUERY, soqlQuery);
+			final JSONObject sync = syncMgr.recordSync(SyncManager.Type.syncDown,
+					target, ContactListLoader.CONTACT_SOUP, null);
+			long syncId = sync.getLong(SmartStore.SOUP_ENTRY_ID);
+			syncMgr.runSync(syncId);
+		} catch (JSONException e) {
+            Log.e(TAG, "JSONException occurred while parsing", e);
+		}
 	}
 
 	/**
@@ -317,6 +366,27 @@ public class MainActivity extends SalesforceListActivity implements
 		protected void publishResults(CharSequence constraint, FilterResults results) {
 			if (results != null && results.values != null) {
 				adpater.setData((List<SalesforceObject>) results.values);
+			}
+		}
+	}
+
+	/**
+	 * A simple receiver for the sync completed event.
+	 *
+	 * @author bhariharan
+	 */
+	private class SyncReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (intent != null) {
+				final String action = intent.getAction();
+				if (action != null && action.equals(SyncManager.SYNC_INTENT_ACTION)) {
+					final String syncStatus = intent.getStringExtra(SyncManager.SYNC_STATUS);
+					if (syncStatus != null && syncStatus.equals(Status.DONE.name())) {
+						getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
+					}
+				}
 			}
 		}
 	}

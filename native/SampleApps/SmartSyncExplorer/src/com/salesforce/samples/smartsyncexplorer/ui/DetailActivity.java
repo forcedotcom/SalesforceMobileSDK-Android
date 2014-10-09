@@ -39,6 +39,7 @@ import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -143,7 +144,8 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 
 	private void refreshScreen() {
 		if (sObject != null) {
-			(new Thread(new SObjectLayoutLoader(sObject, curAccount))).start();
+			(new Thread(new SObjectLayoutLoader(sObject, curAccount,
+					findViewById(R.id.root)))).start();
 		}
 	}
 
@@ -156,15 +158,20 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 
 		private SalesforceObject object;
 		private UserAccount curAccount;
+		private View rootLayout;
 
 		/**
 		 * Parameterized constructor.
 		 *
 		 * @param obj Salesforce object.
+		 * @param account Current account.
+		 * @param layout Root layout.
 		 */
-		public SObjectLayoutLoader(SalesforceObject obj, UserAccount account) {
+		public SObjectLayoutLoader(SalesforceObject obj, UserAccount account,
+				View layout) {
 			object = obj;
 			curAccount = account;
+			rootLayout = layout;
 		}
 
 		@Override
@@ -184,7 +191,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 						final String colLabel = column.getLabel();
 						final String fieldValue = parseColumnValues(colName,
 								fieldName, colLabel);
-						// TODO: Display colLabel and fieldValue in TextViews here.
+						updateDisplayValues(colLabel, fieldValue);
 					}
 				}
 			}
@@ -239,6 +246,13 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 				fieldValue = "";
 			}
 			return fieldValue;
+		}
+
+		private void updateDisplayValues(String colLabel, String fieldValue) {
+//			if (rootLayout != null) {
+//				TableLayout
+//			}
+			// TODO: Display colLabel and fieldValue in TextViews here.
 		}
 	}
 }
