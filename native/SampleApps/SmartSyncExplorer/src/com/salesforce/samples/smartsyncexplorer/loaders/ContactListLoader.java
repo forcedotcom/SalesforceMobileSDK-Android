@@ -42,26 +42,17 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
-import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
+import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 /**
  * A simple AsyncTaskLoader to load a list of Salesforce contacts.
  *
  * @author bhariharan
  */
-public class ContactListLoader extends AsyncTaskLoader<List<SalesforceObject>> {
+public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 
-	public static final String[] CONTACT_FIELDS = {
-		"FirstName",
-		"LastName",
-		"Title",
-		"Phone",
-		"Email",
-		"Department",
-		"HomePhone"
-	};
-	public static final String CONTACT_FIELDS_STR = "FirstName, LastName, Title,"
-			+ " Phone, Email, Department, HomePhone";
+	public static final String CONTACT_FIELDS_STR = "Id, Name, FirstName,"
+			+ " LastName, Title, Phone, Email, Department, HomePhone";
 	public static final String CONTACT_SOUP = "contacts";
 	public static final Integer LIMIT = 4000;
     private static final String TAG = "SmartSyncExplorer: ContactListLoader";
@@ -86,7 +77,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<SalesforceObject>> {
 	}
 
 	@Override
-	public List<SalesforceObject> loadInBackground() {
+	public List<ContactObject> loadInBackground() {
 		if (!smartStore.hasSoup(CONTACT_SOUP)) {
 			return null;
 		}
@@ -100,7 +91,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<SalesforceObject>> {
 		} catch (SmartSqlException e) {
             Log.e(TAG, "SmartSqlException occurred while fetching data", e);
 		}
-		List<SalesforceObject> contacts = new ArrayList<SalesforceObject>();
+		List<ContactObject> contacts = new ArrayList<ContactObject>();
 		if (results != null) {
 			for (int i = 0; i < results.length(); i++) {
 				final JSONArray obj = results.optJSONArray(i);
@@ -114,7 +105,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<SalesforceObject>> {
 
 	private static String getSelectQuery() {
 		final StringBuilder sb = new StringBuilder();
-		for (final String str : CONTACT_FIELDS) {
+		for (final String str : ContactObject.CONTACT_FIELDS) {
 			sb.append(CURLY_BRACE_LEFT);
 			sb.append(CONTACT_SOUP);
 			sb.append(COLON);
@@ -126,17 +117,17 @@ public class ContactListLoader extends AsyncTaskLoader<List<SalesforceObject>> {
 		return sb.toString();
 	}
 
-	private SalesforceObject buildSObject(JSONArray array) {
+	private ContactObject buildSObject(JSONArray array) {
 		final JSONObject object = new JSONObject();
 		try {
-			for (int i = 0; i < CONTACT_FIELDS.length; i++) {
-				final String key = CONTACT_FIELDS[i];
+			for (int i = 0; i < ContactObject.CONTACT_FIELDS.length; i++) {
+				final String key = ContactObject.CONTACT_FIELDS[i];
 				final String value = array.optString(i);
 				object.put(key, value);
 			}
 		} catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
 		}
-		return new SalesforceObject(object);
+		return new ContactObject(object);
 	}
 }

@@ -66,12 +66,12 @@ import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.Status;
-import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
+import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 /**
  * Main activity.
@@ -79,7 +79,7 @@ import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
  * @author bhariharan
  */
 public class MainActivity extends SalesforceListActivity implements
-		OnQueryTextListener, OnCloseListener, LoaderManager.LoaderCallbacks<List<SalesforceObject>> {
+		OnQueryTextListener, OnCloseListener, LoaderManager.LoaderCallbacks<List<ContactObject>> {
 
 	public static final String OBJECT_ID_KEY = "object_id";
 	public static final String OBJECT_TYPE_KEY = "object_type";
@@ -87,6 +87,8 @@ public class MainActivity extends SalesforceListActivity implements
     private static final String TAG = "SmartSyncExplorer: MainActivity";
 	private static final int CONTACT_LOADER_ID = 1;
 	private static IndexSpec[] CONTACTS_INDEX_SPEC = {
+		new IndexSpec("Id", Type.string),
+		new IndexSpec("Name", Type.string),
 		new IndexSpec("FirstName", Type.string),
 		new IndexSpec("LastName", Type.string),
 		new IndexSpec("Title", Type.string),
@@ -100,7 +102,7 @@ public class MainActivity extends SalesforceListActivity implements
     private MRUListAdapter listAdapter;
     private UserAccount curAccount;
 	private NameFieldFilter nameFilter;
-	private List<SalesforceObject> originalData;
+	private List<ContactObject> originalData;
 	private SyncReceiver syncReceiver;
 	private SyncManager syncMgr;
 	private SmartStore smartStore;
@@ -162,19 +164,19 @@ public class MainActivity extends SalesforceListActivity implements
 	}
 
 	@Override
-	public Loader<List<SalesforceObject>> onCreateLoader(int id, Bundle args) {
+	public Loader<List<ContactObject>> onCreateLoader(int id, Bundle args) {
 		return new ContactListLoader(this, curAccount);
 	}
 
 	@Override
-	public void onLoaderReset(Loader<List<SalesforceObject>> loader) {
+	public void onLoaderReset(Loader<List<ContactObject>> loader) {
 		originalData = null;
 		refreshList(null);
 	}
 
 	@Override
-	public void onLoadFinished(Loader<List<SalesforceObject>> loader,
-			List<SalesforceObject> data) {
+	public void onLoadFinished(Loader<List<ContactObject>> loader,
+			List<ContactObject> data) {
 		originalData = data;
 		nameFilter.setOrigData(originalData);
 		refreshList(data);
@@ -200,7 +202,7 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
-		final SalesforceObject sObject = listAdapter.getItem(position);
+		final ContactObject sObject = listAdapter.getItem(position);
 		final Intent detailIntent = new Intent(this, DetailActivity.class);
 		detailIntent.addCategory(Intent.CATEGORY_DEFAULT);
 		detailIntent.putExtra(OBJECT_ID_KEY, sObject.getObjectId());
@@ -209,7 +211,7 @@ public class MainActivity extends SalesforceListActivity implements
 		startActivity(detailIntent);
 	}
 
-	private void refreshList(List<SalesforceObject> data) {
+	private void refreshList(List<ContactObject> data) {
 		listAdapter.setData(data);
 	}
 
@@ -242,10 +244,10 @@ public class MainActivity extends SalesforceListActivity implements
 	 *
 	 * @author bhariharan
 	 */
-	private static class MRUListAdapter extends ArrayAdapter<SalesforceObject> {
+	private static class MRUListAdapter extends ArrayAdapter<ContactObject> {
 
 		private int listItemLayoutId;
-		private List<SalesforceObject> sObjects;
+		private List<ContactObject> sObjects;
 
 		/**
 		 * Parameterized constructor.
@@ -263,7 +265,7 @@ public class MainActivity extends SalesforceListActivity implements
 		 *
 		 * @param data Data.
 		 */
-		public void setData(List<SalesforceObject> data) {
+		public void setData(List<ContactObject> data) {
 			clear();
 			sObjects = data;
 			if (data != null) {
@@ -278,7 +280,7 @@ public class MainActivity extends SalesforceListActivity implements
 				convertView = LayoutInflater.from(getContext()).inflate(listItemLayoutId, null);
 		    }
 			if (sObjects != null) {
-				final SalesforceObject sObject = sObjects.get(position);
+				final ContactObject sObject = sObjects.get(position);
 				if (sObject != null) {
 			        final TextView objName = (TextView) convertView.findViewById(R.id.obj_name);
 			        final TextView objType = (TextView) convertView.findViewById(R.id.obj_type);
@@ -288,7 +290,7 @@ public class MainActivity extends SalesforceListActivity implements
 			        	objName.setTextColor(Color.GREEN);
 			        }
 			        if (objType != null) {
-			        	objType.setText(sObject.getObjectType());
+			        	objType.setText(sObject.getTitle());
 			        	objType.setTextColor(Color.RED);
 			        }
 			        if (objImage != null) {
@@ -313,7 +315,7 @@ public class MainActivity extends SalesforceListActivity implements
 	private static class NameFieldFilter extends Filter {
 
 		private MRUListAdapter adpater;
-		private List<SalesforceObject> origList;
+		private List<ContactObject> origList;
 
 		/**
 		 * Parameterized constructor.
@@ -321,7 +323,7 @@ public class MainActivity extends SalesforceListActivity implements
 		 * @param adapter List adapter.
 		 * @param origList List to perform filtering against.
 		 */
-		public NameFieldFilter(MRUListAdapter adapter, List<SalesforceObject> origList) {
+		public NameFieldFilter(MRUListAdapter adapter, List<ContactObject> origList) {
 			this.adpater = adapter;
 			this.origList = origList;
 		}
@@ -331,7 +333,7 @@ public class MainActivity extends SalesforceListActivity implements
 		 *
 		 * @param origData Original data set.
 		 */
-		public void setOrigData(List<SalesforceObject> origData) {
+		public void setOrigData(List<ContactObject> origData) {
 			origList = origData;
 		}
 
@@ -349,7 +351,7 @@ public class MainActivity extends SalesforceListActivity implements
 			final String filterString = constraint.toString().toLowerCase();
 			int count = origList.size();
 			String filterableString;
-			final List<SalesforceObject> resultSet = new ArrayList<SalesforceObject>();
+			final List<ContactObject> resultSet = new ArrayList<ContactObject>();
 			for (int i = 0; i < count; i++) {
 				filterableString = origList.get(i).getName();
 				if (filterableString.toLowerCase().contains(filterString)) {
@@ -365,7 +367,7 @@ public class MainActivity extends SalesforceListActivity implements
 		@Override
 		protected void publishResults(CharSequence constraint, FilterResults results) {
 			if (results != null && results.values != null) {
-				adpater.setData((List<SalesforceObject>) results.values);
+				adpater.setData((List<ContactObject>) results.values);
 			}
 		}
 	}
