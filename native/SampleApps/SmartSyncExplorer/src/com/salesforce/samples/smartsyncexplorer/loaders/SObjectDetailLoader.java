@@ -26,9 +26,7 @@
  */
 package com.salesforce.samples.smartsyncexplorer.loaders;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -37,24 +35,26 @@ import android.content.Context;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.rest.ApiVersionStrings;
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.smartsync.manager.NetworkManager;
-import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
+import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 /**
- * A simple AsyncTaskLoader to load object detail for a Salesforce object.
+ * A simple AsyncTaskLoader to load object detail for a Contact object.
  *
  * @author bhariharan
  */
-public class SObjectDetailLoader extends AsyncTaskLoader<SalesforceObject> {
+public class SObjectDetailLoader extends AsyncTaskLoader<ContactObject> {
 
     private static final String TAG = "SmartSyncExplorer: SObjectDetailLoader";
+    private static final String DETAIL_QUERY = "SELECT * FROM {" +
+    		ContactListLoader.CONTACT_SOUP + "} WHERE {" +
+    		ContactListLoader.CONTACT_SOUP + ":Id} = '%s'";
 
 	private String objectId;
-	private String objectType;
-	private NetworkManager networkMgr;
+	private SmartStore smartStore;
 
 	/**
 	 * Parameterized constructor.
@@ -62,39 +62,45 @@ public class SObjectDetailLoader extends AsyncTaskLoader<SalesforceObject> {
 	 * @param context Context.
 	 * @param account User account.
 	 * @param objId Object ID.
-	 * @param objType Object type.
 	 */
 	public SObjectDetailLoader(Context context, UserAccount account,
-			String objId, String objType) {
+			String objId) {
 		super(context);
 		objectId = objId;
-		objectType = objType;
-		networkMgr = NetworkManager.getInstance(account);
+		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account);
 	}
 
 	@Override
-	public SalesforceObject loadInBackground() {
-    	SalesforceObject sObject = null;
+	public ContactObject loadInBackground() {
+		ContactObject sObject = null;
+		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
+			return null;
+		}
+		final String query = String.format(DETAIL_QUERY, objectId);
+		final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(query, 1);
+		JSONArray results = null;
 		try {
-			final RestRequest request = RestRequest.getRequestForRetrieve(
-					ApiVersionStrings.VERSION_NUMBER,
-					objectType, objectId, null);
-			final RestResponse response = networkMgr.makeRemoteRequest(request);
-			if (response != null && response.isSuccess()) {
-	            try {
-	                final JSONObject responseJSON = response.asJSONObject();
-	                if (responseJSON != null) {
-	                	sObject = new SalesforceObject(responseJSON);
-	                }
-	            } catch (IOException ex) {
-	                Log.e(TAG, "IOException occurred while reading data", ex);
-	            } catch (JSONException ex) {
-	                Log.e(TAG, "JSONException occurred while parsing", ex);
-	            }
-	        }
-		} catch (UnsupportedEncodingException e) {
-            Log.e(TAG, "UnsupportedEncodingException occurred while making request", e);
-        }
+			results = smartStore.query(querySpec, 0);
+			if (results != null) {
+				sObject = buildSObject(results);
+			}
+		} catch (JSONException e) {
+            Log.e(TAG, "JSONException occurred while parsing", e);
+		} catch (SmartSqlException e) {
+            Log.e(TAG, "SmartSqlException occurred while fetching data", e);
+		}
+		return sObject;
+	}
+
+	private ContactObject buildSObject(JSONArray array) {
+		ContactObject sObject = null;
+		final JSONArray arr = array.optJSONArray(0);
+		if (arr != null) {
+			final JSONObject obj = arr.optJSONObject(1);
+			if (obj != null) {
+				sObject = new ContactObject(obj);
+			}
+		}
 		return sObject;
 	}
 }
