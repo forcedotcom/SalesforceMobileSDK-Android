@@ -66,7 +66,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 
     private UserAccount curAccount;
     private String objectId;
-    private String objectType;
+    private String objectTitle;
     private SalesforceObject sObject;
 
 	@Override
@@ -78,9 +78,9 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 		final Intent launchIntent = getIntent();
 		if (launchIntent != null) {
 			objectId = launchIntent.getStringExtra(MainActivity.OBJECT_ID_KEY);
-			objectType = launchIntent.getStringExtra(MainActivity.OBJECT_TYPE_KEY);
+			objectTitle = launchIntent.getStringExtra(MainActivity.OBJECT_TITLE_KEY);
 			getActionBar().setTitle(launchIntent.getStringExtra(MainActivity.OBJECT_NAME_KEY));
-			getActionBar().setSubtitle(objectType);
+			getActionBar().setSubtitle(objectTitle);
 		}
 	}
 
@@ -126,7 +126,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 
 	@Override
 	public Loader<SalesforceObject> onCreateLoader(int id, Bundle args) {
-		return new SObjectDetailLoader(this, curAccount, objectId, objectType);
+		return new SObjectDetailLoader(this, curAccount, objectId, objectTitle);
 	}
 
 	@Override

@@ -39,10 +39,10 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
  */
 public class SalesforceObject {
 
-    private String objectType;
-    private String name;
-    private String objectId;
-    private final JSONObject rawData;
+    protected String objectType;
+    protected String name;
+    protected String objectId;
+    protected final JSONObject rawData;
 
     /**
      * Parameterized constructor.
