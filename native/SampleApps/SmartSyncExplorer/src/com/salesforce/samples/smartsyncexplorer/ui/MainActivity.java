@@ -82,7 +82,7 @@ public class MainActivity extends SalesforceListActivity implements
 		OnQueryTextListener, OnCloseListener, LoaderManager.LoaderCallbacks<List<ContactObject>> {
 
 	public static final String OBJECT_ID_KEY = "object_id";
-	public static final String OBJECT_TYPE_KEY = "object_type";
+	public static final String OBJECT_TITLE_KEY = "object_title";
 	public static final String OBJECT_NAME_KEY = "object_name";
     private static final String TAG = "SmartSyncExplorer: MainActivity";
 	private static final int CONTACT_LOADER_ID = 1;
@@ -206,7 +206,7 @@ public class MainActivity extends SalesforceListActivity implements
 		final Intent detailIntent = new Intent(this, DetailActivity.class);
 		detailIntent.addCategory(Intent.CATEGORY_DEFAULT);
 		detailIntent.putExtra(OBJECT_ID_KEY, sObject.getObjectId());
-		detailIntent.putExtra(OBJECT_TYPE_KEY, sObject.getObjectType());
+		detailIntent.putExtra(OBJECT_TITLE_KEY, sObject.getTitle());
 		detailIntent.putExtra(OBJECT_NAME_KEY, sObject.getName());
 		startActivity(detailIntent);
 	}
