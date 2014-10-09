@@ -4,11 +4,6 @@ cd ~
 
 curl http://dl.google.com/android/android-sdk_r23.0.2-linux.tgz | tar zxv
 
-expect -c '
-set timeout -1   ;
-spawn ~/android-sdk-linux/tools/android update sdk -u; 
-expect { 
-    "Do you accept the license" { exp_send "y\r" ; exp_continue }
-    eof
-}
-'
+yes | $ANDROID_SDK/tools/android  update sdk --filter platform-tools,build-tools-19.0.3,sysimg-17,android-17,extra-android-support --no-ui --force
+yes no | $ANDROID_SDK/tools/android create avd --force -n test -t android-17 --abi armeabi-v7a
+

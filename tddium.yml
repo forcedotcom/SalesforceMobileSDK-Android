@@ -10,7 +10,7 @@
   :java:
     :java_version: java-7-openjdk
   :tests:
-    - echo NOOP
+    - ./test.sh
   :collect:
     :repo:
       - native/SampleApps/FileExplorer/bin
