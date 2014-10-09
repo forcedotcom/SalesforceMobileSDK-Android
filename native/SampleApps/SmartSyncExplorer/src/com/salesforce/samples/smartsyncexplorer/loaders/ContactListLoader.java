@@ -72,7 +72,8 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 		if (!smartStore.hasSoup(CONTACT_SOUP)) {
 			return null;
 		}
-		final QuerySpec querySpec = QuerySpec.buildAllQuerySpec(CONTACT_SOUP, ContactObject.LAST_NAME, QuerySpec.Order.ascending, LIMIT);
+		final QuerySpec querySpec = QuerySpec.buildAllQuerySpec(CONTACT_SOUP,
+				ContactObject.LAST_NAME, QuerySpec.Order.ascending, LIMIT);
 		JSONArray results = null;
 		List<ContactObject> contacts = new ArrayList<ContactObject>();
 		try {
