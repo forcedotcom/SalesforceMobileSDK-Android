@@ -1,3 +1,6 @@
+sudo apt-get update
+sudo apt-get install -y ia32-libs
+
 ./install.sh
 
 cd ~
