@@ -12,7 +12,13 @@
   :java:
     :java_version: java-7-openjdk
   :tests:
-    - ./test.sh
+    - type: junit
+      command: ./test.sh
+      output: exit-status
+      invocation: single
+      mode: basic
+      report_files:
+      - libs/test/SmartStoreTest/junit-reports/**.xml 
   :collect:
     :repo:
       - native/SampleApps/FileExplorer/bin
