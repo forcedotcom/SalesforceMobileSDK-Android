@@ -1,13 +1,6 @@
-cd libs/SalesforceSDK
+for d in libs/SalesforceSDK external/cordova/framework native/SampleApps/FileExplorer; do
+	echo "Updating android project $d"
+	(cd $d && $ANDROID_SDK/tools/android update project -t $DEVICE_OS_VERSION -p .)
+done
 
-$ANDROID_SDK/tools/android update project -p .
-
-cd ../../external/cordova/framework
-
-$ANDROID_SDK/tools/android update project -p .
-
-cd ../../../native/SampleApps/FileExplorer
-
-$ANDROID_SDK/tools/android update project -p .
-
-ant debug
+(cd native/SampleApps/FileExplorer && ant debug)
