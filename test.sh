@@ -1,12 +1,11 @@
 #!/bin/bash
+. android-settings.sh
 
 $TDDIUM_REPO_ROOT/start-emulator.sh
 
 cd libs/test/SmartStoreTest/
 mv project.properties project.properties.original
 sed s/android-.*/${DEVICE_OS_VERSION}/g project.properties.original > project.properties
-
-. android-settings.sh
 
 android update project --path ../../../external/cordova/framework
 
