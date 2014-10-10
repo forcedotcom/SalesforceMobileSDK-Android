@@ -7,6 +7,8 @@ cd ~
 
 curl http://dl.google.com/android/android-sdk_r23.0.2-linux.tgz | tar zxv
 
+. android-settings.sh
+
 expect -c '
 set timeout -1   ;
 spawn ~/android-sdk-linux/tools/android update sdk -u; 
@@ -16,6 +18,6 @@ expect {
 }
 '
 
-echo y | $ANDROID_SDK/tools/android  update sdk --filter sys-img-armeabi-v7a-$DEVICE_OS_VERSION --no-ui --force --all
-echo no | $ANDROID_SDK/tools/android create avd --force -n test -t $DEVICE_OS_VERSION --abi armeabi-v7a
+echo y | android update sdk --filter sys-img-armeabi-v7a-$DEVICE_OS_VERSION --no-ui --force --all
+echo no | android create avd --force -n test -t $DEVICE_OS_VERSION --abi armeabi-v7a
 
