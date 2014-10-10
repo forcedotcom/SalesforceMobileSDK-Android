@@ -306,8 +306,8 @@ public class SyncManagerTest extends ManagerTestCase {
 	private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress, int expectedTotalSize) throws JSONException {
 		assertEquals("Wrong type", expectedType, sync.getType());
 		assertEquals("Wrong id", expectedId, sync.getId());
-		JSONTestHelper.assertSameJSON("Wrong target", expectedTarget.asJSON(), sync.getTarget().asJSON());
-		JSONTestHelper.assertSameJSON("Wrong options", expectedOptions.asJSON(), sync.getOptions().asJSON());
+		JSONTestHelper.assertSameJSON("Wrong target", (expectedTarget == null ? null : expectedTarget.asJSON()), (sync.getTarget() == null ? null : sync.getTarget().asJSON()));
+		JSONTestHelper.assertSameJSON("Wrong options", (expectedOptions == null ? null : expectedOptions.asJSON()), (sync.getOptions() == null ? null : sync.getOptions().asJSON()));
 		assertEquals("Wrong status", expectedStatus, sync.getStatus());
 		assertEquals("Wrong progress", expectedProgress, sync.getProgress());
 		assertEquals("Wrong total size", expectedTotalSize, sync.getTotalSize());

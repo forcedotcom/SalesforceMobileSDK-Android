@@ -123,8 +123,8 @@ public class SyncState {
 		SyncState state = new SyncState();
 		state.id = sync.getLong(SmartStore.SOUP_ENTRY_ID);
 		state.type = Type.valueOf(sync.getString(SYNC_TYPE));
-		state.target = (state.type == Type.syncDown ? SyncTarget.fromJSON(sync.getJSONObject(SYNC_TARGET)) : null);
-		state.options = (state.type == Type.syncUp ? SyncOptions.fromJSON(sync.getJSONObject(SYNC_OPTIONS)) : null);
+		state.target = SyncTarget.fromJSON(sync.optJSONObject(SYNC_TARGET));
+		state.options = SyncOptions.fromJSON(sync.optJSONObject(SYNC_OPTIONS));
 		state.soupName = sync.getString(SYNC_SOUP_NAME);
 		state.status = Status.valueOf(sync.getString(SYNC_STATUS));
 		state.progress = sync.getInt(SYNC_PROGRESS);
@@ -157,7 +157,7 @@ public class SyncState {
 		sync.put(SmartStore.SOUP_ENTRY_ID, id);
 		sync.put(SYNC_TYPE, type.name());
 		if (target != null) sync.put(SYNC_TARGET, target.asJSON());
-		if (options != null) sync.put(SYNC_TARGET, options.asJSON());
+		if (options != null) sync.put(SYNC_OPTIONS, options.asJSON());
 		sync.put(SYNC_SOUP_NAME, soupName);
 		sync.put(SYNC_STATUS, status.name());
 		sync.put(SYNC_PROGRESS, progress);

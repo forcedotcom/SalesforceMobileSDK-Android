@@ -55,10 +55,13 @@ public class SyncTarget {
 	 * @throws JSONException 
 	 */
 	public static SyncTarget fromJSON(JSONObject target) throws JSONException {
+		if (target == null)
+			return null;
+		
 		QueryType queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
-		String query = target.optString(QUERY);
+		String query = target.optString(QUERY, null);
 		List<String> fieldlist = toList(target.optJSONArray(FIELDLIST));
-		String objectType = target.optString(SOBJECT_TYPE);
+		String objectType = target.optString(SOBJECT_TYPE, null);
 		return new SyncTarget(queryType, query, fieldlist, objectType);
 	}
 

@@ -49,6 +49,9 @@ public class SyncOptions {
 	 * @throws JSONException 
 	 */
 	public static SyncOptions fromJSON(JSONObject options) throws JSONException {
+		if (options == null)
+			return null;
+		
 		List<String> fieldlist = toList(options.optJSONArray(FIELDLIST));
 		return new SyncOptions(fieldlist);
 	}
