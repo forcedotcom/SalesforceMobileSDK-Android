@@ -8,10 +8,10 @@ until [[ "$bootanim" =~ "stopped" ]]; do
    bootanim=`adb -e shell getprop init.svc.bootanim 2>&1`
    if [[ "$bootanim" =~ "not found" ]]; then
       let "failcounter += 1"
-      if [[ $failcounter -gt 10 ]]; then
+      if [[ $failcounter -gt 100 ]]; then
         echo "  Failed to start emulator"
         exit 1
       fi
    fi
-   sleep 1
+   sleep 2
 done
