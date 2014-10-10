@@ -3,11 +3,7 @@ sudo apt-get install -y ia32-libs
 
 ./install.sh
 
-cd ~
-
-curl http://dl.google.com/android/android-sdk_r23.0.2-linux.tgz | tar zxv
-
-. android-settings.sh
+(cd ~ && curl http://dl.google.com/android/android-sdk_r23.0.2-linux.tgz | tar zxv)
 
 expect -c '
 set timeout -1   ;
@@ -17,6 +13,8 @@ expect {
     eof
 }
 '
+
+. android-settings.sh
 
 echo y | android update sdk --filter sys-img-armeabi-v7a-$DEVICE_OS_VERSION --no-ui --force --all
 echo no | android create avd --force -n test -t $DEVICE_OS_VERSION --abi armeabi-v7a

@@ -4,13 +4,11 @@ $TDDIUM_REPO_ROOT/start-emulator.sh
 
 cd libs/test/SmartStoreTest/
 mv project.properties project.properties.original
-sed s/android-.*/${DEVICE_OS_VERSION}/g project.properties.original >
-project.properties
+sed s/android-.*/${DEVICE_OS_VERSION}/g project.properties.original > project.properties
 
 . android-settings.sh
 
-android update project --path
-../../../external/cordova/framework
+android update project --path ../../../external/cordova/framework
 
 cd ../../SalesforceSDK/
 android update project -p .
