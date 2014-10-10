@@ -1,6 +1,5 @@
 :tddium:
   :environment:
-    'ANDROID_SDK': '$HOME/android-sdk-linux'
     'DEVICE_OS_VERSION': 'android-17'
   :hooks:
     :pre_setup: './pre_setup.sh'
