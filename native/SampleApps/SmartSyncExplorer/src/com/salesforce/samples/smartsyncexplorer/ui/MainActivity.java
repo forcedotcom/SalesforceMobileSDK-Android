@@ -50,7 +50,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Filter;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.SearchView.OnCloseListener;
@@ -63,7 +62,6 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
-import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.Status;
 import com.salesforce.androidsdk.smartsync.util.Constants;
@@ -284,7 +282,7 @@ public class MainActivity extends SalesforceListActivity implements
 				if (sObject != null) {
 			        final TextView objName = (TextView) convertView.findViewById(R.id.obj_name);
 			        final TextView objType = (TextView) convertView.findViewById(R.id.obj_type);
-					final ImageView objImage = (ImageView) convertView.findViewById(R.id.obj_image);
+					final TextView objImage = (TextView) convertView.findViewById(R.id.obj_image);
 			        if (objName != null) {
 			        	objName.setText(sObject.getName());
 			        	objName.setTextColor(Color.GREEN);
@@ -294,16 +292,26 @@ public class MainActivity extends SalesforceListActivity implements
 			        	objType.setTextColor(Color.RED);
 			        }
 			        if (objImage != null) {
-			    		final MetadataManager metadataMgr = MetadataManager.getInstance(
-			    				SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
-			    		if (metadataMgr != null) {
-			    			int color = metadataMgr.getColorResourceForObjectType(sObject.getObjectType());
-			    			objImage.setImageResource(color);
-			    		}
+			        	//objImage.setText(sObject.getFirstName().charAt(0)
+			        		//	+ sObject.getLastName().charAt(0));
+			    			// objImage.setBackground(color);
 			        }
 				}
 			}
 		    return convertView;
+		}
+
+		private void setBubbleColor(TextView tv, String displayText) {
+			
+			
+			
+//			var colors = ["#1abc9c", "#2ecc71", "#3498db", "#9b59b6", "#34495e", "#16a085", "#27ae60", "#2980b9", "#8e44ad", "#2c3e50", "#f1c40f", "#e67e22", "#e74c3c", "#95a5a6", "#f39c12", "#d35400", "#c0392b", "#bdc3c7", "#7f8c8d"];
+//	          PolymerExpressions.prototype.iconColor = function(value) {
+//	            if (value && value.length > 0) {
+//	              var code = value.split("").reduce(function(code, val) { return code + val.charCodeAt(0); }, 0);
+//	              return colors[code % 19];
+//	            } else return colors[0];
+//	          }
 		}
 	}
 
