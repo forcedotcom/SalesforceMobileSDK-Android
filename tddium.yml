@@ -5,8 +5,10 @@
     :pre_setup: './pre_setup.sh'
     :worker_setup: './worker_setup.sh'
   :cache:
+    :key_paths:
+      - pre_setup.sh
     :save_paths:
-      - ~/android-sdk-linux
+      - HOME/android-sdk-linux
   :java:
     :java_version: java-7-openjdk
   :tests:
