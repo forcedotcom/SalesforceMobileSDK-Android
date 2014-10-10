@@ -42,8 +42,10 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.phonegap.ForcePlugin;
 import com.salesforce.androidsdk.phonegap.JavaScriptPluginVersion;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.SyncTarget;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 
 /**
  * PhoneGap plugin for smart sync.
@@ -76,7 +78,7 @@ public class SmartSyncPlugin extends ForcePlugin {
             ctx.runOnUiThread(new Runnable() {
                 public void run() {
                 	try {
-                		String syncAsString = intent.getStringExtra(SyncManager.SYNC_AS_STRING);
+                		String syncAsString = intent.getStringExtra(SyncState.SYNC_AS_STRING);
 	                	String js = "javascript:document.dispatchEvent(new CustomEvent(\"" + SYNC_EVENT_TYPE + "\", { \"" + DETAIL + "\": " + syncAsString + "}))";
 	                	webView.loadUrl(js);
                 	}
@@ -162,11 +164,8 @@ public class SmartSyncPlugin extends ForcePlugin {
 		JSONObject options = arg0.optJSONObject(OPTIONS);
 
 		SyncManager syncManager = SyncManager.getInstance(null);
-		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncUp, null, soupName, options);
-		callbackContext.success(sync);
-		
-		// Async
-		syncManager.runSync(sync.getLong(SmartStore.SOUP_ENTRY_ID));
+		SyncState sync = syncManager.syncUp(SyncOptions.fromJSON(options), soupName);
+		callbackContext.success(sync.asJSON());
 	}
 
 	/**
@@ -180,14 +179,10 @@ public class SmartSyncPlugin extends ForcePlugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		JSONObject target = arg0.getJSONObject(TARGET);
 		String soupName = arg0.getString(SOUP_NAME);
-		JSONObject options = arg0.optJSONObject(OPTIONS);
 		
 		SyncManager syncManager = SyncManager.getInstance(null);
-		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncDown, target, soupName, options);
-		callbackContext.success(sync);
-		
-		// Async
-		syncManager.runSync(sync.getLong(SmartStore.SOUP_ENTRY_ID));
+		SyncState sync = syncManager.syncDown(SyncTarget.fromJSON(target), soupName);
+		callbackContext.success(sync.asJSON());
 	}
 	
 	/**
@@ -202,8 +197,8 @@ public class SmartSyncPlugin extends ForcePlugin {
 		long syncId = arg0.getLong(SYNC_ID);
 		
 		SyncManager syncManager = SyncManager.getInstance(null);
-		JSONObject sync = syncManager.getSyncStatus(syncId);
+		SyncState sync = syncManager.getSyncStatus(syncId);
 		
-		callbackContext.success(sync);
+		callbackContext.success(sync.asJSON());
 	}
 }

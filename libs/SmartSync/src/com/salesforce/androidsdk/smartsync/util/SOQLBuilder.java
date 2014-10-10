@@ -61,7 +61,7 @@ public class SOQLBuilder {
      * @param fields Fields.
      * @return Instance of this class.
      */
-    public static SOQLBuilder getInstanceWithFields(String[] fields) {
+    public static SOQLBuilder getInstanceWithFields(String... fields) {
     	return getInstanceWithFields(TextUtils.join(", ", fields));
     }
     

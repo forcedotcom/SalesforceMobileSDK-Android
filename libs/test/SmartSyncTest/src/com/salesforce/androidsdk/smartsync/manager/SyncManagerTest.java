@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
+import java.util.Arrays;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.Locale;
@@ -46,14 +47,16 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager.Type;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SyncOptions;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.androidsdk.util.test.BroadcastListenerQueue;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 
 /**
- * Test class for SyncManager.
+ * Test class for SyncState.
  */
 public class SyncManagerTest extends ManagerTestCase {
 
@@ -63,7 +66,6 @@ public class SyncManagerTest extends ManagerTestCase {
 
 	// Local
 	private static final String LOCAL_ID_PREFIX = "local_";
-	private static final String FIELDLIST = "fieldlist";
 	private static final String ACCOUNTS_SOUP = "accounts";
 	
 	// Misc
@@ -94,8 +96,8 @@ public class SyncManagerTest extends ManagerTestCase {
 	 * @throws JSONException
 	 */
 	public void testGetSyncStatusForInvalidSyncId() throws JSONException {
-		JSONObject syncStatus = syncManager.getSyncStatus(-1);
-		assertNull("Sync status should be null", syncStatus);
+		SyncState sync = syncManager.getSyncStatus(-1);
+		assertNull("Sync status should be null", sync);
 	}
 	
 	/**
@@ -242,21 +244,18 @@ public class SyncManagerTest extends ManagerTestCase {
 		String idsClause = "('" + TextUtils.join("', '", idToNames.keySet()) + "')";
 		
 		// Create sync
-		JSONObject target = new JSONObject();
-		target.put(SyncManager.QUERY_TYPE, SyncManager.QueryType.soql);
-		String soqlQuery = "SELECT Id, Name FROM Account WHERE Id IN " + idsClause;
-		target.put(SyncManager.QUERY, soqlQuery);
-		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncDown, target, ACCOUNTS_SOUP, null);
-		long syncId = getSyncId(sync);
-		checkStatus(sync, SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.NEW, 0, -1);
+		SyncTarget target = SyncTarget.targetForSOQLSyncDown("SELECT Id, Name FROM Account WHERE Id IN " + idsClause);
+		SyncState sync = SyncState.createSyncDown(smartStore, target, ACCOUNTS_SOUP);
+		long syncId = sync.getId();
+		checkStatus(sync, SyncState.Type.syncDown, syncId, target, null, SyncState.Status.NEW, 0, -1);
 		
 		// Run sync
-		syncManager.runSync(syncId);
+		syncManager.runSync(sync);
 
 		// Check status updates
-		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
-		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.RUNNING, 0, idToNames.size());
-		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncDown, syncId, target, null, SyncManager.Status.DONE, 100, idToNames.size());
+		checkStatus(waitForNextBroadcast(), SyncState.Type.syncDown, syncId, target, null, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
+		checkStatus(waitForNextBroadcast(), SyncState.Type.syncDown, syncId, target, null, SyncState.Status.RUNNING, 0, idToNames.size());
+		checkStatus(waitForNextBroadcast(), SyncState.Type.syncDown, syncId, target, null, SyncState.Status.DONE, 100, idToNames.size());
 	}
 
 	/**
@@ -266,24 +265,21 @@ public class SyncManagerTest extends ManagerTestCase {
 	 */
 	private void trySyncUp(int numberChanges) throws JSONException {
 		// Create sync
-		JSONObject options = new JSONObject();
-		JSONArray fieldlist = new JSONArray();
-		fieldlist.put(Constants.NAME);
-		options.put(FIELDLIST, fieldlist);
-		JSONObject sync = syncManager.recordSync(SyncManager.Type.syncUp, null, ACCOUNTS_SOUP, options);
-		long syncId = getSyncId(sync);
-		checkStatus(sync, SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.NEW, 0, -1);
+		SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME }));
+		SyncState sync = SyncState.createSyncUp(smartStore, options, ACCOUNTS_SOUP);
+		long syncId = sync.getId();
+		checkStatus(sync, SyncState.Type.syncUp, syncId, null, options, SyncState.Status.NEW, 0, -1);
 		
 		// Run sync
-		syncManager.runSync(syncId);
+		syncManager.runSync(sync);
 		
 		// Check status updates
-		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
-		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, 0, numberChanges);
+		checkStatus(waitForNextBroadcast(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
+		checkStatus(waitForNextBroadcast(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, 0, numberChanges);
 		for (int i=1; i<numberChanges; i++) {
-			checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.RUNNING, i*100/numberChanges, numberChanges);
+			checkStatus(waitForNextBroadcast(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, i*100/numberChanges, numberChanges);
 		}
-		checkStatus(waitForNextBroadcast(), SyncManager.Type.syncUp, syncId, null, options, SyncManager.Status.DONE, 100, numberChanges);
+		checkStatus(waitForNextBroadcast(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.DONE, 100, numberChanges);
 	}
 
 	/**
@@ -291,9 +287,9 @@ public class SyncManagerTest extends ManagerTestCase {
 	 * @return sync from broadcast
 	 * @throws JSONException
 	 */
-	private JSONObject waitForNextBroadcast() throws JSONException {
+	private SyncState waitForNextBroadcast() throws JSONException {
 		Intent intent = broadcastQueue.getNextBroadcast();
-		return new JSONObject(intent.getStringExtra(SyncManager.SYNC_AS_STRING));
+		return SyncState.fromJSON(new JSONObject(intent.getStringExtra(SyncState.SYNC_AS_STRING)));
 	}
 	
 	/**
@@ -307,14 +303,14 @@ public class SyncManagerTest extends ManagerTestCase {
 	 * @param expectedProgress
 	 * @throws JSONException
 	 */
-	private void checkStatus(JSONObject sync, Type expectedType, long expectedId, JSONObject expectedTarget, JSONObject expectedOptions, SyncManager.Status expectedStatus, int expectedProgress, int expectedTotalSize) throws JSONException {
-		assertEquals("Wrong type", expectedType.name(), sync.getString(SyncManager.SYNC_TYPE));
-		assertEquals("Wrong id", expectedId, sync.getLong(SmartStore.SOUP_ENTRY_ID));
-		JSONTestHelper.assertSameJSON("Wrong target", expectedTarget, sync.optJSONObject(SyncManager.SYNC_TARGET));
-		JSONTestHelper.assertSameJSON("Wrong options", expectedOptions, sync.optJSONObject(SyncManager.SYNC_OPTIONS));
-		assertEquals("Wrong status", expectedStatus.name(), sync.getString(SyncManager.SYNC_STATUS));
-		assertEquals("Wrong progress", expectedProgress, sync.optInt(SyncManager.SYNC_PROGRESS, 0));
-		assertEquals("Wrong total size", expectedTotalSize, sync.optInt(SyncManager.SYNC_TOTAL_SIZE, -1));
+	private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress, int expectedTotalSize) throws JSONException {
+		assertEquals("Wrong type", expectedType, sync.getType());
+		assertEquals("Wrong id", expectedId, sync.getId());
+		JSONTestHelper.assertSameJSON("Wrong target", expectedTarget.asJSON(), sync.getTarget().asJSON());
+		JSONTestHelper.assertSameJSON("Wrong options", expectedOptions.asJSON(), sync.getOptions().asJSON());
+		assertEquals("Wrong status", expectedStatus, sync.getStatus());
+		assertEquals("Wrong progress", expectedProgress, sync.getProgress());
+		assertEquals("Wrong total size", expectedTotalSize, sync.getTotalSize());
 	}
 	
 	/**
@@ -399,7 +395,7 @@ public class SyncManagerTest extends ManagerTestCase {
 	 * Delete all syncs in syncs_soup
 	 */
 	private void deleteSyncs() {
-		smartStore.clearSoup(SyncManager.SYNCS_SOUP);
+		smartStore.clearSoup(SyncState.SYNCS_SOUP);
 	}
 
 	/**
@@ -419,15 +415,6 @@ public class SyncManagerTest extends ManagerTestCase {
 		targetContext.unregisterReceiver(queue);
 	}
 	
-	/**
-	 * @param sync
-	 * @return syn id
-	 * @throws JSONException 
-	 */
-	private long getSyncId(JSONObject sync) throws JSONException {
-		return sync.getLong(SmartStore.SOUP_ENTRY_ID);
-	}
-
 	/**
 	 * Create accounts locally
 	 * @param names
