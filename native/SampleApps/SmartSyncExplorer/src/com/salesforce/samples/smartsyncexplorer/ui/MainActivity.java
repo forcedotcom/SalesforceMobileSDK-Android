@@ -65,9 +65,10 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager.Status;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
@@ -225,15 +226,10 @@ public class MainActivity extends SalesforceListActivity implements
 					CONTACTS_INDEX_SPEC);
 		}
 		try {
-			final JSONObject target = new JSONObject();
-			target.put(SyncManager.QUERY_TYPE, SyncManager.QueryType.soql);
 			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
 					.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
-			target.put(SyncManager.QUERY, soqlQuery);
-			final JSONObject sync = syncMgr.recordSync(SyncManager.Type.syncDown,
-					target, ContactListLoader.CONTACT_SOUP, null);
-			long syncId = sync.getLong(SmartStore.SOUP_ENTRY_ID);
-			syncMgr.runSync(syncId);
+			final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
+			syncMgr.syncDown(target, ContactListLoader.CONTACT_SOUP);
 		} catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
 		}
@@ -384,8 +380,8 @@ public class MainActivity extends SalesforceListActivity implements
 			if (intent != null) {
 				final String action = intent.getAction();
 				if (action != null && action.equals(SyncManager.SYNC_INTENT_ACTION)) {
-					final String syncStatus = intent.getStringExtra(SyncManager.SYNC_STATUS);
-					if (syncStatus != null && syncStatus.equals(Status.DONE.name())) {
+					final String syncStatus = intent.getStringExtra(SyncState.SYNC_STATUS);
+					if (syncStatus != null && syncStatus.equals(SyncState.Status.DONE.name())) {
 						getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
 					}
 				}
