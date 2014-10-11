@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import android.app.LoaderManager;
 import android.content.BroadcastReceiver;
@@ -39,6 +38,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Loader;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -50,7 +50,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Filter;
-import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.SearchView.OnCloseListener;
@@ -63,7 +62,6 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
-import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
@@ -89,16 +87,31 @@ public class MainActivity extends SalesforceListActivity implements
 	private static final int CONTACT_LOADER_ID = 1;
 	private static IndexSpec[] CONTACTS_INDEX_SPEC = {
 		new IndexSpec("Id", Type.string),
-		new IndexSpec("Name", Type.string),
 		new IndexSpec("FirstName", Type.string),
-		new IndexSpec("LastName", Type.string),
-		new IndexSpec("Title", Type.string),
-		new IndexSpec("Phone", Type.string),
-		new IndexSpec("Email", Type.string),
-		new IndexSpec("Department", Type.string),
-		new IndexSpec("HomePhone", Type.string)
+		new IndexSpec("LastName", Type.string)
 	};
-
+	private static final int CONTACT_COLORS[] = {
+		Color.rgb(26, 188, 156),
+		Color.rgb(46, 204, 113),
+		Color.rgb(52, 152, 219),
+		Color.rgb(155, 89, 182),
+		Color.rgb(52, 73, 94),
+		Color.rgb(22, 160, 133),
+		Color.rgb(39, 174, 96),
+		Color.rgb(41, 128, 185),
+		Color.rgb(142, 68, 173),
+		Color.rgb(44, 62, 80),
+		Color.rgb(241, 196, 15),
+		Color.rgb(230, 126, 34),
+		Color.rgb(231, 76, 60),
+		Color.rgb(149, 165, 166),
+		Color.rgb(243, 156, 18),
+		Color.rgb(211, 84, 0),
+		Color.rgb(192, 57, 43),
+		Color.rgb(189, 195, 199),
+		Color.rgb(127, 140, 141)
+	};
+	
     private SearchView searchView;
     private MRUListAdapter listAdapter;
     private UserAccount curAccount;
@@ -280,7 +293,7 @@ public class MainActivity extends SalesforceListActivity implements
 				if (sObject != null) {
 			        final TextView objName = (TextView) convertView.findViewById(R.id.obj_name);
 			        final TextView objType = (TextView) convertView.findViewById(R.id.obj_type);
-					final ImageView objImage = (ImageView) convertView.findViewById(R.id.obj_image);
+					final TextView objImage = (TextView) convertView.findViewById(R.id.obj_image);
 			        if (objName != null) {
 			        	objName.setText(sObject.getName());
 			        	objName.setTextColor(Color.GREEN);
@@ -290,16 +303,37 @@ public class MainActivity extends SalesforceListActivity implements
 			        	objType.setTextColor(Color.RED);
 			        }
 			        if (objImage != null) {
-			    		final MetadataManager metadataMgr = MetadataManager.getInstance(
-			    				SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
-			    		if (metadataMgr != null) {
-			    			int color = metadataMgr.getColorResourceForObjectType(sObject.getObjectType());
-			    			objImage.setImageResource(color);
-			    		}
+			        	final String firstName = sObject.getFirstName();
+			        	final String lastName = sObject.getLastName();
+			        	String initials = Constants.EMPTY_STRING;
+			        	if (firstName.length() > 0) {
+			        		initials = firstName.substring(0, 1);
+			        	}
+			        	if (lastName.length() > 0) {
+			        		initials = initials + lastName.substring(0, 1);
+			        	}
+			        	objImage.setText(initials);
+			        	setBubbleColor(objImage, lastName);
 			        }
 				}
 			}
 		    return convertView;
+		}
+
+		private void setBubbleColor(TextView tv, String lastName) {
+			lastName = lastName.trim();
+			int code = 0;
+			if (!TextUtils.isEmpty(lastName)) {
+				for (int i = 0; i < lastName.length(); i++) {
+					code += lastName.charAt(i);
+				}
+			}
+			int colorIndex = code % CONTACT_COLORS.length;
+			int color = CONTACT_COLORS[colorIndex];
+			final GradientDrawable drawable = new GradientDrawable();
+			drawable.setColor(color);
+			drawable.setShape(GradientDrawable.OVAL);
+			tv.setBackground(drawable);
 		}
 	}
 
