@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import android.app.LoaderManager;
 import android.content.BroadcastReceiver;
@@ -39,6 +38,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.Loader;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -96,7 +96,28 @@ public class MainActivity extends SalesforceListActivity implements
 		new IndexSpec("Department", Type.string),
 		new IndexSpec("HomePhone", Type.string)
 	};
-
+	private static final int CONTACT_COLORS[] = {
+		Color.rgb(26, 188, 156),
+		Color.rgb(46, 204, 113),
+		Color.rgb(52, 152, 219),
+		Color.rgb(155, 89, 182),
+		Color.rgb(52, 73, 94),
+		Color.rgb(22, 160, 133),
+		Color.rgb(39, 174, 96),
+		Color.rgb(41, 128, 185),
+		Color.rgb(142, 68, 173),
+		Color.rgb(44, 62, 80),
+		Color.rgb(241, 196, 15),
+		Color.rgb(230, 126, 34),
+		Color.rgb(231, 76, 60),
+		Color.rgb(149, 165, 166),
+		Color.rgb(243, 156, 18),
+		Color.rgb(211, 84, 0),
+		Color.rgb(192, 57, 43),
+		Color.rgb(189, 195, 199),
+		Color.rgb(127, 140, 141)
+	};
+	
     private SearchView searchView;
     private MRUListAdapter listAdapter;
     private UserAccount curAccount;
@@ -288,26 +309,37 @@ public class MainActivity extends SalesforceListActivity implements
 			        	objType.setTextColor(Color.RED);
 			        }
 			        if (objImage != null) {
-			        	//objImage.setText(sObject.getFirstName().charAt(0)
-			        		//	+ sObject.getLastName().charAt(0));
-			    			// objImage.setBackground(color);
+			        	final String firstName = sObject.getFirstName();
+			        	final String lastName = sObject.getLastName();
+			        	String initials = Constants.EMPTY_STRING;
+			        	if (firstName.length() > 0) {
+			        		initials = firstName.substring(0, 1);
+			        	}
+			        	if (lastName.length() > 0) {
+			        		initials = initials + lastName.substring(0, 1);
+			        	}
+			        	objImage.setText(initials);
+			        	setBubbleColor(objImage, lastName);
 			        }
 				}
 			}
 		    return convertView;
 		}
 
-		private void setBubbleColor(TextView tv, String displayText) {
-			
-			
-			
-//			var colors = ["#1abc9c", "#2ecc71", "#3498db", "#9b59b6", "#34495e", "#16a085", "#27ae60", "#2980b9", "#8e44ad", "#2c3e50", "#f1c40f", "#e67e22", "#e74c3c", "#95a5a6", "#f39c12", "#d35400", "#c0392b", "#bdc3c7", "#7f8c8d"];
-//	          PolymerExpressions.prototype.iconColor = function(value) {
-//	            if (value && value.length > 0) {
-//	              var code = value.split("").reduce(function(code, val) { return code + val.charCodeAt(0); }, 0);
-//	              return colors[code % 19];
-//	            } else return colors[0];
-//	          }
+		private void setBubbleColor(TextView tv, String lastName) {
+			lastName = lastName.trim();
+			int code = 0;
+			if (TextUtils.isEmpty(lastName)) {
+				for (int i = 0; i < lastName.length(); i++) {
+					code += lastName.charAt(i);
+				}
+			}
+			int colorIndex = code % CONTACT_COLORS.length;
+			int color = CONTACT_COLORS[colorIndex];
+			final GradientDrawable drawable = new GradientDrawable();
+			drawable.setColor(color);
+			drawable.setShape(GradientDrawable.OVAL);
+			tv.setBackground(drawable);
 		}
 	}
 
