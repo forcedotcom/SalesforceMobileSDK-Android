@@ -87,14 +87,8 @@ public class MainActivity extends SalesforceListActivity implements
 	private static final int CONTACT_LOADER_ID = 1;
 	private static IndexSpec[] CONTACTS_INDEX_SPEC = {
 		new IndexSpec("Id", Type.string),
-		new IndexSpec("Name", Type.string),
 		new IndexSpec("FirstName", Type.string),
-		new IndexSpec("LastName", Type.string),
-		new IndexSpec("Title", Type.string),
-		new IndexSpec("Phone", Type.string),
-		new IndexSpec("Email", Type.string),
-		new IndexSpec("Department", Type.string),
-		new IndexSpec("HomePhone", Type.string)
+		new IndexSpec("LastName", Type.string)
 	};
 	private static final int CONTACT_COLORS[] = {
 		Color.rgb(26, 188, 156),
