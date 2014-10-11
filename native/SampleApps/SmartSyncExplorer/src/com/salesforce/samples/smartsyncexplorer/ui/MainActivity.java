@@ -329,7 +329,7 @@ public class MainActivity extends SalesforceListActivity implements
 		private void setBubbleColor(TextView tv, String lastName) {
 			lastName = lastName.trim();
 			int code = 0;
-			if (TextUtils.isEmpty(lastName)) {
+			if (!TextUtils.isEmpty(lastName)) {
 				for (int i = 0; i < lastName.length(); i++) {
 					code += lastName.charAt(i);
 				}
