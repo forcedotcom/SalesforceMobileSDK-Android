@@ -46,9 +46,9 @@ import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
  *
  * @author bhariharan
  */
-public class SObjectDetailLoader extends AsyncTaskLoader<ContactObject> {
+public class ContactDetailLoader extends AsyncTaskLoader<ContactObject> {
 
-    private static final String TAG = "SmartSyncExplorer: SObjectDetailLoader";
+    private static final String TAG = "SmartSyncExplorer: ContactDetailLoader";
 
 	private String objectId;
 	private SmartStore smartStore;
@@ -60,7 +60,7 @@ public class SObjectDetailLoader extends AsyncTaskLoader<ContactObject> {
 	 * @param account User account.
 	 * @param objId Object ID.
 	 */
-	public SObjectDetailLoader(Context context, UserAccount account,
+	public ContactDetailLoader(Context context, UserAccount account,
 			String objId) {
 		super(context);
 		objectId = objId;

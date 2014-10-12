@@ -114,7 +114,7 @@ public class MainActivity extends SalesforceListActivity implements
 	};
 	
     private SearchView searchView;
-    private MRUListAdapter listAdapter;
+    private ContactListAdapter listAdapter;
     private UserAccount curAccount;
 	private NameFieldFilter nameFilter;
 	private List<ContactObject> originalData;
@@ -127,7 +127,7 @@ public class MainActivity extends SalesforceListActivity implements
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
 		getActionBar().setTitle(R.string.main_activity_title);
-		listAdapter = new MRUListAdapter(this, R.layout.list_item);
+		listAdapter = new ContactListAdapter(this, R.layout.list_item);
 		getListView().setAdapter(listAdapter);
 		nameFilter = new NameFieldFilter(listAdapter, originalData);
 		syncReceiver = new SyncReceiver();
@@ -144,8 +144,8 @@ public class MainActivity extends SalesforceListActivity implements
 		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 		syncMgr = SyncManager.getInstance(curAccount);
 		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
-		syncDownContacts();
 		getLoaderManager().initLoader(CONTACT_LOADER_ID, null, this);
+		syncDownContacts();
     }
 
 	@Override
@@ -171,7 +171,7 @@ public class MainActivity extends SalesforceListActivity implements
 	public boolean onOptionsItemSelected(MenuItem item) {
 	    switch (item.getItemId()) {
 	        case R.id.action_refresh:
-	        	refreshList(originalData);
+				getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
 				Toast.makeText(this, "Refresh complete!", Toast.LENGTH_LONG).show();
 	            return true;
 	        default:
@@ -239,14 +239,16 @@ public class MainActivity extends SalesforceListActivity implements
 		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
 			smartStore.registerSoup(ContactListLoader.CONTACT_SOUP,
 					CONTACTS_INDEX_SPEC);
-		}
-		try {
-			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
-					.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
-			final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
-			syncMgr.syncDown(target, ContactListLoader.CONTACT_SOUP);
-		} catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while parsing", e);
+			try {
+				final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
+						.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
+				final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
+				syncMgr.syncDown(target, ContactListLoader.CONTACT_SOUP);
+			} catch (JSONException e) {
+	            Log.e(TAG, "JSONException occurred while parsing", e);
+			}
+		} else {
+			getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
 		}
 	}
 
@@ -255,7 +257,7 @@ public class MainActivity extends SalesforceListActivity implements
 	 *
 	 * @author bhariharan
 	 */
-	private static class MRUListAdapter extends ArrayAdapter<ContactObject> {
+	private static class ContactListAdapter extends ArrayAdapter<ContactObject> {
 
 		private int listItemLayoutId;
 		private List<ContactObject> sObjects;
@@ -266,7 +268,7 @@ public class MainActivity extends SalesforceListActivity implements
 		 * @param context Context.
 		 * @param listItemLayoutId List item view resource ID.
 		 */
-		public MRUListAdapter(Context context, int listItemLayoutId) {
+		public ContactListAdapter(Context context, int listItemLayoutId) {
 			super(context, listItemLayoutId);
 			this.listItemLayoutId = listItemLayoutId;
 		}
@@ -340,7 +342,7 @@ public class MainActivity extends SalesforceListActivity implements
 	 */
 	private static class NameFieldFilter extends Filter {
 
-		private MRUListAdapter adpater;
+		private ContactListAdapter adpater;
 		private List<ContactObject> origList;
 
 		/**
@@ -349,7 +351,7 @@ public class MainActivity extends SalesforceListActivity implements
 		 * @param adapter List adapter.
 		 * @param origList List to perform filtering against.
 		 */
-		public NameFieldFilter(MRUListAdapter adapter, List<ContactObject> origList) {
+		public NameFieldFilter(ContactListAdapter adapter, List<ContactObject> origList) {
 			this.adpater = adapter;
 			this.origList = origList;
 		}
