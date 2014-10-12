@@ -144,8 +144,8 @@ public class MainActivity extends SalesforceListActivity implements
 		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 		syncMgr = SyncManager.getInstance(curAccount);
 		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
-		syncDownContacts();
 		getLoaderManager().initLoader(CONTACT_LOADER_ID, null, this);
+		syncDownContacts();
     }
 
 	@Override
@@ -171,7 +171,7 @@ public class MainActivity extends SalesforceListActivity implements
 	public boolean onOptionsItemSelected(MenuItem item) {
 	    switch (item.getItemId()) {
 	        case R.id.action_refresh:
-	        	refreshList(originalData);
+				getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
 				Toast.makeText(this, "Refresh complete!", Toast.LENGTH_LONG).show();
 	            return true;
 	        default:
@@ -239,14 +239,16 @@ public class MainActivity extends SalesforceListActivity implements
 		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
 			smartStore.registerSoup(ContactListLoader.CONTACT_SOUP,
 					CONTACTS_INDEX_SPEC);
-		}
-		try {
-			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
-					.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
-			final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
-			syncMgr.syncDown(target, ContactListLoader.CONTACT_SOUP);
-		} catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while parsing", e);
+			try {
+				final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
+						.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
+				final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
+				syncMgr.syncDown(target, ContactListLoader.CONTACT_SOUP);
+			} catch (JSONException e) {
+	            Log.e(TAG, "JSONException occurred while parsing", e);
+			}
+		} else {
+			getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
 		}
 	}
 
