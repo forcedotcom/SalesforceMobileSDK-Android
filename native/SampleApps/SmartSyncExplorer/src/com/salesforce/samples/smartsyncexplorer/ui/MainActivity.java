@@ -296,36 +296,30 @@ public class MainActivity extends SalesforceListActivity implements
 					final TextView objImage = (TextView) convertView.findViewById(R.id.obj_image);
 			        if (objName != null) {
 			        	objName.setText(sObject.getName());
-			        	objName.setTextColor(Color.GREEN);
 			        }
 			        if (objType != null) {
 			        	objType.setText(sObject.getTitle());
-			        	objType.setTextColor(Color.RED);
 			        }
 			        if (objImage != null) {
 			        	final String firstName = sObject.getFirstName();
-			        	final String lastName = sObject.getLastName();
 			        	String initials = Constants.EMPTY_STRING;
 			        	if (firstName.length() > 0) {
 			        		initials = firstName.substring(0, 1);
 			        	}
-			        	if (lastName.length() > 0) {
-			        		initials = initials + lastName.substring(0, 1);
-			        	}
 			        	objImage.setText(initials);
-			        	setBubbleColor(objImage, lastName);
+			        	setBubbleColor(objImage, firstName);
 			        }
 				}
 			}
 		    return convertView;
 		}
 
-		private void setBubbleColor(TextView tv, String lastName) {
-			lastName = lastName.trim();
+		private void setBubbleColor(TextView tv, String firstName) {
+			firstName = firstName.trim();
 			int code = 0;
-			if (!TextUtils.isEmpty(lastName)) {
-				for (int i = 0; i < lastName.length(); i++) {
-					code += lastName.charAt(i);
+			if (!TextUtils.isEmpty(firstName)) {
+				for (int i = 0; i < firstName.length(); i++) {
+					code += firstName.charAt(i);
 				}
 			}
 			int colorIndex = code % CONTACT_COLORS.length;
