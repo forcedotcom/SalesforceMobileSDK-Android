@@ -6,7 +6,7 @@
     </style>
 
     <style name="ContactDetail.ParentView">
-        <item name="android:textColor">@android:color/white</item>
+        <item name="android:textColor">@android:color/black</item>
         <item name="android:layout_marginTop">4dp</item>
         <item name="android:layout_marginBottom">4dp</item>
         <item name="android:maxLines">1</item>
