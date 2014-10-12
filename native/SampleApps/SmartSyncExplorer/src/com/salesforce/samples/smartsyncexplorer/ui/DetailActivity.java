@@ -50,7 +50,7 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
-import com.salesforce.samples.smartsyncexplorer.loaders.SObjectDetailLoader;
+import com.salesforce.samples.smartsyncexplorer.loaders.ContactDetailLoader;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 /**
@@ -60,7 +60,7 @@ import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
  */
 public class DetailActivity extends SalesforceActivity implements LoaderManager.LoaderCallbacks<ContactObject> {
 
-	private static final int SOBJECT_DETAIL_LOADER_ID = 2;
+	private static final int CONTACT_DETAIL_LOADER_ID = 2;
     private static final String TAG = "SmartSyncExplorer: DetailActivity";
 
     private UserAccount curAccount;
@@ -91,12 +91,12 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	@Override
 	public void onResume(RestClient client) {
 		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
-		getLoaderManager().initLoader(SOBJECT_DETAIL_LOADER_ID, null, this).forceLoad();
+		getLoaderManager().initLoader(CONTACT_DETAIL_LOADER_ID, null, this).forceLoad();
 	}
 
 	@Override
 	public void onDestroy() {
-		getLoaderManager().destroyLoader(SOBJECT_DETAIL_LOADER_ID);
+		getLoaderManager().destroyLoader(CONTACT_DETAIL_LOADER_ID);
 		super.onDestroy();
 	}
 
@@ -127,7 +127,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 
 	@Override
 	public Loader<ContactObject> onCreateLoader(int id, Bundle args) {
-		return new SObjectDetailLoader(this, curAccount, objectId);
+		return new ContactDetailLoader(this, curAccount, objectId);
 	}
 
 	@Override
