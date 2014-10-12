@@ -52,6 +52,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Filter;
 import android.widget.ListView;
 import android.widget.SearchView;
+import android.widget.Toast;
 import android.widget.SearchView.OnCloseListener;
 import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
@@ -171,6 +172,7 @@ public class MainActivity extends SalesforceListActivity implements
 	    switch (item.getItemId()) {
 	        case R.id.action_refresh:
 	        	refreshList(originalData);
+				Toast.makeText(this, "Refresh complete!", Toast.LENGTH_LONG).show();
 	            return true;
 	        default:
 	            return super.onOptionsItemSelected(item);

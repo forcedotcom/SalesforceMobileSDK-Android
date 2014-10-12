@@ -26,20 +26,30 @@
  */
 package com.salesforce.samples.smartsyncexplorer.ui;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.app.LoaderManager;
 import android.content.Intent;
 import android.content.Loader;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
+import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 import com.salesforce.samples.smartsyncexplorer.loaders.SObjectDetailLoader;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
@@ -51,6 +61,7 @@ import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 public class DetailActivity extends SalesforceActivity implements LoaderManager.LoaderCallbacks<ContactObject> {
 
 	private static final int SOBJECT_DETAIL_LOADER_ID = 2;
+    private static final String TAG = "SmartSyncExplorer: DetailActivity";
 
     private UserAccount curAccount;
     private String objectId;
@@ -95,6 +106,8 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	    inflater.inflate(R.menu.action_bar_menu, menu);
 	    final MenuItem searchItem = menu.findItem(R.id.action_search);
 	    searchItem.setVisible(false);
+	    final MenuItem refreshItem = menu.findItem(R.id.action_refresh);
+	    refreshItem.setIcon(R.drawable.ic_action_save);
 	    return super.onCreateOptionsMenu(menu);
 	}
 
@@ -105,7 +118,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	    		finish();
 	    		return true;
 	        case R.id.action_refresh:
-	        	refreshScreen();
+	        	save();
 	            return true;
 	        default:
 	            return super.onOptionsItemSelected(item);
@@ -152,6 +165,42 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	private void setText(EditText textField, String text) {
 		if (textField != null) {
 			textField.setText(text);
+		}
+	}
+
+	private void save() {
+		final String firstName = ((EditText) findViewById(R.id.first_name_field)).getText().toString();
+		final String lastName = ((EditText) findViewById(R.id.last_name_field)).getText().toString();
+		if (TextUtils.isEmpty(firstName) || TextUtils.isEmpty(lastName)) {
+			Toast.makeText(this, "First and last name cannot be empty!", Toast.LENGTH_LONG).show();
+			return;
+		}
+		final String title = ((EditText) findViewById(R.id.title_field)).getText().toString();
+		final String phone = ((EditText) findViewById(R.id.phone_field)).getText().toString();
+		final String email = ((EditText) findViewById(R.id.email_field)).getText().toString();
+		final String department = ((EditText) findViewById(R.id.department_field)).getText().toString();
+		final String homePhone = ((EditText) findViewById(R.id.home_phone_field)).getText().toString();
+		final SmartStore smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
+		JSONObject contact;
+		try {
+			contact = smartStore.retrieve(ContactListLoader.CONTACT_SOUP,
+					smartStore.lookupSoupEntryId(ContactListLoader.CONTACT_SOUP,
+					Constants.ID, objectId)).getJSONObject(0);
+			contact.put(ContactObject.CONTACT_FIELDS[2], firstName);
+			contact.put(ContactObject.CONTACT_FIELDS[3], lastName);
+			contact.put(ContactObject.CONTACT_FIELDS[4], title);
+			contact.put(ContactObject.CONTACT_FIELDS[5], phone);
+			contact.put(ContactObject.CONTACT_FIELDS[6], email);
+			contact.put(ContactObject.CONTACT_FIELDS[7], department);
+			contact.put(ContactObject.CONTACT_FIELDS[8], homePhone);
+			contact.put(SyncManager.LOCAL, true);
+			contact.put(SyncManager.LOCALLY_CREATED, false);
+			contact.put(SyncManager.LOCALLY_DELETED, false);
+			contact.put(SyncManager.LOCALLY_UPDATED, true);
+			smartStore.upsert(ContactListLoader.CONTACT_SOUP, contact);
+			Toast.makeText(this, "Save successful!", Toast.LENGTH_LONG).show();
+		} catch (JSONException e) {
+            Log.e(TAG, "JSONException occurred while parsing", e);
 		}
 	}
 }
