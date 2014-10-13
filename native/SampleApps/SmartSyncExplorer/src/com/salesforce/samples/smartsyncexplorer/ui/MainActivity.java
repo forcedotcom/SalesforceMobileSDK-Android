@@ -50,6 +50,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Filter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SearchView;
 import android.widget.Toast;
@@ -89,7 +90,8 @@ public class MainActivity extends SalesforceListActivity implements
 	private static IndexSpec[] CONTACTS_INDEX_SPEC = {
 		new IndexSpec("Id", Type.string),
 		new IndexSpec("FirstName", Type.string),
-		new IndexSpec("LastName", Type.string)
+		new IndexSpec("LastName", Type.string),
+		new IndexSpec(SyncManager.LOCALLY_UPDATED, Type.string)
 	};
 	private static final int CONTACT_COLORS[] = {
 		Color.rgb(26, 188, 156),
@@ -312,6 +314,12 @@ public class MainActivity extends SalesforceListActivity implements
 			        	}
 			        	objImage.setText(initials);
 			        	setBubbleColor(objImage, firstName);
+			        }
+			        final ImageView syncImage = (ImageView) convertView.findViewById(R.id.sync_status_view);
+			        if (syncImage != null && sObject.isLocallyModified()) {
+			        	syncImage.setImageResource(R.drawable.sync_local);
+			        } else {
+			        	syncImage.setImageResource(R.drawable.sync_success);
 			        }
 				}
 			}
