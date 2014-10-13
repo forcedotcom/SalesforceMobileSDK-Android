@@ -54,10 +54,10 @@ import android.widget.Filter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.SearchView;
-import android.widget.Toast;
 import android.widget.SearchView.OnCloseListener;
 import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -128,6 +128,7 @@ public class MainActivity extends SalesforceListActivity implements
 	private SyncReceiver syncReceiver;
 	private SyncManager syncMgr;
 	private SmartStore smartStore;
+    private LogoutDialogFragment logoutConfirmationDialog;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -139,6 +140,7 @@ public class MainActivity extends SalesforceListActivity implements
 		nameFilter = new NameFieldFilter(listAdapter, originalData);
 		syncReceiver = new SyncReceiver();
 		registerReceiver(syncReceiver, new IntentFilter(SyncManager.SYNC_INTENT_ACTION));
+		logoutConfirmationDialog = new LogoutDialogFragment();
 	}
 
 	@Override
@@ -175,6 +177,9 @@ public class MainActivity extends SalesforceListActivity implements
 	        case R.id.action_refresh:
 				Toast.makeText(this, "Synchronizing...", Toast.LENGTH_SHORT).show();
 				syncUpContacts();
+	            return true;
+	        case R.id.action_logout:
+	    		logoutConfirmationDialog.show(getFragmentManager(), "LogoutDialog");
 	            return true;
 	        default:
 	            return super.onOptionsItemSelected(item);
