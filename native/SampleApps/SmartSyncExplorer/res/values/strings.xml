@@ -17,4 +17,7 @@
     <string name="email">Email: </string>
     <string name="department">Department: </string>
     <string name="home_phone">Home Phone: </string>
+    <string name="logout_title">Log out?</string>
+    <string name="logout_yes">Yes</string>
+    <string name="logout_cancel">No</string>
 </resources>
