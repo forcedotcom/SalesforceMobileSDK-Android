@@ -44,7 +44,7 @@ public class ContactObject extends SalesforceObject {
 	public static final String FIRST_NAME = "FirstName";
 	public static final String LAST_NAME = "LastName";
 	public static final String TITLE = "Title";
-	public static final String PHONE = "Phone";
+	public static final String PHONE = "MobilePhone";
 	public static final String EMAIL = "Email";
 	public static final String DEPARTMENT = "Department";
 	public static final String HOME_PHONE = "HomePhone";

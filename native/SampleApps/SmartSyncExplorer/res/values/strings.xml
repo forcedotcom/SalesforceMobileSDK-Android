@@ -13,7 +13,7 @@
     <string name="first_name">First Name: </string>
     <string name="last_name">Last Name: </string>
     <string name="title">Title: </string>
-    <string name="phone">Phone: </string>
+    <string name="phone">Mobile: </string>
     <string name="email">Email: </string>
     <string name="department">Department: </string>
     <string name="home_phone">Home Phone: </string>
