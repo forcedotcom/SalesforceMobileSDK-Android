@@ -142,11 +142,6 @@ public class MainActivity extends SalesforceListActivity implements
 	}
 
 	@Override
-	protected void refreshIfUserSwitched() {
-		// TODO: User switch. Change 'client' and reload list. Also add logout functionality.
-	}
-
-	@Override
 	public void onResume(RestClient client) {
 		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 		syncMgr = SyncManager.getInstance(curAccount);

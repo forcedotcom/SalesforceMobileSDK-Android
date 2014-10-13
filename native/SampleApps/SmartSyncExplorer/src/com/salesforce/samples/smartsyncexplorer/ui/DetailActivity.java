@@ -84,11 +84,6 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	}
 
 	@Override
-	protected void refreshIfUserSwitched() {
-		// TODO: User switch. Change 'client' and reload list. Also add logout functionality.
-	}
-
-	@Override
 	public void onResume(RestClient client) {
 		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 		getLoaderManager().initLoader(CONTACT_DETAIL_LOADER_ID, null, this).forceLoad();
