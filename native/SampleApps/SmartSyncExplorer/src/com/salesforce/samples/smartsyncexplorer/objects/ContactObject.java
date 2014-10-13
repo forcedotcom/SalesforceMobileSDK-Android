@@ -30,6 +30,7 @@ import org.json.JSONObject;
 
 import android.text.TextUtils;
 
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 
@@ -43,7 +44,6 @@ public class ContactObject extends SalesforceObject {
 	public static final String LAST_NAME = "LastName";
 	public static final String[] CONTACT_FIELDS = {
 		"Id",
-		"Name",
 		"FirstName",
 		LAST_NAME,
 		"Title",
@@ -53,7 +53,8 @@ public class ContactObject extends SalesforceObject {
 		"HomePhone"
 	};
 
-	
+	private boolean isLocallyModified;
+
 	/**
 	 * Parameterized constructor.
 	 *
@@ -63,7 +64,8 @@ public class ContactObject extends SalesforceObject {
 		super(data);
 		objectType = Constants.CONTACT;
 		objectId = data.optString(CONTACT_FIELDS[0]);
-		name = data.optString(CONTACT_FIELDS[1]);
+		name = data.optString(CONTACT_FIELDS[1]) + " " + data.optString(CONTACT_FIELDS[2]);
+		isLocallyModified = data.optBoolean(SyncManager.LOCALLY_UPDATED);
 	}
 
 	/**
@@ -72,7 +74,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return First name of the contact.
 	 */
 	public String getFirstName() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[2]));
+		return sanitizeText(rawData.optString(CONTACT_FIELDS[1]));
 	}
 
 	/**
@@ -81,7 +83,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return Last name of the contact.
 	 */
 	public String getLastName() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[3]));
+		return sanitizeText(rawData.optString(CONTACT_FIELDS[2]));
 	}
 
 	/**
@@ -90,7 +92,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return Title of the contact.
 	 */
 	public String getTitle() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[4]));
+		return sanitizeText(rawData.optString(CONTACT_FIELDS[3]));
 	}
 
 	/**
@@ -99,7 +101,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return Phone number of the contact.
 	 */
 	public String getPhone() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[5]));
+		return sanitizeText(rawData.optString(CONTACT_FIELDS[4]));
 	}
 
 	/**
@@ -108,7 +110,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return E-mail address of the contact.
 	 */
 	public String getEmail() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[6]));
+		return sanitizeText(rawData.optString(CONTACT_FIELDS[5]));
 	}
 
 	/**
@@ -117,7 +119,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return Department of the contact.
 	 */
 	public String getDepartment() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[7]));
+		return sanitizeText(rawData.optString(CONTACT_FIELDS[6]));
 	}
 
 	/**
@@ -126,7 +128,16 @@ public class ContactObject extends SalesforceObject {
 	 * @return Home phone number of the contact.
 	 */
 	public String getHomePhone() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[8]));
+		return sanitizeText(rawData.optString(CONTACT_FIELDS[7]));
+	}
+
+	/**
+	 * Returns whether the contact has been locally modified or not.
+	 *
+	 * @return True - if the contact has been locally modified, False - otherwise.
+	 */
+	public boolean isLocallyModified() {
+		return isLocallyModified;
 	}
 
 	private String sanitizeText(String text) {

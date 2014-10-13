@@ -186,19 +186,20 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 			contact = smartStore.retrieve(ContactListLoader.CONTACT_SOUP,
 					smartStore.lookupSoupEntryId(ContactListLoader.CONTACT_SOUP,
 					Constants.ID, objectId)).getJSONObject(0);
-			contact.put(ContactObject.CONTACT_FIELDS[2], firstName);
-			contact.put(ContactObject.CONTACT_FIELDS[3], lastName);
-			contact.put(ContactObject.CONTACT_FIELDS[4], title);
-			contact.put(ContactObject.CONTACT_FIELDS[5], phone);
-			contact.put(ContactObject.CONTACT_FIELDS[6], email);
-			contact.put(ContactObject.CONTACT_FIELDS[7], department);
-			contact.put(ContactObject.CONTACT_FIELDS[8], homePhone);
+			contact.put(ContactObject.CONTACT_FIELDS[1], firstName);
+			contact.put(ContactObject.CONTACT_FIELDS[2], lastName);
+			contact.put(ContactObject.CONTACT_FIELDS[3], title);
+			contact.put(ContactObject.CONTACT_FIELDS[4], phone);
+			contact.put(ContactObject.CONTACT_FIELDS[5], email);
+			contact.put(ContactObject.CONTACT_FIELDS[6], department);
+			contact.put(ContactObject.CONTACT_FIELDS[7], homePhone);
 			contact.put(SyncManager.LOCAL, true);
 			contact.put(SyncManager.LOCALLY_CREATED, false);
 			contact.put(SyncManager.LOCALLY_DELETED, false);
 			contact.put(SyncManager.LOCALLY_UPDATED, true);
 			smartStore.upsert(ContactListLoader.CONTACT_SOUP, contact);
 			Toast.makeText(this, "Save successful!", Toast.LENGTH_LONG).show();
+			finish();
 		} catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
 		}
