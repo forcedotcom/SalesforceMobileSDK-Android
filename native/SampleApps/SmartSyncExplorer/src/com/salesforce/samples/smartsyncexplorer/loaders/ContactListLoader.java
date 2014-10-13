@@ -51,7 +51,7 @@ import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 
 	public static final String CONTACT_SOUP = "contacts";
-	public static final Integer LIMIT = 4000;
+	public static final Integer LIMIT = 10000;
     private static final String TAG = "SmartSyncExplorer: ContactListLoader";
 
     private SmartStore smartStore;
