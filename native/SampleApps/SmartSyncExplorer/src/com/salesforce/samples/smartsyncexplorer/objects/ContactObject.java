@@ -41,16 +41,22 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
  */
 public class ContactObject extends SalesforceObject {
 
+	public static final String FIRST_NAME = "FirstName";
 	public static final String LAST_NAME = "LastName";
+	public static final String TITLE = "Title";
+	public static final String PHONE = "Phone";
+	public static final String EMAIL = "Email";
+	public static final String DEPARTMENT = "Department";
+	public static final String HOME_PHONE = "HomePhone";
 	public static final String[] CONTACT_FIELDS = {
-		"Id",
-		"FirstName",
+		Constants.ID,
+		FIRST_NAME,
 		LAST_NAME,
-		"Title",
-		"Phone",
-		"Email",
-		"Department",
-		"HomePhone"
+		TITLE,
+		PHONE,
+		EMAIL,
+		DEPARTMENT,
+		HOME_PHONE
 	};
 
 	private boolean isLocallyModified;
@@ -63,8 +69,8 @@ public class ContactObject extends SalesforceObject {
 	public ContactObject(JSONObject data) {
 		super(data);
 		objectType = Constants.CONTACT;
-		objectId = data.optString(CONTACT_FIELDS[0]);
-		name = data.optString(CONTACT_FIELDS[1]) + " " + data.optString(CONTACT_FIELDS[2]);
+		objectId = data.optString(Constants.ID);
+		name = data.optString(FIRST_NAME) + " " + data.optString(LAST_NAME);
 		isLocallyModified = data.optBoolean(SyncManager.LOCALLY_UPDATED);
 	}
 
@@ -74,7 +80,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return First name of the contact.
 	 */
 	public String getFirstName() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[1]));
+		return sanitizeText(rawData.optString(FIRST_NAME));
 	}
 
 	/**
@@ -83,7 +89,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return Last name of the contact.
 	 */
 	public String getLastName() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[2]));
+		return sanitizeText(rawData.optString(LAST_NAME));
 	}
 
 	/**
@@ -92,7 +98,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return Title of the contact.
 	 */
 	public String getTitle() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[3]));
+		return sanitizeText(rawData.optString(TITLE));
 	}
 
 	/**
@@ -101,7 +107,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return Phone number of the contact.
 	 */
 	public String getPhone() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[4]));
+		return sanitizeText(rawData.optString(PHONE));
 	}
 
 	/**
@@ -110,7 +116,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return E-mail address of the contact.
 	 */
 	public String getEmail() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[5]));
+		return sanitizeText(rawData.optString(EMAIL));
 	}
 
 	/**
@@ -119,7 +125,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return Department of the contact.
 	 */
 	public String getDepartment() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[6]));
+		return sanitizeText(rawData.optString(DEPARTMENT));
 	}
 
 	/**
@@ -128,7 +134,7 @@ public class ContactObject extends SalesforceObject {
 	 * @return Home phone number of the contact.
 	 */
 	public String getHomePhone() {
-		return sanitizeText(rawData.optString(CONTACT_FIELDS[7]));
+		return sanitizeText(rawData.optString(HOME_PHONE));
 	}
 
 	/**

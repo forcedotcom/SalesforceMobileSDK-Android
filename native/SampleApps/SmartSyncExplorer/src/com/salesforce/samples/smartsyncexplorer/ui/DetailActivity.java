@@ -186,13 +186,13 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 			contact = smartStore.retrieve(ContactListLoader.CONTACT_SOUP,
 					smartStore.lookupSoupEntryId(ContactListLoader.CONTACT_SOUP,
 					Constants.ID, objectId)).getJSONObject(0);
-			contact.put(ContactObject.CONTACT_FIELDS[1], firstName);
-			contact.put(ContactObject.CONTACT_FIELDS[2], lastName);
-			contact.put(ContactObject.CONTACT_FIELDS[3], title);
-			contact.put(ContactObject.CONTACT_FIELDS[4], phone);
-			contact.put(ContactObject.CONTACT_FIELDS[5], email);
-			contact.put(ContactObject.CONTACT_FIELDS[6], department);
-			contact.put(ContactObject.CONTACT_FIELDS[7], homePhone);
+			contact.put(ContactObject.FIRST_NAME, firstName);
+			contact.put(ContactObject.LAST_NAME, lastName);
+			contact.put(ContactObject.TITLE, title);
+			contact.put(ContactObject.PHONE, phone);
+			contact.put(ContactObject.EMAIL, email);
+			contact.put(ContactObject.DEPARTMENT, department);
+			contact.put(ContactObject.HOME_PHONE, homePhone);
 			contact.put(SyncManager.LOCAL, true);
 			contact.put(SyncManager.LOCALLY_CREATED, false);
 			contact.put(SyncManager.LOCALLY_DELETED, false);
