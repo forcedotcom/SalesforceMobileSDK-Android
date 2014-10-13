@@ -1,4 +1,4 @@
-exit 100
+#!/bin/bash
 
 sudo apt-get update
 sudo apt-get install -y ia32-libs
