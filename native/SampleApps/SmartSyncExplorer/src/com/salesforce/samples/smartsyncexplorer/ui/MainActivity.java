@@ -27,6 +27,7 @@
 package com.salesforce.samples.smartsyncexplorer.ui;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.json.JSONException;
@@ -67,6 +68,7 @@ import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
+import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
@@ -91,7 +93,10 @@ public class MainActivity extends SalesforceListActivity implements
 		new IndexSpec("Id", Type.string),
 		new IndexSpec("FirstName", Type.string),
 		new IndexSpec("LastName", Type.string),
-		new IndexSpec(SyncManager.LOCALLY_UPDATED, Type.string)
+		new IndexSpec(SyncManager.LOCALLY_CREATED, Type.string),
+		new IndexSpec(SyncManager.LOCALLY_UPDATED, Type.string),
+		new IndexSpec(SyncManager.LOCALLY_DELETED, Type.string),
+		new IndexSpec(SyncManager.LOCAL, Type.string)
 	};
 	private static final int CONTACT_COLORS[] = {
 		Color.rgb(26, 188, 156),
@@ -173,8 +178,8 @@ public class MainActivity extends SalesforceListActivity implements
 	public boolean onOptionsItemSelected(MenuItem item) {
 	    switch (item.getItemId()) {
 	        case R.id.action_refresh:
-				getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
-				Toast.makeText(this, "Refresh complete!", Toast.LENGTH_LONG).show();
+				Toast.makeText(this, "Synchronizing...", Toast.LENGTH_SHORT).show();
+				syncUpContacts();
 	            return true;
 	        default:
 	            return super.onOptionsItemSelected(item);
@@ -251,6 +256,15 @@ public class MainActivity extends SalesforceListActivity implements
 			}
 		} else {
 			getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
+		}
+	}
+
+	private void syncUpContacts() {
+		final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS));
+		try {
+			syncMgr.syncUp(options, ContactListLoader.CONTACT_SOUP);
+		} catch (JSONException e) {
+            Log.e(TAG, "JSONException occurred while parsing", e);
 		}
 	}
 
@@ -421,7 +435,19 @@ public class MainActivity extends SalesforceListActivity implements
 				final String action = intent.getAction();
 				if (action != null && action.equals(SyncManager.SYNC_INTENT_ACTION)) {
 					final String syncStatus = intent.getStringExtra(SyncState.SYNC_STATUS);
+					final String syncType = intent.getStringExtra(SyncState.SYNC_TYPE);
 					if (syncStatus != null && syncStatus.equals(SyncState.Status.DONE.name())) {
+						if (syncType != null) {
+							if (syncType.equals(com.salesforce.androidsdk.smartsync.util.SyncState.Type.syncDown)) {
+								Toast.makeText(MainActivity.this,
+										"Sync down successful!",
+										Toast.LENGTH_LONG).show();
+							} else if (syncType.equals(com.salesforce.androidsdk.smartsync.util.SyncState.Type.syncUp)) {
+								Toast.makeText(MainActivity.this,
+										"Sync up successful!",
+										Toast.LENGTH_LONG).show();
+							}
+						}
 						getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
 					}
 				}
