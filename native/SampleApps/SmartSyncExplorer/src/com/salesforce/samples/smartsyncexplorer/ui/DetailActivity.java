@@ -102,7 +102,8 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-	    final MenuInflater inflater = getMenuInflater();
+	    overridePendingTransition(R.anim.slide_in_from_right, R.anim.slide_out_to_left);
+		final MenuInflater inflater = getMenuInflater();
 	    inflater.inflate(R.menu.action_bar_menu, menu);
 	    final MenuItem searchItem = menu.findItem(R.id.action_search);
 	    searchItem.setVisible(false);
@@ -116,6 +117,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	    switch (item.getItemId()) {
 	    	case android.R.id.home:
 	    		finish();
+	    	    overridePendingTransition(R.anim.slide_in_from_left, R.anim.slide_out_to_right);
 	    		return true;
 	        case R.id.action_refresh:
 	        	save();
