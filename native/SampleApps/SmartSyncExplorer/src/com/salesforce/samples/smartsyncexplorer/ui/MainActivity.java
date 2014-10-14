@@ -181,6 +181,9 @@ public class MainActivity extends SalesforceListActivity implements
 	        case R.id.action_logout:
 	    		logoutConfirmationDialog.show(getFragmentManager(), "LogoutDialog");
 	            return true;
+	        case R.id.action_add:
+	        	launchDetailActivity(Constants.EMPTY_STRING, "New Contact",
+	        			Constants.EMPTY_STRING);
 	        default:
 	            return super.onOptionsItemSelected(item);
 	    }
@@ -226,11 +229,17 @@ public class MainActivity extends SalesforceListActivity implements
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		final ContactObject sObject = listAdapter.getItem(position);
+		launchDetailActivity(sObject.getObjectId(), sObject.getName(),
+				sObject.getTitle());
+	}
+
+	private void launchDetailActivity(String objId, String objName,
+			String objTitle) {
 		final Intent detailIntent = new Intent(this, DetailActivity.class);
 		detailIntent.addCategory(Intent.CATEGORY_DEFAULT);
-		detailIntent.putExtra(OBJECT_ID_KEY, sObject.getObjectId());
-		detailIntent.putExtra(OBJECT_TITLE_KEY, sObject.getTitle());
-		detailIntent.putExtra(OBJECT_NAME_KEY, sObject.getName());
+		detailIntent.putExtra(OBJECT_ID_KEY, objId);
+		detailIntent.putExtra(OBJECT_TITLE_KEY, objTitle);
+		detailIntent.putExtra(OBJECT_NAME_KEY, objName);
 		startActivity(detailIntent);
 	}
 

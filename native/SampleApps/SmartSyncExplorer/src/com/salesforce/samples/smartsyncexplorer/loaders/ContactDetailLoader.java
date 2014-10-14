@@ -31,6 +31,7 @@ import org.json.JSONException;
 
 import android.content.AsyncTaskLoader;
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -69,6 +70,9 @@ public class ContactDetailLoader extends AsyncTaskLoader<ContactObject> {
 
 	@Override
 	public ContactObject loadInBackground() {
+		if (TextUtils.isEmpty(objectId)) {
+			return null;
+		}
 		ContactObject sObject = null;
 		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
 			return null;

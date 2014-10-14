@@ -32,37 +32,36 @@ import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.os.Bundle;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.samples.smartsyncexplorer.R;
 
 /**
- * A simple dialog fragment to provide options at logout.
+ * A simple dialog fragment to provide options for deletion.
  */
-public class LogoutDialogFragment extends DialogFragment {
+public class DeleteDialogFragment extends DialogFragment {
 
-	private AlertDialog logoutConfirmationDialog;
+	private AlertDialog deleteConfirmationDialog;
 
 	/**
 	 * Default constructor.
 	 */
-	public LogoutDialogFragment() {
+	public DeleteDialogFragment() {
 	}
 
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
-		logoutConfirmationDialog = new AlertDialog.Builder(getActivity())
-				.setTitle(R.string.logout_title)
+		deleteConfirmationDialog = new AlertDialog.Builder(getActivity())
+				.setTitle(R.string.delete_title)
 				.setPositiveButton(R.string.yes,
 				new DialogInterface.OnClickListener() {
 
 					@Override
 					public void onClick(DialogInterface dialog,
 							int which) {
-						SalesforceSDKManager.getInstance().logout(getActivity());
+						((DetailActivity) getActivity()).reallyDelete();
 					}
 				})
 				.setNegativeButton(R.string.cancel, null)
 				.create();
-		return logoutConfirmationDialog;
+		return deleteConfirmationDialog;
 	}
 }
