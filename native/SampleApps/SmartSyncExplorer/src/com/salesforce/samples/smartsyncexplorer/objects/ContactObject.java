@@ -71,7 +71,9 @@ public class ContactObject extends SalesforceObject {
 		objectType = Constants.CONTACT;
 		objectId = data.optString(Constants.ID);
 		name = data.optString(FIRST_NAME) + " " + data.optString(LAST_NAME);
-		isLocallyModified = data.optBoolean(SyncManager.LOCALLY_UPDATED);
+		isLocallyModified = data.optBoolean(SyncManager.LOCALLY_UPDATED) ||
+				data.optBoolean(SyncManager.LOCALLY_CREATED) ||
+				data.optBoolean(SyncManager.LOCALLY_DELETED);
 	}
 
 	/**

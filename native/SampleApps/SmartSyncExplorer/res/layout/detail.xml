@@ -142,4 +142,18 @@
             style="@style/ContactDetail.ParentView.EditText"
             android:inputType="phone" />
     </LinearLayout>
+
+    <TextView android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/holo_red_light"
+        android:textStyle="bold"
+        android:textSize="20sp"
+        android:textColor="@android:color/white"
+        android:layout_margin="25dp"
+        android:layout_gravity="center"
+        android:text="@string/delete"
+        android:gravity="center"
+        android:padding="6dp"
+        android:onClick="onDeleteClicked"
+        android:clickable="true" />
 </LinearLayout> 

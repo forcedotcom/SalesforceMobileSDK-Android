@@ -18,6 +18,8 @@
     <string name="department">Department: </string>
     <string name="home_phone">Home Phone: </string>
     <string name="logout_title">Log out?</string>
-    <string name="logout_yes">Yes</string>
-    <string name="logout_cancel">No</string>
+    <string name="yes">Yes</string>
+    <string name="cancel">No</string>
+    <string name="delete">Delete</string>
+    <string name="delete_title">Are you sure?</string>
 </resources>

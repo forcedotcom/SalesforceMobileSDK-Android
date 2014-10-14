@@ -38,6 +38,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -49,8 +50,8 @@ import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
-import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactDetailLoader;
+import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 /**
@@ -67,6 +68,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
     private String objectId;
     private String objectTitle;
     private ContactObject sObject;
+    private DeleteDialogFragment deleteConfirmationDialog;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -81,6 +83,7 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 			getActionBar().setTitle(launchIntent.getStringExtra(MainActivity.OBJECT_NAME_KEY));
 			getActionBar().setSubtitle(objectTitle);
 		}
+		deleteConfirmationDialog = new DeleteDialogFragment();
 	}
 
 	@Override
@@ -140,6 +143,35 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	public void onLoaderReset(Loader<ContactObject> loader) {
 		sObject = null;
 		refreshScreen();
+	}
+
+	/**
+	 * Callback received when the 'Delete' button is clicked.
+	 *
+	 * @param v View that was clicked.
+	 */
+	public void onDeleteClicked(View v) {
+		deleteConfirmationDialog.show(getFragmentManager(), "DeleteDialog");
+	}
+
+	/**
+	 * Performs the underlying deletion of a record.
+	 */
+	public void reallyDelete() {
+		final SmartStore smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
+		JSONObject contact;
+		try {
+			contact = smartStore.retrieve(ContactListLoader.CONTACT_SOUP,
+					smartStore.lookupSoupEntryId(ContactListLoader.CONTACT_SOUP,
+					Constants.ID, objectId)).getJSONObject(0);
+			contact.put(SyncManager.LOCAL, true);
+			contact.put(SyncManager.LOCALLY_DELETED, true);
+			smartStore.upsert(ContactListLoader.CONTACT_SOUP, contact);
+			Toast.makeText(this, "Delete successful!", Toast.LENGTH_LONG).show();
+			finish();
+		} catch (JSONException e) {
+            Log.e(TAG, "JSONException occurred while parsing", e);
+		}
 	}
 
 	private void refreshScreen() {
