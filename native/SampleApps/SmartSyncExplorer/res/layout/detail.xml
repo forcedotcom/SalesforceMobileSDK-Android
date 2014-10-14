@@ -23,7 +23,8 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_weight="1"
-            style="@style/ContactDetail.ParentView.EditText" />
+            style="@style/ContactDetail.ParentView.EditText"
+            android:inputType="textNoSuggestions" />
     </LinearLayout>
 
     <LinearLayout android:layout_width="match_parent"
@@ -42,7 +43,8 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_weight="1"
-            style="@style/ContactDetail.ParentView.EditText" />
+            style="@style/ContactDetail.ParentView.EditText"
+            android:inputType="textNoSuggestions" />
     </LinearLayout>
 
     <LinearLayout android:layout_width="match_parent"
@@ -61,7 +63,8 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_weight="1"
-            style="@style/ContactDetail.ParentView.EditText" />
+            style="@style/ContactDetail.ParentView.EditText"
+            android:inputType="textNoSuggestions" />
     </LinearLayout>
 
     <LinearLayout android:layout_width="match_parent"
@@ -81,7 +84,7 @@
             android:layout_gravity="center_vertical"
             android:layout_weight="1"
             style="@style/ContactDetail.ParentView.EditText"
-            android:inputType="phone" />
+            android:inputType="textNoSuggestions|phone" />
     </LinearLayout>
 
     <LinearLayout android:layout_width="match_parent"
@@ -101,7 +104,7 @@
             android:layout_gravity="center_vertical"
             android:layout_weight="1"
             style="@style/ContactDetail.ParentView.EditText"
-            android:inputType="textEmailAddress" />
+            android:inputType="textNoSuggestions|textEmailAddress" />
     </LinearLayout>
 
     <LinearLayout android:layout_width="match_parent"
@@ -120,7 +123,8 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_weight="1"
-            style="@style/ContactDetail.ParentView.EditText" />
+            style="@style/ContactDetail.ParentView.EditText"
+            android:inputType="textNoSuggestions" />
     </LinearLayout>
 
     <LinearLayout android:layout_width="match_parent"
@@ -140,7 +144,7 @@
             android:layout_gravity="center_vertical"
             android:layout_weight="1"
             style="@style/ContactDetail.ParentView.EditText"
-            android:inputType="phone" />
+            android:inputType="textNoSuggestions|phone" />
     </LinearLayout>
 
     <TextView android:layout_width="match_parent"
