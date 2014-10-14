@@ -107,6 +107,8 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	    searchItem.setVisible(false);
 	    final MenuItem logoutItem = menu.findItem(R.id.action_logout);
 	    logoutItem.setVisible(false);
+	    final MenuItem addItem = menu.findItem(R.id.action_add);
+	    addItem.setVisible(false);
 	    final MenuItem refreshItem = menu.findItem(R.id.action_refresh);
 	    refreshItem.setIcon(R.drawable.ic_action_save);
 	    return super.onCreateOptionsMenu(menu);
@@ -214,9 +216,19 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 		final SmartStore smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
 		JSONObject contact;
 		try {
-			contact = smartStore.retrieve(ContactListLoader.CONTACT_SOUP,
-					smartStore.lookupSoupEntryId(ContactListLoader.CONTACT_SOUP,
-					Constants.ID, objectId)).getJSONObject(0);
+			boolean isCreate = TextUtils.isEmpty(objectId);
+			if (!isCreate) {
+				contact = smartStore.retrieve(ContactListLoader.CONTACT_SOUP,
+						smartStore.lookupSoupEntryId(ContactListLoader.CONTACT_SOUP,
+						Constants.ID, objectId)).getJSONObject(0);
+			} else {
+				contact = new JSONObject();
+				contact.put(Constants.ID, "local_" + System.currentTimeMillis()
+						+ Constants.EMPTY_STRING);
+				final JSONObject attributes = new JSONObject();
+				attributes.put(Constants.TYPE.toLowerCase(), Constants.CONTACT);
+				contact.put(Constants.ATTRIBUTES, attributes);
+			}
 			contact.put(ContactObject.FIRST_NAME, firstName);
 			contact.put(ContactObject.LAST_NAME, lastName);
 			contact.put(ContactObject.TITLE, title);
@@ -225,10 +237,14 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 			contact.put(ContactObject.DEPARTMENT, department);
 			contact.put(ContactObject.HOME_PHONE, homePhone);
 			contact.put(SyncManager.LOCAL, true);
-			contact.put(SyncManager.LOCALLY_CREATED, false);
+			contact.put(SyncManager.LOCALLY_UPDATED, !isCreate);
+			contact.put(SyncManager.LOCALLY_CREATED, isCreate);
 			contact.put(SyncManager.LOCALLY_DELETED, false);
-			contact.put(SyncManager.LOCALLY_UPDATED, true);
-			smartStore.upsert(ContactListLoader.CONTACT_SOUP, contact);
+			if (isCreate) {
+				smartStore.create(ContactListLoader.CONTACT_SOUP, contact);
+			} else {
+				smartStore.upsert(ContactListLoader.CONTACT_SOUP, contact);
+			}
 			Toast.makeText(this, "Save successful!", Toast.LENGTH_LONG).show();
 			finish();
 		} catch (JSONException e) {
