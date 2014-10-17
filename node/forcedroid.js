@@ -87,7 +87,7 @@ function usage() {
     console.log('    --appname=<Application Name>');
     console.log('    --targetdir=<Target App Folder>');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
-    console.log('    --targetandroidapi=<Target API> (e.g. 19 for KitKat)');
+    console.log('    --targetandroidapi=<Target API> (e.g. 21 for Lollipop)');
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
     console.log('    [--usesmartstore=<Whether or not to use SmartStore> (\'true\' or \'false\'. false by default)]');
     console.log(outputColors.cyan + '\nOR\n');
