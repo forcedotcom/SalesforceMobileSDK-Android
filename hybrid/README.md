@@ -22,7 +22,10 @@ Inside the HYBRID_DIR, you will find several projects:
 2. **SampleApps/ContactExplorer**: The ContactExplorer sample app uses PhoneGap (aka "cordova") to retrieve local device contacts.  It also uses the forcetk.mobilesdk.js toolkit to implement REST transactions with the Salesforce REST API.  The app uses the OAuth2 support in Salesforce SDK to obtain OAuth credentials, then propagates those credentials to forcetk by sending a javascript event
 3. **SampleApps/VFConnector**: The VFConnector sample app demonstrates how to wrap a VisualForce page in a native container.  This example assumes that your org has a VisualForce page called "BasicVFTest".  The app first obtains OAuth login credentials using the Salesforce SDK OAuth2 support, then uses those credentials to set appropriate webview cookies for accessing VisualForce pages
 4. **SampleApps/AccountEditor**: The AccountEditor sample app allows you to search / create / edit / delete accounts online and offline using the new SmartSync library (smartsync.js)
-5. **SampleApps/SmartStoreExplorer**: The SmartStoreExplorer sample app let you explore SmartStore APIs
+5. **SampleApps/SmartStoreExplorer**: The SmartStoreExplorer sample app lets you explore SmartStore APIs
+6. **SampleApps/HybridFileExplorer**: The HybridFileExplorer sample app lets you access files in Salesforce using file APIs
+7. **SampleApps/SimpleSync**: The SimpleSync sample app demonstrates two way synching of Salesforce records
+8. **SampleApps/UserList**: The UserList sample app is a simple hybrid app that lists the users in an org
 
 # Running sample apps from Eclipse
 
