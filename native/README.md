@@ -35,50 +35,14 @@ Inside the $NATIVE_DIR, you will find several projects:
 
 # Creating a new native application using SalesforceSDK
 
-There is a build.xml in $SALESFORCE_SDK_DIR.
-If you type:
-<pre>
-ant
-</pre>
+To create a new native application, follow the instructions here:
 
-It will print out information about available targets.
-
-To create a new native application simply do:
-<pre>
-ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} [-Duse.smartstore=true]
-</pre>
-
-Where:
-* appName: the name for the new application 
-* targetDir: the directory where the code should reside 
-* packageName: the java package for the new application e.g. com.acme.mobileapp
-* only pass -Duse.smartstore=true if you want SmartStore support
-
-If it's your first time build an application with the Salesforce SDK, do the following:
-cd $LIBS_DIR/SalesforceSDK
-$ANDROID_SDK_DIR/android update project -p .
-
-To build the new application, do the following:
-<pre>
-CD $TARGET_DIR
-$ANDROID_SDK_DIR/android update project -p .
-ant clean debug
-</pre>
-
-To deploy the application, start an emulator or plugin your device and run:
-<pre>
-ant installd
-</pre>
-
-Before you ship, make sure to plug in your oauth client id and callback url in:
-<pre>
-$TARGET_DIR/res/values/rest.xml
-</pre>
+* [Using forcedroid to create Mobile SDK apps](https://www.npmjs.org/package/forcedroid)
 
 # Running your new native application from Eclipse
 
 1. Launch Eclipse
 2. Go to File -> Import and select General -> Existing Projects into Workspace.
-3. Import the $SALESFORCE_SDK_DIR/libs/SalesforceSDK library project and your newly created project $TARGET_DIR into the workspace
+3. Import the $SALESFORCE_SDK_DIR/libs/SalesforceSDK, the $SALESFORCE_SDK_DIR/libs/SmartStore, and the $SALESFORCE_SDK_DIR/libs/SmartSync library projects and your newly created project into the workspace
 4. Right click on the your project and choose Run As -> Android Application
 
