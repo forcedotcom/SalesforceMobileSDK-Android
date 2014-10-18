@@ -416,6 +416,7 @@ public class UserAccountManager {
 	 */
 	public void sendUserSwitchIntent() {
 		final Intent intent = new Intent(USER_SWITCH_INTENT_ACTION);
+		intent.setPackage(context.getPackageName());
 		SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
 	}
 }

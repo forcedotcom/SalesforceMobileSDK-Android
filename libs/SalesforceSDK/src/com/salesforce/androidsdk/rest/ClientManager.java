@@ -526,11 +526,13 @@ public class ClientManager {
 
                         // Broadcasts an intent that the access token has been revoked.
                         final Intent revokeIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
+                        revokeIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
                         SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(revokeIntent);
                     } else {
 
                         // Broadcasts an intent that the access token has been refreshed.
                         final Intent refreshIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
+                        refreshIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
                         SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(refreshIntent);
                     }
                 }

@@ -250,6 +250,7 @@ public class SyncManager {
 	    	Intent intent = new Intent();
 	    	intent.setAction(SYNC_INTENT_ACTION);
 	    	intent.putExtras(sync.asBundle());
+	    	intent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
 			SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
     	}
     	catch (JSONException e) {
