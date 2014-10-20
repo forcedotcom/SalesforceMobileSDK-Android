@@ -34,7 +34,6 @@ import java.util.Map;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaActivity;
-import org.apache.cordova.CordovaChromeClient;
 import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewClient;
 import org.apache.http.NameValuePair;
@@ -111,6 +110,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     public void onCreate(Bundle savedInstanceState) {
     	Log.i("SalesforceDroidGapActivity.onCreate", "onCreate called");
         super.onCreate(savedInstanceState);
+        init();
 
 		// Get bootconfig
 		bootconfig = BootConfig.getBootConfig(this);
@@ -137,37 +137,30 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 	}
 
     @Override
-    public void init(CordovaWebView webView, CordovaWebViewClient webViewClient, CordovaChromeClient webChromeClient) {
+    public void init() {
     	Log.i("SalesforceDroidGapActivity.init", "init called");
-        super.init(webView, makeWebViewClient(webView), webChromeClient);
-        final String uaStr = SalesforceSDKManager.getInstance().getUserAgent();
-        if (null != this.appView) {
-            WebSettings webSettings = this.appView.getSettings();
-            String origUserAgent = webSettings.getUserAgentString();
-            final String extendedUserAgentString = uaStr + " Hybrid " + (origUserAgent == null ? "" : origUserAgent);
-            webSettings.setUserAgentString(extendedUserAgentString);
+    	super.init();
+    	final String uaStr = SalesforceSDKManager.getInstance().getUserAgent();
+    	if (null != this.appView) {
+    		WebSettings webSettings = this.appView.getSettings();
+    		String origUserAgent = webSettings.getUserAgentString();
+    		final String extendedUserAgentString = uaStr + " Hybrid " + (origUserAgent == null ? "" : origUserAgent);
+    		webSettings.setUserAgentString(extendedUserAgentString);
 
-            // Configure HTML5 cache support.
-            webSettings.setDomStorageEnabled(true);
-            String cachePath = getApplicationContext().getCacheDir().getAbsolutePath();
-            webSettings.setAppCachePath(cachePath);
-            webSettings.setAppCacheEnabled(true);
+    		// Configure HTML5 cache support.
+    		webSettings.setDomStorageEnabled(true);
+    		String cachePath = getApplicationContext().getCacheDir().getAbsolutePath();
+    		webSettings.setAppCachePath(cachePath);
             webSettings.setAppCacheMaxSize(1024 * 1024 * 8);
-            webSettings.setAllowFileAccess(true);
+    		webSettings.setAppCacheEnabled(true);
+    		webSettings.setAllowFileAccess(true);
             webSettings.setSavePassword(false);
-            webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
-            EventsObservable.get().notifyEvent(EventType.GapWebViewCreateComplete, appView);
-        }
-    }
+    		webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
+    		EventsObservable.get().notifyEvent(EventType.GapWebViewCreateComplete, appView);
+      	}
+	}
 
-    /**
-     * Construct the client for the default web view object.
-     *
-     * This is intended to be overridable by subclasses of CordovaIntent which
-     * require a more specialized web view.
-     *
-     * @param webView the default constructed web view object
-     */
+	@Override
     protected CordovaWebViewClient makeWebViewClient(CordovaWebView webView) {
         if(android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
             return new SalesforceWebViewClient(this, webView);
