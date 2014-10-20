@@ -98,9 +98,14 @@ function usage() {
 // Helper for 'create' command
 //
 function createApp(config) {
+    // Verify necessary Android prerequisites.
+    if (!validateAppCreatePrerequisites()) {
+        process.exit(8);
+    }
+
     // Native app creation
     if (config.apptype === 'native') {
-        config.relativeTemplateDir = 'native/TemplateApp';
+        config.relativeTemplateDir = path.join('native', 'TemplateApp');
         config.templateAppName = 'Template';
         config.templatePackageName = 'com.salesforce.samples.templateapp';
         createNativeApp(config, true);
@@ -109,6 +114,22 @@ function createApp(config) {
     else {
         createHybridApp(config);
     }
+}
+
+function validateAppCreatePrerequisites() {
+    var androidHomeDir = process.env.ANDROID_HOME;
+    if (typeof androidHomeDir !== 'string') {
+        console.log(outputColors.red + 'You must set the ANDROID_HOME environment variable to the path of your installation of the Android SDK.' + outputColors.reset);
+        return false;
+    }
+
+    var androidExePath = path.join(androidHomeDir, 'tools', 'android');
+    if (!fs.existsSync(androidExePath)) {
+        console.log(outputColors.red + 'The "android" utility does not exist at ' + androidExePath + '.  Make sure you\'ve properly installed the Android SDK.' + outputColors.reset);
+        return false;
+    }
+
+    return true;
 }
 
 //
@@ -135,8 +156,8 @@ function createHybridApp(config) {
     shelljs.exec('cordova create ' + config.projectDir + ' ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android');
-    shelljs.exec('cordova plugin add https://github.com/forcedotcom/SalesforceMobileSDK-CordovaPlugin#unstable');
-    shelljs.exec('node plugins/com.salesforce/tools/postinstall-android.js ' + config.targetandroidapi + ' ' + config.usesmartstore);
+    shelljs.exec('cordova plugin add https://github.com/khawkins/SalesforceMobileSDK-CordovaPlugin#fix_windows');
+    shelljs.exec('node ' + path.join('plugins', 'com.salesforce', 'tools', 'postinstall-android.js') + ' ' + config.targetandroidapi + ' ' + config.usesmartstore);
 
     // Remove the default Cordova app.
     shelljs.rm('-rf', path.join('www', '*'));
@@ -160,7 +181,7 @@ function createHybridApp(config) {
     };
     // console.log("Bootconfig:" + JSON.stringify(bootconfig, null, 2));
 
-    fs.writeFileSync('www/bootconfig.json', JSON.stringify(bootconfig, null, 2));
+    fs.writeFileSync(path.join('www', 'bootconfig.json'), JSON.stringify(bootconfig, null, 2));
     shelljs.exec('cordova prepare android');
     shelljs.popd();
 
