@@ -45,6 +45,7 @@ var miscUtils = require('../external/shared/node/utils');
 var version = '3.0.0';
 var minimumCordovaVersion = '3.5';
 var minTargetApi = {'versionNumber': 17, 'versionName': 'Jelly Bean'};
+var androidExePath;
 
 // Calling main
 main(process.argv);
@@ -99,7 +100,8 @@ function usage() {
 //
 function createApp(config) {
     // Verify necessary Android prerequisites.
-    if (!validateAppCreatePrerequisites()) {
+    androidExePath = getAndroidSDKToolPath();
+    if (androidExePath === null) {
         process.exit(8);
     }
 
@@ -116,20 +118,20 @@ function createApp(config) {
     }
 }
 
-function validateAppCreatePrerequisites() {
+function getAndroidSDKToolPath() {
     var androidHomeDir = process.env.ANDROID_HOME;
     if (typeof androidHomeDir !== 'string') {
         console.log(outputColors.red + 'You must set the ANDROID_HOME environment variable to the path of your installation of the Android SDK.' + outputColors.reset);
-        return false;
+        return null;
     }
 
     var androidExePath = path.join(androidHomeDir, 'tools', 'android');
     if (!fs.existsSync(androidExePath)) {
         console.log(outputColors.red + 'The "android" utility does not exist at ' + androidExePath + '.  Make sure you\'ve properly installed the Android SDK.' + outputColors.reset);
-        return false;
+        return null;
     }
 
-    return true;
+    return androidExePath;
 }
 
 //
@@ -306,7 +308,7 @@ function createNativeApp(config, showNextSteps) {
     // copy <Android Package>/libs/SalesforceSDK -> <App Folder>/forcedroid/libs/SalesforceSDK
     var salesforceSDKRelativePath = path.join('libs', 'SalesforceSDK');
     copyFromSDK(packageSdkRootDir, config.targetdir, salesforceSDKRelativePath);
-    shelljs.exec('android update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), salesforceSDKRelativePath));
+    shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), salesforceSDKRelativePath));
 
     // Copy Cordova library project into the app folder as well, if it's not already there.
     // copy <Android Package>/external/cordova/framework -> <App Folder>/forcedroid/external/cordova/framework
@@ -315,7 +317,7 @@ function createNativeApp(config, showNextSteps) {
     copyFromSDK(packageSdkRootDir, config.targetdir, path.join(cordovaRelativePath, 'framework'));
     shelljs.cp(path.join(packageSdkRootDir, cordovaRelativePath, 'VERSION'), destCordovaDir);
     console.log(destCordovaDir);
-    shelljs.exec('android update project -p ' + path.join(destCordovaDir, 'framework'));
+    shelljs.exec(androidExePath + ' update project -p ' + path.join(destCordovaDir, 'framework'));
     console.log('update done');
 
     // Copy SmartStore library project into the app folder as well, if it's not already there - if required.
@@ -324,7 +326,7 @@ function createNativeApp(config, showNextSteps) {
     if (config.usesmartstore) {
         var smartStoreRelativePath = path.join('libs', 'SmartStore');
         copyFromSDK(packageSdkRootDir, config.targetdir, smartStoreRelativePath);
-        shelljs.exec('android update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), smartStoreRelativePath));
+        shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), smartStoreRelativePath));
         copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
 
@@ -335,7 +337,7 @@ function createNativeApp(config, showNextSteps) {
     var libProject = config.usesmartstore
         ? path.join('..', path.basename(packageSdkRootDir), smartStoreRelativePath)
         : path.join('..', path.basename(packageSdkRootDir), salesforceSDKRelativePath);
-    shelljs.exec('android update project -p ' + config.projectDir + ' -t "android-' + config.targetandroidapi + '" -l ' + libProject);
+    shelljs.exec(androidExePath + ' update project -p ' + config.projectDir + ' -t "android-' + config.targetandroidapi + '" -l ' + libProject);
     '\nmanifestmerger.enabled=true\n'.toEnd(projectPropertiesFilePath);
 
     // Inform the user of next steps if requested.
