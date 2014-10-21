@@ -1,6 +1,7 @@
 apply plugin: 'android'
 
 dependencies {
+  compile project(':external:cordova:framework')
   compile project(':libs:SalesforceSDK')
   compile project(':libs:SmartStore')
 }

@@ -2,6 +2,7 @@
 apply plugin: 'android-library'
 
 dependencies {
+  compile project(':external:cordova:framework')
   compile project(':libs:SalesforceSDK')
   compile files('libs/sqlcipher.jar')
 }
