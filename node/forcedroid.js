@@ -126,6 +126,10 @@ function getAndroidSDKToolPath() {
     }
 
     var androidExePath = path.join(androidHomeDir, 'tools', 'android');
+    var isWindows = (/^win/i).test(process.platform);
+    if (isWindows) {
+        androidExePath = androidExePath + '.bat';
+    }
     if (!fs.existsSync(androidExePath)) {
         console.log(outputColors.red + 'The "android" utility does not exist at ' + androidExePath + '.  Make sure you\'ve properly installed the Android SDK.' + outputColors.reset);
         return null;
@@ -158,7 +162,7 @@ function createHybridApp(config) {
     shelljs.exec('cordova create ' + config.projectDir + ' ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android');
-    shelljs.exec('cordova plugin add https://github.com/khawkins/SalesforceMobileSDK-CordovaPlugin#fix_windows');
+    shelljs.exec('cordova plugin add https://github.com/khawkins/SalesforceMobileSDK-CordovaPlugin#volatile_unstable');
     shelljs.exec('node ' + path.join('plugins', 'com.salesforce', 'tools', 'postinstall-android.js') + ' ' + config.targetandroidapi + ' ' + config.usesmartstore);
 
     // Remove the default Cordova app.
