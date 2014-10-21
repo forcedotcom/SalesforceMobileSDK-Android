@@ -43,29 +43,53 @@ public class SmartSyncJSTest extends JSTestCase {
     
     @Override
     public List<String> getTestNames() {
-		return Arrays.asList(new String[] { "testSObjectCollectionFetch",
-				"testFetchSObjects", "testFetchSObjectsFromServer",
-				"testSObjectDestroy", "testSObjectFetch", "testSObjectSave",
-				"testSObjectTypeDescribe", "testSObjectTypeGetMetadata",
-				"testSObjectTypeDescribeLayout", "testSObjectTypeCacheMerge",
-				"testMultiSObjectTypes", "testSObjectTypeReset",
-				"testStoreCacheAddLocalFields", "testStoreCacheFind",
-				"testStoreCacheInit", "testStoreCacheRemove",
-				"testStoreCacheRetrieve", "testStoreCacheSave",
-				"testStoreCacheSaveAll", "testSyncSObjectCreate",
-				"testSyncSObjectDelete", "testSyncSObjectDetectConflictCreate",
-				"testSyncSObjectDetectConflictDelete",
-				"testSyncSObjectDetectConflictRetrieve",
-				"testSyncSObjectDetectConflictUpdate",
-				"testSyncSObjectRetrieve", "testSyncSObjectUpdate",
+		return Arrays.asList(new String[] { 
+				"testStoreCacheInit",
+				"testStoreCacheRetrieve",
+				"testStoreCacheSave",
+				"testStoreCacheSaveAll",
+				"testStoreCacheRemove",
+				"testStoreCacheFind",
+				"testStoreCacheAddLocalFields",
+				"testSObjectTypeDescribe",
+				"testSObjectTypeGetMetadata",
+				"testSObjectTypeDescribeLayout",
+				"testSObjectTypeCacheOnlyMode",
+				"testSObjectTypeCacheMerge",
+				"testMultiSObjectTypes",
+				"testSObjectTypeReset",
 				"testSyncRemoteObjectWithCacheCreate",
-				"testSyncRemoteObjectWithCacheDelete",
 				"testSyncRemoteObjectWithCacheRead",
 				"testSyncRemoteObjectWithCacheUpdate",
+				"testSyncRemoteObjectWithCacheDelete",
 				"testSyncSObjectWithServerCreate",
-				"testSyncSObjectWithServerDelete",
 				"testSyncSObjectWithServerRead",
-				"testSyncSObjectWithServerUpdate" });
+				"testSyncSObjectWithServerUpdate",
+				"testSyncSObjectWithServerDelete",
+				"testSyncSObjectCreate",
+				"testSyncSObjectRetrieve",
+				"testSyncSObjectUpdate",
+				"testSyncSObjectDelete",
+				"testSyncSObjectDetectConflictCreate",
+				"testSyncSObjectDetectConflictRetrieve",
+				"testSyncSObjectDetectConflictUpdate",
+				"testSyncSObjectDetectConflictDelete",
+				"testSObjectFetch",
+				"testSObjectSave",
+				"testSObjectDestroy",
+				"testSyncApexRestObjectWithServerCreate",
+				"testSyncApexRestObjectWithServerRead",
+				"testSyncApexRestObjectWithServerUpdate",
+				"testSyncApexRestObjectWithServerDelete",
+				"testFetchApexRestObjectsFromServer",
+				"testFetchSObjectsFromServer",
+				"testFetchSObjects",
+				"testSObjectCollectionFetch",
+				"testSyncDown",
+				"testSyncUpLocallyUpdated",
+				"testSyncUpLocallyDeleted",
+				"testSyncUpLocallyCreated"
+				});
 	}
     
     public void testStoreCacheInit() {
@@ -107,12 +131,19 @@ public class SmartSyncJSTest extends JSTestCase {
     public void testSObjectTypeDescribeLayout() {
         runTest("testSObjectTypeDescribeLayout");
     }
+
+    public void testSObjectTypeCacheOnlyMode() {
+        runTest("testSObjectTypeCacheOnlyMode");
+    }
+
     public void testSObjectTypeCacheMerge() {
         runTest("testSObjectTypeCacheMerge");
     }
+
     public void testMultiSObjectTypes() {
         runTest("testMultiSObjectTypes");
     }
+
     public void testSObjectTypeReset() {
         runTest("testSObjectTypeReset");
     }
@@ -193,6 +224,26 @@ public class SmartSyncJSTest extends JSTestCase {
         runTest("testSObjectDestroy");
     }
 
+    public void testSyncApexRestObjectWithServerCreate() {
+        runTest("testSyncApexRestObjectWithServerCreate");
+    }
+
+    public void testSyncApexRestObjectWithServerRead() {
+        runTest("testSyncApexRestObjectWithServerRead");
+    }
+
+    public void testSyncApexRestObjectWithServerUpdate() {
+        runTest("testSyncApexRestObjectWithServerUpdate");
+    }
+
+    public void testSyncApexRestObjectWithServerDelete() {
+        runTest("testSyncApexRestObjectWithServerDelete");
+    }
+
+    public void testFetchApexRestObjectsFromServer() {
+        runTest("testFetchApexRestObjectsFromServer");
+    }
+
     public void testFetchSObjectsFromServer() {
         runTest("testFetchSObjectsFromServer");
     }
@@ -203,5 +254,21 @@ public class SmartSyncJSTest extends JSTestCase {
 
     public void testSObjectCollectionFetch() {
         runTest("testSObjectCollectionFetch");
+    }
+
+    public void testSyncDown() {
+        runTest("testSyncDown");
+    }
+
+    public void testSyncUpLocallyUpdated() {
+        runTest("testSyncUpLocallyUpdated");
+    }
+
+    public void testSyncUpLocallyDeleted() {
+        runTest("testSyncUpLocallyDeleted");
+    }
+
+    public void testSyncUpLocallyCreated() {
+        runTest("testSyncUpLocallyCreated");
     }
 }
