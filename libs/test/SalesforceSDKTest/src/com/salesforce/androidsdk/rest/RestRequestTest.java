@@ -52,7 +52,7 @@ public class RestRequestTest extends TestCase {
 	private static final String TEST_EXTERNAL_ID = "testExternalId";
 	private static final String TEST_QUERY = "testQuery";
 	private static final String TEST_SEARCH = "testSearch";
-	private static final String TEST_FIELDS_STRING = "{\"name\":\"testAccount\",\"fieldX\":\"value with spaces\"}";
+	private static final String TEST_FIELDS_STRING = "{\"fieldX\":\"value with spaces\",\"name\":\"testAccount\"}";
 	private static final List<String> TEST_FIELDS_LIST = Collections.unmodifiableList(Arrays.asList(new String[]{"name", "fieldX"}));
 	
 	private static Map<String, Object> TEST_FIELDS;
