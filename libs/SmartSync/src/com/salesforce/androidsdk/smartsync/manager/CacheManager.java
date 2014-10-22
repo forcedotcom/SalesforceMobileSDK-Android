@@ -60,8 +60,8 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
 public class CacheManager {
 
     private static final String TAG = "SmartSync: CacheManager";
-    private static final String CACHE_TIME_KEY = "cache_time_%s";
-    private static final String CACHE_DATA_KEY = "cache_data_%s";
+    private static final String CACHE_KEY = "cache_key";
+    private static final String CACHE_DATA = "cache_data";
     private static final String SOUP_OF_SOUPS = "master_soup";
     private static final String SOUP_NAMES_KEY = "soup_names";
 
@@ -248,10 +248,9 @@ public class CacheManager {
                 Constants.EMPTY_STRING.equals(cacheKey)) {
             return;
         }
-        final String soupName = cacheType + cacheKey;
-        if (doesCacheExist(soupName)) {
-            smartStore.dropSoup(soupName);
-            removeSoupNameFromMasterSoup(soupName);
+        if (doesCacheExist(cacheType)) {
+            smartStore.dropSoup(cacheType);
+            removeSoupNameFromMasterSoup(cacheType);
             resetInMemoryCache();
         }
     }
@@ -302,13 +301,11 @@ public class CacheManager {
             		Constants.EMPTY_STRING.equals(cacheKey)) {
                 return 0;
             }
-            final String soupName = cacheType + cacheKey;
-            if (!doesCacheExist(soupName)) {
+            if (!doesCacheExist(cacheType)) {
                 return 0;
             }
-            final String smartSql = "SELECT {" + soupName + ":" + String.format(CACHE_TIME_KEY,
-                    cacheKey) + "} FROM {" + soupName + "}";
-            final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
+            final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(cacheType,
+            		SmartStore.SOUP_ENTRY_ID, cacheKey, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
                 final JSONArray array = results.optJSONArray(0);
@@ -340,24 +337,22 @@ public class CacheManager {
         		Constants.EMPTY_STRING.equals(cacheKey)) {
             return null;
         }
-        final String soupName = cacheType + cacheKey;
-        if (!doesCacheExist(soupName)) {
+        if (!doesCacheExist(cacheType)) {
             return null;
         }
 
         // Checks in memory cache first.
-        if (objectTypeCacheMap != null) {
-            final List<SalesforceObjectType> cachedObjTypes = objectTypeCacheMap.get(cacheKey);
-            if (cachedObjTypes != null && cachedObjTypes.size() > 0) {
-                return cachedObjTypes;
-            }
-        }
+//        if (objectTypeCacheMap != null) {
+//            final List<SalesforceObjectType> cachedObjTypes = objectTypeCacheMap.get(cacheKey);
+//            if (cachedObjTypes != null && cachedObjTypes.size() > 0) {
+//                return cachedObjTypes;
+//            }
+//        }
 
         // Falls back on smart store cache if in memory cache is empty.
-        final String smartSql = "SELECT {" + soupName + ":" + String.format(CACHE_DATA_KEY,
-                cacheKey) + "} FROM {" + soupName + "}";
         try {
-            final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
+            final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(cacheType,
+            		CACHE_KEY, cacheKey, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
                 final JSONArray array = results.optJSONArray(0);
@@ -409,24 +404,22 @@ public class CacheManager {
         		Constants.EMPTY_STRING.equals(cacheKey)) {
             return null;
         }
-        final String soupName = cacheType + cacheKey;
-        if (!doesCacheExist(soupName)) {
+        if (!doesCacheExist(cacheType)) {
             return null;
         }
 
         // Checks in memory cache first.
-        if (objectCacheMap != null) {
-            final List<SalesforceObject> cachedObjs = objectCacheMap.get(cacheKey);
-            if (cachedObjs != null && cachedObjs.size() > 0) {
-                return cachedObjs;
-            }
-        }
+//        if (objectCacheMap != null) {
+//            final List<SalesforceObject> cachedObjs = objectCacheMap.get(cacheKey);
+//            if (cachedObjs != null && cachedObjs.size() > 0) {
+//                return cachedObjs;
+//            }
+//        }
 
         // Falls back on smart store cache if in memory cache is empty.
-        final String smartSql = "SELECT {" + soupName + ":" + String.format(CACHE_DATA_KEY,
-                cacheKey) + "} FROM {" + soupName + "}";
         try {
-            final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
+            final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(cacheType,
+            		CACHE_KEY, cacheKey, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
                 final JSONArray array = results.optJSONArray(0);
@@ -478,24 +471,22 @@ public class CacheManager {
         		Constants.EMPTY_STRING.equals(cacheKey)) {
             return null;
         }
-        final String soupName = cacheType + cacheKey;
-        if (!doesCacheExist(soupName)) {
+        if (!doesCacheExist(cacheType)) {
             return null;
         }
 
         // Checks in memory cache first.
-        if (objectTypeLayoutCacheMap != null) {
-            final List<SalesforceObjectTypeLayout> cachedObjs = objectTypeLayoutCacheMap.get(cacheKey);
-            if (cachedObjs != null && cachedObjs.size() > 0) {
-                return cachedObjs;
-            }
-        }
+//        if (objectTypeLayoutCacheMap != null) {
+//            final List<SalesforceObjectTypeLayout> cachedObjs = objectTypeLayoutCacheMap.get(cacheKey);
+//            if (cachedObjs != null && cachedObjs.size() > 0) {
+//                return cachedObjs;
+//            }
+//        }
 
         // Falls back on smart store cache if in memory cache is empty.
-        final String smartSql = "SELECT {" + soupName + ":" + String.format(CACHE_DATA_KEY,
-                cacheKey) + "} FROM {" + soupName + "}";
         try {
-            final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
+            final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(cacheType,
+            		CACHE_KEY, cacheKey, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
                 final JSONArray array = results.optJSONArray(0);
@@ -554,7 +545,6 @@ public class CacheManager {
                 objectTypes.size() == 0) {
             return;
         }
-        final String soupName = cacheType + cacheKey;
 
         // Inserts or updates data in memory cache.
         if (objectTypeCacheMap != null) {
@@ -574,9 +564,9 @@ public class CacheManager {
         if (data.length() > 0) {
             final JSONObject object = new JSONObject();
             try {
-                object.put(String.format(CACHE_DATA_KEY, cacheKey), data);
-                object.put(String.format(CACHE_TIME_KEY, cacheKey), System.currentTimeMillis());
-                upsertData(soupName, object, cacheKey);
+                object.put(CACHE_KEY, cacheKey);
+                object.put(CACHE_DATA, data);
+                upsertData(cacheType, object, cacheKey);
             } catch (JSONException e) {
                 Log.e(TAG, "JSONException occurred while attempting to cache data", e);
             } catch (SmartStoreException e) {
@@ -600,7 +590,6 @@ public class CacheManager {
                 objects.size() == 0) {
             return;
         }
-        final String soupName = cacheType + cacheKey;
 
         // Inserts or updates data in memory cache.
         if (objectTypeLayoutCacheMap != null) {
@@ -627,9 +616,9 @@ public class CacheManager {
         if (data.length() > 0) {
             final JSONObject obj = new JSONObject();
             try {
-                obj.put(String.format(CACHE_DATA_KEY, cacheKey), data);
-                obj.put(String.format(CACHE_TIME_KEY, cacheKey), System.currentTimeMillis());
-                upsertData(soupName, obj, cacheKey);
+                obj.put(CACHE_KEY, cacheKey);
+                obj.put(CACHE_DATA, data);
+                upsertData(cacheType, obj, cacheKey);
             } catch (JSONException e) {
                 Log.e(TAG, "JSONException occurred while attempting to cache data", e);
             } catch (SmartStoreException e) {
@@ -653,7 +642,6 @@ public class CacheManager {
                 objects.size() == 0) {
             return;
         }
-        final String soupName = cacheType + cacheKey;
 
         // Inserts or updates data in memory cache.
         if (objectCacheMap != null) {
@@ -673,9 +661,9 @@ public class CacheManager {
         if (data.length() > 0) {
             final JSONObject obj = new JSONObject();
             try {
-                obj.put(String.format(CACHE_DATA_KEY, cacheKey), data);
-                obj.put(String.format(CACHE_TIME_KEY, cacheKey), System.currentTimeMillis());
-                upsertData(soupName, obj, cacheKey);
+                obj.put(CACHE_KEY, cacheKey);
+                obj.put(CACHE_DATA, data);
+                upsertData(cacheType, obj, cacheKey);
             } catch (JSONException e) {
                 Log.e(TAG, "JSONException occurred while attempting to cache data", e);
             } catch (SmartStoreException e) {
@@ -701,8 +689,8 @@ public class CacheManager {
     	registerMasterSoup();
         if (!doesCacheExist(soupName)) {
             final IndexSpec[] indexSpecs = {
-                    new IndexSpec(String.format(CACHE_DATA_KEY, cacheKey), Type.string),
-                    new IndexSpec(String.format(CACHE_TIME_KEY, cacheKey), Type.integer)
+                    new IndexSpec(CACHE_KEY, Type.string),
+                    new IndexSpec(SmartStore.SOUP_LAST_MODIFIED_DATE, Type.integer)
             };
             smartStore.registerSoup(soupName, indexSpecs);
         }
@@ -735,7 +723,7 @@ public class CacheManager {
         }
         registerSoup(soupName, cacheKey);
         try {
-            smartStore.upsert(soupName, object, String.format(CACHE_DATA_KEY, cacheKey));
+            smartStore.upsert(soupName, object, cacheKey);
             addSoupNameToMasterSoup(soupName);
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while attempting to cache data", e);
