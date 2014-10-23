@@ -34,11 +34,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.R;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-
 import android.content.Context;
 import android.content.res.Resources;
+
+import com.salesforce.androidsdk.R;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 /**
  * Class encapsulating the application configuration (consumer key, oauth scopes, refresh behavior).
@@ -46,7 +46,8 @@ import android.content.res.Resources;
 public class BootConfig {
 
 	// We expect a assets/www/bootconfig.json file to be provided by hybrid apps.
-	private static final String HYBRID_BOOTCONFIG_PATH = "www/bootconfig.json";
+	private static final String HYBRID_BOOTCONFIG_PATH = "www" +
+			System.getProperty("file.separator") + "bootconfig.json";
 
 	// bootconfig.json should contain a map with the following keys.
 	private static final String REMOTE_ACCESS_CONSUMER_KEY = "remoteAccessConsumerKey";
