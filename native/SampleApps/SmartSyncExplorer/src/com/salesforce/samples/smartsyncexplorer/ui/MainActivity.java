@@ -149,7 +149,11 @@ public class MainActivity extends SalesforceListActivity implements
 		syncMgr = SyncManager.getInstance(curAccount);
 		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
 		getLoaderManager().initLoader(CONTACT_LOADER_ID, null, this);
-		syncDownContacts();
+		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
+			syncDownContacts();
+		} else {
+			getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
+		}
     }
 
 	@Override
@@ -252,19 +256,14 @@ public class MainActivity extends SalesforceListActivity implements
 	}
 
 	private void syncDownContacts() {
-		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
-			smartStore.registerSoup(ContactListLoader.CONTACT_SOUP,
-					CONTACTS_INDEX_SPEC);
-			try {
-				final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
-						.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
-				final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
-				syncMgr.syncDown(target, ContactListLoader.CONTACT_SOUP);
-			} catch (JSONException e) {
-	            Log.e(TAG, "JSONException occurred while parsing", e);
-			}
-		} else {
-			getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
+		smartStore.registerSoup(ContactListLoader.CONTACT_SOUP, CONTACTS_INDEX_SPEC);
+		try {
+			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
+					.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
+			final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
+			syncMgr.syncDown(target, ContactListLoader.CONTACT_SOUP);
+		} catch (JSONException e) {
+            Log.e(TAG, "JSONException occurred while parsing", e);
 		}
 	}
 
@@ -455,6 +454,7 @@ public class MainActivity extends SalesforceListActivity implements
 								Toast.makeText(MainActivity.this,
 										"Sync up successful!",
 										Toast.LENGTH_LONG).show();
+								syncDownContacts();
 							}
 						}
 						getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();

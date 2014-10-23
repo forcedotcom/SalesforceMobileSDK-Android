@@ -41,9 +41,9 @@ import com.salesforce.androidsdk.smartsync.model.SalesforceObjectTypeLayout;
 public class CacheManagerTest extends ManagerTestCase {
 
 	private static final long REFRESH_INTERVAL = 24 * 60 * 60 * 1000;
-    private static final String MRU_CACHE_TYPE = "recent_objects_";
-    private static final String METADATA_CACHE_TYPE = "metadata_";
-    private static final String LAYOUT_CACHE_TYPE = "layout_";
+    private static final String MRU_CACHE_TYPE = "recent_objects";
+    private static final String METADATA_CACHE_TYPE = "metadata";
+    private static final String LAYOUT_CACHE_TYPE = "layout";
     private static final String MRU_BY_OBJECT_TYPE_CACHE_KEY = "mru_for_%s";
     private static final String ALL_OBJECTS_CACHE_KEY = "all_objects";
     private static final String OBJECT_LAYOUT_BY_TYPE_CACHE_KEY = "object_layout_%s";

@@ -1,0 +1,3 @@
+The 'httpcore' library has a class that conflicts with the default Android version. Run the following command every time the 'httpcore' JAR is updated.
+
+zip -d ./libs/SalesforceSDK/libs/httpcore-4.3.2.jar org/apache/http/params/SyncBasicHttpParams.class
