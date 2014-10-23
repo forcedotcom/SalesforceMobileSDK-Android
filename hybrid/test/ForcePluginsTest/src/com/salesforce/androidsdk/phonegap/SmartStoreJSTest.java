@@ -39,6 +39,11 @@ public class SmartStoreJSTest extends JSTestCase {
     public SmartStoreJSTest() {
         super("SmartStoreTestSuite");
     }
+    
+    @Override
+    protected int getMaxRuntimeInSecondsForTest(String testName) {
+    	return 10;
+    }
 
     @Override
     public List<String> getTestNames() {

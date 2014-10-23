@@ -123,7 +123,7 @@ public abstract class JSTestCase extends InstrumentationTestCase {
      * @return maximum time the test should be allowed to run in seconds
      */
     protected int getMaxRuntimeInSecondsForTest(String testName) {
-    	return 8;
+    	return 5;
     }
     
 	/**

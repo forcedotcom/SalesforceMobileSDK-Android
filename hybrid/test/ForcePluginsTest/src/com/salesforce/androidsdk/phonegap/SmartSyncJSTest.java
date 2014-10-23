@@ -40,235 +40,240 @@ public class SmartSyncJSTest extends JSTestCase {
     public SmartSyncJSTest() {
         super("SmartSyncTestSuite");
     }
+
+    @Override
+    protected int getMaxRuntimeInSecondsForTest(String testName) {
+    	return 30;
+    }    
     
     @Override
     public List<String> getTestNames() {
 		return Arrays.asList(new String[] { 
-				"testStoreCacheInit",
-				"testStoreCacheRetrieve",
-				"testStoreCacheSave",
-				"testStoreCacheSaveAll",
-				"testStoreCacheRemove",
-				"testStoreCacheFind",
-				"testStoreCacheAddLocalFields",
-				"testSObjectTypeDescribe",
-				"testSObjectTypeGetMetadata",
-				"testSObjectTypeDescribeLayout",
-				"testSObjectTypeCacheOnlyMode",
-				"testSObjectTypeCacheMerge",
-				"testMultiSObjectTypes",
-				"testSObjectTypeReset",
-				"testSyncRemoteObjectWithCacheCreate",
-				"testSyncRemoteObjectWithCacheRead",
-				"testSyncRemoteObjectWithCacheUpdate",
-				"testSyncRemoteObjectWithCacheDelete",
-				"testSyncSObjectWithServerCreate",
-				"testSyncSObjectWithServerRead",
-				"testSyncSObjectWithServerUpdate",
-				"testSyncSObjectWithServerDelete",
-				"testSyncSObjectCreate",
-				"testSyncSObjectRetrieve",
-				"testSyncSObjectUpdate",
-				"testSyncSObjectDelete",
-				"testSyncSObjectDetectConflictCreate",
-				"testSyncSObjectDetectConflictRetrieve",
-				"testSyncSObjectDetectConflictUpdate",
-				"testSyncSObjectDetectConflictDelete",
-				"testSObjectFetch",
-				"testSObjectSave",
-				"testSObjectDestroy",
-				"testSyncApexRestObjectWithServerCreate",
-				"testSyncApexRestObjectWithServerRead",
-				"testSyncApexRestObjectWithServerUpdate",
-				"testSyncApexRestObjectWithServerDelete",
-				"testFetchApexRestObjectsFromServer",
-				"testFetchSObjectsFromServer",
-				"testFetchSObjects",
-				"testSObjectCollectionFetch",
-				"testSyncDown",
-				"testSyncUpLocallyUpdated",
-				"testSyncUpLocallyDeleted",
-				"testSyncUpLocallyCreated"
+//				"testStoreCacheInit",
+//				"testStoreCacheRetrieve",
+//				"testStoreCacheSave",
+//				"testStoreCacheSaveAll",
+//				"testStoreCacheRemove",
+//				"testStoreCacheFind",
+//				"testStoreCacheAddLocalFields",
+//				"testSObjectTypeDescribe",
+//				"testSObjectTypeGetMetadata",
+//				"testSObjectTypeDescribeLayout",
+//				"testSObjectTypeCacheOnlyMode",
+//				"testSObjectTypeCacheMerge",
+//				"testMultiSObjectTypes",
+//				"testSObjectTypeReset",
+//				"testSyncRemoteObjectWithCacheCreate",
+//				"testSyncRemoteObjectWithCacheRead",
+//				"testSyncRemoteObjectWithCacheUpdate",
+//				"testSyncRemoteObjectWithCacheDelete",
+//				"testSyncSObjectWithServerCreate",
+//				"testSyncSObjectWithServerRead",
+//				"testSyncSObjectWithServerUpdate",
+//				"testSyncSObjectWithServerDelete",
+//				"testSyncSObjectCreate",
+//				"testSyncSObjectRetrieve",
+//				"testSyncSObjectUpdate",
+//				"testSyncSObjectDelete",
+//				"testSyncSObjectDetectConflictCreate",
+//				"testSyncSObjectDetectConflictRetrieve",
+//				"testSyncSObjectDetectConflictUpdate",
+//				"testSyncSObjectDetectConflictDelete",
+//				"testSObjectFetch",
+//				"testSObjectSave",
+//				"testSObjectDestroy",
+//				"testSyncApexRestObjectWithServerCreate",
+//				"testSyncApexRestObjectWithServerRead",
+//				"testSyncApexRestObjectWithServerUpdate",
+//				"testSyncApexRestObjectWithServerDelete",
+//				"testFetchApexRestObjectsFromServer",
+//				"testFetchSObjectsFromServer",
+//				"testFetchSObjects",
+//				"testSObjectCollectionFetch",
+//				"testSyncDown",
+				"testSyncUpLocallyUpdated" //,
+//				"testSyncUpLocallyDeleted",
+//				"testSyncUpLocallyCreated"
 				});
 	}
     
-    public void testStoreCacheInit() {
-        runTest("testStoreCacheInit");
-    }
-
-    public void testStoreCacheRetrieve() {
-        runTest("testStoreCacheRetrieve");
-    }
-
-    public void testStoreCacheSave() {
-        runTest("testStoreCacheSave");
-    }
-
-    public void testStoreCacheSaveAll() {
-        runTest("testStoreCacheSaveAll");
-    }
-
-    public void testStoreCacheRemove() {
-        runTest("testStoreCacheRemove");
-    }
-
-    public void testStoreCacheFind() {
-        runTest("testStoreCacheFind");
-    }
-
-    public void testStoreCacheAddLocalFields() {
-        runTest("testStoreCacheAddLocalFields");
-    }
-
-    public void testSObjectTypeDescribe() {
-        runTest("testSObjectTypeDescribe");
-    }
-
-    public void testSObjectTypeGetMetadata() {
-        runTest("testSObjectTypeGetMetadata");
-    }
-
-    public void testSObjectTypeDescribeLayout() {
-        runTest("testSObjectTypeDescribeLayout");
-    }
-
-    public void testSObjectTypeCacheOnlyMode() {
-        runTest("testSObjectTypeCacheOnlyMode");
-    }
-
-    public void testSObjectTypeCacheMerge() {
-        runTest("testSObjectTypeCacheMerge");
-    }
-
-    public void testMultiSObjectTypes() {
-        runTest("testMultiSObjectTypes");
-    }
-
-    public void testSObjectTypeReset() {
-        runTest("testSObjectTypeReset");
-    }
-
-    public void testSyncRemoteObjectWithCacheCreate() {
-        runTest("testSyncRemoteObjectWithCacheCreate");
-    }
-
-    public void testSyncRemoteObjectWithCacheRead() {
-        runTest("testSyncRemoteObjectWithCacheRead");
-    }
-
-    public void testSyncRemoteObjectWithCacheUpdate() {
-        runTest("testSyncRemoteObjectWithCacheUpdate");
-    }
-
-    public void testSyncRemoteObjectWithCacheDelete() {
-        runTest("testSyncRemoteObjectWithCacheDelete");
-    }
-
-    public void testSyncSObjectWithServerCreate() {
-        runTest("testSyncSObjectWithServerCreate");
-    }
-
-    public void testSyncSObjectWithServerRead() {
-        runTest("testSyncSObjectWithServerRead");
-    }
-
-    public void testSyncSObjectWithServerUpdate() {
-        runTest("testSyncSObjectWithServerUpdate");
-    }
-
-    public void testSyncSObjectWithServerDelete() {
-        runTest("testSyncSObjectWithServerDelete");
-    }
-
-    public void testSyncSObjectCreate() {
-        runTest("testSyncSObjectCreate");
-    }
-
-    public void testSyncSObjectRetrieve() {
-        runTest("testSyncSObjectRetrieve");
-    }
-
-    public void testSyncSObjectUpdate() {
-        runTest("testSyncSObjectUpdate");
-    }
-
-    public void testSyncSObjectDelete() {
-        runTest("testSyncSObjectDelete");
-    }
-
-    public void testSyncSObjectDetectConflictCreate() {
-        runTest("testSyncSObjectDetectConflictCreate");
-    }
-
-    public void testSyncSObjectDetectConflictRetrieve() {
-        runTest("testSyncSObjectDetectConflictRetrieve");
-    }
-
-    public void testSyncSObjectDetectConflictUpdate() {
-        runTest("testSyncSObjectDetectConflictUpdate");
-    }
-
-    public void testSyncSObjectDetectConflictDelete() {
-        runTest("testSyncSObjectDetectConflictDelete");
-    }
-
-    public void testSObjectFetch() {
-        runTest("testSObjectFetch");
-    }
-
-    public void testSObjectSave() {
-        runTest("testSObjectSave");
-    }
-
-    public void testSObjectDestroy() {
-        runTest("testSObjectDestroy");
-    }
-
-    public void testSyncApexRestObjectWithServerCreate() {
-        runTest("testSyncApexRestObjectWithServerCreate");
-    }
-
-    public void testSyncApexRestObjectWithServerRead() {
-        runTest("testSyncApexRestObjectWithServerRead");
-    }
-
-    public void testSyncApexRestObjectWithServerUpdate() {
-        runTest("testSyncApexRestObjectWithServerUpdate");
-    }
-
-    public void testSyncApexRestObjectWithServerDelete() {
-        runTest("testSyncApexRestObjectWithServerDelete");
-    }
-
-    public void testFetchApexRestObjectsFromServer() {
-        runTest("testFetchApexRestObjectsFromServer");
-    }
-
-    public void testFetchSObjectsFromServer() {
-        runTest("testFetchSObjectsFromServer");
-    }
-
-    public void testFetchSObjects() {
-        runTest("testFetchSObjects");
-    }
-
-    public void testSObjectCollectionFetch() {
-        runTest("testSObjectCollectionFetch");
-    }
-
-    public void testSyncDown() {
-        runTest("testSyncDown");
-    }
-
+//    public void testStoreCacheInit() {
+//        runTest("testStoreCacheInit");
+//    }
+//
+//    public void testStoreCacheRetrieve() {
+//        runTest("testStoreCacheRetrieve");
+//    }
+//
+//    public void testStoreCacheSave() {
+//        runTest("testStoreCacheSave");
+//    }
+//
+//    public void testStoreCacheSaveAll() {
+//        runTest("testStoreCacheSaveAll");
+//    }
+//
+//    public void testStoreCacheRemove() {
+//        runTest("testStoreCacheRemove");
+//    }
+//
+//    public void testStoreCacheFind() {
+//        runTest("testStoreCacheFind");
+//    }
+//
+//    public void testStoreCacheAddLocalFields() {
+//        runTest("testStoreCacheAddLocalFields");
+//    }
+//
+//    public void testSObjectTypeDescribe() {
+//        runTest("testSObjectTypeDescribe");
+//    }
+//
+//    public void testSObjectTypeGetMetadata() {
+//        runTest("testSObjectTypeGetMetadata");
+//    }
+//
+//    public void testSObjectTypeDescribeLayout() {
+//        runTest("testSObjectTypeDescribeLayout");
+//    }
+//
+//    public void testSObjectTypeCacheOnlyMode() {
+//        runTest("testSObjectTypeCacheOnlyMode");
+//    }
+//
+//    public void testSObjectTypeCacheMerge() {
+//        runTest("testSObjectTypeCacheMerge");
+//    }
+//
+//    public void testMultiSObjectTypes() {
+//        runTest("testMultiSObjectTypes");
+//    }
+//
+//    public void testSObjectTypeReset() {
+//        runTest("testSObjectTypeReset");
+//    }
+//
+//    public void testSyncRemoteObjectWithCacheCreate() {
+//        runTest("testSyncRemoteObjectWithCacheCreate");
+//    }
+//
+//    public void testSyncRemoteObjectWithCacheRead() {
+//        runTest("testSyncRemoteObjectWithCacheRead");
+//    }
+//
+//    public void testSyncRemoteObjectWithCacheUpdate() {
+//        runTest("testSyncRemoteObjectWithCacheUpdate");
+//    }
+//
+//    public void testSyncRemoteObjectWithCacheDelete() {
+//        runTest("testSyncRemoteObjectWithCacheDelete");
+//    }
+//
+//    public void testSyncSObjectWithServerCreate() {
+//        runTest("testSyncSObjectWithServerCreate");
+//    }
+//
+//    public void testSyncSObjectWithServerRead() {
+//        runTest("testSyncSObjectWithServerRead");
+//    }
+//
+//    public void testSyncSObjectWithServerUpdate() {
+//        runTest("testSyncSObjectWithServerUpdate");
+//    }
+//
+//    public void testSyncSObjectWithServerDelete() {
+//        runTest("testSyncSObjectWithServerDelete");
+//    }
+//
+//    public void testSyncSObjectCreate() {
+//        runTest("testSyncSObjectCreate");
+//    }
+//
+//    public void testSyncSObjectRetrieve() {
+//        runTest("testSyncSObjectRetrieve");
+//    }
+//
+//    public void testSyncSObjectUpdate() {
+//        runTest("testSyncSObjectUpdate");
+//    }
+//
+//    public void testSyncSObjectDelete() {
+//        runTest("testSyncSObjectDelete");
+//    }
+//
+//    public void testSyncSObjectDetectConflictCreate() {
+//        runTest("testSyncSObjectDetectConflictCreate");
+//    }
+//
+//    public void testSyncSObjectDetectConflictRetrieve() {
+//        runTest("testSyncSObjectDetectConflictRetrieve");
+//    }
+//
+//    public void testSyncSObjectDetectConflictUpdate() {
+//        runTest("testSyncSObjectDetectConflictUpdate");
+//    }
+//
+//    public void testSyncSObjectDetectConflictDelete() {
+//        runTest("testSyncSObjectDetectConflictDelete");
+//    }
+//
+//    public void testSObjectFetch() {
+//        runTest("testSObjectFetch");
+//    }
+//
+//    public void testSObjectSave() {
+//        runTest("testSObjectSave");
+//    }
+//
+//    public void testSObjectDestroy() {
+//        runTest("testSObjectDestroy");
+//    }
+//
+//    public void testSyncApexRestObjectWithServerCreate() {
+//        runTest("testSyncApexRestObjectWithServerCreate");
+//    }
+//
+//    public void testSyncApexRestObjectWithServerRead() {
+//        runTest("testSyncApexRestObjectWithServerRead");
+//    }
+//
+//    public void testSyncApexRestObjectWithServerUpdate() {
+//        runTest("testSyncApexRestObjectWithServerUpdate");
+//    }
+//
+//    public void testSyncApexRestObjectWithServerDelete() {
+//        runTest("testSyncApexRestObjectWithServerDelete");
+//    }
+//
+//    public void testFetchApexRestObjectsFromServer() {
+//        runTest("testFetchApexRestObjectsFromServer");
+//    }
+//
+//    public void testFetchSObjectsFromServer() {
+//        runTest("testFetchSObjectsFromServer");
+//    }
+//
+//    public void testFetchSObjects() {
+//        runTest("testFetchSObjects");
+//    }
+//
+//    public void testSObjectCollectionFetch() {
+//        runTest("testSObjectCollectionFetch");
+//    }
+//
+//    public void testSyncDown() {
+//        runTest("testSyncDown");
+//    }
+//
     public void testSyncUpLocallyUpdated() {
         runTest("testSyncUpLocallyUpdated");
     }
-
-    public void testSyncUpLocallyDeleted() {
-        runTest("testSyncUpLocallyDeleted");
-    }
-
-    public void testSyncUpLocallyCreated() {
-        runTest("testSyncUpLocallyCreated");
-    }
+//
+//    public void testSyncUpLocallyDeleted() {
+//        runTest("testSyncUpLocallyDeleted");
+//    }
+//
+//    public void testSyncUpLocallyCreated() {
+//        runTest("testSyncUpLocallyCreated");
+//    }
 }
