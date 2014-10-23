@@ -305,12 +305,12 @@ public class CacheManager {
                 return 0;
             }
             final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(cacheType,
-            		SmartStore.SOUP_ENTRY_ID, cacheKey, 1);
+            		CACHE_KEY, cacheKey, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
-                final JSONArray array = results.optJSONArray(0);
-                if (array != null && array.length() > 0) {
-                    return array.optLong(0);
+                final JSONObject jObj = results.optJSONObject(0);
+                if (jObj != null) {
+                    return jObj.optLong(SmartStore.SOUP_LAST_MODIFIED_DATE);
                 }
             }
         } catch (IllegalStateException e) {
@@ -342,12 +342,12 @@ public class CacheManager {
         }
 
         // Checks in memory cache first.
-//        if (objectTypeCacheMap != null) {
-//            final List<SalesforceObjectType> cachedObjTypes = objectTypeCacheMap.get(cacheKey);
-//            if (cachedObjTypes != null && cachedObjTypes.size() > 0) {
-//                return cachedObjTypes;
-//            }
-//        }
+        if (objectTypeCacheMap != null) {
+            final List<SalesforceObjectType> cachedObjTypes = objectTypeCacheMap.get(cacheKey);
+            if (cachedObjTypes != null && cachedObjTypes.size() > 0) {
+                return cachedObjTypes;
+            }
+        }
 
         // Falls back on smart store cache if in memory cache is empty.
         try {
@@ -355,30 +355,27 @@ public class CacheManager {
             		CACHE_KEY, cacheKey, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
-                final JSONArray array = results.optJSONArray(0);
-                if (array != null && array.length() > 0) {
-                    final String res = array.optString(0);
+            	final JSONObject jObj = results.optJSONObject(0);
+                if (jObj != null) {
+                    final JSONArray res = jObj.optJSONArray(CACHE_DATA);
                     if (res != null && res.length() > 0) {
-                        final JSONArray cachedResults = new JSONArray(res);
-                        if (cachedResults.length() > 0) {
-                            final List<SalesforceObjectType> cachedList = new ArrayList<SalesforceObjectType>();
-                            for (int j = 0; j < cachedResults.length(); j++) {
-                                final JSONObject sfObj = cachedResults.optJSONObject(j);
-                                if (sfObj != null) {
-                                    cachedList.add(new SalesforceObjectType(sfObj));
-                                }
+                    	final List<SalesforceObjectType> cachedList = new ArrayList<SalesforceObjectType>();
+                        for (int j = 0; j < res.length(); j++) {
+                            final JSONObject sfObj = res.optJSONObject(j);
+                            if (sfObj != null) {
+                                cachedList.add(new SalesforceObjectType(sfObj));
                             }
-                            if (cachedList.size() > 0) {
+                        }
+                        if (cachedList.size() > 0) {
 
-                                // Inserts or updates data in memory cache.
-                                if (objectTypeCacheMap != null) {
-                                    if (objectTypeCacheMap.get(cacheKey) != null) {
-                                        objectTypeCacheMap.remove(cacheKey);
-                                    }
-                                    objectTypeCacheMap.put(cacheKey, cachedList);
+                            // Inserts or updates data in memory cache.
+                            if (objectTypeCacheMap != null) {
+                                if (objectTypeCacheMap.get(cacheKey) != null) {
+                                    objectTypeCacheMap.remove(cacheKey);
                                 }
-                                return cachedList;
+                                objectTypeCacheMap.put(cacheKey, cachedList);
                             }
+                            return cachedList;
                         }
                     }
                 }
@@ -409,12 +406,12 @@ public class CacheManager {
         }
 
         // Checks in memory cache first.
-//        if (objectCacheMap != null) {
-//            final List<SalesforceObject> cachedObjs = objectCacheMap.get(cacheKey);
-//            if (cachedObjs != null && cachedObjs.size() > 0) {
-//                return cachedObjs;
-//            }
-//        }
+        if (objectCacheMap != null) {
+            final List<SalesforceObject> cachedObjs = objectCacheMap.get(cacheKey);
+            if (cachedObjs != null && cachedObjs.size() > 0) {
+                return cachedObjs;
+            }
+        }
 
         // Falls back on smart store cache if in memory cache is empty.
         try {
@@ -422,30 +419,27 @@ public class CacheManager {
             		CACHE_KEY, cacheKey, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
-                final JSONArray array = results.optJSONArray(0);
-                if (array != null && array.length() > 0) {
-                    final String res = array.optString(0);
+            	final JSONObject jObj = results.optJSONObject(0);
+                if (jObj != null) {
+                    final JSONArray res = jObj.optJSONArray(CACHE_DATA);
                     if (res != null && res.length() > 0) {
-                        final JSONArray cachedResults = new JSONArray(res);
-                        if (cachedResults.length() > 0) {
-                            final List<SalesforceObject> cachedList = new ArrayList<SalesforceObject>();
-                            for (int j = 0; j < cachedResults.length(); j++) {
-                                final JSONObject sfObj = cachedResults.optJSONObject(j);
-                                if (sfObj != null) {
-                                    cachedList.add(new SalesforceObject(sfObj));
-                                }
+                        final List<SalesforceObject> cachedList = new ArrayList<SalesforceObject>();
+                        for (int j = 0; j < res.length(); j++) {
+                            final JSONObject sfObj = res.optJSONObject(j);
+                            if (sfObj != null) {
+                                cachedList.add(new SalesforceObject(sfObj));
                             }
-                            if (cachedList.size() > 0) {
+                        }
+                        if (cachedList.size() > 0) {
 
-                                // Inserts or updates data in memory cache.
-                                if (objectCacheMap != null) {
-                                    if (objectCacheMap.get(cacheKey) != null) {
-                                        objectCacheMap.remove(cacheKey);
-                                    }
-                                    objectCacheMap.put(cacheKey, cachedList);
+                            // Inserts or updates data in memory cache.
+                            if (objectCacheMap != null) {
+                                if (objectCacheMap.get(cacheKey) != null) {
+                                    objectCacheMap.remove(cacheKey);
                                 }
-                                return cachedList;
+                                objectCacheMap.put(cacheKey, cachedList);
                             }
+                            return cachedList;
                         }
                     }
                 }
@@ -476,12 +470,12 @@ public class CacheManager {
         }
 
         // Checks in memory cache first.
-//        if (objectTypeLayoutCacheMap != null) {
-//            final List<SalesforceObjectTypeLayout> cachedObjs = objectTypeLayoutCacheMap.get(cacheKey);
-//            if (cachedObjs != null && cachedObjs.size() > 0) {
-//                return cachedObjs;
-//            }
-//        }
+        if (objectTypeLayoutCacheMap != null) {
+            final List<SalesforceObjectTypeLayout> cachedObjs = objectTypeLayoutCacheMap.get(cacheKey);
+            if (cachedObjs != null && cachedObjs.size() > 0) {
+                return cachedObjs;
+            }
+        }
 
         // Falls back on smart store cache if in memory cache is empty.
         try {
@@ -489,35 +483,32 @@ public class CacheManager {
             		CACHE_KEY, cacheKey, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
-                final JSONArray array = results.optJSONArray(0);
-                if (array != null && array.length() > 0) {
-                    final String res = array.optString(0);
+            	final JSONObject jObj = results.optJSONObject(0);
+                if (jObj != null) {
+                    final JSONArray res = jObj.optJSONArray(CACHE_DATA);
                     if (res != null && res.length() > 0) {
-                        final JSONArray cachedResults = new JSONArray(res);
-                        if (cachedResults.length() > 0) {
-                            final List<SalesforceObjectTypeLayout> cachedList = new ArrayList<SalesforceObjectTypeLayout>();
-                            for (int j = 0; j < cachedResults.length(); j++) {
-                                final JSONObject sfObj = cachedResults.optJSONObject(j);
-                                if (sfObj != null) {
-                                    final JSONObject rawData = sfObj.optJSONObject("rawData");
-                                    final String type = sfObj.optString("type");
-                                    if (rawData != null && type != null &&
-                                    		!Constants.EMPTY_STRING.equals(type)) {
-                                        cachedList.add(new SalesforceObjectTypeLayout(type, rawData));
-                                    }
+                        final List<SalesforceObjectTypeLayout> cachedList = new ArrayList<SalesforceObjectTypeLayout>();
+                        for (int j = 0; j < res.length(); j++) {
+                            final JSONObject sfObj = res.optJSONObject(j);
+                            if (sfObj != null) {
+                                final JSONObject rawData = sfObj.optJSONObject("rawData");
+                                final String type = sfObj.optString("type");
+                                if (rawData != null && type != null &&
+                                		!Constants.EMPTY_STRING.equals(type)) {
+                                    cachedList.add(new SalesforceObjectTypeLayout(type, rawData));
                                 }
                             }
-                            if (cachedList.size() > 0) {
+                        }
+                        if (cachedList.size() > 0) {
 
-                                // Inserts or updates data in memory cache.
-                                if (objectTypeLayoutCacheMap != null) {
-                                    if (objectTypeLayoutCacheMap.get(cacheKey) != null) {
-                                        objectTypeLayoutCacheMap.remove(cacheKey);
-                                    }
-                                    objectTypeLayoutCacheMap.put(cacheKey, cachedList);
+                            // Inserts or updates data in memory cache.
+                            if (objectTypeLayoutCacheMap != null) {
+                                if (objectTypeLayoutCacheMap.get(cacheKey) != null) {
+                                    objectTypeLayoutCacheMap.remove(cacheKey);
                                 }
-                                return cachedList;
+                                objectTypeLayoutCacheMap.put(cacheKey, cachedList);
                             }
+                            return cachedList;
                         }
                     }
                 }
@@ -689,8 +680,7 @@ public class CacheManager {
     	registerMasterSoup();
         if (!doesCacheExist(soupName)) {
             final IndexSpec[] indexSpecs = {
-                    new IndexSpec(CACHE_KEY, Type.string),
-                    new IndexSpec(SmartStore.SOUP_LAST_MODIFIED_DATE, Type.integer)
+                    new IndexSpec(CACHE_KEY, Type.string)
             };
             smartStore.registerSoup(soupName, indexSpecs);
         }
