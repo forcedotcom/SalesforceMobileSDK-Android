@@ -42,8 +42,9 @@ var fs = require('fs');
 var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
-var version = '2.3.0';
+var version = '2.3.1';
 var minimumCordovaVersion = '3.5';
+var androidExePath;
 
 // Calling main
 main(process.argv);
@@ -97,9 +98,15 @@ function usage() {
 // Helper for 'create' command
 //
 function createApp(config) {
+    // Verify necessary Android prerequisites.
+    androidExePath = getAndroidSDKToolPath();
+    if (androidExePath === null) {
+        process.exit(8);
+    }
+
     // Native app creation
     if (config.apptype === 'native') {
-        config.relativeTemplateDir = 'native/TemplateApp';
+        config.relativeTemplateDir = path.join('native', 'TemplateApp');
         config.templateAppName = 'Template';
         config.templatePackageName = 'com.salesforce.samples.templateapp';
         createNativeApp(config, true);
@@ -108,6 +115,26 @@ function createApp(config) {
     else {
         createHybridApp(config);
     }
+}
+
+function getAndroidSDKToolPath() {
+    var androidHomeDir = process.env.ANDROID_HOME;
+    if (typeof androidHomeDir !== 'string') {
+        console.log(outputColors.red + 'You must set the ANDROID_HOME environment variable to the path of your installation of the Android SDK.' + outputColors.reset);
+        return null;
+    }
+
+    var androidExePath = path.join(androidHomeDir, 'tools', 'android');
+    var isWindows = (/^win/i).test(process.platform);
+    if (isWindows) {
+        androidExePath = androidExePath + '.bat';
+    }
+    if (!fs.existsSync(androidExePath)) {
+        console.log(outputColors.red + 'The "android" utility does not exist at ' + androidExePath + '.  Make sure you\'ve properly installed the Android SDK.' + outputColors.reset);
+        return null;
+    }
+
+    return androidExePath;
 }
 
 //
@@ -135,7 +162,7 @@ function createHybridApp(config) {
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android');
     shelljs.exec('cordova plugin add https://github.com/forcedotcom/SalesforceMobileSDK-CordovaPlugin');
-    shelljs.exec('node plugins/com.salesforce/tools/postinstall-android.js ' + config.targetandroidapi + ' ' + config.usesmartstore);
+    shelljs.exec('node ' + path.join('plugins', 'com.salesforce', 'tools', 'postinstall-android.js') + ' ' + config.targetandroidapi + ' ' + config.usesmartstore);
 
     // Remove the default Cordova app.
     shelljs.rm('-rf', path.join('www', '*'));
@@ -159,7 +186,7 @@ function createHybridApp(config) {
     };
     // console.log("Bootconfig:" + JSON.stringify(bootconfig, null, 2));
 
-    fs.writeFileSync('www/bootconfig.json', JSON.stringify(bootconfig, null, 2));
+    fs.writeFileSync(path.join('www', 'bootconfig.json'), JSON.stringify(bootconfig, null, 2));
     shelljs.exec('cordova prepare android');
     shelljs.popd();
 
@@ -284,7 +311,7 @@ function createNativeApp(config, showNextSteps) {
     // copy <Android Package>/libs/SalesforceSDK -> <App Folder>/forcedroid/libs/SalesforceSDK
     var salesforceSDKRelativePath = path.join('libs', 'SalesforceSDK');
     copyFromSDK(packageSdkRootDir, config.targetdir, salesforceSDKRelativePath);
-    shelljs.exec('android update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), salesforceSDKRelativePath));
+    shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), salesforceSDKRelativePath));
 
     // Copy Cordova library project into the app folder as well, if it's not already there.
     // copy <Android Package>/external/cordova/framework -> <App Folder>/forcedroid/external/cordova/framework
@@ -293,7 +320,7 @@ function createNativeApp(config, showNextSteps) {
     copyFromSDK(packageSdkRootDir, config.targetdir, path.join(cordovaRelativePath, 'framework'));
     shelljs.cp(path.join(packageSdkRootDir, cordovaRelativePath, 'VERSION'), destCordovaDir);
     console.log(destCordovaDir);
-    shelljs.exec('android update project -p ' + path.join(destCordovaDir, 'framework'));
+    shelljs.exec(androidExePath + ' update project -p ' + path.join(destCordovaDir, 'framework'));
     console.log('update done');
 
     // Copy SmartStore library project into the app folder as well, if it's not already there - if required.
@@ -302,7 +329,7 @@ function createNativeApp(config, showNextSteps) {
     if (config.usesmartstore) {
         var smartStoreRelativePath = path.join('libs', 'SmartStore');
         copyFromSDK(packageSdkRootDir, config.targetdir, smartStoreRelativePath);
-        shelljs.exec('android update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), smartStoreRelativePath));
+        shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), smartStoreRelativePath));
         copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
 
@@ -313,7 +340,7 @@ function createNativeApp(config, showNextSteps) {
     var libProject = config.usesmartstore
         ? path.join('..', path.basename(packageSdkRootDir), smartStoreRelativePath)
         : path.join('..', path.basename(packageSdkRootDir), salesforceSDKRelativePath);
-    shelljs.exec('android update project -p ' + config.projectDir + ' -t "android-' + config.targetandroidapi + '" -l ' + libProject);
+    shelljs.exec(androidExePath + ' update project -p ' + config.projectDir + ' -t "android-' + config.targetandroidapi + '" -l ' + libProject);
     '\nmanifestmerger.enabled=true\n'.toEnd(projectPropertiesFilePath);
 
     // Inform the user of next steps if requested.
