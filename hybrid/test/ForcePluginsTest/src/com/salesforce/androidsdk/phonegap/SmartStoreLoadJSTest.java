@@ -42,6 +42,11 @@ public class SmartStoreLoadJSTest extends JSTestCase {
     }
     
     @Override
+    protected int getMaxRuntimeInSecondsForTest(String testName) {
+    	return 30;
+    }    
+    
+    @Override
     public List<String> getTestNames() {
     	return Arrays.asList(new String[] {"testNumerousFields", "testIncreasingFieldLength", "testAddAndRetrieveManyEntries", "testUpsertManyEntries", "testUpsertAndQueryEntries", "testUpsertConcurrentEntries" });
     }

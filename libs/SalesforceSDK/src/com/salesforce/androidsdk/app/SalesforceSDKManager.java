@@ -774,12 +774,13 @@ public class SalesforceSDKManager {
 		String clientId = null;
 		String loginServer = null;
 		if (account != null) {
+			String passcodeHash = getPasscodeHash();
 			refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account),
-	        		getPasscodeHash());
+	        		passcodeHash);
 	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
-	        		AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
+	        		AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
 	        loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
-	        		AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());
+	        		AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
 		}
 
 		/*

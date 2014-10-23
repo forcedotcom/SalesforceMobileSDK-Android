@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.util.test;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import android.app.Instrumentation;
 import android.content.Intent;
@@ -89,14 +90,19 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 		        activity.sendJavascript(jsCmd);
 		        Log.i(getClass().getSimpleName(), "running test:" + testName);
 		        
-		        // Block until test completes
+		        // Block until test completes or times out
 		        TestResult result = null;
+	            int timeout = getMaxRuntimeInSecondsForTest(testName);
 		        try {
-		            result = TestRunnerPlugin.testResults.take();
+					result = TestRunnerPlugin.testResults.poll(timeout, TimeUnit.SECONDS);
+		            if (result == null) {
+		            	result = new TestResult(testName, false, "Timeout (" + timeout + " seconds) exceeded", timeout);
+		            }
 		        }
-		        catch (InterruptedException intEx) {
-		        	Log.e(getClass().getSimpleName(), "Test interrupted", intEx);
+		        catch (Exception e) {
+	            	result = new TestResult(testName, false, "Test failed", timeout);
 		        }
+		        Log.i(getClass().getSimpleName(), "done running test:" + testName);
 		        
 		        // Save result
 		        testResults.get(jsSuite).put(testName, result);
@@ -112,6 +118,14 @@ public abstract class JSTestCase extends InstrumentationTestCase {
      * @return all the javascript test names in the suite
      */
     protected abstract List<String> getTestNames();
+    
+    /**
+     * @param testName
+     * @return maximum time the test should be allowed to run in seconds
+     */
+    protected int getMaxRuntimeInSecondsForTest(String testName) {
+    	return 5;
+    }
     
 	/**
 	 * Helper method: no longer actually run the javascript test, instead asserts based on saved results
