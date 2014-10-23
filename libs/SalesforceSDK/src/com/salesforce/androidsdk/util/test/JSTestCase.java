@@ -102,6 +102,7 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 		        catch (Exception e) {
 	            	result = new TestResult(testName, false, "Test failed", timeout);
 		        }
+		        Log.i(getClass().getSimpleName(), "done running test:" + testName);
 		        
 		        // Save result
 		        testResults.get(jsSuite).put(testName, result);
