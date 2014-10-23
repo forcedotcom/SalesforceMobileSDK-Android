@@ -140,8 +140,7 @@ public class UserAccountManager {
 	 * @return Current user that's logged in.
 	 */
 	public UserAccount getCurrentUser() {
-		final Account account = getCurrentAccount();
-		return account == null ? null : buildUserAccount(account);
+		return buildUserAccount(getCurrentAccount());
 	}
 
 	/**
