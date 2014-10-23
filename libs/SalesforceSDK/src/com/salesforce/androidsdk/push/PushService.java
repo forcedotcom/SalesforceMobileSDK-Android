@@ -253,7 +253,7 @@ public class PushService extends IntentService {
     			unregisterSFDCPushNotification(id, account);
     		}
     	}
-        context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT));
+        context.sendBroadcast((new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT)).setPackage(context.getPackageName()));
         scheduleGCMRetry(false, account);
     }
 
@@ -342,8 +342,8 @@ public class PushService extends IntentService {
     		Log.e(TAG, "Error occurred during SFDC un-registration.", e);
     	} finally {
         	PushMessaging.clearRegistrationInfo(context, account);
-            context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT));
-            context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_EVENT));
+            context.sendBroadcast((new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT)).setPackage(context.getPackageName()));
+            context.sendBroadcast((new Intent(PushMessaging.UNREGISTERED_EVENT)).setPackage(context.getPackageName()));
         }
     }
 

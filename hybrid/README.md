@@ -22,7 +22,10 @@ Inside the HYBRID_DIR, you will find several projects:
 2. **SampleApps/ContactExplorer**: The ContactExplorer sample app uses PhoneGap (aka "cordova") to retrieve local device contacts.  It also uses the forcetk.mobilesdk.js toolkit to implement REST transactions with the Salesforce REST API.  The app uses the OAuth2 support in Salesforce SDK to obtain OAuth credentials, then propagates those credentials to forcetk by sending a javascript event
 3. **SampleApps/VFConnector**: The VFConnector sample app demonstrates how to wrap a VisualForce page in a native container.  This example assumes that your org has a VisualForce page called "BasicVFTest".  The app first obtains OAuth login credentials using the Salesforce SDK OAuth2 support, then uses those credentials to set appropriate webview cookies for accessing VisualForce pages
 4. **SampleApps/AccountEditor**: The AccountEditor sample app allows you to search / create / edit / delete accounts online and offline using the new SmartSync library (smartsync.js)
-5. **SampleApps/SmartStoreExplorer**: The SmartStoreExplorer sample app let you explore SmartStore APIs
+5. **SampleApps/SmartStoreExplorer**: The SmartStoreExplorer sample app lets you explore SmartStore APIs
+6. **SampleApps/HybridFileExplorer**: The HybridFileExplorer sample app lets you access files in Salesforce using file APIs
+7. **SampleApps/SimpleSync**: The SimpleSync sample app demonstrates two way synching of Salesforce records
+8. **SampleApps/UserList**: The UserList sample app is a simple hybrid app that lists the users in an org
 
 # Running sample apps from Eclipse
 
@@ -33,71 +36,15 @@ Inside the HYBRID_DIR, you will find several projects:
 5. Right click on any of the sample apps and choose Run As -> Android Application to run it.
 6. Right click on any of the test project and choose Run As -> Android JUnit Test to run the tests.
 
-
 # Creating a new hybrid application using SalesforceSDK
 
-There is a build.xml in $SALESFORCE_SDK_DIR.
-If you type:
-<pre>
-ant
-</pre>
+To create a new hybrid application, follow the instructions here:
 
-It will print out information about available targets.
-
-To create a new hybrid application with local html/js simply do:
-<pre>
-ant create_hybrid_local -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} [-Duse.smartstore=true]
-</pre>
-
-Where:
-* appName: the name for the new application 
-* targetDir: the directory where the code should reside 
-* packageName: the java package for the new application e.g. com.acme.mobileapp
-* only pass -Duse.smartstore=true if you want SmartStore support
-
-Put your html/js in ${target.dir}/assets/www/.
-
-To create a new hybrid application with remote html/js simply do:
-<pre>
-ant create_hybrid_remote -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} -Dstart.page={startPage} [-Duse.smartstore=true]
-</pre>
-
-Where:
-* appName: the name for the new application 
-* targetDir: the directory where the code should reside 
-* packageName: the java package for the new application e.g. com.acme.mobileapp
-* startPage: the remote start page for the application e.g. /apex/MyFirstApp
-* only pass -Duse.smartstore=true if you want SmartStore support
-
-
-If it's your first time build an application with the Salesforce SDK, do the following:
-<pre>
-cd $LIBS_DIR/SalesforceSDK
-$ANDROID_SDK_DIR/android update project -p .
-cd $LIBS_DIR/SmartStore
-$ANDROID_SDK_DIR/android update project -p .
-</pre>
-
-To build the new application, do the following:
-<pre>
-cd $TARGET_DIR
-$ANDROID_SDK_DIR/android update project -p .
-ant clean debug
-</pre>
-
-To deploy the application, start an emulator or plugin your device and run:
-<pre>
-ant installd
-</pre>
-
-Before you ship, make sure to plug in your oauth client id and callback url in:
-<pre>
-$TARGET_DIR/assets/www/bootconfig.json
-</pre>
+* [Using forcedroid to create Mobile SDK apps](https://www.npmjs.org/package/forcedroid)
 
 # Running your new native application from Eclipse
 1. Launch Eclipse
 2. Go to File -> Import and select General -> Existing Projects into Workspace.
-3. Import the $SALESFORCE_SDK_DIR/libs/SalesforceSDK and the $SALESFORCE_SDK_DIR/libs/SmartStore (only if you passed -Duse.smartstore=true) library projects and your newly created project $TARGET_DIR into the workspace
+3. Import the $SALESFORCE_SDK_DIR/libs/SalesforceSDK, the $SALESFORCE_SDK_DIR/libs/SmartStore, and the $SALESFORCE_SDK_DIR/libs/SmartSync library projects and your newly created project into the workspace
 4. Right click on the your project and choose Run As -> Android Application
 
