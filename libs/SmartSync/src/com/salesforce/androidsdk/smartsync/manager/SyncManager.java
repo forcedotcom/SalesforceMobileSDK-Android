@@ -185,11 +185,11 @@ public class SyncManager {
 	 * @param sync
 	 */
 	public void runSync(final SyncState sync) {
+		updateSync(sync, SyncState.Status.RUNNING, 0, -1 /* don't change */);
 		threadPool.execute(new Runnable() {
 			@Override
 			public void run() {
 				try {
-					updateSync(sync, SyncState.Status.RUNNING, 0, -1 /* don't change */);
 					switch(sync.getType()) {
 					case syncDown: syncDown(sync); break;
 					case syncUp:   syncUp(sync); break;

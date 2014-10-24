@@ -31,6 +31,7 @@ import org.json.JSONObject;
 
 import com.salesforce.androidsdk.smartstore.phonegap.SmartStorePlugin;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 /**
  * Simple class to represent a query spec
@@ -278,14 +279,14 @@ public class QuerySpec {
 	public static QuerySpec fromJSON(String soupName, JSONObject querySpecJson)
 			throws JSONException {
 		QueryType queryType = QueryType.valueOf(querySpecJson.getString(SmartStorePlugin.QUERY_TYPE));
-		String path = querySpecJson.optString(SmartStorePlugin.INDEX_PATH, null);
-		String matchKey = querySpecJson.optString(SmartStorePlugin.MATCH_KEY, null);
-		String beginKey = querySpecJson.optString(SmartStorePlugin.BEGIN_KEY, null);
-		String endKey = querySpecJson.optString(SmartStorePlugin.END_KEY, null);
-		String likeKey = querySpecJson.optString(SmartStorePlugin.LIKE_KEY, null);
-		String smartSql = querySpecJson.optString(SmartStorePlugin.SMART_SQL, null);
+		String path = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.INDEX_PATH);
+		String matchKey = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.MATCH_KEY);
+		String beginKey = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.BEGIN_KEY);
+		String endKey = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.END_KEY);
+		String likeKey = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.LIKE_KEY);
+		String smartSql = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.SMART_SQL);
 		
-		Order order = Order.valueOf(querySpecJson.optString(SmartStorePlugin.ORDER, "ascending"));
+		Order order = Order.valueOf(JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.ORDER, "ascending"));
 		int pageSize = querySpecJson.getInt(SmartStorePlugin.PAGE_SIZE); 
 	
 		// Building query spec

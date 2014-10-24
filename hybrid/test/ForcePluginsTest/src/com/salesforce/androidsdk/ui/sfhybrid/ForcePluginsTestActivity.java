@@ -27,18 +27,9 @@
 
 package com.salesforce.androidsdk.ui.sfhybrid;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-
-import android.content.Context;
-import android.util.Log;
-
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
-import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 
 /**
  * Sub-class of SalesforceDroidGapActivity that authenticates using hard-coded credentials
@@ -46,50 +37,28 @@ import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
  */
 public class ForcePluginsTestActivity extends SalesforceDroidGapActivity {
 
+	static String username = "sdktest@cs1.com";
+	static String accountName = username + " (ForcePluginsTest)";
+	static String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5LuEc0OGFQRIHGNkCvWU1XiK0TI7w==";
+	static String authToken = "--will-be-set-through-refresh--";
+	static String identityUrl = "https://test.salesforce.com";
+	static String instanceUrl = "https://cs1.salesforce.com";
+	static String loginUrl = "https://test.salesforce.com";
+	static String orgId = "00DS0000000HDptMAG";
+	static String userId = "005S0000003yO7jIAE";
+	
 	@Override
 	protected ClientManager buildClientManager() {
-		return new MockClientManager(this, SalesforceSDKManager.getInstance()
-				.getAccountType(), SalesforceSDKManager.getInstance()
-				.getLoginOptions(), SalesforceSDKManager.getInstance()
-				.shouldLogoutWhenTokenRevoked());
-	}
+		final ClientManager clientManager = super.buildClientManager();
+		final LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
 
-	private static class MockClientManager extends ClientManager {
-
-		public MockClientManager(Context ctx, String accountType,
-				LoginOptions loginOptions, boolean revokedTokenShouldLogout) {
-			super(ctx, accountType, loginOptions, revokedTokenShouldLogout);
-		}
-
-		@Override
-		public RestClient peekRestClient() {
-			String username = "sdktest@cs1.com";
-			String accountName = username + " (ForcePluginsTest)";
-			String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5LuEc0OGFQRIHGNkCvWU1XiK0TI7w==";
-			String authToken = "";
-			String identityUrl = "https://test.salesforce.com";
-			String instanceUrl = "https://cs1.salesforce.com";
-			String loginUrl = "https://test.salesforce.com";
-			String orgId = "00DS0000000HDptMAG";
-			String userId = "005S0000003yO7jIAE";
-			String communityId = null;
-			String communityUrl = null;
-			LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
-			
-			try {
-				AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(
-						this, authToken, refreshToken);
-				ClientInfo clientInfo = new ClientInfo(
-						loginOptions.oauthClientId, new URI(instanceUrl),
-						new URI(loginUrl), new URI(identityUrl),
-						accountName, username, userId, orgId, communityId, communityUrl);
-				return new RestClient(clientInfo, authToken,
-						HttpAccess.DEFAULT, authTokenProvider);
-			} catch (URISyntaxException e) {
-				Log.w("ClientManager:peekRestClient", "Invalid server URL", e);
-				throw new AccountInfoNotFoundException("invalid server url", e);
-			}
-		}
-	}
+		clientManager.createNewAccount(accountName,
+        		username, refreshToken,
+        		authToken, instanceUrl,
+        		loginUrl, identityUrl,
+        		loginOptions.oauthClientId, orgId,
+        		userId, null);
 	
+		return clientManager;
+	}
 }
