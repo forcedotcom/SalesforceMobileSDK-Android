@@ -95,6 +95,7 @@ public class PushService extends IntentService {
     private static final String SERVICE_TYPE = "ServiceType";
     private static final String CONNECTION_TOKEN = "ConnectionToken";
     private static final String FIELD_ID = "id";
+    private static final String NOT_ENABLED = "not_enabled";
 
     // Wake lock instance.
     private static PowerManager.WakeLock WAKE_LOCK;
@@ -366,12 +367,23 @@ public class PushService extends IntentService {
         	if (client != null) {
             	final RestResponse res = client.sendSync(req);
             	String id = null;
+
+            	/*
+            	 * If the push notification device object has been created,
+            	 * reads the device registration ID. If the status code
+            	 * indicates that the resource is not found, push notifications
+            	 * are not enabled for this connected app, which means we
+            	 * should not attempt to re-register a few minutes later.
+            	 */
             	if (res.getStatusCode() == HttpStatus.SC_CREATED) {
             		final JSONObject obj = res.asJSONObject();
             		if (obj != null) {
             			id = obj.getString(FIELD_ID);
             		}
+            	} else if (res.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+            		id = NOT_ENABLED;
             	}
+            	res.consume();
             	return id;
         	}
     	} catch (Exception e) {
@@ -398,6 +410,7 @@ public class PushService extends IntentService {
             	if (res.getStatusCode() == HttpStatus.SC_NO_CONTENT) {
             		return true;
             	}
+            	res.consume();
     		}
     	} catch (IOException e) {
     		Log.e(TAG, "Push notification un-registration failed.", e);
