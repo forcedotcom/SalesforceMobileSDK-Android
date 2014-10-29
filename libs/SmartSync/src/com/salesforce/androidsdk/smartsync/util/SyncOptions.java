@@ -97,13 +97,4 @@ public class SyncOptions {
 		}
 		return arr;
 	}
-
-    /**
-     * Enum for query type
-     */
-    public enum QueryType {
-    	mru,
-    	sosl,
-    	soql
-    }
 }

@@ -30,8 +30,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.os.Bundle;
-
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 
@@ -165,13 +163,6 @@ public class SyncState {
 		return sync;
 	}
 	
-	public Bundle asBundle() throws JSONException {
-		Bundle bundle = new Bundle();
-		bundle.putString(SYNC_AS_STRING, asJSON().toString());
-		bundle.putString(SYNC_STATUS, status.name());
-		return bundle;
-	}
-	
 	/**
 	 * Save SyncState to db
 	 * @param store
@@ -225,6 +216,18 @@ public class SyncState {
 		this.status = status;
 	}
 	
+	public boolean isDone() {
+		return this.status == Status.DONE;
+	}
+	
+	public boolean hasFailed() {
+		return this.status == Status.FAILED;
+	}
+	
+	public SyncState copy() throws JSONException {
+		return SyncState.fromJSON(asJSON());
+	}	
+	
     /**
      * Enum for sync type
      */
@@ -243,4 +246,6 @@ public class SyncState {
     	DONE,
     	FAILED
     }
+
+
 }
