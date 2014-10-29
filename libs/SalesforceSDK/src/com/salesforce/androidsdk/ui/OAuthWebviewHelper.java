@@ -28,6 +28,8 @@ package com.salesforce.androidsdk.ui;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 import java.util.Locale;
 import java.util.Map;
 
@@ -37,8 +39,12 @@ import android.net.Uri;
 import android.net.http.SslError;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.security.KeyChain;
+import android.security.KeyChainAliasCallback;
+import android.security.KeyChainException;
 import android.text.TextUtils;
 import android.util.Log;
+import android.webkit.ClientCertRequest;
 import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
@@ -74,7 +80,7 @@ import com.salesforce.androidsdk.util.UriFragmentParser;
  *  f) done!
  *
  */
-public class OAuthWebviewHelper {
+public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
     private static final String ACCOUNT_OPTIONS = "accountOptions";
 
@@ -107,12 +113,22 @@ public class OAuthWebviewHelper {
     /**
      * Construct a new OAuthWebviewHelper and perform the initial configuration of the Webview.
      */
-	public OAuthWebviewHelper(OAuthWebviewHelperEvents callback, LoginOptions options, WebView webview, Bundle savedInstanceState) {
-        assert options != null && callback != null && webview != null;
+    @Deprecated
+	public OAuthWebviewHelper(OAuthWebviewHelperEvents callback,
+			LoginOptions options, WebView webview, Bundle savedInstanceState) {
+    	/*
+    	 * TODO: Replace the 'null' for Activity here with the correct activity.
+    	 */
+    	this(null, callback, options, webview, savedInstanceState);
+    }
+
+	public OAuthWebviewHelper(Activity activity, OAuthWebviewHelperEvents callback,
+			LoginOptions options, WebView webview, Bundle savedInstanceState) {
+        assert options != null && callback != null && webview != null && activity != null;
+        this.activity = activity;
         this.callback = callback;
         this.loginOptions = options;
         this.webview = webview;
-
         webview.getSettings().setJavaScriptEnabled(true);
         webview.getSettings().setSavePassword(false);
         webview.setWebViewClient(makeWebViewClient());
@@ -127,12 +143,15 @@ public class OAuthWebviewHelper {
         } else {
             clearCookies();
         }
-    }
+	}
 
     private final OAuthWebviewHelperEvents callback;
     protected final LoginOptions loginOptions;
     private final WebView webview;
     private AccountOptions accountOptions;
+    private Activity activity;
+    private PrivateKey key;
+    private X509Certificate[] certChain;
 
     public void saveState(Bundle outState) {
         webview.saveState(outState);
@@ -200,7 +219,6 @@ public class OAuthWebviewHelper {
         // look for deny. kick them back to login, so clear cookies and repoint browser
         if ("access_denied".equals(error)
                 && "end-user denied authorization".equals(errorDesc)) {
-
             webview.post(new Runnable() {
                 @Override
                 public void run() {
@@ -208,12 +226,9 @@ public class OAuthWebviewHelper {
                     loadLoginPage();
                 }
             });
-
         } else {
-
             Toast t = Toast.makeText(webview.getContext(), error + " : " + errorDesc,
                     Toast.LENGTH_LONG);
-
             webview.postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -236,9 +251,9 @@ public class OAuthWebviewHelper {
      * see which system you're logging in to
      */
     public void loadLoginPage() {
-        // Filling in loginUrl
-        loginOptions.loginUrl = getLoginUrl();
 
+        // Filling in loginUrl.
+        loginOptions.loginUrl = getLoginUrl();
         try {
             URI uri = getAuthorizationUrl();
             callback.loadingLoginPage(loginOptions.loginUrl);
@@ -246,6 +261,9 @@ public class OAuthWebviewHelper {
         } catch (URISyntaxException ex) {
             showError(ex);
         }
+    	if (shouldUseCertBasedAuth()) {
+    		KeyChain.choosePrivateKeyAlias(activity, this, null, null, null, 0, null);
+    	}
     }
 
     protected String getOAuthClientId() {
@@ -260,6 +278,19 @@ public class OAuthWebviewHelper {
                 loginOptions.oauthScopes,
                 null,
                 getAuthorizationDisplayType());
+    }
+
+    /**
+     * Returns whether certificate based authentication flow should be used.
+     *
+     * @return True - if it should be used, False - otherwise.
+     */
+    protected boolean shouldUseCertBasedAuth() {
+    	/*
+    	 * TODO: This method should call the server API to determine if this
+    	 * flow is supported or not. If yes - return true, else - return false.
+    	 */
+    	return true;
     }
 
    	/** 
@@ -337,6 +368,12 @@ public class OAuthWebviewHelper {
             // Bringing up toast
             Toast.makeText(getContext(), text, Toast.LENGTH_LONG).show();
             handler.cancel();
+        }
+
+        @Override
+        public void onReceivedClientCertRequest(WebView view, ClientCertRequest request) {
+			Log.e("***********", "Key: " + key);
+        	request.proceed(key, certChain);
         }
     }
 
@@ -603,6 +640,20 @@ public class OAuthWebviewHelper {
                     options.getString(COMMUNITY_URL)
                     );
         }
-
     }
+
+	@Override
+	public void alias(String alias) {
+		Log.e("***********", "Alias: " + alias);
+		try {
+			certChain = KeyChain.getCertificateChain(activity, alias);
+			Log.e("***********", "Certs: " + certChain);
+			key = KeyChain.getPrivateKey(activity, alias);
+			Log.e("***********", "Key: " + key);
+		} catch (KeyChainException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
 }
