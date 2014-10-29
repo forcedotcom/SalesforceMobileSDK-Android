@@ -224,6 +224,10 @@ public class SyncState {
 		return this.status == Status.FAILED;
 	}
 	
+	public boolean isRunning() {
+		return this.status == Status.RUNNING;
+	}
+	
 	public SyncState copy() throws JSONException {
 		return SyncState.fromJSON(asJSON());
 	}	
