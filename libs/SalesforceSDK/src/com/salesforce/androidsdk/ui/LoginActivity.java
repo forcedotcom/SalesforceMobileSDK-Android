@@ -26,11 +26,18 @@
  */
 package com.salesforce.androidsdk.ui;
 
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
+
 import android.accounts.AccountAuthenticatorActivity;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.security.KeyChain;
+import android.security.KeyChainAliasCallback;
+import android.security.KeyChainException;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -54,7 +61,8 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  *
  * The bulk of the work for this is actually managed by OAuthWebviewHelper class.
  */
-public class LoginActivity extends AccountAuthenticatorActivity implements OAuthWebviewHelperEvents {
+public class LoginActivity extends AccountAuthenticatorActivity
+		implements OAuthWebviewHelperEvents, KeyChainAliasCallback {
 
 	// Request code when calling server picker activity
     public static final int PICK_SERVER_REQUEST_CODE = 10;
@@ -97,6 +105,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
 		// Load login page
 		webviewHelper.loadLoginPage();
+		KeyChain.choosePrivateKeyAlias(this, this, null, null, null, 0, null);
 	}
 
 	protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback,
@@ -258,5 +267,20 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	public void finish() {
         SalesforceSDKManager.getInstance().getUserAccountManager().sendUserSwitchIntent();
         super.finish();
+	}
+
+	@Override
+	public void alias(String alias) {
+		Log.e("***********", "Alias: " + alias);
+		try {
+			final X509Certificate[] certs = KeyChain.getCertificateChain(this, alias);
+			Log.e("***********", "Certs: " + certs);
+			final PrivateKey key = KeyChain.getPrivateKey(this, alias);
+			Log.e("***********", "Key: " + key);
+		} catch (KeyChainException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 }
