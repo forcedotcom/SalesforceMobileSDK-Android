@@ -26,75 +26,47 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
+
+import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 
 /**
- * Options for sync up
+ * This tracks sync updates using a queue, allowing for tests to wait for certain sync updates to turn up.
  */
-public class SyncOptions {
-	
-	public static final String FIELDLIST = "fieldlist";
-	
-	private List<String> fieldlist;
-	
-	/**
-	 * Build SyncUpOptions from json
-	 * @param options as json
-	 * @return
-	 * @throws JSONException 
-	 */
-	public static SyncOptions fromJSON(JSONObject options) throws JSONException {
-		if (options == null)
-			return null;
-		
-		List<String> fieldlist = toList(options.optJSONArray(FIELDLIST));
-		return new SyncOptions(fieldlist);
-	}
-	
-	/**
-	 * @param fieldlist
-	 * @return
-	 */
-	public static SyncOptions optionsForSyncUp(List<String> fieldlist) {
-		return new SyncOptions(fieldlist);
-	}
-	
-	/**
-	 * Private constructor
-	 * @param fieldlist
-	 */
-	private SyncOptions(List<String> fieldlist) {
-		this.fieldlist = fieldlist;
-	}
-	
-	/**
-	 * @return json representation of target
-	 * @throws JSONException
-	 */
-	public JSONObject asJSON() throws JSONException {
-		JSONObject options = new JSONObject();
-		options.put(FIELDLIST, new JSONArray(fieldlist));
-		return options;
-	}
+public class SyncUpdateCallbackQueue implements SyncUpdateCallback {
 
-	public List<String> getFieldlist() {
-		return fieldlist;
+	private BlockingQueue<SyncState> syncs; 
+	
+	public SyncUpdateCallbackQueue() {
+		syncs = new ArrayBlockingQueue<SyncState>(10);
 	}
 	
-	@SuppressWarnings("unchecked")
-	private static <T> List<T> toList(JSONArray jsonArray) throws JSONException {
-		if (jsonArray == null) {
-			return null;
+	public void onUpdate(SyncState sync) {
+		try {
+			syncs.offer(sync.copy());
+		} catch (JSONException e) {
+			throw new RuntimeException(e);
 		}
-		List<T> arr = new ArrayList<T>();
-		for (int i=0; i<jsonArray.length(); i++) {
-			arr.add((T) jsonArray.get(i));
-		}
-		return arr;
 	}
+	
+    // remove any events in the queue
+    public void clearQueue() {
+    	syncs.clear();
+    }
+
+    /** will return the next event in the queue, waiting if needed for a reasonable amount of time */
+    public SyncState getNextSyncUpdate() {
+        try {
+        	SyncState sync = syncs.poll(30, TimeUnit.SECONDS);
+            if (sync == null)
+                throw new RuntimeException("Failure ** Timeout waiting for a broadcast ");
+            return sync;
+        } catch (InterruptedException ex) {
+            throw new RuntimeException("Was interrupted waiting for broadcast");
+        }
+    }
 }
