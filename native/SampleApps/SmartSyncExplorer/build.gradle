@@ -7,7 +7,7 @@ dependencies {
 }
 
 android {
-  compileSdkVersion 17
+  compileSdkVersion 21
   buildToolsVersion "20.0.0"
 
   sourceSets {
@@ -29,5 +29,4 @@ android {
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
   }
-
 }

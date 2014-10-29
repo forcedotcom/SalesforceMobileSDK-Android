@@ -161,20 +161,20 @@ else
     process_args $@
 
     build_project_if_requested "Cordova" $CORDOVA_TOP/framework 19
-    build_project_if_requested "SalesforceSDK" $LIBS_TOP/SalesforceSDK 17
-    build_project_if_requested "SmartStore" $LIBS_TOP/SmartStore 17
-    build_project_if_requested "SmartSync" $LIBS_TOP/SmartSync 17
-    build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp 17
-    build_project_if_requested "RestExplorer" $NATIVE_TOP/SampleApps/RestExplorer 17
-    build_project_if_requested "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator 17
-    build_project_if_requested "SmartSyncExplorer" $NATIVE_TOP/SampleApps/SmartSyncExplorer 17
-    build_project_if_requested "FileExplorer" $NATIVE_TOP/SampleApps/FileExplorer 17
-    build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor 17
-    build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer 17
-    build_project_if_requested "SimpleSync" $HYBRID_TOP/SampleApps/SimpleSync 17
-    build_project_if_requested "UserList" $HYBRID_TOP/SampleApps/UserList 17
-    build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer 17
-    build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector 17
+    build_project_if_requested "SalesforceSDK" $LIBS_TOP/SalesforceSDK 21
+    build_project_if_requested "SmartStore" $LIBS_TOP/SmartStore 21
+    build_project_if_requested "SmartSync" $LIBS_TOP/SmartSync 21
+    build_project_if_requested "TemplateApp" $NATIVE_TOP/TemplateApp 21
+    build_project_if_requested "RestExplorer" $NATIVE_TOP/SampleApps/RestExplorer 21
+    build_project_if_requested "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator 21
+    build_project_if_requested "SmartSyncExplorer" $NATIVE_TOP/SampleApps/SmartSyncExplorer 21
+    build_project_if_requested "FileExplorer" $NATIVE_TOP/SampleApps/FileExplorer 21
+    build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor 21
+    build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer 21
+    build_project_if_requested "SimpleSync" $HYBRID_TOP/SampleApps/SimpleSync 21
+    build_project_if_requested "UserList" $HYBRID_TOP/SampleApps/UserList 21
+    build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer 21
+    build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector 21
 
     build_test_project_if_requested "SalesforceSDKTest" $LIBS_TOP/test/SalesforceSDKTest .
     build_test_project_if_requested "SmartStoreTest" $LIBS_TOP/test/SmartStoreTest .
