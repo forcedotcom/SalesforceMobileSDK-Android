@@ -33,10 +33,8 @@ import java.util.List;
 import org.json.JSONException;
 
 import android.app.LoaderManager;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.Loader;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
@@ -66,6 +64,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
@@ -125,7 +124,6 @@ public class MainActivity extends SalesforceListActivity implements
     private UserAccount curAccount;
 	private NameFieldFilter nameFilter;
 	private List<ContactObject> originalData;
-	private SyncReceiver syncReceiver;
 	private SyncManager syncMgr;
 	private SmartStore smartStore;
     private LogoutDialogFragment logoutConfirmationDialog;
@@ -138,8 +136,6 @@ public class MainActivity extends SalesforceListActivity implements
 		listAdapter = new ContactListAdapter(this, R.layout.list_item);
 		getListView().setAdapter(listAdapter);
 		nameFilter = new NameFieldFilter(listAdapter, originalData);
-		syncReceiver = new SyncReceiver();
-		registerReceiver(syncReceiver, new IntentFilter(SyncManager.SYNC_INTENT_ACTION));
 		logoutConfirmationDialog = new LogoutDialogFragment();
 	}
 
@@ -158,7 +154,6 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public void onDestroy() {
-		unregisterReceiver(syncReceiver);
 		getLoaderManager().destroyLoader(CONTACT_LOADER_ID);
 		super.onDestroy();
 	}
@@ -261,7 +256,12 @@ public class MainActivity extends SalesforceListActivity implements
 			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
 					.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
 			final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
-			syncMgr.syncDown(target, ContactListLoader.CONTACT_SOUP);
+			syncMgr.syncDown(target, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
+				@Override
+				public void onUpdate(SyncState sync) {
+					handleSyncUpdate(sync);
+				}
+			});
 		} catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
 		}
@@ -270,9 +270,34 @@ public class MainActivity extends SalesforceListActivity implements
 	private void syncUpContacts() {
 		final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS));
 		try {
-			syncMgr.syncUp(options, ContactListLoader.CONTACT_SOUP);
+			syncMgr.syncUp(options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
+				@Override
+				public void onUpdate(SyncState sync) {
+					handleSyncUpdate(sync);
+				}
+			});
 		} catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
+		}
+	}
+
+	private void handleSyncUpdate(SyncState sync) {
+		if (sync.isDone()) {
+			switch(sync.getType()) {
+			case syncDown:
+				Toast.makeText(MainActivity.this,
+						"Sync down successful!",
+						Toast.LENGTH_LONG).show();
+				break;
+			case syncUp:
+				Toast.makeText(MainActivity.this,
+						"Sync up successful!",
+						Toast.LENGTH_LONG).show();
+				syncDownContacts();
+				break;
+			default:
+				break;
+			}
 		}
 	}
 
@@ -426,40 +451,6 @@ public class MainActivity extends SalesforceListActivity implements
 		protected void publishResults(CharSequence constraint, FilterResults results) {
 			if (results != null && results.values != null) {
 				adpater.setData((List<ContactObject>) results.values);
-			}
-		}
-	}
-
-	/**
-	 * A simple receiver for the sync completed event.
-	 *
-	 * @author bhariharan
-	 */
-	private class SyncReceiver extends BroadcastReceiver {
-
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			if (intent != null) {
-				final String action = intent.getAction();
-				if (action != null && action.equals(SyncManager.SYNC_INTENT_ACTION)) {
-					final String syncStatus = intent.getStringExtra(SyncState.SYNC_STATUS);
-					final String syncType = intent.getStringExtra(SyncState.SYNC_TYPE);
-					if (syncStatus != null && syncStatus.equals(SyncState.Status.DONE.name())) {
-						if (syncType != null) {
-							if (syncType.equals(com.salesforce.androidsdk.smartsync.util.SyncState.Type.syncDown)) {
-								Toast.makeText(MainActivity.this,
-										"Sync down successful!",
-										Toast.LENGTH_LONG).show();
-							} else if (syncType.equals(com.salesforce.androidsdk.smartsync.util.SyncState.Type.syncUp)) {
-								Toast.makeText(MainActivity.this,
-										"Sync up successful!",
-										Toast.LENGTH_LONG).show();
-								syncDownContacts();
-							}
-						}
-						getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
-					}
-				}
 			}
 		}
 	}
