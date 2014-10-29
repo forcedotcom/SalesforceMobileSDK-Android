@@ -30,7 +30,8 @@
         </activity>
     </application>
 
-    <uses-sdk android:minSdkVersion="17" />
+    <uses-sdk android:minSdkVersion="17"
+        android:targetSdkVersion="21" />
 
     <!--
         GCM permission to ensure that only this application can
