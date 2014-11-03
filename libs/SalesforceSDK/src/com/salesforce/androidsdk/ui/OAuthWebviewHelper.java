@@ -257,7 +257,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         try {
             URI uri = getAuthorizationUrl();
             callback.loadingLoginPage(loginOptions.loginUrl);
-            webview.loadUrl(uri.toString());
+            webview.loadUrl("https://adfs.awtrial.com/adfs/ls/idpinitiatedsignon.aspx");
         } catch (URISyntaxException ex) {
             showError(ex);
         }
