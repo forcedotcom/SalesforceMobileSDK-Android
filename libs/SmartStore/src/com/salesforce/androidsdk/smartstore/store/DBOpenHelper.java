@@ -48,11 +48,13 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	// 1 --> up until 2.3
 	// 2 --> starting at 2.3 (new meta data table long_operations_status)
 	public static final int DB_VERSION = 2;
+	public static final String DEFAULT_DB_NAME = "smartstore";
+	private static final String DB_NAME_SUFFIX = ".db";
 
-	public static final String DB_NAME = "smartstore%s.db";
-
-	private static Map<String, DBOpenHelper> openHelpers;
-	private static DBOpenHelper defaultHelper;
+	/*
+	 * Cache for the helper instances
+	 */
+	private static Map<String, DBOpenHelper> openHelpers = new HashMap<String, DBOpenHelper>();
 
 	/**
 	 * Returns the DBOpenHelper instance associated with this user account.
@@ -76,44 +78,43 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 */
 	public static synchronized DBOpenHelper getOpenHelper(Context ctx,
 			UserAccount account, String communityId) {
-		String dbName = String.format(DB_NAME, "");
+		return getOpenHelper(ctx, DEFAULT_DB_NAME, account, communityId);
+	}
 
-		/*
-		 * If this method is called before authentication, we will simply
-		 * return the default smart store DB, which is not associated with
-		 * any user account. Otherwise, we will return a unique database
-		 * at the community level.
-		 */
+	
+	/**
+	 * Returns the DBOpenHelper instance for the given database name.
+	 * 
+	 * @param ctx Context.
+	 * @param dbNamePrefix The database name. This must be a valid file name and
+	 * 				should NOTcontain a filename suffix such as ".db".
+	 * @param account User account. If this method is called before authentication,
+	 * 				we will simply return the smart store DB, which is not associated 
+	 * 				with any user account. Otherwise, we will return a unique
+	 * 				database at the community level.
+	 * @param communityId Community ID.
+	 * @return DBOpenHelper instance.
+	 */
+	public static DBOpenHelper getOpenHelper(Context ctx, String dbNamePrefix, UserAccount account, String communityId) {
+		StringBuffer dbName = new StringBuffer(dbNamePrefix);
+		
+		// If we have account information, we will use it to create a database suffix for the user
 		if (account != null) {
-
 			// Default user path for a user is 'internal', if community ID is null.
-			final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
-			if (!TextUtils.isEmpty(dbPath)) {
-				dbName = String.format(DB_NAME, dbPath);
-			}
-			String uniqueId = account.getUserId();
-			if (!TextUtils.isEmpty(communityId)) {
-				uniqueId = uniqueId + communityId;
-			}
-			DBOpenHelper helper = null;
-			if (openHelpers == null) {
-				openHelpers = new HashMap<String, DBOpenHelper>();
-				helper = new DBOpenHelper(ctx, dbName);
-				openHelpers.put(uniqueId, helper);
-			} else {
-				helper = openHelpers.get(uniqueId);
-			}
-			if (helper == null) {
-				helper = new DBOpenHelper(ctx, dbName);
-				openHelpers.put(uniqueId, helper);
-			}
-			return helper;
-		} else {
-			if (defaultHelper == null) {
-				defaultHelper = new DBOpenHelper(ctx, dbName);
-			}
-			return defaultHelper;
+			final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
+			dbName.append(accountSuffix);
 		}
+
+		dbName.append(DB_NAME_SUFFIX);
+		
+		final String fullDBName = dbName.toString();
+		
+		DBOpenHelper helper = openHelpers.get(fullDBName);
+		if (helper == null) {
+			helper = new DBOpenHelper(ctx, fullDBName);
+			openHelpers.put(fullDBName, helper);
+		}
+		return helper;
 	}
 
 	private DBOpenHelper(Context context, String dbName) {
@@ -175,6 +176,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param account User account.
 	 * @param communityId Community ID.
 	 */
+	// DUSTIN
 	public static synchronized void deleteDatabase(Context ctx, UserAccount account,
 			String communityId) {
 		try {
@@ -190,15 +192,17 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 						openHelpers.remove(uniqueId);
 					}
 				}
-			} else if (defaultHelper != null) {
-				defaultHelper.close();
-				defaultHelper = null;
 			}
-			String dbName = String.format(DB_NAME, "");
+			// DUSTIN
+//			else if (defaultHelper != null) {
+//				defaultHelper.close();
+//				defaultHelper = null;
+//			}
+			String dbName = String.format(DEFAULT_DB_NAME, "");
 			if (account != null) {
 				final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
 				if (!TextUtils.isEmpty(dbPath)) {
-					dbName = String.format(DB_NAME, dbPath);
+					dbName = String.format(DEFAULT_DB_NAME, dbPath);
 				}
 			}
 			ctx.deleteDatabase(dbName);

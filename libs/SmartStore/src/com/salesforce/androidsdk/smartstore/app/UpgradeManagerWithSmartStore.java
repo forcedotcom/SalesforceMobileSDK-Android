@@ -100,7 +100,8 @@ public class UpgradeManagerWithSmartStore extends UpgradeManager {
     	 * database to the new format for the current user.
     	 * If not, nothing is done.
     	 */
-    	final String oldDbName = String.format(DBOpenHelper.DB_NAME, "");
+    	// DUSTIN - TODO
+    	final String oldDbName = String.format(DBOpenHelper.DEFAULT_DB_NAME, "");
     	if (SalesforceSDKManagerWithSmartStore.getInstance().getAppContext().getDatabasePath(oldDbName).exists()) {
     		final UserAccount curAccount = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
 
@@ -111,7 +112,7 @@ public class UpgradeManagerWithSmartStore extends UpgradeManager {
     		if (curAccount != null) {
         		final String dbPath = curAccount.getCommunityLevelFilenameSuffix(null);
         		if (!TextUtils.isEmpty(dbPath)) {
-        			final String newDbName = String.format(DBOpenHelper.DB_NAME,
+        			final String newDbName = String.format(DBOpenHelper.DEFAULT_DB_NAME,
         					dbPath);
         			final String dbDir = SalesforceSDKManagerWithSmartStore.getInstance().getAppContext().getApplicationInfo().dataDir
         					+ "/databases";
