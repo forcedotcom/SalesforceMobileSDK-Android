@@ -214,6 +214,28 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 		// physically delete the database from disk
 		ctx.deleteDatabase(fullDBName);
+		
+		// if community id was not passed in, then we remove ALL databases for the account.
+		if (account != null && TextUtils.isEmpty(communityId)) {
+			StringBuffer communityDBNamePrefix = new StringBuffer(dbNamePrefix);
+			String accountSuffix = account.getUserLevelFilenameSuffix();
+			communityDBNamePrefix.append(accountSuffix);
+			
+	    	final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
+	    	final File dir = new File(dbPath);
+	    	if (dir != null) {
+	        	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(communityDBNamePrefix.toString());
+	        	final File[] fileList = dir.listFiles();
+	        	if (fileList != null) {
+	            	for (final File file : fileList) {
+	            		if (file != null && fileFilter.accept(dir, file.getName())) {
+	            			file.delete();
+	            			openHelpers.remove(file.getName());
+	            		}
+	            	}
+	        	}
+	    	}
+		}
 	}
 
 
@@ -228,4 +250,30 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		}
 	};
 
+    /**
+     * This class acts as a filter to identify only the relevant SmartStore files.
+     *
+     * @author bhariharan
+     */
+    private static class SmartStoreFileFilter implements FilenameFilter {
+
+    	private String dbNamePrefix;
+
+    	/**
+    	 * Parameterized constructor.
+    	 *
+    	 * @param dbNamePrefix Database name prefix pattern.
+    	 */
+    	public SmartStoreFileFilter(String dbNamePrefix) {
+    		this.dbNamePrefix = dbNamePrefix;
+    	}
+
+		@Override
+		public boolean accept(File dir, String filename) {
+			if (filename != null && filename.startsWith(dbNamePrefix)) {
+				return true;
+			}
+			return false;
+		}
+    }
 }

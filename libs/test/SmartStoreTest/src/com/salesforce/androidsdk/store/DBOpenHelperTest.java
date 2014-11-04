@@ -137,6 +137,64 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 		
 		assertNotSame("Helpers should be different instances.", helper, helperPostDelete);
 	}
+	
+	/**
+	 * Ensure that only the single community-specific database is deleted.
+	 */
+	public void testDeleteDatabaseWithCommunityId() {
+		UserAccount testAcct = getTestUserAccount();
+
+		// create the database we want to ensure is deleted
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, testAcct, TEST_COMMUNITY_ID);
+		SQLiteDatabase db = helper.getWritableDatabase("");
+		
+		// create another database for this account which should not be deleted.
+		DBOpenHelper dontDeleteHelper = DBOpenHelper.getOpenHelper(targetContext, testAcct, "other_community_id");
+		SQLiteDatabase dontDeleteDb = dontDeleteHelper.getWritableDatabase("");
+		String dontDeleteDbName = getBaseName(dontDeleteDb);
+
+		// now, delete the first database and make sure we didn't remove the second.
+		DBOpenHelper.deleteDatabase(targetContext,  testAcct, TEST_COMMUNITY_ID);
+		assertTrue("Database should not have been deleted.", databaseExists(targetContext, dontDeleteDbName));
+		
+		// 1st helper should not be cached, but 2nd should still be cached
+		DBOpenHelper helperNew = DBOpenHelper.getOpenHelper(targetContext, testAcct, TEST_COMMUNITY_ID);
+		assertNotSame("Helper should have been removed from cache.", helper, helperNew);
+		
+		DBOpenHelper dontDeleteHelperCached = DBOpenHelper.getOpenHelper(targetContext, testAcct, "other_community_id");
+		assertSame("Helper should be same instance.", dontDeleteHelper, dontDeleteHelperCached);
+
+	}
+	
+	/**
+	 * Ensure that all databases related to the account are removed when community id is not specified.
+	 */
+	public void testDeleteDatabaseWithoutCommunityId() {
+		UserAccount testAcct = getTestUserAccount();
+
+		// create the database we want to ensure is deleted
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, testAcct, TEST_COMMUNITY_ID);
+		SQLiteDatabase db = helper.getWritableDatabase("");
+		String dbName = getBaseName(db);
+		
+		// create another database for this account which should not be deleted.
+		DBOpenHelper helper2 = DBOpenHelper.getOpenHelper(targetContext, testAcct, "other_community_id");
+		SQLiteDatabase db2 = helper2.getWritableDatabase("");
+		String dbName2 = getBaseName(db2);
+
+		// now, delete all databases related to accounts and ensure they no longer exist
+		DBOpenHelper.deleteDatabase(targetContext,  testAcct);
+		
+		assertFalse("Database should not exist.", databaseExists(targetContext, dbName));
+		assertFalse("Database should not exist.", databaseExists(targetContext, dbName2));
+		
+		// also make sure references to the helpers no longer exist
+		DBOpenHelper helperNew = DBOpenHelper.getOpenHelper(targetContext, testAcct, TEST_COMMUNITY_ID);
+		DBOpenHelper helperNew2 = DBOpenHelper.getOpenHelper(targetContext, testAcct, "other_community_id");
+
+		assertNotSame("Helper should have been removed from cache.", helper, helperNew);
+		assertNotSame("Helper should have been removed from cache.", helper2, helperNew2);
+	}
 
 	/**
 	 * Determines if the given database file exists or not in the database directory.
