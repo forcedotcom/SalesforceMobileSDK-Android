@@ -176,56 +176,46 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param account User account.
 	 * @param communityId Community ID.
 	 */
-	// DUSTIN
 	public static synchronized void deleteDatabase(Context ctx, UserAccount account,
 			String communityId) {
-		try {
-			if (account != null) {
-				String uniqueId = account.getUserId();
-				if (!TextUtils.isEmpty(communityId)) {
-					uniqueId = uniqueId + communityId;
-				}
-				if (openHelpers != null) {
-					final DBOpenHelper helper = openHelpers.get(uniqueId);
-					if (helper != null) {
-						helper.close();
-						openHelpers.remove(uniqueId);
-					}
-				}
-			}
-			// DUSTIN
-//			else if (defaultHelper != null) {
-//				defaultHelper.close();
-//				defaultHelper = null;
-//			}
-			String dbName = String.format(DEFAULT_DB_NAME, "");
-			if (account != null) {
-				final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
-				if (!TextUtils.isEmpty(dbPath)) {
-					dbName = String.format(DEFAULT_DB_NAME, dbPath);
-				}
-			}
-			ctx.deleteDatabase(dbName);
-
-	    	// Deletes the community databases associated with this user account.
-	    	final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
-	    	final File dir = new File(dbPath);
-	    	if (dir != null) {
-	        	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(dbName);
-	        	final File[] fileList = dir.listFiles();
-	        	if (fileList != null) {
-	            	for (final File file : fileList) {
-	            		if (file != null && fileFilter.accept(dir, file.getName())) {
-	            			file.delete();
-	            		}
-	            	}
-	        	}
-	    	}
-		} catch (Exception e) {
-        	Log.e("DBOpenHelper:deleteDatabase",
-        			"Exception occurred while attempting to delete database.", e);
-		}
+		deleteDatabase(ctx, DEFAULT_DB_NAME, account, communityId);
 	}
+
+	/**
+	 * Deletes the underlying database for the specified user and community.
+	 *
+	 * @param ctx Context.
+	 * @param dbNamePrefix The database name. This must be a valid file name and
+	 * 				should NOTcontain a filename suffix such as ".db".
+	 * @param account User account.
+	 * @param communityId Community ID.
+	 * 
+	 */
+	public static synchronized void deleteDatabase(Context ctx, String dbNamePrefix, UserAccount account, String communityId) {
+		StringBuffer dbName = new StringBuffer(dbNamePrefix);
+		
+		// If we have account information, we will use it to create a database suffix for the user
+		if (account != null) {
+			// Default user path for a user is 'internal', if community ID is null.
+			final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
+			dbName.append(accountSuffix);
+		}
+
+		dbName.append(DB_NAME_SUFFIX);
+		
+		final String fullDBName = dbName.toString();
+
+		// close and remove the helper from the cache if it exists
+		final DBOpenHelper helper = openHelpers.get(fullDBName);
+		if (helper != null) {
+			helper.close();
+			openHelpers.remove(fullDBName);
+		}
+
+		// physically delete the database from disk
+		ctx.deleteDatabase(fullDBName);
+	}
+
 
 	static class DBHook implements SQLiteDatabaseHook {
 		public void preKey(SQLiteDatabase database) {
@@ -238,32 +228,4 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		}
 	};
 
-    /**
-     * This class acts as a filter to identify only the relevant SmartStore files.
-     *
-     * @author bhariharan
-     */
-    private static class SmartStoreFileFilter implements FilenameFilter {
-
-    	private String dbName;
-
-    	/**
-    	 * Parameterized constructor.
-    	 *
-    	 * @param dbName Database name.
-    	 */
-    	public SmartStoreFileFilter(String dbName) {
-    		this.dbName = dbName;
-    	}
-
-		@Override
-		public boolean accept(File dir, String filename) {
-			final String subString = dbName.substring(0,
-					dbName.length() - 3);
-			if (filename != null && filename.startsWith(subString)) {
-				return true;
-			}
-			return false;
-		}
-    }
 }

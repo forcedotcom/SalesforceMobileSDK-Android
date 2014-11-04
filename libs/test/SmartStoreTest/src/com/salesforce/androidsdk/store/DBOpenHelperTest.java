@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.store;
 
+import java.io.File;
+
 import net.sqlcipher.database.SQLiteDatabase;
 import android.content.Context;
 import android.os.Bundle;
@@ -111,8 +113,40 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 		assertTrue("Database name does not have default internal community id.",dbName.contains(TEST_COMMUNITY_ID));
 	}
 
-	public void testDeleteTests() {
+	/**
+	 * Ensures the default database is removed correctly.
+	 */
+	public void testDeleteDatabaseDefault() {
+		// create db
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext,null);
+		SQLiteDatabase db = helper.getWritableDatabase("");
+		String dbName = getBaseName(db);
+		
+		DBOpenHelper.deleteDatabase(targetContext, null);
+		
+		assertFalse("Database should not exist.", databaseExists(targetContext, dbName));
+	}
+	
+	/**
+	 * Ensures the database is removed from the cache.
+	 */
+	public void testDeleteDatabaseRemovesFromCache() {
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, null);
+		DBOpenHelper.deleteDatabase(targetContext, null);
+		DBOpenHelper helperPostDelete = DBOpenHelper.getOpenHelper(targetContext, null);
+		
+		assertNotSame("Helpers should be different instances.", helper, helperPostDelete);
+	}
 
+	/**
+	 * Determines if the given database file exists or not in the database directory.
+	 * @param dbName The database name.
+	 * @return
+	 */
+	private boolean databaseExists(Context ctx, String dbName) {
+		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases/"  + dbName;
+    	final File file = new File(dbPath);
+		return file.exists();
 	}
 
 	/**
@@ -130,12 +164,12 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	/**
 	 * Obtain the base filename from a given path.
 	 * 
-	 * @param dbPath
+	 * @param db
 	 *            The full path, including filename.
 	 * @return Just the filename.
 	 */
-	private String getBaseName(SQLiteDatabase dbPath) {
-		String[] pathParts = dbPath.getPath().split("/");
+	private String getBaseName(SQLiteDatabase db) {
+		String[] pathParts = db.getPath().split("/");
 		return pathParts[pathParts.length - 1];
 	}
 }
