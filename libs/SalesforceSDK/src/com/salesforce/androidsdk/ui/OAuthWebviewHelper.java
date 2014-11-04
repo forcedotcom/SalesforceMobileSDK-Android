@@ -257,13 +257,10 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         try {
             URI uri = getAuthorizationUrl();
             callback.loadingLoginPage(loginOptions.loginUrl);
-            webview.loadUrl("https://adfs.awtrial.com/adfs/ls/idpinitiatedsignon.aspx");
+            webview.loadUrl(uri.toString());
         } catch (URISyntaxException ex) {
             showError(ex);
         }
-    	if (shouldUseCertBasedAuth()) {
-    		KeyChain.choosePrivateKeyAlias(activity, this, null, null, null, 0, null);
-    	}
     }
 
     protected String getOAuthClientId() {
@@ -278,19 +275,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 loginOptions.oauthScopes,
                 null,
                 getAuthorizationDisplayType());
-    }
-
-    /**
-     * Returns whether certificate based authentication flow should be used.
-     *
-     * @return True - if it should be used, False - otherwise.
-     */
-    protected boolean shouldUseCertBasedAuth() {
-    	/*
-    	 * TODO: This method should call the server API to determine if this
-    	 * flow is supported or not. If yes - return true, else - return false.
-    	 */
-    	return true;
     }
 
    	/** 
@@ -372,7 +356,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         @Override
         public void onReceivedClientCertRequest(WebView view, ClientCertRequest request) {
-			Log.e("***********", "Key: " + key);
         	request.proceed(key, certChain);
         }
     }
@@ -644,12 +627,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
 	@Override
 	public void alias(String alias) {
-		Log.e("***********", "Alias: " + alias);
 		try {
 			certChain = KeyChain.getCertificateChain(activity, alias);
-			Log.e("***********", "Certs: " + certChain);
 			key = KeyChain.getPrivateKey(activity, alias);
-			Log.e("***********", "Key: " + key);
 		} catch (KeyChainException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {

@@ -31,6 +31,7 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.security.KeyChain;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -92,13 +93,29 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		webView.getSettings().setSavePassword(false);
 		EventsObservable.get().notifyEvent(EventType.AuthWebViewCreateComplete, webView);
 		webviewHelper = getOAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
-		
+
 		// Let observers know
-		EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);        
+		EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);
+		if (shouldUseCertBasedAuth()) {
+			KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, null);
+		}
 
 		// Load login page
 		webviewHelper.loadLoginPage();
 	}
+
+    /**
+     * Returns whether certificate based authentication flow should be used.
+     *
+     * @return True - if it should be used, False - otherwise.
+     */
+    protected boolean shouldUseCertBasedAuth() {
+    	/*
+    	 * TODO: This method should call the server API to determine if this
+    	 * flow is supported or not. If yes - return true, else - return false.
+    	 */
+    	return true;
+    }
 
 	protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback,
 			LoginOptions loginOptions, WebView webView, Bundle savedInstanceState) {
