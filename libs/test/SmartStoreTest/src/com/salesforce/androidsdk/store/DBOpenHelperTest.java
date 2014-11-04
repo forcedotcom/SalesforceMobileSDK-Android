@@ -197,6 +197,43 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	}
 
 	/**
+	 * Has smart store for given account returns true.
+	 */
+	public void testHasSmartStoreIsTrueForDefaultDatabase() {
+		UserAccount testAcct = getTestUserAccount(); 
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, testAcct);
+		SQLiteDatabase db = helper.getWritableDatabase("");
+
+		assertTrue("SmartStore for account should exist.", DBOpenHelper.smartStoreExists(targetContext, testAcct, null));
+	}
+	
+	/**
+	 * Has smart store for given account returns false.
+	 */
+	public void testHasSmartStoreIsFalseForDefaultDatabase() {
+		assertFalse("SmartStore for account should not exist.", DBOpenHelper.smartStoreExists(targetContext, null, null));
+	}
+
+	/**
+	 * Has smart store for specified database and account returns true.
+	 */
+	public void testHasSmartStoreIsTrueForSpecifiedDatabase() {
+		UserAccount testAcct = getTestUserAccount(); 
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, "testdb", testAcct, null);
+		SQLiteDatabase db = helper.getWritableDatabase("");
+
+		assertTrue("SmartStore for account should exist.", DBOpenHelper.smartStoreExists(targetContext, "testdb", testAcct, null));
+	}
+	
+	/**
+	 * Has smart store for given account returns false.
+	 */
+	public void testHasSmartStoreIsFalseForSpecifiedDatabase() {
+		assertFalse("SmartStore for account should not exist.", DBOpenHelper.smartStoreExists(targetContext, "dbdne", null, null));
+	}
+
+
+	/**
 	 * Determines if the given database file exists or not in the database directory.
 	 * @param dbName The database name.
 	 * @return

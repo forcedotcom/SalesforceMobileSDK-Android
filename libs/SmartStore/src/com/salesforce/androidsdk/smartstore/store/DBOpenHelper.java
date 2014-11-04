@@ -36,7 +36,6 @@ import net.sqlcipher.database.SQLiteDatabaseHook;
 import net.sqlcipher.database.SQLiteOpenHelper;
 import android.content.Context;
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 
@@ -236,6 +235,41 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	        	}
 	    	}
 		}
+	}
+
+
+	/**
+	 * Determines if a smart store currently exists for the given account and/or community id.
+	 * 
+	 * @param ctx Context.
+	 * @param account User account.
+	 * @param communityId Community ID.
+	 * @return boolean indicating if a smartstore already exists.
+	 */
+	public static boolean smartStoreExists(Context ctx, UserAccount account, String communityId) {
+		return smartStoreExists(ctx, DEFAULT_DB_NAME, account, communityId);
+	}
+
+	/**
+	 * Determines if a smart store currently exists for the given database name, account 
+	 * and/or community id.
+	 * 
+	 * @param ctx Context.
+	 * @param dbNamePrefix The database name. This must be a valid file name and
+	 * 				should NOTcontain a filename suffix such as ".db".
+	 * @param account User account.
+	 * @param communityId Community ID.
+	 * @return boolean indicating if a smartstore already exists.
+	 */
+	public static boolean smartStoreExists(Context ctx, String dbNamePrefix, UserAccount account, String communityId) {
+		StringBuffer dbName = new StringBuffer(dbNamePrefix);
+		if (account != null) {
+			final String dbSuffix = account.getCommunityLevelFilenameSuffix(communityId);
+			dbName.append(dbSuffix);
+		}
+		dbName.append(DB_NAME_SUFFIX);
+		
+		return ctx.getDatabasePath(dbName.toString()).exists();
 	}
 
 
