@@ -85,8 +85,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * Returns the DBOpenHelper instance for the given database name.
 	 * 
 	 * @param ctx Context.
-	 * @param dbNamePrefix The database name. This must be a valid file name and
-	 * 				should NOTcontain a filename suffix such as ".db".
+     * @param dbNamePrefix The database name. This must be a valid file name without a 
+     * 					   filename extension such as ".db".
 	 * @param account User account. If this method is called before authentication,
 	 * 				we will simply return the smart store DB, which is not associated 
 	 * 				with any user account. Otherwise, we will return a unique
@@ -184,8 +184,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * Deletes the underlying database for the specified user and community.
 	 *
 	 * @param ctx Context.
-	 * @param dbNamePrefix The database name. This must be a valid file name and
-	 * 				should NOTcontain a filename suffix such as ".db".
+     * @param dbNamePrefix The database name. This must be a valid file name without a 
+     * 					   filename extension such as ".db".
 	 * @param account User account.
 	 * @param communityId Community ID.
 	 * 
@@ -255,8 +255,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * and/or community id.
 	 * 
 	 * @param ctx Context.
-	 * @param dbNamePrefix The database name. This must be a valid file name and
-	 * 				should NOTcontain a filename suffix such as ".db".
+     * @param dbNamePrefix The database name. This must be a valid file name without a 
+     * 					   filename extension such as ".db".
 	 * @param account User account.
 	 * @param communityId Community ID.
 	 * @return boolean indicating if a smartstore already exists.

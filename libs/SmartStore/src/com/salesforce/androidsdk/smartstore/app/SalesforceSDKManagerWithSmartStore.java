@@ -243,8 +243,22 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @return SmartStore instance.
      */
     public SmartStore getSmartStore(UserAccount account, String communityId) {
+    	return getSmartStore(DBOpenHelper.DEFAULT_DB_NAME, account, communityId);
+    }
+
+    /**
+     * Returns the database used by smart store for a specified database name and 
+     * user in the specified community.
+     *
+     * @param dbNamePrefix The database name. This must be a valid file name without a 
+     * 					   filename extension such as ".db".
+     * @param account UserAccount instance.
+     * @param communityId Community ID.
+     * @return SmartStore instance.
+     */
+    public SmartStore getSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
     	final String passcodeHash = getPasscodeHash();
-        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context,
+        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context, dbNamePrefix,
         		account, communityId).getWritableDatabase(passcodeHash == null ?
         		getEncryptionKeyForPasscode(null) : passcodeHash);
         return new SmartStore(db);
@@ -283,8 +297,8 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     /**
      * Returns whether smart store is enabled for the specified database or not.
      *
-     * @param dbNamePrefix The database name. This must be a valid file name and
-	 * 				should NOTcontain a filename suffix such as ".db".
+     * @param dbNamePrefix The database name. This must be a valid file name without a 
+     * 					   filename extension such as ".db".
      * @param account UserAccount instance.
      * @param communityId Community ID.
      * @return True - if the user has a smart store database, False - otherwise.
