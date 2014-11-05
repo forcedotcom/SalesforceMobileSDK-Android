@@ -36,6 +36,7 @@ import net.sqlcipher.database.SQLiteDatabaseHook;
 import net.sqlcipher.database.SQLiteOpenHelper;
 import android.content.Context;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 
@@ -191,49 +192,53 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * 
 	 */
 	public static synchronized void deleteDatabase(Context ctx, String dbNamePrefix, UserAccount account, String communityId) {
-		StringBuffer dbName = new StringBuffer(dbNamePrefix);
-		
-		// If we have account information, we will use it to create a database suffix for the user
-		if (account != null) {
-			// Default user path for a user is 'internal', if community ID is null.
-			final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
-			dbName.append(accountSuffix);
-		}
-
-		dbName.append(DB_NAME_SUFFIX);
-		
-		final String fullDBName = dbName.toString();
-
-		// close and remove the helper from the cache if it exists
-		final DBOpenHelper helper = openHelpers.get(fullDBName);
-		if (helper != null) {
-			helper.close();
-			openHelpers.remove(fullDBName);
-		}
-
-		// physically delete the database from disk
-		ctx.deleteDatabase(fullDBName);
-		
-		// if community id was not passed in, then we remove ALL databases for the account.
-		if (account != null && TextUtils.isEmpty(communityId)) {
-			StringBuffer communityDBNamePrefix = new StringBuffer(dbNamePrefix);
-			String accountSuffix = account.getUserLevelFilenameSuffix();
-			communityDBNamePrefix.append(accountSuffix);
+		try {
+			StringBuffer dbName = new StringBuffer(dbNamePrefix);
 			
-	    	final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
-	    	final File dir = new File(dbPath);
-	    	if (dir != null) {
-	        	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(communityDBNamePrefix.toString());
-	        	final File[] fileList = dir.listFiles();
-	        	if (fileList != null) {
-	            	for (final File file : fileList) {
-	            		if (file != null && fileFilter.accept(dir, file.getName())) {
-	            			file.delete();
-	            			openHelpers.remove(file.getName());
-	            		}
-	            	}
-	        	}
-	    	}
+			// If we have account information, we will use it to create a database suffix for the user
+			if (account != null) {
+				// Default user path for a user is 'internal', if community ID is null.
+				final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
+				dbName.append(accountSuffix);
+			}
+	
+			dbName.append(DB_NAME_SUFFIX);
+			
+			final String fullDBName = dbName.toString();
+	
+			// close and remove the helper from the cache if it exists
+			final DBOpenHelper helper = openHelpers.get(fullDBName);
+			if (helper != null) {
+				helper.close();
+				openHelpers.remove(fullDBName);
+			}
+	
+			// physically delete the database from disk
+			ctx.deleteDatabase(fullDBName);
+			
+			// if community id was not passed in, then we remove ALL databases for the account.
+			if (account != null && TextUtils.isEmpty(communityId)) {
+				StringBuffer communityDBNamePrefix = new StringBuffer(dbNamePrefix);
+				String accountSuffix = account.getUserLevelFilenameSuffix();
+				communityDBNamePrefix.append(accountSuffix);
+				
+		    	final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
+		    	final File dir = new File(dbPath);
+		    	if (dir != null) {
+		        	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(communityDBNamePrefix.toString());
+		        	final File[] fileList = dir.listFiles();
+		        	if (fileList != null) {
+		            	for (final File file : fileList) {
+		            		if (file != null && fileFilter.accept(dir, file.getName())) {
+		            			file.delete();
+		            			openHelpers.remove(file.getName());
+		            		}
+		            	}
+		        	}
+		    	}
+			}
+		} catch (Exception e) {
+			Log.e("DBOpenHelper:deleteDatabase", "Exception occurred while attempting to delete database.", e);
 		}
 	}
 
