@@ -61,7 +61,7 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	}
 
 	/**
-	 * Make sure database name is correct for no account and communityId.
+	 * Make sure database name is correct for no account and no communityId.
 	 */
 	public void testGetHelperForNullAccountNullCommunityId() {
 		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, "somedb", null, null);
@@ -73,7 +73,7 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	}
 	
 	/**
-	 * Make sure database name is correct for no account and communityId.
+	 * Make sure database name is correct for account without a communityId.
 	 */
 	public void testGetHelperForAccountNullCommunityId() {
 		UserAccount testAcct = getTestUserAccount();
