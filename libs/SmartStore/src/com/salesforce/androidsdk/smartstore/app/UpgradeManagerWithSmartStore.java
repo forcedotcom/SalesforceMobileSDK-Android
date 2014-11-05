@@ -32,7 +32,6 @@ import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.UpgradeManager;
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 
 /**
  * This class handles upgrades from one version to another.
@@ -46,7 +45,7 @@ public class UpgradeManagerWithSmartStore extends UpgradeManager {
      */
     private static final String SMART_STORE_KEY = "smart_store_version";
 
-	private static final String DB_NAME_2DOT2_FORMAT = "smartstore%s.db";
+    private static final String DB_NAME_2DOT2_FORMAT = "smartstore%s.db";
 
     private static UpgradeManagerWithSmartStore instance = null;
 

@@ -290,9 +290,9 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param communityId Community ID.
      * @return True - if the user has a smart store database, False - otherwise.
      */
-	public boolean hasSmartStore(UserAccount account, String communityId) {
-		return hasSmartStore(DBOpenHelper.DEFAULT_DB_NAME, account, communityId);
-	}
+     public boolean hasSmartStore(UserAccount account, String communityId) {
+    	 return hasSmartStore(DBOpenHelper.DEFAULT_DB_NAME, account, communityId);
+     }
 	
     /**
      * Returns whether smart store is enabled for the specified database or not.
@@ -303,7 +303,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param communityId Community ID.
      * @return True - if the user has a smart store database, False - otherwise.
      */
-	public boolean hasSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
-		return DBOpenHelper.smartStoreExists(context, dbNamePrefix, account, communityId);
-	}
+     public boolean hasSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
+     	return DBOpenHelper.smartStoreExists(context, dbNamePrefix, account, communityId);
+     }
 }
