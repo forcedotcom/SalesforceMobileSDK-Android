@@ -90,7 +90,7 @@ function usage() {
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
     console.log('    --targetandroidapi=<Target API> (e.g. 21 for Lollipop)');
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
-    console.log('    [--usesmartstore=<Whether or not to use SmartStore> (\'true\' or \'false\'. false by default)]');
+    console.log('    [--usesmartstore=<Whether or not to use SmartStore/SmartSync> (\'true\' or \'false\'. false by default)]');
     console.log(outputColors.cyan + '\nOR\n');
     console.log(outputColors.magenta + 'forcedroid version' + outputColors.reset);
 }
@@ -295,16 +295,15 @@ function createNativeApp(config, showNextSteps) {
 
     // If SmartStore is configured, set it up.
     if (config.usesmartstore) {
-        console.log('Adding SmartStore support.');
+        console.log('Adding SmartStore/SmartSync support.');
         shelljs.mkdir('-p', path.join(config.projectDir, 'assets'));  // May not exist for native.
         shelljs.cp(path.join(packageSdkRootDir, 'external', 'sqlcipher', 'assets', 'icudt46l.zip'), path.join(config.projectDir, 'assets', 'icudt46l.zip'));
 
-        console.log('Extending SalesforceSDKManagerWithSmartStore instead of SalesforceSDKManager.');
-        shelljs.sed('-i', /SalesforceSDKManager/g, 'SalesforceSDKManagerWithSmartStore', appClassPath);
-        shelljs.sed('-i', /WithSmartStoreWithSmartStore/g, 'WithSmartStore', appClassPath); // undoing change if the template was already using SalesforceSDKManagerWithSmartStore
+        console.log('Extending SmartSyncSDKManager instead of SalesforceSDKManager.');
+        shelljs.sed('-i', /SalesforceSDKManager/g, 'SmartSyncSDKManager', appClassPath);
         shelljs.sed('-i',
-            /com\.salesforce\.androidsdk\.app\.SalesforceSDKManagerWithSmartStore/g,
-            'com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore',
+            /com\.salesforce\.androidsdk\.app\.SmartSyncSDKManager/g,
+            'com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager',
             appClassPath);
     }
 
@@ -324,13 +323,17 @@ function createNativeApp(config, showNextSteps) {
     shelljs.exec(androidExePath + ' update project -p ' + path.join(destCordovaDir, 'framework'));
     console.log('update done');
 
-    // Copy SmartStore library project into the app folder as well, if it's not already there - if required.
+    // Copy SmartStore and SmartSync library projects into the app folder as well, if it's not already there - if required.
     // copy <Android Package>/libs/SmartStore -> <App Folder>/forcedroid/libs/SmartStore
+    // copy <Android Package>/libs/SmartSync -> <App Folder>/forcedroid/libs/SmartSync
     // copy <Android Package>/external/sqlcipher -> <App Folder>/forcedroid/external/sqlcipher
     if (config.usesmartstore) {
         var smartStoreRelativePath = path.join('libs', 'SmartStore');
         copyFromSDK(packageSdkRootDir, config.targetdir, smartStoreRelativePath);
         shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), smartStoreRelativePath));
+        var smartSyncRelativePath = path.join('libs', 'SmartSync');
+        copyFromSDK(packageSdkRootDir, config.targetdir, smartSyncRelativePath);
+        shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), smartSyncRelativePath));
         copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
 
@@ -339,7 +342,7 @@ function createNativeApp(config, showNextSteps) {
     var projectPropertiesFilePath = path.join(config.projectDir, 'project.properties');
     shelljs.rm(projectPropertiesFilePath);
     var libProject = config.usesmartstore
-        ? path.join('..', path.basename(packageSdkRootDir), smartStoreRelativePath)
+        ? path.join('..', path.basename(packageSdkRootDir), smartSyncRelativePath)
         : path.join('..', path.basename(packageSdkRootDir), salesforceSDKRelativePath);
     shelljs.exec(androidExePath + ' update project -p ' + config.projectDir + ' -t "android-' + config.targetandroidapi + '" -l ' + libProject);
     '\nmanifestmerger.enabled=true\n'.toEnd(projectPropertiesFilePath);
@@ -443,7 +446,7 @@ function createArgsProcessorList() {
                     function(argsMap) { return (argsMap['apptype'] === 'hybrid_remote'); });
 
     // Use SmartStore
-    addProcessorFor(argProcessorList, 'usesmartstore', 'Do you want to use SmartStore in your app? [yes/NO] (\'No\' by default)', 'Use smartstore must be yes or no.',
+    addProcessorFor(argProcessorList, 'usesmartstore', 'Do you want to use SmartStore or SmartSync in your app? [yes/NO] (\'No\' by default)', 'Use smartstore must be yes or no.',
                     function(val) {
                         if (val.trim() === '') return true;
                         return ['yes', 'no'].indexOf(val.toLowerCase()) >= 0;

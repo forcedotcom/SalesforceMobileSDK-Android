@@ -57,9 +57,9 @@ public class UserAccount {
 	public static final String COMMUNITY_ID = "communityId";
 	public static final String COMMUNITY_URL = "communityUrl";
 	public static final String INTERNAL_COMMUNITY_ID = "000000000000000000";
+	public static final String INTERNAL_COMMUNITY_PATH = "internal";
 
 	private static final String TAG = "UserAccount";
-	private static final String INTERNAL_COMMUNITY_PATH = "internal";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
 

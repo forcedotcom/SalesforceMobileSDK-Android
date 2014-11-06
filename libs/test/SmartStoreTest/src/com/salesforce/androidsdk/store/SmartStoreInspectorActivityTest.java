@@ -212,8 +212,7 @@ public class SmartStoreInspectorActivityTest extends
 
 	private void createStore() {
 		DBOpenHelper.deleteDatabase(targetContext, null);
-		SQLiteDatabase db = DBOpenHelper.getOpenHelper(targetContext, null)
-				.getWritableDatabase("");
+		SQLiteDatabase db = DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase("");
 		DBHelper.getInstance(db).clearMemoryCache();
 		store = new SmartStore(db);
 	}
