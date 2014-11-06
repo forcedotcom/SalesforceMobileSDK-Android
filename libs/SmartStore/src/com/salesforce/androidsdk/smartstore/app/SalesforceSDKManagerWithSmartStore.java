@@ -32,7 +32,6 @@ import net.sqlcipher.database.SQLiteDatabase;
 import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
-import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
