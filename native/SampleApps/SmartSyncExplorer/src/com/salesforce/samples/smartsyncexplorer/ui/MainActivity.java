@@ -283,6 +283,9 @@ public class MainActivity extends SalesforceListActivity implements
 	}
 
 	private void handleSyncUpdate(SyncState sync) {
+		if (Looper.myLooper() == null) {
+            Looper.prepare();	
+    	}
 		if (sync.isDone()) {
 			if (Looper.myLooper() == null) {
                 Looper.prepare();	
