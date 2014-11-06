@@ -37,8 +37,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -51,7 +49,7 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
-import com.salesforce.androidsdk.util.test.BroadcastListenerQueue;
+import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 
@@ -72,12 +70,10 @@ public class SyncManagerTest extends ManagerTestCase {
 	private static final int COUNT_TEST_ACCOUNTS = 10;
 	
 	private Map<String, String> idToNames;
-	private BroadcastListenerQueue broadcastQueue;
 
 	@Override
     public void setUp() throws Exception {
     	super.setUp();
-    	broadcastQueue = setupBroadcastListenerQueue();
     	createAccountsSoup();
     	idToNames = createTestAccountsOnServer(COUNT_TEST_ACCOUNTS);
     }
@@ -87,7 +83,6 @@ public class SyncManagerTest extends ManagerTestCase {
     	deleteTestAccountsOnServer(idToNames);
     	dropAccountsSoup();
     	deleteSyncs();
-    	tearDownBroadcastListenerQueue(broadcastQueue);
     	super.tearDown();
     }
 	
@@ -250,12 +245,13 @@ public class SyncManagerTest extends ManagerTestCase {
 		checkStatus(sync, SyncState.Type.syncDown, syncId, target, null, SyncState.Status.NEW, 0, -1);
 		
 		// Run sync
-		syncManager.runSync(sync);
+		SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+		syncManager.runSync(sync, queue);
 
 		// Check status updates
-		checkStatus(waitForNextBroadcast(), SyncState.Type.syncDown, syncId, target, null, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
-		checkStatus(waitForNextBroadcast(), SyncState.Type.syncDown, syncId, target, null, SyncState.Status.RUNNING, 0, idToNames.size());
-		checkStatus(waitForNextBroadcast(), SyncState.Type.syncDown, syncId, target, null, SyncState.Status.DONE, 100, idToNames.size());
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, null, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, null, SyncState.Status.RUNNING, 0, idToNames.size());
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, null, SyncState.Status.DONE, 100, idToNames.size());
 	}
 
 	/**
@@ -271,27 +267,18 @@ public class SyncManagerTest extends ManagerTestCase {
 		checkStatus(sync, SyncState.Type.syncUp, syncId, null, options, SyncState.Status.NEW, 0, -1);
 		
 		// Run sync
-		syncManager.runSync(sync);
+		SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+		syncManager.runSync(sync, queue);
 		
 		// Check status updates
-		checkStatus(waitForNextBroadcast(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
-		checkStatus(waitForNextBroadcast(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, 0, numberChanges);
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, 0, numberChanges);
 		for (int i=1; i<numberChanges; i++) {
-			checkStatus(waitForNextBroadcast(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, i*100/numberChanges, numberChanges);
+			checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, i*100/numberChanges, numberChanges);
 		}
-		checkStatus(waitForNextBroadcast(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.DONE, 100, numberChanges);
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.DONE, 100, numberChanges);
 	}
 
-	/**
-	 * Blocks until next sync broadcast
-	 * @return sync from broadcast
-	 * @throws JSONException
-	 */
-	private SyncState waitForNextBroadcast() throws JSONException {
-		Intent intent = broadcastQueue.getNextBroadcast();
-		return SyncState.fromJSON(new JSONObject(intent.getStringExtra(SyncState.SYNC_AS_STRING)));
-	}
-	
 	/**
 	 * Helper method to check sync state
 	 * @param sync
@@ -398,23 +385,6 @@ public class SyncManagerTest extends ManagerTestCase {
 		smartStore.clearSoup(SyncState.SYNCS_SOUP);
 	}
 
-	/**
-	 * Setup broadcast listener queue to synchronize code with broadcasts from SyncManager
-	 * @return
-	 */
-	private BroadcastListenerQueue setupBroadcastListenerQueue() {
-		BroadcastListenerQueue queue = new BroadcastListenerQueue(); 
-		targetContext.registerReceiver(queue, new IntentFilter(SyncManager.SYNC_INTENT_ACTION));
-		return queue;
-	}
-
-	/**
-	 * Unregister broadcast listener queue from broadcasts from SyncManager
-	 */
-	private void tearDownBroadcastListenerQueue(BroadcastListenerQueue queue) {
-		targetContext.unregisterReceiver(queue);
-	}
-	
 	/**
 	 * Create accounts locally
 	 * @param names

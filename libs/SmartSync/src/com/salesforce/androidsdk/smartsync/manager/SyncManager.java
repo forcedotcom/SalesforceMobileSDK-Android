@@ -37,12 +37,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Intent;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -53,9 +51,9 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
-import com.salesforce.androidsdk.smartsync.util.SyncTarget;
-import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 
 
 /**
@@ -75,9 +73,6 @@ public class SyncManager {
 	public static final String LOCALLY_DELETED = "__locally_deleted__";
 	public static final String LOCAL = "__local__";
 	
-	// Broadcast
-	public static final String SYNC_INTENT_ACTION = "com.salesforce.androidsdk.smartsync.manager.SyncManager.UPDATE_SYNC";
-
 	/**
      * Returns the instance of this class associated with this user account.
      *
@@ -171,35 +166,37 @@ public class SyncManager {
      * Create and run a sync down
      * @param target
      * @param soupName
+     * @param callback
      * @return
      * @throws JSONException
      */
-    public SyncState syncDown(SyncTarget target, String soupName) throws JSONException {
+    public SyncState syncDown(SyncTarget target, String soupName, SyncUpdateCallback callback) throws JSONException {
     	SyncState sync = SyncState.createSyncDown(smartStore, target, soupName);
-		runSync(sync);
+		runSync(sync, callback);
 		return sync;
     }
 
 	/**
 	 * Run a sync
 	 * @param sync
+	 * @param callback 
 	 */
-	public void runSync(final SyncState sync) {
-		updateSync(sync, SyncState.Status.RUNNING, 0, -1 /* don't change */);
+	public void runSync(final SyncState sync, final SyncUpdateCallback callback) {
+		updateSync(sync, SyncState.Status.RUNNING, 0, -1 /* don't change */, callback);
 		threadPool.execute(new Runnable() {
 			@Override
 			public void run() {
 				try {
 					switch(sync.getType()) {
-					case syncDown: syncDown(sync); break;
-					case syncUp:   syncUp(sync); break;
+					case syncDown: syncDown(sync, callback); break;
+					case syncUp:   syncUp(sync, callback); break;
 					}
-					updateSync(sync, SyncState.Status.DONE, 100, -1 /* don't change */);
+					updateSync(sync, SyncState.Status.DONE, 100, -1 /* don't change */, callback);
 				}
 				catch (Exception e) {
 					Log.e("SmartSyncManager:runSync", "Error during sync: " + sync.getId(), e);
 					// Update status to failed
-					updateSync(sync, SyncState.Status.FAILED,  -1 /* don't change*/, -1 /* don't change */);
+					updateSync(sync, SyncState.Status.FAILED,  -1 /* don't change*/, -1 /* don't change */, callback);
 				}
 			}
 		});
@@ -209,12 +206,13 @@ public class SyncManager {
      * Create and run a sync up
      * @param options
      * @param soupName
+     * @param callback
      * @return
      * @throws JSONException
      */
-    public SyncState syncUp(SyncOptions options, String soupName) throws JSONException {
+    public SyncState syncUp(SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
     	SyncState sync = SyncState.createSyncUp(smartStore, options, soupName);
-    	runSync(sync);
+    	runSync(sync, callback);
     	return sync;
     }
     
@@ -236,29 +234,25 @@ public class SyncManager {
 	/**
      * Update sync with new status, progress, totalSize
      * @param sync 
-     * @param status
-     * @param progress pass -1 to keep the current value
-     * @param totalSize pass -1 to keep the current value
+	 * @param status
+	 * @param progress pass -1 to keep the current value
+	 * @param totalSize pass -1 to keep the current value
+	 * @param callback 
      */
-    private void updateSync(SyncState sync, SyncState.Status status, int progress, int totalSize) {
+    private void updateSync(SyncState sync, SyncState.Status status, int progress, int totalSize, SyncUpdateCallback callback) {
     	try {
     		sync.setStatus(status);
     		if (progress != -1) sync.setProgress(progress);
     		if (totalSize != -1) sync.setTotalSize(totalSize);
     		sync.save(smartStore);
-	    	
-	    	Intent intent = new Intent();
-	    	intent.setAction(SYNC_INTENT_ACTION);
-	    	intent.putExtras(sync.asBundle());
-	    	intent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
-			SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
+	    	callback.onUpdate(sync);
     	}
     	catch (JSONException e) {
     		Log.e("SmartSyncManager:updateSync", "Unexpected json error for sync: " + sync.getId(), e);
     	}
     }
     
-    private void syncUp(SyncState sync) throws Exception {
+    private void syncUp(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		String soupName = sync.getSoupName();
 		SyncOptions options = sync.getOptions();
 		List<String> fieldlist = options.getFieldlist();
@@ -267,7 +261,7 @@ public class SyncManager {
 		// Call smartstore
 		JSONArray records = smartStore.query(querySpec, 0); // TBD deal with more than 2000 locally modified records
 		int totalSize = records.length();
-		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize);
+		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
 		for (int i = 0; i < totalSize; i++) {
 			JSONObject record = records.getJSONObject(i);
 			
@@ -338,20 +332,20 @@ public class SyncManager {
 			// Updating status
 			int progress = (i+1)*100 / totalSize;
 			if (progress < 100) {
-				updateSync(sync, SyncState.Status.RUNNING, progress, -1 /* don't change */);
+				updateSync(sync, SyncState.Status.RUNNING, progress, -1 /* don't change */, callback);
 			}			
 		}
 	}
 
-	private void syncDown(SyncState sync) throws Exception {
+	private void syncDown(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		switch(sync.getTarget().getQueryType()) {
-		case mru:  syncDownMru(sync); break;
-		case soql: syncDownSoql(sync); break;
-		case sosl: syncDownSosl(sync); break;
+		case mru:  syncDownMru(sync, callback); break;
+		case soql: syncDownSoql(sync, callback); break;
+		case sosl: syncDownSosl(sync, callback); break;
 		}
 	}
 	
-	private void syncDownMru(SyncState sync) throws Exception {
+	private void syncDownMru(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		SyncTarget target = sync.getTarget();
 		String sobjectType = target.getObjectType();
 		List<String>fieldlist = target.getFieldlist();
@@ -373,12 +367,12 @@ public class SyncManager {
 		int totalSize = records.length();
 		
 		// Save to smartstore
-		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize);
+		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
 		if (totalSize > 0)
 			saveRecordsToSmartStore(soupName, records);
 	}
 
-	private void syncDownSoql(SyncState sync) throws Exception {
+	private void syncDownSoql(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		String soupName = sync.getSoupName();	
 		SyncTarget target = sync.getTarget();
 		String query = target.getQuery();
@@ -390,7 +384,7 @@ public class SyncManager {
 
 		int countSaved = 0;
 		int totalSize = responseJson.getInt(Constants.TOTAL_SIZE);
-		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize);
+		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
 		
 		do {
 			JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
@@ -400,7 +394,7 @@ public class SyncManager {
 			
 			// Update sync status
 			if (countSaved < totalSize)
-				updateSync(sync, SyncState.Status.RUNNING, countSaved*100 / totalSize, -1 /* don't change */);
+				updateSync(sync, SyncState.Status.RUNNING, countSaved*100 / totalSize, -1 /* don't change */, callback);
 
 			// Fetch next records if any
 			String nextRecordsUrl = responseJson.optString(Constants.NEXT_RECORDS_URL, null);
@@ -409,7 +403,7 @@ public class SyncManager {
 		while (responseJson != null);
 	}
 
-	private void syncDownSosl(SyncState sync) throws Exception {
+	private void syncDownSosl(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		String soupName = sync.getSoupName();	
 		SyncTarget target = sync.getTarget();
 		String query = target.getQuery();
@@ -423,7 +417,7 @@ public class SyncManager {
 		int totalSize = records.length();
 		
 		// Save to smartstore
-		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize);
+		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
 		if (totalSize > 0)
 			saveRecordsToSmartStore(soupName, records);
 	}
@@ -486,4 +480,12 @@ public class SyncManager {
     public void setNetworkManager(NetworkManager networkMgr) {
         restClient = networkMgr.getRestClient();
     }
+    
+    
+	/**
+	 * Callback to get sync status udpates
+	 */
+	public interface SyncUpdateCallback {
+		void onUpdate(SyncState sync);
+	}
 }
