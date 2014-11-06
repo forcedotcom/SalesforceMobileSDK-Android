@@ -243,8 +243,22 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @return SmartStore instance.
      */
     public SmartStore getSmartStore(UserAccount account, String communityId) {
+    	return getSmartStore(DBOpenHelper.DEFAULT_DB_NAME, account, communityId);
+    }
+
+    /**
+     * Returns the database used by smart store for a specified database name and 
+     * user in the specified community.
+     *
+     * @param dbNamePrefix The database name. This must be a valid file name without a 
+     * 					   filename extension such as ".db".
+     * @param account UserAccount instance.
+     * @param communityId Community ID.
+     * @return SmartStore instance.
+     */
+    public SmartStore getSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
     	final String passcodeHash = getPasscodeHash();
-        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context,
+        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context, dbNamePrefix,
         		account, communityId).getWritableDatabase(passcodeHash == null ?
         		getEncryptionKeyForPasscode(null) : passcodeHash);
         return new SmartStore(db);
@@ -276,14 +290,20 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param communityId Community ID.
      * @return True - if the user has a smart store database, False - otherwise.
      */
-    public boolean hasSmartStore(UserAccount account, String communityId) {
-    	String dbName = String.format(DBOpenHelper.DB_NAME, "");
-    	if (account != null) {
-        	final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
-    		if (!TextUtils.isEmpty(dbPath)) {
-    			dbName = String.format(DBOpenHelper.DB_NAME, dbPath);
-    		}
-    	}
-        return context.getDatabasePath(dbName).exists();
-    }
+     public boolean hasSmartStore(UserAccount account, String communityId) {
+    	 return hasSmartStore(DBOpenHelper.DEFAULT_DB_NAME, account, communityId);
+     }
+	
+    /**
+     * Returns whether smart store is enabled for the specified database or not.
+     *
+     * @param dbNamePrefix The database name. This must be a valid file name without a 
+     * 					   filename extension such as ".db".
+     * @param account UserAccount instance.
+     * @param communityId Community ID.
+     * @return True - if the user has a smart store database, False - otherwise.
+     */
+     public boolean hasSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
+     	return DBOpenHelper.smartStoreExists(context, dbNamePrefix, account, communityId);
+     }
 }
