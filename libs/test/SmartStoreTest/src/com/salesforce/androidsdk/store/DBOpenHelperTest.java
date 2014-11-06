@@ -146,7 +146,7 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 
 		// create the database we want to ensure is deleted
 		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, testAcct, TEST_COMMUNITY_ID);
-		SQLiteDatabase db = helper.getWritableDatabase("");
+		helper.getWritableDatabase("");
 		
 		// create another database for this account which should not be deleted.
 		DBOpenHelper dontDeleteHelper = DBOpenHelper.getOpenHelper(targetContext, testAcct, "other_community_id");
@@ -202,16 +202,17 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	public void testHasSmartStoreIsTrueForDefaultDatabase() {
 		UserAccount testAcct = getTestUserAccount(); 
 		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, testAcct);
-		SQLiteDatabase db = helper.getWritableDatabase("");
-
-		assertTrue("SmartStore for account should exist.", DBOpenHelper.smartStoreExists(targetContext, testAcct, null));
+		helper.getWritableDatabase("");
+		assertTrue("SmartStore for account should exist.",
+				DBOpenHelper.smartStoreExists(targetContext, testAcct, null));
 	}
 	
 	/**
 	 * Has smart store for given account returns false.
 	 */
 	public void testHasSmartStoreIsFalseForDefaultDatabase() {
-		assertFalse("SmartStore for account should not exist.", DBOpenHelper.smartStoreExists(targetContext, null, null));
+		assertFalse("SmartStore for account should not exist.",
+				DBOpenHelper.smartStoreExists(targetContext, null, null));
 	}
 
 	/**
@@ -220,16 +221,17 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	public void testHasSmartStoreIsTrueForSpecifiedDatabase() {
 		UserAccount testAcct = getTestUserAccount(); 
 		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, "testdb", testAcct, null);
-		SQLiteDatabase db = helper.getWritableDatabase("");
-
-		assertTrue("SmartStore for account should exist.", DBOpenHelper.smartStoreExists(targetContext, "testdb", testAcct, null));
+		helper.getWritableDatabase("");
+		assertTrue("SmartStore for account should exist.",
+				DBOpenHelper.smartStoreExists(targetContext, "testdb", testAcct, null));
 	}
 	
 	/**
 	 * Has smart store for given account returns false.
 	 */
 	public void testHasSmartStoreIsFalseForSpecifiedDatabase() {
-		assertFalse("SmartStore for account should not exist.", DBOpenHelper.smartStoreExists(targetContext, "dbdne", null, null));
+		assertFalse("SmartStore for account should not exist.",
+				DBOpenHelper.smartStoreExists(targetContext, "dbdne", null, null));
 	}
 
 

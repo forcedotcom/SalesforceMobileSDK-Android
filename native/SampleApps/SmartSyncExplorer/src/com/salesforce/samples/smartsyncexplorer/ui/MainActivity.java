@@ -39,6 +39,7 @@ import android.content.Loader;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
+import android.os.Looper;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -282,6 +283,9 @@ public class MainActivity extends SalesforceListActivity implements
 	}
 
 	private void handleSyncUpdate(SyncState sync) {
+		if (Looper.myLooper() == null) {
+            Looper.prepare();	
+    	}
 		if (sync.isDone()) {
 			switch(sync.getType()) {
 			case syncDown:
