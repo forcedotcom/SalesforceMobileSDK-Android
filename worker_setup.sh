@@ -2,9 +2,5 @@
 
 . android-settings.sh
 
-for d in libs/SalesforceSDK external/cordova/framework native/SampleApps/FileExplorer; do
-	echo "Updating android project $d"
-	(cd $d && android update project -p .)
-done
+tools/sdk.sh -v -b SalesforceSDK Cordova RestExplorer FileExplorer 
 
-(cd native/SampleApps/FileExplorer && ant debug)
