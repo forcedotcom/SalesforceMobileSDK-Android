@@ -13,5 +13,6 @@ until [[ "$bootanim" =~ "stopped" ]]; do
         exit 1
       fi
    fi
+   echo $bootanim
    sleep 2
 done
