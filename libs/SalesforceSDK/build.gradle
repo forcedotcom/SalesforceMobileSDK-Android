@@ -2,9 +2,10 @@
 apply plugin: 'android-library'
 
 dependencies {
-  compile project(':external:cordova:framework')
   compile 'org.apache.httpcomponents:httpmime:4.3.2'
-  compile 'org.apache.james:apache-mime4j:0.7.2'
+
+  // TODO: The Maven version of mime4j has dependencies on AWT and Swing
+  compile files('libs/apache-mime4j-0.7.2.jar')
 
   // TODO: Replace the following libs with MavenCentral when they're available.
   compile files('libs/volley_android-4.4.2_r2.jar')
@@ -14,13 +15,15 @@ dependencies {
 }
 
 android {
-  compileSdkVersion 17
+  compileSdkVersion 19
   buildToolsVersion "20.0.0"
 
   sourceSets {
     main {
       manifest.srcFile 'AndroidManifest.xml'
-      java.srcDirs = ['src']
+
+      // Include Cordova as a source dependency since it exists in a submodule
+      java.srcDirs = ['src', '../../external/cordova/framework/src']
       resources.srcDirs = ['src']
       aidl.srcDirs = ['src']
       renderscript.srcDirs = ['src']
