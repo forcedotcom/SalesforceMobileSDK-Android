@@ -1,12 +1,11 @@
 apply plugin: 'android'
 
 dependencies {
-  compile project(':external:cordova:framework')
   compile project(':libs:SalesforceSDK')
 }
 
 android {
-  compileSdkVersion 17
+  compileSdkVersion 19
   buildToolsVersion "20.0.0"
 
   sourceSets {
@@ -38,5 +37,4 @@ android {
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
   }
-
 }
