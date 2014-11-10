@@ -2,11 +2,7 @@
 apply plugin: 'android-library'
 
 dependencies {
-  compile('org.apache.httpcomponents:httpmime:4.3.2') {
-    // The Android SDK also includes these modules, so don't include them again
-    exclude group: 'commons-logging', module: 'commons-logging'
-    exclude group: 'org.apache.httpcomponents', module: 'httpclient'
-  }
+  compile 'org.apache.httpcomponents:httpmime:4.3.2'
 
   // TODO: The Maven version of mime4j has dependencies on AWT and Swing
   compile files('libs/apache-mime4j-0.7.2.jar')
