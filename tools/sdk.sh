@@ -56,6 +56,7 @@ usage ()
     echo "        TemplateApp"
     echo "        AccountEditor"
     echo "        ContactExplorer"
+    echo "        HybridFileExplorer"
     echo "        SimpleSync"
     echo "        UserList"
     echo "        SmartStoreExplorer"
@@ -171,6 +172,7 @@ else
     build_project_if_requested "FileExplorer" $NATIVE_TOP/SampleApps/FileExplorer 19
     build_project_if_requested "AccountEditor" $HYBRID_TOP/SampleApps/AccountEditor 19
     build_project_if_requested "ContactExplorer" $HYBRID_TOP/SampleApps/ContactExplorer 19
+    build_project_if_requested "HybridFileExplorer" $HYBRID_TOP/SampleApps/HybridFileExplorer 19
     build_project_if_requested "SimpleSync" $HYBRID_TOP/SampleApps/SimpleSync 19
     build_project_if_requested "UserList" $HYBRID_TOP/SampleApps/UserList 19
     build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer 19
@@ -181,7 +183,7 @@ else
     build_test_project_if_requested "SmartSyncTest" $LIBS_TOP/test/SmartSyncTest ../../SmartSync
     build_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/test/TemplateAppTest ../../TemplateApp
     build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/SampleApps/test/RestExplorerTest ../../RestExplorer
-    build_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest $LIBS_TOP/SmartSync
+    build_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest ../../../libs/SmartSync
 
     run_test_project_if_requested "SalesforceSDKTest" $LIBS_TOP/test/SalesforceSDKTest
     run_test_project_if_requested "SmartStoreTest" $LIBS_TOP/test/SmartStoreTest
