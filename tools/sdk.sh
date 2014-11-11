@@ -176,12 +176,12 @@ else
     build_project_if_requested "SmartStoreExplorer" $HYBRID_TOP/SampleApps/SmartStoreExplorer 19
     build_project_if_requested "VFConnector" $HYBRID_TOP/SampleApps/VFConnector 19
 
-    build_test_project_if_requested "SalesforceSDKTest" $LIBS_TOP/test/SalesforceSDKTest .
-    build_test_project_if_requested "SmartStoreTest" $LIBS_TOP/test/SmartStoreTest .
-    build_test_project_if_requested "SmartSyncTest" $LIBS_TOP/test/SmartSyncTest .
+    build_test_project_if_requested "SalesforceSDKTest" $LIBS_TOP/test/SalesforceSDKTest ../../SalesforceSDK
+    build_test_project_if_requested "SmartStoreTest" $LIBS_TOP/test/SmartStoreTest ../../SmartStore
+    build_test_project_if_requested "SmartSyncTest" $LIBS_TOP/test/SmartSyncTest ../../SmartSync
     build_test_project_if_requested "TemplateAppTest" $NATIVE_TOP/test/TemplateAppTest ../../TemplateApp
     build_test_project_if_requested "RestExplorerTest" $NATIVE_TOP/SampleApps/test/RestExplorerTest ../../RestExplorer
-    build_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest .
+    build_test_project_if_requested "ForcePluginsTest" $HYBRID_TOP/test/ForcePluginsTest $LIBS_TOP/SmartSync
 
     run_test_project_if_requested "SalesforceSDKTest" $LIBS_TOP/test/SalesforceSDKTest
     run_test_project_if_requested "SmartStoreTest" $LIBS_TOP/test/SmartStoreTest

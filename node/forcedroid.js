@@ -44,7 +44,7 @@ var miscUtils = require('../external/shared/node/utils');
 
 var version = '3.0.0';
 var minimumCordovaVersion = '3.5';
-var minTargetApi = {'versionNumber': 17, 'versionName': 'Jelly Bean'};
+var minTargetApi = {'versionNumber': 19, 'versionName': 'KitKat'};
 var androidExePath;
 
 // Calling main
