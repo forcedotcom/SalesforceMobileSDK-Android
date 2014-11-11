@@ -4,7 +4,7 @@
     <!-- The local.properties file is created and updated by the 'android' tool.
          It contains the path to the SDK. It should *NOT* be checked into
          Version Control Systems. -->
-    <loadproperties srcFile="local.properties" />
+    <property file="local.properties" />
 
     <!-- The ant.properties file can be created by you. It is only edited by the
          'android' tool to add properties to it.
@@ -28,6 +28,15 @@
          -->
     <property file="ant.properties" />
 
+    <!-- if sdk.dir was not set from one of the property file, then
+         get it from the ANDROID_HOME env var.
+         This must be done before we load project.properties since
+         the proguard config can use sdk.dir -->
+    <property environment="env" />
+    <condition property="sdk.dir" value="${env.ANDROID_HOME}">
+        <isset property="env.ANDROID_HOME" />
+    </condition>
+
     <!-- The project.properties file is created and updated by the 'android'
          tool, as well as ADT.
 
@@ -41,25 +50,23 @@
 
     <!-- quick check on sdk.dir -->
     <fail
-            message="sdk.dir is missing. Make sure to generate local.properties using 'android update project'"
+            message="sdk.dir is missing. Make sure to generate local.properties using 'android update project' or to inject it through the ANDROID_HOME environment variable."
             unless="sdk.dir"
     />
 
-
-<!-- extension targets. Uncomment the ones where you want to do custom work
-     in between standard targets -->
-<!--
-    <target name="-pre-build">
-    </target>
-    <target name="-pre-compile">
-    </target>
-
-    /* This is typically used for code obfuscation.
-       Compiled code location: ${out.classes.absolute.dir}
-       If this is not done in place, override ${out.dex.input.absolute.dir} */
-    <target name="-post-compile">
-    </target>
--->
+    <!--
+        Import per project custom build rules if present at the root of the project.
+        This is the place to put custom intermediary targets such as:
+            -pre-build
+            -pre-compile
+            -post-compile (This is typically used for code obfuscation.
+                           Compiled code location: ${out.classes.absolute.dir}
+                           If this is not done in place, override ${out.dex.input.absolute.dir})
+            -post-package
+            -post-build
+            -pre-clean
+    -->
+    <import file="custom_rules.xml" optional="true" />
 
     <!-- Import the actual build file.
 
@@ -82,81 +89,37 @@
     <!-- version-tag: custom -->
     <import file="${sdk.dir}/tools/ant/build.xml" />
 
-    <!-- Otherwise ant installt fails -->
-    <property name="dont.do.deps" value="false" />
-
-    <!-- Otherwise it won't build -->
-    <property name="project.is.testapp" value="true" />
-    <property name="project.is.test" value="false" />
-
-    <!-- Overridding androidsdk's test target
-         to extract manifest.package and test.runner from AndroidManifest.xml -->
-    <target name="test" depends="-test-project-check"
-                description="Runs tests from the package defined in test.package property">
-
-        <xpath input="AndroidManifest.xml" expression="/manifest/@package" output="manifest.package" />
-        <xpath input="AndroidManifest.xml" expression="/manifest/instrumentation/@android:name" output="test.runner" />
-        <property name="tested.project.absolute.dir" location="${tested.project.dir}" />
-        <property name="reports.dir" value="${basedir}/junit-reports"/>
-
-        <!-- Application package of the tested project extracted from its manifest file -->
-        <xpath input="${tested.project.absolute.dir}/AndroidManifest.xml"
-                expression="/manifest/@package" output="tested.manifest.package" />
-
+    <!-- Otherwise ant installt fails -->       
+    <property name="dont.do.deps" value="false" />     
+       
+    <!-- Otherwise it won't build -->      
+    <property name="project.is.testapp" value="true" />        
+    <property name="project.is.test" value="false" />      
+       
+    <!-- Overridding androidsdk's test target      
+         to extract manifest.package and test.runner from AndroidManifest.xml -->      
+    <target name="test" depends="-test-project-check"      
+                description="Runs tests from the package defined in test.package property">        
+       
+        <xpath input="AndroidManifest.xml" expression="/manifest/@package" output="manifest.package" />        
+        <xpath input="AndroidManifest.xml" expression="/manifest/instrumentation/@android:name" output="test.runner" />        
+        <property name="tested.project.absolute.dir" location="${tested.project.dir}" />       
+        <property name="reports.dir" value="${basedir}/junit-reports"/>        
+       
+        <!-- Application package of the tested project extracted from its manifest file -->        
+        <xpath input="${tested.project.absolute.dir}/AndroidManifest.xml"      
+                expression="/manifest/@package" output="tested.manifest.package" />        
+       
         <property name="files.dir" value="/data/data/${manifest.package}/files"/>
 
-        <property name="emma.dump.file"
-                value="/data/data/${tested.manifest.package}/coverage.ec" />
-
-        <if condition="${emma.enabled}">
-            <then>
-                <echo>WARNING: Code Coverage is currently only supported on the emulator and rooted devices.</echo>
-                <run-tests-helper emma.enabled="true">
-                    <extra-instrument-args>
-                        <arg value="-e" />
-                           <arg value="coverageFile" />
-                           <arg value="${emma.dump.file}" />
-                    </extra-instrument-args>
-                </run-tests-helper>
-                <echo>Downloading coverage file into project directory...</echo>
-                <exec executable="${adb}" failonerror="true">
-                    <arg line="${adb.device.arg}" />
-                    <arg value="pull" />
-                    <arg value="${emma.dump.file}" />
-                    <arg value="coverage.ec" />
-                </exec>
-                <echo>Extracting coverage report...</echo>
-                <emma>
-                    <report sourcepath="${tested.project.absolute.dir}/${source.dir}"
-                                      verbosity="${verbosity}">
-                        <!-- TODO: report.dir or something like should be introduced if necessary -->
-                        <infileset dir=".">
-                            <include name="coverage.ec" />
-                            <include name="coverage.em" />
-                        </infileset>
-                        <!-- TODO: reports in other, indicated by user formats -->
-                        <html outfile="coverage.html" />
-                   </report>
-                </emma>
-                <echo>Cleaning up temporary files...</echo>
-                <delete file="coverage.ec" />
-                <delete file="coverage.em" />
-                <echo>Saving the report file in ${basedir}/coverage/coverage.html</echo>
-            </then>
-            <else>
-                <run-tests-helper />
-            </else>
-        </if>
-
-        <echo>Downloading XML test reports...</echo>
-        <mkdir dir="${reports.dir}"/>
-        <exec executable="${adb}" failonerror="true">
-            <arg line="${adb.device.arg}"/>
-            <arg value="pull" />
-            <arg value="${files.dir}" />
-            <arg value="${reports.dir}" />
-        </exec>
-        <echo>Saving junit reports in ${basedir}/junit-reports</echo>
+        <echo>Downloading XML test reports...</echo>        
+        <mkdir dir="${reports.dir}"/>      
+        <exec executable="${adb}" failonerror="true">      
+            <arg line="${adb.device.arg}"/>        
+            <arg value="pull" />       
+            <arg value="${files.dir}" />       
+            <arg value="${reports.dir}" />     
+        </exec>        
+        <echo>Saving junit reports in ${basedir}/junit-reports</echo>      
     </target>
-
 </project>

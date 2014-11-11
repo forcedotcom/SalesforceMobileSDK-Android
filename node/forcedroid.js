@@ -44,7 +44,7 @@ var miscUtils = require('../external/shared/node/utils');
 
 var version = '3.0.0';
 var minimumCordovaVersion = '3.5';
-var minTargetApi = {'versionNumber': 17, 'versionName': 'Jelly Bean'};
+var minTargetApi = {'versionNumber': 19, 'versionName': 'KitKat'};
 var androidExePath;
 
 // Calling main
@@ -88,9 +88,9 @@ function usage() {
     console.log('    --appname=<Application Name>');
     console.log('    --targetdir=<Target App Folder>');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
-    console.log('    --targetandroidapi=<Target API> (e.g. 21 for Lollipop)');
+    console.log('    --targetandroidapi=<Target API> (e.g. 21 for Lollipop — Only required/used for \'native\')');
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
-    console.log('    [--usesmartstore=<Whether or not to use SmartStore/SmartSync> (\'true\' or \'false\'. false by default)]');
+    console.log('    [--usesmartstore=<Whether or not to use SmartStore/SmartSync> (\'true\' or \'false\'. false by default — Only required/used for \'native\')]');
     console.log(outputColors.cyan + '\nOR\n');
     console.log(outputColors.magenta + 'forcedroid version' + outputColors.reset);
 }
@@ -163,7 +163,6 @@ function createHybridApp(config) {
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android');
     shelljs.exec('cordova plugin add https://github.com/forcedotcom/SalesforceMobileSDK-CordovaPlugin#unstable');
-    shelljs.exec('node ' + path.join('plugins', 'com.salesforce', 'tools', 'postinstall-android.js') + ' ' + config.targetandroidapi + ' ' + config.usesmartstore);
 
     // Remove the default Cordova app.
     shelljs.rm('-rf', path.join('www', '*'));
@@ -200,7 +199,7 @@ function createHybridApp(config) {
          '   - Go to File -> Import... ',
          '   - Choose Android -> Existing Android Code into Workspace, and click Next >',
          '   - For the root directory, browse to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder',
-         '   - Pick the following projects: ' + config.appname + '/platforms/android, ' + config.appname + '/platforms/android/CordovaLib, ' + config.appname + '/plugins/com.salesforce/android/hybrid/SmartStore and ' + config.appname + '/plugins/com.salesforce/android/native/SalesforceSDK',
+         '   - Pick the following projects: ' + config.appname + '/platforms/android, ' + config.appname + '/platforms/android/CordovaLib, ' + config.appname + '/plugins/com.salesforce/android/libs/SmartSync, ' + config.appname + '/plugins/com.salesforce/android/libs/SmartStore and ' + config.appname + '/plugins/com.salesforce/android/libs/SalesforceSDK',
          '   - Click Finish',
          '   - Run your application by right-clicking the ' + config.appname + ' project in Project Explorer, and choosing Run As -> Android Application',
          '',
@@ -451,7 +450,7 @@ function createArgsProcessorList() {
                         if (val.trim() === '') return true;
                         return ['yes', 'no'].indexOf(val.toLowerCase()) >= 0;
                     },
-                    undefined,
+                    function(argsMap) { return (argsMap['apptype'] === 'native'); },
                     function(val) { return (val.toLowerCase() === 'yes'); });
 
     return argProcessorList;
@@ -463,7 +462,8 @@ function createArgsProcessorList() {
 function addProcessorForAndroidApi(argProcessorList) { 
     // Target API
     addProcessorFor(argProcessorList, 'targetandroidapi', 'Enter the target Android API version number for your application (at least ' + minTargetApi.versionNumber + ' (' + minTargetApi.versionName + ')):', 'Target API must be at least ' + minTargetApi.versionNumber, 
-                    function(val) { var intVal = parseInt(val); return intVal >= minTargetApi.versionNumber; });
+                    function(val) { var intVal = parseInt(val); return intVal >= minTargetApi.versionNumber; },
+                    function(argsMap) { return (argsMap['apptype'] === 'native'); });
 }
 
 
