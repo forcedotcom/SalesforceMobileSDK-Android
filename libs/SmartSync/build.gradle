@@ -2,12 +2,11 @@
 apply plugin: 'android-library'
 
 dependencies {
-  compile project(':libs:SalesforceSDK')
   compile project(':libs:SmartStore')
 }
 
 android {
-  compileSdkVersion 17
+  compileSdkVersion 19
   buildToolsVersion "20.0.0"
 
   sourceSets {
@@ -39,4 +38,3 @@ android {
     exclude 'META-INF/NOTICE'
   }
 }
-

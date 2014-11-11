@@ -1,13 +1,11 @@
 apply plugin: 'android'
 
 dependencies {
-  compile project(':libs:SalesforceSDK')
-  compile project(':libs:SmartStore')
   compile project(':libs:SmartSync')
 }
 
 android {
-  compileSdkVersion 17
+  compileSdkVersion 19
   buildToolsVersion "20.0.0"
 
   sourceSets {
@@ -29,5 +27,4 @@ android {
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
   }
-
 }
