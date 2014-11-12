@@ -848,6 +848,10 @@ public class SalesforceSDKManager {
      * @return The user agent string to use for all requests.
      */
     public final String getUserAgent() {
+    	return getUserAgent("");
+    }
+    
+    public final String getUserAgent(String qualifier) {
         String appName = "";
         String appVersion = "";
         try {
@@ -860,7 +864,7 @@ public class SalesforceSDKManager {
             // if your application doesn't have a name (like a test harness from Gradle)
             Log.w("SalesforceSDKManager:getUserAgent", nfe);
         }
-	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native");
+	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native") + qualifier;
 	    return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s",
 	            SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, nativeOrHybrid);
 	}

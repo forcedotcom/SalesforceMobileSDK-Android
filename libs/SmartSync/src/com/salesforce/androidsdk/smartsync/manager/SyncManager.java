@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +42,8 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -66,6 +69,9 @@ public class SyncManager {
     private String apiVersion;
 	private SmartStore smartStore;
 	private RestClient restClient;
+	
+	// For user agent
+	private static final String SMART_SYNC = "SmartSync";
 	
 	// Local fields
 	public static final String LOCALLY_CREATED = "__locally_created__";
@@ -305,7 +311,7 @@ public class SyncManager {
 			}
 			
 			// Call server
-			RestResponse response = restClient.sendSync(request);
+			RestResponse response = sendSyncWithSmartSyncUserAgent(request);
 			// Update smartstore
 			if (response.isSuccess()) {
 				// Replace id with server id during create
@@ -353,7 +359,7 @@ public class SyncManager {
     	
     	// Get recent items ids from server
 		RestRequest request = RestRequest.getRequestForMetadata(apiVersion, sobjectType);
-		RestResponse response = restClient.sendSync(request);
+		RestResponse response = sendSyncWithSmartSyncUserAgent(request);
 		List<String> recentItems = pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
 
 		// Building SOQL query to get requested at
@@ -361,7 +367,7 @@ public class SyncManager {
 
 		// Get recent items attributes from server
 		request = RestRequest.getRequestForQuery(apiVersion, soql);
-		response = restClient.sendSync(request);
+		response = sendSyncWithSmartSyncUserAgent(request);
 		JSONObject responseJson = response.asJSONObject();
 		JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
 		int totalSize = records.length();
@@ -379,7 +385,7 @@ public class SyncManager {
 		RestRequest request = RestRequest.getRequestForQuery(apiVersion, query);
 	
 		// Call server
-		RestResponse response = restClient.sendSync(request);
+		RestResponse response = sendSyncWithSmartSyncUserAgent(request);
 		JSONObject responseJson = response.asJSONObject();
 
 		int countSaved = 0;
@@ -398,7 +404,8 @@ public class SyncManager {
 
 			// Fetch next records if any
 			String nextRecordsUrl = responseJson.optString(Constants.NEXT_RECORDS_URL, null);
-			responseJson = nextRecordsUrl == null ? null : restClient.sendSync(RestMethod.GET, nextRecordsUrl, null).asJSONObject();
+			RestRequest restRequest = new RestRequest(RestMethod.GET, nextRecordsUrl, null);
+			responseJson = nextRecordsUrl == null ? null : sendSyncWithSmartSyncUserAgent(restRequest).asJSONObject();
 		}
 		while (responseJson != null);
 	}
@@ -410,7 +417,7 @@ public class SyncManager {
 		RestRequest request = RestRequest.getRequestForSearch(apiVersion, query);
 	
 		// Call server
-		RestResponse response = restClient.sendSync(request);
+		RestResponse response = sendSyncWithSmartSyncUserAgent(request);
 	
 		// Parse response
 		JSONArray records = response.asJSONArray();
@@ -448,6 +455,20 @@ public class SyncManager {
 	}
     
     /**
+     * Send request after adding user-agent header that says SmartSync
+	 * @param restRequest
+	 * @return
+	 * @throws IOException
+	 */
+	private RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
+		Map<String, String> headers = restRequest.getAdditionalHttpHeaders();
+		if (headers == null)
+			headers = new HashMap<String, String>();
+		headers.put(HttpAccess.USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC));
+		return restClient.sendSync(restRequest.getMethod(), restRequest.getPath(), restRequest.getRequestEntity(), headers);
+	}
+
+	/**
      * Enum for action
      *
      */
