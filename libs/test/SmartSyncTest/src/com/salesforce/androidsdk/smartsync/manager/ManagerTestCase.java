@@ -93,11 +93,9 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         metadataManager = MetadataManager.getInstance(null);
         cacheManager = CacheManager.getInstance(null);
         syncManager = SyncManager.getInstance(null);
-        final NetworkManager networkManager = NetworkManager.getInstance(null);
         restClient = initRestClient();
-		networkManager.setRestClient(null, restClient);
-        metadataManager.setNetworkManager(networkManager);
-        syncManager.setNetworkManager(networkManager);
+        metadataManager.setRestClient(restClient);
+        syncManager.setRestClient(restClient);
         smartStore = cacheManager.getSmartStore();
     }
 

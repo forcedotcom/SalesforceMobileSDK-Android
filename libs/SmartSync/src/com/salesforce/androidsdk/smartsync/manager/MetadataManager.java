@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.smartsync.manager;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -41,7 +42,10 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.smartsync.R;
@@ -77,14 +81,13 @@ public class MetadataManager {
 
     // Other constants.
     private static final String RECORD_TYPE_GLOBAL = "global";
-    private static final String REST_API_PATH = "services/data";
     private static final String RECENTLY_VIEWED = "RecentlyViewed";
 
     private static Map<String, MetadataManager> INSTANCES;
 
     private String apiVersion;
     private CacheManager cacheManager;
-    private NetworkManager networkManager;
+	private RestClient restClient;
     private String communityId;
 
     /**
@@ -176,16 +179,17 @@ public class MetadataManager {
         apiVersion = ApiVersionStrings.VERSION_NUMBER;
         this.communityId = communityId;
         cacheManager = CacheManager.getInstance(account, communityId);
-        networkManager = NetworkManager.getInstance(account, communityId);
+        restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
     }
-
+    
     /**
-     * Sets the network manager to be used.
-     *
-     * @param networkMgr NetworkManager instance.
+     * Sets the rest client to be used.
+     * This is primarily used only by tests.
+     * 
+     * @param restClient
      */
-    public void setNetworkManager(NetworkManager networkMgr) {
-        networkManager = networkMgr;
+    public void setRestClient(RestClient restClient) {
+        this.restClient = restClient;
     }
 
     /**
@@ -346,8 +350,13 @@ public class MetadataManager {
 
         // Makes a live server call to fetch object types.
         final List<SalesforceObjectType> returnList = new ArrayList<SalesforceObjectType>();
-        final String path = String.format("%s/%s/sobjects", REST_API_PATH, apiVersion);
-        final RestResponse response = networkManager.makeRemoteGETRequest(path, null);
+        RestResponse response = null;
+        try {
+        	response = restClient.sendSync(RestRequest.getRequestForDescribeGlobal(apiVersion));
+        } catch(IOException e) {
+        	Log.e(TAG, "IOException occurred while sending request", e);
+        }
+        
         if (response != null && response.isSuccess()) {
             try {
                 final JSONObject responseJSON = response.asJSONObject();
@@ -424,9 +433,13 @@ public class MetadataManager {
         }
 
         // Makes a live server call to fetch metadata.
-        final String path = String.format("%s/%s/sobjects/%s/describe", REST_API_PATH,
-                apiVersion, objectTypeName);
-        final RestResponse response = networkManager.makeRemoteGETRequest(path, null);
+        RestResponse response = null;
+        try {
+        	response = restClient.sendSync(RestRequest.getRequestForDescribe(apiVersion, objectTypeName));
+        } catch(IOException e) {
+        	Log.e(TAG, "IOException occurred while sending request", e);
+        }
+        
         if (response != null && response.isSuccess()) {
             try {
                 final JSONObject responseJSON = response.asJSONObject();
@@ -592,11 +605,12 @@ public class MetadataManager {
         }
 
         // Makes a live server call to fetch the object layout.
-        final String path = String.format("%s/%s/search/layout", REST_API_PATH,
-                apiVersion);
-        final Map<String, Object> params = new HashMap<String, Object>();
-        params.put("q", objectTypeName);
-        final RestResponse response = networkManager.makeRemoteGETRequest(path, params);
+        RestResponse response = null;
+        try {
+        	response = restClient.sendSync(RestRequest.getRequestForSearchResultLayout(apiVersion, Arrays.asList(new String[] {objectTypeName})));
+        } catch(IOException e) {
+        	Log.e(TAG, "IOException occurred while sending request", e);
+        }
         if (response != null && response.isSuccess()) {
             try {
                 final JSONArray responseJSON = response.asJSONArray();
@@ -709,11 +723,14 @@ public class MetadataManager {
                         networkFieldName, communityId);
             }
             queryBuilder.where(whereClause);
-            final String queryString = queryBuilder.buildAndEncode();
-            final String path = String.format("%s/%s/query/", REST_API_PATH, apiVersion);
-            final Map<String, Object> params = new HashMap<String, Object>();
-            params.put("q", queryString);
-            final RestResponse response = networkManager.makeRemoteGETRequest(path, params);
+            final String queryString = queryBuilder.build();
+
+            RestResponse response = null;
+            try {
+            	response = restClient.sendSync(RestRequest.getRequestForQuery(apiVersion, queryString));
+            } catch(IOException e) {
+            	Log.e(TAG, "IOException occurred while sending request", e);
+            }
             if (response != null && response.isSuccess()) {
                 final JSONObject responseJSON = response.asJSONObject();
                 if (responseJSON != null) {
@@ -980,8 +997,13 @@ public class MetadataManager {
      * @return List of object types.
      */
     private List<SalesforceObjectType> loadSmartScopes(CachePolicy cachePolicy) {
-        final String path = String.format("%s/%s/search/scopeOrder", REST_API_PATH, apiVersion);
-        final RestResponse response = networkManager.makeRemoteGETRequest(path, null);
+        RestResponse response = null;
+        try {
+        	response = restClient.sendSync(RestRequest.getRequestForSearchScopeAndOrder(apiVersion));
+        } catch(IOException e) {
+        	Log.e(TAG, "IOException occurred while sending request", e);
+        }
+        
         List<SalesforceObjectType> recentItems = new ArrayList<SalesforceObjectType>();
         if (response != null && response.isSuccess()) {
             try {
@@ -1092,11 +1114,14 @@ public class MetadataManager {
             }
             queryBuilder.where(whereClause);
         }
-        final String query = queryBuilder.buildAndEncode();
-        final Map<String, Object> queryParams = new HashMap<String, Object>();
-        queryParams.put("q", query);
-        final String path = String.format("%s/%s/query/", REST_API_PATH, apiVersion);
-        final RestResponse response = networkManager.makeRemoteGETRequest(path, queryParams);
+        final String query = queryBuilder.build();
+        RestResponse response = null;
+        try {
+        	response = restClient.sendSync(RestRequest.getRequestForQuery(apiVersion, query));
+        } catch(IOException e) {
+        	Log.e(TAG, "IOException occurred while sending request", e);
+        }
+        
         if (response != null && response.isSuccess()) {
             try {
                 final JSONObject responseJSON = response.asJSONObject();

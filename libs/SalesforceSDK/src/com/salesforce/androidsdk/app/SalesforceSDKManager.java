@@ -60,7 +60,10 @@ import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.AdminPrefsManager;
 import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PRNGFixes;
 import com.salesforce.androidsdk.security.PasscodeManager;
@@ -991,5 +994,12 @@ public class SalesforceSDKManager {
      */
     public boolean isLoggingOut() {
     	return isLoggingOut;
+    }
+    
+    /**
+     * @return ClientManager
+     */
+    public ClientManager getClientManager() {
+    	return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(), true);
     }
 }

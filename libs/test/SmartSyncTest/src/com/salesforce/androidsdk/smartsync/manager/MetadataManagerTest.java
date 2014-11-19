@@ -106,6 +106,7 @@ public class MetadataManagerTest extends ManagerTestCase {
      * Test for 'loadAllObjectTypes' (from the server).
      */
     public void testLoadAllObjectTypesFromServer() {
+    	fail(); // FIXME test stops the whole suite
     	final List<SalesforceObjectType> objectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
     			REFRESH_INTERVAL);
     	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ALL_OBJECTS_FILE);
@@ -256,6 +257,8 @@ public class MetadataManagerTest extends ManagerTestCase {
      * Test for 'loadAllObjectTypes' (from the cache).
      */
     public void testLoadAllObjectTypesFromCache() {
+
+    	fail(); // FIXME test stops the whole suite
     	metadataManager.loadAllObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
     			REFRESH_INTERVAL);
     	final List<SalesforceObjectType> objectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
