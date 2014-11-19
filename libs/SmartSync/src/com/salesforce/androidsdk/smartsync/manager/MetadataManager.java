@@ -723,7 +723,7 @@ public class MetadataManager {
                         networkFieldName, communityId);
             }
             queryBuilder.where(whereClause);
-            final String queryString = queryBuilder.buildAndEncode();
+            final String queryString = queryBuilder.build();
 
             RestResponse response = null;
             try {
@@ -1114,7 +1114,7 @@ public class MetadataManager {
             }
             queryBuilder.where(whereClause);
         }
-        final String query = queryBuilder.buildAndEncode();
+        final String query = queryBuilder.build();
         RestResponse response = null;
         try {
         	response = restClient.sendSync(RestRequest.getRequestForQuery(apiVersion, query));
