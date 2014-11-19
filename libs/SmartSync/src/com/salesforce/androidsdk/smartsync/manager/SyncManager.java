@@ -232,7 +232,7 @@ public class SyncManager {
 	private SyncManager(UserAccount account, String communityId) {
 	    apiVersion = ApiVersionStrings.VERSION_NUMBER;
 	    smartStore = CacheManager.getInstance(account, communityId).getSmartStore();
-        restClient = SalesforceSDKManager.getInstance().getRestClient(account);
+        restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
 	    
 		SyncState.setupSyncsSoupIfNeeded(smartStore);
 	}

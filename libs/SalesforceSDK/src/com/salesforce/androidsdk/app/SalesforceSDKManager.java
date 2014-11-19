@@ -997,36 +997,9 @@ public class SalesforceSDKManager {
     }
     
     /**
-     * @param account
-     * @return RestClient for account
+     * @return ClientManager
      */
-    public RestClient getRestClient(UserAccount account) {
-    	final ClientManager cm = new ClientManager(SalesforceSDKManager.getInstance().getAppContext(),
-    			SalesforceSDKManager.getInstance().getAccountType(),
-    			SalesforceSDKManager.getInstance().getLoginOptions(), true);
-    	RestClient client = null;
-
-    	/*
-    	 * The reason we can't directly call 'peekRestClient()' here is because
-    	 * ClientManager does not hand out a rest client when a logout is in
-    	 * progress. Hence, we build a rest client here manually, with the
-    	 * available data in the 'account' object.
-    	 */
-    	if (cm != null) {
-    		try {
-    	        final AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(cm,
-    	        		account.getAuthToken(), account.getRefreshToken());
-    			final ClientInfo clientInfo = new ClientInfo(account.getClientId(),
-    					new URI(account.getInstanceServer()), new URI(account.getLoginServer()),
-    					new URI(account.getIdUrl()), account.getAccountName(), account.getUsername(),
-    	        		account.getUserId(), account.getOrgId(),
-    	        		account.getCommunityId(), account.getCommunityUrl());
-                client = new RestClient(clientInfo, account.getAuthToken(),
-                		HttpAccess.DEFAULT, authTokenProvider);
-    		} catch (Exception e) {
-    			Log.e("SalesforceSDKManager:getRestClient", "Failed to get rest client.", e);
-    		}
-    	}
-    	return client;
+    public ClientManager getClientManager() {
+    	return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(), true);
     }
 }

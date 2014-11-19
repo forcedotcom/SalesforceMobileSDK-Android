@@ -179,7 +179,7 @@ public class MetadataManager {
         apiVersion = ApiVersionStrings.VERSION_NUMBER;
         this.communityId = communityId;
         cacheManager = CacheManager.getInstance(account, communityId);
-        restClient = SalesforceSDKManager.getInstance().getRestClient(account);
+        restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
     }
     
     /**
