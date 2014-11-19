@@ -60,7 +60,10 @@ import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.AdminPrefsManager;
 import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PRNGFixes;
 import com.salesforce.androidsdk.security.PasscodeManager;
@@ -991,5 +994,39 @@ public class SalesforceSDKManager {
      */
     public boolean isLoggingOut() {
     	return isLoggingOut;
+    }
+    
+    /**
+     * @param account
+     * @return RestClient for account
+     */
+    public RestClient getRestClient(UserAccount account) {
+    	final ClientManager cm = new ClientManager(SalesforceSDKManager.getInstance().getAppContext(),
+    			SalesforceSDKManager.getInstance().getAccountType(),
+    			SalesforceSDKManager.getInstance().getLoginOptions(), true);
+    	RestClient client = null;
+
+    	/*
+    	 * The reason we can't directly call 'peekRestClient()' here is because
+    	 * ClientManager does not hand out a rest client when a logout is in
+    	 * progress. Hence, we build a rest client here manually, with the
+    	 * available data in the 'account' object.
+    	 */
+    	if (cm != null) {
+    		try {
+    	        final AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(cm,
+    	        		account.getAuthToken(), account.getRefreshToken());
+    			final ClientInfo clientInfo = new ClientInfo(account.getClientId(),
+    					new URI(account.getInstanceServer()), new URI(account.getLoginServer()),
+    					new URI(account.getIdUrl()), account.getAccountName(), account.getUsername(),
+    	        		account.getUserId(), account.getOrgId(),
+    	        		account.getCommunityId(), account.getCommunityUrl());
+                client = new RestClient(clientInfo, account.getAuthToken(),
+                		HttpAccess.DEFAULT, authTokenProvider);
+    		} catch (Exception e) {
+    			Log.e("SalesforceSDKManager:getRestClient", "Failed to get rest client.", e);
+    		}
+    	}
+    	return client;
     }
 }

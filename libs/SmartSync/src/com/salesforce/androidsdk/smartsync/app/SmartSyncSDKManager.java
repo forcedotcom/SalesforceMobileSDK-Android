@@ -36,7 +36,6 @@ import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartSto
 import com.salesforce.androidsdk.smartsync.SmartSyncUserAccountManager;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
-import com.salesforce.androidsdk.smartsync.manager.NetworkManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
@@ -180,7 +179,6 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
     	 * the underlying database will be wiped in the super class.
     	 */
     	CacheManager.softReset(userAccount);
-    	NetworkManager.reset(userAccount);
     	SyncManager.reset(userAccount);
         super.cleanUp(frontActivity, account);
     }

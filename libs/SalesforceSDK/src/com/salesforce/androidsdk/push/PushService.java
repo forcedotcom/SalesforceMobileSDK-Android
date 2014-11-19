@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.push;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
@@ -50,14 +49,10 @@ import android.util.Log;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
-import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider;
-import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 
 /**
  * This class houses functionality related to push notifications.
@@ -361,7 +356,7 @@ public class PushService extends IntentService {
     	fields.put(CONNECTION_TOKEN, registrationId);
     	fields.put(SERVICE_TYPE, ANDROID_GCM);
     	try {
-    		final RestClient client = getRestClient(account);
+    		final RestClient client = SalesforceSDKManager.getInstance().getRestClient(account);
         	final RestRequest req = RestRequest.getRequestForCreate(ApiVersionStrings.VERSION_NUMBER,
         			MOBILE_PUSH_SERVICE_DEVICE, fields);
         	if (client != null) {
@@ -404,7 +399,7 @@ public class PushService extends IntentService {
     	final RestRequest req = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER,
     			MOBILE_PUSH_SERVICE_DEVICE, registeredId);
     	try {
-    		final RestClient client = getRestClient(account);
+    		final RestClient client = SalesforceSDKManager.getInstance().getRestClient(account);
     		if (client != null) {
             	final RestResponse res = client.sendSync(req);
             	if (res.getStatusCode() == HttpStatus.SC_NO_CONTENT) {
@@ -416,42 +411,6 @@ public class PushService extends IntentService {
     		Log.e(TAG, "Push notification un-registration failed.", e);
     	}
     	return false;
-    }
-
-    /**
-     * Gets an instance of RestClient.
-     *
-     * @param account User account.
-     * @return Instance of RestClient.
-     */
-    private RestClient getRestClient(UserAccount account) {
-    	final ClientManager cm = new ClientManager(SalesforceSDKManager.getInstance().getAppContext(),
-    			SalesforceSDKManager.getInstance().getAccountType(),
-    			SalesforceSDKManager.getInstance().getLoginOptions(), true);
-    	RestClient client = null;
-
-    	/*
-    	 * The reason we can't directly call 'peekRestClient()' here is because
-    	 * ClientManager does not hand out a rest client when a logout is in
-    	 * progress. Hence, we build a rest client here manually, with the
-    	 * available data in the 'account' object.
-    	 */
-    	if (cm != null) {
-    		try {
-    	        final AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(cm,
-    	        		account.getAuthToken(), account.getRefreshToken());
-    			final ClientInfo clientInfo = new ClientInfo(account.getClientId(),
-    					new URI(account.getInstanceServer()), new URI(account.getLoginServer()),
-    					new URI(account.getIdUrl()), account.getAccountName(), account.getUsername(),
-    	        		account.getUserId(), account.getOrgId(),
-    	        		account.getCommunityId(), account.getCommunityUrl());
-                client = new RestClient(clientInfo, account.getAuthToken(),
-                		HttpAccess.DEFAULT, authTokenProvider);
-    		} catch (Exception e) {
-    			Log.e(TAG, "Failed to get rest client.");
-    		}
-    	}
-    	return client;
     }
 
     /**
