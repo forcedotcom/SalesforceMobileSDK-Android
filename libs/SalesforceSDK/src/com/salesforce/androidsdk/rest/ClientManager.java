@@ -44,6 +44,7 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -138,6 +139,11 @@ public class ClientManager {
      *
      * @return
      */
+
+    public RestClient peekRestClient(UserAccount user) {
+    	return peekRestClient(getAccountByName(user.getAccountName()));
+    }
+    
     public RestClient peekRestClient(Account acc) {
         if (acc == null) {
             AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");

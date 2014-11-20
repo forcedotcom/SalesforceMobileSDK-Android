@@ -992,4 +992,11 @@ public class SalesforceSDKManager {
     public boolean isLoggingOut() {
     	return isLoggingOut;
     }
+    
+    /**
+     * @return ClientManager
+     */
+    public ClientManager getClientManager() {
+    	return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(), true);
+    }
 }

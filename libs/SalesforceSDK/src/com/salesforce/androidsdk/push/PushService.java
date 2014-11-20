@@ -425,9 +425,7 @@ public class PushService extends IntentService {
      * @return Instance of RestClient.
      */
     private RestClient getRestClient(UserAccount account) {
-    	final ClientManager cm = new ClientManager(SalesforceSDKManager.getInstance().getAppContext(),
-    			SalesforceSDKManager.getInstance().getAccountType(),
-    			SalesforceSDKManager.getInstance().getLoginOptions(), true);
+    	final ClientManager cm = SalesforceSDKManager.getInstance().getClientManager();
     	RestClient client = null;
 
     	/*

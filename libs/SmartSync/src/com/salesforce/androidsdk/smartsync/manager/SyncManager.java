@@ -61,7 +61,7 @@ import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 
 /**
  * Sync Manager
- */
+*/
 public class SyncManager {
 	private static Map<String, SyncManager> INSTANCES;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
@@ -232,7 +232,7 @@ public class SyncManager {
 	private SyncManager(UserAccount account, String communityId) {
 	    apiVersion = ApiVersionStrings.VERSION_NUMBER;
 	    smartStore = CacheManager.getInstance(account, communityId).getSmartStore();
-	    restClient = NetworkManager.getInstance(account, communityId).getRestClient();
+        restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
 	    
 		SyncState.setupSyncsSoupIfNeeded(smartStore);
 	}
@@ -493,13 +493,13 @@ public class SyncManager {
     
 
     /**
-     * Sets the network manager to be used.
+     * Sets the rest client to be used.
      * This is primarily used only by tests.
      * 
-     * @param networkMgr
+     * @param restClient
      */
-    public void setNetworkManager(NetworkManager networkMgr) {
-        restClient = networkMgr.getRestClient();
+    public void setRestClient(RestClient restClient) {
+        this.restClient = restClient;
     }
     
     
