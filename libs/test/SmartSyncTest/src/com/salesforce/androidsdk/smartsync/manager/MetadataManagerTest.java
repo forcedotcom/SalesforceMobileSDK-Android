@@ -56,12 +56,6 @@ public class MetadataManagerTest extends ManagerTestCase {
 	private static final String CASE_1_ID = "500S0000003s6Sf";
 	private static final String CASE_1_NAME = "00001007";
 	private static final String CASE_2_ID = "500S0000004O7fd";
-	private static final String ACCOUNT_LAYOUT_FILE = "account_layout.json";
-	private static final String CASE_LAYOUT_FILE = "case_layout.json";
-	private static final String OPPORTUNITY_LAYOUT_FILE = "opportunity_layout.json";
-	private static final String ALL_OBJECTS_FILE = "all_objects.json";
-	private static final String ACCOUNT_METADATA_FILE = "account_metadata.json";
-	private static final String CASE_METADATA_FILE = "case_metadata.json";
 
     /**
      * Test for global 'loadMRUObjects' (from the server).
@@ -106,14 +100,9 @@ public class MetadataManagerTest extends ManagerTestCase {
      * Test for 'loadAllObjectTypes' (from the server).
      */
     public void testLoadAllObjectTypesFromServer() {
-    	fail(); // FIXME test stops the whole suite
     	final List<SalesforceObjectType> objectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
     			REFRESH_INTERVAL);
-    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ALL_OBJECTS_FILE);
-    	assertNotNull("Expected raw data should not be null", rawJson);
-    	final List<SalesforceObjectType> expectedObjectTypes = parseObjectTypes(rawJson);
-    	assertEquals("List of object types should match expected list",
-    			expectedObjectTypes, objectTypes);
+    	assertTrue("objectTypes list should contain objects", objectTypes != null && objectTypes.size() > 0);
     }
 
     /**
@@ -122,11 +111,8 @@ public class MetadataManagerTest extends ManagerTestCase {
     public void testLoadAccountObjectTypeFromServer() {
     	final SalesforceObjectType account = metadataManager.loadObjectType(Constants.ACCOUNT,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ACCOUNT_METADATA_FILE);
-    	assertNotNull("Expected raw data should not be null", rawJson);
-    	final SalesforceObjectType expectedAccount = new SalesforceObjectType(rawJson);
-    	assertEquals("Account metadata should match expected metadata",
-    			expectedAccount, account);
+    	assertNotNull("account object should not be null.", account);
+    	assertEquals(String.format("account object type name should be %s", Constants.ACCOUNT), account.getName(), Constants.ACCOUNT);
     }
 
     /**
@@ -135,11 +121,8 @@ public class MetadataManagerTest extends ManagerTestCase {
     public void testLoadCaseObjectTypeFromServer() {
     	final SalesforceObjectType actualCase = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, CASE_METADATA_FILE);
-    	assertNotNull("Expected raw data should not be null", rawJson);
-    	final SalesforceObjectType expectedCase = new SalesforceObjectType(rawJson);
-    	assertEquals("Case metadata should match expected metadata",
-    			expectedCase, actualCase);
+    	assertNotNull("case object should not be null.", actualCase);
+    	assertEquals(String.format("case object type name should be %s", Constants.CASE), actualCase.getName(), Constants.CASE);
     }
 
     /**
@@ -156,26 +139,6 @@ public class MetadataManagerTest extends ManagerTestCase {
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	assertNotNull("Layout list should not be null", objectLayouts);
     	assertEquals("Layout list size should be 3", 3, objectLayouts.size());
-    	for (final SalesforceObjectTypeLayout layout : objectLayouts) {
-    		final String objType = layout.getObjectType();
-    		assertNotNull("Object type should not be null", objType);
-    		JSONObject expectedRawData = null;
-			SalesforceObjectTypeLayout expectedLayout = null;
-    		if (Constants.ACCOUNT.equals(objType)) {
-    			expectedRawData = JSONReader.readJSONObject(targetContext,
-    					ACCOUNT_LAYOUT_FILE);
-    		} else if (Constants.CASE.equals(objType)) {
-    			expectedRawData = JSONReader.readJSONObject(targetContext,
-    					CASE_LAYOUT_FILE);
-    		} else if (Constants.OPPORTUNITY.equals(objType)) {
-    			expectedRawData = JSONReader.readJSONObject(targetContext,
-    					OPPORTUNITY_LAYOUT_FILE);
-    		}
-    		assertNotNull("Expected raw data should not be null", expectedRawData);
-			expectedLayout = new SalesforceObjectTypeLayout(objType, expectedRawData);
-    		assertEquals("Received layout should be equal to the expected layout",
-    				expectedLayout, layout);
-    	}
     }
 
     /**
@@ -258,46 +221,41 @@ public class MetadataManagerTest extends ManagerTestCase {
      */
     public void testLoadAllObjectTypesFromCache() {
 
-    	fail(); // FIXME test stops the whole suite
-    	metadataManager.loadAllObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
+    	final List<SalesforceObjectType> serverObjectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RELOAD_AND_RETURN_CACHE_DATA,
     			REFRESH_INTERVAL);
-    	final List<SalesforceObjectType> objectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
+    	final List<SalesforceObjectType> cachedObjectTypes = metadataManager.loadAllObjectTypes(CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD,
     			REFRESH_INTERVAL);
-    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ALL_OBJECTS_FILE);
-    	assertNotNull("Expected raw data should not be null", rawJson);
-    	final List<SalesforceObjectType> expectedObjectTypes = parseObjectTypes(rawJson);
-    	assertEquals("List of object types should match expected list",
-    			expectedObjectTypes, objectTypes);
+    	assertNotNull("serverObjectTypes list should not be null.", serverObjectTypes);
+    	assertNotNull("cachedObjectTypes list should not be null.", cachedObjectTypes);
+    	assertTrue("serverObjectTypes should contain server objects", serverObjectTypes.size() > 0);
+    	assertTrue("cachedObjectTypes should contain cached objects", cachedObjectTypes.size() > 0);
+    	assertEquals("Number of cachedObjectTypes should be the same as serverObjectTypes.", cachedObjectTypes.size(), serverObjectTypes.size());
     }
 
     /**
      * Test for account 'loadObjectType' (from the cache).
      */
     public void testLoadAccountObjectTypeFromCache() {
-    	metadataManager.loadObjectType(Constants.ACCOUNT,
+    	final SalesforceObjectType serverAccount = metadataManager.loadObjectType(Constants.ACCOUNT,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	final SalesforceObjectType account = metadataManager.loadObjectType(Constants.ACCOUNT,
+    	final SalesforceObjectType cachedAccount = metadataManager.loadObjectType(Constants.ACCOUNT,
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
-    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, ACCOUNT_METADATA_FILE);
-    	assertNotNull("Expected raw data should not be null", rawJson);
-    	final SalesforceObjectType expectedAccount = new SalesforceObjectType(rawJson);
-    	assertEquals("Account metadata should match expected metadata",
-    			expectedAccount, account);
+    	assertNotNull("serverAccount should not be null.", serverAccount);
+    	assertNotNull("cachedAccount should not be null.", cachedAccount);
+    	assertEquals("serverAccount and cachedAccount should be equal.", serverAccount, cachedAccount);
     }
 
     /**
      * Test for case 'loadObjectType' (from the cache).
      */
     public void testLoadCaseObjectTypeFromCache() {
-    	metadataManager.loadObjectType(Constants.CASE,
+    	final SalesforceObjectType serverCase = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
-    	final SalesforceObjectType actualCase = metadataManager.loadObjectType(Constants.CASE,
+    	final SalesforceObjectType cachedCase = metadataManager.loadObjectType(Constants.CASE,
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
-    	final JSONObject rawJson = JSONReader.readJSONObject(targetContext, CASE_METADATA_FILE);
-    	assertNotNull("Expected raw data should not be null", rawJson);
-    	final SalesforceObjectType expectedCase = new SalesforceObjectType(rawJson);
-    	assertEquals("Case metadata should match expected metadata",
-    			expectedCase, actualCase);
+    	assertNotNull("serverCase should not be null.", serverCase);
+    	assertNotNull("cachedCase should not be null.", cachedCase);
+    	assertEquals("serverCase and cachedCase should be equal.", serverCase, cachedCase);
     }
 
     /**
@@ -316,26 +274,6 @@ public class MetadataManagerTest extends ManagerTestCase {
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
     	assertNotNull("Layout list should not be null", objectLayouts);
     	assertEquals("Layout list size should be 3", 3, objectLayouts.size());
-    	for (final SalesforceObjectTypeLayout layout : objectLayouts) {
-    		final String objType = layout.getObjectType();
-    		assertNotNull("Object type should not be null", objType);
-    		JSONObject expectedRawData = null;
-			SalesforceObjectTypeLayout expectedLayout = null;
-    		if (Constants.ACCOUNT.equals(objType)) {
-    			expectedRawData = JSONReader.readJSONObject(targetContext,
-    					ACCOUNT_LAYOUT_FILE);
-    		} else if (Constants.CASE.equals(objType)) {
-    			expectedRawData = JSONReader.readJSONObject(targetContext,
-    					CASE_LAYOUT_FILE);
-    		} else if (Constants.OPPORTUNITY.equals(objType)) {
-    			expectedRawData = JSONReader.readJSONObject(targetContext,
-    					OPPORTUNITY_LAYOUT_FILE);
-    		}
-    		assertNotNull("Expected raw data should not be null", expectedRawData);
-			expectedLayout = new SalesforceObjectTypeLayout(objType, expectedRawData);
-    		assertEquals("Received layout should be equal to the expected layout",
-    				expectedLayout, layout);
-    	}
     }
 
     /**
