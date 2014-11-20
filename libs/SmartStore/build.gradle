@@ -29,7 +29,7 @@ android {
     }
   }
   defaultConfig {
-    testPackageName "com.salesforce.androidsdk.smartstore.tests"
+    testApplicationId "com.salesforce.androidsdk.smartstore.tests"
     testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
   }
   packagingOptions {
