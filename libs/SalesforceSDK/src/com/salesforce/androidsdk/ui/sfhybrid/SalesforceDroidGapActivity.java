@@ -317,7 +317,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
      */
     public void authenticate(final CallbackContext callbackContext) {
     	Log.i("SalesforceDroidGapActivity.authenticate", "authenticate called");
-    	clientManager.getRestClient(this, new RestClientCallback() {
+        clientManager.getRestClient(this, new RestClientCallback() {
 
 			@Override
 			public void authenticatedRestClient(RestClient client) {
@@ -342,7 +342,13 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
                         @Override
                         public void onSuccess(RestRequest request, RestResponse response) {
-                            setSidCookies();
+
+                        	/*
+                        	 * The client instance being used here needs to be
+                        	 * refreshed, to ensure we use the new access token. 
+                        	 */
+                        	SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+                        	setSidCookies();
                             loadVFPingPage();
                             if (callbackContext != null) {
                                 callbackContext.success(getJSONCredentials());
@@ -371,24 +377,30 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
     
         	@Override
-                public void onSuccess(RestRequest request, RestResponse response) {
-                    Log.i("SalesforceOAuthPlugin.refresh", "Refresh succeeded");
-                    setSidCookies();
-                    loadVFPingPage();
-                    String frontDoorUrl = getFrontDoorUrl(url);
-                    loadUrl(frontDoorUrl);
-                }
+            public void onSuccess(RestRequest request, RestResponse response) {
+        		Log.i("SalesforceDroidGapActivity.refresh", "Refresh succeeded");
 
-                @Override
-                public void onError(Exception exception) {
-                    Log.w("SalesforceDroidGapActivity.refresh", "Refresh failed - " + exception);
+            	/*
+            	 * The client instance being used here needs to be
+            	 * refreshed, to ensure we use the new access token. 
+            	 */
+                SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+                setSidCookies();
+                loadVFPingPage();
+                final String frontDoorUrl = getFrontDoorUrl(url, true);
+                loadUrl(frontDoorUrl);
+            }
 
-                    // Only logout if we are NOT offline
-                    if (!(exception instanceof NoNetworkException)) {
-                        SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
-                    }
+        	@Override
+            public void onError(Exception exception) {
+        		Log.w("SalesforceDroidGapActivity.refresh", "Refresh failed - " + exception);
+
+        		// Only logout if we are NOT offline
+                if (!(exception instanceof NoNetworkException)) {
+                	SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
                 }
-            });
+            }
+        });
     }        
 
     /**
@@ -447,20 +459,31 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     	assert !bootconfig.isLocal();
     	String startPage = bootconfig.getStartPage();
     	Log.i("SalesforceDroidGapActivity.loadRemoteStartPage", "loading: " + startPage);
-		String url = getFrontDoorUrl(startPage);
+		String url = getFrontDoorUrl(startPage, false);
 		loadUrl(url);
     	webAppLoaded = true;
     }
     
     /**
-     * @param url
-     * @return front-door url
+     * Returns the front-doored URL of a URL passed in.
+     *
+     * @param url URL to be front-doored.
+     * @param isAbsUrl True - if the URL should be used as is, False - otherwise.
+     * @return Front-doored URL.
      */
-    public String getFrontDoorUrl(String url) {
+    public String getFrontDoorUrl(String url, boolean isAbsUrl) {
 		String frontDoorUrl = client.getClientInfo().getInstanceUrlAsString() + "/secur/frontdoor.jsp?";
 		List<NameValuePair> params = new LinkedList<NameValuePair>();
 		params.add(new BasicNameValuePair("sid", client.getAuthToken()));
-		params.add(new BasicNameValuePair("retURL", client.getClientInfo().resolveUrl(url).toString()));
+
+		/*
+		 * We need to use the absolute URL in some cases and relative URL in some
+		 * other cases, because of differences between instance URL and community
+		 * URL. Community URL can be custom and the logic of determining which
+		 * URL to use is in the 'resolveUrl' method in 'ClientInfo'.
+		 */
+        url = (isAbsUrl ? url : client.getClientInfo().resolveUrl(url).toString());
+		params.add(new BasicNameValuePair("retURL", url));
 		params.add(new BasicNameValuePair("display", "touch"));
 		frontDoorUrl += URLEncodedUtils.format(params, "UTF-8");
     	return frontDoorUrl;
