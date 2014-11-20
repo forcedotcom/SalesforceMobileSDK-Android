@@ -19,23 +19,26 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 2.3
+### What's New in 3.0
 
-**Push Notifications**
-- Salesforce Mobile SDK now supports the ability to register and receive push notifications from within a hybrid local or remote application.
-
-**SmartStore Enhancements**
-SmartStore now supports:
-- The ability to add and/or remove index specs for an existing soup.
-- A new API to return data size.
-- A new tool, `SmartStoreInspector`, that lets you easily inspect the contents of SmartStore.
+**SmartSync Library**
+- Salesforce Mobile SDK now has a new library called `SmartSync`, that adds the ability to:
+	- Fetch Salesforce records or metadata and cache them offline, by picking one of the available pre-defined cache policies.
+	- Edit records offline and save them offline in SmartStore.
+	- Synchronize a bunch of records by pushing locally modified records to the Salesforce cloud.
+- A new Cordova plugin, `SmartSyncPlugin`, has been added, to enable consumption of the `SmartSync` library in a hybrid app.
+- A new native sample app, `SmartSyncExplorer`, has been added to demonstrate the power of the `SmartSync` library.
 
 **Library Upgrades**
-- Upgraded the `Cordova` library to `v3.5`.
+- Raised the minimum Android OS version required by Mobile SDK to `v4.2.2` (API 17).
+- Upgraded the `Cordova` library to `v3.6.4`.
+- Upgraded `android-junit-report.jar` to `v1.5.8`.
+- Upgraded `apache-mime4j.jar` to `v0.7.2`.
+- Upgraded `httpmime.jar` to `v4.3.2`.
 
 **Other Technical Improvements**
 - Various bug fixes.
-- Support for serving local JavaScript resources through `localhost` in a hybrid remote application.
+- Android Studio and the Gradle build system are now fully supported.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials
 
