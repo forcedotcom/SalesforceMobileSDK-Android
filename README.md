@@ -22,15 +22,19 @@ Introduction
 ### What's New in 3.0
 
 **SmartSync Library**
-- Salesforce Mobile SDK now has a new native library called `SmartSync`, that adds the ability to:
+- Salesforce Mobile SDK now has a new library called `SmartSync`, that adds the ability to:
 	- Fetch Salesforce records or metadata and cache them offline, by picking one of the available pre-defined cache policies.
 	- Edit records offline and save them offline in SmartStore.
 	- Synchronize a bunch of records by pushing locally modified records to the Salesforce cloud.
-- A new sample app, `SmartSyncExplorer`, has been added to demonstrate the power of the `SmartSync` library.
+- A new Cordova plugin, `SmartSyncPlugin`, has been added, to enable consumption of the `SmartSync` library in a hybrid app.
+- A new native sample app, `SmartSyncExplorer`, has been added to demonstrate the power of the `SmartSync` library.
 
 **Library Upgrades**
 - Raised the minimum Android OS version required by Mobile SDK to `v4.2.2` (API 17).
 - Upgraded the `Cordova` library to `v3.6.4`.
+- Upgraded `android-junit-report.jar` to `v1.5.8`.
+- Upgraded `apache-mime4j.jar` to `v0.7.2`.
+- Upgraded `httpmime.jar` to `v4.3.2`.
 
 **Other Technical Improvements**
 - Various bug fixes.
