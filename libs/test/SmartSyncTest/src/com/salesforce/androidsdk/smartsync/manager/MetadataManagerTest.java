@@ -29,15 +29,11 @@ package com.salesforce.androidsdk.smartsync.manager;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import com.salesforce.androidsdk.smartsync.manager.CacheManager.CachePolicy;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObjectType;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObjectTypeLayout;
 import com.salesforce.androidsdk.smartsync.util.Constants;
-import com.salesforce.androidsdk.smartsync.util.JSONReader;
 
 /**
  * Test class for MetadataManager.
@@ -274,32 +270,5 @@ public class MetadataManagerTest extends ManagerTestCase {
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
     	assertNotNull("Layout list should not be null", objectLayouts);
     	assertEquals("Layout list size should be 3", 3, objectLayouts.size());
-    }
-
-    /**
-     * Parses and returns object types from raw data.
-     *
-     * @param rawData Raw JSON data.
-     * @return List of object types.
-     */
-    private List<SalesforceObjectType> parseObjectTypes(JSONObject rawData) {
-        final List<SalesforceObjectType> returnList = new ArrayList<SalesforceObjectType>();
-        final JSONArray objectTypes = rawData.optJSONArray("sobjects");
-        if (objectTypes != null) {
-            for (int i = 0; i < objectTypes.length(); i++) {
-                final JSONObject metadata = objectTypes.optJSONObject(i);
-                if (metadata != null) {
-                    final boolean hidden = metadata.optBoolean(Constants.HIDDEN_FIELD, false);
-                    if (!hidden) {
-                    	final SalesforceObjectType objType = new SalesforceObjectType(metadata);
-                        returnList.add(objType);
-                    }
-                }
-            }
-        }
-        if (returnList.size() == 0) {
-            return null;
-        }
-        return returnList;
     }
 }
