@@ -28,7 +28,7 @@ android {
     }
   }
   defaultConfig {
-    testPackageName "com.salesforce.androidsdk.smartsync.tests"
+    testApplicationId "com.salesforce.androidsdk.smartsync.tests"
     testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
   }
   packagingOptions {
