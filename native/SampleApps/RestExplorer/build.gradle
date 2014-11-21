@@ -19,7 +19,7 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
-    
+
     androidTest.setRoot('../test/RestExplorerTest')
     androidTest {
       java.srcDirs = ['../test/RestExplorerTest/src']
@@ -28,7 +28,7 @@ android {
     }
   }
   defaultConfig {
-    testPackageName "com.salesforce.samples.restexplorer"
+    testApplicationId "com.salesforce.samples.restexplorer.tests"
     testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
   }
   packagingOptions {

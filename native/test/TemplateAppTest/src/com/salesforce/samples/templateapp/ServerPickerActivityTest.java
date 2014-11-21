@@ -138,7 +138,7 @@ public class ServerPickerActivityTest extends
 
 	private void openCustomEditDialog() throws Throwable {
 		btnCustomEdit = (Button) activity.findViewById(
-				R.id.sf__show_custom_url_edit);
+				com.salesforce.androidsdk.R.id.sf__show_custom_url_edit);
 		assertNotNull("Custom URL Edit dialog does not exist", btnCustomEdit);
 		clickView(btnCustomEdit);
 		final CustomServerUrlEditor dialog = activity.getCustomServerUrlEditor();
@@ -147,10 +147,10 @@ public class ServerPickerActivityTest extends
 		assertNotNull("Root view should not be null", rootView);
 		if (btnApply == null || btnCancel == null || txtLabel == null
 				|| txtUrl == null) {
-			btnApply = (Button) rootView.findViewById(R.id.sf__apply_button);
-			btnCancel = (Button) rootView.findViewById(R.id.sf__cancel_button);
-			txtLabel = (EditText) rootView.findViewById(R.id.sf__picker_custom_label);
-			txtUrl = (EditText) rootView.findViewById(R.id.sf__picker_custom_url);
+			btnApply = (Button) rootView.findViewById(com.salesforce.androidsdk.R.id.sf__apply_button);
+			btnCancel = (Button) rootView.findViewById(com.salesforce.androidsdk.R.id.sf__cancel_button);
+			txtLabel = (EditText) rootView.findViewById(com.salesforce.androidsdk.R.id.sf__picker_custom_label);
+			txtUrl = (EditText) rootView.findViewById(com.salesforce.androidsdk.R.id.sf__picker_custom_url);
 		}
 		setFocus(txtLabel);
 	}
