@@ -27,7 +27,7 @@ Introduction
 	- Edit records offline and save them offline in SmartStore.
 	- Synchronize a bunch of records by pushing locally modified records to the Salesforce cloud.
 - A new Cordova plugin, `SmartSyncPlugin`, has been added, to enable consumption of the `SmartSync` library in a hybrid app.
-- A new native sample app, `SmartSyncExplorer`, has been added to demonstrate the power of the `SmartSync` library.
+- A new native sample app, `SmartSyncExplorer`, demonstrates the power of the `SmartSync` library on Android.
 
 **Library Upgrades**
 - Raised the minimum Android OS version required by Mobile SDK to `v4.2.2` (API 17).
