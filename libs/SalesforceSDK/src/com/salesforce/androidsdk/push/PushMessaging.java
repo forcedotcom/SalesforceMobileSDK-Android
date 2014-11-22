@@ -27,10 +27,14 @@
 package com.salesforce.androidsdk.push;
 
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.content.pm.ServiceInfo;
 import android.os.Bundle;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -90,7 +94,12 @@ public class PushMessaging {
             registrationIntent.putExtra(SENDER,
             		BootConfig.getBootConfig(context).getPushNotificationClientId());
             registrationIntent.putExtra(ACCOUNT_BUNDLE_KEY, account.toBundle());
-            context.startService(registrationIntent);
+            final ServiceInfo si = getServiceInfo(context, registrationIntent);
+            if (si != null) {
+        		final ComponentName component = new ComponentName(si.packageName, si.name);
+                registrationIntent.setComponent(component);
+                context.startService(registrationIntent);
+    		}
         } else {
             registerSFDCPush(context, account);
         }
@@ -129,7 +138,12 @@ public class PushMessaging {
             unregIntent.putExtra(EXTRA_APPLICATION_PENDING_INTENT,
                     PendingIntent.getBroadcast(context, 0, new Intent(), 0));
             unregIntent.putExtra(ACCOUNT_BUNDLE_KEY, account.toBundle());
-            context.startService(unregIntent);
+            final ServiceInfo si = getServiceInfo(context, unregIntent);
+            if (si != null) {
+        		final ComponentName component = new ComponentName(si.packageName, si.name);
+                unregIntent.setComponent(component);
+                context.startService(unregIntent);
+    		}
         }
     }
 
@@ -339,5 +353,24 @@ public class PushMessaging {
     		sharedPrefFile = sharedPrefFile + account.getUserLevelFilenameSuffix();
     	}
     	return sharedPrefFile;
+    }
+
+    /**
+     * Returns the service info associated with an intent.
+     *
+     * @param context Context.
+     * @param intent Intent.
+     * @return Service info.
+     */
+    private static ServiceInfo getServiceInfo(Context context, Intent intent) {
+    	ServiceInfo si = null;
+    	final PackageManager pm = context.getPackageManager();
+        if (pm != null) {
+        	final ResolveInfo ri = pm.resolveService(intent, 0);
+        	if (ri != null) {
+        		si = ri.serviceInfo;
+        	}
+        }
+        return si;
     }
 }
