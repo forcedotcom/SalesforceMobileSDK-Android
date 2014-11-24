@@ -1,0 +1,61 @@
+:environment:
+  'DEVICE_OS_VERSION': 'android-17'
+:hooks:
+  :pre_setup: './pre_setup.sh'
+  :worker_setup: './worker_setup.sh'
+:cache:
+  :key_paths:
+    - pre_setup.sh
+  :save_paths:
+    - HOME/android-sdk-linux
+:java:
+  :java_version: java-7-openjdk
+:timeout_hook: 1200
+:timeout: 1800
+:tests: # All are queued to run in parallel
+  - ". android-settings.sh && ./tools/sdk.sh -v -b ContactExplorer"
+  - ". android-settings.sh && ./tools/sdk.sh -v -b VFConnector"
+  - ". android-settings.sh && ./tools/sdk.sh -v -b SmartStore -b SmartStoreExplorer"
+  - ". android-settings.sh && ./tools/sdk.sh -v -b AccountEditor"
+  - ". android-settings.sh && ./tools/sdk.sh -v -b HybridFileExplorer"
+  - ". android-settings.sh && ./tools/sdk.sh -v -b SimpleSync"
+  - ". android-settings.sh && ./tools/sdk.sh -v -b UserList"
+  - ". android-settings.sh && ./tools/sdk.sh -v -b NativeSqlAggregator"
+  - type: junit
+    command: "./with-emulator.sh ./tools/sdk.sh -v -b SalesforceSDKTest -t SalesforceSDKTest"
+    output: exit-status
+    invocation: single
+    mode: basic
+    report_files:
+    - "**/junit-reports/**.xml"
+  - type: junit
+    command: "./with-emulator.sh ./tools/sdk.sh -v -b RestExplorer -b RestExplorerTest -t RestExplorerTest"
+    output: exit-status
+    invocation: single
+    mode: basic
+    report_files:
+    - "**/junit-reports/**.xml"
+  - type: junit
+    command: "./with-emulator.sh ./tools/sdk.sh -v -b TemplateApp -b TemplateAppTest -t TemplateAppTest"
+    output: exit-status
+    invocation: single
+    mode: basic
+    report_files:
+    - "**/junit-reports/**.xml"
+  - type: junit
+    command: "./with-emulator.sh ./tools/sdk.sh -v -b SmartStore -b SmartStoreTest -t SmartStoreTest"
+    output: exit-status
+    invocation: single
+    mode: basic
+    report_files:
+    - "**/junit-reports/**.xml"
+  - type: junit
+    command: "./with-emulator.sh ./tools/sdk.sh -v -b ForcePluginsTest -t ForcePluginsTest"
+    output: exit-status
+    invocation: single
+    mode: basic
+    report_files:
+    - "**/junit-reports/**.xml"
+:collect:
+  :repo:
+    - native/SampleApps/FileExplorer/bin
