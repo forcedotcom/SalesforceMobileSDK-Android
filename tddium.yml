@@ -50,6 +50,13 @@
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
+    command: "./with-emulator.sh ./tools/sdk.sh -v -b SmartSync -b SmartSyncTest -t SmartSyncTest"
+    output: exit-status
+    invocation: single
+    mode: basic
+    report_files:
+    - "**/junit-reports/**.xml"
+  - type: junit
     command: "./with-emulator.sh ./tools/sdk.sh -v -b ForcePluginsTest -t ForcePluginsTest"
     output: exit-status
     invocation: single
