@@ -26,9 +26,8 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import java.util.Locale;
-
 import android.accounts.AccountAuthenticatorActivity;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -38,7 +37,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.webkit.WebView;
-import android.widget.TextView;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -64,8 +62,6 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
     private SalesforceR salesforceR;
 	private boolean wasBackgrounded;
 	private OAuthWebviewHelper webviewHelper;
-	private View loadSpinner;
-	private View loadSeparator;
 
     /**************************************************************************************************
      *
@@ -89,8 +85,6 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
 		// Setup content view
 		setContentView(salesforceR.layoutLogin());
-        loadSpinner = findViewById(salesforceR.idLoadSpinner());
-        loadSeparator = findViewById(salesforceR.idLoadSeparator());
 
 		// Setup the WebView.
 		WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
@@ -158,54 +152,24 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(salesforceR.menuLogin(), menu);
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
-    public boolean onPrepareOptionsMenu(Menu menu) {
-
-        /*
-         * The only way to customize the title of a menu item is to do
-         * it through code. While this is a dirty hack, there appears to
-         * be no other way to ellipsize the title of a menu item.
-         * The overflow occurs only when the locale is German, and hence,
-         * the text is ellipsized just for the German locale.
-         */
-        final Locale locale = getResources().getConfiguration().locale;
-        if (locale.equals(Locale.GERMANY) || locale.equals(Locale.GERMAN)) {
-                for (int i = 0; i < menu.size(); i++) {
-                final MenuItem item = menu.getItem(i);
-                final String fullTitle = item.getTitle().toString();
-                if (fullTitle != null && fullTitle.length() > 8) {
-                    item.setTitle(fullTitle.substring(0, 8) + "...");
-                }
-            }
-        }
-        return true;
-    }
-
-    /**
-     * handle main menu clicks
-     */
-    @Override
-    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+    public boolean onOptionsItemSelected(MenuItem item) {
         int itemId = item.getItemId();
 		if (itemId == salesforceR.idItemClearCookies()) {
         	onClearCookiesClick(null);
         	return true;
-        }
-        else if (itemId == salesforceR.idItemPickServer()) {
+        } else if (itemId == salesforceR.idItemPickServer()) {
         	onPickServerClick(null);
         	return true;
-        }
-        else if (itemId == salesforceR.idItemReload()) {
+        } else if (itemId == salesforceR.idItemReload()) {
         	onReloadClick(null);
         	return true;
-        }
-        else {
-            return super.onMenuItemSelected(featureId, item);
+        } else {
+            return super.onOptionsItemSelected(item);
         }
     }
 
@@ -217,22 +181,14 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
 	@Override
 	public void loadingLoginPage(String loginUrl) {
-        TextView serverName = (TextView) findViewById(salesforceR.idServerName());
-        if (serverName != null) {
-                serverName.setText(loginUrl);
-        }
+		final ActionBar ab = getActionBar();
+		ab.setTitle(loginUrl);
 	}
 
 	@Override
 	public void onLoadingProgress(int totalProgress) {
 		onIndeterminateProgress(false);
 		setProgress(totalProgress);
-		if (loadSpinner != null) {
-			loadSpinner.setVisibility(totalProgress < Window.PROGRESS_END ? View.VISIBLE : View.GONE);
-		}
-		if (loadSeparator != null) {
-			loadSeparator.setVisibility(totalProgress < Window.PROGRESS_END ? View.VISIBLE : View.GONE);
-		}
 	}
 
 	@Override

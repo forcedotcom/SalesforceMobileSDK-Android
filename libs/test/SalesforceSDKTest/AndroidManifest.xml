@@ -23,8 +23,9 @@
 	</application>
 
     <instrumentation android:targetPackage="com.salesforce.androidsdk.tests"
-        android:name="com.salesforce.androidsdk.util.JUnitReportTestRunner"
+        android:name="com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
         android:label="Tests for SalesforceSDK" />
 
-	<uses-sdk android:minSdkVersion="8" />
+    <uses-sdk android:minSdkVersion="17"
+        android:targetSdkVersion="19" />
 </manifest>

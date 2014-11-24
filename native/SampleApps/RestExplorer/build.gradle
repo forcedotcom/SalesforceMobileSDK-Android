@@ -5,7 +5,7 @@ dependencies {
 }
 
 android {
-  compileSdkVersion 11
+  compileSdkVersion 19
   buildToolsVersion "20.0.0"
 
   sourceSets {
@@ -19,7 +19,7 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
-    
+
     androidTest.setRoot('../test/RestExplorerTest')
     androidTest {
       java.srcDirs = ['../test/RestExplorerTest/src']
@@ -28,8 +28,8 @@ android {
     }
   }
   defaultConfig {
-    testPackageName "com.salesforce.samples.restexplorer"
-    testInstrumentationRunner "com.salesforce.androidsdk.util.JUnitReportTestRunner"
+    testApplicationId "com.salesforce.samples.restexplorer.tests"
+    testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'
@@ -37,5 +37,4 @@ android {
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
   }
-
 }

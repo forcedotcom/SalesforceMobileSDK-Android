@@ -26,7 +26,12 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.salesforce.androidsdk.smartstore.phonegap.SmartStorePlugin;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 /**
  * Simple class to represent a query spec
@@ -266,6 +271,37 @@ public class QuerySpec {
     }
 
     /**
+	 * @param soupName
+	 * @param querySpecJson
+	 * @return
+	 * @throws JSONException
+	 */
+	public static QuerySpec fromJSON(String soupName, JSONObject querySpecJson)
+			throws JSONException {
+		QueryType queryType = QueryType.valueOf(querySpecJson.getString(SmartStorePlugin.QUERY_TYPE));
+		String path = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.INDEX_PATH);
+		String matchKey = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.MATCH_KEY);
+		String beginKey = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.BEGIN_KEY);
+		String endKey = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.END_KEY);
+		String likeKey = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.LIKE_KEY);
+		String smartSql = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.SMART_SQL);
+		
+		Order order = Order.valueOf(JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.ORDER, "ascending"));
+		int pageSize = querySpecJson.getInt(SmartStorePlugin.PAGE_SIZE); 
+	
+		// Building query spec
+		QuerySpec querySpec = null;
+		switch (queryType) {
+	    case exact:   querySpec = buildExactQuerySpec(soupName, path, matchKey, pageSize); break;
+	    case range:   querySpec = buildRangeQuerySpec(soupName, path, beginKey, endKey, order, pageSize); break;
+	    case like:    querySpec = buildLikeQuerySpec(soupName, path, likeKey, order, pageSize); break;
+	    case smart:   querySpec = buildSmartQuerySpec(smartSql, pageSize); break;
+	    default: throw new RuntimeException("Fell through switch: " + queryType);
+		}
+		return querySpec;
+	}
+
+	/**
      * Query type enum
      */
     public enum QueryType {

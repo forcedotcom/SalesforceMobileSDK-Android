@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,16 +27,12 @@
 package com.salesforce.samples.restexplorer;
 
 import java.io.IOException;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.net.HttpURLConnection;
 
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.ProtocolVersion;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
-import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
@@ -58,8 +54,9 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.util.EventsListenerQueue;
+import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
 /**
  * Tests for ExplorerActivity
@@ -100,6 +97,7 @@ public class ExplorerActivityTest extends
     private Context targetContext;
     private ClientManager clientManager;
     private MockHttpAccess mockHttpAccessor;
+    public static volatile String RESPONSE = null;
 
     public ExplorerActivityTest() {
         super(ExplorerActivity.class);
@@ -121,6 +119,13 @@ public class ExplorerActivityTest extends
                 TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, null);
         mockHttpAccessor = new MockHttpAccess(SalesforceSDKManager.getInstance().getAppContext());
         SalesforceSDKManager.getInstance().getPasscodeManager().setTimeoutMs(0 /* disabled */);
+
+        // Plug our mock HTTP accessor.
+        final ExplorerActivity activity = getActivity();
+        assertNotNull("Activity should not be null", activity);
+        final RestClient client = activity.getClient();
+        assertNotNull("Rest client should not be null", client);
+        client.setHttpAccessor(mockHttpAccessor);
     }
 
 	@Override
@@ -129,6 +134,8 @@ public class ExplorerActivityTest extends
             eq.tearDown();
             eq = null;
         }
+		RESPONSE = null;
+		mockHttpAccessor = null;
 		super.tearDown();
 	}
 
@@ -153,20 +160,28 @@ public class ExplorerActivityTest extends
      * Test clicking logout and then canceling out.
      */
     public void testClickLogoutThenCancel() {
+
         // Click on logout
         clickView(getActivity().findViewById(R.id.logout_button));
+        waitSome();
 
         // Check that confirmation dialog is shown
-        assertTrue("Logout confirmation dialog showing", getActivity().logoutConfirmationDialog.isShowing());
+        final ExplorerActivity activity = getActivity();
+        assertNotNull("Activity should not be null", activity);
+        final LogoutDialogFragment logoutFrag = activity.getLogoutConfirmationDialog();
+        assertNotNull("Logout dialog fragment should not be null", logoutFrag);
+        final AlertDialog dialog = (AlertDialog) logoutFrag.getDialog();
+        assertNotNull("Logout dialog should not be null", dialog);
+        assertTrue("Logout confirmation dialog should be showing", dialog.isShowing());
 
         // Click no
-        clickView(getActivity().logoutConfirmationDialog.getButton(AlertDialog.BUTTON_NEGATIVE));
+        clickView(dialog.getButton(AlertDialog.BUTTON_NEGATIVE));
 
         // Wait for dialog to go
         waitSome();
 
         // Check that confirmation dialog is no longer shown
-        assertFalse("Logout confirmation dialog should no longer be showing", getActivity().logoutConfirmationDialog.isShowing());
+        assertFalse("Logout confirmation dialog should no longer be showing", dialog.isShowing());
     }
 
     /**
@@ -174,17 +189,25 @@ public class ExplorerActivityTest extends
      * the account.
      */
     public void testClickLogoutThenConfirm() {
+
         // Click on logout
         clickView(getActivity().findViewById(R.id.logout_button));
+        waitSome();
 
         // Check that confirmation dialog is shown
-        assertTrue("Logout confirmation dialog showing", getActivity().logoutConfirmationDialog.isShowing());
+        final ExplorerActivity activity = getActivity();
+        assertNotNull("Activity should not be null", activity);
+        final LogoutDialogFragment logoutFrag = activity.getLogoutConfirmationDialog();
+        assertNotNull("Logout dialog fragment should not be null", logoutFrag);
+        final AlertDialog dialog = (AlertDialog) logoutFrag.getDialog();
+        assertNotNull("Logout dialog should not be null", dialog);
+        assertTrue("Logout confirmation dialog should be showing", dialog.isShowing());
         final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
         UserAccount curUser = userAccMgr.getCurrentUser();
         assertNotNull("Current user should not be null", curUser);
 
         // Click yes
-        clickView(getActivity().logoutConfirmationDialog.getButton(AlertDialog.BUTTON_POSITIVE));
+        clickView(dialog.getButton(AlertDialog.BUTTON_POSITIVE));
         final EventsListenerQueue eq = new EventsListenerQueue();
         eq.waitForEvent(EventType.LogoutComplete, 30000);
         curUser = userAccMgr.getCurrentUser();
@@ -280,7 +303,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.update_fields_text, "{\"field1\":\"update1\",\"field2\":\"update2\"}");
             }
         };
-        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Update", extraSetup, "[PATCH " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpdate/objIdUpdate {\"field1\":\"update1\",\"field2\":\"update2\"}]");
+        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Update", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpdate/objIdUpdate?_HttpMethod=PATCH {\"field1\":\"update1\",\"field2\":\"update2\"}]");
     }
 
     /**
@@ -296,7 +319,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.upsert_fields_text, "{\"field1\":\"upsert1\",\"field2\":\"upsert2\"}");
             }
         };
-        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Upsert", extraSetup, "[PATCH " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpsert/extIdField/extId {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
+        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Upsert", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpsert/extIdField/extId?_HttpMethod=PATCH {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
     }
 
     /**
@@ -370,16 +393,16 @@ public class ExplorerActivityTest extends
      * @param expectedResponse
      */
     private void gotoTabAndRunAction(int tabIndex, int goButtonId, String goButtonLabel, Runnable extraSetup, String expectedResponse) {
+
         // Go to tab
-        TabHost tabHost = (TabHost) getActivity().findViewById(android.R.id.tabhost);
+        final ExplorerActivity activity = getActivity();
+        assertNotNull("Activity should not be null", activity);
+        TabHost tabHost = (TabHost) activity.findViewById(android.R.id.tabhost);
         clickTab(tabHost, tabIndex);
 
         // Check UI
-        Button runButton = (Button) getActivity().findViewById(goButtonId);
+        Button runButton = (Button) activity.findViewById(goButtonId);
         assertEquals(goButtonLabel + " button has wrong label", goButtonLabel, runButton.getText());
-
-        // Plug our mock access
-        getActivity().getClient().setHttpAccessor(mockHttpAccessor);
 
         // Do any extra setup
         if (extraSetup != null) {
@@ -390,19 +413,17 @@ public class ExplorerActivityTest extends
         clickView(runButton);
 
         // Wait for call to complete
-        String mockResponse = null;
-        try {
-            mockResponse = mockHttpAccessor.q.poll(5, TimeUnit.SECONDS);
+        long curTime = System.currentTimeMillis();
+        while (RESPONSE == null) {
+        	if (System.currentTimeMillis() - curTime > 5000) {
+        		break;
+        	}
         }
-        catch (InterruptedException e) {
-            fail("Test interrupted");
-        }
-        assertEquals("Wrong request executed", expectedResponse, mockResponse);
-
+        assertEquals("Wrong request executed", expectedResponse, RESPONSE);
 
         // Check result area
         waitForRender();
-        TextView resultText = (TextView) getActivity().findViewById(R.id.result_text);
+        TextView resultText = (TextView) activity.findViewById(R.id.result_text);
         assertTrue("Response not found in text area", resultText.getText().toString().indexOf(expectedResponse) > 0);
     }
 
@@ -410,22 +431,22 @@ public class ExplorerActivityTest extends
      * Mock http access
      */
     private static class MockHttpAccess extends HttpAccess {
+
         protected MockHttpAccess(Context app) {
             super(app, null);
         }
 
-        public final BlockingQueue<String> q = new ArrayBlockingQueue<String>(1);
-
-        protected Execution execute(HttpRequestBase req) throws ClientProtocolException, IOException {
+        @Override
+        protected Execution execute(HttpURLConnection httpConn, HttpEntity reqEntity) throws IOException {
             HttpResponse res = new BasicHttpResponse(new BasicStatusLine(new ProtocolVersion("http", 1, 1), HttpStatus.SC_OK, null), null, null);
             String body = "";
-            if (req instanceof HttpEntityEnclosingRequestBase) {
-                body = " " + EntityUtils.toString(((HttpEntityEnclosingRequestBase) req).getEntity());
+            if (reqEntity != null) {
+                body = " " + EntityUtils.toString(reqEntity);
             }
-            String mockResponse = "[" + req.getMethod() + " " + req.getURI() + body + "]";
-            q.add(mockResponse);
+            String mockResponse = "[" + httpConn.getRequestMethod() + " " + httpConn.getURL() + body + "]";
             res.setEntity(new StringEntity(mockResponse));
-            return new Execution(req, res);
+            RESPONSE = mockResponse;
+            return new Execution(res);
         }
     }
 
@@ -473,6 +494,7 @@ public class ExplorerActivityTest extends
     private void clickView(final View v) {
         try {
             runTestOnUiThread(new Runnable() {
+
                 @Override
                 public void run() {
                     v.performClick();

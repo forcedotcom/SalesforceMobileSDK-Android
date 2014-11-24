@@ -42,8 +42,9 @@ var fs = require('fs');
 var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
-var version = '2.3.1';
+var version = '3.0.0';
 var minimumCordovaVersion = '3.5';
+var minTargetApi = {'versionNumber': 19, 'versionName': 'KitKat'};
 var androidExePath;
 
 // Calling main
@@ -87,9 +88,9 @@ function usage() {
     console.log('    --appname=<Application Name>');
     console.log('    --targetdir=<Target App Folder>');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
-    console.log('    --targetandroidapi=<Target Api e.g. 19 for KitKat>');
+    console.log('    --targetandroidapi=<Target API> (e.g. 21 for Lollipop — Only required/used for \'native\')');
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
-    console.log('    [--usesmartstore=<Whether or not to use SmartStore> (\'true\' or \'false\'. false by default)]');
+    console.log('    [--usesmartstore=<Whether or not to use SmartStore/SmartSync> (\'yes\' or \'no\'. no by default — Only required/used for \'native\')]');
     console.log(outputColors.cyan + '\nOR\n');
     console.log(outputColors.magenta + 'forcedroid version' + outputColors.reset);
 }
@@ -161,8 +162,7 @@ function createHybridApp(config) {
     shelljs.exec('cordova create ' + config.projectDir + ' ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android');
-    shelljs.exec('cordova plugin add https://github.com/forcedotcom/SalesforceMobileSDK-CordovaPlugin');
-    shelljs.exec('node ' + path.join('plugins', 'com.salesforce', 'tools', 'postinstall-android.js') + ' ' + config.targetandroidapi + ' ' + config.usesmartstore);
+    shelljs.exec('cordova plugin add https://github.com/forcedotcom/SalesforceMobileSDK-CordovaPlugin#unstable');
 
     // Remove the default Cordova app.
     shelljs.rm('-rf', path.join('www', '*'));
@@ -199,7 +199,7 @@ function createHybridApp(config) {
          '   - Go to File -> Import... ',
          '   - Choose Android -> Existing Android Code into Workspace, and click Next >',
          '   - For the root directory, browse to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder',
-         '   - Pick the following projects: ' + config.appname + '/platforms/android, ' + config.appname + '/platforms/android/CordovaLib, ' + config.appname + '/plugins/com.salesforce/android/hybrid/SmartStore and ' + config.appname + '/plugins/com.salesforce/android/native/SalesforceSDK',
+         '   - Pick the following projects: ' + config.appname + '/platforms/android, ' + config.appname + '/platforms/android/CordovaLib, ' + config.appname + '/plugins/com.salesforce/android/libs/SmartSync, ' + config.appname + '/plugins/com.salesforce/android/libs/SmartStore and ' + config.appname + '/plugins/com.salesforce/android/libs/SalesforceSDK',
          '   - Click Finish',
          '   - Run your application by right-clicking the ' + config.appname + ' project in Project Explorer, and choosing Run As -> Android Application',
          '',
@@ -294,16 +294,15 @@ function createNativeApp(config, showNextSteps) {
 
     // If SmartStore is configured, set it up.
     if (config.usesmartstore) {
-        console.log('Adding SmartStore support.');
+        console.log('Adding SmartStore/SmartSync support.');
         shelljs.mkdir('-p', path.join(config.projectDir, 'assets'));  // May not exist for native.
         shelljs.cp(path.join(packageSdkRootDir, 'external', 'sqlcipher', 'assets', 'icudt46l.zip'), path.join(config.projectDir, 'assets', 'icudt46l.zip'));
 
-        console.log('Extending SalesforceSDKManagerWithSmartStore instead of SalesforceSDKManager.');
-        shelljs.sed('-i', /SalesforceSDKManager/g, 'SalesforceSDKManagerWithSmartStore', appClassPath);
-        shelljs.sed('-i', /WithSmartStoreWithSmartStore/g, 'WithSmartStore', appClassPath); // undoing change if the template was already using SalesforceSDKManagerWithSmartStore
+        console.log('Extending SmartSyncSDKManager instead of SalesforceSDKManager.');
+        shelljs.sed('-i', /SalesforceSDKManager/g, 'SmartSyncSDKManager', appClassPath);
         shelljs.sed('-i',
-            /com\.salesforce\.androidsdk\.app\.SalesforceSDKManagerWithSmartStore/g,
-            'com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore',
+            /com\.salesforce\.androidsdk\.app\.SmartSyncSDKManager/g,
+            'com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager',
             appClassPath);
     }
 
@@ -323,13 +322,17 @@ function createNativeApp(config, showNextSteps) {
     shelljs.exec(androidExePath + ' update project -p ' + path.join(destCordovaDir, 'framework'));
     console.log('update done');
 
-    // Copy SmartStore library project into the app folder as well, if it's not already there - if required.
+    // Copy SmartStore and SmartSync library projects into the app folder as well, if it's not already there - if required.
     // copy <Android Package>/libs/SmartStore -> <App Folder>/forcedroid/libs/SmartStore
+    // copy <Android Package>/libs/SmartSync -> <App Folder>/forcedroid/libs/SmartSync
     // copy <Android Package>/external/sqlcipher -> <App Folder>/forcedroid/external/sqlcipher
     if (config.usesmartstore) {
         var smartStoreRelativePath = path.join('libs', 'SmartStore');
         copyFromSDK(packageSdkRootDir, config.targetdir, smartStoreRelativePath);
         shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), smartStoreRelativePath));
+        var smartSyncRelativePath = path.join('libs', 'SmartSync');
+        copyFromSDK(packageSdkRootDir, config.targetdir, smartSyncRelativePath);
+        shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), smartSyncRelativePath));
         copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
 
@@ -338,7 +341,7 @@ function createNativeApp(config, showNextSteps) {
     var projectPropertiesFilePath = path.join(config.projectDir, 'project.properties');
     shelljs.rm(projectPropertiesFilePath);
     var libProject = config.usesmartstore
-        ? path.join('..', path.basename(packageSdkRootDir), smartStoreRelativePath)
+        ? path.join('..', path.basename(packageSdkRootDir), smartSyncRelativePath)
         : path.join('..', path.basename(packageSdkRootDir), salesforceSDKRelativePath);
     shelljs.exec(androidExePath + ' update project -p ' + config.projectDir + ' -t "android-' + config.targetandroidapi + '" -l ' + libProject);
     '\nmanifestmerger.enabled=true\n'.toEnd(projectPropertiesFilePath);
@@ -442,12 +445,12 @@ function createArgsProcessorList() {
                     function(argsMap) { return (argsMap['apptype'] === 'hybrid_remote'); });
 
     // Use SmartStore
-    addProcessorFor(argProcessorList, 'usesmartstore', 'Do you want to use SmartStore in your app? [yes/NO] (\'No\' by default)', 'Use smartstore must be yes or no.',
+    addProcessorFor(argProcessorList, 'usesmartstore', 'Do you want to use SmartStore or SmartSync in your app? [yes/NO] (\'No\' by default)', 'Use smartstore must be yes or no.',
                     function(val) {
                         if (val.trim() === '') return true;
                         return ['yes', 'no'].indexOf(val.toLowerCase()) >= 0;
                     },
-                    undefined,
+                    function(argsMap) { return (argsMap['apptype'] === 'native'); },
                     function(val) { return (val.toLowerCase() === 'yes'); });
 
     return argProcessorList;
@@ -457,9 +460,10 @@ function createArgsProcessorList() {
 // Add processor for target android api
 // 
 function addProcessorForAndroidApi(argProcessorList) { 
-    // Target API 
-    addProcessorFor(argProcessorList, 'targetandroidapi', 'Enter the target android api for your application (number between 8 (Froyo) and 19 (KitKat):', 'Target api must be a number between 8 and 19.', 
-                    function(val) { var intVal = parseInt(val); return intVal >= 8 && intVal <= 19; });
+    // Target API
+    addProcessorFor(argProcessorList, 'targetandroidapi', 'Enter the target Android API version number for your application (at least ' + minTargetApi.versionNumber + ' (' + minTargetApi.versionName + ')):', 'Target API must be at least ' + minTargetApi.versionNumber, 
+                    function(val) { var intVal = parseInt(val); return intVal >= minTargetApi.versionNumber; },
+                    function(argsMap) { return (argsMap['apptype'] === 'native'); });
 }
 
 

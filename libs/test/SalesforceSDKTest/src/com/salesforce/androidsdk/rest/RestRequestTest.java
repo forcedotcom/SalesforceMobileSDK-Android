@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.rest;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,9 +36,13 @@ import java.util.Map;
 
 import junit.framework.TestCase;
 
+import org.apache.http.ParseException;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
+import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 public class RestRequestTest extends TestCase {
 	
@@ -51,8 +54,10 @@ public class RestRequestTest extends TestCase {
 	private static final String TEST_QUERY = "testQuery";
 	private static final String TEST_SEARCH = "testSearch";
 	private static final String TEST_FIELDS_STRING = "{\"fieldX\":\"value with spaces\",\"name\":\"testAccount\"}";
-	private static final String TEST_FIELDS_LIST_STRING = URLEncoder.encode("name,fieldX");
 	private static final List<String> TEST_FIELDS_LIST = Collections.unmodifiableList(Arrays.asList(new String[]{"name", "fieldX"}));
+	private static final String TEST_FIELDS_LIST_STRING = "name%2CfieldX";
+	private static final List<String> TEST_OBJECTS_LIST = Collections.unmodifiableList(Arrays.asList(new String[]{"Account", "Contact"}));
+	private static final String TEST_OBJECTS_LIST_STRING = "Account%2CContact";
 	
 	private static Map<String, Object> TEST_FIELDS;
 	static {
@@ -124,12 +129,14 @@ public class RestRequestTest extends TestCase {
 	 * Test for getRequestForCreate
 	 * @throws IOException 
 	 * @throws UnsupportedEncodingException 
+	 * @throws JSONException 
+	 * @throws ParseException 
 	 */
-	public void testGetRequestForCreate() throws UnsupportedEncodingException, IOException {
+	public void testGetRequestForCreate() throws UnsupportedEncodingException, IOException, ParseException, JSONException {
 		RestRequest request = RestRequest.getRequestForCreate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_FIELDS);
 		assertEquals("Wrong method", RestMethod.POST, request.getMethod());
 		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE, request.getPath());
-		assertEquals("Wrong request entity", TEST_FIELDS_STRING, EntityUtils.toString(request.getRequestEntity()));
+		JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject(TEST_FIELDS_STRING), new JSONObject(EntityUtils.toString(request.getRequestEntity())));
 		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 	
@@ -149,12 +156,14 @@ public class RestRequestTest extends TestCase {
 	 * Test for getRequestForUpdate
 	 * @throws IOException 
 	 * @throws UnsupportedEncodingException 
+	 * @throws JSONException 
+	 * @throws ParseException 
 	 */
-	public void testGetRequestForUpdate() throws UnsupportedEncodingException, IOException {
+	public void testGetRequestForUpdate() throws UnsupportedEncodingException, IOException, ParseException, JSONException {
 		RestRequest request = RestRequest.getRequestForUpdate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID, TEST_FIELDS);
 		assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
 		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_OBJECT_ID, request.getPath());
-		assertEquals("Wrong request entity", TEST_FIELDS_STRING, EntityUtils.toString(request.getRequestEntity()));
+		JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject(TEST_FIELDS_STRING), new JSONObject(EntityUtils.toString(request.getRequestEntity())));
 		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 	
@@ -162,12 +171,14 @@ public class RestRequestTest extends TestCase {
 	 * Test for getRequestForUpsert
 	 * @throws IOException 
 	 * @throws UnsupportedEncodingException 
+	 * @throws JSONException 
+	 * @throws ParseException 
 	 */
-	public void testGetRequestForUpsert() throws UnsupportedEncodingException, IOException {
+	public void testGetRequestForUpsert() throws UnsupportedEncodingException, IOException, ParseException, JSONException {
 		RestRequest request = RestRequest.getRequestForUpsert(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_EXTERNAL_ID_FIELD, TEST_EXTERNAL_ID, TEST_FIELDS);
 		assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
 		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_EXTERNAL_ID_FIELD + "/" + TEST_EXTERNAL_ID, request.getPath());
-		assertEquals("Wrong request entity", TEST_FIELDS_STRING, EntityUtils.toString(request.getRequestEntity()));
+		JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject(TEST_FIELDS_STRING), new JSONObject(EntityUtils.toString(request.getRequestEntity())));
 		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
@@ -202,6 +213,30 @@ public class RestRequestTest extends TestCase {
 		RestRequest request = RestRequest.getRequestForSearch(TEST_API_VERSION, TEST_SEARCH);
 		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
 		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/search?q=" + TEST_SEARCH, request.getPath());
+		assertNull("Wrong request entity", request.getRequestEntity());
+		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
+
+	/**
+	 * Test for getRequestForSearchScopeAndOrder
+	 * @throws UnsupportedEncodingException 
+	 */
+	public void testGetRequestForSeachScopeAndOrder() throws UnsupportedEncodingException {
+		RestRequest request = RestRequest.getRequestForSearchScopeAndOrder(TEST_API_VERSION);
+		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/search/scopeOrder", request.getPath());
+		assertNull("Wrong request entity", request.getRequestEntity());
+		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+	}
+	
+	/**
+	 * Test for getRequestForSearchResultLayout
+	 * @throws UnsupportedEncodingException 
+	 */
+	public void testGetRequestForSearchResultLayout() throws UnsupportedEncodingException {
+		RestRequest request = RestRequest.getRequestForSearchResultLayout(TEST_API_VERSION, TEST_OBJECTS_LIST);
+		assertEquals("Wrong method", RestMethod.GET, request.getMethod());
+		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/search/layout?q=" + TEST_OBJECTS_LIST_STRING, request.getPath());
 		assertNull("Wrong request entity", request.getRequestEntity());
 		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}

@@ -85,12 +85,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "2.3.0";
-
-    /**
-     * Last phone version.
-     */
-    private static final int GINGERBREAD_MR1 = 10;
+    public static final String SDK_VERSION = "3.0.0";
 
     /**
      * Default app name.
@@ -123,6 +118,11 @@ public class SalesforceSDKManager {
     private AdminPrefsManager adminPrefsManager;
     private PushNotificationInterface pushNotificationInterface;
     private volatile boolean loggedOut = false;
+
+    /**
+     * PasscodeManager object lock.
+     */
+    private Object passcodeManagerLock = new Object();
 
     /**
      * Returns a singleton instance of this class.
@@ -454,11 +454,13 @@ public class SalesforceSDKManager {
      *
      * @return PasscodeManager instance.
      */
-    public synchronized PasscodeManager getPasscodeManager() {
-        if (passcodeManager == null) {
-            passcodeManager = new PasscodeManager(context);
-        }
-        return passcodeManager;
+    public PasscodeManager getPasscodeManager() {
+    	synchronized (passcodeManagerLock) {
+            if (passcodeManager == null) {
+                passcodeManager = new PasscodeManager(context);
+            }
+            return passcodeManager;
+		}
     }
 
 	/**
@@ -772,12 +774,13 @@ public class SalesforceSDKManager {
 		String clientId = null;
 		String loginServer = null;
 		if (account != null) {
+			String passcodeHash = getPasscodeHash();
 			refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account),
-	        		getPasscodeHash());
+	        		passcodeHash);
 	        clientId = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
-	        		AuthenticatorService.KEY_CLIENT_ID), getPasscodeHash());
+	        		AuthenticatorService.KEY_CLIENT_ID), passcodeHash);
 	        loginServer = SalesforceSDKManager.decryptWithPasscode(mgr.getUserData(account,
-	        		AuthenticatorService.KEY_INSTANCE_URL), getPasscodeHash());
+	        		AuthenticatorService.KEY_INSTANCE_URL), passcodeHash);
 		}
 
 		/*
@@ -845,6 +848,10 @@ public class SalesforceSDKManager {
      * @return The user agent string to use for all requests.
      */
     public final String getUserAgent() {
+    	return getUserAgent("");
+    }
+    
+    public final String getUserAgent(String qualifier) {
         String appName = "";
         String appVersion = "";
         try {
@@ -857,7 +864,7 @@ public class SalesforceSDKManager {
             // if your application doesn't have a name (like a test harness from Gradle)
             Log.w("SalesforceSDKManager:getUserAgent", nfe);
         }
-	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native");
+	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native") + qualifier;
 	    return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s",
 	            SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, nativeOrHybrid);
 	}
@@ -886,9 +893,7 @@ public class SalesforceSDKManager {
      * @return True if the application is running on a tablet.
      */
     public static boolean isTablet() {
-        if (Build.VERSION.SDK_INT <= GINGERBREAD_MR1) {
-            return false;
-        } else if ((INSTANCE.context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
+        if ((INSTANCE.context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
             return true;
         }
         return false;
@@ -986,5 +991,12 @@ public class SalesforceSDKManager {
      */
     public boolean isLoggingOut() {
     	return isLoggingOut;
+    }
+    
+    /**
+     * @return ClientManager
+     */
+    public ClientManager getClientManager() {
+    	return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(), true);
     }
 }

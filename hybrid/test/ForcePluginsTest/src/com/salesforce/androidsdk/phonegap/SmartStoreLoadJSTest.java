@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.phonegap;
 import java.util.Arrays;
 import java.util.List;
 
-import com.salesforce.androidsdk.util.JSTestCase;
+import com.salesforce.androidsdk.util.test.JSTestCase;
 
 
 /**
@@ -42,8 +42,13 @@ public class SmartStoreLoadJSTest extends JSTestCase {
     }
     
     @Override
+    protected int getMaxRuntimeInSecondsForTest(String testName) {
+    	return 30;
+    }    
+    
+    @Override
     public List<String> getTestNames() {
-    	return Arrays.asList(new String[] {"testNumerousFields", "testIncreasingFieldLength", "testAddAndRetrieveManyEntries", "testUpsertManyEntries", "testUpsertAndQueryEntries"});
+    	return Arrays.asList(new String[] {"testNumerousFields", "testIncreasingFieldLength", "testAddAndRetrieveManyEntries", "testUpsertManyEntries", "testUpsertAndQueryEntries", "testUpsertConcurrentEntries" });
     }
     
     public void testNumerousFields()  {
@@ -64,5 +69,9 @@ public class SmartStoreLoadJSTest extends JSTestCase {
     
     public void testUpsertAndQueryEntries()  {
     	runTest("testUpsertAndQueryEntries");
-    }    
+    }
+    
+    public void testUpsertConcurrentEntries() {
+    	runTest("testUpsertConcurrentEntries");
+    }
 }

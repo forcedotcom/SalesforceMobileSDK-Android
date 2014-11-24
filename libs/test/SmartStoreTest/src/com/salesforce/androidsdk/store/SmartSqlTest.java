@@ -38,6 +38,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 /**
  * Tests for "smart" sql
@@ -166,7 +167,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	public void testSmartQueryDoingCount() throws JSONException {
 		loadData();
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select count(*) from {employees}", 1), 0);
-		assertSameJSONArray("Wrong result", new JSONArray("[[7]]"), result);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[7]]"), result);
 	}
 	
 	/**
@@ -176,7 +177,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	public void testSmartQueryDoingSum() throws JSONException {
 		loadData();
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select sum({departments:budget}) from {departments}", 1), 0);
-		assertSameJSONArray("Wrong result", new JSONArray("[[3000000]]"), result);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[3000000]]"), result);
 	}
 
 	/**
@@ -186,7 +187,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	public void testSmartQueryReturningOneRowWithOneInteger() throws JSONException {
 		loadData();
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:salary} from {employees} where {employees:lastName} = 'Haas'", 1), 0);
-		assertSameJSONArray("Wrong result", new JSONArray("[[200000]]"), result);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[200000]]"), result);
 	}
 	
 	/**
@@ -196,7 +197,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	public void testSmartQueryReturningOneRowWithTwoIntegers() throws JSONException {
 		loadData();
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select mgr.{employees:salary}, e.{employees:salary} from {employees} as mgr, {employees} as e where e.{employees:lastName} = 'Thompson' and mgr.{employees:employeeId} = e.{employees:managerId}", 1), 0);
-		assertSameJSONArray("Wrong result", new JSONArray("[[200000,120000]]"), result);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[200000,120000]]"), result);
 	}
 	
 	/**
@@ -206,7 +207,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	public void testSmartQueryReturningTwoRowsWithOneIntegerEach() throws JSONException {
 		loadData();
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:salary} from {employees} where {employees:managerId} = '00010' order by {employees:firstName}", 2), 0);
-		assertSameJSONArray("Wrong result", new JSONArray("[[120000],[100000]]"), result);
+		JSONTestHelper.assertSameJSONArray("Wrong result", new JSONArray("[[120000],[100000]]"), result);
 	}
 
 	/**
@@ -220,7 +221,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 		
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:_soup}, {employees:firstName}, {employees:salary} from {employees} where {employees:lastName} = 'Haas'", 1) , 0);
 		assertEquals("Expected one row", 1, result.length());
-		assertSameJSON("Wrong soup", christineJson, result.getJSONArray(0).getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong soup", christineJson, result.getJSONArray(0).getJSONObject(0));
 		assertEquals("Wrong first name", "Christine", result.getJSONArray(0).getString(1));
 		assertEquals("Wrong salary", 200000, result.getJSONArray(0).getInt(2));
 	}
@@ -237,7 +238,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 		String[] expectedResults = new String[] {"Christine", "Eileen", "Eva", "Irving", "John", "Michael", "Sally"};
 		for (int i = 0; i<7; i++) {
 			JSONArray result = store.query(query , i);
-			assertSameJSONArray("Wrong result at page " + i, new JSONArray("[[" + expectedResults[i] + "]]"), result);
+			JSONTestHelper.assertSameJSONArray("Wrong result at page " + i, new JSONArray("[[" + expectedResults[i] + "]]"), result);
 		}
 	}
 
@@ -253,9 +254,9 @@ public class SmartSqlTest extends SmartStoreTestCase {
 		
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:_soup}, {employees:_soupEntryId}, {employees:_soupLastModifiedDate}, {employees:salary} from {employees} where {employees:lastName} = 'Haas'", 1) , 0);
 		assertEquals("Expected one row", 1, result.length());
-		assertSameJSON("Wrong soup", christineJson, result.getJSONArray(0).getJSONObject(0));
-		assertSameJSON("Wrong soupEntryId", christineJson.getString(SmartStore.SOUP_ENTRY_ID), result.getJSONArray(0).getInt(1));
-		assertSameJSON("Wrong soupLastModifiedDate", christineJson.getString(SmartStore.SOUP_LAST_MODIFIED_DATE), result.getJSONArray(0).getLong(2));
+		JSONTestHelper.assertSameJSON("Wrong soup", christineJson, result.getJSONArray(0).getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong soupEntryId", christineJson.getString(SmartStore.SOUP_ENTRY_ID), result.getJSONArray(0).getInt(1));
+		JSONTestHelper.assertSameJSON("Wrong soupLastModifiedDate", christineJson.getString(SmartStore.SOUP_LAST_MODIFIED_DATE), result.getJSONArray(0).getLong(2));
 	}
 
 	

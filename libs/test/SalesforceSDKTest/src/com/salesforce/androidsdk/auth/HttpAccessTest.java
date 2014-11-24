@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -43,8 +43,7 @@ import com.salesforce.androidsdk.auth.HttpAccess.Execution;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 
 /**
- * Tests for HttpAccess
- *
+ * Tests for HttpAccess.
  */
 public class HttpAccessTest extends InstrumentationTestCase {
 
@@ -63,12 +62,7 @@ public class HttpAccessTest extends InstrumentationTestCase {
 		headers.put("Authorization", "OAuth " + refreshResponse.authToken);
 		resourcesUri = new URI(TestCredentials.INSTANCE_URL + "/services/data/" + TestCredentials.API_VERSION + "/");
 	}
-	
-	@Override
-	public void tearDown() throws Exception {
-		httpAccess.resetNetwork();
-	}
-	
+
 	/**
 	 * Testing sending a GET request to /services/data - Check status code and response body
 	 * @throws IOException 

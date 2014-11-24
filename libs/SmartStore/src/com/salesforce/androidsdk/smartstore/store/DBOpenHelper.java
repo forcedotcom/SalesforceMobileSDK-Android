@@ -48,11 +48,13 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	// 1 --> up until 2.3
 	// 2 --> starting at 2.3 (new meta data table long_operations_status)
 	public static final int DB_VERSION = 2;
+	public static final String DEFAULT_DB_NAME = "smartstore";
+	private static final String DB_NAME_SUFFIX = ".db";
 
-	public static final String DB_NAME = "smartstore%s.db";
-
-	private static Map<String, DBOpenHelper> openHelpers;
-	private static DBOpenHelper defaultHelper;
+	/*
+	 * Cache for the helper instances
+	 */
+	private static Map<String, DBOpenHelper> openHelpers = new HashMap<String, DBOpenHelper>();
 
 	/**
 	 * Returns the DBOpenHelper instance associated with this user account.
@@ -76,44 +78,43 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 */
 	public static synchronized DBOpenHelper getOpenHelper(Context ctx,
 			UserAccount account, String communityId) {
-		String dbName = String.format(DB_NAME, "");
+		return getOpenHelper(ctx, DEFAULT_DB_NAME, account, communityId);
+	}
 
-		/*
-		 * If this method is called before authentication, we will simply
-		 * return the default smart store DB, which is not associated with
-		 * any user account. Otherwise, we will return a unique database
-		 * at the community level.
-		 */
+	
+	/**
+	 * Returns the DBOpenHelper instance for the given database name.
+	 * 
+	 * @param ctx Context.
+	 * @param dbNamePrefix The database name. This must be a valid file name without a 
+     *                     filename extension such as ".db".
+	 * @param account User account. If this method is called before authentication,
+	 * 				we will simply return the smart store DB, which is not associated 
+	 * 				with any user account. Otherwise, we will return a unique
+	 * 				database at the community level.
+	 * @param communityId Community ID.
+	 * @return DBOpenHelper instance.
+	 */
+	public static DBOpenHelper getOpenHelper(Context ctx, String dbNamePrefix, UserAccount account, String communityId) {
+		StringBuffer dbName = new StringBuffer(dbNamePrefix);
+		
+		// If we have account information, we will use it to create a database suffix for the user
 		if (account != null) {
-
 			// Default user path for a user is 'internal', if community ID is null.
-			final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
-			if (!TextUtils.isEmpty(dbPath)) {
-				dbName = String.format(DB_NAME, dbPath);
-			}
-			String uniqueId = account.getUserId();
-			if (!TextUtils.isEmpty(communityId)) {
-				uniqueId = uniqueId + communityId;
-			}
-			DBOpenHelper helper = null;
-			if (openHelpers == null) {
-				openHelpers = new HashMap<String, DBOpenHelper>();
-				helper = new DBOpenHelper(ctx, dbName);
-				openHelpers.put(uniqueId, helper);
-			} else {
-				helper = openHelpers.get(uniqueId);
-			}
-			if (helper == null) {
-				helper = new DBOpenHelper(ctx, dbName);
-				openHelpers.put(uniqueId, helper);
-			}
-			return helper;
-		} else {
-			if (defaultHelper == null) {
-				defaultHelper = new DBOpenHelper(ctx, dbName);
-			}
-			return defaultHelper;
+			final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
+			dbName.append(accountSuffix);
 		}
+
+		dbName.append(DB_NAME_SUFFIX);
+		
+		final String fullDBName = dbName.toString();
+		
+		DBOpenHelper helper = openHelpers.get(fullDBName);
+		if (helper == null) {
+			helper = new DBOpenHelper(ctx, fullDBName);
+			openHelpers.put(fullDBName, helper);
+		}
+		return helper;
 	}
 
 	private DBOpenHelper(Context context, String dbName) {
@@ -177,51 +178,105 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 */
 	public static synchronized void deleteDatabase(Context ctx, UserAccount account,
 			String communityId) {
-		try {
-			if (account != null) {
-				String uniqueId = account.getUserId();
-				if (!TextUtils.isEmpty(communityId)) {
-					uniqueId = uniqueId + communityId;
-				}
-				if (openHelpers != null) {
-					final DBOpenHelper helper = openHelpers.get(uniqueId);
-					if (helper != null) {
-						helper.close();
-						openHelpers.remove(uniqueId);
-					}
-				}
-			} else if (defaultHelper != null) {
-				defaultHelper.close();
-				defaultHelper = null;
-			}
-			String dbName = String.format(DB_NAME, "");
-			if (account != null) {
-				final String dbPath = account.getCommunityLevelFilenameSuffix(communityId);
-				if (!TextUtils.isEmpty(dbPath)) {
-					dbName = String.format(DB_NAME, dbPath);
-				}
-			}
-			ctx.deleteDatabase(dbName);
+		deleteDatabase(ctx, DEFAULT_DB_NAME, account, communityId);
+	}
 
-	    	// Deletes the community databases associated with this user account.
-	    	final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
-	    	final File dir = new File(dbPath);
-	    	if (dir != null) {
-	        	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(dbName);
-	        	final File[] fileList = dir.listFiles();
-	        	if (fileList != null) {
-	            	for (final File file : fileList) {
-	            		if (file != null && fileFilter.accept(dir, file.getName())) {
-	            			file.delete();
-	            		}
-	            	}
-	        	}
-	    	}
+	/**
+	 * Deletes the underlying database for the specified user and community.
+	 *
+	 * @param ctx Context.
+	 * @param dbNamePrefix The database name. This must be a valid file name without a 
+     *                     filename extension such as ".db".
+	 * @param account User account.
+	 * @param communityId Community ID.
+	 * 
+	 */
+	public static synchronized void deleteDatabase(Context ctx, String dbNamePrefix, UserAccount account, String communityId) {
+		try {
+			StringBuffer dbName = new StringBuffer(dbNamePrefix);
+			
+			// If we have account information, we will use it to create a database suffix for the user
+			if (account != null) {
+				// Default user path for a user is 'internal', if community ID is null.
+				final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
+				dbName.append(accountSuffix);
+			}
+	
+			dbName.append(DB_NAME_SUFFIX);
+			
+			final String fullDBName = dbName.toString();
+	
+			// close and remove the helper from the cache if it exists
+			final DBOpenHelper helper = openHelpers.get(fullDBName);
+			if (helper != null) {
+				helper.close();
+				openHelpers.remove(fullDBName);
+			}
+	
+			// physically delete the database from disk
+			ctx.deleteDatabase(fullDBName);
+			
+			// if community id was not passed in, then we remove ALL databases for the account.
+			if (account != null && TextUtils.isEmpty(communityId)) {
+				StringBuffer communityDBNamePrefix = new StringBuffer(dbNamePrefix);
+				String accountSuffix = account.getUserLevelFilenameSuffix();
+				communityDBNamePrefix.append(accountSuffix);
+				
+		    	final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
+		    	final File dir = new File(dbPath);
+		    	if (dir != null) {
+		        	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(communityDBNamePrefix.toString());
+		        	final File[] fileList = dir.listFiles();
+		        	if (fileList != null) {
+		            	for (final File file : fileList) {
+		            		if (file != null && fileFilter.accept(dir, file.getName())) {
+		            			file.delete();
+		            			openHelpers.remove(file.getName());
+		            		}
+		            	}
+		        	}
+		    	}
+			}
 		} catch (Exception e) {
-        	Log.e("DBOpenHelper:deleteDatabase",
-        			"Exception occurred while attempting to delete database.", e);
+			Log.e("DBOpenHelper:deleteDatabase", "Exception occurred while attempting to delete database.", e);
 		}
 	}
+
+
+	/**
+	 * Determines if a smart store currently exists for the given account and/or community id.
+	 * 
+	 * @param ctx Context.
+	 * @param account User account.
+	 * @param communityId Community ID.
+	 * @return boolean indicating if a smartstore already exists.
+	 */
+	public static boolean smartStoreExists(Context ctx, UserAccount account, String communityId) {
+		return smartStoreExists(ctx, DEFAULT_DB_NAME, account, communityId);
+	}
+
+	/**
+	 * Determines if a smart store currently exists for the given database name, account 
+	 * and/or community id.
+	 * 
+	 * @param ctx Context.
+	 * @param dbNamePrefix The database name. This must be a valid file name without a 
+	 *                     filename extension such as ".db".
+	 * @param account User account.
+	 * @param communityId Community ID.
+	 * @return boolean indicating if a smartstore already exists.
+	 */
+	public static boolean smartStoreExists(Context ctx, String dbNamePrefix, UserAccount account, String communityId) {
+		StringBuffer dbName = new StringBuffer(dbNamePrefix);
+		if (account != null) {
+			final String dbSuffix = account.getCommunityLevelFilenameSuffix(communityId);
+			dbName.append(dbSuffix);
+		}
+		dbName.append(DB_NAME_SUFFIX);
+		
+		return ctx.getDatabasePath(dbName.toString()).exists();
+	}
+
 
 	static class DBHook implements SQLiteDatabaseHook {
 		public void preKey(SQLiteDatabase database) {
@@ -241,22 +296,20 @@ public class DBOpenHelper extends SQLiteOpenHelper {
      */
     private static class SmartStoreFileFilter implements FilenameFilter {
 
-    	private String dbName;
+    	private String dbNamePrefix;
 
     	/**
     	 * Parameterized constructor.
     	 *
-    	 * @param dbName Database name.
+    	 * @param dbNamePrefix Database name prefix pattern.
     	 */
-    	public SmartStoreFileFilter(String dbName) {
-    		this.dbName = dbName;
+    	public SmartStoreFileFilter(String dbNamePrefix) {
+    		this.dbNamePrefix = dbNamePrefix;
     	}
 
 		@Override
 		public boolean accept(File dir, String filename) {
-			final String subString = dbName.substring(0,
-					dbName.length() - 3);
-			if (filename != null && filename.startsWith(subString)) {
+			if (filename != null && filename.startsWith(dbNamePrefix)) {
 				return true;
 			}
 			return false;

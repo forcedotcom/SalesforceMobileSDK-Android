@@ -45,6 +45,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 /**
  * Abstract super class for plain and encrypted smart store tests
@@ -81,14 +82,14 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		assertNull("Should have been null", SmartStore.project(null, "path"));
 		
 		// Root
-		assertSameJSON("Should have returned whole object", json, SmartStore.project(json, null));
-		assertSameJSON("Should have returned whole object", json, SmartStore.project(json, ""));
+		JSONTestHelper.assertSameJSON("Should have returned whole object", json, SmartStore.project(json, null));
+		JSONTestHelper.assertSameJSON("Should have returned whole object", json, SmartStore.project(json, ""));
 		
 		// Top-level elements
 		assertEquals("Wrong value for key a", "va", SmartStore.project(json, "a"));
 		assertEquals("Wrong value for key b", 2, SmartStore.project(json, "b"));
-		assertSameJSON("Wrong value for key c", new JSONArray("[0,1,2]"), SmartStore.project(json, "c"));
-		assertSameJSON("Wrong value for key d", new JSONObject("{'d1':'vd1','d2':'vd2','d3':[1,2],'d4':{'e':5}}"), (JSONObject) SmartStore.project(json, "d"));
+		JSONTestHelper.assertSameJSON("Wrong value for key c", new JSONArray("[0,1,2]"), SmartStore.project(json, "c"));
+		JSONTestHelper.assertSameJSON("Wrong value for key d", new JSONObject("{'d1':'vd1','d2':'vd2','d3':[1,2],'d4':{'e':5}}"), (JSONObject) SmartStore.project(json, "d"));
 	}
 
 	/**
@@ -101,8 +102,8 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Nested elements
 		assertEquals("Wrong value for key d.d1", "vd1", SmartStore.project(json, "d.d1"));
 		assertEquals("Wrong value for key d.d2", "vd2", SmartStore.project(json, "d.d2"));
-		assertSameJSON("Wrong value for key d.d3", new JSONArray("[1,2]"), SmartStore.project(json, "d.d3"));
-		assertSameJSON("Wrong value for key d.d4", new JSONObject("{'e':5}"), SmartStore.project(json, "d.d4"));
+		JSONTestHelper.assertSameJSON("Wrong value for key d.d3", new JSONArray("[1,2]"), SmartStore.project(json, "d.d3"));
+		JSONTestHelper.assertSameJSON("Wrong value for key d.d4", new JSONObject("{'e':5}"), SmartStore.project(json, "d.d4"));
 		assertEquals("Wrong value for key d.d4.e", 5, SmartStore.project(json, "d.d4.e"));
 	}
 
@@ -192,7 +193,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			assertEquals("Wrong id", idOf(soupEltCreated), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupEltCreated.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
 			assertEquals("Wrong value in index column", "ka", c.getString(c.getColumnIndex(soupTableName + "_0")));
-			assertSameJSON("Wrong value in soup column", soupEltCreated, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+			JSONTestHelper.assertSameJSON("Wrong value in soup column", soupEltCreated, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 			assertEquals("Created date and last modified date should be equal", c.getLong(c.getColumnIndex("created")),  c.getLong(c.getColumnIndex("lastModified")));
 		}
 		finally {
@@ -232,21 +233,21 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			assertEquals("Wrong created date", soupElt1Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
 			assertEquals("Wrong value in index column", "Doe", c.getString(c.getColumnIndex(soupTableName + "_0")));
 			assertEquals("Wrong value in index column", "San Francisco", c.getString(c.getColumnIndex(soupTableName + "_1")));
-			assertSameJSON("Wrong value in soup column", soupElt1Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+			JSONTestHelper.assertSameJSON("Wrong value in soup column", soupElt1Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 			
 			c.moveToNext();
 			assertEquals("Wrong id", idOf(soupElt2Created), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupElt2Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
 			assertEquals("Wrong value in index column", "Jackson", c.getString(c.getColumnIndex(soupTableName + "_0")));
 			assertEquals("Wrong value in index column", "Los Angeles", c.getString(c.getColumnIndex(soupTableName + "_1")));
-			assertSameJSON("Wrong value in soup column", soupElt2Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+			JSONTestHelper.assertSameJSON("Wrong value in soup column", soupElt2Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 
 			c.moveToNext();
 			assertEquals("Wrong id", idOf(soupElt3Created), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupElt3Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
 			assertEquals("Wrong value in index column", "Watson", c.getString(c.getColumnIndex(soupTableName + "_0")));
 			assertEquals("Wrong value in index column", "London", c.getString(c.getColumnIndex(soupTableName + "_1")));
-			assertSameJSON("Wrong value in soup column", soupElt3Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+			JSONTestHelper.assertSameJSON("Wrong value in soup column", soupElt3Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 			
 		}
 		finally {
@@ -275,9 +276,9 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created)).getJSONObject(0);
 		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created)).getJSONObject(0);
 
-		assertSameJSON("Retrieve mismatch", soupElt1Created, soupElt1Retrieved);
-		assertSameJSON("Retrieve mismatch", soupElt2Updated, soupElt2Retrieved);
-		assertSameJSON("Retrieve mismatch", soupElt3Created, soupElt3Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt1Created, soupElt1Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt2Updated, soupElt2Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt3Created, soupElt3Retrieved);
 
 		// Check DB
 		Cursor c = null;
@@ -327,9 +328,9 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Upserted)).getJSONObject(0);
 		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Upserted)).getJSONObject(0);
 
-		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
-		assertSameJSON("Retrieve mismatch", soupElt2Updated, soupElt2Retrieved);
-		assertSameJSON("Retrieve mismatch", soupElt3Upserted, soupElt3Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt2Updated, soupElt2Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt3Upserted, soupElt3Retrieved);
 		
 		// Check DB
 		Cursor c = null;
@@ -379,9 +380,9 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Upserted)).getJSONObject(0);
 		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Upserted)).getJSONObject(0);
 
-		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
-		assertSameJSON("Retrieve mismatch", soupElt2Updated, soupElt2Retrieved);
-		assertSameJSON("Retrieve mismatch", soupElt3Upserted, soupElt3Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt2Updated, soupElt2Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt3Upserted, soupElt3Retrieved);
 
 		// Check DB
 		Cursor c = null;
@@ -442,8 +443,8 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		JSONObject soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Upserted)).getJSONObject(0);
 		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Upserted)).getJSONObject(0);
 
-		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
-		assertSameJSON("Retrieve mismatch", soupElt2Upserted, soupElt2Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt2Upserted, soupElt2Retrieved);
 		
 		try {
 			store.upsert(TEST_SOUP, soupElt3, "key");
@@ -471,9 +472,9 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		JSONObject soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created)).getJSONObject(0);
 		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created)).getJSONObject(0);
 
-		assertSameJSON("Retrieve mismatch", soupElt1Created, soupElt1Retrieved);
-		assertSameJSON("Retrieve mismatch", soupElt2Created, soupElt2Retrieved);
-		assertSameJSON("Retrieve mismatch", soupElt3Created, soupElt3Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt1Created, soupElt1Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt2Created, soupElt2Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt3Created, soupElt3Retrieved);
 	}
 
 	/**
@@ -495,9 +496,9 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		JSONArray soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created));
 		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created)).getJSONObject(0);
 
-		assertSameJSON("Retrieve mismatch", soupElt1Created, soupElt1Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt1Created, soupElt1Retrieved);
 		assertEquals("Should be empty", 0, soupElt2Retrieved.length());
-		assertSameJSON("Retrieve mismatch", soupElt3Created, soupElt3Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt3Created, soupElt3Retrieved);
 		
 		// Check DB
 		Cursor c = null;
@@ -568,20 +569,20 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Query all - small page
 		JSONArray result = store.query(QuerySpec.buildAllQuerySpec(TEST_SOUP, "key", Order.ascending, 2), 0);
 		assertEquals("Two elements expected", 2, result.length());
-		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
-		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
 
 		// Query all - next small page
 		result = store.query(QuerySpec.buildAllQuerySpec(TEST_SOUP, "key", Order.ascending, 2), 1);
 		assertEquals("One element expected", 1, result.length());
-		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
 
 		// Query all - large page
 		result = store.query(QuerySpec.buildAllQuerySpec(TEST_SOUP, "key", Order.ascending, 10), 0);
 		assertEquals("Three elements expected", 3, result.length());
-		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
-		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
-		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(2));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(2));
 	
 	}
 	
@@ -601,7 +602,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Exact match
 		JSONArray result = store.query(QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "ka2", 10), 0);
 		assertEquals("One result expected", 1, result.length());
-		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
 
 	}
 
@@ -621,14 +622,14 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Range query
 		JSONArray result = store.query(QuerySpec.buildRangeQuerySpec(TEST_SOUP, "key", "ka2", "ka3", Order.ascending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
-		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
-		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(1));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(1));
 
 		// Range query - descending order
 		result = store.query(QuerySpec.buildRangeQuerySpec(TEST_SOUP, "key", "ka2", "ka3", Order.descending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
-		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
-		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
 	}
 
 	/**
@@ -649,40 +650,40 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Like query (starts with)
 		JSONArray result = store.query(QuerySpec.buildLikeQuerySpec(TEST_SOUP, "key", "abc%", Order.ascending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
-		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
-		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
 
 		// Like query (ends with)
 		result = store.query(QuerySpec.buildLikeQuerySpec(TEST_SOUP, "key", "%bcd", Order.ascending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
-		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
-		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(1));
 
 		// Like query (starts with) - descending order
 		result = store.query(QuerySpec.buildLikeQuerySpec(TEST_SOUP, "key", "abc%", Order.descending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
-		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
-		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(1));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(1));
 
 		// Like query (ends with) - descending order
 		result = store.query(QuerySpec.buildLikeQuerySpec(TEST_SOUP, "key", "%bcd", Order.descending, 10), 0);
 		assertEquals("Two results expected", 2, result.length());
-		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
-		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
 
 		// Like query (contains)
 		result = store.query(QuerySpec.buildLikeQuerySpec(TEST_SOUP, "key", "%bc%", Order.ascending, 10), 0);
 		assertEquals("Three results expected", 3, result.length());
-		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
-		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
-		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(2));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(2));
 
 		// Like query (contains) - descending order
 		result = store.query(QuerySpec.buildLikeQuerySpec(TEST_SOUP, "key", "%bc%", Order.descending, 10), 0);
 		assertEquals("Three results expected", 3, result.length());
-		assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
-		assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
-		assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(2));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt2Created, result.getJSONObject(0));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt1Created, result.getJSONObject(1));
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt3Created, result.getJSONObject(2));
 	}
 	
 	/**
@@ -703,7 +704,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		
 		// Check
 		JSONObject soupElt1Retrieved = store.retrieve(THIRD_TEST_SOUP, idOf(soupElt1Upserted)).getJSONObject(0);		
-		assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt1Upserted, soupElt1Retrieved);
 	}
 
 	/**
@@ -956,7 +957,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 				assertEquals("Wrong value in index column", "1 market", c.getString(c.getColumnIndex(soupTableName + "_1")));
 			else
 				assertNull("Wrong value in index column", c.getString(c.getColumnIndex(soupTableName + "_1"))); 
-			assertSameJSON("Wrong value in soup column", soupElt1Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+			JSONTestHelper.assertSameJSON("Wrong value in soup column", soupElt1Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 			
 			c.moveToNext();
 			assertEquals("Wrong id", idOf(soupElt2Created), c.getLong(c.getColumnIndex("id")));
@@ -966,7 +967,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 				assertEquals("Wrong value in index column", "100 mission", c.getString(c.getColumnIndex(soupTableName + "_1")));
 			else
 				assertNull("Wrong value in index column", c.getString(c.getColumnIndex(soupTableName + "_1"))); 
-			assertSameJSON("Wrong value in soup column", soupElt2Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+			JSONTestHelper.assertSameJSON("Wrong value in soup column", soupElt2Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 		
 			c.moveToNext();
 			assertEquals("Wrong id", idOf(soupElt3Created), c.getLong(c.getColumnIndex("id")));
@@ -976,7 +977,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 				assertEquals("Wrong value in index column", "50 market", c.getString(c.getColumnIndex(soupTableName + "_1")));
 			else
 				assertNull("Wrong value in index column", c.getString(c.getColumnIndex(soupTableName + "_1"))); 
-			assertSameJSON("Wrong value in soup column", soupElt3Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+			JSONTestHelper.assertSameJSON("Wrong value in soup column", soupElt3Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 			
 		}
 		finally {
@@ -1143,8 +1144,8 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			JSONObject actualDetails = operations[0].getDetails();
 			assertEquals("Wrong soup name", OTHER_TEST_SOUP, actualDetails.getString("soupName"));
 			assertEquals("Wrong soup table name", soupTableName, actualDetails.getString("soupTableName"));
-			assertSameJSON("Wrong old indexes", IndexSpec.toJSON(oldIndexSpecs), actualDetails.getJSONArray("oldIndexSpecs"));
-			// new index specs in details might or might not have column names based on step so not comparing with assertSameJSON however checkIndexSpecs below should catch any discrepancies
+			JSONTestHelper.assertSameJSON("Wrong old indexes", IndexSpec.toJSON(oldIndexSpecs), actualDetails.getJSONArray("oldIndexSpecs"));
+			// new index specs in details might or might not have column names based on step so not comparing with JSONTestHelper.assertSameJSON however checkIndexSpecs below should catch any discrepancies
 			assertEquals("Wrong re-index data", true, actualDetails.getBoolean("reIndexData"));
 			
 			// Check last step completed
@@ -1172,7 +1173,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 				assertEquals("Wrong value in index column", "Doe", c.getString(c.getColumnIndex(soupTableName + "_0")));
 				assertEquals("Wrong value in index column", "San Francisco", c.getString(c.getColumnIndex(soupTableName + "_1")));
 				assertEquals("Wrong value in index column", "1 market", c.getString(c.getColumnIndex(soupTableName + "_2")));
-				assertSameJSON("Wrong value in soup column", soupElt1Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+				JSONTestHelper.assertSameJSON("Wrong value in soup column", soupElt1Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 				
 				c.moveToNext();
 				assertEquals("Wrong id", idOf(soupElt2Created), c.getLong(c.getColumnIndex("id")));
@@ -1180,7 +1181,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 				assertEquals("Wrong value in index column", "Jackson", c.getString(c.getColumnIndex(soupTableName + "_0")));
 				assertEquals("Wrong value in index column", "Los Angeles", c.getString(c.getColumnIndex(soupTableName + "_1")));
 				assertEquals("Wrong value in index column", "100 mission", c.getString(c.getColumnIndex(soupTableName + "_2")));
-				assertSameJSON("Wrong value in soup column", soupElt2Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+				JSONTestHelper.assertSameJSON("Wrong value in soup column", soupElt2Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 			}
 			finally {
 				safeClose(c);

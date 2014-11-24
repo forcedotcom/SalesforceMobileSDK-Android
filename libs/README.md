@@ -4,8 +4,7 @@ This folder contains the library projects provided in the Salesforce Mobile SDK,
 
 ### SDK notes
 
-* The SDK is supported and tested for Android 2.2 and above.
-* The SalesforceSDK project is built with the Android 3.0 (Honeycomb) library.  The primary reason for this is that we want to be able to make a conditional check at runtime for file system encryption capabilities.  This check is guarded from being called on earlier Android platforms, the net result being that you can still use the SalesforceSDK in earlier Android application versions, down to the mininum-supported Android 2.2.
+* The SDK is supported and tested for Android 4.2.2 and above.
 
 # Setting up your development environment
 
@@ -23,8 +22,10 @@ Inside the $NATIVE_DIR, you will find several projects:
 
 1. **SalesforceSDK**: The Salesforce SDK library project which provides support for OAuth2, REST API calls, pin screen (driven by mobile policy)
 2. **SmartStore**: Library project which provides the SmartStore functionality
-3. **test/SalesforceSDKTest**: Test project for SalesforceSDK
-4. **test/SmartStoreTest**: Test project for SmartStore
+3. **SmartSync**: The SmartSync library project which provides support for Salesforce object metadata API calls, layout API calls, MRU API calls, caching
+4. **test/SalesforceSDKTest**: Test project for SalesforceSDK
+5. **test/SmartStoreTest**: Test project for SmartStore
+6. **test/SmartSyncTest**: Test project for SmartSync
 
 # Running sample apps from Eclipse
 

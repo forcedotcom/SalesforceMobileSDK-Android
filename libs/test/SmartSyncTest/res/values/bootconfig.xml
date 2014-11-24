@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="remoteAccessConsumerKey">3MVG92.uWdyphVj4bnolD7yuIpCQsNgddWtqRND3faxrv9uKnbj47H4RkwheHA2lKY4cBusvDVp0M6gdGE8hp</string>
+    <string name="oauthRedirectURI">sfdc:///axm/detect/oauth/done</string>
+    <string-array name="oauthScopes">
+        <item>api</item>
+    </string-array>
+    <string name="androidPushNotificationClientId"></string>
+    <string name="account_name">sdktest@cs1.com (test)</string>
+    <string name="account_type">com.salesforce.androidsdk.smartsynctest.login</string>
+    <string name="encoding">UTF-8</string>
+    <string name="instance_url">https://cs1.salesforce.com</string>
+    <string name="community_url">https://cs1.salesforce.com/androidcomm</string>
+    <string name="identity_url">https://test.salesforce.com</string>
+    <string name="login_url">https://test.salesforce.com</string>
+    <string name="oauth_refresh_token">5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5JPlgkezkgDiE1o9mI4jd6mD4ZFYA==</string>
+    <string name="org_id">00DS0000000HDptMAG</string>
+    <string name="user_id">005S0000003yaERIAY</string>
+    <string name="username">sdktest@cs1.com</string>
+</resources>

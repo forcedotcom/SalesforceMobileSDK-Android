@@ -95,6 +95,7 @@ public class PushService extends IntentService {
     private static final String SERVICE_TYPE = "ServiceType";
     private static final String CONNECTION_TOKEN = "ConnectionToken";
     private static final String FIELD_ID = "id";
+    private static final String NOT_ENABLED = "not_enabled";
 
     // Wake lock instance.
     private static PowerManager.WakeLock WAKE_LOCK;
@@ -172,7 +173,7 @@ public class PushService extends IntentService {
             		if (accounts != null) {
                 		for (final UserAccount userAcc : accounts) {
                         	final String regId = PushMessaging.getRegistrationId(context,
-                        			account);
+                        			userAcc);
                         	if (regId != null) {
                                 onRegistered(regId, userAcc);
                         	}
@@ -253,7 +254,7 @@ public class PushService extends IntentService {
     			unregisterSFDCPushNotification(id, account);
     		}
     	}
-        context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT));
+        context.sendBroadcast((new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT)).setPackage(context.getPackageName()));
         scheduleGCMRetry(false, account);
     }
 
@@ -290,7 +291,11 @@ public class PushService extends IntentService {
         final Calendar cal = Calendar.getInstance();
         cal.add(Calendar.MILLISECOND, (int) when);
         final Intent retryIntent = new Intent(context, SFDCRegistrationRetryAlarmReceiver.class);
-        retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, account.toBundle());
+        if (account == null) {
+            retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE);
+        } else {
+            retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, account.toBundle());
+        }
         final PendingIntent retryPIntent = PendingIntent.getBroadcast(context,
         		1, retryIntent, PendingIntent.FLAG_ONE_SHOT);
         final AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -304,6 +309,10 @@ public class PushService extends IntentService {
      * @param account User account.
      */
     private void onRegistered(String registrationId, UserAccount account) {
+        if (account == null) {
+            Log.e(TAG, "Account is null. Will retry registration later");
+            return;
+        }
     	long retryInterval = SFDC_REGISTRATION_RETRY;
     	try {
         	final String id = registerSFDCPushNotification(registrationId, account);
@@ -317,7 +326,7 @@ public class PushService extends IntentService {
     	} catch (Exception e) {
     		Log.e(TAG, "Error occurred during SFDC registration.", e);
     	} finally {
-            scheduleSFDCRegistrationRetry(retryInterval, account);
+            scheduleSFDCRegistrationRetry(retryInterval, null);
     	}
     }
 
@@ -334,8 +343,8 @@ public class PushService extends IntentService {
     		Log.e(TAG, "Error occurred during SFDC un-registration.", e);
     	} finally {
         	PushMessaging.clearRegistrationInfo(context, account);
-            context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT));
-            context.sendBroadcast(new Intent(PushMessaging.UNREGISTERED_EVENT));
+            context.sendBroadcast((new Intent(PushMessaging.UNREGISTERED_ATTEMPT_COMPLETE_EVENT)).setPackage(context.getPackageName()));
+            context.sendBroadcast((new Intent(PushMessaging.UNREGISTERED_EVENT)).setPackage(context.getPackageName()));
         }
     }
 
@@ -358,12 +367,23 @@ public class PushService extends IntentService {
         	if (client != null) {
             	final RestResponse res = client.sendSync(req);
             	String id = null;
+
+            	/*
+            	 * If the push notification device object has been created,
+            	 * reads the device registration ID. If the status code
+            	 * indicates that the resource is not found, push notifications
+            	 * are not enabled for this connected app, which means we
+            	 * should not attempt to re-register a few minutes later.
+            	 */
             	if (res.getStatusCode() == HttpStatus.SC_CREATED) {
             		final JSONObject obj = res.asJSONObject();
             		if (obj != null) {
             			id = obj.getString(FIELD_ID);
             		}
+            	} else if (res.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+            		id = NOT_ENABLED;
             	}
+            	res.consume();
             	return id;
         	}
     	} catch (Exception e) {
@@ -390,6 +410,7 @@ public class PushService extends IntentService {
             	if (res.getStatusCode() == HttpStatus.SC_NO_CONTENT) {
             		return true;
             	}
+            	res.consume();
     		}
     	} catch (IOException e) {
     		Log.e(TAG, "Push notification un-registration failed.", e);
@@ -404,9 +425,7 @@ public class PushService extends IntentService {
      * @return Instance of RestClient.
      */
     private RestClient getRestClient(UserAccount account) {
-    	final ClientManager cm = new ClientManager(SalesforceSDKManager.getInstance().getAppContext(),
-    			SalesforceSDKManager.getInstance().getAccountType(),
-    			SalesforceSDKManager.getInstance().getLoginOptions(), true);
+    	final ClientManager cm = SalesforceSDKManager.getInstance().getClientManager();
     	RestClient client = null;
 
     	/*
@@ -465,8 +484,13 @@ public class PushService extends IntentService {
         		final Bundle accBundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
         		if (accBundle != null) {
                     PushMessaging.register(context, new UserAccount(accBundle));
-        		}
-        	}
+                } else {
+                    if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(intent
+                            .getStringExtra(PushMessaging.ACCOUNT_BUNDLE_KEY))) {
+                        PushMessaging.register(context, null);
+                    }
+                }
+            }
         }
     }
 
@@ -483,8 +507,13 @@ public class PushService extends IntentService {
         		final Bundle accBundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
         		if (accBundle != null) {
                     PushMessaging.registerSFDCPush(context, new UserAccount(accBundle));
-        		}
-        	}
+                } else {
+                    if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(intent
+                            .getStringExtra(PushMessaging.ACCOUNT_BUNDLE_KEY))) {
+                        PushMessaging.registerSFDCPush(context, null);
+                    }
+                }
+            }
         }
     }
 

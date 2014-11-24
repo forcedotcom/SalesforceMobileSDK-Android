@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,6 +26,9 @@
  */
 package com.salesforce.samples.templateapp;
 
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.test.ActivityInstrumentationTestCase2;
 import android.view.View;
 import android.widget.Button;
@@ -33,9 +36,10 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.ui.CustomServerUrlEditor;
 import com.salesforce.androidsdk.ui.ServerPickerActivity;
-import com.salesforce.androidsdk.util.EventsListenerQueue;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
 /**
  * Tests for ServerPickerActivity
@@ -49,6 +53,7 @@ public class ServerPickerActivityTest extends
 	private Button btnApply;
 	private EditText txtLabel;
 	private EditText txtUrl;
+	private ServerPickerActivity activity;
 
 	public ServerPickerActivityTest() {
 		super(ServerPickerActivity.class);
@@ -64,6 +69,9 @@ public class ServerPickerActivityTest extends
         if (SalesforceSDKManager.getInstance() == null) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
+        activity = getActivity();
+        removeFragmentIfRequired();
+        assertNotNull("Activity should not be null", activity);
 	}
 
 	@Override
@@ -72,6 +80,8 @@ public class ServerPickerActivityTest extends
             eq.tearDown();
             eq = null;
         }
+		activity.finish();
+		activity = null;
 		super.tearDown();
 	}
 
@@ -83,8 +93,8 @@ public class ServerPickerActivityTest extends
 	public void testCancelButton() throws Throwable {
 		openCustomEditDialog();
 		clickView(btnCancel);
-		assertFalse("Custom URL dialog should be closed",
-				getActivity().urlEditDialog.isShowing());
+		assertNull("Custom URL dialog should be closed",
+				activity.getCustomServerUrlEditor().getDialog());
 	}
 
 	/**
@@ -117,56 +127,51 @@ public class ServerPickerActivityTest extends
 		addCustomUrl(label, url);
 		clickView(btnApply);
 		assertTrue("Custom URL dialog should still be open",
-				getActivity().urlEditDialog.isShowing());
+				activity.getCustomServerUrlEditor().getDialog().isShowing());
 		assertTrue("URL field should still have focus", txtUrl.hasFocus());
 		url = "https://valid.url.com";
 		addCustomUrl(label, url);
 		clickView(btnApply);
-		assertFalse("Custom URL dialog should be closed",
-				getActivity().urlEditDialog.isShowing());
+		assertNull("Custom URL dialog should be closed",
+				activity.getCustomServerUrlEditor().getDialog());
 	}
 
 	private void openCustomEditDialog() throws Throwable {
-		btnCustomEdit = (Button) getActivity().findViewById(
-				R.id.sf__show_custom_url_edit);
+		btnCustomEdit = (Button) activity.findViewById(
+				com.salesforce.androidsdk.R.id.sf__show_custom_url_edit);
 		assertNotNull("Custom URL Edit dialog does not exist", btnCustomEdit);
-		runTestOnUiThread(new Runnable() {
-
-			@Override
-			public void run() {
-				assertTrue("Unable to click open Custom URL Edit Dialog",
-						btnCustomEdit.performClick());
-				if (btnApply == null || btnCancel == null || txtLabel == null
-						|| txtUrl == null) {
-					btnApply = (Button) getActivity().urlEditDialog
-							.findViewById(R.id.sf__apply_button);
-					btnCancel = (Button) getActivity().urlEditDialog
-							.findViewById(R.id.sf__cancel_button);
-					txtLabel = (EditText) getActivity().urlEditDialog
-							.findViewById(R.id.sf__picker_custom_label);
-					txtUrl = (EditText) getActivity().urlEditDialog
-							.findViewById(R.id.sf__picker_custom_url);
-				}
-				txtLabel.requestFocus();
-			}
-		});
-	}
-
-	private void removeCurrentCustomServer() throws Throwable {
-		if (txtLabel.getEditableText().length() > 0) {
-			setText(txtLabel, "");
+		clickView(btnCustomEdit);
+		final CustomServerUrlEditor dialog = activity.getCustomServerUrlEditor();
+		Thread.sleep(3000);
+		final View rootView = dialog.getRootView();
+		assertNotNull("Root view should not be null", rootView);
+		if (btnApply == null || btnCancel == null || txtLabel == null
+				|| txtUrl == null) {
+			btnApply = (Button) rootView.findViewById(com.salesforce.androidsdk.R.id.sf__apply_button);
+			btnCancel = (Button) rootView.findViewById(com.salesforce.androidsdk.R.id.sf__cancel_button);
+			txtLabel = (EditText) rootView.findViewById(com.salesforce.androidsdk.R.id.sf__picker_custom_label);
+			txtUrl = (EditText) rootView.findViewById(com.salesforce.androidsdk.R.id.sf__picker_custom_url);
 		}
-		if (txtUrl.getEditableText().length() > 0) {
-			setText(txtUrl, "");
-		}
+		setFocus(txtLabel);
 	}
 
 	private void addCustomUrl(String label, String url) throws Throwable {
-		openCustomEditDialog();
-		removeCurrentCustomServer();
+		if (!activity.getCustomServerUrlEditor().isVisible()) {
+			openCustomEditDialog();
+		}
 		setText(txtLabel, label);
 		setFocus(txtUrl);
 		setText(txtUrl, url);
+	}
+
+	private void removeFragmentIfRequired() {
+		final FragmentManager fm = activity.getFragmentManager();
+		final Fragment dialog = activity.getFragmentManager().findFragmentByTag("custom_server_dialog");
+		if (dialog != null && dialog.isAdded()) {
+			final FragmentTransaction ft = fm.beginTransaction();
+			ft.remove(dialog);
+			ft.commit();
+		}
 	}
 
     private void setText(final TextView v, final String text) {

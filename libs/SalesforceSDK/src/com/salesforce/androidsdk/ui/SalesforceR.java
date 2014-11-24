@@ -46,15 +46,9 @@ public class SalesforceR {
 	public int stringGenericAuthenticationErrorTitle() {return R.string.sf__generic_authentication_error_title; } 
 	public int stringGenericAuthenticationErrorBody() {return R.string.sf__generic_authentication_error; }
 	public int menuLogin() { return R.menu.sf__login; }
-	public int idAuthContainer() { return R.id.sf__auth_container; }
 	public int idItemClearCookies() { return R.id.sf__menu_clear_cookies; }
 	public int idItemPickServer() { return R.id.sf__menu_pick_server; }
 	public int idItemReload() { return R.id.sf__menu_reload; }
-	public int idLoadSeparator() { return R.id.sf__load_separator; }
-	public int idLoadSpinner() { return R.id.sf__load_spinner; }
-	public int idServerName() { return R.id.sf__server_name; }
-	public int styleTextHostName() { return R.style.Text_HostName; }
-	public int styleTextHostUrl() { return R.style.Text_HostUrl; }
 	/* Passcode */
 	public int layoutPasscode() {return R.layout.sf__passcode; }
 	public int idPasscodeTitle() {return R.id.sf__passcode_title; }

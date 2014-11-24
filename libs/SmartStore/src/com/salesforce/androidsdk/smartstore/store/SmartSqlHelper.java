@@ -33,7 +33,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import net.sqlcipher.database.SQLiteDatabase;
-import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 
@@ -79,7 +78,6 @@ public class SmartSqlHelper  {
 	 * @return actual sql     
 	 */
 	public String convertSmartSql(SQLiteDatabase db, String smartSql) {
-		Log.i("SmartSqlHelper.convertSmartSql", "smart sql = " + smartSql);
 
 		// Select's only
 		String smartSqlLowerCase = smartSql.toLowerCase(Locale.getDefault()).trim();
@@ -131,7 +129,6 @@ public class SmartSqlHelper  {
 		matcher.appendTail(sql);
 
 		// Done
-		Log.i("SmartSqlHelper.convertSmartSql", "sql = " + sql);
 		return sql.toString();
 	}
 	
