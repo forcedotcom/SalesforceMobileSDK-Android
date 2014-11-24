@@ -11,7 +11,7 @@
 :java:
   :java_version: java-7-openjdk
 :timeout_hook: 1200
-:timeout: 7200
+:timeout: 1800
 :tests: # All are queued to run in parallel
   - ". android-settings.sh && ./tools/sdk.sh -v -b ContactExplorer"
   - ". android-settings.sh && ./tools/sdk.sh -v -b VFConnector"
