@@ -861,7 +861,8 @@ public class SalesforceSDKManager {
         } catch (NameNotFoundException e) {
             Log.w("SalesforceSDKManager:getUserAgent", e);
         } catch (Resources.NotFoundException nfe) {
-            // if your application doesn't have a name (like a test harness from Gradle)
+
+    	   	// A test harness such as Gradle does NOT have an application name.
             Log.w("SalesforceSDKManager:getUserAgent", nfe);
         }
 	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native") + qualifier;
