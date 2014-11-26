@@ -114,7 +114,6 @@ public class OAuthWebviewHelper {
         this.webview = webview;
 
         webview.getSettings().setJavaScriptEnabled(true);
-        webview.getSettings().setSavePassword(false);
         webview.setWebViewClient(makeWebViewClient());
         webview.setWebChromeClient(makeWebChromeClient());
 
@@ -152,7 +151,7 @@ public class OAuthWebviewHelper {
     }
 
     public void clearView() {
-        webview.clearView();
+    	webview.loadUrl("about:blank");
     }
 
     /**
