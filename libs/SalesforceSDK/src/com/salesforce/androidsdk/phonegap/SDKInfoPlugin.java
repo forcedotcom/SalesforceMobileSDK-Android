@@ -39,6 +39,7 @@ import org.xmlpull.v1.XmlPullParserException;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
 
@@ -109,10 +110,17 @@ public class SDKInfoPlugin extends ForcePlugin {
     * @throws JSONException 
     */
    public static JSONObject getSDKInfo(Context ctx) throws NameNotFoundException, JSONException {
-       PackageInfo packageInfo = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0);
-       String appName = ctx.getString(packageInfo.applicationInfo.labelRes);
-       String appVersion = packageInfo.versionName;
-        
+	   String appName = "";
+       String appVersion = "";
+       try {
+           final PackageInfo packageInfo = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0);
+           appName = ctx.getString(packageInfo.applicationInfo.labelRes);
+           appVersion = packageInfo.versionName;
+       } catch (Resources.NotFoundException nfe) {
+
+    	   	// A test harness such as Gradle does NOT have an application name.
+       	 	Log.w("SalesforceSDKManager:getUserAgent", nfe);
+       }
        JSONObject data = new JSONObject();
        data.put(SDK_VERSION, SalesforceSDKManager.SDK_VERSION);
        data.put(APP_NAME, appName);
