@@ -150,10 +150,8 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     		webSettings.setDomStorageEnabled(true);
     		String cachePath = getApplicationContext().getCacheDir().getAbsolutePath();
     		webSettings.setAppCachePath(cachePath);
-            webSettings.setAppCacheMaxSize(1024 * 1024 * 8);
     		webSettings.setAppCacheEnabled(true);
     		webSettings.setAllowFileAccess(true);
-            webSettings.setSavePassword(false);
     		webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
     		EventsObservable.get().notifyEvent(EventType.GapWebViewCreateComplete, appView);
       	}

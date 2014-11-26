@@ -88,7 +88,6 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 
 		// Setup the WebView.
 		WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
-		webView.getSettings().setSavePassword(false);
 		EventsObservable.get().notifyEvent(EventType.AuthWebViewCreateComplete, webView);
 		webviewHelper = getOAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
 		
