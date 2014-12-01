@@ -12,7 +12,8 @@
 		android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
 
 		<!-- Launcher screen -->
-		<activity android:name=".ExplorerActivity" android:label="@string/app_name"
+		<activity android:name=".ExplorerActivity"
+		    android:label="@string/app_name"
 			android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN" />

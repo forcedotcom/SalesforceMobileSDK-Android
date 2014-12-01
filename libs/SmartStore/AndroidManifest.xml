@@ -2,8 +2,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk.smartstore"
-	android:versionCode="39"
-	android:versionName="3.0.0.unstable">
+	android:versionCode="40"
+	android:versionName="3.1.0.unstable">
 
     <uses-sdk android:minSdkVersion="17"
         android:targetSdkVersion="21" />

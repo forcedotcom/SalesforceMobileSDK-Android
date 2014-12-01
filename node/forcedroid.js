@@ -42,7 +42,7 @@ var fs = require('fs');
 var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
-var version = '3.0.0';
+var version = '3.1.0';
 var minimumCordovaVersion = '3.5';
 var minTargetApi = {'versionNumber': 19, 'versionName': 'KitKat'};
 var androidExePath;
@@ -90,7 +90,7 @@ function usage() {
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
     console.log('    --targetandroidapi=<Target API> (e.g. 21 for Lollipop — Only required/used for \'native\')');
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
-    console.log('    [--usesmartstore=<Whether or not to use SmartStore/SmartSync> (\'true\' or \'false\'. false by default — Only required/used for \'native\')]');
+    console.log('    [--usesmartstore=<Whether or not to use SmartStore/SmartSync> (\'yes\' or \'no\'. no by default — Only required/used for \'native\')]');
     console.log(outputColors.cyan + '\nOR\n');
     console.log(outputColors.magenta + 'forcedroid version' + outputColors.reset);
 }

@@ -30,7 +30,6 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
-import com.salesforce.androidsdk.smartsync.manager.NetworkManager;
 
 /**
  * This class acts as a manager that provides methods to access
@@ -60,7 +59,6 @@ public class SmartSyncUserAccountManager extends UserAccountManager {
 		super.switchToUser(user);
 		CacheManager.softReset(user);
 		MetadataManager.reset(user);
-		NetworkManager.reset(user);
 	}
 
 	@Override
@@ -69,6 +67,5 @@ public class SmartSyncUserAccountManager extends UserAccountManager {
     	final UserAccount userAccount = SmartSyncUserAccountManager.getInstance().getCurrentUser();
 		CacheManager.softReset(userAccount);
 		MetadataManager.reset(userAccount);
-		NetworkManager.reset(userAccount);
 	}
 }

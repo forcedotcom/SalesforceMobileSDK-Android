@@ -63,6 +63,7 @@ import android.net.NetworkInfo;
  */
 public class HttpAccess extends BroadcastReceiver {
 
+	public static final String USER_AGENT = "User-Agent";
 	private static final String PATCH = "PATCH";
 
     // Fields to keep track of network.
@@ -360,7 +361,7 @@ public class HttpAccess extends BroadcastReceiver {
     			}
     			httpConn = (HttpURLConnection) url.openConnection();
     			httpConn.setRequestMethod(requestMethod);
-    			httpConn.setRequestProperty("User-Agent", userAgent);
+    			httpConn.setRequestProperty(USER_AGENT, userAgent);
     		}
     	}
     	return httpConn;

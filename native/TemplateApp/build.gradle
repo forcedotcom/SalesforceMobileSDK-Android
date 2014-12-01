@@ -19,7 +19,7 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
-    
+
     androidTest.setRoot('../test/TemplateAppTest')
     androidTest {
       java.srcDirs = ['../test/TemplateAppTest/src']
@@ -28,8 +28,8 @@ android {
     }
   }
   defaultConfig {
-    testPackageName "com.salesforce.samples.templateapp"
-    testInstrumentationRunner "com.salesforce.androidsdk.util.JUnitReportTestRunner"
+    testApplicationId "com.salesforce.samples.templateapp.tests"
+    testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

@@ -130,7 +130,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         this.loginOptions = options;
         this.webview = webview;
         webview.getSettings().setJavaScriptEnabled(true);
-        webview.getSettings().setSavePassword(false);
         webview.setWebViewClient(makeWebViewClient());
         webview.setWebChromeClient(makeWebChromeClient());
 
@@ -171,7 +170,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     }
 
     public void clearView() {
-        webview.clearView();
+    	webview.loadUrl("about:blank");
     }
 
     /**

@@ -85,7 +85,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "3.0.0.unstable";
+    public static final String SDK_VERSION = "3.1.0.unstable";
 
     /**
      * Default app name.
@@ -848,6 +848,10 @@ public class SalesforceSDKManager {
      * @return The user agent string to use for all requests.
      */
     public final String getUserAgent() {
+    	return getUserAgent("");
+    }
+    
+    public final String getUserAgent(String qualifier) {
         String appName = "";
         String appVersion = "";
         try {
@@ -857,10 +861,11 @@ public class SalesforceSDKManager {
         } catch (NameNotFoundException e) {
             Log.w("SalesforceSDKManager:getUserAgent", e);
         } catch (Resources.NotFoundException nfe) {
-            // if your application doesn't have a name (like a test harness from Gradle)
+
+    	   	// A test harness such as Gradle does NOT have an application name.
             Log.w("SalesforceSDKManager:getUserAgent", nfe);
         }
-	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native");
+	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native") + qualifier;
 	    return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s",
 	            SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, nativeOrHybrid);
 	}
@@ -987,5 +992,12 @@ public class SalesforceSDKManager {
      */
     public boolean isLoggingOut() {
     	return isLoggingOut;
+    }
+    
+    /**
+     * @return ClientManager
+     */
+    public ClientManager getClientManager() {
+    	return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(), true);
     }
 }

@@ -55,6 +55,8 @@ import com.android.volley.Request;
  * <li> update</li>
  * <li> upsert</li>
  * <li> delete</li>
+ * <li> searchScopeAndOrder</li>
+ * <li> searchResultLayout</li>
  * </ul>
  * 
  * It also has constructors to build any arbitrary request.
@@ -101,7 +103,9 @@ public class RestRequest {
 		UPDATE("/services/data/%s/sobjects/%s/%s"), 
 		DELETE("/services/data/%s/sobjects/%s/%s"), 
 		QUERY("/services/data/%s/query"), 
-		SEARCH("/services/data/%s/search");
+		SEARCH("/services/data/%s/search"),
+		SEARCH_SCOPE_AND_ORDER("/services/data/%s/search/scopeOrder"),
+		SEARCH_RESULT_LAYOUT("/services/data/%s/search/layout");
 
 		private final String pathTemplate;
 
@@ -171,7 +175,7 @@ public class RestRequest {
 	
 	/**
 	 * Request to get summary information about each Salesforce.com version currently available.
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/index_Left.htm#StartTopic=Content/resources_versions.htm
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_versions.htm
 	 * 
 	 * @return a JsonNode
      * @throws IOException
@@ -183,7 +187,7 @@ public class RestRequest {
 	
 	/**
 	 * Request to list available resources for the specified API version, including resource name and URI.
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/index_Left.htm#StartTopic=Content/resources_discoveryresource.htm
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_discoveryresource.htm
 	 *
 	 * @param apiVersion
 	 * @return a RestRequest
@@ -196,7 +200,7 @@ public class RestRequest {
 
 	/**
 	 * Request to list the available objects and their metadata for your organization's data.
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/index_Left.htm#StartTopic=Content/resources_describeGlobal.htm
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_describeGlobal.htm
 	 *
 	 * @param apiVersion
 	 * @return a RestRequest
@@ -209,7 +213,7 @@ public class RestRequest {
 
 	/**
 	 * Request to describe the individual metadata for the specified object.
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/index_Left.htm#StartTopic=Content/resources_sobject_basic_info.htm
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_basic_info.htm
 	 * 
 	 * @param apiVersion
 	 * @param objectType
@@ -223,7 +227,7 @@ public class RestRequest {
 
 	/**
 	 * Request to completely describe the individual metadata at all levels for the specified object. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/index_Left.htm#StartTopic=Content/resources_sobject_describe.htm
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_describe.htm
 	 * 
 	 * @param apiVersion
 	 * @param objectType
@@ -235,7 +239,7 @@ public class RestRequest {
 	
 	/**
 	 * Request to create a record. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/index_Left.htm#StartTopic=Content/resources_sobject_retrieve.htm
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
 	 * 
 	 * @param apiVersion
 	 * @param objectType
@@ -251,7 +255,7 @@ public class RestRequest {
 
 	/**
 	 * Request to retrieve a record by object id. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/index_Left.htm#StartTopic=Content/resources_sobject_retrieve.htm
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
 	 * 
 	 * @param apiVersion
 	 * @param objectType
@@ -283,7 +287,7 @@ public class RestRequest {
 
 	/**
 	 * Request to update a record. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/index_Left.htm#StartTopic=Content/resources_sobject_retrieve.htm
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
 	 *
 	 * @param apiVersion 
 	 * @param objectType
@@ -303,7 +307,7 @@ public class RestRequest {
 	
 	/**
 	 * Request to upsert (update or insert) a record. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/index_Left.htm#StartTopic=Content/resources_sobject_retrieve.htm
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_upsert.htm
 	 *
 	 * @param apiVersion
 	 * @param objectType
@@ -323,7 +327,7 @@ public class RestRequest {
 	
 	/**
 	 * Request to delete a record. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/index_Left.htm#StartTopic=Content/resources_sobject_retrieve.htm
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
 	 * 
 	 * @param apiVersion
 	 * @param objectType
@@ -336,7 +340,7 @@ public class RestRequest {
 
 	/**
 	 * Request to execute the specified SOSL search. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/index_Left.htm#StartTopic=Content/resources_search.htm
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search.htm
 	 * 
 	 * @param apiVersion
 	 * @param q
@@ -352,7 +356,7 @@ public class RestRequest {
 
 	/**
 	 * Request to execute the specified SOQL search. 
-	 * See http://www.salesforce.com/us/developer/docs/api_rest/index_Left.htm#StartTopic=Content/resources_query.htm
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_query.htm
 	 * 
 	 * @param apiVersion
 	 * @param q
@@ -366,6 +370,35 @@ public class RestRequest {
 		return new RestRequest(RestMethod.GET, path.toString(), null);	
 	}
 
+	/**
+	 * Request to execute the specified SOQL search. 
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm
+	 * 
+	 * @param apiVersion
+	 * @param q
+	 * @return a RestRequest
+	 * @throws UnsupportedEncodingException 
+	 */
+	public static RestRequest getRequestForSearchScopeAndOrder(String apiVersion) throws UnsupportedEncodingException  {
+		StringBuilder path = new StringBuilder(RestAction.SEARCH_SCOPE_AND_ORDER.getPath(apiVersion));
+		return new RestRequest(RestMethod.GET, path.toString(), null);	
+	}	
+	
+	/**
+	 * Request to execute the specified SOQL search. 
+	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_layouts.htm
+	 * 
+	 * @param apiVersion
+	 * @param objectList
+	 * @return a RestRequest
+	 * @throws UnsupportedEncodingException 
+	 */
+	public static RestRequest getRequestForSearchResultLayout(String apiVersion, List<String> objectList) throws UnsupportedEncodingException  {
+		StringBuilder path = new StringBuilder(RestAction.SEARCH_RESULT_LAYOUT.getPath(apiVersion));
+		path.append("?q=");
+		path.append(URLEncoder.encode(toCsv(objectList).toString(), HTTP.UTF_8));
+		return new RestRequest(RestMethod.GET, path.toString(), null);	
+	}	
 	
 	/**
 	 * Jsonize map and create a StringEntity out of it 
