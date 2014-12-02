@@ -19,6 +19,7 @@
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b AccountEditor"
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b HybridFileExplorer"
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b SmartSync -b SimpleSync"
+  - ". android-settings.sh && ./tools/sdk.sh -v -f -b SmartSync -b SmartSyncExplorer"
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b UserList"
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b NativeSqlAggregator"
   - "./package-npm.sh"
