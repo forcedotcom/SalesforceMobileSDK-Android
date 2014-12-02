@@ -20,7 +20,8 @@
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b HybridFileExplorer"
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b SimpleSync"
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b UserList"
-  - ". android-settings.sh && ./tools/sdk.sh -v -f -b NativeSqlAggregator"
+  - ". android-settings.sh && ./tools/sdk.sh -v -f -b SmartStore -b NativeSqlAggregator"
+  - "./package-npm.sh"
   - type: junit
     command: "./with-emulator.sh ./tools/sdk.sh -v -f -b SalesforceSDKTest -t SalesforceSDKTest"
     output: exit-status
