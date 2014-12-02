@@ -3,8 +3,7 @@
 . android-settings.sh
 
 
-project_libs="libs/SalesforceSDK external/cordova/framework native/SampleApps/FileExplorer native/Sa
-mpleApps/RestExplorer"
+project_libs="libs/SalesforceSDK external/cordova/framework native/SampleApps/FileExplorer native/SampleApps/RestExplorer"
 
 for d in $project_libs ; do
 	echo "Updating android project $d"
