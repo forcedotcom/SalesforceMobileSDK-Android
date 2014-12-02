@@ -13,51 +13,53 @@
 :timeout_hook: 1200
 :timeout: 1800
 :tests: # All are queued to run in parallel
-  - ". android-settings.sh && ./tools/sdk.sh -v -b ContactExplorer"
-  - ". android-settings.sh && ./tools/sdk.sh -v -b VFConnector"
-  - ". android-settings.sh && ./tools/sdk.sh -v -b SmartStore -b SmartStoreExplorer"
-  - ". android-settings.sh && ./tools/sdk.sh -v -b AccountEditor"
-  - ". android-settings.sh && ./tools/sdk.sh -v -b HybridFileExplorer"
-  - ". android-settings.sh && ./tools/sdk.sh -v -b SimpleSync"
-  - ". android-settings.sh && ./tools/sdk.sh -v -b UserList"
-  - ". android-settings.sh && ./tools/sdk.sh -v -b NativeSqlAggregator"
+  - ". android-settings.sh && ./tools/sdk.sh -v -f -b ContactExplorer"
+  - ". android-settings.sh && ./tools/sdk.sh -v -f -b VFConnector"
+  - ". android-settings.sh && ./tools/sdk.sh -v -f -b SmartStoreExplorer"
+  - ". android-settings.sh && ./tools/sdk.sh -v -f -b AccountEditor"
+  - ". android-settings.sh && ./tools/sdk.sh -v -f -b HybridFileExplorer"
+  - ". android-settings.sh && ./tools/sdk.sh -v -f -b SmartSync -b SimpleSync"
+  - ". android-settings.sh && ./tools/sdk.sh -v -f -b SmartSync -b SmartSyncExplorer"
+  - ". android-settings.sh && ./tools/sdk.sh -v -f -b UserList"
+  - ". android-settings.sh && ./tools/sdk.sh -v -f -b NativeSqlAggregator"
+  - "./package-npm.sh"
   - type: junit
-    command: "./with-emulator.sh ./tools/sdk.sh -v -b SalesforceSDKTest -t SalesforceSDKTest"
+    command: "./with-emulator.sh ./tools/sdk.sh -v -f -b SalesforceSDKTest -t SalesforceSDKTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./tools/sdk.sh -v -b RestExplorer -b RestExplorerTest -t RestExplorerTest"
+    command: "./with-emulator.sh ./tools/sdk.sh -v -f -b RestExplorer -b RestExplorerTest -t RestExplorerTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./tools/sdk.sh -v -b TemplateApp -b TemplateAppTest -t TemplateAppTest"
+    command: "./with-emulator.sh ./tools/sdk.sh -v -f -b TemplateApp -b TemplateAppTest -t TemplateAppTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./tools/sdk.sh -v -b SmartStore -b SmartStoreTest -t SmartStoreTest"
+    command: "./with-emulator.sh ./tools/sdk.sh -v -f b SmartStoreTest -t SmartStoreTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./tools/sdk.sh -v -b SmartSync -b SmartSyncTest -t SmartSyncTest"
+    command: "./with-emulator.sh ./tools/sdk.sh -v -f -b SmartSync -b SmartSyncTest -t SmartSyncTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./tools/sdk.sh -v -b ForcePluginsTest -t ForcePluginsTest"
+    command: "./with-emulator.sh ./tools/sdk.sh -v -f -b ForcePluginsTest -t ForcePluginsTest"
     output: exit-status
     invocation: single
     mode: basic

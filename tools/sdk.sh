@@ -8,6 +8,7 @@ TRUE=0
 FALSE=1
 TARGETS=""
 VERBOSE=$FALSE
+FAILFAST=$FALSE
 BUILD_OUTPUT_FILTER='^BUILD '
 TEST_OUTPUT_FILTER='Tests run\|OK'
 
@@ -22,6 +23,7 @@ process_args()
         case $1 in
             -h) usage ; shift 1 ;;
             -v) verbose ; shift 1 ;;
+	    -f) failfast ; shift 1 ;;
             -b) TARGETS="$TARGETS build{$2}" ; shift 2 ;;
             -t) TARGETS="$TARGETS test{$2}" ; shift 2 ;;
             *) shift 1 ;;
@@ -36,12 +38,13 @@ wrong_directory_usage()
 
 usage ()
 {
-    echo "./tools/sdk.sh [-b <build_target>] [-t <test_target>] [-h] [-v]"
+    echo "./tools/sdk.sh [-b <build_target>] [-t <test_target>] [-h] [-v] [-f]"
     echo ""
     echo "   -b target to build that target"
     echo "   -t test_target to run that test_target"
     echo "   -h for help"
     echo "   -v for verbose output"
+    echo "   -f to exit immediately on failure"
     echo ""
     echo "    <build_target> can be "
     echo "        all"
@@ -84,6 +87,11 @@ verbose ()
     TEST_OUTPUT_FILTER=""
 }
 
+failfast ()
+{
+    FAILFAST=$TRUE
+}
+
 should_do ()
 {
     if [[ "$TARGETS" == *$1* ]]
@@ -109,6 +117,32 @@ header ()
     fi
 }
 
+# Run command ($1) optionally piped to 'grep $2'
+# If global $FAILFAST is set, exit immediately if command exits with non-zero
+# (failure) exit status.
+run_with_output_filter ()
+{
+    cmd=$1
+    filter=$2
+
+    if [ "$filter" == "" ]
+    then
+        $cmd
+    else
+        ( $cmd | grep $filter ; exit ${PIPESTATUS[0]} )
+    fi
+
+    result=$?
+
+    if [ $FAILFAST -eq $TRUE ]
+    then
+        if [ $result -ne 0 ]
+        then
+            exit ${result}
+        fi
+    fi
+}
+
 build_project_if_requested ()
 {
     if ( should_do "build{all}" || should_do "build{$1}" )
@@ -124,8 +158,9 @@ build_project_if_requested ()
         ANDROID_TARGET=`android list target | grep "android-$API_VERSION" | cut -d" "  -f2`
         # echo "API_VERSION=$API_VERSION"
         # echo "ANDROID_TARGET=$ANDROID_TARGET"
-        android update project -p . -t "$ANDROID_TARGET" | grep "$BUILD_OUTPUT_FILTER"
-        ant clean debug | grep "$BUILD_OUTPUT_FILTER"
+
+	run_with_output_filter "android update project -p . -t $ANDROID_TARGET" $BUILD_OUTPUT_FILTER
+        run_with_output_filter "ant clean debug" $BUILD_OUTPUT_FILTER
         cd $TOP
     fi
 }
@@ -136,8 +171,8 @@ build_test_project_if_requested ()
     then
         header "Building test project $1"
         cd $2
-        android update test-project -p . -m $3 | grep "$BUILD_OUTPUT_FILTER"
-        ant clean debug | grep "$BUILD_OUTPUT_FILTER"
+        run_with_output_filter "android update test-project -p . -m $3" $BUILD_OUTPUT_FILTER
+        run_with_output_filter "ant clean debug" $BUILD_OUTPUT_FILTER
         cd $TOP
     fi
 }
@@ -148,9 +183,9 @@ run_test_project_if_requested ()
     then
         header "Running test project $1"
         cd $2
-        ant installt | grep "$TEST_OUTPUT_FILTER"
-        ant test | grep "$TEST_OUTPUT_FILTER"
-        ant uninstall | grep "$TEST_OUTPUT_FILTER"
+        run_with_output_filter "ant installt" $TEST_OUTPUT_FILTER
+        run_with_output_filter "ant test" $TEST_OUTPUT_FILTER
+        run_with_output_filter "ant uninstall" $TEST_OUTPUT_FILTER
         cd $TOP
     fi
 }
