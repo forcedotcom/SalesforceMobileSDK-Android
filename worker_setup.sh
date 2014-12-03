@@ -10,5 +10,13 @@ for d in $project_libs ; do
 	(cd $d && android update project -p .)
 done
 
-tools/sdk.sh -v -b SalesforceSDK Cordova RestExplorer FileExplorer SmartStore
+tools/sdk.sh -v -b Cordova SmartStore
 
+# FileExplorer
+./gradlew :native:SampleApps:FileExplorer:assembleDebug
+
+# RestExplorer
+./gradlew :native:SampleApps:RestExplorer:assembleDebug
+
+# SalesforceSDK
+./gradlew :libs:SalesforceSDK:assembleDebug

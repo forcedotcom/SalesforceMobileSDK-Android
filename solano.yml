@@ -31,47 +31,48 @@
 :tests: 
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b ContactExplorer"
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b VFConnector"
-  - ". android-settings.sh && ./tools/sdk.sh -v -f -b SmartStoreExplorer"
+  - "./gradlew :native:SampleApps:SmartSyncExplorer:assembleDebug"
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b AccountEditor"
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b HybridFileExplorer"
-  - ". android-settings.sh && ./tools/sdk.sh -v -f -b SmartSync -b SimpleSync"
-  - ". android-settings.sh && ./tools/sdk.sh -v -f -b SmartSync -b SmartSyncExplorer"
+  - "./gradlew :libs:SmartSync:assembleDebug"
+  - "./gradlew :libs:SmartStore:assembleDebug"
   - ". android-settings.sh && ./tools/sdk.sh -v -f -b UserList"
-  - ". android-settings.sh && ./tools/sdk.sh -v -f -b NativeSqlAggregator"
+  - "./gradlew :native:SampleApps:NativeSqlAggregator:assembleDebug"
+  - "./gradlew :native:TemplateApp:assembleDebug"
   - "./package-npm.sh"
 
   # To capture JUnit XML output from a command line, set its type to "junit"
   # and indicate where Solano CI can find the XML files
   - type: junit
-    command: "./with-emulator.sh ./tools/sdk.sh -v -f -b SalesforceSDKTest -t SalesforceSDKTest"
+    command: "./gradlew :libs:SalesforceSDK:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./gradlew :native:SampleApps:RestExplorer:connectedAndroidTest"
+    command: "./gradlew :native:SampleApps:RestExplorer:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/TEST**.xml" # Note that gradle leaves XML output in a different location from ant
   - type: junit
-    command: "./with-emulator.sh ./tools/sdk.sh -v -f -b TemplateApp -b TemplateAppTest -t TemplateAppTest"
+    command: "./gradlew :native:TemplateApp:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./tools/sdk.sh -v -f b SmartStoreTest -t SmartStoreTest"
+    command: "./gradlew :libs:SmartStore:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./tools/sdk.sh -v -f -b SmartSync -b SmartSyncTest -t SmartSyncTest"
+    command: "./gradlew :libs:SmartSync:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
