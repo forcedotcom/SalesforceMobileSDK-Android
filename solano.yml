@@ -31,7 +31,7 @@
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./tools/sdk.sh -v -f -b RestExplorer -b RestExplorerTest -t RestExplorerTest"
+    command: "./with-emulator.sh ./gradlew :native:SampleApps:RestExplorer:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
