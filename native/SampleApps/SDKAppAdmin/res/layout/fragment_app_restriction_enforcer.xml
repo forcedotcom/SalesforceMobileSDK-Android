@@ -19,10 +19,18 @@
         android:layout_height="wrap_content"
         android:text="@string/unhide" />
 
-    <Switch
-        android:id="@+id/say_hello"
+    <EditText
+        android:id="@+id/login_host"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/allow_saying_hello" />
+        android:hint="@string/login_host"
+        android:inputType="textUri" />
+    
+    <Button
+        android:id="@+id/save"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/save"  />
+    
 
 </LinearLayout>
