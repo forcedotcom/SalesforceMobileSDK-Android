@@ -11,4 +11,6 @@
     <string name="disallowed">Disallowed</string>
     <string name="profile_name">SmartSyncExplorerProfile</string>
     <string name="save">Save</string>
+    <string name="description_login_host">Login Host (description)</string>
+    <string name="title_login_host">Login Host (title)</string>    
 </resources>

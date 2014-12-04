@@ -157,10 +157,12 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
                 (RestrictionsManager) activity.getSystemService(Context.RESTRICTIONS_SERVICE);
         List<RestrictionEntry> restrictions =
                 restrictionsManager.getManifestRestrictions(PACKAGE_NAME_TARGET_APP);
-        for (RestrictionEntry restriction : restrictions) {
-            if (CONFIGURATION_LOGIN_HOST.equals(restriction.getKey())) {
-                return restriction.getSelectedString();
-            }
+        if (restrictions != null) {
+	        for (RestrictionEntry restriction : restrictions) {
+	            if (CONFIGURATION_LOGIN_HOST.equals(restriction.getKey())) {
+	                return restriction.getSelectedString();
+	            }
+	        }
         }
         return DEFAULT_LOGIN_HOST;
     }
