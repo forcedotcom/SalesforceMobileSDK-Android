@@ -23,4 +23,6 @@
     <string name="cancel">No</string>
     <string name="delete">Delete</string>
     <string name="delete_title">Are you sure?</string>
+    <string name="description_login_host">Login Host (description)</string>
+    <string name="title_login_host">Login Host (title)</string>        
 </resources>
