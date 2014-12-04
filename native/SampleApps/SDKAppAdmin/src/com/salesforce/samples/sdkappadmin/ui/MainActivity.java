@@ -43,7 +43,7 @@ public class MainActivity extends FragmentActivity {
         if (null == savedInstanceState) {
             DevicePolicyManager manager = (DevicePolicyManager)
                     getSystemService(Context.DEVICE_POLICY_SERVICE);
-            if (true) { // manager.isProfileOwnerApp(getApplicationContext().getPackageName())) {
+            if (manager.isProfileOwnerApp(getApplicationContext().getPackageName())) {
                 // If the managed profile is already set up, we show the main screen.
                 showMainFragment();
             } else {
