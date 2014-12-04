@@ -44,7 +44,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.salesforce.samples.sdkappadmin.AppConfiguratorAdminReceiver;
 import com.salesforce.samples.sdkappadmin.R;
@@ -53,7 +52,7 @@ import com.salesforce.samples.sdkappadmin.R;
  * This fragment provides UI and functionality to configure target application
  * sample.
  */
-public class AppConfiguratorFragment extends Fragment implements View.OnClickListener {
+public class ConfigureAppFragment extends Fragment implements View.OnClickListener {
 
 	/**
 	 * Default login host
@@ -63,13 +62,12 @@ public class AppConfiguratorFragment extends Fragment implements View.OnClickLis
 	/**
      * Package name of the target app sample.
      */
-    private static final String PACKAGE_NAME_TARGET_APP
-            = "com.salesforce.samples.smartsyncexplorer";
+    private static final String PACKAGE_NAME_TARGET_APP = "com.salesforce.samples.smartsyncexplorer";
 
     /**
      * Key for {@link SharedPreferences}
      */
-    private static final String PREFS_KEY = "AppConfiguratorFragment";
+    private static final String PREFS_KEY = "ConfigureAppFragment";
 
     /**
      * Key for the string restriction in target app.
@@ -79,23 +77,20 @@ public class AppConfiguratorFragment extends Fragment implements View.OnClickLis
 
     // UI Components
     private TextView mTextStatus;
-    private Button mButtonUnhide;
     private Button mButtonSave;
     private EditText mLoginHost;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_app_restriction_enforcer, container, false);
+        return inflater.inflate(R.layout.fragment_configure_app, container, false);
     }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         mTextStatus = (TextView) view.findViewById(R.id.status);
         mLoginHost = (EditText) view.findViewById(R.id.login_host);
-        mButtonUnhide = (Button) view.findViewById(R.id.unhide);
         mButtonSave = (Button) view.findViewById(R.id.save);
-        mButtonUnhide.setOnClickListener(this);
         mButtonSave.setOnClickListener(this);
     }
 
@@ -108,9 +103,6 @@ public class AppConfiguratorFragment extends Fragment implements View.OnClickLis
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
-            case R.id.unhide: 
-                unhideApp(getActivity());
-                break;
             case R.id.save: 
             	saveLoginHost(getActivity(), mLoginHost.getText().toString());
                 break;
@@ -125,55 +117,34 @@ public class AppConfiguratorFragment extends Fragment implements View.OnClickLis
      */
     private void updateUi(Activity activity) {
         PackageManager packageManager = activity.getPackageManager();
+        int status = -1; // ready
         try {
-            ApplicationInfo info = packageManager.getApplicationInfo(
-                    PACKAGE_NAME_TARGET_APP, PackageManager.GET_UNINSTALLED_PACKAGES);
-            DevicePolicyManager devicePolicyManager =
-                    (DevicePolicyManager) activity.getSystemService(Activity.DEVICE_POLICY_SERVICE);
-            if (0 < (info.flags & ApplicationInfo.FLAG_INSTALLED)) {
-                if (!devicePolicyManager.isApplicationHidden(
-                        AppConfiguratorAdminReceiver.getComponentName(activity),
-                        PACKAGE_NAME_TARGET_APP)) {
-                    // The app is ready
-                    mTextStatus.setVisibility(View.GONE);
-                    mButtonUnhide.setVisibility(View.GONE);
-                    mLoginHost.setVisibility(View.VISIBLE);
-                    mLoginHost.setText(getLoginHost(activity));
-                } else {
-                    // The app is installed but hidden in this profile
-                    mTextStatus.setText(R.string.status_not_activated);
-                    mTextStatus.setVisibility(View.VISIBLE);
-                    mButtonUnhide.setVisibility(View.VISIBLE);
-                    mLoginHost.setVisibility(View.GONE);
-                }
-            } else {
+            ApplicationInfo info = packageManager.getApplicationInfo(PACKAGE_NAME_TARGET_APP, PackageManager.GET_UNINSTALLED_PACKAGES);
+            DevicePolicyManager devicePolicyManager = (DevicePolicyManager) activity.getSystemService(Activity.DEVICE_POLICY_SERVICE);
+            if ((info.flags & ApplicationInfo.FLAG_INSTALLED) == 0) {
                 // Need to reinstall the sample app
-                mTextStatus.setText(R.string.status_need_reinstall);
-                mTextStatus.setVisibility(View.VISIBLE);
-                mButtonUnhide.setVisibility(View.GONE);
-                mLoginHost.setVisibility(View.GONE);
+            	status = R.string.status_need_reinstall;
+            }
+            else if (devicePolicyManager.isApplicationHidden(AppConfiguratorAdminReceiver.getComponentName(activity), PACKAGE_NAME_TARGET_APP)) {
+                // The app is installed but hidden in this profile
+            	status = R.string.status_not_activated;
             }
         } catch (PackageManager.NameNotFoundException e) {
-            mTextStatus.setText(R.string.status_not_installed);
-            mTextStatus.setVisibility(View.VISIBLE);
-            mButtonUnhide.setVisibility(View.GONE);
-            mLoginHost.setVisibility(View.GONE);
+        	status = R.string.status_not_installed;
         }
-    }
 
-    /**
-     * Unhides the AppRestrictionSchema sample in case it is hidden in this profile.
-     *
-     * @param activity The activity
-     */
-    private void unhideApp(Activity activity) {
-        DevicePolicyManager devicePolicyManager =
-                (DevicePolicyManager) activity.getSystemService(Activity.DEVICE_POLICY_SERVICE);
-        devicePolicyManager.setApplicationHidden(
-                AppConfiguratorAdminReceiver.getComponentName(activity),
-                PACKAGE_NAME_TARGET_APP, false);
-        Toast.makeText(activity, "Enabled the app", Toast.LENGTH_SHORT).show();
-        updateUi(activity);
+        if (status < 0) {
+        	mLoginHost.setText(getLoginHost(activity));
+	        mTextStatus.setVisibility(View.GONE);
+	        mLoginHost.setVisibility(View.VISIBLE);
+	        mButtonSave.setVisibility(View.VISIBLE);
+        }
+        else {
+        	mTextStatus.setText(status);
+	        mTextStatus.setVisibility(View.VISIBLE);
+	        mLoginHost.setVisibility(View.GONE);
+	        mButtonSave.setVisibility(View.GONE);
+        }
     }
 
     /**

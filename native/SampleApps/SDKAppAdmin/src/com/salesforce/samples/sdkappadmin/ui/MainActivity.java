@@ -61,7 +61,7 @@ public class MainActivity extends FragmentActivity {
 
     private void showMainFragment() {
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.container, new AppConfiguratorFragment())
+                .replace(R.id.container, new ConfigureAppFragment())
                 .commit();
     }
 
