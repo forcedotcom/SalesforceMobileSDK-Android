@@ -73,7 +73,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
     /**
      * Key for the string restriction in target app.
      */
-    private static final String CONFIGURATION_LOGIN_HOST = "loginHost";
+    private static final String CONFIGURATION_LOGIN_HOST = "login_host";
 
 
     // UI Components

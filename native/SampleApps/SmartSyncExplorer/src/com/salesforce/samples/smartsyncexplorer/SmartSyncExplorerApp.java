@@ -33,8 +33,8 @@ import android.app.Application;
 import android.content.Context;
 import android.content.RestrictionEntry;
 import android.content.RestrictionsManager;
+import android.widget.Toast;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
 import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncUpgradeManager;
@@ -141,6 +141,9 @@ public class SmartSyncExplorerApp extends Application {
 			String loginHostFromRestrictions = getLoginHostFromRestrictions(ctx);;
 			if (loginHostFromRestrictions != null) {
 				setSelectedLoginServer(getLoginServerFromURL(loginHostFromRestrictions));
+				
+		        Toast toast = Toast.makeText(ctx, loginHostFromRestrictions + " read from profile", Toast.LENGTH_SHORT);
+		        toast.show();
 			}
 		}
 
@@ -152,7 +155,7 @@ public class SmartSyncExplorerApp extends Application {
 	        if (restrictions != null) {
 		        for (RestrictionEntry restriction : restrictions) {
 		        	// XXX hard-coded constant
-		            if ("loginHost".equals(restriction.getKey())) {
+		            if ("login_host".equals(restriction.getKey())) {
 		                return restriction.getSelectedString();
 		            }
 		        }
