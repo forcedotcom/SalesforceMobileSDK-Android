@@ -26,9 +26,22 @@
  */
 package com.salesforce.samples.smartsyncexplorer;
 
-import android.app.Application;
+import java.util.List;
 
+import android.app.Activity;
+import android.app.Application;
+import android.content.Context;
+import android.content.RestrictionEntry;
+import android.content.RestrictionsManager;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
+import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.smartsync.app.SmartSyncUpgradeManager;
+import com.salesforce.androidsdk.ui.LoginActivity;
+import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.samples.smartsyncexplorer.ui.MainActivity;
 
 /**
@@ -39,7 +52,7 @@ public class SmartSyncExplorerApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SmartSyncSDKManager.initNative(getApplicationContext(), new KeyImpl(),
+		SDKManagerUsingWorkProfile.initNative(getApplicationContext(), new KeyImpl(),
 				MainActivity.class);
 
 		/*
@@ -50,4 +63,106 @@ public class SmartSyncExplorerApp extends Application {
 		 */
 		// SmartSyncSDKManager.getInstance().setPushNotificationReceiver(pnInterface);
 	}
+	
+	
+	public static class SDKManagerUsingWorkProfile extends SmartSyncSDKManager {
+
+	    private LoginServerManagerUsingWorkProfile loginServerManagerUsingWorkProfile;
+		
+		protected SDKManagerUsingWorkProfile(Context context, KeyInterface keyImpl,
+				Class<? extends Activity> mainActivity,
+				Class<? extends Activity> loginActivity) {
+			super(context, keyImpl, mainActivity, loginActivity);
+		}
+		
+		/**
+		 * Initializes components required for this class
+		 * to properly function. This method should be called
+		 * by apps using the Salesforce Mobile SDK.
+		 *
+		 * @param context Application context.
+	     * @param keyImpl Implementation of KeyInterface.
+	     * @param mainActivity Activity that should be launched after the login flow.
+	     * @param loginActivity Login activity.
+		 */
+		private static void init(Context context, KeyInterface keyImpl,
+				Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+			if (INSTANCE == null) {
+	    		INSTANCE = new SDKManagerUsingWorkProfile(context, keyImpl, mainActivity, loginActivity);
+	    	}
+			initInternal(context);
+
+	        // Upgrade to the latest version.
+	        SmartSyncUpgradeManager.getInstance().upgradeSObject();
+	        EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
+		}
+
+	    public static void initHybrid(Context context, KeyInterface keyImpl) {
+	    	SDKManagerUsingWorkProfile.init(context, keyImpl, SalesforceDroidGapActivity.class,
+	    			LoginActivity.class);
+	    }
+
+	    public static void initHybrid(Context context, KeyInterface keyImpl,
+	    		Class<? extends Activity> loginActivity) {
+	    	SDKManagerUsingWorkProfile.init(context, keyImpl, SalesforceDroidGapActivity.class,
+	    			loginActivity);
+	    }
+
+	    public static void initHybrid(Context context, KeyInterface keyImpl,
+	    		Class<? extends SalesforceDroidGapActivity> mainActivity,
+	    		Class<? extends Activity> loginActivity) {
+	    	SDKManagerUsingWorkProfile.init(context, keyImpl, mainActivity, loginActivity);
+	    }
+	    
+	    public static void initNative(Context context, KeyInterface keyImpl,
+	    		Class<? extends Activity> mainActivity) {
+	    	SDKManagerUsingWorkProfile.init(context, keyImpl, mainActivity, LoginActivity.class);
+	    }
+
+	    public static void initNative(Context context, KeyInterface keyImpl,
+	    		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+	    	SDKManagerUsingWorkProfile.init(context, keyImpl, mainActivity, loginActivity);
+	    }		
+
+		@Override
+		public synchronized LoginServerManager getLoginServerManager() {
+	        if (loginServerManagerUsingWorkProfile == null) {
+	        	loginServerManagerUsingWorkProfile = new LoginServerManagerUsingWorkProfile(context);
+	        }
+	        return loginServerManagerUsingWorkProfile;
+		}
+	}
+	
+	public static class LoginServerManagerUsingWorkProfile extends LoginServerManager {
+
+		public LoginServerManagerUsingWorkProfile(Context ctx) {
+			super(ctx);
+			
+			String loginHostFromRestrictions = getLoginHostFromRestrictions(ctx);;
+			if (loginHostFromRestrictions != null) {
+				setSelectedLoginServer(getLoginServerFromURL(loginHostFromRestrictions));
+			}
+		}
+
+		private String getLoginHostFromRestrictions(Context ctx) {
+			RestrictionsManager restrictionsManager =
+	                (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
+	        List<RestrictionEntry> restrictions =
+	                restrictionsManager.getManifestRestrictions("com.salesforce.samples.smartsyncexplorer");
+	        if (restrictions != null) {
+		        for (RestrictionEntry restriction : restrictions) {
+		        	// XXX hard-coded constant
+		            if ("loginHost".equals(restriction.getKey())) {
+		                return restriction.getSelectedString();
+		            }
+		        }
+	        }			
+	        
+	        return null;
+		}
+		
+		
+	}
 }
+
+

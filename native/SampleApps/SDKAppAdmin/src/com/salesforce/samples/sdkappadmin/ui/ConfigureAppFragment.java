@@ -44,6 +44,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.salesforce.samples.sdkappadmin.AppConfiguratorAdminReceiver;
 import com.salesforce.samples.sdkappadmin.R;
@@ -196,6 +197,9 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
                 .edit()
                 .putString(CONFIGURATION_LOGIN_HOST, loginHost)
                 .apply();
+
+        Toast toast = Toast.makeText(activity, loginHost + " saved", Toast.LENGTH_SHORT);
+        toast.show();
     }
 
 }
