@@ -26,12 +26,10 @@
  */
 package com.salesforce.samples.configuredapp;
 
-import java.util.List;
-
 import android.app.Application;
 import android.content.Context;
-import android.content.RestrictionEntry;
 import android.content.RestrictionsManager;
+import android.os.Bundle;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -71,15 +69,10 @@ public class ConfiguredApp extends Application {
 		private String getLoginHostFromRestrictions(Context ctx) {
 			RestrictionsManager restrictionsManager =
 	                (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
-	        List<RestrictionEntry> restrictions =
-	                restrictionsManager.getManifestRestrictions("com.salesforce.samples.configuredapp");
-	        if (restrictions != null) {
-		        for (RestrictionEntry restriction : restrictions) {
+			Bundle settings = restrictionsManager.getApplicationRestrictions();
+			if (settings.containsKey("login_host")) {
 		        	// XXX hard-coded constant
-		            if ("login_host".equals(restriction.getKey())) {
-		                return restriction.getSelectedString();
-		            }
-		        }
+                return settings.getString("login_host");
 	        }			
 	        
 	        return null;

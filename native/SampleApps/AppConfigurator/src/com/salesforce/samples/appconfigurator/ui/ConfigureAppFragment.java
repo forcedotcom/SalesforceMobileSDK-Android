@@ -58,7 +58,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
 	/**
 	 * Default login host
 	 */
-    private static final String DEFAULT_LOGIN_HOST = "https://login.salesforce.com";
+    private static final String DEFAULT_LOGIN_HOST = "--default-app-configurator--";
 
 	/**
      * Package name of the target app sample.

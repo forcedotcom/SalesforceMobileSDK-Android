@@ -2,7 +2,7 @@
 <restrictions xmlns:android="http://schemas.android.com/apk/res/android">
 
     <restriction
-        android:defaultValue="--default-login--"
+        android:defaultValue="--default-configured-app--"
         android:description="@string/description_login_host"
         android:key="login_host"
         android:restrictionType="string"
