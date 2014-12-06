@@ -24,45 +24,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+package com.salesforce.samples.configuredapp;
 
-package com.salesforce.samples.sdkappadmin.ui;
+import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
+import com.salesforce.androidsdk.security.Encryptor;
 
-import com.salesforce.samples.sdkappadmin.R;
+/**
+ * This class provides an implementation of KeyInterface.
+ *
+ * @author bhariharan
+ */
+public class KeyImpl implements KeyInterface {
 
-import android.app.admin.DevicePolicyManager;
-import android.content.Context;
-import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
-
-public class MainActivity extends FragmentActivity {
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_real);
-        if (null == savedInstanceState) {
-            DevicePolicyManager manager = (DevicePolicyManager)
-                    getSystemService(Context.DEVICE_POLICY_SERVICE);
-            if (manager.isProfileOwnerApp(getApplicationContext().getPackageName())) {
-                // If the managed profile is already set up, we show the main screen.
-                showMainFragment();
-            } else {
-                // If not, we show the set up screen.
-                showSetupProfile();
-            }
-        }
-    }
-
-    private void showSetupProfile() {
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.container, new SetupProfileFragment())
-                .commit();
-    }
-
-    private void showMainFragment() {
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.container, new AppConfiguratorFragment())
-                .commit();
-    }
-
+	@Override
+	public String getKey(String name) {
+		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
+	}
 }

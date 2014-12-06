@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <resources>
-    <string name="app_name">SDKAppAdmin</string>
+    <string name="app_name">AppConfigurator</string>
     <string name="intro_message">
         <![CDATA[
         
             
 	    This sample demonstrates how to configure other apps as a profile owner.
-	    Use SmartSyncExplorer sample as a app with available configurations.
+	    Use ConfiguredApp sample as a app with available configurations.
             
         
         ]]>

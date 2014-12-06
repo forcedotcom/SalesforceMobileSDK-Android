@@ -13,12 +13,6 @@
         android:layout_height="wrap_content"
         android:text="@string/status_not_installed" />
 
-    <Button
-        android:id="@+id/unhide"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/unhide" />
-
     <EditText
         android:id="@+id/login_host"
         android:layout_width="wrap_content"

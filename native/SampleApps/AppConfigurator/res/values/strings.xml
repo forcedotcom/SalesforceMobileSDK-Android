@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_profile_message">This app is currently not a profile owner.</string>
+    <string name="set_up_profile">Set up profile</string>
+    <string name="status_not_installed">ConfiguredApp is not installed.</string>
+    <string name="status_not_activated">ConfiguredApp is installed, but not activated in this profile.</string>
+    <string name="status_need_reinstall">ConfiguredApp needs reinstalling.</string>
+    <string name="unhide">Activate ConfiguredApp</string>
+    <string name="login_host">Login Host</string>
+    <string name="profile_name">ConfiguredAppProfile</string>
+    <string name="save">Save</string>
+</resources>

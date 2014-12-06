@@ -25,38 +25,44 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.samples.sdkappadmin.ui;
+package com.salesforce.samples.appconfigurator.ui;
+
+import com.salesforce.samples.appconfigurator.R;
 
 import android.app.admin.DevicePolicyManager;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 
-import com.salesforce.samples.sdkappadmin.AppConfiguratorAdminReceiver;
-import com.salesforce.samples.sdkappadmin.R;
-
-/**
- * This activity is started after the provisioning is complete in
- * {@link AppConfiguratorAdminReceiver}.
- */
-public class EnableProfileActivity extends FragmentActivity {
+public class MainActivity extends FragmentActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main_real);
         if (null == savedInstanceState) {
-            // Enable the newly created profile
-            DevicePolicyManager manager =
-                    (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-            ComponentName componentName = AppConfiguratorAdminReceiver.getComponentName(this);
-            manager.setProfileName(componentName, getString(R.string.profile_name));
-            manager.setProfileEnabled(componentName);
+            DevicePolicyManager manager = (DevicePolicyManager)
+                    getSystemService(Context.DEVICE_POLICY_SERVICE);
+            if (manager.isProfileOwnerApp(getApplicationContext().getPackageName())) {
+                // If the managed profile is already set up, we show the main screen.
+                showMainFragment();
+            } else {
+                // If not, we show the set up screen.
+                showSetupProfile();
+            }
         }
-        // Open the main screen
-        startActivity(new Intent(this, MainActivity.class));
-        finish();
+    }
+
+    private void showSetupProfile() {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.container, new SetupProfileFragment())
+                .commit();
+    }
+
+    private void showMainFragment() {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.container, new ConfigureAppFragment())
+                .commit();
     }
 
 }

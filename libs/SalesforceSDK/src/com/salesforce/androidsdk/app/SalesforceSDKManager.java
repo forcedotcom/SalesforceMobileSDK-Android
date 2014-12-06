@@ -429,7 +429,15 @@ public class SalesforceSDKManager {
         	loginServerManager = new LoginServerManager(context);
         }
         return loginServerManager;
-    }    
+    }
+    
+    /**
+     * Sets the loging server manager associated with SalesforceSDKManager.
+     * @param mgr
+     */
+    public synchronized void setLoginServerManager(LoginServerManager mgr) {
+    	loginServerManager = mgr;
+    }
 
     /**
      * Sets a receiver that handles received push notifications.

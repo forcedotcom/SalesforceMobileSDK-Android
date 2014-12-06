@@ -24,10 +24,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.sdkappadmin.ui;
+package com.salesforce.samples.appconfigurator.ui;
 
-import com.salesforce.samples.sdkappadmin.AppConfiguratorAdminReceiver;
-import com.salesforce.samples.sdkappadmin.R;
+import com.salesforce.samples.appconfigurator.AppConfiguratorAdminReceiver;
+import com.salesforce.samples.appconfigurator.R;
 
 import android.app.Activity;
 import android.content.Intent;
