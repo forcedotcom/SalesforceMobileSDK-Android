@@ -44,35 +44,35 @@
   # To capture JUnit XML output from a command line, set its type to "junit"
   # and indicate where Solano CI can find the XML files
   - type: junit
-    command: "./gradlew :libs:SalesforceSDK:connectedAndroidTest"
+    command: "./with-emulator.sh ./gradlew :libs:SalesforceSDK:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./gradlew :native:SampleApps:RestExplorer:connectedAndroidTest"
+    command: "./with-emulator.sh ./gradlew :native:SampleApps:RestExplorer:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/TEST**.xml" # Note that gradle leaves XML output in a different location from ant
   - type: junit
-    command: "./gradlew :native:TemplateApp:connectedAndroidTest"
+    command: "./with-emulator.sh ./gradlew :native:TemplateApp:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./gradlew :libs:SmartStore:connectedAndroidTest"
+    command: "./with-emulator.sh ./gradlew :libs:SmartStore:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./gradlew :libs:SmartSync:connectedAndroidTest"
+    command: "./with-emulator.sh ./gradlew :libs:SmartSync:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
