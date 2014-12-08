@@ -13,10 +13,10 @@ done
 tools/sdk.sh -v -b Cordova SmartStore
 
 # FileExplorer
-. android-settings.sh && ./gradlew :native:SampleApps:FileExplorer:assembleDebug
+./gradlew :native:SampleApps:FileExplorer:assembleDebug
 
 # RestExplorer
-. android-settings.sh && ./gradlew :native:SampleApps:RestExplorer:assembleDebug
+./gradlew :native:SampleApps:RestExplorer:assembleDebug
 
 # SalesforceSDK
-. android-settings.sh && ./gradlew :libs:SalesforceSDK:assembleDebug
+./gradlew :libs:SalesforceSDK:assembleDebug
