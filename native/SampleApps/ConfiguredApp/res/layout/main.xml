@@ -7,4 +7,9 @@
     android:background="@android:color/white"
     android:id="@+id/root">
 
+    <TextView
+        android:id="@+id/bootconfig"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
 </LinearLayout> 

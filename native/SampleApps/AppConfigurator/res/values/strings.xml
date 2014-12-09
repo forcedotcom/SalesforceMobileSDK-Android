@@ -7,4 +7,5 @@
     <string name="status_need_reinstall">Target app needs reinstalling.</string>
     <string name="profile_name">SDKProfile</string>
     <string name="save">Save</string>
+    <string name="saved">Configuration Saved</string>
 </resources>

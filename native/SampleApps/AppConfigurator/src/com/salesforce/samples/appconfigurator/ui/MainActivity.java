@@ -32,6 +32,7 @@ import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.os.Bundle;
 
+import com.salesforce.samples.appconfigurator.AppConfiguratorState;
 import com.salesforce.samples.appconfigurator.R;
 
 public class MainActivity extends Activity {
@@ -39,21 +40,23 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main_real);
+        setContentView(R.layout.activity_main);
         if (null == savedInstanceState) {
+            AppConfiguratorState state = AppConfiguratorState.getInstance(this);
             DevicePolicyManager manager = (DevicePolicyManager)
                     getSystemService(Context.DEVICE_POLICY_SERVICE);
-            if (manager.isProfileOwnerApp(getApplicationContext().getPackageName())) {
-                // If the managed profile is already set up, we show the main screen.
-                showMainFragment();
+            if (!manager.isProfileOwnerApp(getApplicationContext().getPackageName())) {
+                // Step 1
+                showSetupProfileFragment();
             } else {
-                // If not, we show the set up screen.
-                showSetupProfile();
+
+                // Step 2
+                showMainFragment();
             }
         }
     }
 
-    private void showSetupProfile() {
+    private void showSetupProfileFragment() {
         getFragmentManager().beginTransaction()
                 .replace(R.id.container, new SetupProfileFragment())
                 .commit();

@@ -26,23 +26,22 @@
  */
 package com.salesforce.androidsdk.config;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import org.xmlpull.v1.XmlPullParserException;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.ui.SalesforceR;
+
+import org.xmlpull.v1.XmlPullParserException;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Class to manage login hosts (default and user entered).
@@ -193,7 +192,6 @@ public class LoginServerManager {
 	public List<LoginServer> getLoginServersFromRuntimeConfig() {
 		RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
 		String[] mdmLoginServers = runtimeConfig.getStringArray(ConfigKey.LOGIN_SERVERS);
-        Toast.makeText(ctx, mdmLoginServers + "", Toast.LENGTH_SHORT).show();
 		final List<LoginServer> allServers = new ArrayList<LoginServer>();
 		
 		if (mdmLoginServers != null) {

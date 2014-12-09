@@ -33,8 +33,8 @@ import android.os.Build;
 import android.os.Bundle;
 
 /**
- * Mobile SDK applications can also be configured at runtime by using a MDM solution.
- * For an example, see the ConfiguratorApp sample application.
+ * Classes responsible for reading runtime configurations (from MDM provider).
+ * For an example, see the ConfiguratorApp and ConfiguredApp sample applications.
  */
 public class RuntimeConfig {
 	
@@ -67,15 +67,30 @@ public class RuntimeConfig {
 		}
 		return INSTANCE;
 	}
-	
+
+    /**
+     * Get string run time configuration
+     * @param configKey key
+     * @return string value
+     */
 	public String getString(ConfigKey configKey) {
 		return (configurations == null ? null : configurations.getString(configKey.name()));
 	}
 
+    /**
+     * Get string array run time configuration
+     * @param configKey key
+     * @return string array value
+     */
 	public String[] getStringArray(ConfigKey configKey) {
 		return (configurations == null ? null : configurations.getStringArray(configKey.name()));
 	}
-	
+
+    /**
+     * Get boolean run time configuration
+     * @param configKey key
+     * @return boolean value
+     */
 	public Boolean getBoolean(ConfigKey configKey) {
 		return (configurations == null ? false : configurations.getBoolean(configKey.name()));
 	}

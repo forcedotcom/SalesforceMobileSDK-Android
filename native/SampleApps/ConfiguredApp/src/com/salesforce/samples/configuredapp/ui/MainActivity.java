@@ -27,10 +27,15 @@
 package com.salesforce.samples.configuredapp.ui;
 
 import android.os.Bundle;
+import android.util.Log;
+import android.widget.TextView;
 
+import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
 import com.salesforce.samples.configuredapp.R;
+
+import org.json.JSONException;
 
 /**
  * Main activity.
@@ -42,6 +47,14 @@ public class MainActivity extends SalesforceActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
+        String bootconfig = "";
+        try {
+            bootconfig = BootConfig.getBootConfig(this).asJSON().toString(4);
+        }
+        catch (JSONException e) {
+            Log.e("MainActivity.onCreate", "Could not serialize bootconfig", e);
+        }
+        ((TextView) findViewById(R.id.bootconfig)).setText(bootconfig);
 	}
 
 	@Override
