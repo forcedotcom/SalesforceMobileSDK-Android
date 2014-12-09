@@ -38,7 +38,7 @@ import com.salesforce.androidsdk.util.JSONObjectHelper;
  */
 public class QuerySpec {
 	private static final String SELECT_COUNT = "SELECT count(*) ";
-    private static final String SELECT_COUNT_FORM = SELECT_COUNT + " FROM (%s)";
+    private static final String SELECT_COUNT_FROM = SELECT_COUNT + " FROM (%s)";
 
 	// Constants
 	private static final String SELECT = "SELECT  ";
@@ -182,7 +182,7 @@ public class QuerySpec {
      * Compute countSmartSql for smart queries
      */
     private String computeCountSql(String smartSql) {
-    	return String.format(SELECT_COUNT_FORM, smartSql);
+    	return String.format(SELECT_COUNT_FROM, smartSql);
     }
 
     /**
