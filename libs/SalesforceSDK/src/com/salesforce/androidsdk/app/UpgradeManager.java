@@ -39,7 +39,7 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
-import com.salesforce.androidsdk.auth.LoginServerManager;
+import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.AdminPrefsManager;
 import com.salesforce.androidsdk.security.PasscodeManager;

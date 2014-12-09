@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.rest;
+package com.salesforce.androidsdk.config;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -39,9 +39,14 @@ import android.content.res.Resources;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 
 /**
  * Class encapsulating the application configuration (consumer key, oauth scopes, refresh behavior).
+ */
+/**
+ * @author wmathurin
+ *
  */
 public class BootConfig {
 
@@ -90,11 +95,25 @@ public class BootConfig {
 			} else {
 				INSTANCE.readFromXML(ctx);
 			}
+			INSTANCE.readFromRuntimeConfig(ctx);
 		}
 		return INSTANCE;
 	}
 	
     /**
+     * Use runtime configurations (from MDM provider) if any
+     * @param ctx
+     */
+    private void readFromRuntimeConfig(Context ctx) {
+    	RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
+    	String mdmRemoteAccessConsumeKey = runtimeConfig.getString(ConfigKey.REMOTE_ACCESS_CONSUMER_KEY);
+    	String mdmOauthRedirectURI = runtimeConfig.getString(ConfigKey.OAUTH_REDIRECT_URI);
+    	
+    	if (mdmRemoteAccessConsumeKey != null) remoteAccessConsumerKey = mdmRemoteAccessConsumeKey;
+    	if (mdmOauthRedirectURI != null) oauthRedirectURI = mdmOauthRedirectURI;
+	}
+
+	/**
      * @return boot config as JSONObject
 	 * @throws JSONException
 	 */

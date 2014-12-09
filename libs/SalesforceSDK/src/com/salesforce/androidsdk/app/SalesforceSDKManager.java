@@ -53,12 +53,13 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.config.BootConfig;
+import com.salesforce.androidsdk.config.LoginServerManager;
+import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.AdminPrefsManager;
-import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
@@ -429,8 +430,8 @@ public class SalesforceSDKManager {
         	loginServerManager = new LoginServerManager(context);
         }
         return loginServerManager;
-    }    
-
+    }
+    
     /**
      * Sets a receiver that handles received push notifications.
      *
