@@ -38,6 +38,8 @@ import com.salesforce.androidsdk.util.JSONObjectHelper;
  */
 public class QuerySpec {
 	private static final String SELECT_COUNT = "SELECT count(*) ";
+    private static final String SELECT_COUNT_FORM = SELECT_COUNT + " FROM (%s)";
+
 	// Constants
 	private static final String SELECT = "SELECT  ";
 	private static final String FROM = "FROM ";
@@ -137,7 +139,7 @@ public class QuerySpec {
      * Return a query spec for a like query
      * @param soupName
      * @param path
-     * @param matchKey
+     * @param likeKey
      * @param order
      * @param pageSize
      * @return
@@ -180,8 +182,7 @@ public class QuerySpec {
      * Compute countSmartSql for smart queries
      */
     private String computeCountSql(String smartSql) {
-    	int fromLocation = smartSql.toLowerCase().indexOf(" from ");
-    	return SELECT_COUNT  + smartSql.substring(fromLocation);
+    	return String.format(SELECT_COUNT_FORM, smartSql);
     }
 
     /**
@@ -195,7 +196,7 @@ public class QuerySpec {
      * @return from clause for exact/like/range queries
      */
     private String computeFromClause() {
-    	return FROM  + computeSoupReference() + " ";
+        return FROM  + computeSoupReference() + " ";
     }
     
     /**
