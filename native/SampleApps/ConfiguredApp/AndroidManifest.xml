@@ -15,11 +15,6 @@
 		android:name=".ConfiguredApp"
 		android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity">
 
-      <meta-data
-          android:name="android.content.APP_RESTRICTIONS"
-          android:resource="@xml/app_restrictions" />
-      
-
 		<!-- Launcher screen -->
 		<activity android:name="com.salesforce.samples.configuredapp.ui.MainActivity"
 		    android:label="@string/app_name"

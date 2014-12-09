@@ -26,17 +26,17 @@
  */
 package com.salesforce.samples.appconfigurator.ui;
 
-import com.salesforce.samples.appconfigurator.AppConfiguratorAdminReceiver;
-import com.salesforce.samples.appconfigurator.R;
-
 import android.app.Activity;
+import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
+
+import com.salesforce.samples.appconfigurator.AppConfiguratorAdminReceiver;
+import com.salesforce.samples.appconfigurator.R;
 
 import static android.app.admin.DevicePolicyManager.ACTION_PROVISION_MANAGED_PROFILE;
 import static android.app.admin.DevicePolicyManager.EXTRA_DEVICE_ADMIN;

@@ -27,14 +27,14 @@
 
 package com.salesforce.samples.appconfigurator.ui;
 
-import com.salesforce.samples.appconfigurator.R;
-
+import android.app.Activity;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.os.Bundle;
-import android.support.v4.app.FragmentActivity;
 
-public class MainActivity extends FragmentActivity {
+import com.salesforce.samples.appconfigurator.R;
+
+public class MainActivity extends Activity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,13 +54,13 @@ public class MainActivity extends FragmentActivity {
     }
 
     private void showSetupProfile() {
-        getSupportFragmentManager().beginTransaction()
+        getFragmentManager().beginTransaction()
                 .replace(R.id.container, new SetupProfileFragment())
                 .commit();
     }
 
     private void showMainFragment() {
-        getSupportFragmentManager().beginTransaction()
+        getFragmentManager().beginTransaction()
                 .replace(R.id.container, new ConfigureAppFragment())
                 .commit();
     }

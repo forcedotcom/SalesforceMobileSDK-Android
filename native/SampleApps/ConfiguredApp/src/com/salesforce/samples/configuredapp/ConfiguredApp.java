@@ -27,13 +27,8 @@
 package com.salesforce.samples.configuredapp;
 
 import android.app.Application;
-import android.content.Context;
-import android.content.RestrictionsManager;
-import android.os.Bundle;
-import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.samples.configuredapp.ui.MainActivity;
 
 /**
@@ -45,40 +40,7 @@ public class ConfiguredApp extends Application {
 	public void onCreate() {
 		super.onCreate();
 		SalesforceSDKManager.initNative(getApplicationContext(), new KeyImpl(),
-				MainActivity.class);
-		SalesforceSDKManager.getInstance().setLoginServerManager(new LoginServerManagerUsingWorkProfile(getApplicationContext()));
-	}
-	
-	public static class LoginServerManagerUsingWorkProfile extends LoginServerManager {
-
-		public LoginServerManagerUsingWorkProfile(Context ctx) {
-			super(ctx);
-			
-			String loginHostFromRestrictions = getLoginHostFromRestrictions(ctx);;
-			if (loginHostFromRestrictions != null) {
-				addCustomLoginServer("Profile server", loginHostFromRestrictions);
-				setSelectedLoginServer(getLoginServerFromURL(loginHostFromRestrictions));
-				
-		        Toast.makeText(ctx, loginHostFromRestrictions + " read from profile", Toast.LENGTH_SHORT).show();
-			}
-			else {
-		        Toast.makeText(ctx, "No login host found in profile", Toast.LENGTH_SHORT).show();
-			}
-		}
-
-		private String getLoginHostFromRestrictions(Context ctx) {
-			RestrictionsManager restrictionsManager =
-	                (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
-			Bundle settings = restrictionsManager.getApplicationRestrictions();
-			if (settings.containsKey("login_host")) {
-		        	// XXX hard-coded constant
-                return settings.getString("login_host");
-	        }			
-	        
-	        return null;
-		}
-		
-		
+                MainActivity.class);
 	}
 }
 

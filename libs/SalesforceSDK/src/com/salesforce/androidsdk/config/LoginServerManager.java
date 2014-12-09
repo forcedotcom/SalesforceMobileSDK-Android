@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.auth;
+package com.salesforce.androidsdk.config;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,8 +38,10 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.ui.SalesforceR;
 
 /**
@@ -77,8 +79,9 @@ public class LoginServerManager {
     	settings = ctx.getSharedPreferences(SERVER_URL_FILE,
     			Context.MODE_PRIVATE);
     	initSharedPrefFile();
-    	final List<LoginServer> allServers = getAllSavedSevers();
+    	final List<LoginServer> allServers = getLoginServers();
     	selectedServer = new LoginServer("Production", PRODUCTION_LOGIN_URL, false);
+
     	if (allServers != null) {
     		final LoginServer server = allServers.get(0);
     		if (server != null) {
@@ -97,7 +100,7 @@ public class LoginServerManager {
     	if (url == null) {
     		return null;
     	}
-    	final List<LoginServer> allServers = getAllSavedSevers();
+    	final List<LoginServer> allServers = getLoginServers();
     	if (allServers != null) {
     		for (final LoginServer server : allServers) {
     			if (server != null && url.equals(server.url)) {
@@ -168,11 +171,55 @@ public class LoginServerManager {
 	}
 
 	/**
+	 * Returns the list of login servers.
+	 * Checks run time configuration first.
+	 * Reads from preferences if no runtime configuration found.
+	 *
+	 * @return List of login servers.
+	 */
+	public List<LoginServer> getLoginServers() {
+		List<LoginServer> allServers = getLoginServersFromRuntimeConfig();
+		if (allServers == null) {
+			allServers = getLoginServersFromPreferences();
+		}
+		return allServers;
+	}
+
+	/**
+	 * Returns the list of login servers from runtime configuration (from MDM provider) if any
+	 * 
+	 * @return List of login servers or null.
+	 */
+	public List<LoginServer> getLoginServersFromRuntimeConfig() {
+		RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
+		String[] mdmLoginServers = runtimeConfig.getStringArray(ConfigKey.LOGIN_SERVERS);
+        Toast.makeText(ctx, mdmLoginServers + "", Toast.LENGTH_SHORT).show();
+		final List<LoginServer> allServers = new ArrayList<LoginServer>();
+		
+		if (mdmLoginServers != null) {
+			String[] mdmLoginServersLabels = runtimeConfig.getStringArray(ConfigKey.LOGIN_SERVERS_LABELS);
+
+			if (mdmLoginServersLabels == null || mdmLoginServersLabels.length != mdmLoginServers.length) {
+				Log.w("LoginServerManager.getLoginServersFromRuntimeConfig", "No login servers labels provided or wrong number of login servers labels provided - Using URLs for the labels");
+				mdmLoginServersLabels = mdmLoginServers;
+			}
+			
+			for (int i = 0; i < mdmLoginServers.length; i++) {
+				String name = mdmLoginServersLabels[i];
+				String url = mdmLoginServers[i];
+				final LoginServer server = new LoginServer(name, url, false);
+				allServers.add(server);
+			}
+		}
+		return (allServers.size() > 0 ? allServers : null);
+	}
+
+	/**
 	 * Returns the list of all saved servers, including custom servers.
 	 *
 	 * @return List of all saved servers.
 	 */
-	public List<LoginServer> getAllSavedSevers() {
+	public List<LoginServer> getLoginServersFromPreferences() {
 		int numServers = settings.getInt(NUMBER_OF_ENTRIES, 0);
 		if (numServers == 0) {
 			return null;
@@ -189,7 +236,7 @@ public class LoginServerManager {
 		}
 		return (allServers.size() > 0 ? allServers : null);
 	}
-
+	
 	/**
 	 * Returns production and sandbox as the login servers
 	 * (only called when servers.xml is missing).

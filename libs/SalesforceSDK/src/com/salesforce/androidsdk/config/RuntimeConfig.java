@@ -24,39 +24,66 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+package com.salesforce.androidsdk.config;
 
-package com.salesforce.samples.appconfigurator.ui;
-
-import android.app.Activity;
-import android.app.admin.DevicePolicyManager;
-import android.content.ComponentName;
+import android.annotation.TargetApi;
 import android.content.Context;
-import android.content.Intent;
+import android.content.RestrictionsManager;
+import android.os.Build;
 import android.os.Bundle;
 
-import com.salesforce.samples.appconfigurator.AppConfiguratorAdminReceiver;
-import com.salesforce.samples.appconfigurator.R;
-
 /**
- * This activity is started after the provisioning is complete in
- * {@link AppConfiguratorAdminReceiver}.
+ * Mobile SDK applications can also be configured at runtime by using a MDM solution.
+ * For an example, see the ConfiguratorApp sample application.
  */
-public class EnableProfileActivity extends Activity {
+public class RuntimeConfig {
+	
+	public enum ConfigKey {
+		LOGIN_SERVERS,
+		LOGIN_SERVERS_LABELS,
+		REMOTE_ACCESS_CONSUMER_KEY,
+		OAUTH_REDIRECT_URI;
+	}
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (null == savedInstanceState) {
-            // Enable the newly created profile
-            DevicePolicyManager manager =
-                    (DevicePolicyManager) getSystemService(Context.DEVICE_POLICY_SERVICE);
-            ComponentName componentName = AppConfiguratorAdminReceiver.getComponentName(this);
-            manager.setProfileName(componentName, getString(R.string.profile_name));
-            manager.setProfileEnabled(componentName);
+	private Bundle configurations = null;
+	
+	private static RuntimeConfig INSTANCE = null;
+
+	private RuntimeConfig(Context ctx) {
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+			configurations = getRestrictions(ctx);
         }
-        // Open the main screen
-        startActivity(new Intent(this, MainActivity.class));
-        finish();
-    }
+	}
+	
+	/**
+     * Method to (build and) get the singleton instance.
+     *
+	 * @param ctx Context.
+	 * @return RuntimeConfig instance.
+	 */
+	public static RuntimeConfig getRuntimeConfig(Context ctx) {
+		if (INSTANCE == null) {
+			INSTANCE = new RuntimeConfig(ctx);
+		}
+		return INSTANCE;
+	}
+	
+	public String getString(ConfigKey configKey) {
+		return (configurations == null ? null : configurations.getString(configKey.name()));
+	}
 
+	public String[] getStringArray(ConfigKey configKey) {
+		return (configurations == null ? null : configurations.getStringArray(configKey.name()));
+	}
+	
+	public Boolean getBoolean(ConfigKey configKey) {
+		return (configurations == null ? false : configurations.getBoolean(configKey.name()));
+	}
+	
+	@TargetApi(Build.VERSION_CODES.LOLLIPOP) 
+	private Bundle getRestrictions(Context ctx) {
+		RestrictionsManager restrictionsManager = (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
+		return restrictionsManager.getApplicationRestrictions();
+	}
+		
 }
