@@ -113,7 +113,7 @@ header ()
 
 build_project_if_requested ()
 {
-    if ( should_do "build{all}" || should_do "build{$1}" )
+    if ( should_do "build{$1}" )
     then
         header "Building project $1"
         cd $2
@@ -138,7 +138,7 @@ build_project_if_requested ()
 
 run_test_project_if_requested ()
 {
-    if ( should_do "test{all}" || should_do "test{$1}" )
+    if ( should_do "test{$1}" )
     then
         header "Running test project $1"
         ./gradlew $2:connectedAndroidTest  | grep "$TEST_OUTPUT_FILTER"
@@ -151,29 +151,41 @@ then
 else
     process_args $@
 
-    build_project_if_requested    "Cordova"             $CORDOVA_TOP/framework                     19
-    build_project_if_requested    "SalesforceSDK"       $LIBS_TOP/SalesforceSDK                    21 :libs:SalesforceSDK
-    build_project_if_requested    "SmartStore"          $LIBS_TOP/SmartStore                       19 :libs:SmartStore
-    build_project_if_requested    "SmartSync"           $LIBS_TOP/SmartSync                        19 :libs:SmartSync
-    build_project_if_requested    "TemplateApp"         $NATIVE_TOP/TemplateApp                    19 :native:TemplateApp
-    build_project_if_requested    "RestExplorer"        $NATIVE_TOP/SampleApps/RestExplorer        19 :native:SampleApps:RestExplorer 
-    build_project_if_requested    "AppConfigurator"     $NATIVE_TOP/SampleApps/AppConfigurator     21 :native:SampleApps:AppConfigurator
-    build_project_if_requested    "ConfiguredApp"       $NATIVE_TOP/SampleApps/ConfiguredApp       21 :native:SampleApps:ConfiguredApp
-    build_project_if_requested    "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator 19 :native:SampleApps:NativeSqlAggregator
-    build_project_if_requested    "SmartSyncExplorer"   $NATIVE_TOP/SampleApps/SmartSyncExplorer   19 :native:SampleApps:SmartSyncExplorer
-    build_project_if_requested    "FileExplorer"        $NATIVE_TOP/SampleApps/FileExplorer        19 :native:SampleApps:FileExplorer
-    build_project_if_requested    "AccountEditor"       $HYBRID_TOP/SampleApps/AccountEditor       19 :hybrid:SampleApps:AccountEditor
-    build_project_if_requested    "ContactExplorer"     $HYBRID_TOP/SampleApps/ContactExplorer     19 :hybrid:SampleApps:ContactExplorer
-    build_project_if_requested    "HybridFileExplorer"  $HYBRID_TOP/SampleApps/HybridFileExplorer  19 :hybrid:SampleApps:HybridFileExplorer
-    build_project_if_requested    "SimpleSync"          $HYBRID_TOP/SampleApps/SimpleSync          19 :hybrid:SampleApps:SimpleSync
-    build_project_if_requested    "UserList"            $HYBRID_TOP/SampleApps/UserList            19 :hybrid:SampleApps:UserList
-    build_project_if_requested    "SmartStoreExplorer"  $HYBRID_TOP/SampleApps/SmartStoreExplorer  19 :hybrid:SampleApps:SmartStoreExplorer
-    build_project_if_requested    "VFConnector"         $HYBRID_TOP/SampleApps/VFConnector         19 :hybrid:SampleApps:VFConnector
+    if ( should_do "build{all}" )
+    then
+        header "Building all"
+        ./gradlew assembleDebug  | grep "$TEST_OUTPUT_FILTER"
+    else
+        build_project_if_requested    "Cordova"                 $CORDOVA_TOP/framework                     19
+        build_project_if_requested    "SalesforceSDK"       $LIBS_TOP/SalesforceSDK                    21 :libs:SalesforceSDK
+        build_project_if_requested    "SmartStore"          $LIBS_TOP/SmartStore                       19 :libs:SmartStore
+        build_project_if_requested    "SmartSync"           $LIBS_TOP/SmartSync                        19 :libs:SmartSync
+        build_project_if_requested    "TemplateApp"         $NATIVE_TOP/TemplateApp                    19 :native:TemplateApp
+        build_project_if_requested    "RestExplorer"        $NATIVE_TOP/SampleApps/RestExplorer        19 :native:SampleApps:RestExplorer 
+        build_project_if_requested    "AppConfigurator"     $NATIVE_TOP/SampleApps/AppConfigurator     21 :native:SampleApps:AppConfigurator
+        build_project_if_requested    "ConfiguredApp"       $NATIVE_TOP/SampleApps/ConfiguredApp       21 :native:SampleApps:ConfiguredApp
+        build_project_if_requested    "NativeSqlAggregator" $NATIVE_TOP/SampleApps/NativeSqlAggregator 19 :native:SampleApps:NativeSqlAggregator
+        build_project_if_requested    "SmartSyncExplorer"   $NATIVE_TOP/SampleApps/SmartSyncExplorer   19 :native:SampleApps:SmartSyncExplorer
+        build_project_if_requested    "FileExplorer"        $NATIVE_TOP/SampleApps/FileExplorer        19 :native:SampleApps:FileExplorer
+        build_project_if_requested    "AccountEditor"       $HYBRID_TOP/SampleApps/AccountEditor       19 :hybrid:SampleApps:AccountEditor
+        build_project_if_requested    "ContactExplorer"     $HYBRID_TOP/SampleApps/ContactExplorer     19 :hybrid:SampleApps:ContactExplorer
+        build_project_if_requested    "HybridFileExplorer"  $HYBRID_TOP/SampleApps/HybridFileExplorer  19 :hybrid:SampleApps:HybridFileExplorer
+        build_project_if_requested    "SimpleSync"          $HYBRID_TOP/SampleApps/SimpleSync          19 :hybrid:SampleApps:SimpleSync
+        build_project_if_requested    "UserList"            $HYBRID_TOP/SampleApps/UserList            19 :hybrid:SampleApps:UserList
+        build_project_if_requested    "SmartStoreExplorer"  $HYBRID_TOP/SampleApps/SmartStoreExplorer  19 :hybrid:SampleApps:SmartStoreExplorer
+        build_project_if_requested    "VFConnector"         $HYBRID_TOP/SampleApps/VFConnector         19 :hybrid:SampleApps:VFConnector
+    fi
 
-    run_test_project_if_requested "SalesforceSDKTest"   :libs:SalesforceSDK
-    run_test_project_if_requested "SmartStoreTest"      :libs:SmartStore
-    run_test_project_if_requested "SmartSyncTest"       :libs:SmartSync
-    run_test_project_if_requested "TemplateAppTest"     :native:TemplateApp
-    run_test_project_if_requested "RestExplorerTest"    :native:SampleApps:RestExplorer
-    run_test_project_if_requested "ForcePluginsTest"    :hybrid:test:ForcePluginsTest
+    if ( should_do "test{all}" )
+    then
+        header "Testing all"
+        ./gradlew connectedAndroidTest  | grep "$TEST_OUTPUT_FILTER"
+    else
+        run_test_project_if_requested "SalesforceSDKTest"   :libs:SalesforceSDK
+        run_test_project_if_requested "SmartStoreTest"      :libs:SmartStore
+        run_test_project_if_requested "SmartSyncTest"       :libs:SmartSync
+        run_test_project_if_requested "TemplateAppTest"     :native:TemplateApp
+        run_test_project_if_requested "RestExplorerTest"    :native:SampleApps:RestExplorer
+        run_test_project_if_requested "ForcePluginsTest"    :hybrid:test:ForcePluginsTest
+    fi
 fi
