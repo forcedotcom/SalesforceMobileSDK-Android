@@ -42,8 +42,8 @@ var fs = require('fs');
 var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
-var version = '3.0.0';
-var minimumCordovaVersion = '3.5';
+var version = '3.0.1';
+var minimumCordovaVersion = '4.0';
 var minTargetApi = {'versionNumber': 19, 'versionName': 'KitKat'};
 var androidExePath;
 
@@ -202,16 +202,6 @@ function createHybridApp(config) {
          '   - Pick the following projects: ' + config.appname + '/platforms/android, ' + config.appname + '/platforms/android/CordovaLib, ' + config.appname + '/plugins/com.salesforce/android/libs/SmartSync, ' + config.appname + '/plugins/com.salesforce/android/libs/SmartStore and ' + config.appname + '/plugins/com.salesforce/android/libs/SalesforceSDK',
          '   - Click Finish',
          '   - Run your application by right-clicking the ' + config.appname + ' project in Project Explorer, and choosing Run As -> Android Application',
-         '',
-         outputColors.cyan + 'To work with your new project from the command line, use the following instructions:',
-         '',
-         outputColors.cyan + 'To build the new application, do the following:' + outputColors.reset,
-         '   - cd ' + config.projectDir,
-         '   - cordova build',
-         '',
-         outputColors.cyan + 'To run the application, start an emulator or plug in your device and run:' + outputColors.reset,
-         '   - cordova run',
-         '',
          ''].join('\n');
     console.log(nextStepsOutput);
     console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
@@ -356,7 +346,7 @@ function createNativeApp(config, showNextSteps) {
              '   - Go to File -> Import... ',
              '   - Select General -> Existing Projects into Workspace, and click Next >',
              '   - For the root directory, browse to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder',
-             '   - Select the ' + path.basename(libProject) + ' and ' + outputColors.magenta + config.appname + outputColors.reset + ' projects, and click Finish',
+             '   - Select the ' + path.basename(libProject) + ', Cordova, and ' + outputColors.magenta + config.appname + outputColors.reset + ' projects, and click Finish',
              '   - Choose \'Build All\' from the Project menu',
              '   - Run your application by right-clicking the project in Project Explorer, and choosing Run As -> Android Application',
              '',
