@@ -5,18 +5,19 @@
 # Set global environment variables for all subcommands and tests
 :environment:
   'DEVICE_OS_VERSION': 'android-17'
+  'TDDIUM_CONFIG_ROOT': '$TDDIUM_REPO_ROOT/config'
 
 # Run build-wide and per-worker setup
 :hooks:
-  :pre_setup: './pre_setup.sh'
-  :worker_setup: './worker_setup.sh'
+  :pre_setup: '$TDDIUM_CONFIG_ROOT/pre_setup.sh'
+  :worker_setup: '$TDDIUM_CONFIG_ROOT/worker_setup.sh'
 # Time out hooks if they (each) run for more than 20 minutes
 :timeout_hook: 1200
 
 # Configure caching of Android SDK install
 :cache:
   :key_paths:
-    - pre_setup.sh
+    - $TDDIUM_CONFIG_ROOT/pre_setup.sh
   :save_paths:
     - HOME/android-sdk-linux
 

@@ -3,7 +3,7 @@
 sudo apt-get update
 sudo apt-get install -y ia32-libs
 
-./install.sh
+$TDDIUM_REPO_ROOT/install.sh
 
 (cd ~ && curl http://dl.google.com/android/android-sdk_r23.0.2-linux.tgz | tar zxv)
 

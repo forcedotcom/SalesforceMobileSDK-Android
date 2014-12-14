@@ -1,7 +1,7 @@
 #!/bin/bash
 . android-settings.sh
 
-$TDDIUM_REPO_ROOT/start-emulator.sh
+$TDDIUM_CONFIG_ROOT/start-emulator.sh
 
 cd libs/test/SmartStoreTest/
 mv project.properties project.properties.original
@@ -21,7 +21,7 @@ cd ../test/SmartStoreTest/
 android update test-project -p . -m ../../SmartStore/
 ant clean debug
 
-$TDDIUM_REPO_ROOT/wait-for-emulator.sh
+$TDDIUM_CONFIG_ROOT/wait-for-emulator.sh
 
 ant installt
 ant test
