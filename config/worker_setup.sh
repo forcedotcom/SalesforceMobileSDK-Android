@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. android-settings.sh
+. config/android-settings.sh
 
 
 project_libs="libs/SalesforceSDK external/cordova/framework native/SampleApps/FileExplorer native/SampleApps/RestExplorer libs/SmartStore"
