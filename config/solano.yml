@@ -15,8 +15,8 @@
 
 # Configure caching of Android SDK install
 :cache:
-  :key_paths:
-    - config/pre_setup.sh
+  #:key_paths:
+  #  - config/pre_setup.sh
   :save_paths:
     - HOME/android-sdk-linux
 
