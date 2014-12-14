@@ -17,7 +17,7 @@ expect {
 }
 '
 
-. android-settings.sh
+. config/android-settings.sh
 
 echo y | android update sdk --no-ui --all --filter build-tools-20.0.0
 echo y | android update sdk --filter sys-img-armeabi-v7a-$DEVICE_OS_VERSION --no-ui --force --all
