@@ -1,5 +1,5 @@
 #!/bin/bash
-. android-settings.sh
+. config/android-settings.sh
 
 pkill -f emulator64 || true
 

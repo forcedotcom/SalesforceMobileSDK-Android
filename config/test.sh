@@ -1,5 +1,5 @@
 #!/bin/bash
-. android-settings.sh
+. config/android-settings.sh
 
 $TDDIUM_CONFIG_ROOT/start-emulator.sh
 
