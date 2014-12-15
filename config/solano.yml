@@ -44,7 +44,7 @@
   # To capture JUnit XML output from a command line, set its type to "junit"
   # and indicate where Solano CI can find the XML files
   - type: junit
-    command: "config/with-emulator.sh ./gradlew :libs:SalesforceSDK:connectedAndroidTest"
+    command: "config/with-emulator.sh ./tools/sdk.sh -v -f -b SalesforceSDK"
     output: exit-status
     invocation: single
     mode: basic
