@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+
+echo "Waiting for emulator to start..."
+
+bootanim=""
+failcounter=0
+until [[ "$bootanim" =~ "stopped" ]]; do
+   bootanim=`adb -e shell getprop init.svc.bootanim 2>&1`
+   if [[ "$bootanim" =~ "not found" ]]; then
+      let "failcounter += 1"
+      if [[ $failcounter -gt 100 ]]; then
+        echo "  Failed to start emulator"
+        exit 1
+      fi
+   fi
+   echo $bootanim
+   sleep 2
+done

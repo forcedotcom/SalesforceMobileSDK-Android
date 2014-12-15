@@ -8,6 +8,7 @@ TRUE=0
 FALSE=1
 TARGETS=""
 VERBOSE=$FALSE
+FAILFAST=$FALSE
 BUILD_OUTPUT_FILTER='^BUILD '
 TEST_OUTPUT_FILTER='^BUILD '
 
@@ -22,6 +23,7 @@ process_args()
         case $1 in
             -h) usage ; shift 1 ;;
             -v) verbose ; shift 1 ;;
+	    -f) failfast ; shift 1 ;;
             -b) TARGETS="$TARGETS build{$2}" ; shift 2 ;;
             -t) TARGETS="$TARGETS test{$2}" ; shift 2 ;;
             *) shift 1 ;;
@@ -36,12 +38,13 @@ wrong_directory_usage()
 
 usage ()
 {
-    echo "./tools/sdk.sh [-b <build_target>] [-t <test_target>] [-h] [-v]"
+    echo "./tools/sdk.sh [-b <build_target>] [-t <test_target>] [-h] [-v] [-f]"
     echo ""
     echo "   -b target to build that target"
     echo "   -t test_target to run that test_target"
     echo "   -h for help"
     echo "   -v for verbose output"
+    echo "   -f to exit immediately on failure"
     echo ""
     echo "    <build_target> can be "
     echo "        all"
@@ -86,6 +89,11 @@ verbose ()
     TEST_OUTPUT_FILTER=""
 }
 
+failfast ()
+{
+    FAILFAST=$TRUE
+}
+
 should_do ()
 {
     if [[ "$TARGETS" == *$1* ]]
@@ -108,6 +116,32 @@ header ()
         echo "********************************************************************************"
     else
         echo "$1"
+    fi
+}
+
+# Run command ($1) optionally piped to 'grep $2'
+# If global $FAILFAST is set, exit immediately if command exits with non-zero
+# (failure) exit status.
+run_with_output_filter ()
+{
+    cmd=$1
+    filter=$2
+
+    if [ "$filter" == "" ]
+    then
+        $cmd
+    else
+        ( $cmd | grep $filter ; exit ${PIPESTATUS[0]} )
+    fi
+
+    result=$?
+
+    if [ $FAILFAST -eq $TRUE ]
+    then
+        if [ $result -ne 0 ]
+        then
+            exit ${result}
+        fi
     fi
 }
 
