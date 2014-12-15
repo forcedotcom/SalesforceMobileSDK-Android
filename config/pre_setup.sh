@@ -19,7 +19,7 @@ expect {
 
 . config/android-settings.sh
 
-echo y | android update sdk --no-ui --all --filter build-tools-20.0.0
+echo y | android update sdk --no-ui --all --filter build-tools-21.1.1
 echo y | android update sdk --filter sys-img-armeabi-v7a-$DEVICE_OS_VERSION --no-ui --force --all
 echo no | android create avd --force -n test -t $DEVICE_OS_VERSION --abi armeabi-v7a
 
