@@ -38,7 +38,7 @@ import android.content.pm.ServiceInfo;
 import android.os.Bundle;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.rest.BootConfig;
+import com.salesforce.androidsdk.config.BootConfig;
 
 /**
  * This class provides utility functions related to push notifications,

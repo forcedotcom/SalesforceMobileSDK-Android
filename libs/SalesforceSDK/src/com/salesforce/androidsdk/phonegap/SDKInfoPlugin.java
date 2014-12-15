@@ -44,7 +44,7 @@ import android.content.res.XmlResourceParser;
 import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.BootConfig;
+import com.salesforce.androidsdk.config.BootConfig;
 
 /**
  * PhoneGap plugin for SDK info.

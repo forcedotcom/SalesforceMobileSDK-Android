@@ -22,8 +22,8 @@
 	</application>
 
     <instrumentation android:targetPackage="com.salesforce.androidsdk.smartstore.tests" 
-        android:name="com.salesforce.androidsdk.util.test.JUnitReportTestRunner" 
-        android:label="Tests for SmartStore" />
+        android:name="com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
+    />
 
     <uses-sdk android:minSdkVersion="17"
         android:targetSdkVersion="19" />

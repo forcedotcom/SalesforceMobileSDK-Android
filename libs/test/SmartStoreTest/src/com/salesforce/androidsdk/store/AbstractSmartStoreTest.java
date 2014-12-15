@@ -729,7 +729,47 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		store.dropSoup(FOURTH_TEST_SOUP);
 		assertFalse("Soup " + FOURTH_TEST_SOUP + " should have been deleted", store.hasSoup(FOURTH_TEST_SOUP));
 	}
-	
+
+    /**
+     * Test to verify an count query for a query with group by.
+     *
+     * @throws JSONException
+     */
+    public void testCountQueryWithGroupBy() throws JSONException {
+        // Before
+        assertFalse("Soup third_test_soup should not exist", store.hasSoup(THIRD_TEST_SOUP));
+
+        // Register
+        store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
+        assertTrue("Register soup call failed", store.hasSoup(THIRD_TEST_SOUP));
+
+
+        JSONObject soupElt1 = new JSONObject("{'key':'a', 'value':'va1'}");
+        JSONObject soupElt2 = new JSONObject("{'key':'b', 'value':'va1'}");
+        JSONObject soupElt3 = new JSONObject("{'key':'c', 'value':'va2'}");
+        JSONObject soupElt4 = new JSONObject("{'key':'d', 'value':'va3'}");
+        JSONObject soupElt5 = new JSONObject("{'key':'e', 'value':'va3'}");
+
+
+        store.create(THIRD_TEST_SOUP, soupElt1);
+        store.create(THIRD_TEST_SOUP, soupElt2);
+        store.create(THIRD_TEST_SOUP, soupElt3);
+		store.create(THIRD_TEST_SOUP, soupElt4);
+        store.create(THIRD_TEST_SOUP, soupElt5);
+
+
+        final String smartSql = "SELECT {" + THIRD_TEST_SOUP + ":value}, count(*) FROM {" + THIRD_TEST_SOUP + "} GROUP BY {" + THIRD_TEST_SOUP + ":value} ORDER BY {" + THIRD_TEST_SOUP + ":value}";
+        final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 25);
+        final JSONArray result = store.query(querySpec, 0);
+        assertNotNull("Result should not be null", result);
+        assertEquals("Three results expected", 3, result.length());
+        JSONTestHelper.assertSameJSON("Wrong result for query", new JSONArray("[['va1', 2], ['va2', 1], ['va3', 2]]"), result);
+        final int count = store.countQuery(querySpec);
+        assertEquals("Incorrect count query", "SELECT count(*)  FROM (" + smartSql + ")", querySpec.countSmartSql);
+        assertEquals("Incorrect count", 3, count);
+    }
+
+
 	/**
 	 * Test to verify proper indexing of integer and longs
 	 */
@@ -760,8 +800,8 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 	 * Helper method for testIntegerIndexedField and testFloatingIndexedField
 	 * Insert soup element with number and check db 
 	 * @param fieldType
-	 * @param valuesIn
-	 * @param valuesOut
+	 * @param valueIn
+	 * @param valueOut
 	 * @throws JSONException 
 	 */
 	private void tryNumber(Type fieldType, Number valueIn, Number valueOut) throws JSONException {
