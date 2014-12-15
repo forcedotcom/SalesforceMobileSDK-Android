@@ -29,57 +29,57 @@
 
 # Each element in the tests list will be queued to run, and executed in parallel. Each element can be bash command line.
 :tests: 
-  - ". android-settings.sh && ./tools/sdk.sh -v -f -b ContactExplorer"
-  - ". android-settings.sh && ./tools/sdk.sh -v -f -b VFConnector"
-  - ". android-settings.sh && ./gradlew :native:SampleApps:SmartSyncExplorer:assembleDebug"
-  - ". android-settings.sh && ./tools/sdk.sh -v -f -b AccountEditor"
-  - ". android-settings.sh && ./tools/sdk.sh -v -f -b HybridFileExplorer"
-  - ". android-settings.sh && ./gradlew :libs:SmartSync:assembleDebug"
-  - ". android-settings.sh && ./gradlew :libs:SmartStore:assembleDebug"
-  - ". android-settings.sh && ./tools/sdk.sh -v -f -b UserList"
-  - ". android-settings.sh && ./gradlew :native:SampleApps:NativeSqlAggregator:assembleDebug"
-  - ". android-settings.sh && ./gradlew :native:TemplateApp:assembleDebug"
-  - "./package-npm.sh"
+  - ". config/android-settings.sh && ./tools/sdk.sh -v -f -b ContactExplorer"
+  - ". config/android-settings.sh && ./tools/sdk.sh -v -f -b VFConnector"
+  - ". config/android-settings.sh && ./gradlew :native:SampleApps:SmartSyncExplorer:assembleDebug"
+  - ". config/android-settings.sh && ./tools/sdk.sh -v -f -b AccountEditor"
+  - ". config/android-settings.sh && ./tools/sdk.sh -v -f -b HybridFileExplorer"
+  - ". config/android-settings.sh && ./gradlew :libs:SmartSync:assembleDebug"
+  - ". config/android-settings.sh && ./gradlew :libs:SmartStore:assembleDebug"
+  - ". config/android-settings.sh && ./tools/sdk.sh -v -f -b UserList"
+  - ". config/android-settings.sh && ./gradlew :native:SampleApps:NativeSqlAggregator:assembleDebug"
+  - ". config/android-settings.sh && ./gradlew :native:TemplateApp:assembleDebug"
+  - "config/package-npm.sh"
 
   # To capture JUnit XML output from a command line, set its type to "junit"
   # and indicate where Solano CI can find the XML files
   - type: junit
-    command: "./with-emulator.sh ./gradlew :libs:SalesforceSDK:connectedAndroidTest"
+    command: "config/with-emulator.sh ./gradlew :libs:SalesforceSDK:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./gradlew :native:SampleApps:RestExplorer:connectedAndroidTest"
+    command: "config/with-emulator.sh ./gradlew :native:SampleApps:RestExplorer:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/TEST**.xml" # Note that gradle leaves XML output in a different location from ant
   - type: junit
-    command: "./with-emulator.sh ./gradlew :native:TemplateApp:connectedAndroidTest"
+    command: "config/with-emulator.sh ./gradlew :native:TemplateApp:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./gradlew :libs:SmartStore:connectedAndroidTest"
+    command: "config/with-emulator.sh ./gradlew :libs:SmartStore:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./gradlew :libs:SmartSync:connectedAndroidTest"
+    command: "config/with-emulator.sh ./gradlew :libs:SmartSync:connectedAndroidTest"
     output: exit-status
     invocation: single
     mode: basic
     report_files:
     - "**/junit-reports/**.xml"
   - type: junit
-    command: "./with-emulator.sh ./tools/sdk.sh -v -f -b ForcePluginsTest -t ForcePluginsTest"
+    command: "config/with-emulator.sh ./tools/sdk.sh -v -f -b ForcePluginsTest -t ForcePluginsTest"
     output: exit-status
     invocation: single
     mode: basic
