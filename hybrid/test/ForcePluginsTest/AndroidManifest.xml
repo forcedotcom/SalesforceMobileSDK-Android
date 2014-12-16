@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-	package="com.salesforce.androidsdk.tests" 
+	package="com.salesforce.androidsdk.forcepluginstests"
     android:versionCode="1"
     android:versionName="1.0">
 
@@ -32,7 +32,4 @@
         </activity>
     </application>
 
-    <instrumentation android:targetPackage="com.salesforce.androidsdk.tests"
-        android:name="com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
-        android:label="Tests for Force Plugins" />
 </manifest>

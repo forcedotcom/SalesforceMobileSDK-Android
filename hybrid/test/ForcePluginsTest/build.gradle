@@ -27,7 +27,7 @@ android {
     }
   }
   defaultConfig {
-    testApplicationId "com.salesforce.androidsdk.tests"
+    testApplicationId "com.salesforce.androidsdk.forcepluginstest"
     testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
   }
   packagingOptions {
