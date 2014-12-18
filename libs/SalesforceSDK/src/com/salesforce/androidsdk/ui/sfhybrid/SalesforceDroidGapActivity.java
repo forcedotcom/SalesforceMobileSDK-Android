@@ -340,14 +340,20 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
                      */
 	                SalesforceDroidGapActivity.this.client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
 
-                        @Override
-                        public void onSuccess(RestRequest request, RestResponse response) {
-                            setSidCookies();
-                            loadVFPingPage();
-                            if (callbackContext != null) {
-                                callbackContext.success(getJSONCredentials());
-                            }
-                        }
+	                	@Override
+	                	public void onSuccess(RestRequest request, RestResponse response) {
+
+	                		/*
+	                		 * The client instance being used here needs to be
+	                		 * refreshed, to ensure we use the new access token. 
+	                		 */
+	                		SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+	                		setSidCookies();
+	                		loadVFPingPage();
+	                		if (callbackContext != null) {
+	                			callbackContext.success(getJSONCredentials());
+	                		}
+	                	}
 
                         @Override
                         public void onError(Exception exception) {
@@ -371,13 +377,19 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
     
         	@Override
-                public void onSuccess(RestRequest request, RestResponse response) {
-                    Log.i("SalesforceOAuthPlugin.refresh", "Refresh succeeded");
-                    setSidCookies();
-                    loadVFPingPage();
-                    String frontDoorUrl = getFrontDoorUrl(url);
-                    loadUrl(frontDoorUrl);
-                }
+        	public void onSuccess(RestRequest request, RestResponse response) {
+        		Log.i("SalesforceOAuthPlugin.refresh", "Refresh succeeded");
+
+        		/*
+        		 * The client instance being used here needs to be
+        		 * refreshed, to ensure we use the new access token. 
+        		 */
+        		SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+        		setSidCookies();
+        		loadVFPingPage();
+        		String frontDoorUrl = getFrontDoorUrl(url);
+        		loadUrl(frontDoorUrl);
+        	}
 
                 @Override
                 public void onError(Exception exception) {
