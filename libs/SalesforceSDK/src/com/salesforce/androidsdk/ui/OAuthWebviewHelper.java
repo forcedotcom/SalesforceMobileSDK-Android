@@ -147,7 +147,7 @@ public class OAuthWebviewHelper {
 
     public void clearCookies() {
         CookieManager cm = CookieManager.getInstance();
-        cm.removeAllCookie();
+        cm.removeAllCookies(null);
     }
 
     public void clearView() {
