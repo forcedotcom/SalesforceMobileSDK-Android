@@ -42,7 +42,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         if (null == savedInstanceState) {
-            AppConfiguratorState state = AppConfiguratorState.getInstance(this);
+            AppConfiguratorState.getInstance(this);
             DevicePolicyManager manager = (DevicePolicyManager)
                     getSystemService(Context.DEVICE_POLICY_SERVICE);
             if (!manager.isProfileOwnerApp(getApplicationContext().getPackageName())) {

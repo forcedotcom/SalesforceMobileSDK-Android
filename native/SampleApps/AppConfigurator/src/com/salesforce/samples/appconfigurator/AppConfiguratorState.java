@@ -31,7 +31,6 @@ import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.widget.Toast;
 
 public class AppConfiguratorState {
 
