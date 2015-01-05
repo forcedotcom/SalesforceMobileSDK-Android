@@ -47,7 +47,6 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.util.Log;
 import android.webkit.CookieManager;
-import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -305,9 +304,6 @@ public class SalesforceSDKManager {
 
         // Initializes the HTTP client.
         HttpAccess.init(context, INSTANCE.getUserAgent());
-
-        // Ensures that we have a CookieSyncManager instance.
-        CookieSyncManager.createInstance(context);
 
         // Upgrades to the latest version.
         UpgradeManager.getInstance().upgradeAccMgr();
@@ -602,8 +598,7 @@ public class SalesforceSDKManager {
     protected void startLoginPage() {
 
         // Clears cookies.
-        CookieSyncManager.createInstance(context);
-        CookieManager.getInstance().removeAllCookie();
+        CookieManager.getInstance().removeAllCookies(null);
 
         // Restarts the application.
         final Intent i = new Intent(context, getMainActivityClass());
@@ -618,8 +613,7 @@ public class SalesforceSDKManager {
     public void startSwitcherActivityIfRequired() {
 
         // Clears cookies.
-        CookieSyncManager.createInstance(context);
-        CookieManager.getInstance().removeAllCookie();
+        CookieManager.getInstance().removeAllCookies(null);
 
         /*
          * If the number of accounts remaining is 0, shows the login page.
