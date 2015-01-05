@@ -57,7 +57,6 @@ public class AdminPrefsManager {
 	 * @param attribs Admin prefs.
 	 * @param account UserAccount instance.
 	 */
-    @SuppressWarnings("unchecked")
 	public void setPrefs(JSONObject attribs, UserAccount account) {
 		if (attribs != null) {
 			String sharedPrefPath = ADMIN_PREFS;
