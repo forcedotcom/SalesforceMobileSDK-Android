@@ -100,6 +100,7 @@ public class OAuth2 {
     private static final String CODE = "code";
     private static final String ACTIVATED_CLIENT_CODE = "activated_client_code";
     private static final String CUSTOM_ATTRIBUTES = "custom_attributes";
+    private static final String CUSTOM_PERMISSIONS = "custom_permissions";
     private static final String SFDC_COMMUNITY_ID = "sfdc_community_id";
     private static final String SFDC_COMMUNITY_URL = "sfdc_community_url";
 
@@ -230,7 +231,7 @@ public class OAuth2 {
      * receiving an authorization code from the oAuth authorization UI flow.
      * In addition, this will also call the Identity service to fetch & populate the username field.
      *
-     * @param loginServer  the protocol & host (e.g. https://login.salesforce.com) that the authCode was generated from
+     * @param loginServerUrl  the protocol & host (e.g. https://login.salesforce.com) that the authCode was generated from
      * @param clientSecret the client secret if there is one (e.g. for IP/IC bypass)
      * @param authCode     the authorization code issued by the oauth authorization flow.
      *
@@ -363,13 +364,16 @@ public class OAuth2 {
         public String username;
         public int pinLength = -1;
         public int screenLockTimeout = -1;
-        public JSONObject adminPrefs;
+        public JSONObject customAttributes;
+        public JSONObject customPermissions;
+
 
         public IdServiceResponse(HttpResponse httpResponse) {
             try {
                 JSONObject parsedResponse = parseResponse(httpResponse);
                 username = parsedResponse.getString(USERNAME);
-                adminPrefs = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
+                customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
+                customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
 
                 // With connected apps (pilot in Summer '12), the server can specify a policy.
                 if (parsedResponse.has(MOBILE_POLICY)) {
