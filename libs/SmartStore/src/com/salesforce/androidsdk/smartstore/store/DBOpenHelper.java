@@ -155,6 +155,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 	
 	@Override
+	@SuppressWarnings("deprecation")
 	public void onOpen(SQLiteDatabase db) {
 		(new SmartStore(db)).resumeLongOperations();
 	}

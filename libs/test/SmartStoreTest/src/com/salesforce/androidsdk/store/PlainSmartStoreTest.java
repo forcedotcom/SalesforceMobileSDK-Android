@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-2014, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,18 +26,14 @@
  */
 package com.salesforce.androidsdk.store;
 
-import net.sqlcipher.database.SQLiteDatabase;
-
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 
 /**
  * Tests for plain smart store
- *
  */
 public class PlainSmartStoreTest extends AbstractSmartStoreTest {
 
 	@Override
-	protected SQLiteDatabase getWritableDatabase() {
-		return DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase("");
+	protected String getPasscode() {
+		return "";
 	}
 }

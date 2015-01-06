@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.smartstore.app;
 import java.util.List;
 
 import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteOpenHelper;
 import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
@@ -257,10 +258,10 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      */
     public SmartStore getSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
     	final String passcodeHash = getPasscodeHash();
-        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context, dbNamePrefix,
-        		account, communityId).getWritableDatabase(passcodeHash == null ?
+        final String passcode = (passcodeHash == null ?
         		getEncryptionKeyForPasscode(null) : passcodeHash);
-        return new SmartStore(db);
+        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(context, account, communityId);
+        return new SmartStore(dbOpenHelper, passcode);
     }
 
     /**
