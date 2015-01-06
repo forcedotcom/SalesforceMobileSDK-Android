@@ -36,6 +36,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
@@ -87,10 +88,16 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 		setContentView(salesforceR.layoutLogin());
 
 		// Setup the WebView.
-		WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
+		final WebView webView = (WebView) findViewById(salesforceR.idLoginWebView());
+		final WebSettings webSettings = webView.getSettings();
+		webSettings.setJavaScriptEnabled(true);
+		webSettings.setAllowFileAccessFromFileURLs(true);
+		webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
+		webSettings.setDatabaseEnabled(true);
+		webSettings.setDomStorageEnabled(true);
 		EventsObservable.get().notifyEvent(EventType.AuthWebViewCreateComplete, webView);
 		webviewHelper = getOAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
-		
+
 		// Let observers know
 		EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);        
 
@@ -244,11 +251,9 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (requestCode == PICK_SERVER_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
 			webviewHelper.loadLoginPage();
-		}
-		else if (requestCode == PasscodeManager.PASSCODE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+		} else if (requestCode == PasscodeManager.PASSCODE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
 			webviewHelper.onNewPasscode();
-		}
-		else {
+		} else {
 	        super.onActivityResult(requestCode, resultCode, data);
 	    }
 	}
