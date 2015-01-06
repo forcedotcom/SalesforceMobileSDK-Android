@@ -68,8 +68,6 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		assertTrue("Table for test_soup should now exist", hasTable("TABLE_1"));
 		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
 	}
-	
-	protected abstract SQLiteDatabase getWritableDatabase();
 
 	/**
 	 * Testing method with paths to top level string/integer/array/map as well as edge cases (null object/null or empty path)
@@ -186,6 +184,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
 			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, null, null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -224,7 +223,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			String soupTableName = getSoupTableName(OTHER_TEST_SOUP);
 			assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
 			assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
-			
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
@@ -283,7 +282,8 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
-			String soupTableName = getSoupTableName(TEST_SOUP);			
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			String soupTableName = getSoupTableName(TEST_SOUP);		
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
 			assertEquals("Expected three soup elements", 3, c.getCount());
@@ -335,6 +335,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
 			String soupTableName = getSoupTableName(TEST_SOUP);			
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -387,6 +388,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
 			String soupTableName = getSoupTableName(TEST_SOUP);			
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -418,12 +420,10 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 	 */
 	public void testUpsertWithNonIndexedExternalId() throws JSONException {
 		JSONObject soupElt = new JSONObject("{'key':'ka1', 'value':'va1'}");
-		
 		try {
 			store.upsert(TEST_SOUP, soupElt, "value");
 			fail("Exception was expected: value is not an indexed field");
-		}
-		catch (RuntimeException e) {
+		} catch (RuntimeException e) {
 			assertTrue("Wrong exception", e.getMessage().contains("does not have an index"));
 		}
 	}
@@ -449,8 +449,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		try {
 			store.upsert(TEST_SOUP, soupElt3, "key");
 			fail("Exception was expected: key is not unique in the soup");
-		}
-		catch (RuntimeException e) {
+		} catch (RuntimeException e) {
 			assertTrue("Wrong exception", e.getMessage().contains("are more than one soup elements"));
 		}
 	}
@@ -503,6 +502,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
 			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
@@ -512,8 +512,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			
 			c.moveToNext();
 			assertEquals("Wrong id", idOf(soupElt3Created), c.getLong(c.getColumnIndex("id")));
-		}
-		finally {
+		} finally {
 			safeClose(c);
 		}
 	}
@@ -544,11 +543,11 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
 			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertFalse("Expected no soup element", c.moveToFirst());
-		}
-		finally {
+		} finally {
 			safeClose(c);
 		}
 	}
@@ -812,6 +811,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		
 		Cursor c = null;
 		try {
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
 			String soupTableName = getSoupTableName(FOURTH_TEST_SOUP);
 			String amountColumnName = store.getSoupIndexSpecs(FOURTH_TEST_SOUP)[0].columnName;
 			c = DBHelper.getInstance(db).query(db, soupTableName, new String[] { amountColumnName }, null, null, "id = " + id);
@@ -821,8 +821,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 				assertEquals("Not the value expected", valueOut.longValue(), c.getLong(0));
 			else if (fieldType == Type.floating)
 				assertEquals("Not the value expected", valueOut.doubleValue(), c.getDouble(0)); 
-		}
-		finally {
+		} finally {
 			safeClose(c);
 		}
 	}
@@ -982,6 +981,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		// Check DB
 		Cursor c = null;
 		try {
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
 			String soupTableName = getSoupTableName(OTHER_TEST_SOUP);
 			assertEquals("Table for other_test_soup was expected to be called TABLE_2", "TABLE_2", soupTableName);
 			assertTrue("Table for other_test_soup should now exist", hasTable("TABLE_2"));
@@ -1158,6 +1158,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 	 * @throws JSONException
 	 */
 	private void tryAlterSoupInterruptResume(AlterSoupStep toStep) throws JSONException {
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
 		assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
 		IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("lastName", Type.string)};
 		store.registerSoup(OTHER_TEST_SOUP, indexSpecs);

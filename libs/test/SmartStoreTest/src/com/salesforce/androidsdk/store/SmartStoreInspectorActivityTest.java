@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.store;
 import java.util.HashSet;
 import java.util.Set;
 
-import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteOpenHelper;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -211,10 +211,10 @@ public class SmartStoreInspectorActivityTest extends
 	}
 
 	private void createStore() {
-		DBOpenHelper.deleteDatabase(targetContext, null);
-		SQLiteDatabase db = DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase("");
-		DBHelper.getInstance(db).clearMemoryCache();
-		store = new SmartStore(db);
+		final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
+		DBHelper.getInstance(dbOpenHelper.getWritableDatabase("")).clearMemoryCache();
+		store = new SmartStore(dbOpenHelper, "");
+		store.dropAllSoups();
 	}
 
 	private void createSoups() {
