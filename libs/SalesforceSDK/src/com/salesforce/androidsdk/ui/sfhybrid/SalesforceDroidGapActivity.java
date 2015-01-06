@@ -424,7 +424,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         		public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 	final CookieManager cookieMgr = CookieManager.getInstance();
                     cookieMgr.setAcceptCookie(true);
-                    cookieMgr.flush();
+                    SalesforceSDKManager.getInstance().syncCookies();
         			return true;
         		}
         	});
@@ -507,11 +507,11 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
        Log.i("SalesforceDroidGapActivity.setSidCookies", "setting cookies");
        CookieManager cookieMgr = CookieManager.getInstance();
        cookieMgr.setAcceptCookie(true);  // Required to set additional cookies that the auth process will return.
-       cookieMgr.removeSessionCookies(null);
+       SalesforceSDKManager.getInstance().removeSessionCookies();
        SystemClock.sleep(250); // removeSessionCookies kicks out a thread - let it finish
        String accessToken = client.getAuthToken();
        addSidCookieForInstance(cookieMgr,".salesforce.com", accessToken);
-       cookieMgr.flush();
+       SalesforceSDKManager.getInstance().syncCookies();
    }
 
    private void addSidCookieForInstance(CookieManager cookieMgr, String domain, String sid) {
