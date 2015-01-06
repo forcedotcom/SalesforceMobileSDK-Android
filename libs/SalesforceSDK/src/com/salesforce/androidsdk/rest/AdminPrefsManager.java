@@ -59,12 +59,7 @@ public class AdminPrefsManager {
 	 */
 	public void setPrefs(JSONObject attribs, UserAccount account) {
 		if (attribs != null) {
-			String sharedPrefPath = ADMIN_PREFS;
-			if (account != null) {
-				sharedPrefPath = ADMIN_PREFS + account.getOrgLevelFilenameSuffix();
-			}
-			final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext()
-	                    .getSharedPreferences(sharedPrefPath, Context.MODE_PRIVATE);
+            final SharedPreferences sp = getSharedPreferences(account);
 	        final Editor e = sp.edit();
 	        final Iterator<String> keys = attribs.keys();
 	        while (keys.hasNext()) {
@@ -83,27 +78,18 @@ public class AdminPrefsManager {
 	 * @param account UserAccount instance.
 	 */
 	public void setPrefs(Map<String, String> attribs, UserAccount account) {
-		if (attribs != null) {
-			String sharedPrefPath = ADMIN_PREFS;
-			if (account != null) {
-				sharedPrefPath = ADMIN_PREFS + account.getOrgLevelFilenameSuffix();
-			}
-			final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext()
-	                    .getSharedPreferences(sharedPrefPath, Context.MODE_PRIVATE);
-	        final Editor e = sp.edit();
-	        if (attribs != null) {
-	        	final Set<String> keys = attribs.keySet();
-	        	if (keys != null) {
-	        		for (final String key : keys) {
-	    		        e.putString(key, attribs.get(key));
-	        		}
-	        	}
-	        }
-	        e.commit();
-	    }
+        setPrefs(new JSONObject(attribs), account);
 	}
 
-	/**
+    private SharedPreferences getSharedPreferences(UserAccount account) {
+        String sharedPrefPath = ADMIN_PREFS;
+        if (account != null) {
+            sharedPrefPath = ADMIN_PREFS + account.getOrgLevelFilenameSuffix();
+        }
+        return SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(sharedPrefPath, Context.MODE_PRIVATE);
+    }
+
+    /**
 	 * Returns the admin pref value for the specified key, for a user account.
 	 *
 	 * @param key Key.
@@ -112,12 +98,7 @@ public class AdminPrefsManager {
 	 */
     @SuppressWarnings("unchecked")
 	public String getPref(String key, UserAccount account) {
-    	String sharedPrefPath = ADMIN_PREFS;
-		if (account != null) {
-			sharedPrefPath = ADMIN_PREFS + account.getOrgLevelFilenameSuffix();
-		}
-    	final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext()
-    			.getSharedPreferences(sharedPrefPath, Context.MODE_PRIVATE);
+        final SharedPreferences sp = getSharedPreferences(account);
 	    final Map<String, String> customAttributes = (Map<String, String>) sp.getAll();
     	if (customAttributes != null) {
     	    return customAttributes.get(key);
@@ -133,12 +114,7 @@ public class AdminPrefsManager {
 	 */
     @SuppressWarnings("unchecked")
 	public Map<String, String> getPrefs(UserAccount account) {
-    	String sharedPrefPath = ADMIN_PREFS;
-		if (account != null) {
-			sharedPrefPath = ADMIN_PREFS + account.getOrgLevelFilenameSuffix();
-		}
-    	final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext()
-    			.getSharedPreferences(sharedPrefPath, Context.MODE_PRIVATE);
+        final SharedPreferences sp = getSharedPreferences(account);
 	    return (Map<String, String>) sp.getAll();
     }
 
@@ -148,12 +124,7 @@ public class AdminPrefsManager {
      * @param account UserAccount instance.
      */
     public void reset(UserAccount account) {
-    	String sharedPrefPath = ADMIN_PREFS;
-		if (account != null) {
-			sharedPrefPath = ADMIN_PREFS + account.getOrgLevelFilenameSuffix();
-		}
-    	final SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext()
-    			.getSharedPreferences(sharedPrefPath, Context.MODE_PRIVATE);
+        final SharedPreferences sp = getSharedPreferences(account);
         final Editor editor = sp.edit();
         editor.clear();
         editor.commit();
