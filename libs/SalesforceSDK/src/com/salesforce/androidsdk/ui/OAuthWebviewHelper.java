@@ -77,7 +77,7 @@ import com.salesforce.androidsdk.util.UriFragmentParser;
  */
 public class OAuthWebviewHelper {
 
-    public static final String MUST_BE_MANAGED_APP = "must_be_managed_app"; // custom permission name - XXX Does this constant belong here?
+    public static final String MUST_BE_MANAGED_APP_PERM = "must_be_managed_app";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
 
     /**
@@ -403,8 +403,10 @@ public class OAuthWebviewHelper {
                 }
 
                 if (id.customPermissions != null) {
-                    // XXX should we give them to the AdminPrefsManager also?
-                    final boolean mustBeManagedApp = id.customPermissions.optBoolean(MUST_BE_MANAGED_APP);
+                    final AdminPrefsManager prefManager = SalesforceSDKManager.getInstance().getAdminPrefsManager();
+                    prefManager.setPrefs(id.customPermissions, account);
+                    // XXX problem if a custom setting and a custom permission have the same name
+                    final boolean mustBeManagedApp = id.customPermissions.optBoolean(MUST_BE_MANAGED_APP_PERM);
                     if (mustBeManagedApp && !RuntimeConfig.getRuntimeConfig(getContext()).isManagedApp()) {
                         onAuthFlowError(getContext().getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericAuthenticationErrorTitle()),
                             getContext().getString(SalesforceSDKManager.getInstance().getSalesforceR().stringManagedAppError()));
