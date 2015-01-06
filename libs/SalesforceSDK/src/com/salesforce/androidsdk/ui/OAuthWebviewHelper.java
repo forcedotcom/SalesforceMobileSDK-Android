@@ -39,7 +39,6 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
-import android.webkit.CookieManager;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -146,8 +145,7 @@ public class OAuthWebviewHelper {
     }
 
     public void clearCookies() {
-        CookieManager cm = CookieManager.getInstance();
-        cm.removeAllCookies(null);
+    	SalesforceSDKManager.getInstance().removeAllCookies();
     }
 
     public void clearView() {
