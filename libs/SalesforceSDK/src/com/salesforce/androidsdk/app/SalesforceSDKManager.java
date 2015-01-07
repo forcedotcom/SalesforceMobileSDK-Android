@@ -53,11 +53,12 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.config.AdminPermsManager;
+import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
-import com.salesforce.androidsdk.rest.AdminPrefsManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
@@ -114,7 +115,8 @@ public class SalesforceSDKManager {
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
 	private boolean isLoggingOut = false;
-    private AdminPrefsManager adminPrefsManager;
+    private AdminSettingsManager adminSettingsManager;
+    private AdminPermsManager adminPermsManager;
     private PushNotificationInterface pushNotificationInterface;
     private volatile boolean loggedOut = false;
 
@@ -126,7 +128,6 @@ public class SalesforceSDKManager {
     /**
      * Returns a singleton instance of this class.
      *
-     * @param context Application context.
      * @return Singleton instance of SalesforceSDKManager.
      */
     public static SalesforceSDKManager getInstance() {
@@ -469,16 +470,29 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Returns the administrator preferences manager that's associated with SalesforceSDKManager.
+     * Returns the administrator settings manager that's associated with SalesforceSDKManager.
      *
-     * @return AdminPrefsManager instance.
+     * @return AdminSettingsManager instance.
      */
-    public synchronized AdminPrefsManager getAdminPrefsManager() {
-    	if (adminPrefsManager == null) {
-    		adminPrefsManager = new AdminPrefsManager();
+    public synchronized AdminSettingsManager getAdminSettingsManager() {
+    	if (adminSettingsManager == null) {
+    		adminSettingsManager = new AdminSettingsManager();
     	}
-    	return adminPrefsManager;
+    	return adminSettingsManager;
     }
+
+    /**
+     * Returns the administrator permissions manager that's associated with SalesforceSDKManager.
+     *
+     * @return AdminPermsManager instance.
+     */
+    public synchronized AdminPermsManager getAdminPermsManager() {
+        if (adminPermsManager == null) {
+            adminPermsManager = new AdminPermsManager();
+        }
+        return adminPermsManager;
+    }
+
 
     /**
      * Changes the passcode to a new value.
@@ -583,8 +597,10 @@ public class SalesforceSDKManager {
          * are stored at the org level.
          */
         if (users == null || users.size() <= 1) {
-            getAdminPrefsManager().resetAll();
-            adminPrefsManager = null;
+            getAdminSettingsManager().resetAll();
+            getAdminPermsManager().resetAll();
+            adminSettingsManager = null;
+            adminPermsManager = null;
             getPasscodeManager().reset(context);
             passcodeManager = null;
             encryptionKey = null;
