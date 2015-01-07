@@ -77,7 +77,10 @@ import com.salesforce.androidsdk.util.UriFragmentParser;
  */
 public class OAuthWebviewHelper {
 
+    // Set a custom permission on your connected application with that name if you want
+    // the application to be restricted to managed devices
     public static final String MUST_BE_MANAGED_APP_PERM = "must_be_managed_app";
+
     private static final String ACCOUNT_OPTIONS = "accountOptions";
 
     /**
