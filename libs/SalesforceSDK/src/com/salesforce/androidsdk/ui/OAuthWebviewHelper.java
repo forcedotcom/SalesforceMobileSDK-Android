@@ -52,9 +52,10 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
+import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
-import com.salesforce.androidsdk.rest.AdminPrefsManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
@@ -74,6 +75,10 @@ import com.salesforce.androidsdk.util.UriFragmentParser;
  *
  */
 public class OAuthWebviewHelper {
+
+    // Set a custom permission on your connected application with that name if you want
+    // the application to be restricted to managed devices
+    public static final String MUST_BE_MANAGED_APP_PERM = "must_be_managed_app";
 
     private static final String ACCOUNT_OPTIONS = "accountOptions";
 
@@ -371,11 +376,12 @@ public class OAuthWebviewHelper {
 
         @Override
         protected void onPostExecute(OAuth2.TokenEndpointResponse tr) {
+            final SalesforceSDKManager mgr = SalesforceSDKManager.getInstance();
             if (backgroundException != null) {
                 Log.w("LoginActiviy.onAuthFlowComplete", backgroundException);
                 // Error
-                onAuthFlowError(getContext().getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                        getContext().getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericAuthenticationErrorBody()));
+                onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
+                        getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorBody()));
                 callback.finish();
             } else {
 
@@ -392,16 +398,26 @@ public class OAuthWebviewHelper {
                 		accountOptions.username, buildAccountName(accountOptions.username,
                 		accountOptions.instanceUrl), loginOptions.clientSecret,
                 		accountOptions.communityId, accountOptions.communityUrl);
-                if (id.adminPrefs != null) {
-                    final AdminPrefsManager prefManager = SalesforceSDKManager.getInstance().getAdminPrefsManager();
-                    prefManager.setPrefs(id.adminPrefs, account);
+
+                if (id.customAttributes != null) {
+                    mgr.getAdminSettingsManager().setPrefs(id.customAttributes, account);
+                }
+
+                if (id.customPermissions != null) {
+                    mgr.getAdminPermsManager().setPrefs(id.customPermissions, account);
+                    final boolean mustBeManagedApp = id.customPermissions.optBoolean(MUST_BE_MANAGED_APP_PERM);
+                    if (mustBeManagedApp && !RuntimeConfig.getRuntimeConfig(getContext()).isManagedApp()) {
+                        onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
+                            getContext().getString(mgr.getSalesforceR().stringManagedAppError()));
+                        callback.finish();
+                    }
                 }
 
                 // Screen lock required by mobile policy
                 if (id.screenLockTimeout > 0) {
 
                     // Stores the mobile policy for the org.
-                    final PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
+                    final PasscodeManager passcodeManager = mgr.getPasscodeManager();
                     passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength);
                     passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
                     passcodeManager.setMinPasscodeLength(id.pinLength);
@@ -415,22 +431,22 @@ public class OAuthWebviewHelper {
                      * passcode already exists, the existing hash is used and the
                      * account is added at this point.
                      */
-                    if (!passcodeManager.hasStoredPasscode(SalesforceSDKManager.getInstance().getAppContext())) {
+                    if (!passcodeManager.hasStoredPasscode(mgr.getAppContext())) {
 
                         // This will bring up the create passcode screen - we will create the account in onResume
-                        SalesforceSDKManager.getInstance().getPasscodeManager().setEnabled(true);
-                        SalesforceSDKManager.getInstance().getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
+                        mgr.getPasscodeManager().setEnabled(true);
+                        mgr.getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
                     } else {
-                        loginOptions.passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
+                        loginOptions.passcodeHash = mgr.getPasscodeHash();
                     	addAccount();
                         callback.finish();
                     }
                 }
                 // No screen lock required or no mobile policy specified
                 else {
-                    final PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
+                    final PasscodeManager passcodeManager = mgr.getPasscodeManager();
                     passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH);
-                    loginOptions.passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
+                    loginOptions.passcodeHash = mgr.getPasscodeHash();
                     addAccount();
                     callback.finish();
                 }

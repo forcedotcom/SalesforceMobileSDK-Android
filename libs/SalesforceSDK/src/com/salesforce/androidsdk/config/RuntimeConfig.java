@@ -69,6 +69,14 @@ public class RuntimeConfig {
 	}
 
     /**
+     * Returns true if application is managed (i.e. has restrictions / runtime configurations)
+     * @return boolean
+     */
+    public boolean isManagedApp() {
+        return configurations != null;
+    }
+
+    /**
      * Get string run time configuration
      * @param configKey key
      * @return string value
