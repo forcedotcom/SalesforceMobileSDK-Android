@@ -379,79 +379,89 @@ public class OAuthWebviewHelper {
         @Override
         protected void onPostExecute(OAuth2.TokenEndpointResponse tr) {
             final SalesforceSDKManager mgr = SalesforceSDKManager.getInstance();
+
+            //
+            // Failure cases.
+            //
             if (backgroundException != null) {
                 Log.w("LoginActiviy.onAuthFlowComplete", backgroundException);
                 // Error
                 onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
                         getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorBody()));
                 callback.finish();
-            } else {
+                return;
+            }
 
-                // Putting together all the information needed to create the new account.
-                accountOptions = new AccountOptions(id.username, tr.refreshToken,
-                		tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId,
-                		tr.communityId, tr.communityUrl);
-
-                // Sets additional admin prefs, if they exist.
-                final UserAccount account = new UserAccount(accountOptions.authToken,
-                		accountOptions.refreshToken, loginOptions.loginUrl,
-                		accountOptions.identityUrl, accountOptions.instanceUrl,
-                		accountOptions.orgId, accountOptions.userId,
-                		accountOptions.username, buildAccountName(accountOptions.username,
-                		accountOptions.instanceUrl), loginOptions.clientSecret,
-                		accountOptions.communityId, accountOptions.communityUrl);
-
-                if (id.customAttributes != null) {
-                    mgr.getAdminSettingsManager().setPrefs(id.customAttributes, account);
-                }
-
-                if (id.customPermissions != null) {
-                    mgr.getAdminPermsManager().setPrefs(id.customPermissions, account);
-                    final boolean mustBeManagedApp = id.customPermissions.optBoolean(MUST_BE_MANAGED_APP_PERM);
-                    if (mustBeManagedApp && !RuntimeConfig.getRuntimeConfig(getContext()).isManagedApp()) {
-                        onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
+            if (id.customPermissions != null) {
+                final boolean mustBeManagedApp = id.customPermissions.optBoolean(MUST_BE_MANAGED_APP_PERM);
+                if (mustBeManagedApp && !RuntimeConfig.getRuntimeConfig(getContext()).isManagedApp()) {
+                    onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
                             getContext().getString(mgr.getSalesforceR().stringManagedAppError()));
-                        callback.finish();
-                    }
+                    callback.finish();
+                    return;
                 }
+            }
 
-                // Screen lock required by mobile policy
-                if (id.screenLockTimeout > 0) {
+            //
+            // Putting together all the information needed to create the new account.
+            //
+            accountOptions = new AccountOptions(id.username, tr.refreshToken,
+                    tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId,
+                    tr.communityId, tr.communityUrl);
 
-                    // Stores the mobile policy for the org.
-                    final PasscodeManager passcodeManager = mgr.getPasscodeManager();
-                    passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength);
-                    passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
-                    passcodeManager.setMinPasscodeLength(id.pinLength);
+            // Sets additional admin prefs, if they exist.
+            final UserAccount account = new UserAccount(accountOptions.authToken,
+                    accountOptions.refreshToken, loginOptions.loginUrl,
+                    accountOptions.identityUrl, accountOptions.instanceUrl,
+                    accountOptions.orgId, accountOptions.userId,
+                    accountOptions.username, buildAccountName(accountOptions.username,
+                    accountOptions.instanceUrl), loginOptions.clientSecret,
+                    accountOptions.communityId, accountOptions.communityUrl);
 
-                    /*
-                     * Checks if a passcode already exists. If a passcode has NOT
-                     * been created yet, the user is taken through the passcode
-                     * creation flow, at the end of which account data is encrypted
-                     * with a hash of the passcode. Other existing accounts are
-                     * also re-encrypted behind the scenes at this point. If a
-                     * passcode already exists, the existing hash is used and the
-                     * account is added at this point.
-                     */
-                    if (!passcodeManager.hasStoredPasscode(mgr.getAppContext())) {
+            if (id.customAttributes != null) {
+                mgr.getAdminSettingsManager().setPrefs(id.customAttributes, account);
+            }
 
-                        // This will bring up the create passcode screen - we will create the account in onResume
-                        mgr.getPasscodeManager().setEnabled(true);
-                        mgr.getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
-                    } else {
-                        loginOptions.passcodeHash = mgr.getPasscodeHash();
-                    	addAccount();
-                        callback.finish();
-                    }
-                }
-                // No screen lock required or no mobile policy specified
-                else {
-                    final PasscodeManager passcodeManager = mgr.getPasscodeManager();
-                    passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH);
+            if (id.customPermissions != null) {
+                mgr.getAdminPermsManager().setPrefs(id.customPermissions, account);
+            }
+
+
+            // Screen lock required by mobile policy
+            if (id.screenLockTimeout > 0) {
+
+                // Stores the mobile policy for the org.
+                final PasscodeManager passcodeManager = mgr.getPasscodeManager();
+                passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength);
+                passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
+                passcodeManager.setMinPasscodeLength(id.pinLength);
+
+                /*
+                 * Checks if a passcode already exists. If a passcode has NOT
+                 * been created yet, the user is taken through the passcode
+                 * creation flow, at the end of which account data is encrypted
+                 * with a hash of the passcode. Other existing accounts are
+                 * also re-encrypted behind the scenes at this point. If a
+                 * passcode already exists, the existing hash is used and the
+                 * account is added at this point.
+                 */
+                if (!passcodeManager.hasStoredPasscode(mgr.getAppContext())) {
+                    // This will bring up the create passcode screen - we will create the account in onResume
+                    mgr.getPasscodeManager().setEnabled(true);
+                    mgr.getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
+                } else {
                     loginOptions.passcodeHash = mgr.getPasscodeHash();
                     addAccount();
                     callback.finish();
                 }
+            }
+            // No screen lock required or no mobile policy specified
+            else {
+                final PasscodeManager passcodeManager = mgr.getPasscodeManager();
+                passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH);
+                loginOptions.passcodeHash = mgr.getPasscodeHash();
+                addAccount();
+                callback.finish();
             }
         }
 
