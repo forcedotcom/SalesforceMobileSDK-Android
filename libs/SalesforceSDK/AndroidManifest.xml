@@ -12,7 +12,6 @@
 
         <!-- Service required for authentication -->
         <service android:exported="true"
-            android:process=":auth"
             android:name="com.salesforce.androidsdk.auth.AuthenticatorService">
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator" />

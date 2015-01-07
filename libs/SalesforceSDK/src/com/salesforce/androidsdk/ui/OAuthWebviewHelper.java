@@ -52,7 +52,6 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
-import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
