@@ -45,6 +45,7 @@ public class RuntimeConfig {
 		OAUTH_REDIRECT_URI;
 	}
 
+    private boolean isManaged = false;
 	private Bundle configurations = null;
 	
 	private static RuntimeConfig INSTANCE = null;
@@ -52,6 +53,7 @@ public class RuntimeConfig {
 	private RuntimeConfig(Context ctx) {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 			configurations = getRestrictions(ctx);
+            isManaged = hasRestrictionsProvider(ctx);
         }
 	}
 	
@@ -69,11 +71,11 @@ public class RuntimeConfig {
 	}
 
     /**
-     * Returns true if application is managed (i.e. has restrictions / runtime configurations)
+     * Returns true if application is managed
      * @return boolean
      */
     public boolean isManagedApp() {
-        return configurations != null;
+        return isManaged;
     }
 
     /**
@@ -108,5 +110,12 @@ public class RuntimeConfig {
 		RestrictionsManager restrictionsManager = (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
 		return restrictionsManager.getApplicationRestrictions();
 	}
-		
+
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private boolean hasRestrictionsProvider(Context ctx) {
+        RestrictionsManager restrictionsManager = (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
+        return restrictionsManager.hasRestrictionsProvider();
+    }
+
 }
