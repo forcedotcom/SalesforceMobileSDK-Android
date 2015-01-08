@@ -159,7 +159,6 @@ public class OAuth2 {
         final List<String> scopesList = Arrays.asList(scopes == null ? new String[]{} : scopes);
         Set<String> scopesSet = new HashSet<String>(scopesList);
         scopesSet.add(REFRESH_TOKEN);
-        scopesSet.add(CUSTOM_PERMISSIONS);
         return TextUtils.join(" ", scopesSet.toArray(new String[]{}));
     }
 
