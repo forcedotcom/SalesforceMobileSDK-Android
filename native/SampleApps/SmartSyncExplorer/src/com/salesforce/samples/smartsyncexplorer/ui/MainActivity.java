@@ -253,11 +253,12 @@ public class MainActivity extends SalesforceListActivity implements
 
 	private void syncDownContacts() {
 		smartStore.registerSoup(ContactListLoader.CONTACT_SOUP, CONTACTS_INDEX_SPEC);
+        final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
 		try {
 			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
 					.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
 			final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
-			syncMgr.syncDown(target, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
+			syncMgr.syncDown(target, options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
 				@Override
 				public void onUpdate(SyncState sync) {
 					handleSyncUpdate(sync);

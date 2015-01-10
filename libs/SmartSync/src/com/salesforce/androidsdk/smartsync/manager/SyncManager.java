@@ -26,18 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -56,14 +44,32 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 
 
 /**
  * Sync Manager
 */
 public class SyncManager {
-	private static Map<String, SyncManager> INSTANCES;
+    public static final int MAX_DIRTY_RECORDS = 2000;
+    private static Map<String, SyncManager> INSTANCES;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 	
     private String apiVersion;
@@ -171,13 +177,14 @@ public class SyncManager {
     /**
      * Create and run a sync down
      * @param target
-     * @param soupName
+     * @param options
+      *@param soupName
      * @param callback
      * @return
      * @throws JSONException
      */
-    public SyncState syncDown(SyncTarget target, String soupName, SyncUpdateCallback callback) throws JSONException {
-    	SyncState sync = SyncState.createSyncDown(smartStore, target, soupName);
+    public SyncState syncDown(SyncTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
+    	SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
 		runSync(sync, callback);
 		return sync;
     }
@@ -262,7 +269,7 @@ public class SyncManager {
 		String soupName = sync.getSoupName();
 		SyncOptions options = sync.getOptions();
 		List<String> fieldlist = options.getFieldlist();
-		QuerySpec querySpec = QuerySpec.buildExactQuerySpec(soupName, LOCAL, "true", 2000); // XXX that could use a lot of memory
+		QuerySpec querySpec = QuerySpec.buildExactQuerySpec(soupName, LOCAL, "true", MAX_DIRTY_RECORDS); // XXX that could use a lot of memory
 		
 		// Call smartstore
 		JSONArray records = smartStore.query(querySpec, 0); // TBD deal with more than 2000 locally modified records
@@ -353,6 +360,7 @@ public class SyncManager {
 	
 	private void syncDownMru(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		SyncTarget target = sync.getTarget();
+        MergeMode mergeMode = sync.getMergeMode();
 		String sobjectType = target.getObjectType();
 		List<String>fieldlist = target.getFieldlist();
     	String soupName = sync.getSoupName();
@@ -375,12 +383,13 @@ public class SyncManager {
 		// Save to smartstore
 		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
 		if (totalSize > 0)
-			saveRecordsToSmartStore(soupName, records);
+			saveRecordsToSmartStore(soupName, records, mergeMode);
 	}
 
 	private void syncDownSoql(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		String soupName = sync.getSoupName();	
 		SyncTarget target = sync.getTarget();
+        MergeMode mergeMode = sync.getMergeMode();
 		String query = target.getQuery();
 		RestRequest request = RestRequest.getRequestForQuery(apiVersion, query);
 	
@@ -395,7 +404,7 @@ public class SyncManager {
 		do {
 			JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
 			// Save to smartstore
-			saveRecordsToSmartStore(soupName, records);
+			saveRecordsToSmartStore(soupName, records, mergeMode);
 			countSaved += records.length();
 			
 			// Update sync status
@@ -413,7 +422,8 @@ public class SyncManager {
 	private void syncDownSosl(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		String soupName = sync.getSoupName();	
 		SyncTarget target = sync.getTarget();
-		String query = target.getQuery();
+        MergeMode mergeMode = sync.getMergeMode();
+        String query = target.getQuery();
 		RestRequest request = RestRequest.getRequestForSearch(apiVersion, query);
 	
 		// Call server
@@ -426,7 +436,7 @@ public class SyncManager {
 		// Save to smartstore
 		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
 		if (totalSize > 0)
-			saveRecordsToSmartStore(soupName, records);
+			saveRecordsToSmartStore(soupName, records, mergeMode);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -437,18 +447,42 @@ public class SyncManager {
 		}
 		return arr;
 	}
+
+    private Set<String> toSet(JSONArray jsonArray) throws JSONException {
+        Set<String> set = new HashSet<String>();
+        for (int i=0; i<jsonArray.length(); i++) {
+            set.add(jsonArray.getJSONArray(i).getString(0));
+        }
+        return set;
+    }
 	
-	private void saveRecordsToSmartStore(String soupName, JSONArray records)
+	private void saveRecordsToSmartStore(String soupName, JSONArray records, MergeMode mergeMode)
 			throws JSONException {
-		// Save to SmartStore
+        // Gather ids of dirty records
+        Set<String> idsToSkip = null;
+        if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
+            String dirtyRecordsSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true'", soupName, Constants.ID, soupName, soupName, LOCAL);
+            idsToSkip = toSet(smartStore.query(QuerySpec.buildSmartQuerySpec(dirtyRecordsSql, MAX_DIRTY_RECORDS), 0));
+        }
+
 		smartStore.beginTransaction();
 		for (int i = 0; i < records.length(); i++) {
 			JSONObject record = records.getJSONObject(i);
-			record.put(LOCAL, false);
-			record.put(LOCALLY_CREATED, false);
-			record.put(LOCALLY_UPDATED, false);
-			record.put(LOCALLY_DELETED, false);
-			smartStore.upsert(soupName, records.getJSONObject(i), Constants.ID, false);
+
+            // Skip?
+            if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
+                String id = JSONObjectHelper.optString(record, Constants.ID);
+                if (id != null && idsToSkip.contains(id)) {
+                    continue; // don't write over dirty record
+                }
+            }
+
+            // Save
+            record.put(LOCAL, false);
+            record.put(LOCALLY_CREATED, false);
+            record.put(LOCALLY_UPDATED, false);
+            record.put(LOCALLY_DELETED, false);
+            smartStore.upsert(soupName, records.getJSONObject(i), Constants.ID, false);
 		}
 		smartStore.setTransactionSuccessful();
 		smartStore.endTransaction();
@@ -477,7 +511,7 @@ public class SyncManager {
     	update,
     	delete
     }
-    
+
     /**
      * Exception thrown by smart sync manager
      *
