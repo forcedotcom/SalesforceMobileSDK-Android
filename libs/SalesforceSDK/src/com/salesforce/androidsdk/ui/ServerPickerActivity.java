@@ -37,8 +37,8 @@ import android.view.View;
 import android.widget.RadioGroup;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.LoginServerManager;
-import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
+import com.salesforce.androidsdk.config.LoginServerManager;
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 
 /**
  * This class provides UI to change the login server URL to use
@@ -194,7 +194,7 @@ public class ServerPickerActivity extends Activity implements
      */
     protected void setupRadioButtons() {
         final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
-        final List<LoginServer> servers = loginServerManager.getAllSavedSevers();
+        final List<LoginServer> servers = loginServerManager.getLoginServers();
         if (servers != null) {
             for (final LoginServer currentServer : servers) {
                 setRadioState(radioGroup, currentServer);

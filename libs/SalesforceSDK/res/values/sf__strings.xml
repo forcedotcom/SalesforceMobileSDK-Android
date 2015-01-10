@@ -6,6 +6,7 @@
 	<string name="sf__generic_error">An error has occurred %s\nPlease try again</string>
 	<string name="sf__invalid_server_url">Please type in a valid URL starting with https://</string>
 	<string name="sf__access_token_revoked">Your access token has been revoked by the administrator. You will now be logged out.</string>
+    <string name="sf__managed_app_error">Authentication only allowed from managed device.</string>
 
     <!-- SSL Errors -->
     <string name="sf__ssl_error">SSL Error: %s.</string>

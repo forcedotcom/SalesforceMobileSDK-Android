@@ -39,9 +39,9 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
-import com.salesforce.androidsdk.auth.LoginServerManager;
+import com.salesforce.androidsdk.config.AdminSettingsManager;
+import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.push.PushMessaging;
-import com.salesforce.androidsdk.rest.AdminPrefsManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 
 /**
@@ -180,11 +180,11 @@ public class UpgradeManager {
     		 * from the default storage path. We pass the correct account to
     		 * the setter, to migrate the contents to the correct storage path.
     		 */
-    		final Map<String, String> prefs = SalesforceSDKManager.getInstance().getAdminPrefsManager().getPrefs(null);
-    		SalesforceSDKManager.getInstance().getAdminPrefsManager().setPrefs(prefs,
+    		final Map<String, String> prefs = SalesforceSDKManager.getInstance().getAdminSettingsManager().getPrefs(null);
+    		SalesforceSDKManager.getInstance().getAdminSettingsManager().setPrefs(prefs,
     				SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account));
     		final SharedPreferences settings = SalesforceSDKManager.getInstance()
-        			.getAppContext().getSharedPreferences(AdminPrefsManager.ADMIN_PREFS,
+        			.getAppContext().getSharedPreferences(AdminSettingsManager.FILENAME_ROOT,
         			Context.MODE_PRIVATE);
     		final Editor edit = settings.edit();
     		edit.clear();

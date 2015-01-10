@@ -1,0 +1,92 @@
+# Solano CI Configuration
+#
+# See http://docs.solanolabs.com/ for more information.
+
+# Set global environment variables for all subcommands and tests
+:environment:
+  'DEVICE_OS_VERSION': 'android-17'
+
+# Run build-wide and per-worker setup
+:hooks:
+  :pre_setup: 'config/pre_setup.sh'
+  :worker_setup: 'config/worker_setup.sh'
+# Time out hooks if they (each) run for more than 20 minutes
+:timeout_hook: 1200
+
+# Configure caching of Android SDK install
+:cache:
+  #:key_paths:
+  #  - config/pre_setup.sh
+  :save_paths:
+    - HOME/android-sdk-linux
+
+# Set Java version to OpenJDK 1.7
+:java:
+  :java_version: java-7-openjdk
+
+# Timeout a given test command after 30 minutes
+:timeout: 1800
+
+# Each element in the tests list will be queued to run, and executed in parallel. Each element can be bash command line.
+:tests: 
+  - ". config/android-settings.sh && ./tools/sdk.sh -v -f -b ContactExplorer"
+  - ". config/android-settings.sh && ./tools/sdk.sh -v -f -b VFConnector"
+  - ". config/android-settings.sh && ./gradlew :native:SampleApps:SmartSyncExplorer:assembleDebug"
+  - ". config/android-settings.sh && ./tools/sdk.sh -v -f -b AccountEditor"
+  - ". config/android-settings.sh && ./tools/sdk.sh -v -f -b HybridFileExplorer"
+  - ". config/android-settings.sh && ./gradlew :libs:SmartSync:assembleDebug"
+  - ". config/android-settings.sh && ./gradlew :libs:SmartStore:assembleDebug"
+  - ". config/android-settings.sh && ./tools/sdk.sh -v -f -b UserList"
+  - ". config/android-settings.sh && ./gradlew :native:SampleApps:NativeSqlAggregator:assembleDebug"
+  - ". config/android-settings.sh && ./gradlew :native:TemplateApp:assembleDebug"
+  - "config/package-npm.sh"
+
+  # To capture JUnit XML output from a command line, set its type to "junit"
+  # and indicate where Solano CI can find the XML files
+  - type: junit
+    command: "config/with-emulator.sh ./tools/sdk.sh -v -f -b SalesforceSDK"
+    output: exit-status
+    invocation: single
+    mode: basic
+    report_files:
+    - "**/junit-reports/**.xml"
+  - type: junit
+    command: "config/with-emulator.sh ./tools/sdk.sh -v -f -b RestExplorer"
+    output: exit-status
+    invocation: single
+    mode: basic
+    report_files:
+    - "**/TEST**.xml" # Note that gradle leaves XML output in a different location from ant
+  - type: junit
+    command: "config/with-emulator.sh ./tools/sdk.sh -v -f -t TemplateAppTest"
+    output: exit-status
+    invocation: single
+    mode: basic
+    report_files:
+    - "**/junit-reports/**.xml"
+  - type: junit
+    command: "config/with-emulator.sh ./tools/sdk.sh -v -f -t SmartStoreTest"
+    output: exit-status
+    invocation: single
+    mode: basic
+    report_files:
+    - "**/junit-reports/**.xml"
+  - type: junit
+    command: "config/with-emulator.sh ./gradlew ./tools/sdk.sh -v -f -t SmartSyncTest"
+    output: exit-status
+    invocation: single
+    mode: basic
+    report_files:
+    - "**/junit-reports/**.xml"
+  - type: junit
+    command: "config/with-emulator.sh ./tools/sdk.sh -v -f -t ForcePluginsTest"
+    output: exit-status
+    invocation: single
+    mode: basic
+    report_files:
+    - "**/junit-reports/**.xml"
+
+# Attach files relative to the repo to the build report
+:collect:
+  :repo:
+    - native/SampleApps/FileExplorer/bin

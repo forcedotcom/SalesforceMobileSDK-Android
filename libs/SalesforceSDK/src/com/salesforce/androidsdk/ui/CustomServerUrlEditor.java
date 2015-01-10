@@ -42,7 +42,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.LoginServerManager;
+import com.salesforce.androidsdk.config.LoginServerManager;
 
 /**
  * Custom dialog fragment to allow the user to set a label and URL to use for the login.

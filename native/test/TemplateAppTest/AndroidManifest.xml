@@ -10,8 +10,8 @@
     </application>
 
     <instrumentation android:targetPackage="com.salesforce.samples.templateapp" 
-        android:name="com.salesforce.androidsdk.util.test.JUnitReportTestRunner" 
-        android:label="Tests for TemplateApp" />
+        android:name="com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
+    />
 
     <uses-sdk android:minSdkVersion="17"
         android:targetSdkVersion="21" />
