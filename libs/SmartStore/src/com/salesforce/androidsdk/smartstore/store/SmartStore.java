@@ -663,7 +663,7 @@ public class SmartStore  {
 	
 	/**
 	 * @param querySpec
-	 * @return count of results for a "smart" query
+	 * @return count of results for a query
 	 */
 	public int countQuery(QuerySpec querySpec) {
 		final SQLiteDatabase db = getDatabase();
