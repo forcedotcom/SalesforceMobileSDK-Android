@@ -68,7 +68,7 @@ import java.util.concurrent.Executors;
  * Sync Manager
 */
 public class SyncManager {
-    public static final int MAX_DIRTY_RECORDS = 2000;
+    public static final int PAGE_SIZE = 2000;
     private static Map<String, SyncManager> INSTANCES;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 	
@@ -269,88 +269,100 @@ public class SyncManager {
 		String soupName = sync.getSoupName();
 		SyncOptions options = sync.getOptions();
 		List<String> fieldlist = options.getFieldlist();
-		QuerySpec querySpec = QuerySpec.buildExactQuerySpec(soupName, LOCAL, "true", MAX_DIRTY_RECORDS); // XXX that could use a lot of memory
-		
-		// Call smartstore
-		JSONArray records = smartStore.query(querySpec, 0); // TBD deal with more than 2000 locally modified records
-		int totalSize = records.length();
-		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
-		for (int i = 0; i < totalSize; i++) {
-			JSONObject record = records.getJSONObject(i);
-			
-			// Do we need to do a create, update or delete
-			Action action = null;
-			if (record.getBoolean(LOCALLY_DELETED)) 
-				action = Action.delete;
-			else if (record.getBoolean(LOCALLY_CREATED))
-				action = Action.create;
-			else if (record.getBoolean(LOCALLY_UPDATED))
-				action = Action.update;
-			
-			if (action == null) {
-				// Nothing to do for this record
-				continue;
-			}
 
-			// Getting type and id
-			String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
-			String objectId = record.getString(Constants.ID);
-			
-			// Fields to save (in the case of create or update)
-			Map<String, Object> fields = new HashMap<String, Object>();
-			if (action == Action.create || action == Action.update) {
-				for (String fieldName : fieldlist) {
-					if (!fieldName.equals(Constants.ID)) {
-						fields.put(fieldName, record.get(fieldName));
-					}
-				}
-			}
-			
-			// Building create/update/delete request
-			RestRequest request = null;
-			switch (action) {
-			case create: request = RestRequest.getRequestForCreate(apiVersion, objectType, fields); break;
-			case delete: request = RestRequest.getRequestForDelete(apiVersion, objectType, objectId); break;
-			case update: request = RestRequest.getRequestForUpdate(apiVersion, objectType, objectId, fields); break;
-			default:
-				break;
-			
-			}
-			
-			// Call server
-			RestResponse response = sendSyncWithSmartSyncUserAgent(request);
-			// Update smartstore
-			if (response.isSuccess()) {
-				// Replace id with server id during create
-				if (action == Action.create) {
-					record.put(Constants.ID, response.asJSONObject().get(Constants.LID));
-				}
-				// Set local flags to false
-				record.put(LOCAL, false);
-				record.put(LOCALLY_CREATED, false);
-				record.put(LOCALLY_UPDATED, false);
-				record.put(LOCALLY_DELETED, false);
-				
-				// Remove entry on delete
-				if (action == Action.delete) {
-					smartStore.delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));				
-				}
-				// Update entry otherwise
-				else {
-					smartStore.update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID));				
-				}
-			}
-			
-			
-			// Updating status
-			int progress = (i+1)*100 / totalSize;
-			if (progress < 100) {
-				updateSync(sync, SyncState.Status.RUNNING, progress, -1 /* don't change */, callback);
-			}			
-		}
+        Set<String> dirtyRecordIds = getDirtyRecordIds(soupName, SmartStore.SOUP_ENTRY_ID);
+		int totalSize = dirtyRecordIds.size();
+        updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
+        int i = 0;
+        for (String id : dirtyRecordIds) {
+            JSONObject record = smartStore.retrieve(soupName, Long.valueOf(id)).getJSONObject(0);
+            syncUpOneRecord(soupName, fieldlist, record);
+
+            // Updating status
+            int progress = (i + 1) * 100 / totalSize;
+            if (progress < 100) {
+                updateSync(sync, SyncState.Status.RUNNING, progress, -1 /* don't change */, callback);
+            }
+
+            // Incrementing i
+            i++;
+        }
 	}
 
-	private void syncDown(SyncState sync, SyncUpdateCallback callback) throws Exception {
+    private boolean syncUpOneRecord(String soupName, List<String> fieldlist, JSONObject record) throws JSONException, IOException {
+        // Do we need to do a create, update or delete
+        Action action = null;
+        if (record.getBoolean(LOCALLY_DELETED))
+            action = Action.delete;
+        else if (record.getBoolean(LOCALLY_CREATED))
+            action = Action.create;
+        else if (record.getBoolean(LOCALLY_UPDATED))
+            action = Action.update;
+
+        if (action == null) {
+            // Nothing to do for this record
+            return true;
+        }
+
+        // Getting type and id
+        String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
+        String objectId = record.getString(Constants.ID);
+
+        // Fields to save (in the case of create or update)
+        Map<String, Object> fields = new HashMap<String, Object>();
+        if (action == Action.create || action == Action.update) {
+            for (String fieldName : fieldlist) {
+                if (!fieldName.equals(Constants.ID)) {
+                    fields.put(fieldName, record.get(fieldName));
+                }
+            }
+        }
+
+        // Building create/update/delete request
+        RestRequest request = null;
+        switch (action) {
+            case create:
+                request = RestRequest.getRequestForCreate(apiVersion, objectType, fields);
+                break;
+            case delete:
+                request = RestRequest.getRequestForDelete(apiVersion, objectType, objectId);
+                break;
+            case update:
+                request = RestRequest.getRequestForUpdate(apiVersion, objectType, objectId, fields);
+                break;
+            default:
+                break;
+
+        }
+
+        // Call server
+        RestResponse response = sendSyncWithSmartSyncUserAgent(request);
+
+        // Update smartstore
+        if (response.isSuccess()) {
+            // Replace id with server id during create
+            if (action == Action.create) {
+                record.put(Constants.ID, response.asJSONObject().get(Constants.LID));
+            }
+            // Set local flags to false
+            record.put(LOCAL, false);
+            record.put(LOCALLY_CREATED, false);
+            record.put(LOCALLY_UPDATED, false);
+            record.put(LOCALLY_DELETED, false);
+
+            // Remove entry on delete
+            if (action == Action.delete) {
+                smartStore.delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
+            }
+            // Update entry otherwise
+            else {
+                smartStore.update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID));
+            }
+        }
+        return false;
+    }
+
+    private void syncDown(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		switch(sync.getTarget().getQueryType()) {
 		case mru:  syncDownMru(sync, callback); break;
 		case soql: syncDownSoql(sync, callback); break;
@@ -461,8 +473,7 @@ public class SyncManager {
         // Gather ids of dirty records
         Set<String> idsToSkip = null;
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
-            String dirtyRecordsSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true'", soupName, Constants.ID, soupName, soupName, LOCAL);
-            idsToSkip = toSet(smartStore.query(QuerySpec.buildSmartQuerySpec(dirtyRecordsSql, MAX_DIRTY_RECORDS), 0));
+            idsToSkip = getDirtyRecordIds(soupName, Constants.ID);
         }
 
 		smartStore.beginTransaction();
@@ -487,7 +498,20 @@ public class SyncManager {
 		smartStore.setTransactionSuccessful();
 		smartStore.endTransaction();
 	}
-    
+
+    private Set<String> getDirtyRecordIds(String soupName, String idField) throws JSONException {
+        Set<String> idsToSkip = new HashSet<String>();;
+        String dirtyRecordsSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true'", soupName, idField, soupName, soupName, LOCAL);
+        final QuerySpec smartQuerySpec = QuerySpec.buildSmartQuerySpec(dirtyRecordsSql, PAGE_SIZE);
+        boolean hasMore = true;
+        for (int pageIndex=0; hasMore; pageIndex++) {
+            JSONArray results = smartStore.query(smartQuerySpec, pageIndex);
+            hasMore = (results.length() == PAGE_SIZE);
+            idsToSkip.addAll(toSet(results));
+        }
+        return idsToSkip;
+    }
+
     /**
      * Send request after adding user-agent header that says SmartSync
 	 * @param restRequest
