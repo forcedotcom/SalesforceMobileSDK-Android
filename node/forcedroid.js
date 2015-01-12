@@ -159,7 +159,7 @@ function createHybridApp(config) {
         process.exit(7);
     }
 
-    shelljs.exec('cordova create ' + config.projectDir + ' ' + config.packagename + ' ' + config.appname);
+    shelljs.exec('cordova create "' + config.projectDir + '" ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android');
     shelljs.exec('cordova plugin add https://github.com/forcedotcom/SalesforceMobileSDK-CordovaPlugin#unstable');
