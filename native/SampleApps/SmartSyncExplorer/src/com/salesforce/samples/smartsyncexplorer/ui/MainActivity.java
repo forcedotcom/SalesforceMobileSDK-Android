@@ -149,11 +149,15 @@ public class MainActivity extends SalesforceListActivity implements
 		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
 			syncDownContacts();
 		} else {
-			getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
-		}
+            refreshList();
+        }
     }
 
-	@Override
+    private void refreshList() {
+        getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
+    }
+
+    @Override
 	public void onDestroy() {
 		getLoaderManager().destroyLoader(CONTACT_LOADER_ID);
 		super.onDestroy();
@@ -293,6 +297,7 @@ public class MainActivity extends SalesforceListActivity implements
 				Toast.makeText(MainActivity.this,
 						"Sync down successful!",
 						Toast.LENGTH_LONG).show();
+                refreshList();
 				break;
 			case syncUp:
 				Toast.makeText(MainActivity.this,
