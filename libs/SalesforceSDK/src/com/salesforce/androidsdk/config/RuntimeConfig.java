@@ -42,7 +42,9 @@ public class RuntimeConfig {
 		LOGIN_SERVERS,
 		LOGIN_SERVERS_LABELS,
 		REMOTE_ACCESS_CONSUMER_KEY,
-		OAUTH_REDIRECT_URI;
+		OAUTH_REDIRECT_URI,
+		REQUIRE_CERT_AUTH,
+		CERT_ALIAS;
 	}
 
     private boolean isManaged = false;
@@ -111,11 +113,9 @@ public class RuntimeConfig {
 		return restrictionsManager.getApplicationRestrictions();
 	}
 
-
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private boolean hasRestrictionsProvider(Context ctx) {
         RestrictionsManager restrictionsManager = (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
         return restrictionsManager.hasRestrictionsProvider();
     }
-
 }
