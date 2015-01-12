@@ -260,22 +260,7 @@ public class SyncState {
      * Enum for merge modes
      */
     public enum MergeMode {
-        OVERWRITE("overwrite"),
-        LEAVE_IF_CHANGED("merge-fail-if-changed");
-
-        private final String jsMergeMode;
-
-        private MergeMode(String jsMergeMode) {
-            this.jsMergeMode = jsMergeMode;
-        }
-
-        public static MergeMode fromJs(String jsMergeMode) {
-            for (MergeMode m : MergeMode.values()) {
-                if (m.jsMergeMode.equals(jsMergeMode)) {
-                    return m;
-                }
-            }
-            return null;
-        }
+        OVERWRITE,
+        LEAVE_IF_CHANGED;
     }
 }
