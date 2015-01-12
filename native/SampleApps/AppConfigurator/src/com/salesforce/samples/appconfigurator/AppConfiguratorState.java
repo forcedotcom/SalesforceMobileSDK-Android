@@ -150,6 +150,8 @@ public class AppConfiguratorState {
         if (!loginServersLabels.isEmpty()) restrictions.putStringArray(ConfigKey.LOGIN_SERVERS_LABELS.name(), loginServersLabels.split(","));
         if (!remoteAccessConsumerKey.isEmpty()) restrictions.putString(ConfigKey.REMOTE_ACCESS_CONSUMER_KEY.name(), remoteAccessConsumerKey);
         if (!oauthRedirectURI.isEmpty()) restrictions.putString(ConfigKey.OAUTH_REDIRECT_URI.name(), oauthRedirectURI);
+        restrictions.putBoolean(ConfigKey.REQUIRE_CERT_AUTH.name(), requireCertAuth);
+        if (!certAlias.isEmpty()) restrictions.putString(ConfigKey.CERT_ALIAS.name(), certAlias);
         devicePolicyManager.setApplicationRestrictions(
                 AppConfiguratorAdminReceiver.getComponentName(ctx),
                 getTargetApp(), restrictions);
