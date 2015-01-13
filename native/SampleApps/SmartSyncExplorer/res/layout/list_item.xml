@@ -41,7 +41,6 @@
     </LinearLayout>
 
     <ImageView android:id="@+id/sync_status_view"
-        android:layout_toRightOf="@id/obj_layout"
         android:layout_alignParentRight="true"
         android:layout_width="42dp"
         android:layout_height="42dp"
