@@ -119,12 +119,12 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     @Deprecated
 	public OAuthWebviewHelper(OAuthWebviewHelperEvents callback,
 			LoginOptions options, WebView webview, Bundle savedInstanceState) {
-    	/*
-    	 * TODO: Replace the 'null' for Activity here with the correct activity.
-    	 */
-    	this(null, callback, options, webview, savedInstanceState);
+    	this(new LoginActivity(), callback, options, webview, savedInstanceState);
     }
 
+    /**
+     * Construct a new OAuthWebviewHelper and perform the initial configuration of the Webview.
+     */
 	public OAuthWebviewHelper(Activity activity, OAuthWebviewHelperEvents callback,
 			LoginOptions options, WebView webview, Bundle savedInstanceState) {
         assert options != null && callback != null && webview != null && activity != null;

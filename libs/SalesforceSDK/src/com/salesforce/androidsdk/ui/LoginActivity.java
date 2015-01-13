@@ -42,6 +42,8 @@ import android.webkit.WebView;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.config.RuntimeConfig;
+import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
@@ -116,11 +118,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
      * @return True - if it should be used, False - otherwise.
      */
     protected boolean shouldUseCertBasedAuth() {
-    	/*
-    	 * TODO: This method should call the server API to determine if this
-    	 * flow is supported or not. If yes - return true, else - return false.
-    	 */
-    	return true;
+		return RuntimeConfig.getRuntimeConfig(this).getBoolean(ConfigKey.REQUIRE_CERT_AUTH);
     }
 
 	protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback,
