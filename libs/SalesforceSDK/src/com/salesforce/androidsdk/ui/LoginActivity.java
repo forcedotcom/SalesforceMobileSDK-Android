@@ -105,7 +105,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		// Let observers know
 		EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);
 		if (shouldUseCertBasedAuth()) {
-			KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, null);
+			final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.CERT_ALIAS);
+			KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, alias);
 		}
 
 		// Load login page
