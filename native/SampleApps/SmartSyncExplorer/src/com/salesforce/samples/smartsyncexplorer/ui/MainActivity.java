@@ -149,11 +149,15 @@ public class MainActivity extends SalesforceListActivity implements
 		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
 			syncDownContacts();
 		} else {
-			getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
-		}
+            refreshList();
+        }
     }
 
-	@Override
+    private void refreshList() {
+        getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
+    }
+
+    @Override
 	public void onDestroy() {
 		getLoaderManager().destroyLoader(CONTACT_LOADER_ID);
 		super.onDestroy();
@@ -253,11 +257,12 @@ public class MainActivity extends SalesforceListActivity implements
 
 	private void syncDownContacts() {
 		smartStore.registerSoup(ContactListLoader.CONTACT_SOUP, CONTACTS_INDEX_SPEC);
+        final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
 		try {
 			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
 					.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
 			final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
-			syncMgr.syncDown(target, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
+			syncMgr.syncDown(target, options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
 				@Override
 				public void onUpdate(SyncState sync) {
 					handleSyncUpdate(sync);
@@ -295,6 +300,7 @@ public class MainActivity extends SalesforceListActivity implements
 				Toast.makeText(MainActivity.this,
 						"Sync down successful!",
 						Toast.LENGTH_LONG).show();
+                refreshList();
 				break;
 			case syncUp:
 				Toast.makeText(MainActivity.this,

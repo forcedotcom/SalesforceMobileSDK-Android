@@ -158,7 +158,6 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
     /**
      * Returns a singleton instance of this class.
      *
-     * @param context Application context.
      * @return Singleton instance of SmartSyncSDKManager.
      */
     public static SmartSyncSDKManager getInstance() {

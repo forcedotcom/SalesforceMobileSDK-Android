@@ -137,9 +137,10 @@ public class SmartSyncPlugin extends ForcePlugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		JSONObject target = arg0.getJSONObject(TARGET);
 		String soupName = arg0.getString(SOUP_NAME);
+        JSONObject options = arg0.getJSONObject(OPTIONS);
 		
 		SyncManager syncManager = SyncManager.getInstance(null);
-		SyncState sync = syncManager.syncDown(SyncTarget.fromJSON(target), soupName, new SyncUpdateCallback() {
+		SyncState sync = syncManager.syncDown(SyncTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
 			@Override
 			public void onUpdate(SyncState sync) {
 				handleSyncUpdate(sync);
