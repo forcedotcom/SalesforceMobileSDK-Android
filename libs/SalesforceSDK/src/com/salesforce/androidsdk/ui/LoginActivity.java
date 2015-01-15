@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2012, salesforce.com, inc.
+ * Copyright (c) 2011-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -31,6 +31,7 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.security.KeyChain;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -41,6 +42,8 @@ import android.webkit.WebView;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.config.RuntimeConfig;
+import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.OAuthWebviewHelper.OAuthWebviewHelperEvents;
@@ -55,7 +58,8 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  *
  * The bulk of the work for this is actually managed by OAuthWebviewHelper class.
  */
-public class LoginActivity extends AccountAuthenticatorActivity implements OAuthWebviewHelperEvents {
+public class LoginActivity extends AccountAuthenticatorActivity
+		implements OAuthWebviewHelperEvents {
 
 	// Request code when calling server picker activity
     public static final int PICK_SERVER_REQUEST_CODE = 10;
@@ -99,15 +103,28 @@ public class LoginActivity extends AccountAuthenticatorActivity implements OAuth
 		webviewHelper = getOAuthWebviewHelper(this, loginOptions, webView, savedInstanceState);
 
 		// Let observers know
-		EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);        
+		EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);
+		if (shouldUseCertBasedAuth()) {
+			final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.CERT_ALIAS);
+			KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, alias);
+		}
 
 		// Load login page
 		webviewHelper.loadLoginPage();
 	}
 
+    /**
+     * Returns whether certificate based authentication flow should be used.
+     *
+     * @return True - if it should be used, False - otherwise.
+     */
+    protected boolean shouldUseCertBasedAuth() {
+		return RuntimeConfig.getRuntimeConfig(this).getBoolean(ConfigKey.REQUIRE_CERT_AUTH);
+    }
+
 	protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback,
 			LoginOptions loginOptions, WebView webView, Bundle savedInstanceState) {
-		return new OAuthWebviewHelper(callback, loginOptions, webView, savedInstanceState);
+		return new OAuthWebviewHelper(this, callback, loginOptions, webView, savedInstanceState);
 	}
 
 	@Override

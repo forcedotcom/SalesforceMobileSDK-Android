@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -42,7 +42,9 @@ public class RuntimeConfig {
 		LOGIN_SERVERS,
 		LOGIN_SERVERS_LABELS,
 		REMOTE_ACCESS_CONSUMER_KEY,
-		OAUTH_REDIRECT_URI;
+		OAUTH_REDIRECT_URI,
+		REQUIRE_CERT_AUTH,
+		CERT_ALIAS;
 	}
 
     private boolean isManaged = false;
@@ -111,11 +113,9 @@ public class RuntimeConfig {
 		return restrictionsManager.getApplicationRestrictions();
 	}
 
-
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private boolean hasRestrictionsProvider(Context ctx) {
         RestrictionsManager restrictionsManager = (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
         return restrictionsManager.hasRestrictionsProvider();
     }
-
 }

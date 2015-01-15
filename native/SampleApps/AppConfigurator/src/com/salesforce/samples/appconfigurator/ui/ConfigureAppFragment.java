@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -57,6 +57,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
     private EditText mLoginServersLabels;
     private EditText mRemoteAccessConsumerKey;
     private EditText mOauthRedirectURI;
+    private EditText mCertAlias;
     private EditText[] mEditTexts;
 
     @Override
@@ -72,9 +73,13 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
         mLoginServersLabels = (EditText) view.findViewById(R.id.login_servers_labels);
         mRemoteAccessConsumerKey = (EditText) view.findViewById(R.id.remote_access_consumer_key);
         mOauthRedirectURI = (EditText) view.findViewById(R.id.oauth_redirect_uri);
+        mCertAlias = (EditText) view.findViewById(R.id.cert_alias);
         mButtonSave = (Button) view.findViewById(R.id.save);
         mButtonSave.setOnClickListener(this);
-        mEditTexts = new EditText[] { mLoginServers, mLoginServersLabels, mRemoteAccessConsumerKey, mOauthRedirectURI};
+        mEditTexts = new EditText[] {
+        		mLoginServers, mLoginServersLabels, mRemoteAccessConsumerKey,
+        		mOauthRedirectURI, mCertAlias
+        };
     }
 
     @Override
@@ -88,11 +93,17 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
         switch (view.getId()) {
             case R.id.save:
                 AppConfiguratorState state = AppConfiguratorState.getInstance(getActivity());
+                boolean isCertAuthEnabled = false;
+                if (mCertAlias.getText() != null && !mCertAlias.getText().toString().trim().isEmpty()) {
+                	isCertAuthEnabled = true;
+                }
                 state.saveConfigurations(getActivity(),
                         mLoginServers.getText().toString(),
                         mLoginServersLabels.getText().toString(),
                         mRemoteAccessConsumerKey.getText().toString(),
-                        mOauthRedirectURI.getText().toString());
+                        mOauthRedirectURI.getText().toString(),
+                        isCertAuthEnabled,
+                        mCertAlias.getText().toString());
                 Toast.makeText(getActivity(), R.string.saved, Toast.LENGTH_SHORT).show();
                 break;
         }
@@ -121,6 +132,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
             mLoginServersLabels.setText(state.getLoginServersLabels());
             mRemoteAccessConsumerKey.setText(state.getRemoteAccessConsumerKey());
             mOauthRedirectURI.setText(state.getOauthRedirectURI());
+            mCertAlias.setText(state.getCertAlias());
             mTextStatus.setVisibility(View.GONE);
             for(EditText editText : mEditTexts) {
                 editText.setVisibility(View.VISIBLE);
@@ -135,5 +147,4 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
             mButtonSave.setVisibility(View.GONE);
         }
     }
-
 }

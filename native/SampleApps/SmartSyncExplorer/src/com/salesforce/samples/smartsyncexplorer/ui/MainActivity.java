@@ -292,6 +292,9 @@ public class MainActivity extends SalesforceListActivity implements
             Looper.prepare();	
     	}
 		if (sync.isDone()) {
+			if (Looper.myLooper() == null) {
+                Looper.prepare();	
+        	}
 			switch(sync.getType()) {
 			case syncDown:
 				Toast.makeText(MainActivity.this,
