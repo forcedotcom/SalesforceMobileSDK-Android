@@ -33,11 +33,13 @@ import java.security.cert.X509Certificate;
 import java.util.Locale;
 import java.util.Map;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
@@ -355,7 +357,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             handler.cancel();
         }
 
-        @Override
+        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+		@Override
         public void onReceivedClientCertRequest(WebView view, ClientCertRequest request) {
         	request.proceed(key, certChain);
         }
