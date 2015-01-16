@@ -39,12 +39,12 @@ import android.os.Bundle;
 public class RuntimeConfig {
 	
 	public enum ConfigKey {
-		LOGIN_SERVERS,
-		LOGIN_SERVERS_LABELS,
-		REMOTE_ACCESS_CONSUMER_KEY,
-		OAUTH_REDIRECT_URI,
-		REQUIRE_CERT_AUTH,
-		CERT_ALIAS;
+		AppServiceHosts,
+		AppServiceHostLabels,
+		ManagedAppOAuthID,
+		ManagedAppCallbackURL,
+		RequireCertAuth,
+		ManagedAppCertAlias;
 	}
 
     private boolean isManaged = false;

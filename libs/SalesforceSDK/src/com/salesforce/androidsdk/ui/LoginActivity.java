@@ -105,7 +105,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		// Let observers know
 		EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);
 		if (shouldUseCertBasedAuth()) {
-			final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.CERT_ALIAS);
+			final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.ManagedAppCertAlias);
 			KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, alias);
 		}
 
@@ -119,7 +119,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
      * @return True - if it should be used, False - otherwise.
      */
     protected boolean shouldUseCertBasedAuth() {
-		return RuntimeConfig.getRuntimeConfig(this).getBoolean(ConfigKey.REQUIRE_CERT_AUTH);
+		return RuntimeConfig.getRuntimeConfig(this).getBoolean(ConfigKey.RequireCertAuth);
     }
 
 	protected OAuthWebviewHelper getOAuthWebviewHelper(OAuthWebviewHelperEvents callback,

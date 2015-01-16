@@ -39,12 +39,12 @@ public class AppConfiguratorState {
 
     // Copied from com.salesforce.androidsdk.config.RuntimeConfig
     public enum ConfigKey {
-        LOGIN_SERVERS,
-        LOGIN_SERVERS_LABELS,
-        REMOTE_ACCESS_CONSUMER_KEY,
-        OAUTH_REDIRECT_URI,
-        REQUIRE_CERT_AUTH,
-		CERT_ALIAS;
+		AppServiceHosts,
+		AppServiceHostLabels,
+		ManagedAppOAuthID,
+		ManagedAppCallbackURL,
+		RequireCertAuth,
+		ManagedAppCertAlias;
     }
 
     // Default values
@@ -74,12 +74,12 @@ public class AppConfiguratorState {
 
     private AppConfiguratorState(Context ctx) {
         SharedPreferences prefs = ctx.getSharedPreferences(PREFS_KEY, Context.MODE_PRIVATE);
-        loginServers = prefs.getString(ConfigKey.LOGIN_SERVERS.name(), DEFAULT_LOGIN_SERVERS);
-        loginServersLabels = prefs.getString(ConfigKey.LOGIN_SERVERS_LABELS.name(), DEFAULT_LOGIN_SERVERS_LABELS);
-        remoteAccessConsumerKey = prefs.getString(ConfigKey.REMOTE_ACCESS_CONSUMER_KEY.name(), DEFAULT_REMOTE_ACCESS_CONSUMER_KEY);
-        oauthRedirectURI = prefs.getString(ConfigKey.OAUTH_REDIRECT_URI.name(), DEFAULT_OAUTH_REDIRECT_URI);
-        requireCertAuth = prefs.getBoolean(ConfigKey.REQUIRE_CERT_AUTH.name(), false);
-        certAlias = prefs.getString(ConfigKey.CERT_ALIAS.name(), null);
+        loginServers = prefs.getString(ConfigKey.AppServiceHosts.name(), DEFAULT_LOGIN_SERVERS);
+        loginServersLabels = prefs.getString(ConfigKey.AppServiceHostLabels.name(), DEFAULT_LOGIN_SERVERS_LABELS);
+        remoteAccessConsumerKey = prefs.getString(ConfigKey.ManagedAppOAuthID.name(), DEFAULT_REMOTE_ACCESS_CONSUMER_KEY);
+        oauthRedirectURI = prefs.getString(ConfigKey.ManagedAppCallbackURL.name(), DEFAULT_OAUTH_REDIRECT_URI);
+        requireCertAuth = prefs.getBoolean(ConfigKey.RequireCertAuth.name(), false);
+        certAlias = prefs.getString(ConfigKey.ManagedAppCertAlias.name(), null);
     }
 
     public String getTargetApp() {
@@ -134,24 +134,24 @@ public class AppConfiguratorState {
         // Save to preferences
         ctx.getSharedPreferences(PREFS_KEY, Context.MODE_PRIVATE)
                 .edit()
-                .putString(ConfigKey.LOGIN_SERVERS.name(), loginServers)
-                .putString(ConfigKey.LOGIN_SERVERS_LABELS.name(), loginServersLabels)
-                .putString(ConfigKey.REMOTE_ACCESS_CONSUMER_KEY.name(), remoteAccessConsumerKey)
-                .putString(ConfigKey.OAUTH_REDIRECT_URI.name(), oauthRedirectURI)
-                .putBoolean(ConfigKey.REQUIRE_CERT_AUTH.name(), requireCertAuth)
-                .putString(ConfigKey.CERT_ALIAS.name(), certAlias)
+                .putString(ConfigKey.AppServiceHosts.name(), loginServers)
+                .putString(ConfigKey.AppServiceHostLabels.name(), loginServersLabels)
+                .putString(ConfigKey.ManagedAppOAuthID.name(), remoteAccessConsumerKey)
+                .putString(ConfigKey.ManagedAppCallbackURL.name(), oauthRedirectURI)
+                .putBoolean(ConfigKey.RequireCertAuth.name(), requireCertAuth)
+                .putString(ConfigKey.ManagedAppCertAlias.name(), certAlias)
                 .apply();
 
         // Save to app restrictions on target app
         DevicePolicyManager devicePolicyManager
                 = (DevicePolicyManager) ctx.getSystemService(Context.DEVICE_POLICY_SERVICE);
         Bundle restrictions = new Bundle();
-        if (!loginServers.isEmpty()) restrictions.putStringArray(ConfigKey.LOGIN_SERVERS.name(), loginServers.split(","));
-        if (!loginServersLabels.isEmpty()) restrictions.putStringArray(ConfigKey.LOGIN_SERVERS_LABELS.name(), loginServersLabels.split(","));
-        if (!remoteAccessConsumerKey.isEmpty()) restrictions.putString(ConfigKey.REMOTE_ACCESS_CONSUMER_KEY.name(), remoteAccessConsumerKey);
-        if (!oauthRedirectURI.isEmpty()) restrictions.putString(ConfigKey.OAUTH_REDIRECT_URI.name(), oauthRedirectURI);
-        restrictions.putBoolean(ConfigKey.REQUIRE_CERT_AUTH.name(), requireCertAuth);
-        if (!certAlias.isEmpty()) restrictions.putString(ConfigKey.CERT_ALIAS.name(), certAlias);
+        if (!loginServers.isEmpty()) restrictions.putStringArray(ConfigKey.AppServiceHosts.name(), loginServers.split(","));
+        if (!loginServersLabels.isEmpty()) restrictions.putStringArray(ConfigKey.AppServiceHostLabels.name(), loginServersLabels.split(","));
+        if (!remoteAccessConsumerKey.isEmpty()) restrictions.putString(ConfigKey.ManagedAppOAuthID.name(), remoteAccessConsumerKey);
+        if (!oauthRedirectURI.isEmpty()) restrictions.putString(ConfigKey.ManagedAppCallbackURL.name(), oauthRedirectURI);
+        restrictions.putBoolean(ConfigKey.RequireCertAuth.name(), requireCertAuth);
+        if (!certAlias.isEmpty()) restrictions.putString(ConfigKey.ManagedAppCertAlias.name(), certAlias);
         devicePolicyManager.setApplicationRestrictions(
                 AppConfiguratorAdminReceiver.getComponentName(ctx),
                 getTargetApp(), restrictions);

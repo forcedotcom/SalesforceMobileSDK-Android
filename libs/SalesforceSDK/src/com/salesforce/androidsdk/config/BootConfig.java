@@ -106,8 +106,8 @@ public class BootConfig {
      */
     private void readFromRuntimeConfig(Context ctx) {
     	RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
-    	String mdmRemoteAccessConsumeKey = runtimeConfig.getString(ConfigKey.REMOTE_ACCESS_CONSUMER_KEY);
-    	String mdmOauthRedirectURI = runtimeConfig.getString(ConfigKey.OAUTH_REDIRECT_URI);
+    	String mdmRemoteAccessConsumeKey = runtimeConfig.getString(ConfigKey.ManagedAppOAuthID);
+    	String mdmOauthRedirectURI = runtimeConfig.getString(ConfigKey.ManagedAppCallbackURL);
     	
     	if (mdmRemoteAccessConsumeKey != null) remoteAccessConsumerKey = mdmRemoteAccessConsumeKey;
     	if (mdmOauthRedirectURI != null) oauthRedirectURI = mdmOauthRedirectURI;
