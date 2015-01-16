@@ -122,7 +122,7 @@ public class SyncManagerTest extends ManagerTestCase {
         trySyncDown(MergeMode.LEAVE_IF_CHANGED);
 
         // Check db
-        Map<String, String> idToNamesExpected = new HashMap(idToNames);
+        Map<String, String> idToNamesExpected = new HashMap<String, String>(idToNames);
         idToNamesExpected.putAll(idToNamesLocallyUpdated);
         checkDb(idToNamesExpected);
 
