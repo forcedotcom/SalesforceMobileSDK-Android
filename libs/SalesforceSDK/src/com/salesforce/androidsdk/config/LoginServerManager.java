@@ -191,11 +191,11 @@ public class LoginServerManager {
 	 */
 	public List<LoginServer> getLoginServersFromRuntimeConfig() {
 		RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
-		String[] mdmLoginServers = runtimeConfig.getStringArray(ConfigKey.LOGIN_SERVERS);
+		String[] mdmLoginServers = runtimeConfig.getStringArray(ConfigKey.AppServiceHosts);
 		final List<LoginServer> allServers = new ArrayList<LoginServer>();
 		
 		if (mdmLoginServers != null) {
-			String[] mdmLoginServersLabels = runtimeConfig.getStringArray(ConfigKey.LOGIN_SERVERS_LABELS);
+			String[] mdmLoginServersLabels = runtimeConfig.getStringArray(ConfigKey.AppServiceHostLabels);
 
 			if (mdmLoginServersLabels == null || mdmLoginServersLabels.length != mdmLoginServers.length) {
 				Log.w("LoginServerManager.getLoginServersFromRuntimeConfig", "No login servers labels provided or wrong number of login servers labels provided - Using URLs for the labels");
