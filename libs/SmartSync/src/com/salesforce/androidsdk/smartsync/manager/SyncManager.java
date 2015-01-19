@@ -53,7 +53,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -68,23 +71,31 @@ import java.util.concurrent.Executors;
  * Sync Manager
 */
 public class SyncManager {
+    // Constants
     public static final int PAGE_SIZE = 2000;
+    private static final int UNCHANGED = -1;
+
+    // For user agent
+    private static final String SMART_SYNC = "SmartSync";
+
+    // Local fields
+    public static final String LOCALLY_CREATED = "__locally_created__";
+    public static final String LOCALLY_UPDATED = "__locally_updated__";
+    public static final String LOCALLY_DELETED = "__locally_deleted__";
+    public static final String LOCAL = "__local__";
+
+    // Static member
     private static Map<String, SyncManager> INSTANCES;
+
+    // Time stamp format
+    private static final DateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+
+    // Members
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
-	
     private String apiVersion;
 	private SmartStore smartStore;
 	private RestClient restClient;
-	
-	// For user agent
-	private static final String SMART_SYNC = "SmartSync";
-	
-	// Local fields
-	public static final String LOCALLY_CREATED = "__locally_created__";
-	public static final String LOCALLY_UPDATED = "__locally_updated__";
-	public static final String LOCALLY_DELETED = "__locally_deleted__";
-	public static final String LOCAL = "__local__";
-	
+
 	/**
      * Returns the instance of this class associated with this user account.
      *
@@ -189,13 +200,37 @@ public class SyncManager {
 		return sync;
     }
 
+    /**
+     * Re-run sync but only fetch new/modified records
+     * @param syncId
+     * @param callback
+     * @throws JSONException
+     */
+    public SyncState reSync(long syncId, SyncUpdateCallback callback) throws JSONException {
+        SyncState sync = SyncState.byId(smartStore, syncId);
+        if (sync == null) {
+            throw new SmartSyncException("Cannot run reSync:" + syncId + ": no sync found");
+        }
+        if (sync.getType() != SyncState.Type.syncDown || sync.getTarget().getQueryType() != SyncTarget.QueryType.soql) {
+            throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong type:" + sync.getType());
+        }
+        if (sync.getTarget().getQueryType() != SyncTarget.QueryType.soql) {
+            throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong query type:" + sync.getTarget().getQueryType());
+        }
+        if (sync.getStatus() != SyncState.Status.DONE) {
+            throw new SmartSyncException("Cannot run reSync:" + syncId + ": not done:" + sync.getStatus());
+        }
+        runSync(sync, callback);
+        return sync;
+    }
+
 	/**
 	 * Run a sync
 	 * @param sync
 	 * @param callback 
 	 */
 	public void runSync(final SyncState sync, final SyncUpdateCallback callback) {
-		updateSync(sync, SyncState.Status.RUNNING, 0, -1 /* don't change */, callback);
+		updateSync(sync, SyncState.Status.RUNNING, 0, callback);
 		threadPool.execute(new Runnable() {
 			@Override
 			public void run() {
@@ -204,12 +239,12 @@ public class SyncManager {
 					case syncDown: syncDown(sync, callback); break;
 					case syncUp:   syncUp(sync, callback); break;
 					}
-					updateSync(sync, SyncState.Status.DONE, 100, -1 /* don't change */, callback);
+					updateSync(sync, SyncState.Status.DONE, 100, callback);
 				}
 				catch (Exception e) {
 					Log.e("SmartSyncManager:runSync", "Error during sync: " + sync.getId(), e);
 					// Update status to failed
-					updateSync(sync, SyncState.Status.FAILED,  -1 /* don't change*/, -1 /* don't change */, callback);
+					updateSync(sync, SyncState.Status.FAILED,  UNCHANGED, callback);
 				}
 			}
 		});
@@ -249,14 +284,12 @@ public class SyncManager {
      * @param sync 
 	 * @param status
 	 * @param progress pass -1 to keep the current value
-	 * @param totalSize pass -1 to keep the current value
-	 * @param callback 
+	 * @param callback
      */
-    private void updateSync(SyncState sync, SyncState.Status status, int progress, int totalSize, SyncUpdateCallback callback) {
+    private void updateSync(SyncState sync, SyncState.Status status, int progress, SyncUpdateCallback callback) {
     	try {
     		sync.setStatus(status);
-    		if (progress != -1) sync.setProgress(progress);
-    		if (totalSize != -1) sync.setTotalSize(totalSize);
+    		if (progress != UNCHANGED) sync.setProgress(progress);
     		sync.save(smartStore);
 	    	callback.onUpdate(sync);
     	}
@@ -272,7 +305,8 @@ public class SyncManager {
 
         Set<String> dirtyRecordIds = getDirtyRecordIds(soupName, SmartStore.SOUP_ENTRY_ID);
 		int totalSize = dirtyRecordIds.size();
-        updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
+        sync.setTotalSize(totalSize);
+        updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         int i = 0;
         for (String id : dirtyRecordIds) {
             JSONObject record = smartStore.retrieve(soupName, Long.valueOf(id)).getJSONObject(0);
@@ -281,7 +315,7 @@ public class SyncManager {
             // Updating status
             int progress = (i + 1) * 100 / totalSize;
             if (progress < 100) {
-                updateSync(sync, SyncState.Status.RUNNING, progress, -1 /* don't change */, callback);
+                updateSync(sync, SyncState.Status.RUNNING, progress, callback);
             }
 
             // Incrementing i
@@ -391,9 +425,10 @@ public class SyncManager {
 		JSONObject responseJson = response.asJSONObject();
 		JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
 		int totalSize = records.length();
-		
+        sync.setTotalSize(totalSize);
+
 		// Save to smartstore
-		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
+		updateSync(sync, SyncState.Status.RUNNING, 0, callback);
 		if (totalSize > 0)
 			saveRecordsToSmartStore(soupName, records, mergeMode);
 	}
@@ -403,7 +438,12 @@ public class SyncManager {
 		SyncTarget target = sync.getTarget();
         MergeMode mergeMode = sync.getMergeMode();
 		String query = target.getQuery();
-		RestRequest request = RestRequest.getRequestForQuery(apiVersion, query);
+
+        // Is is a resync?
+        long maxTimeStamp = sync.getMaxTimeStamp();
+        query = addFilterForReSync(query, maxTimeStamp);
+
+        RestRequest request = RestRequest.getRequestForQuery(apiVersion, query);
 	
 		// Call server
 		RestResponse response = sendSyncWithSmartSyncUserAgent(request);
@@ -411,27 +451,40 @@ public class SyncManager {
 
 		int countSaved = 0;
 		int totalSize = responseJson.getInt(Constants.TOTAL_SIZE);
-		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
+        sync.setTotalSize(totalSize);
+        updateSync(sync, SyncState.Status.RUNNING, 0, callback);
 		
 		do {
 			JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
 			// Save to smartstore
 			saveRecordsToSmartStore(soupName, records, mergeMode);
 			countSaved += records.length();
-			
+            maxTimeStamp = Math.max(maxTimeStamp, getMaxTimeStamp(records));
+
 			// Update sync status
-			if (countSaved < totalSize)
-				updateSync(sync, SyncState.Status.RUNNING, countSaved*100 / totalSize, -1 /* don't change */, callback);
+            if (countSaved < totalSize)
+                updateSync(sync, SyncState.Status.RUNNING, countSaved*100 / totalSize, callback);
 
 			// Fetch next records if any
-			String nextRecordsUrl = responseJson.optString(Constants.NEXT_RECORDS_URL, null);
+			String nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);
 			RestRequest restRequest = new RestRequest(RestMethod.GET, nextRecordsUrl, null);
 			responseJson = nextRecordsUrl == null ? null : sendSyncWithSmartSyncUserAgent(restRequest).asJSONObject();
 		}
 		while (responseJson != null);
+        sync.setMaxTimeStamp(maxTimeStamp);
 	}
 
-	private void syncDownSosl(SyncState sync, SyncUpdateCallback callback) throws Exception {
+    public String addFilterForReSync(String query, long maxTimeStamp) {
+        if (maxTimeStamp != UNCHANGED) {
+            String extraPredicate = Constants.SYSTEM_MODSTAMP + " > " + TIMESTAMP_FORMAT.format(new Date(maxTimeStamp));
+            query = query.contains(" where ")
+                        ? query.replaceFirst("( where )", "$1" + extraPredicate + " and ")
+                        : query.replaceFirst("( from[ ]+[^ ]*)", "$1 where " + extraPredicate);
+        }
+        return query;
+    }
+
+    private void syncDownSosl(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		String soupName = sync.getSoupName();	
 		SyncTarget target = sync.getTarget();
         MergeMode mergeMode = sync.getMergeMode();
@@ -444,9 +497,10 @@ public class SyncManager {
 		// Parse response
 		JSONArray records = response.asJSONArray();
 		int totalSize = records.length();
-		
+        sync.setTotalSize(totalSize);
+
 		// Save to smartstore
-		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
+		updateSync(sync, SyncState.Status.RUNNING, 0, callback);
 		if (totalSize > 0)
 			saveRecordsToSmartStore(soupName, records, mergeMode);
 	}
@@ -459,6 +513,31 @@ public class SyncManager {
 		}
 		return arr;
 	}
+
+    private long getMaxTimeStamp(JSONArray jsonArray) throws JSONException {
+        long maxTimeStamp = UNCHANGED;
+        for (int i=0; i<jsonArray.length(); i++) {
+            String timeStampStr = JSONObjectHelper.optString(jsonArray.getJSONObject(i), Constants.SYSTEM_MODSTAMP);
+            if (timeStampStr == null) {
+                maxTimeStamp = UNCHANGED;
+                break; // systemModstamp field not present
+            }
+
+            try {
+                long timeStamp = TIMESTAMP_FORMAT.parse(timeStampStr).getTime();
+                maxTimeStamp = Math.max(timeStamp, maxTimeStamp);
+            }
+            catch (Exception e) {
+                Log.w("SmartSync.getMaxTimeStamp", "Could not parse systemModstamp", e);
+                maxTimeStamp = UNCHANGED;
+                break;
+            }
+        }
+
+        return maxTimeStamp;
+    }
+
+
 
     private Set<String> toSet(JSONArray jsonArray) throws JSONException {
         Set<String> set = new HashSet<String>();
