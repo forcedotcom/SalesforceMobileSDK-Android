@@ -26,11 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.phonegap;
 
-import org.apache.cordova.CallbackContext;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.util.Log;
 
 import com.salesforce.androidsdk.phonegap.ForcePlugin;
@@ -40,6 +35,11 @@ import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallbac
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
+
+import org.apache.cordova.CallbackContext;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * PhoneGap plugin for smart sync.
@@ -62,7 +62,8 @@ public class SmartSyncPlugin extends ForcePlugin {
 	enum Action {
 		syncUp,
 		syncDown,
-		getSyncStatus
+		getSyncStatus,
+        reSync
 	}
 	
     @Override
@@ -89,6 +90,7 @@ public class SmartSyncPlugin extends ForcePlugin {
 		        		  case syncUp:             syncUp(args, callbackContext); break;
 		        		  case syncDown:		   syncDown(args, callbackContext); break;
 		        		  case getSyncStatus:	   getSyncStatus(args, callbackContext); break;
+                          case reSync:             reSync(args, callbackContext); break;
 		                  default: throw new RuntimeException("No handler for action " + action);
 		    	    	}
 	        		}
@@ -165,7 +167,29 @@ public class SmartSyncPlugin extends ForcePlugin {
 		
 		callbackContext.success(sync.asJSON());
 	}
-	
+
+    /**
+     * Native implementatino of reSync
+     * @param args
+     * @param callbackContext
+     * @throws JSONException
+     */
+    private void reSync(JSONArray args, CallbackContext callbackContext) throws JSONException {
+        // Parse args
+        JSONObject arg0 = args.getJSONObject(0);
+        long syncId = arg0.getLong(SYNC_ID);
+
+        SyncManager syncManager = SyncManager.getInstance(null);
+        SyncState sync = syncManager.reSync(syncId, new SyncUpdateCallback() {
+            @Override
+            public void onUpdate(SyncState sync) {
+                handleSyncUpdate(sync);
+            }
+        });
+
+        callbackContext.success(sync.asJSON());
+    }
+
 	private void handleSyncUpdate(final SyncState sync) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
