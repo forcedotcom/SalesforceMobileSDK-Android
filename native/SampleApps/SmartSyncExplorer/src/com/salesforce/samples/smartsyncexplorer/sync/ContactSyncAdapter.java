@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.sync;
+package com.salesforce.samples.smartsyncexplorer.sync;
 
 import android.accounts.Account;
 import android.content.AbstractThreadedSyncAdapter;
@@ -44,8 +44,6 @@ import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
  */
 public class ContactSyncAdapter extends AbstractThreadedSyncAdapter {
 
-	private Context context;
-
 	/**
 	 * Parameterized constructor.
 	 *
@@ -62,7 +60,7 @@ public class ContactSyncAdapter extends AbstractThreadedSyncAdapter {
 			ContentProviderClient provider, SyncResult syncResult) {
 		if (account != null) {
 			final UserAccount user = SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account);
-			final ContactListLoader contactLoader = new ContactListLoader(context, user);
+			final ContactListLoader contactLoader = new ContactListLoader(getContext(), user);
 			contactLoader.onContentChanged();
 		}
 	}
