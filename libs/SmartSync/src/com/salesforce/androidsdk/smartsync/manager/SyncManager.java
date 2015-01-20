@@ -88,7 +88,7 @@ public class SyncManager {
     private static Map<String, SyncManager> INSTANCES;
 
     // Time stamp format
-    private static final DateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    public static final DateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 
     // Members
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
@@ -477,9 +477,9 @@ public class SyncManager {
     public String addFilterForReSync(String query, long maxTimeStamp) {
         if (maxTimeStamp != UNCHANGED) {
             String extraPredicate = Constants.SYSTEM_MODSTAMP + " > " + TIMESTAMP_FORMAT.format(new Date(maxTimeStamp));
-            query = query.contains(" where ")
-                        ? query.replaceFirst("( where )", "$1" + extraPredicate + " and ")
-                        : query.replaceFirst("( from[ ]+[^ ]*)", "$1 where " + extraPredicate);
+            query = query.toLowerCase().contains(" where ")
+                        ? query.replaceFirst("( [wW][hH][eE][rR][eE] )", "$1" + extraPredicate + " and ")
+                        : query.replaceFirst("( [fF][rR][oO][mM][ ]+[^ ]*)", "$1 where " + extraPredicate);
         }
         return query;
     }
