@@ -220,6 +220,7 @@ public class SyncManager {
         if (sync.getStatus() != SyncState.Status.DONE) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": not done:" + sync.getStatus());
         }
+        sync.setTotalSize(-1);
         runSync(sync, callback);
         return sync;
     }

@@ -135,6 +135,47 @@ public class SyncManagerTest extends ManagerTestCase {
     }
 
     /**
+     * Sync down the test accounts, modify a few on the server, re-sync, make sure only the updated ones are downloaded
+     */
+    public void testReSync() throws Exception {
+        // first sync down
+        long syncId = trySyncDown(MergeMode.OVERWRITE);
+
+        // Check sync time stamp
+        SyncState sync = syncManager.getSyncStatus(syncId);
+        SyncTarget target = sync.getTarget();
+        SyncOptions options = sync.getOptions();
+        long maxTimeStamp = sync.getMaxTimeStamp();
+        assertTrue("Wrong time stamp", maxTimeStamp > 0);
+
+        // Make some remote change
+        Thread.sleep(1000); // time stamp precision is in seconds
+        Map<String, String> idToNamesUpdated = new HashMap<String, String>();
+        String[] allIds = idToNames.keySet().toArray(new String[0]);
+        String[] ids = new String[]{allIds[0], allIds[2]};
+        for (int i = 0; i < ids.length; i++) {
+            String id = ids[i];
+            idToNamesUpdated.put(id, idToNames.get(id) + "_updated");
+        }
+        updateAccountsOnServer(idToNamesUpdated);
+
+        // Call reSync
+        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        syncManager.reSync(syncId, queue);
+
+        // Check status updates
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, idToNamesUpdated.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, idToNamesUpdated.size());
+
+        // Check db
+        checkDb(idToNamesUpdated);
+
+        // Check sync time stamp
+        assertTrue("Wrong time stamp", syncManager.getSyncStatus(syncId).getMaxTimeStamp() > maxTimeStamp);
+    }
+
+    /**
 	 * Sync down the test accounts, modify a few, sync up, check smartstore and server afterwards
 	 */
 	public void testSyncUpWithLocallyUpdatedRecords() throws Exception {
@@ -172,7 +213,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		JSONTestHelper.assertSameJSONObject("Wrong data on server", new JSONObject(idToNamesLocallyUpdated), idToNamesFromServer);
 	}
 
-	/**
+    /**
 	 * Create accounts locally, sync up, check smartstore and server afterwards
 	 */
 	public void testSyncUpWithLocallyCreatedRecords() throws Exception {
@@ -244,7 +285,7 @@ public class SyncManagerTest extends ManagerTestCase {
 	}
 
     /**
-     * Test for addFilterForReSync
+     * Test addFilterForReSync with various queries
      */
     public void testAddFilterForResync() {
         Date date = new Date();
@@ -265,12 +306,12 @@ public class SyncManagerTest extends ManagerTestCase {
 	 * @throws JSONException
      * @param mergeMode
 	 */
-	private void trySyncDown(MergeMode mergeMode) throws JSONException {
+	private long trySyncDown(MergeMode mergeMode) throws JSONException {
 		// Ids clause
 		String idsClause = "('" + TextUtils.join("', '", idToNames.keySet()) + "')";
 		
 		// Create sync
-		SyncTarget target = SyncTarget.targetForSOQLSyncDown("SELECT Id, Name FROM Account WHERE Id IN " + idsClause);
+		SyncTarget target = SyncTarget.targetForSOQLSyncDown("SELECT Id, Name, SystemModstamp FROM Account WHERE Id IN " + idsClause);
         SyncOptions options = SyncOptions.optionsForSyncDown(mergeMode);
 		SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP);
 		long syncId = sync.getId();
@@ -284,6 +325,8 @@ public class SyncManagerTest extends ManagerTestCase {
 		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
 		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, idToNames.size());
 		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, idToNames.size());
+
+        return syncId;
 	}
 
 	/**
@@ -457,6 +500,25 @@ public class SyncManagerTest extends ManagerTestCase {
 			smartStore.upsert(ACCOUNTS_SOUP, account);
 		}
 	}
+
+    /**
+     * Update accounts on server
+     * @param idToNamesUpdated
+     * @throws Exception
+     */
+    private void updateAccountsOnServer(Map<String, String> idToNamesUpdated) throws Exception {
+        for (Entry<String, String> idAndName : idToNamesUpdated.entrySet()) {
+            String id = idAndName.getKey();
+            String updatedName = idAndName.getValue();
+
+            Map<String, Object> fields = new HashMap<String, Object>();
+            fields.put(Constants.NAME, updatedName);
+            RestRequest request = RestRequest.getRequestForUpdate(ApiVersionStrings.VERSION_NUMBER, Constants.ACCOUNT, id, fields);
+            // Response
+            RestResponse response = restClient.sendSync(request);
+            assertTrue("Updated failed", response.isSuccess());
+        }
+    }
 
 	/**
 	 * Delete accounts locally
