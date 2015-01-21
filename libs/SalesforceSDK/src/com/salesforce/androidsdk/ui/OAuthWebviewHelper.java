@@ -655,6 +655,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 		try {
 			certChain = KeyChain.getCertificateChain(activity, alias);
 			key = KeyChain.getPrivateKey(activity, alias);
+			activity.runOnUiThread(new Runnable() {
+
+                @Override
+                public void run() {
+                	loadLoginPage();
+                }
+            });
 		} catch (KeyChainException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {
