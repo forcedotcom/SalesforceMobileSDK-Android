@@ -61,7 +61,7 @@ public class ContactSyncAdapter extends AbstractThreadedSyncAdapter {
 		if (account != null) {
 			final UserAccount user = SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account);
 			final ContactListLoader contactLoader = new ContactListLoader(getContext(), user);
-			contactLoader.onContentChanged();
+			contactLoader.syncUp();
 		}
 	}
 }
