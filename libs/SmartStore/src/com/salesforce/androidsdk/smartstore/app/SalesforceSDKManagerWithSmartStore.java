@@ -180,6 +180,8 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     		if (userAccount != null && hasSmartStore(userAccount)) {
     			DBOpenHelper.deleteDatabase(getAppContext(), userAccount);
     		}
+    	} else {
+    		DBOpenHelper.deleteAllDatabases(getAppContext());
     	}
 
         /*
