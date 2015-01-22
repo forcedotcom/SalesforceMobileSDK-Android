@@ -107,10 +107,9 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		if (shouldUseCertBasedAuth()) {
 			final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.ManagedAppCertAlias);
 			KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, alias);
+		} else {
+			webviewHelper.loadLoginPage();
 		}
-
-		// Load login page
-		webviewHelper.loadLoginPage();
 	}
 
     /**
