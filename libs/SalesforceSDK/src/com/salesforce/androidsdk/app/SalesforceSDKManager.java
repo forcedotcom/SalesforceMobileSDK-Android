@@ -828,21 +828,43 @@ public class SalesforceSDKManager {
     	loggedOut = true;
     	cleanUp(frontActivity, account);
 
-    	// Removes the exisiting account, if any.
+    	/*
+    	 * Removes the existing account, if any. 'account == null' does not
+    	 * guarantee that there are no accounts to remove. In the 'Forgot Passcode'
+    	 * flow there could be accounts to remove, but we don't have them, since
+    	 * we don't have the passcode hash to decrypt them. Hence, we query
+    	 * AccountManager directly here and remove the accounts for the case
+    	 * where 'account == null'. If AccountManager doesn't have accounts
+    	 * either, then there's nothing to do.
+    	 */
     	if (account == null) {
-    		EventsObservable.get().notifyEvent(EventType.LogoutComplete);
-    		if (showLoginPage) {
-    			startSwitcherActivityIfRequired();
+    		final AccountManager accMgr = AccountManager.get(context);
+    		if (accMgr != null) {
+    			final Account[] accounts = accMgr.getAccountsByType(getAccountType());
+    			if (accounts != null) {
+    				for (int i = 0; i < accounts.length - 1; i++) {
+    					clientMgr.removeAccounts(accounts);
+    				}
+    				clientMgr.removeAccountAsync(accounts[accounts.length - 1],
+    						new AccountManagerCallback<Boolean>() {
+
+    	    			@Override
+    	    			public void run(AccountManagerFuture<Boolean> arg0) {
+    	    				notifyLogoutComplete(showLoginPage);
+    	    			}
+    	    		});
+    			} else {
+    				notifyLogoutComplete(showLoginPage);
+    			}
+    		} else {
+    			notifyLogoutComplete(showLoginPage);
     		}
     	} else {
     		clientMgr.removeAccountAsync(account, new AccountManagerCallback<Boolean>() {
 
     			@Override
     			public void run(AccountManagerFuture<Boolean> arg0) {
-    				EventsObservable.get().notifyEvent(EventType.LogoutComplete);
-    				if (showLoginPage) {
-    					startSwitcherActivityIfRequired();
-    				}
+    				notifyLogoutComplete(showLoginPage);
     			}
     		});
     	}
@@ -852,6 +874,13 @@ public class SalesforceSDKManager {
         if (shouldLogoutWhenTokenRevoked() && account != null && refreshToken != null) {
         	new RevokeTokenTask(refreshToken, clientId, loginServer).execute();
         }
+    }
+
+    private void notifyLogoutComplete(boolean showLoginPage) {
+    	EventsObservable.get().notifyEvent(EventType.LogoutComplete);
+		if (showLoginPage) {
+			startSwitcherActivityIfRequired();
+		}
     }
 
     /**
