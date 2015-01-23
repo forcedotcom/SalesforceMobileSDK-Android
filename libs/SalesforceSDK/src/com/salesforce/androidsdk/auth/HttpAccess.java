@@ -64,6 +64,12 @@ import android.net.NetworkInfo;
 public class HttpAccess extends BroadcastReceiver {
 
 	public static final String USER_AGENT = "User-Agent";
+
+	/*
+	 * FIXME: Remove this when PATCH is available out of the box.
+	 *
+	 * https://code.google.com/p/android/issues/detail?id=76611
+	 */
 	private static final String PATCH = "PATCH";
 
     // Fields to keep track of network.
@@ -354,6 +360,15 @@ public class HttpAccess extends BroadcastReceiver {
     	if (uri != null) {
     		URL url = uri.toURL();
     		if (url != null) {
+
+    			/*
+    			 * FIXME: PATCH has been added to the latest OkHttp library,
+    			 * which has been consumed in the AOSP branch. When this change
+    			 * makes it to mainstream Android, replace the custom PATCH
+    			 * config here with stock PATCH.
+    			 *
+    			 * https://code.google.com/p/android/issues/detail?id=76611
+    			 */
     			if (PATCH.equals(requestMethod)) {
     				final String urlString = url.toString() + "?_HttpMethod=PATCH";
     				url = new URL(urlString);
