@@ -30,6 +30,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.content.res.XmlResourceParser;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -185,23 +186,42 @@ public class LoginServerManager {
 	}
 
 	/**
-	 * Returns the list of login servers from runtime configuration (from MDM provider) if any
-	 * 
+	 * Returns the list of login servers from runtime configuration
+	 * (from MDM provider), if any.
+	 *
 	 * @return List of login servers or null.
 	 */
 	public List<LoginServer> getLoginServersFromRuntimeConfig() {
 		RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
-		String[] mdmLoginServers = runtimeConfig.getStringArray(ConfigKey.AppServiceHosts);
+		String[] mdmLoginServers = null;
+		try {
+			mdmLoginServers = runtimeConfig.getStringArray(ConfigKey.AppServiceHosts);
+		} catch (Exception e) {
+			Log.w("LoginServerManager.getLoginServersFromRuntimeConfig",
+					"Exception thrown while attempting to read array, attempting to read string value instead");
+			final String loginServer = runtimeConfig.getString(ConfigKey.AppServiceHosts);
+			if (!TextUtils.isEmpty(loginServer)) {
+				mdmLoginServers = new String[] {loginServer};
+			}
+		}
 		final List<LoginServer> allServers = new ArrayList<LoginServer>();
-		
 		if (mdmLoginServers != null) {
-			String[] mdmLoginServersLabels = runtimeConfig.getStringArray(ConfigKey.AppServiceHostLabels);
-
+			String[] mdmLoginServersLabels = null;
+			try {
+				mdmLoginServersLabels = runtimeConfig.getStringArray(ConfigKey.AppServiceHostLabels);
+			} catch (Exception e) {
+				Log.w("LoginServerManager.getLoginServersFromRuntimeConfig",
+						"Exception thrown while attempting to read array, attempting to read string value instead");
+				final String loginServerLabel = runtimeConfig.getString(ConfigKey.AppServiceHostLabels);
+				if (!TextUtils.isEmpty(loginServerLabel)) {
+					mdmLoginServersLabels = new String[] {loginServerLabel};
+				}
+			}
 			if (mdmLoginServersLabels == null || mdmLoginServersLabels.length != mdmLoginServers.length) {
-				Log.w("LoginServerManager.getLoginServersFromRuntimeConfig", "No login servers labels provided or wrong number of login servers labels provided - Using URLs for the labels");
+				Log.w("LoginServerManager.getLoginServersFromRuntimeConfig",
+						"No login servers labels provided or wrong number of login servers labels provided - Using URLs for the labels");
 				mdmLoginServersLabels = mdmLoginServers;
 			}
-			
 			for (int i = 0; i < mdmLoginServers.length; i++) {
 				String name = mdmLoginServersLabels[i];
 				String url = mdmLoginServers[i];
