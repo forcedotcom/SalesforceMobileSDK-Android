@@ -22,11 +22,11 @@ Introduction
 ### What's New in 3.1
 
 **SmartSync Library Enhancements**
-- The sync down operation now offers multiple modes that let the developer decide whether to overwrite locally modified data or not.
+- The sync down operation now offers multiple modes that let the developer decide whether to overwrite locally modified data.
 
 **Advanced Authentication/MDM Features**
 - Mobile SDK 3.1 provides the ability to perform certificate based authentication of users.
-- MDM providers can now configure settings such as login hosts, remote access consumer key and callback URL, at runtime, for applications built on the Mobile SDK 3.1.
+- MDM providers can now configure login hosts, remote access consumer key and callback URL at runtime, for applications built on Mobile SDK 3.1.
 - Note: The above features are supported only in Android Lollipop (API 21) and above.
 
 **Other Technical Improvements**
