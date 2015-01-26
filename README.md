@@ -19,26 +19,18 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 3.0
+### What's New in 3.1
 
-**SmartSync Library**
-- Salesforce Mobile SDK now has a new library called `SmartSync`, that adds the ability to:
-	- Fetch Salesforce records or metadata and cache them offline, by picking one of the available pre-defined cache policies.
-	- Edit records offline and save them offline in SmartStore.
-	- Synchronize a bunch of records by pushing locally modified records to the Salesforce cloud.
-- A new Cordova plugin, `SmartSyncPlugin`, has been added, to enable consumption of the `SmartSync` library in a hybrid app.
-- A new native sample app, `SmartSyncExplorer`, demonstrates the power of the `SmartSync` library on Android.
+**SmartSync Library Enhancements**
+- The sync down operation now offers multiple modes that let the developer decide whether to overwrite locally modified data or not.
 
-**Library Upgrades**
-- Raised the minimum Android OS version required by Mobile SDK to `v4.2.2` (API 17).
-- Upgraded the `Cordova` library to `v3.6.4`.
-- Upgraded `android-junit-report.jar` to `v1.5.8`.
-- Upgraded `apache-mime4j.jar` to `v0.7.2`.
-- Upgraded `httpmime.jar` to `v4.3.2`.
+**Advanced Authentication/MDM Features**
+- Mobile SDK 3.1 provides the ability to perform certificate based authentication of users.
+- MDM providers can now configure settings such as login hosts, remote access consumer key and callback URL, at runtime, for applications built on the Mobile SDK 3.1.
+- Note: The above features are supported only in Android Lollipop (API 21) and above.
 
 **Other Technical Improvements**
 - Various bug fixes.
-- Android Studio and the Gradle build system are now fully supported.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials
 
