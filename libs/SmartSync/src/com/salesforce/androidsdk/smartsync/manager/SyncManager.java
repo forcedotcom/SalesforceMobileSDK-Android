@@ -184,9 +184,7 @@ public class SyncManager {
      */
     public SyncState syncDown(SyncTarget target, String soupName, SyncUpdateCallback callback) throws JSONException {
         SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE);
-        SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
-        runSync(sync, callback);
-        return sync;
+        return syncDown(target, options, soupName, callback);
     }
 
     /**
