@@ -42,7 +42,7 @@ var fs = require('fs');
 var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
-var version = '3.1.0';
+var version = '3.2.0';
 var minimumCordovaVersion = '4.0';
 var minTargetApi = {'versionNumber': 21, 'versionName': 'Lollipop'};
 var androidExePath;
