@@ -1,6 +1,7 @@
 com.salesforce.androidsdk.accounts
 com.salesforce.androidsdk.app
 com.salesforce.androidsdk.auth
+com.salesforce.androidsdk.config
 com.salesforce.androidsdk.phonegap
 com.salesforce.androidsdk.push
 com.salesforce.androidsdk.rest
