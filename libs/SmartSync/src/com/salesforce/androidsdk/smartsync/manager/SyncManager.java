@@ -26,18 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -56,14 +44,32 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 
 
 /**
  * Sync Manager
 */
 public class SyncManager {
-	private static Map<String, SyncManager> INSTANCES;
+    public static final int PAGE_SIZE = 2000;
+    private static Map<String, SyncManager> INSTANCES;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 	
     private String apiVersion;
@@ -169,7 +175,7 @@ public class SyncManager {
     }
 
     /**
-     * Create and run a sync down
+     * Create and run a sync down that will overwrite any modified records
      * @param target
      * @param soupName
      * @param callback
@@ -177,7 +183,21 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState syncDown(SyncTarget target, String soupName, SyncUpdateCallback callback) throws JSONException {
-    	SyncState sync = SyncState.createSyncDown(smartStore, target, soupName);
+        SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE);
+        return syncDown(target, options, soupName, callback);
+    }
+
+    /**
+     * Create and run a sync down
+     * @param target
+     * @param options
+      *@param soupName
+     * @param callback
+     * @return
+     * @throws JSONException
+     */
+    public SyncState syncDown(SyncTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
+    	SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
 		runSync(sync, callback);
 		return sync;
     }
@@ -262,88 +282,100 @@ public class SyncManager {
 		String soupName = sync.getSoupName();
 		SyncOptions options = sync.getOptions();
 		List<String> fieldlist = options.getFieldlist();
-		QuerySpec querySpec = QuerySpec.buildExactQuerySpec(soupName, LOCAL, "true", 2000); // XXX that could use a lot of memory
-		
-		// Call smartstore
-		JSONArray records = smartStore.query(querySpec, 0); // TBD deal with more than 2000 locally modified records
-		int totalSize = records.length();
-		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
-		for (int i = 0; i < totalSize; i++) {
-			JSONObject record = records.getJSONObject(i);
-			
-			// Do we need to do a create, update or delete
-			Action action = null;
-			if (record.getBoolean(LOCALLY_DELETED)) 
-				action = Action.delete;
-			else if (record.getBoolean(LOCALLY_CREATED))
-				action = Action.create;
-			else if (record.getBoolean(LOCALLY_UPDATED))
-				action = Action.update;
-			
-			if (action == null) {
-				// Nothing to do for this record
-				continue;
-			}
 
-			// Getting type and id
-			String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
-			String objectId = record.getString(Constants.ID);
-			
-			// Fields to save (in the case of create or update)
-			Map<String, Object> fields = new HashMap<String, Object>();
-			if (action == Action.create || action == Action.update) {
-				for (String fieldName : fieldlist) {
-					if (!fieldName.equals(Constants.ID)) {
-						fields.put(fieldName, record.get(fieldName));
-					}
-				}
-			}
-			
-			// Building create/update/delete request
-			RestRequest request = null;
-			switch (action) {
-			case create: request = RestRequest.getRequestForCreate(apiVersion, objectType, fields); break;
-			case delete: request = RestRequest.getRequestForDelete(apiVersion, objectType, objectId); break;
-			case update: request = RestRequest.getRequestForUpdate(apiVersion, objectType, objectId, fields); break;
-			default:
-				break;
-			
-			}
-			
-			// Call server
-			RestResponse response = sendSyncWithSmartSyncUserAgent(request);
-			// Update smartstore
-			if (response.isSuccess()) {
-				// Replace id with server id during create
-				if (action == Action.create) {
-					record.put(Constants.ID, response.asJSONObject().get(Constants.LID));
-				}
-				// Set local flags to false
-				record.put(LOCAL, false);
-				record.put(LOCALLY_CREATED, false);
-				record.put(LOCALLY_UPDATED, false);
-				record.put(LOCALLY_DELETED, false);
-				
-				// Remove entry on delete
-				if (action == Action.delete) {
-					smartStore.delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));				
-				}
-				// Update entry otherwise
-				else {
-					smartStore.update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID));				
-				}
-			}
-			
-			
-			// Updating status
-			int progress = (i+1)*100 / totalSize;
-			if (progress < 100) {
-				updateSync(sync, SyncState.Status.RUNNING, progress, -1 /* don't change */, callback);
-			}			
-		}
+        Set<String> dirtyRecordIds = getDirtyRecordIds(soupName, SmartStore.SOUP_ENTRY_ID);
+		int totalSize = dirtyRecordIds.size();
+        updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
+        int i = 0;
+        for (String id : dirtyRecordIds) {
+            JSONObject record = smartStore.retrieve(soupName, Long.valueOf(id)).getJSONObject(0);
+            syncUpOneRecord(soupName, fieldlist, record);
+
+            // Updating status
+            int progress = (i + 1) * 100 / totalSize;
+            if (progress < 100) {
+                updateSync(sync, SyncState.Status.RUNNING, progress, -1 /* don't change */, callback);
+            }
+
+            // Incrementing i
+            i++;
+        }
 	}
 
-	private void syncDown(SyncState sync, SyncUpdateCallback callback) throws Exception {
+    private boolean syncUpOneRecord(String soupName, List<String> fieldlist, JSONObject record) throws JSONException, IOException {
+        // Do we need to do a create, update or delete
+        Action action = null;
+        if (record.getBoolean(LOCALLY_DELETED))
+            action = Action.delete;
+        else if (record.getBoolean(LOCALLY_CREATED))
+            action = Action.create;
+        else if (record.getBoolean(LOCALLY_UPDATED))
+            action = Action.update;
+
+        if (action == null) {
+            // Nothing to do for this record
+            return true;
+        }
+
+        // Getting type and id
+        String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
+        String objectId = record.getString(Constants.ID);
+
+        // Fields to save (in the case of create or update)
+        Map<String, Object> fields = new HashMap<String, Object>();
+        if (action == Action.create || action == Action.update) {
+            for (String fieldName : fieldlist) {
+                if (!fieldName.equals(Constants.ID)) {
+                    fields.put(fieldName, record.get(fieldName));
+                }
+            }
+        }
+
+        // Building create/update/delete request
+        RestRequest request = null;
+        switch (action) {
+            case create:
+                request = RestRequest.getRequestForCreate(apiVersion, objectType, fields);
+                break;
+            case delete:
+                request = RestRequest.getRequestForDelete(apiVersion, objectType, objectId);
+                break;
+            case update:
+                request = RestRequest.getRequestForUpdate(apiVersion, objectType, objectId, fields);
+                break;
+            default:
+                break;
+
+        }
+
+        // Call server
+        RestResponse response = sendSyncWithSmartSyncUserAgent(request);
+
+        // Update smartstore
+        if (response.isSuccess()) {
+            // Replace id with server id during create
+            if (action == Action.create) {
+                record.put(Constants.ID, response.asJSONObject().get(Constants.LID));
+            }
+            // Set local flags to false
+            record.put(LOCAL, false);
+            record.put(LOCALLY_CREATED, false);
+            record.put(LOCALLY_UPDATED, false);
+            record.put(LOCALLY_DELETED, false);
+
+            // Remove entry on delete
+            if (action == Action.delete) {
+                smartStore.delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
+            }
+            // Update entry otherwise
+            else {
+                smartStore.update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID));
+            }
+        }
+        return false;
+    }
+
+    private void syncDown(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		switch(sync.getTarget().getQueryType()) {
 		case mru:  syncDownMru(sync, callback); break;
 		case soql: syncDownSoql(sync, callback); break;
@@ -353,6 +385,7 @@ public class SyncManager {
 	
 	private void syncDownMru(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		SyncTarget target = sync.getTarget();
+        MergeMode mergeMode = sync.getMergeMode();
 		String sobjectType = target.getObjectType();
 		List<String>fieldlist = target.getFieldlist();
     	String soupName = sync.getSoupName();
@@ -375,12 +408,13 @@ public class SyncManager {
 		// Save to smartstore
 		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
 		if (totalSize > 0)
-			saveRecordsToSmartStore(soupName, records);
+			saveRecordsToSmartStore(soupName, records, mergeMode);
 	}
 
 	private void syncDownSoql(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		String soupName = sync.getSoupName();	
 		SyncTarget target = sync.getTarget();
+        MergeMode mergeMode = sync.getMergeMode();
 		String query = target.getQuery();
 		RestRequest request = RestRequest.getRequestForQuery(apiVersion, query);
 	
@@ -395,7 +429,7 @@ public class SyncManager {
 		do {
 			JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
 			// Save to smartstore
-			saveRecordsToSmartStore(soupName, records);
+			saveRecordsToSmartStore(soupName, records, mergeMode);
 			countSaved += records.length();
 			
 			// Update sync status
@@ -413,7 +447,8 @@ public class SyncManager {
 	private void syncDownSosl(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		String soupName = sync.getSoupName();	
 		SyncTarget target = sync.getTarget();
-		String query = target.getQuery();
+        MergeMode mergeMode = sync.getMergeMode();
+        String query = target.getQuery();
 		RestRequest request = RestRequest.getRequestForSearch(apiVersion, query);
 	
 		// Call server
@@ -426,7 +461,7 @@ public class SyncManager {
 		// Save to smartstore
 		updateSync(sync, SyncState.Status.RUNNING, 0, totalSize, callback);
 		if (totalSize > 0)
-			saveRecordsToSmartStore(soupName, records);
+			saveRecordsToSmartStore(soupName, records, mergeMode);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -437,23 +472,59 @@ public class SyncManager {
 		}
 		return arr;
 	}
+
+    private Set<String> toSet(JSONArray jsonArray) throws JSONException {
+        Set<String> set = new HashSet<String>();
+        for (int i=0; i<jsonArray.length(); i++) {
+            set.add(jsonArray.getJSONArray(i).getString(0));
+        }
+        return set;
+    }
 	
-	private void saveRecordsToSmartStore(String soupName, JSONArray records)
+	private void saveRecordsToSmartStore(String soupName, JSONArray records, MergeMode mergeMode)
 			throws JSONException {
-		// Save to SmartStore
+        // Gather ids of dirty records
+        Set<String> idsToSkip = null;
+        if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
+            idsToSkip = getDirtyRecordIds(soupName, Constants.ID);
+        }
+
 		smartStore.beginTransaction();
 		for (int i = 0; i < records.length(); i++) {
 			JSONObject record = records.getJSONObject(i);
-			record.put(LOCAL, false);
-			record.put(LOCALLY_CREATED, false);
-			record.put(LOCALLY_UPDATED, false);
-			record.put(LOCALLY_DELETED, false);
-			smartStore.upsert(soupName, records.getJSONObject(i), Constants.ID, false);
+
+            // Skip?
+            if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
+                String id = JSONObjectHelper.optString(record, Constants.ID);
+                if (id != null && idsToSkip.contains(id)) {
+                    continue; // don't write over dirty record
+                }
+            }
+
+            // Save
+            record.put(LOCAL, false);
+            record.put(LOCALLY_CREATED, false);
+            record.put(LOCALLY_UPDATED, false);
+            record.put(LOCALLY_DELETED, false);
+            smartStore.upsert(soupName, records.getJSONObject(i), Constants.ID, false);
 		}
 		smartStore.setTransactionSuccessful();
 		smartStore.endTransaction();
 	}
-    
+
+    private Set<String> getDirtyRecordIds(String soupName, String idField) throws JSONException {
+        Set<String> idsToSkip = new HashSet<String>();;
+        String dirtyRecordsSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true'", soupName, idField, soupName, soupName, LOCAL);
+        final QuerySpec smartQuerySpec = QuerySpec.buildSmartQuerySpec(dirtyRecordsSql, PAGE_SIZE);
+        boolean hasMore = true;
+        for (int pageIndex=0; hasMore; pageIndex++) {
+            JSONArray results = smartStore.query(smartQuerySpec, pageIndex);
+            hasMore = (results.length() == PAGE_SIZE);
+            idsToSkip.addAll(toSet(results));
+        }
+        return idsToSkip;
+    }
+
     /**
      * Send request after adding user-agent header that says SmartSync
 	 * @param restRequest
@@ -477,7 +548,7 @@ public class SyncManager {
     	update,
     	delete
     }
-    
+
     /**
      * Exception thrown by smart sync manager
      *

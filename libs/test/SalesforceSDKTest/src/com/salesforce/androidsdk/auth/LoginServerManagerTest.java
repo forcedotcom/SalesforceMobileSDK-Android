@@ -35,7 +35,8 @@ import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.LoginServerManager.LoginServer;
+import com.salesforce.androidsdk.config.LoginServerManager;
+import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
@@ -97,7 +98,7 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	 * Test for getDefaultLoginServer.
 	 */
 	public void testGetDefaultLoginServers() {
-		final List<LoginServer> servers = loginServerManager.getAllSavedSevers();
+		final List<LoginServer> servers = loginServerManager.getLoginServers();
 		assertEquals("Wrong number of servers", 3, servers.size());
 		assertProduction(servers.get(0));
 		assertSandbox(servers.get(1));
@@ -147,17 +148,17 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	public void testAddMultipleCustomServers() {
 
 		// Starting point, only 3 servers.
-		List<LoginServer> servers = loginServerManager.getAllSavedSevers();
+		List<LoginServer> servers = loginServerManager.getLoginServers();
 		assertEquals("Expected no custom login servers", 3, servers.size());
 
 		// Adding first custom server.
 		loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
-		servers = loginServerManager.getAllSavedSevers();
+		servers = loginServerManager.getLoginServers();
 		assertEquals("Expected one custom login server", 4, servers.size());
 
 		// Adding second custom server.
 		loginServerManager.addCustomLoginServer(CUSTOM_NAME_2, CUSTOM_URL_2);
-		servers = loginServerManager.getAllSavedSevers();
+		servers = loginServerManager.getLoginServers();
 		assertEquals("Expected one custom login server", 5, servers.size());
 	}
 
@@ -197,12 +198,12 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 	public void testReset() {
 
 		// Starting point, only 3 servers.
-		List<LoginServer> servers = loginServerManager.getAllSavedSevers();
+		List<LoginServer> servers = loginServerManager.getLoginServers();
 		assertEquals("Expected no custom login servers", 3, servers.size());
 
 		// Adding custom server.
 		loginServerManager.addCustomLoginServer(CUSTOM_NAME, CUSTOM_URL);
-		servers = loginServerManager.getAllSavedSevers();
+		servers = loginServerManager.getLoginServers();
 		assertEquals("Expected one custom login server", 4, servers.size());
 
 		// Selecting sandbox.
@@ -214,7 +215,7 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
 		 * and custom server should be removed from shared prefs.
 		 */
 		loginServerManager.reset();
-		servers = loginServerManager.getAllSavedSevers();
+		servers = loginServerManager.getLoginServers();
 		assertEquals("Expected no custom login servers", 3, servers.size());
 		assertProduction(loginServerManager.getSelectedLoginServer());
 	}

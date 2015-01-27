@@ -47,7 +47,6 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
-import android.webkit.CookieSyncManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -55,8 +54,8 @@ import android.webkit.WebViewClient;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess.NoNetworkException;
+import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
-import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -121,9 +120,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         userSwitchReceiver = new DroidGapUserSwitchReceiver();
         registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
 
-        // Ensure we have a CookieSyncManager
-        CookieSyncManager.createInstance(this);
-
 		// Let observers know
 		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
     }
@@ -150,10 +146,8 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     		webSettings.setDomStorageEnabled(true);
     		String cachePath = getApplicationContext().getCacheDir().getAbsolutePath();
     		webSettings.setAppCachePath(cachePath);
-            webSettings.setAppCacheMaxSize(1024 * 1024 * 8);
     		webSettings.setAppCacheEnabled(true);
     		webSettings.setAllowFileAccess(true);
-            webSettings.setSavePassword(false);
     		webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
     		EventsObservable.get().notifyEvent(EventType.GapWebViewCreateComplete, appView);
       	}
@@ -193,7 +187,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         		else {
                 	Log.i("SalesforceDroidGapActivity.onResume", "Already logged in / web app already loaded");
         		}
-	            CookieSyncManager.getInstance().startSync();
         	}
         }
     }
@@ -293,7 +286,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     public void onPause() {
         super.onPause();
         passcodeManager.onPause(this);
-        CookieSyncManager.getInstance().stopSync();
     }
 
     @Override
@@ -317,7 +309,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
      */
     public void authenticate(final CallbackContext callbackContext) {
     	Log.i("SalesforceDroidGapActivity.authenticate", "authenticate called");
-    	clientManager.getRestClient(this, new RestClientCallback() {
+        clientManager.getRestClient(this, new RestClientCallback() {
 
 			@Override
 			public void authenticatedRestClient(RestClient client) {
@@ -340,20 +332,20 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
                      */
 	                SalesforceDroidGapActivity.this.client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
 
-	                	@Override
-	                	public void onSuccess(RestRequest request, RestResponse response) {
+                        @Override
+                        public void onSuccess(RestRequest request, RestResponse response) {
 
-	                		/*
-	                		 * The client instance being used here needs to be
-	                		 * refreshed, to ensure we use the new access token. 
-	                		 */
-	                		SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-	                		setSidCookies();
-	                		loadVFPingPage();
-	                		if (callbackContext != null) {
-	                			callbackContext.success(getJSONCredentials());
-	                		}
-	                	}
+                        	/*
+                        	 * The client instance being used here needs to be
+                        	 * refreshed, to ensure we use the new access token. 
+                        	 */
+                        	SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+                        	setSidCookies();
+                            loadVFPingPage();
+                            if (callbackContext != null) {
+                                callbackContext.success(getJSONCredentials());
+                            }
+                        }
 
                         @Override
                         public void onError(Exception exception) {
@@ -377,30 +369,30 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
     
         	@Override
-        	public void onSuccess(RestRequest request, RestResponse response) {
-        		Log.i("SalesforceOAuthPlugin.refresh", "Refresh succeeded");
+            public void onSuccess(RestRequest request, RestResponse response) {
+        		Log.i("SalesforceDroidGapActivity.refresh", "Refresh succeeded");
 
-        		/*
-        		 * The client instance being used here needs to be
-        		 * refreshed, to ensure we use the new access token. 
-        		 */
-        		SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-        		setSidCookies();
-        		loadVFPingPage();
-        		String frontDoorUrl = getFrontDoorUrl(url);
-        		loadUrl(frontDoorUrl);
-        	}
+            	/*
+            	 * The client instance being used here needs to be
+            	 * refreshed, to ensure we use the new access token. 
+            	 */
+                SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+                setSidCookies();
+                loadVFPingPage();
+                final String frontDoorUrl = getFrontDoorUrl(url, true);
+                loadUrl(frontDoorUrl);
+            }
 
-                @Override
-                public void onError(Exception exception) {
-                    Log.w("SalesforceDroidGapActivity.refresh", "Refresh failed - " + exception);
+        	@Override
+            public void onError(Exception exception) {
+        		Log.w("SalesforceDroidGapActivity.refresh", "Refresh failed - " + exception);
 
-                    // Only logout if we are NOT offline
-                    if (!(exception instanceof NoNetworkException)) {
-                        SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
-                    }
+        		// Only logout if we are NOT offline
+                if (!(exception instanceof NoNetworkException)) {
+                	SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
                 }
-            });
+            }
+        });
     }        
 
     /**
@@ -430,10 +422,9 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
         		@Override
         		public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                	final CookieSyncManager cookieSyncMgr = CookieSyncManager.getInstance();
-                    final CookieManager cookieMgr = CookieManager.getInstance();
+                	final CookieManager cookieMgr = CookieManager.getInstance();
                     cookieMgr.setAcceptCookie(true);
-                    cookieSyncMgr.sync();
+                    SalesforceSDKManager.getInstance().syncCookies();
         			return true;
         		}
         	});
@@ -459,20 +450,31 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     	assert !bootconfig.isLocal();
     	String startPage = bootconfig.getStartPage();
     	Log.i("SalesforceDroidGapActivity.loadRemoteStartPage", "loading: " + startPage);
-		String url = getFrontDoorUrl(startPage);
+		String url = getFrontDoorUrl(startPage, false);
 		loadUrl(url);
     	webAppLoaded = true;
     }
     
     /**
-     * @param url
-     * @return front-door url
+     * Returns the front-doored URL of a URL passed in.
+     *
+     * @param url URL to be front-doored.
+     * @param isAbsUrl True - if the URL should be used as is, False - otherwise.
+     * @return Front-doored URL.
      */
-    public String getFrontDoorUrl(String url) {
+    public String getFrontDoorUrl(String url, boolean isAbsUrl) {
 		String frontDoorUrl = client.getClientInfo().getInstanceUrlAsString() + "/secur/frontdoor.jsp?";
 		List<NameValuePair> params = new LinkedList<NameValuePair>();
 		params.add(new BasicNameValuePair("sid", client.getAuthToken()));
-		params.add(new BasicNameValuePair("retURL", client.getClientInfo().resolveUrl(url).toString()));
+
+		/*
+		 * We need to use the absolute URL in some cases and relative URL in some
+		 * other cases, because of differences between instance URL and community
+		 * URL. Community URL can be custom and the logic of determining which
+		 * URL to use is in the 'resolveUrl' method in 'ClientInfo'.
+		 */
+        url = (isAbsUrl ? url : client.getClientInfo().resolveUrl(url).toString());
+		params.add(new BasicNameValuePair("retURL", url));
 		params.add(new BasicNameValuePair("display", "touch"));
 		frontDoorUrl += URLEncodedUtils.format(params, "UTF-8");
     	return frontDoorUrl;
@@ -503,14 +505,13 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     */
    private void setSidCookies() {
        Log.i("SalesforceDroidGapActivity.setSidCookies", "setting cookies");
-       CookieSyncManager cookieSyncMgr = CookieSyncManager.getInstance();
        CookieManager cookieMgr = CookieManager.getInstance();
        cookieMgr.setAcceptCookie(true);  // Required to set additional cookies that the auth process will return.
-       cookieMgr.removeSessionCookie();
+       SalesforceSDKManager.getInstance().removeSessionCookies();
        SystemClock.sleep(250); // removeSessionCookies kicks out a thread - let it finish
        String accessToken = client.getAuthToken();
        addSidCookieForInstance(cookieMgr,".salesforce.com", accessToken);
-       cookieSyncMgr.sync();
+       SalesforceSDKManager.getInstance().syncCookies();
    }
 
    private void addSidCookieForInstance(CookieManager cookieMgr, String domain, String sid) {

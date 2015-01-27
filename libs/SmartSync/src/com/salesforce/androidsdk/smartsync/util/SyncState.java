@@ -48,12 +48,11 @@ public class SyncState {
 	public static final String SYNC_STATUS = "status";
 	public static final String SYNC_PROGRESS = "progress";
 	public static final String SYNC_TOTAL_SIZE = "totalSize";
-	public static final String SYNC_AS_STRING = "syncAsString";
 
 	private long id;
 	private Type type;
 	private SyncTarget target; // null for sync-up
-	private SyncOptions options; // null for sync-down
+	private SyncOptions options;
 	private String soupName;
 	private Status status;
 	private int progress;
@@ -79,10 +78,11 @@ public class SyncState {
 	 * @return
 	 * @throws JSONException 
 	 */
-	public static SyncState createSyncDown(SmartStore store, SyncTarget target, String soupName) throws JSONException {
+	public static SyncState createSyncDown(SmartStore store, SyncTarget target, SyncOptions options, String soupName) throws JSONException {
     	JSONObject sync = new JSONObject();
     	sync.put(SYNC_TYPE, Type.syncDown);
     	sync.put(SYNC_TARGET, target.asJSON());
+        sync.put(SYNC_OPTIONS, options.asJSON());
     	sync.put(SYNC_SOUP_NAME, soupName);
     	sync.put(SYNC_STATUS, Status.NEW.name());
     	sync.put(SYNC_PROGRESS, 0);
@@ -187,6 +187,10 @@ public class SyncState {
 	public SyncOptions getOptions() {
 		return options;
 	}
+
+    public MergeMode getMergeMode() {
+        return (options != null && options.getMergeMode() != null) ? options.getMergeMode() : MergeMode.OVERWRITE;
+    }
 	
 	public String getSoupName() {
 		return soupName;
@@ -252,4 +256,11 @@ public class SyncState {
     }
 
 
+    /**
+     * Enum for merge modes
+     */
+    public enum MergeMode {
+        OVERWRITE,
+        LEAVE_IF_CHANGED;
+    }
 }

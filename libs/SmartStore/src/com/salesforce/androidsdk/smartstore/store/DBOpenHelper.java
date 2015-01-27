@@ -155,6 +155,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 	
 	@Override
+	@SuppressWarnings("deprecation")
 	public void onOpen(SQLiteDatabase db) {
 		(new SmartStore(db)).resumeLongOperations();
 	}
@@ -189,9 +190,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
      *                     filename extension such as ".db".
 	 * @param account User account.
 	 * @param communityId Community ID.
-	 * 
 	 */
-	public static synchronized void deleteDatabase(Context ctx, String dbNamePrefix, UserAccount account, String communityId) {
+	public static synchronized void deleteDatabase(Context ctx, String dbNamePrefix,
+			UserAccount account, String communityId) {
 		try {
 			StringBuffer dbName = new StringBuffer(dbNamePrefix);
 			
@@ -201,9 +202,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 				final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
 				dbName.append(accountSuffix);
 			}
-	
 			dbName.append(DB_NAME_SUFFIX);
-			
 			final String fullDBName = dbName.toString();
 	
 			// close and remove the helper from the cache if it exists
@@ -221,27 +220,21 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 				StringBuffer communityDBNamePrefix = new StringBuffer(dbNamePrefix);
 				String accountSuffix = account.getUserLevelFilenameSuffix();
 				communityDBNamePrefix.append(accountSuffix);
-				
-		    	final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
-		    	final File dir = new File(dbPath);
-		    	if (dir != null) {
-		        	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(communityDBNamePrefix.toString());
-		        	final File[] fileList = dir.listFiles();
-		        	if (fileList != null) {
-		            	for (final File file : fileList) {
-		            		if (file != null && fileFilter.accept(dir, file.getName())) {
-		            			file.delete();
-		            			openHelpers.remove(file.getName());
-		            		}
-		            	}
-		        	}
-		    	}
+		    	deleteFiles(ctx, communityDBNamePrefix.toString());
 			}
 		} catch (Exception e) {
 			Log.e("DBOpenHelper:deleteDatabase", "Exception occurred while attempting to delete database.", e);
 		}
 	}
 
+	/**
+	 * Deletes all remaining databases.
+	 *
+	 * @param ctx Context.
+	 */
+	public static synchronized void deleteAllDatabases(Context ctx) {
+		deleteFiles(ctx, "");
+	}
 
 	/**
 	 * Determines if a smart store currently exists for the given account and/or community id.
@@ -251,7 +244,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param communityId Community ID.
 	 * @return boolean indicating if a smartstore already exists.
 	 */
-	public static boolean smartStoreExists(Context ctx, UserAccount account, String communityId) {
+	public static boolean smartStoreExists(Context ctx, UserAccount account,
+			String communityId) {
 		return smartStoreExists(ctx, DEFAULT_DB_NAME, account, communityId);
 	}
 
@@ -266,17 +260,16 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param communityId Community ID.
 	 * @return boolean indicating if a smartstore already exists.
 	 */
-	public static boolean smartStoreExists(Context ctx, String dbNamePrefix, UserAccount account, String communityId) {
+	public static boolean smartStoreExists(Context ctx, String dbNamePrefix,
+			UserAccount account, String communityId) {
 		StringBuffer dbName = new StringBuffer(dbNamePrefix);
 		if (account != null) {
 			final String dbSuffix = account.getCommunityLevelFilenameSuffix(communityId);
 			dbName.append(dbSuffix);
 		}
 		dbName.append(DB_NAME_SUFFIX);
-		
 		return ctx.getDatabasePath(dbName.toString()).exists();
 	}
-
 
 	static class DBHook implements SQLiteDatabaseHook {
 		public void preKey(SQLiteDatabase database) {
@@ -288,6 +281,23 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		public void postKey(SQLiteDatabase database) {
 		}
 	};
+
+	private static void deleteFiles(Context ctx, String prefix) {
+		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
+    	final File dir = new File(dbPath);
+    	if (dir != null) {
+        	final SmartStoreFileFilter fileFilter = new SmartStoreFileFilter(prefix);
+        	final File[] fileList = dir.listFiles();
+        	if (fileList != null) {
+            	for (final File file : fileList) {
+            		if (file != null && fileFilter.accept(dir, file.getName())) {
+            			file.delete();
+            			openHelpers.remove(file.getName());
+            		}
+            	}
+        	}
+    	}
+	}
 
     /**
      * This class acts as a filter to identify only the relevant SmartStore files.

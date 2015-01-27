@@ -270,7 +270,9 @@ public class PushService extends IntentService {
         cal.add(Calendar.MILLISECOND, (int) backoffTimeMs);
         final Intent retryIntent = new Intent(context, register ? RetryRegistrationAlarmReceiver.class
                 : UnregisterRetryAlarmReceiver.class);
-        retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, account.toBundle());
+        if (account != null) {
+            retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, account.toBundle());
+        }
         final PendingIntent retryPIntent = PendingIntent.getBroadcast(context,
         		1, retryIntent, PendingIntent.FLAG_ONE_SHOT);
         final AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);

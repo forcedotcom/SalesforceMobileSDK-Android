@@ -26,13 +26,10 @@
  */
 package com.salesforce.androidsdk.store;
 
-import net.sqlcipher.database.SQLiteDatabase;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
@@ -58,8 +55,8 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	private static final String DEPARTMENTS_SOUP = "departments";
 
 	@Override
-	protected SQLiteDatabase getWritableDatabase() {
-		return DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase("");
+	protected String getPasscode() {
+		return "";
 	}
 
 	@Override

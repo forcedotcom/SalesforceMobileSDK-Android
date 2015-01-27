@@ -33,6 +33,7 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -53,12 +54,13 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.auth.LoginServerManager;
 import com.salesforce.androidsdk.auth.OAuth2;
+import com.salesforce.androidsdk.config.AdminPermsManager;
+import com.salesforce.androidsdk.config.AdminSettingsManager;
+import com.salesforce.androidsdk.config.BootConfig;
+import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
-import com.salesforce.androidsdk.rest.AdminPrefsManager;
-import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
@@ -80,12 +82,13 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  * use the static getInstance() method to access the
  * singleton SalesforceSDKManager object.
  */
+@SuppressWarnings("deprecation")
 public class SalesforceSDKManager {
 
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "3.0.0";
+    public static final String SDK_VERSION = "3.1.0";
 
     /**
      * Default app name.
@@ -115,7 +118,8 @@ public class SalesforceSDKManager {
     private LoginServerManager loginServerManager;
     private boolean isTestRun = false;
 	private boolean isLoggingOut = false;
-    private AdminPrefsManager adminPrefsManager;
+    private AdminSettingsManager adminSettingsManager;
+    private AdminPermsManager adminPermsManager;
     private PushNotificationInterface pushNotificationInterface;
     private volatile boolean loggedOut = false;
 
@@ -127,7 +131,6 @@ public class SalesforceSDKManager {
     /**
      * Returns a singleton instance of this class.
      *
-     * @param context Application context.
      * @return Singleton instance of SalesforceSDKManager.
      */
     public static SalesforceSDKManager getInstance() {
@@ -306,9 +309,6 @@ public class SalesforceSDKManager {
         // Initializes the HTTP client.
         HttpAccess.init(context, INSTANCE.getUserAgent());
 
-        // Ensures that we have a CookieSyncManager instance.
-        CookieSyncManager.createInstance(context);
-
         // Upgrades to the latest version.
         UpgradeManager.getInstance().upgradeAccMgr();
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
@@ -429,8 +429,8 @@ public class SalesforceSDKManager {
         	loginServerManager = new LoginServerManager(context);
         }
         return loginServerManager;
-    }    
-
+    }
+    
     /**
      * Sets a receiver that handles received push notifications.
      *
@@ -473,16 +473,29 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Returns the administrator preferences manager that's associated with SalesforceSDKManager.
+     * Returns the administrator settings manager that's associated with SalesforceSDKManager.
      *
-     * @return AdminPrefsManager instance.
+     * @return AdminSettingsManager instance.
      */
-    public synchronized AdminPrefsManager getAdminPrefsManager() {
-    	if (adminPrefsManager == null) {
-    		adminPrefsManager = new AdminPrefsManager();
+    public synchronized AdminSettingsManager getAdminSettingsManager() {
+    	if (adminSettingsManager == null) {
+    		adminSettingsManager = new AdminSettingsManager();
     	}
-    	return adminPrefsManager;
+    	return adminSettingsManager;
     }
+
+    /**
+     * Returns the administrator permissions manager that's associated with SalesforceSDKManager.
+     *
+     * @return AdminPermsManager instance.
+     */
+    public synchronized AdminPermsManager getAdminPermsManager() {
+        if (adminPermsManager == null) {
+            adminPermsManager = new AdminPermsManager();
+        }
+        return adminPermsManager;
+    }
+
 
     /**
      * Changes the passcode to a new value.
@@ -587,8 +600,10 @@ public class SalesforceSDKManager {
          * are stored at the org level.
          */
         if (users == null || users.size() <= 1) {
-            getAdminPrefsManager().resetAll();
-            adminPrefsManager = null;
+            getAdminSettingsManager().resetAll();
+            getAdminPermsManager().resetAll();
+            adminSettingsManager = null;
+            adminPermsManager = null;
             getPasscodeManager().reset(context);
             passcodeManager = null;
             encryptionKey = null;
@@ -602,8 +617,7 @@ public class SalesforceSDKManager {
     protected void startLoginPage() {
 
         // Clears cookies.
-        CookieSyncManager.createInstance(context);
-        CookieManager.getInstance().removeAllCookie();
+    	removeAllCookies();
 
         // Restarts the application.
         final Intent i = new Intent(context, getMainActivityClass());
@@ -618,8 +632,7 @@ public class SalesforceSDKManager {
     public void startSwitcherActivityIfRequired() {
 
         // Clears cookies.
-        CookieSyncManager.createInstance(context);
-        CookieManager.getInstance().removeAllCookie();
+    	removeAllCookies();
 
         /*
          * If the number of accounts remaining is 0, shows the login page.
@@ -815,21 +828,43 @@ public class SalesforceSDKManager {
     	loggedOut = true;
     	cleanUp(frontActivity, account);
 
-    	// Removes the exisiting account, if any.
+    	/*
+    	 * Removes the existing account, if any. 'account == null' does not
+    	 * guarantee that there are no accounts to remove. In the 'Forgot Passcode'
+    	 * flow there could be accounts to remove, but we don't have them, since
+    	 * we don't have the passcode hash to decrypt them. Hence, we query
+    	 * AccountManager directly here and remove the accounts for the case
+    	 * where 'account == null'. If AccountManager doesn't have accounts
+    	 * either, then there's nothing to do.
+    	 */
     	if (account == null) {
-    		EventsObservable.get().notifyEvent(EventType.LogoutComplete);
-    		if (showLoginPage) {
-    			startSwitcherActivityIfRequired();
+    		final AccountManager accMgr = AccountManager.get(context);
+    		if (accMgr != null) {
+    			final Account[] accounts = accMgr.getAccountsByType(getAccountType());
+    			if (accounts != null) {
+    				for (int i = 0; i < accounts.length - 1; i++) {
+    					clientMgr.removeAccounts(accounts);
+    				}
+    				clientMgr.removeAccountAsync(accounts[accounts.length - 1],
+    						new AccountManagerCallback<Boolean>() {
+
+    	    			@Override
+    	    			public void run(AccountManagerFuture<Boolean> arg0) {
+    	    				notifyLogoutComplete(showLoginPage);
+    	    			}
+    	    		});
+    			} else {
+    				notifyLogoutComplete(showLoginPage);
+    			}
+    		} else {
+    			notifyLogoutComplete(showLoginPage);
     		}
     	} else {
     		clientMgr.removeAccountAsync(account, new AccountManagerCallback<Boolean>() {
 
     			@Override
     			public void run(AccountManagerFuture<Boolean> arg0) {
-    				EventsObservable.get().notifyEvent(EventType.LogoutComplete);
-    				if (showLoginPage) {
-    					startSwitcherActivityIfRequired();
-    				}
+    				notifyLogoutComplete(showLoginPage);
     			}
     		});
     	}
@@ -839,6 +874,13 @@ public class SalesforceSDKManager {
         if (shouldLogoutWhenTokenRevoked() && account != null && refreshToken != null) {
         	new RevokeTokenTask(refreshToken, clientId, loginServer).execute();
         }
+    }
+
+    private void notifyLogoutComplete(boolean showLoginPage) {
+    	EventsObservable.get().notifyEvent(EventType.LogoutComplete);
+		if (showLoginPage) {
+			startSwitcherActivityIfRequired();
+		}
     }
 
     /**
@@ -861,7 +903,8 @@ public class SalesforceSDKManager {
         } catch (NameNotFoundException e) {
             Log.w("SalesforceSDKManager:getUserAgent", e);
         } catch (Resources.NotFoundException nfe) {
-            // if your application doesn't have a name (like a test harness from Gradle)
+
+    	   	// A test harness such as Gradle does NOT have an application name.
             Log.w("SalesforceSDKManager:getUserAgent", nfe);
         }
 	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native") + qualifier;
@@ -998,5 +1041,47 @@ public class SalesforceSDKManager {
      */
     public ClientManager getClientManager() {
     	return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(), true);
+    }
+
+	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+	public void removeAllCookies() {
+
+		/*
+		 * TODO: Remove this conditional once 'minApi >= 21'.
+		 */
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+	        CookieManager.getInstance().removeAllCookies(null);
+		} else {
+	        CookieSyncManager.createInstance(context);
+	        CookieManager.getInstance().removeAllCookie();
+		}
+    }
+
+	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+	public void removeSessionCookies() {
+
+		/*
+		 * TODO: Remove this conditional once 'minApi >= 21'.
+		 */
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+	        CookieManager.getInstance().removeSessionCookies(null);
+		} else {
+	        CookieSyncManager.createInstance(context);
+	        CookieManager.getInstance().removeSessionCookie();
+		}
+    }
+
+	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+	public void syncCookies() {
+
+		/*
+		 * TODO: Remove this conditional once 'minApi >= 21'.
+		 */
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+	        CookieManager.getInstance().flush();
+		} else {
+	        CookieSyncManager.createInstance(context);
+	        CookieSyncManager.getInstance().sync();
+		}
     }
 }

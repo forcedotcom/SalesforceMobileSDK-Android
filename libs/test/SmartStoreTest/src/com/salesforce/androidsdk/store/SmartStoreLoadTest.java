@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteOpenHelper;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -64,30 +65,29 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	private static final String TEST_SOUP = "test_soup";
 	
 	protected Context targetContext;
-	private SQLiteDatabase db;
 	private SmartStore store;
-	
+
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		DBHelper.getInstance(db).clearMemoryCache();
-		DBHelper.getInstance(db).reset(targetContext, null);
-		db = getWritableDatabase();
-		store = new SmartStore(db);
+		final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
+		DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getPasscode())).reset(targetContext, null);
+		store = new SmartStore(dbOpenHelper, getPasscode());
+		store.dropAllSoups();
 		assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
 		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
 		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
 	}
-	
-	protected SQLiteDatabase getWritableDatabase() {
-		return DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase("");
+
+	protected String getPasscode() {
+		return "";
 	}
 
 	@Override
 	protected void tearDown() throws Exception {
+		final SQLiteDatabase db = DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase(getPasscode());
 		db.close();
-		// Not cleaning up after the test to make diagnosing issues easier
 		super.tearDown();
 	}
 

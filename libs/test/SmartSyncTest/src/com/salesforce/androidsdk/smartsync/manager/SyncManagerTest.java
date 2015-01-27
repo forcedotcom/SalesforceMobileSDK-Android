@@ -26,17 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import java.util.Arrays;
-import java.util.Formatter;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -48,9 +37,22 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Arrays;
+import java.util.Formatter;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 
 /**
@@ -100,44 +102,54 @@ public class SyncManagerTest extends ManagerTestCase {
 	 */
 	public void testSyncDown() throws Exception {
 		// first sync down
-		trySyncDown();
+		trySyncDown(MergeMode.OVERWRITE);
 
-		
 		// Check that db was correctly populated
-		String idsClause = "('" + TextUtils.join("', '", idToNames.keySet()) + "')";
-		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:Id}, {accounts:Name} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, COUNT_TEST_ACCOUNTS);
-		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
-		JSONObject idToNamesFromDb = new JSONObject();
-		for (int i=0; i<accountsFromDb.length(); i++) {
-			JSONArray row = accountsFromDb.getJSONArray(i);
-			idToNamesFromDb.put(row.getString(0), row.getString(1));
-		}
-		JSONTestHelper.assertSameJSONObject("Wrong data in db", new JSONObject(idToNames), idToNamesFromDb);
+        checkDb(idToNames);
 	}
 
-	/**
+    /**
+     * Sync down the test accounts, make some local changes, sync down again with merge mode LEAVE_IF_CHANGED then sync down with merge mode OVERWRITE
+     */
+    public void testSyncDownWithoutOverwrite() throws Exception {
+        // first sync down
+        trySyncDown(MergeMode.OVERWRITE);
+
+        // Make some local change
+        Map<String, String> idToNamesLocallyUpdated = makeSomeLocalChanges();
+
+        // sync down again with MergeMode.LEAVE_IF_CHANGED
+        trySyncDown(MergeMode.LEAVE_IF_CHANGED);
+
+        // Check db
+        Map<String, String> idToNamesExpected = new HashMap<String, String>(idToNames);
+        idToNamesExpected.putAll(idToNamesLocallyUpdated);
+        checkDb(idToNamesExpected);
+
+        // sync down again with MergeMode.OVERWRITE
+        trySyncDown(MergeMode.OVERWRITE);
+
+        // Check db
+        checkDb(idToNames);
+    }
+
+    /**
 	 * Sync down the test accounts, modify a few, sync up, check smartstore and server afterwards
 	 */
 	public void testSyncUpWithLocallyUpdatedRecords() throws Exception {
 		// First sync down
-		trySyncDown();
+        trySyncDown(MergeMode.OVERWRITE);
 		
 		// Update a few entries locally
-		Map<String, String> idToNamesLocallyUpdated = new HashMap<String, String>();
-		String[] allIds = idToNames.keySet().toArray(new String[0]);
-		String[] ids = new String[] { allIds[0], allIds[1], allIds[2] };
-		for (int i = 0; i < ids.length; i++) {
-			String id = ids[i];
-			idToNamesLocallyUpdated.put(id, idToNames.get(id) + "_updated");
-		}
-		updateAccountsLocally(idToNamesLocallyUpdated);
-		
+		Map<String, String> idToNamesLocallyUpdated = makeSomeLocalChanges();
+
 		// Sync up
 		trySyncUp(3);
 		
 		// Check that db doesn't show entries as locally modified anymore
+        Set<String> ids = idToNamesLocallyUpdated.keySet();
 		String idsClause = "('" + TextUtils.join("', '", ids) + "')";
-		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, ids.length);
+		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, ids.size());
 		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
 		for (int i=0; i<accountsFromDb.length(); i++) {
 			JSONArray row = accountsFromDb.getJSONArray(i);
@@ -206,7 +218,7 @@ public class SyncManagerTest extends ManagerTestCase {
 	 */
 	public void testSyncUpWithLocallyDeletedRecords() throws Exception {
 		// First sync down
-		trySyncDown();
+        trySyncDown(MergeMode.OVERWRITE);
 		
 		// Delete a few entries locally
 		String[] allIds = idToNames.keySet().toArray(new String[0]);
@@ -233,25 +245,27 @@ public class SyncManagerTest extends ManagerTestCase {
 	/**
 	 * Sync down helper
 	 * @throws JSONException
+     * @param mergeMode
 	 */
-	private void trySyncDown() throws JSONException {
+	private void trySyncDown(MergeMode mergeMode) throws JSONException {
 		// Ids clause
 		String idsClause = "('" + TextUtils.join("', '", idToNames.keySet()) + "')";
 		
 		// Create sync
 		SyncTarget target = SyncTarget.targetForSOQLSyncDown("SELECT Id, Name FROM Account WHERE Id IN " + idsClause);
-		SyncState sync = SyncState.createSyncDown(smartStore, target, ACCOUNTS_SOUP);
+        SyncOptions options = SyncOptions.optionsForSyncDown(mergeMode);
+		SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP);
 		long syncId = sync.getId();
-		checkStatus(sync, SyncState.Type.syncDown, syncId, target, null, SyncState.Status.NEW, 0, -1);
+		checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
 		
 		// Run sync
 		SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
 		syncManager.runSync(sync, queue);
 
 		// Check status updates
-		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, null, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
-		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, null, SyncState.Status.RUNNING, 0, idToNames.size());
-		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, null, SyncState.Status.DONE, 100, idToNames.size());
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, idToNames.size());
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, idToNames.size());
 	}
 
 	/**
@@ -409,7 +423,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
 	/**
 	 * Update accounts locally
-	 * @param id
+	 * @param idToNamesLocallyUpdated
 	 * @throws JSONException
 	 */
 	private void updateAccountsLocally(Map<String, String> idToNamesLocallyUpdated) throws JSONException {
@@ -441,4 +455,37 @@ public class SyncManagerTest extends ManagerTestCase {
 			smartStore.upsert(ACCOUNTS_SOUP, account);
 		}
 	}
+
+    /**
+     * Check db
+     * @throws JSONException
+     * @param expectedIdToNames
+     */
+    private void checkDb(Map<String, String> expectedIdToNames) throws JSONException {
+        String idsClause = "('" + TextUtils.join("', '", expectedIdToNames.keySet()) + "')";
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:Id}, {accounts:Name} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, COUNT_TEST_ACCOUNTS);
+        JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+        JSONObject idToNamesFromDb = new JSONObject();
+        for (int i=0; i<accountsFromDb.length(); i++) {
+            JSONArray row = accountsFromDb.getJSONArray(i);
+            idToNamesFromDb.put(row.getString(0), row.getString(1));
+        }
+        JSONTestHelper.assertSameJSONObject("Wrong data in db", new JSONObject(expectedIdToNames), idToNamesFromDb);
+    }
+
+    /**
+     * Make local changes
+     * @throws JSONException
+     */
+    private Map<String, String> makeSomeLocalChanges() throws JSONException {
+        Map<String, String> idToNamesLocallyUpdated = new HashMap<String, String>();
+        String[] allIds = idToNames.keySet().toArray(new String[0]);
+        String[] ids = new String[] { allIds[0], allIds[1], allIds[2] };
+        for (int i = 0; i < ids.length; i++) {
+            String id = ids[i];
+            idToNamesLocallyUpdated.put(id, idToNames.get(id) + "_updated");
+        }
+        updateAccountsLocally(idToNamesLocallyUpdated);
+        return idToNamesLocallyUpdated;
+    }
 }

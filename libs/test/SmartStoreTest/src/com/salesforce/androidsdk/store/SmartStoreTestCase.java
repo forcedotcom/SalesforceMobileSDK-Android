@@ -26,17 +26,18 @@
  */
 package com.salesforce.androidsdk.store;
 
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteOpenHelper;
+
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import net.sqlcipher.database.SQLiteDatabase;
-
 
 import android.content.Context;
 import android.database.Cursor;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 
 /**
@@ -46,24 +47,26 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 
 	protected Context targetContext;
-	protected SQLiteDatabase db;
+	protected SQLiteOpenHelper dbOpenHelper;
 	protected SmartStore store;
-	
+
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 		targetContext = getInstrumentation().getTargetContext();
-		DBHelper.getInstance(db).reset(targetContext, null); // start clean
-		db = getWritableDatabase();
-		store = new SmartStore(db);
+		dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
+		DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getPasscode())).reset(targetContext, null);
+		store = new SmartStore(dbOpenHelper, getPasscode());
+		store.dropAllSoups();
 	}
-	
-	protected abstract SQLiteDatabase getWritableDatabase();
+
+	protected abstract String getPasscode();
 
 	@Override
 	protected void tearDown() throws Exception {
-		db.close();
-		// Not cleaning up after the test to make diagnosing issues easier
+		dbOpenHelper.close();
+		store.dropAllSoups();
+		DBOpenHelper.deleteDatabase(targetContext, null);
 		super.tearDown();
 	}
 
@@ -74,6 +77,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	 */
 	protected boolean hasTable(String tableName) {
 		Cursor c = null;
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
 		try {
 			c = DBHelper.getInstance(db).query(db, "sqlite_master", null, null, null, "type = ? and name = ?", "table", tableName);
 			return c.getCount() == 1;
@@ -98,6 +102,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	 * @return table name for soup
 	 */
 	protected String getSoupTableName(String soupName) {
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
 		return DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	}
 

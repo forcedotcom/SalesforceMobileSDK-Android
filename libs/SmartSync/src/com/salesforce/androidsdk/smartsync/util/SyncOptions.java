@@ -26,24 +26,29 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * Options for sync up
+ * Options for sync up / down
  */
 public class SyncOptions {
-	
+
+    public static final String MERGEMODE = "mergeMode";
 	public static final String FIELDLIST = "fieldlist";
-	
+
+    private MergeMode mergeMode;
 	private List<String> fieldlist;
 	
 	/**
-	 * Build SyncUpOptions from json
+	 * Build SyncOptions from json
 	 * @param options as json
 	 * @return
 	 * @throws JSONException 
@@ -51,9 +56,11 @@ public class SyncOptions {
 	public static SyncOptions fromJSON(JSONObject options) throws JSONException {
 		if (options == null)
 			return null;
-		
+
+        String mergeModeStr = JSONObjectHelper.optString(options, MERGEMODE);
+        MergeMode mergeMode = mergeModeStr == null ? null : MergeMode.valueOf(mergeModeStr);
 		List<String> fieldlist = toList(options.optJSONArray(FIELDLIST));
-		return new SyncOptions(fieldlist);
+		return new SyncOptions(fieldlist, mergeMode);
 	}
 	
 	/**
@@ -61,15 +68,25 @@ public class SyncOptions {
 	 * @return
 	 */
 	public static SyncOptions optionsForSyncUp(List<String> fieldlist) {
-		return new SyncOptions(fieldlist);
+		return new SyncOptions(fieldlist, null);
 	}
+
+    /**
+     * @param mergeMode
+     * @return
+     */
+    public static SyncOptions optionsForSyncDown(MergeMode mergeMode) {
+        return new SyncOptions(null, mergeMode);
+    }
 	
 	/**
 	 * Private constructor
 	 * @param fieldlist
+     * @param mergeMode
 	 */
-	private SyncOptions(List<String> fieldlist) {
+	private SyncOptions(List<String> fieldlist, MergeMode mergeMode) {
 		this.fieldlist = fieldlist;
+        this.mergeMode = mergeMode;
 	}
 	
 	/**
@@ -78,13 +95,18 @@ public class SyncOptions {
 	 */
 	public JSONObject asJSON() throws JSONException {
 		JSONObject options = new JSONObject();
-		options.put(FIELDLIST, new JSONArray(fieldlist));
+        if (mergeMode != null) options.put(MERGEMODE, mergeMode.name());
+		if (fieldlist != null) options.put(FIELDLIST, new JSONArray(fieldlist));
 		return options;
 	}
 
 	public List<String> getFieldlist() {
 		return fieldlist;
 	}
+
+    public MergeMode getMergeMode() {
+        return mergeMode;
+    }
 	
 	@SuppressWarnings("unchecked")
 	private static <T> List<T> toList(JSONArray jsonArray) throws JSONException {

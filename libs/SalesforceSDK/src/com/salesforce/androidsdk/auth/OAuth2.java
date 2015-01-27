@@ -31,9 +31,12 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -46,6 +49,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.net.Uri;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.auth.HttpAccess.Execution;
@@ -94,14 +98,19 @@ public class OAuth2 {
     private static final String REFRESH_TOKEN = "refresh_token";
     private static final String RESPONSE_TYPE = "response_type";
     private static final String SCOPE = "scope";
+    private static final String REDIRECT_URI = "redirect_uri";
     private static final String SCREEN_LOCK = "screen_lock";
     private static final String TOKEN = "token";
     private static final String USERNAME = "username";
     private static final String CODE = "code";
     private static final String ACTIVATED_CLIENT_CODE = "activated_client_code";
     private static final String CUSTOM_ATTRIBUTES = "custom_attributes";
+    private static final String CUSTOM_PERMISSIONS = "custom_permissions";
     private static final String SFDC_COMMUNITY_ID = "sfdc_community_id";
     private static final String SFDC_COMMUNITY_URL = "sfdc_community_url";
+    private static final String AND = "&";
+    private static final String EQUAL = "=";
+    private static final String TOUCH = "touch";
 
     // Login paths
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
@@ -137,31 +146,20 @@ public class OAuth2 {
     
     public static URI getAuthorizationUrl(URI loginServer, String clientId,
             String callbackUrl, String[] scopes, String clientSecret, String displayType) {
-        if (displayType == null) displayType = "touch";
         final StringBuilder sb = new StringBuilder(loginServer.toString());
-        sb.append(OAUTH_AUTH_PATH);
-        sb.append(displayType);
-        if (clientSecret != null) {
-            sb.append("&").append(RESPONSE_TYPE).append("=").append(ACTIVATED_CLIENT_CODE);
-        } else {
-            sb.append("&").append(RESPONSE_TYPE).append("=").append(TOKEN);
-        }
-        sb.append("&").append(CLIENT_ID).append("=").append(Uri.encode(clientId));
-        if ((null != scopes) && (scopes.length > 0)) {
-            //need to always have the refresh_token scope to reuse our refresh token
-            sb.append("&").append(SCOPE).append("=").append(REFRESH_TOKEN);
-            StringBuilder scopeStr = new StringBuilder();
-            for (String scope : scopes) {
-                if (!scope.equalsIgnoreCase(REFRESH_TOKEN)) {
-                    scopeStr.append(" ").append(scope);
-                }
-            }
-            String safeScopeStr = Uri.encode(scopeStr.toString());
-            sb.append(safeScopeStr);
-        }
-        sb.append("&redirect_uri=");
-        sb.append(callbackUrl);
+        sb.append(OAUTH_AUTH_PATH).append(displayType == null ? TOUCH : displayType);
+        sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(clientSecret == null ? TOKEN : ACTIVATED_CLIENT_CODE);
+        sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
+        sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
+        sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
         return URI.create(sb.toString());
+    }
+
+    private static String computeScopeParameter(String[] scopes) {
+        final List<String> scopesList = Arrays.asList(scopes == null ? new String[]{} : scopes);
+        Set<String> scopesSet = new HashSet<String>(scopesList);
+        scopesSet.add(REFRESH_TOKEN);
+        return TextUtils.join(" ", scopesSet.toArray(new String[]{}));
     }
 
     /**
@@ -230,7 +228,7 @@ public class OAuth2 {
      * receiving an authorization code from the oAuth authorization UI flow.
      * In addition, this will also call the Identity service to fetch & populate the username field.
      *
-     * @param loginServer  the protocol & host (e.g. https://login.salesforce.com) that the authCode was generated from
+     * @param loginServerUrl  the protocol & host (e.g. https://login.salesforce.com) that the authCode was generated from
      * @param clientSecret the client secret if there is one (e.g. for IP/IC bypass)
      * @param authCode     the authorization code issued by the oauth authorization flow.
      *
@@ -363,13 +361,16 @@ public class OAuth2 {
         public String username;
         public int pinLength = -1;
         public int screenLockTimeout = -1;
-        public JSONObject adminPrefs;
+        public JSONObject customAttributes;
+        public JSONObject customPermissions;
+
 
         public IdServiceResponse(HttpResponse httpResponse) {
             try {
                 JSONObject parsedResponse = parseResponse(httpResponse);
                 username = parsedResponse.getString(USERNAME);
-                adminPrefs = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
+                customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
+                customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
 
                 // With connected apps (pilot in Summer '12), the server can specify a policy.
                 if (parsedResponse.has(MOBILE_POLICY)) {

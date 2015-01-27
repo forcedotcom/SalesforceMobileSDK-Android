@@ -34,7 +34,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.BootConfig;
+import com.salesforce.androidsdk.config.BootConfig;
 
 import android.content.Context;
 import android.content.pm.PackageManager.NameNotFoundException;

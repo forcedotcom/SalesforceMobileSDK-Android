@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2012, salesforce.com, inc.
+ * Copyright (c) 2011-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -28,18 +28,25 @@ package com.salesforce.androidsdk.ui;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
 import java.util.Locale;
 import java.util.Map;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.security.KeyChain;
+import android.security.KeyChainAliasCallback;
+import android.security.KeyChainException;
 import android.text.TextUtils;
 import android.util.Log;
-import android.webkit.CookieManager;
+import android.webkit.ClientCertRequest;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -53,9 +60,9 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.config.BootConfig;
+import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
-import com.salesforce.androidsdk.rest.AdminPrefsManager;
-import com.salesforce.androidsdk.rest.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
@@ -74,7 +81,11 @@ import com.salesforce.androidsdk.util.UriFragmentParser;
  *  f) done!
  *
  */
-public class OAuthWebviewHelper {
+public class OAuthWebviewHelper implements KeyChainAliasCallback {
+
+    // Set a custom permission on your connected application with that name if you want
+    // the application to be restricted to managed devices
+    public static final String MUST_BE_MANAGED_APP_PERM = "must_be_managed_app";
 
     private static final String ACCOUNT_OPTIONS = "accountOptions";
 
@@ -107,14 +118,23 @@ public class OAuthWebviewHelper {
     /**
      * Construct a new OAuthWebviewHelper and perform the initial configuration of the Webview.
      */
-	public OAuthWebviewHelper(OAuthWebviewHelperEvents callback, LoginOptions options, WebView webview, Bundle savedInstanceState) {
-        assert options != null && callback != null && webview != null;
+    @Deprecated
+	public OAuthWebviewHelper(OAuthWebviewHelperEvents callback,
+			LoginOptions options, WebView webview, Bundle savedInstanceState) {
+    	this(new LoginActivity(), callback, options, webview, savedInstanceState);
+    }
+
+    /**
+     * Construct a new OAuthWebviewHelper and perform the initial configuration of the Webview.
+     */
+	public OAuthWebviewHelper(Activity activity, OAuthWebviewHelperEvents callback,
+			LoginOptions options, WebView webview, Bundle savedInstanceState) {
+        assert options != null && callback != null && webview != null && activity != null;
+        this.activity = activity;
         this.callback = callback;
         this.loginOptions = options;
         this.webview = webview;
-
         webview.getSettings().setJavaScriptEnabled(true);
-        webview.getSettings().setSavePassword(false);
         webview.setWebViewClient(makeWebViewClient());
         webview.setWebChromeClient(makeWebChromeClient());
 
@@ -127,12 +147,15 @@ public class OAuthWebviewHelper {
         } else {
             clearCookies();
         }
-    }
+	}
 
     private final OAuthWebviewHelperEvents callback;
     protected final LoginOptions loginOptions;
     private final WebView webview;
     private AccountOptions accountOptions;
+    private Activity activity;
+    private PrivateKey key;
+    private X509Certificate[] certChain;
 
     public void saveState(Bundle outState) {
         webview.saveState(outState);
@@ -147,12 +170,11 @@ public class OAuthWebviewHelper {
     }
 
     public void clearCookies() {
-        CookieManager cm = CookieManager.getInstance();
-        cm.removeAllCookie();
+    	SalesforceSDKManager.getInstance().removeAllCookies();
     }
 
     public void clearView() {
-        webview.clearView();
+    	webview.loadUrl("about:blank");
     }
 
     /**
@@ -200,7 +222,6 @@ public class OAuthWebviewHelper {
         // look for deny. kick them back to login, so clear cookies and repoint browser
         if ("access_denied".equals(error)
                 && "end-user denied authorization".equals(errorDesc)) {
-
             webview.post(new Runnable() {
                 @Override
                 public void run() {
@@ -208,12 +229,9 @@ public class OAuthWebviewHelper {
                     loadLoginPage();
                 }
             });
-
         } else {
-
             Toast t = Toast.makeText(webview.getContext(), error + " : " + errorDesc,
                     Toast.LENGTH_LONG);
-
             webview.postDelayed(new Runnable() {
                 @Override
                 public void run() {
@@ -236,9 +254,9 @@ public class OAuthWebviewHelper {
      * see which system you're logging in to
      */
     public void loadLoginPage() {
-        // Filling in loginUrl
-        loginOptions.loginUrl = getLoginUrl();
 
+        // Filling in loginUrl.
+        loginOptions.loginUrl = getLoginUrl();
         try {
             URI uri = getAuthorizationUrl();
             callback.loadingLoginPage(loginOptions.loginUrl);
@@ -338,6 +356,12 @@ public class OAuthWebviewHelper {
             Toast.makeText(getContext(), text, Toast.LENGTH_LONG).show();
             handler.cancel();
         }
+
+        @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+		@Override
+        public void onReceivedClientCertRequest(WebView view, ClientCertRequest request) {
+        	request.proceed(key, certChain);
+        }
     }
 
     /**
@@ -374,69 +398,90 @@ public class OAuthWebviewHelper {
 
         @Override
         protected void onPostExecute(OAuth2.TokenEndpointResponse tr) {
+            final SalesforceSDKManager mgr = SalesforceSDKManager.getInstance();
+
+            //
+            // Failure cases.
+            //
             if (backgroundException != null) {
                 Log.w("LoginActiviy.onAuthFlowComplete", backgroundException);
                 // Error
-                onAuthFlowError(getContext().getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                        getContext().getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericAuthenticationErrorBody()));
+                onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
+                        getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorBody()));
                 callback.finish();
-            } else {
+                return;
+            }
 
-                // Putting together all the information needed to create the new account.
-                accountOptions = new AccountOptions(id.username, tr.refreshToken,
-                		tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId,
-                		tr.communityId, tr.communityUrl);
-
-                // Sets additional admin prefs, if they exist.
-                final UserAccount account = new UserAccount(accountOptions.authToken,
-                		accountOptions.refreshToken, loginOptions.loginUrl,
-                		accountOptions.identityUrl, accountOptions.instanceUrl,
-                		accountOptions.orgId, accountOptions.userId,
-                		accountOptions.username, buildAccountName(accountOptions.username,
-                		accountOptions.instanceUrl), loginOptions.clientSecret,
-                		accountOptions.communityId, accountOptions.communityUrl);
-                if (id.adminPrefs != null) {
-                    final AdminPrefsManager prefManager = SalesforceSDKManager.getInstance().getAdminPrefsManager();
-                    prefManager.setPrefs(id.adminPrefs, account);
+            if (id.customPermissions != null) {
+                final boolean mustBeManagedApp = id.customPermissions.optBoolean(MUST_BE_MANAGED_APP_PERM);
+                if (mustBeManagedApp && !RuntimeConfig.getRuntimeConfig(getContext()).isManagedApp()) {
+                    onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
+                            getContext().getString(mgr.getSalesforceR().stringManagedAppError()));
+                    callback.finish();
+                    return;
                 }
+            }
 
-                // Screen lock required by mobile policy
-                if (id.screenLockTimeout > 0) {
+            //
+            // Putting together all the information needed to create the new account.
+            //
+            accountOptions = new AccountOptions(id.username, tr.refreshToken,
+                    tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId,
+                    tr.communityId, tr.communityUrl);
 
-                    // Stores the mobile policy for the org.
-                    final PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-                    passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength);
-                    passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
-                    passcodeManager.setMinPasscodeLength(id.pinLength);
+            // Sets additional admin prefs, if they exist.
+            final UserAccount account = new UserAccount(accountOptions.authToken,
+                    accountOptions.refreshToken, loginOptions.loginUrl,
+                    accountOptions.identityUrl, accountOptions.instanceUrl,
+                    accountOptions.orgId, accountOptions.userId,
+                    accountOptions.username, buildAccountName(accountOptions.username,
+                    accountOptions.instanceUrl), loginOptions.clientSecret,
+                    accountOptions.communityId, accountOptions.communityUrl);
 
-                    /*
-                     * Checks if a passcode already exists. If a passcode has NOT
-                     * been created yet, the user is taken through the passcode
-                     * creation flow, at the end of which account data is encrypted
-                     * with a hash of the passcode. Other existing accounts are
-                     * also re-encrypted behind the scenes at this point. If a
-                     * passcode already exists, the existing hash is used and the
-                     * account is added at this point.
-                     */
-                    if (!passcodeManager.hasStoredPasscode(SalesforceSDKManager.getInstance().getAppContext())) {
+            if (id.customAttributes != null) {
+                mgr.getAdminSettingsManager().setPrefs(id.customAttributes, account);
+            }
 
-                        // This will bring up the create passcode screen - we will create the account in onResume
-                        SalesforceSDKManager.getInstance().getPasscodeManager().setEnabled(true);
-                        SalesforceSDKManager.getInstance().getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
-                    } else {
-                        loginOptions.passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
-                    	addAccount();
-                        callback.finish();
-                    }
-                }
-                // No screen lock required or no mobile policy specified
-                else {
-                    final PasscodeManager passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-                    passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH);
-                    loginOptions.passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
+            if (id.customPermissions != null) {
+                mgr.getAdminPermsManager().setPrefs(id.customPermissions, account);
+            }
+
+
+            // Screen lock required by mobile policy
+            if (id.screenLockTimeout > 0) {
+
+                // Stores the mobile policy for the org.
+                final PasscodeManager passcodeManager = mgr.getPasscodeManager();
+                passcodeManager.storeMobilePolicyForOrg(account, id.screenLockTimeout * 1000 * 60, id.pinLength);
+                passcodeManager.setTimeoutMs(id.screenLockTimeout * 1000 * 60);
+                passcodeManager.setMinPasscodeLength(id.pinLength);
+
+                /*
+                 * Checks if a passcode already exists. If a passcode has NOT
+                 * been created yet, the user is taken through the passcode
+                 * creation flow, at the end of which account data is encrypted
+                 * with a hash of the passcode. Other existing accounts are
+                 * also re-encrypted behind the scenes at this point. If a
+                 * passcode already exists, the existing hash is used and the
+                 * account is added at this point.
+                 */
+                if (!passcodeManager.hasStoredPasscode(mgr.getAppContext())) {
+                    // This will bring up the create passcode screen - we will create the account in onResume
+                    mgr.getPasscodeManager().setEnabled(true);
+                    mgr.getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
+                } else {
+                    loginOptions.passcodeHash = mgr.getPasscodeHash();
                     addAccount();
                     callback.finish();
                 }
+            }
+            // No screen lock required or no mobile policy specified
+            else {
+                final PasscodeManager passcodeManager = mgr.getPasscodeManager();
+                passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH);
+                loginOptions.passcodeHash = mgr.getPasscodeHash();
+                addAccount();
+                callback.finish();
             }
         }
 
@@ -603,6 +648,24 @@ public class OAuthWebviewHelper {
                     options.getString(COMMUNITY_URL)
                     );
         }
-
     }
+
+	@Override
+	public void alias(String alias) {
+		try {
+			certChain = KeyChain.getCertificateChain(activity, alias);
+			key = KeyChain.getPrivateKey(activity, alias);
+			activity.runOnUiThread(new Runnable() {
+
+                @Override
+                public void run() {
+                	loadLoginPage();
+                }
+            });
+		} catch (KeyChainException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
 }

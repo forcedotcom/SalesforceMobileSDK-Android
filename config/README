@@ -1,0 +1,7 @@
+# Solano CI Configuration
+#
+#
+# This repo is configured to build and run on SolanoCI infrastructure.
+#
+# See http://docs.solanolabs.com/ for more information.
+ 
