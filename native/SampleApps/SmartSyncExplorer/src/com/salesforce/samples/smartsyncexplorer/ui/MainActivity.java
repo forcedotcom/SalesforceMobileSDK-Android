@@ -128,6 +128,7 @@ public class MainActivity extends SalesforceListActivity implements
 	private SyncManager syncMgr;
 	private SmartStore smartStore;
     private LogoutDialogFragment logoutConfirmationDialog;
+    private long syncId = -1;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -255,23 +256,31 @@ public class MainActivity extends SalesforceListActivity implements
 		nameFilter.filter(filterTerm);
 	}
 
-	private void syncDownContacts() {
-		smartStore.registerSoup(ContactListLoader.CONTACT_SOUP, CONTACTS_INDEX_SPEC);
-        final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
-		try {
-			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
-					.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
-			final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
-			syncMgr.syncDown(target, options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
-				@Override
-				public void onUpdate(SyncState sync) {
-					handleSyncUpdate(sync);
-				}
-			});
-		} catch (JSONException e) {
+    private void syncDownContacts() {
+        smartStore.registerSoup(ContactListLoader.CONTACT_SOUP, CONTACTS_INDEX_SPEC);
+        SyncUpdateCallback callback = new SyncUpdateCallback() {
+            @Override
+            public void onUpdate(SyncState sync) {
+                handleSyncUpdate(sync);
+            }
+        };
+
+        try {
+            if (syncId == -1) {
+                final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
+                final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
+                        .from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
+                final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
+                SyncState sync = syncMgr.syncDown(target, options, ContactListLoader.CONTACT_SOUP, callback);
+                syncId = sync.getId(); // sync id only in memory so a new sync is created if app is restarted
+            }
+            else {
+                syncMgr.reSync(syncId, callback);
+            }
+        } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
-		}
-	}
+        }
+    }
 
 	private void syncUpContacts() {
 		final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS));
