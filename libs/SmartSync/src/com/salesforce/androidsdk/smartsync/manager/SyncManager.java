@@ -186,6 +186,19 @@ public class SyncManager {
     }
 
     /**
+     * Create and run a sync down that will overwrite any modified records
+     * @param target
+     * @param soupName
+     * @param callback
+     * @return
+     * @throws JSONException
+     */
+    public SyncState syncDown(SyncTarget target, String soupName, SyncUpdateCallback callback) throws JSONException {
+        SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.OVERWRITE);
+        return syncDown(target, options, soupName, callback);
+    }
+
+    /**
      * Create and run a sync down
      * @param target
      * @param options

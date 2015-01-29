@@ -130,7 +130,7 @@ public class JavaScriptPluginVersionTest extends InstrumentationTestCase {
 	 * Create JavaScriptPluginVersion for future versions and make sure isCurrent/isOlder/isNewer returns the value expected
 	 */
 	public void testJavaScriptPluginVersionsWithNewVersion() {
-		for (String version : new String[] {"3.2.0", "3.3.0", "3.4.0"}) {
+		for (String version : new String[] {"3.3.0", "3.4.0", "3.5.0"}) {
 			assertFalse((new JavaScriptPluginVersion(version)).isOlder());
 			assertFalse((new JavaScriptPluginVersion(version)).isCurrent());
 			assertTrue((new JavaScriptPluginVersion(version)).isNewer());
