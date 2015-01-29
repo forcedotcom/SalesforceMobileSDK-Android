@@ -46,127 +46,127 @@ import org.json.JSONObject;
  */
 public class SmartSyncPlugin extends ForcePlugin {
 
-	// Keys in json from/to javascript
-	static final String TARGET = "target";
-	static final String SOUP_NAME = "soupName";
-	static final String OPTIONS = "options";
-	static final String SYNC_ID = "syncId";
+    // Keys in json from/to javascript
+    static final String TARGET = "target";
+    static final String SOUP_NAME = "soupName";
+    static final String OPTIONS = "options";
+    static final String SYNC_ID = "syncId";
 
-	// Event
-	private static final String SYNC_EVENT_TYPE = "sync";
-	private static final String DETAIL = "detail";
+    // Event
+    private static final String SYNC_EVENT_TYPE = "sync";
+    private static final String DETAIL = "detail";
 
-	/**
-	 * Supported plugin actions that the client can take.
-	 */
-	enum Action {
-		syncUp,
-		syncDown,
-		getSyncStatus,
+    /**
+     * Supported plugin actions that the client can take.
+     */
+    enum Action {
+        syncUp,
+        syncDown,
+        getSyncStatus,
         reSync
-	}
-	
+    }
+    
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
-    	final long start = System.currentTimeMillis();
-    	// Figure out action
-    	final Action action;
-    	try {
-    		action = Action.valueOf(actionStr);
-    	}
-    	catch (IllegalArgumentException e) {
-    		Log.e("SmartSyncPlugin.execute", "Unknown action " + actionStr);
+        final long start = System.currentTimeMillis();
+        // Figure out action
+        final Action action;
+        try {
+            action = Action.valueOf(actionStr);
+        }
+        catch (IllegalArgumentException e) {
+            Log.e("SmartSyncPlugin.execute", "Unknown action " + actionStr);
             return false;
-    	}
+        }
 
-    	// Not running smartstore action on the main thread
-    	cordova.getThreadPool().execute(new Runnable() {
-			@Override
-			public void run() {
-		    	// All smart store action need to be serialized
-				synchronized(SmartSyncPlugin.class) {
-	        		try {
-		        		switch(action) {
-		        		  case syncUp:             syncUp(args, callbackContext); break;
-		        		  case syncDown:		   syncDown(args, callbackContext); break;
-		        		  case getSyncStatus:	   getSyncStatus(args, callbackContext); break;
+        // Not running smartstore action on the main thread
+        cordova.getThreadPool().execute(new Runnable() {
+            @Override
+            public void run() {
+                // All smart store action need to be serialized
+                synchronized(SmartSyncPlugin.class) {
+                    try {
+                        switch(action) {
+                          case syncUp:             syncUp(args, callbackContext); break;
+                          case syncDown:           syncDown(args, callbackContext); break;
+                          case getSyncStatus:      getSyncStatus(args, callbackContext); break;
                           case reSync:             reSync(args, callbackContext); break;
-		                  default: throw new RuntimeException("No handler for action " + action);
-		    	    	}
-	        		}
-	            	catch (Exception e) {
-	            		Log.w("SmartSyncPlugin.execute", e.getMessage(), e);
-	            		callbackContext.error(e.getMessage());
-	            	}	        		
-	            	Log.d("SmartSyncPlugin.execute", "Total time for " + action + "->" + (System.currentTimeMillis() - start));
-	        	}
-			}
-    	});
-    	Log.d("SmartSyncPlugin.execute", "Main thread time for " + action + "->" + (System.currentTimeMillis() - start));
-    	return true;
+                          default: throw new RuntimeException("No handler for action " + action);
+                        }
+                    }
+                    catch (Exception e) {
+                        Log.w("SmartSyncPlugin.execute", e.getMessage(), e);
+                        callbackContext.error(e.getMessage());
+                    }                   
+                    Log.d("SmartSyncPlugin.execute", "Total time for " + action + "->" + (System.currentTimeMillis() - start));
+                }
+            }
+        });
+        Log.d("SmartSyncPlugin.execute", "Main thread time for " + action + "->" + (System.currentTimeMillis() - start));
+        return true;
     }
 
-	/**
-	 * Native implementation of syncUp
-	 * @param args
-	 * @param callbackContext
-	 * @throws JSONException 
-	 */
-	private void syncUp(JSONArray args, CallbackContext callbackContext) throws JSONException {
-		// Parse args
-		JSONObject arg0 = args.getJSONObject(0);
-		String soupName = arg0.getString(SOUP_NAME);
-		JSONObject options = arg0.optJSONObject(OPTIONS);
+    /**
+     * Native implementation of syncUp
+     * @param args
+     * @param callbackContext
+     * @throws JSONException 
+     */
+    private void syncUp(JSONArray args, CallbackContext callbackContext) throws JSONException {
+        // Parse args
+        JSONObject arg0 = args.getJSONObject(0);
+        String soupName = arg0.getString(SOUP_NAME);
+        JSONObject options = arg0.optJSONObject(OPTIONS);
 
-		SyncManager syncManager = SyncManager.getInstance(null);
-		SyncState sync = syncManager.syncUp(SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
-			@Override
-			public void onUpdate(SyncState sync) {
-				handleSyncUpdate(sync);
-			}
-		});
-		callbackContext.success(sync.asJSON());
-	}
+        SyncManager syncManager = SyncManager.getInstance(null);
+        SyncState sync = syncManager.syncUp(SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
+            @Override
+            public void onUpdate(SyncState sync) {
+                handleSyncUpdate(sync);
+            }
+        });
+        callbackContext.success(sync.asJSON());
+    }
 
-	/**
-	 * Native implementation of syncDown
-	 * @param args
-	 * @param callbackContext
-	 * @throws JSONException 
-	 */
-	private void syncDown(JSONArray args, CallbackContext callbackContext) throws JSONException {
-		// Parse args
-		JSONObject arg0 = args.getJSONObject(0);
-		JSONObject target = arg0.getJSONObject(TARGET);
-		String soupName = arg0.getString(SOUP_NAME);
+    /**
+     * Native implementation of syncDown
+     * @param args
+     * @param callbackContext
+     * @throws JSONException 
+     */
+    private void syncDown(JSONArray args, CallbackContext callbackContext) throws JSONException {
+        // Parse args
+        JSONObject arg0 = args.getJSONObject(0);
+        JSONObject target = arg0.getJSONObject(TARGET);
+        String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.getJSONObject(OPTIONS);
-		
-		SyncManager syncManager = SyncManager.getInstance(null);
-		SyncState sync = syncManager.syncDown(SyncTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
-			@Override
-			public void onUpdate(SyncState sync) {
-				handleSyncUpdate(sync);
-			}
-		});
-		callbackContext.success(sync.asJSON());
-	}
-	
-	/**
-	 * Native implementation of getSyncStatus
-	 * @param args
-	 * @param callbackContext
-	 * @throws JSONException 
-	 */	
-	private void getSyncStatus(JSONArray args, CallbackContext callbackContext) throws JSONException {
-		// Parse args
-		JSONObject arg0 = args.getJSONObject(0);
-		long syncId = arg0.getLong(SYNC_ID);
-		
-		SyncManager syncManager = SyncManager.getInstance(null);
-		SyncState sync = syncManager.getSyncStatus(syncId);
-		
-		callbackContext.success(sync.asJSON());
-	}
+        
+        SyncManager syncManager = SyncManager.getInstance(null);
+        SyncState sync = syncManager.syncDown(SyncTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
+            @Override
+            public void onUpdate(SyncState sync) {
+                handleSyncUpdate(sync);
+            }
+        });
+        callbackContext.success(sync.asJSON());
+    }
+    
+    /**
+     * Native implementation of getSyncStatus
+     * @param args
+     * @param callbackContext
+     * @throws JSONException 
+     */ 
+    private void getSyncStatus(JSONArray args, CallbackContext callbackContext) throws JSONException {
+        // Parse args
+        JSONObject arg0 = args.getJSONObject(0);
+        long syncId = arg0.getLong(SYNC_ID);
+        
+        SyncManager syncManager = SyncManager.getInstance(null);
+        SyncState sync = syncManager.getSyncStatus(syncId);
+        
+        callbackContext.success(sync.asJSON());
+    }
 
     /**
      * Native implementatino of reSync
@@ -190,18 +190,18 @@ public class SmartSyncPlugin extends ForcePlugin {
         callbackContext.success(sync.asJSON());
     }
 
-	private void handleSyncUpdate(final SyncState sync) {
+    private void handleSyncUpdate(final SyncState sync) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
-            	try {
-            		String syncAsString = sync.asJSON().toString();
-                	String js = "javascript:document.dispatchEvent(new CustomEvent(\"" + SYNC_EVENT_TYPE + "\", { \"" + DETAIL + "\": " + syncAsString + "}))";
-                	webView.loadUrl(js);
-            	}
-            	catch (Exception e) {
-            		Log.e("SmartSyncPlugin.handleSyncUpdate", "Failed to dispatch event", e);
-            	}
+                try {
+                    String syncAsString = sync.asJSON().toString();
+                    String js = "javascript:document.dispatchEvent(new CustomEvent(\"" + SYNC_EVENT_TYPE + "\", { \"" + DETAIL + "\": " + syncAsString + "}))";
+                    webView.loadUrl(js);
+                }
+                catch (Exception e) {
+                    Log.e("SmartSyncPlugin.handleSyncUpdate", "Failed to dispatch event", e);
+                }
             }
         });
-	}
+    }
 }
