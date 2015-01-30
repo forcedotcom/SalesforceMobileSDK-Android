@@ -490,7 +490,7 @@ public class SyncManager {
 
     public String addFilterForReSync(String query, long maxTimeStamp) {
         if (maxTimeStamp != UNCHANGED) {
-            String extraPredicate = Constants.SYSTEM_MODSTAMP + " > " + TIMESTAMP_FORMAT.format(new Date(maxTimeStamp));
+            String extraPredicate = Constants.LAST_MODIFIED_DATE + " > " + TIMESTAMP_FORMAT.format(new Date(maxTimeStamp));
             query = query.toLowerCase().contains(" where ")
                         ? query.replaceFirst("( [wW][hH][eE][rR][eE] )", "$1" + extraPredicate + " and ")
                         : query.replaceFirst("( [fF][rR][oO][mM][ ]+[^ ]*)", "$1 where " + extraPredicate);
@@ -531,10 +531,10 @@ public class SyncManager {
     private long getMaxTimeStamp(JSONArray jsonArray) throws JSONException {
         long maxTimeStamp = UNCHANGED;
         for (int i=0; i<jsonArray.length(); i++) {
-            String timeStampStr = JSONObjectHelper.optString(jsonArray.getJSONObject(i), Constants.SYSTEM_MODSTAMP);
+            String timeStampStr = JSONObjectHelper.optString(jsonArray.getJSONObject(i), Constants.LAST_MODIFIED_DATE);
             if (timeStampStr == null) {
                 maxTimeStamp = UNCHANGED;
-                break; // systemModstamp field not present
+                break; // LastModifiedDate field not present
             }
 
             try {
@@ -542,7 +542,7 @@ public class SyncManager {
                 maxTimeStamp = Math.max(timeStamp, maxTimeStamp);
             }
             catch (Exception e) {
-                Log.w("SmartSync.getMaxTimeStamp", "Could not parse systemModstamp", e);
+                Log.w("SmartSync.getMaxTimeStamp", "Could not parse LastModifiedDate", e);
                 maxTimeStamp = UNCHANGED;
                 break;
             }
@@ -593,7 +593,7 @@ public class SyncManager {
 	}
 
     private Set<String> getDirtyRecordIds(String soupName, String idField) throws JSONException {
-        Set<String> idsToSkip = new HashSet<String>();;
+        Set<String> idsToSkip = new HashSet<String>();
         String dirtyRecordsSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true'", soupName, idField, soupName, soupName, LOCAL);
         final QuerySpec smartQuerySpec = QuerySpec.buildSmartQuerySpec(dirtyRecordsSql, PAGE_SIZE);
         boolean hasMore = true;

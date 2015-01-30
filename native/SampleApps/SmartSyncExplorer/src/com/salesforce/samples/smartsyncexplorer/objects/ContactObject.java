@@ -57,7 +57,7 @@ public class ContactObject extends SalesforceObject {
 		EMAIL,
 		DEPARTMENT,
 		HOME_PHONE,
-        Constants.SYSTEM_MODSTAMP
+        Constants.LAST_MODIFIED_DATE
 	};
 
 	private boolean isLocallyModified;
