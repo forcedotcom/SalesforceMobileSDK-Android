@@ -291,14 +291,14 @@ public class SyncManagerTest extends ManagerTestCase {
         Date date = new Date();
         long dateLong = date.getTime();
         String dateStr = SyncManager.TIMESTAMP_FORMAT.format(date);
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where SystemModstamp > " + dateStr, syncManager.addFilterForReSync("select Id from Account", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where SystemModstamp > " + dateStr + " limit 100", syncManager.addFilterForReSync("select Id from Account limit 100", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where SystemModstamp > " + dateStr + " and Name = 'John'", syncManager.addFilterForReSync("select Id from Account where Name = 'John'", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where SystemModstamp > " + dateStr + " and Name = 'John' limit 100", syncManager.addFilterForReSync("select Id from Account where Name = 'John' limit 100", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where SystemModstamp > " + dateStr, syncManager.addFilterForReSync("SELECT Id FROM Account", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where SystemModstamp > " + dateStr + " LIMIT 100", syncManager.addFilterForReSync("SELECT Id FROM Account LIMIT 100", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE SystemModstamp > " + dateStr + " and Name = 'John'", syncManager.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John'", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE SystemModstamp > " + dateStr + " and Name = 'John' LIMIT 100", syncManager.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John' LIMIT 100", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr, syncManager.addFilterForReSync("select Id from Account", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " limit 100", syncManager.addFilterForReSync("select Id from Account limit 100", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " and Name = 'John'", syncManager.addFilterForReSync("select Id from Account where Name = 'John'", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " and Name = 'John' limit 100", syncManager.addFilterForReSync("select Id from Account where Name = 'John' limit 100", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr, syncManager.addFilterForReSync("SELECT Id FROM Account", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr + " LIMIT 100", syncManager.addFilterForReSync("SELECT Id FROM Account LIMIT 100", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John'", syncManager.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John'", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John' LIMIT 100", syncManager.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John' LIMIT 100", dateLong));
     }
 
 	/**
@@ -311,7 +311,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		String idsClause = "('" + TextUtils.join("', '", idToNames.keySet()) + "')";
 		
 		// Create sync
-		SyncTarget target = SyncTarget.targetForSOQLSyncDown("SELECT Id, Name, SystemModstamp FROM Account WHERE Id IN " + idsClause);
+		SyncTarget target = SyncTarget.targetForSOQLSyncDown("SELECT Id, Name, LastModifiedDate FROM Account WHERE Id IN " + idsClause);
         SyncOptions options = SyncOptions.optionsForSyncDown(mergeMode);
 		SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP);
 		long syncId = sync.getId();
