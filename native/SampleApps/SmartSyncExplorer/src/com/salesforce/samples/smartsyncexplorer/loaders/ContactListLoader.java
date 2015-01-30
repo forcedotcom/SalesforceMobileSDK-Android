@@ -45,6 +45,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager.SmartSyncException;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
@@ -114,7 +115,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	/**
 	 * Pushes local changes up to the server.
 	 */
-	public void syncUp() {
+	public synchronized void syncUp() {
 		final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS));
 		try {
 			syncMgr.syncUp(options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
@@ -126,13 +127,15 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 			});
 		} catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
+		} catch (SmartSyncException e) {
+            Log.e(TAG, "SmartSyncException occurred while attempting to sync up", e);
 		}
 	}
 
 	/**
 	 * Pulls the latest records from the server.
 	 */
-	public void syncDown() {
+	public synchronized void syncDown() {
 		smartStore.registerSoup(ContactListLoader.CONTACT_SOUP, CONTACTS_INDEX_SPEC);
         final SyncUpdateCallback callback = new SyncUpdateCallback() {
 
@@ -147,13 +150,16 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
                 final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
                         .from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
                 final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
-                SyncState sync = syncMgr.syncDown(target, options, ContactListLoader.CONTACT_SOUP, callback);
+                final SyncState sync = syncMgr.syncDown(target, options,
+                		ContactListLoader.CONTACT_SOUP, callback);
                 syncId = sync.getId();
             } else {
                 syncMgr.reSync(syncId, callback);
             }
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
-        }
+        } catch (SmartSyncException e) {
+            Log.e(TAG, "SmartSyncException occurred while attempting to sync down", e);
+		}
 	}
 }

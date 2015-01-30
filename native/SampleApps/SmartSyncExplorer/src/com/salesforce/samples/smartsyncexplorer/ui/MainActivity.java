@@ -77,7 +77,7 @@ public class MainActivity extends SalesforceListActivity implements
 	public static final String OBJECT_TITLE_KEY = "object_title";
 	public static final String OBJECT_NAME_KEY = "object_name";
 	private static final String SYNC_CONTENT_AUTHORITY = "com.salesforce.samples.smartsyncexplorer.sync.contactsyncadapter";
-	private static final long SYNC_FREQUENCY_ONE_HOUR = 1 * 60; //1 * 60 * 60;
+	private static final long SYNC_FREQUENCY_ONE_HOUR = 1 * 60 * 60;
 	private static final int CONTACT_LOADER_ID = 1;
 	private static final int CONTACT_COLORS[] = {
 		Color.rgb(26, 188, 156),
@@ -135,6 +135,14 @@ public class MainActivity extends SalesforceListActivity implements
 		} else {
             refreshList();
         }
+
+		/*
+		 * Enables sync automatically for this provider. To enable almost
+		 * instantaneous sync when records are modified locally, a call needs
+		 * to be made by the content provider to notify the sync provider
+		 * that the underlying data set has changed. Since we don't use cursors
+		 * in this sample application, we simply enable periodic sync every hour.
+		 */
 		ContentResolver.setSyncAutomatically(account, SYNC_CONTENT_AUTHORITY, true);
 		ContentResolver.addPeriodicSync(account, SYNC_CONTENT_AUTHORITY,
 					Bundle.EMPTY, SYNC_FREQUENCY_ONE_HOUR);	
