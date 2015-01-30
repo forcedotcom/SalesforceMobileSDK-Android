@@ -52,6 +52,7 @@ import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
+import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 /**
@@ -122,7 +123,9 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 
 				@Override
 				public void onUpdate(SyncState sync) {
-					syncDown();
+					if (!Status.RUNNING.equals(sync.getStatus())) {
+						syncDown();
+					}
 				}
 			});
 		} catch (JSONException e) {
