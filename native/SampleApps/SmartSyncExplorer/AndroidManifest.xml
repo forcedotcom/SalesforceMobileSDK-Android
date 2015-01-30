@@ -45,6 +45,7 @@
             android:authorities="com.salesforce.samples.smartsyncexplorer.sync.contactsyncadapter"
             android:exported="true"
             android:syncable="true"
+            android:enabled="true"
             android:label="Sync Contacts" />
     </application>
 

@@ -143,7 +143,6 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 				@Override
 				public void onUpdate(SyncState sync) {
 					loadInBackground();
-					onContentChanged();
 				}
 			});
 		} catch (JSONException e) {

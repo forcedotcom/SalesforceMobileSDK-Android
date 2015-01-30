@@ -29,7 +29,9 @@ package com.salesforce.samples.smartsyncexplorer.ui;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.accounts.Account;
 import android.app.LoaderManager;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.Loader;
@@ -74,6 +76,8 @@ public class MainActivity extends SalesforceListActivity implements
 	public static final String OBJECT_ID_KEY = "object_id";
 	public static final String OBJECT_TITLE_KEY = "object_title";
 	public static final String OBJECT_NAME_KEY = "object_name";
+	private static final String SYNC_CONTENT_AUTHORITY = "com.salesforce.samples.smartsyncexplorer.sync.contactsyncadapter";
+	private static final long SYNC_FREQUENCY_ONE_HOUR = 1 * 60; //1 * 60 * 60;
 	private static final int CONTACT_LOADER_ID = 1;
 	private static final int CONTACT_COLORS[] = {
 		Color.rgb(26, 188, 156),
@@ -120,6 +124,10 @@ public class MainActivity extends SalesforceListActivity implements
 	@Override
 	public void onResume(RestClient client) {
 		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+		Account account = null;
+		if (curAccount != null) {
+			account = SmartSyncSDKManager.getInstance().getUserAccountManager().buildAccount(curAccount);
+		}
 		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
 		getLoaderManager().initLoader(CONTACT_LOADER_ID, null, this);
 		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
@@ -127,6 +135,9 @@ public class MainActivity extends SalesforceListActivity implements
 		} else {
             refreshList();
         }
+		ContentResolver.setSyncAutomatically(account, SYNC_CONTENT_AUTHORITY, true);
+		ContentResolver.addPeriodicSync(account, SYNC_CONTENT_AUTHORITY,
+					Bundle.EMPTY, SYNC_FREQUENCY_ONE_HOUR);	
     }
 
     private void refreshList() {
