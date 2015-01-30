@@ -75,6 +75,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 
     private SmartStore smartStore;
     private SyncManager syncMgr;
+    private long syncId = -1;
 
 	/**
 	 * Parameterized constructor.
@@ -133,20 +134,26 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 */
 	public void syncDown() {
 		smartStore.registerSoup(ContactListLoader.CONTACT_SOUP, CONTACTS_INDEX_SPEC);
-        final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
-		try {
-			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
-					.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
-			final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
-			syncMgr.syncDown(target, options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
+        final SyncUpdateCallback callback = new SyncUpdateCallback() {
 
-				@Override
-				public void onUpdate(SyncState sync) {
-					loadInBackground();
-				}
-			});
-		} catch (JSONException e) {
+            @Override
+            public void onUpdate(SyncState sync) {
+				loadInBackground();
+            }
+        };
+        try {
+            if (syncId == -1) {
+                final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
+                final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
+                        .from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
+                final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
+                SyncState sync = syncMgr.syncDown(target, options, ContactListLoader.CONTACT_SOUP, callback);
+                syncId = sync.getId();
+            } else {
+                syncMgr.reSync(syncId, callback);
+            }
+        } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
-		}
+        }
 	}
 }

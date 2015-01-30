@@ -48,6 +48,7 @@ public class Constants {
 	public static final String NEXT_RECORDS_URL = "nextRecordsUrl";
 	public static final String TOTAL_SIZE = "totalSize";
 	public static final String RECENT_ITEMS = "recentItems";
+    public static final String LAST_MODIFIED_DATE = "LastModifiedDate";
 
     /**
      * Salesforce object types.

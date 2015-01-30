@@ -48,6 +48,7 @@ public class SyncState {
 	public static final String SYNC_STATUS = "status";
 	public static final String SYNC_PROGRESS = "progress";
 	public static final String SYNC_TOTAL_SIZE = "totalSize";
+    public static final String SYNC_MAX_TIME_STAMP = "maxTimeStamp";
 
 	private long id;
 	private Type type;
@@ -57,6 +58,7 @@ public class SyncState {
 	private Status status;
 	private int progress;
 	private int totalSize;
+    private long maxTimeStamp;
 	
 	
 	/**
@@ -87,6 +89,7 @@ public class SyncState {
     	sync.put(SYNC_STATUS, Status.NEW.name());
     	sync.put(SYNC_PROGRESS, 0);
     	sync.put(SYNC_TOTAL_SIZE, -1);
+        sync.put(SYNC_MAX_TIME_STAMP, -1);
 
     	sync = store.upsert(SYNCS_SOUP, sync);
     	return SyncState.fromJSON(sync);
@@ -106,6 +109,7 @@ public class SyncState {
     	sync.put(SYNC_STATUS, Status.NEW.name());
     	sync.put(SYNC_PROGRESS, 0);
     	sync.put(SYNC_TOTAL_SIZE, -1);
+        sync.put(SYNC_MAX_TIME_STAMP, -1);
 
     	sync = store.upsert(SYNCS_SOUP, sync);
     	return SyncState.fromJSON(sync);
@@ -127,6 +131,7 @@ public class SyncState {
 		state.status = Status.valueOf(sync.getString(SYNC_STATUS));
 		state.progress = sync.getInt(SYNC_PROGRESS);
 		state.totalSize = sync.getInt(SYNC_TOTAL_SIZE);
+        state.maxTimeStamp = sync.optLong(SYNC_MAX_TIME_STAMP, -1);
 		return state;
 	}
 	
@@ -160,6 +165,7 @@ public class SyncState {
 		sync.put(SYNC_STATUS, status.name());
 		sync.put(SYNC_PROGRESS, progress);
 		sync.put(SYNC_TOTAL_SIZE, totalSize);
+        sync.put(SYNC_MAX_TIME_STAMP, maxTimeStamp);
 		return sync;
 	}
 	
@@ -207,8 +213,16 @@ public class SyncState {
 	public int getTotalSize() {
 		return totalSize;
 	}
-	
-	public void setProgress(int progress) {
+
+    public long getMaxTimeStamp() {
+        return maxTimeStamp;
+    }
+
+    public void setMaxTimeStamp(long maxTimeStamp) {
+        this.maxTimeStamp = maxTimeStamp;
+    }
+
+    public void setProgress(int progress) {
 		this.progress = progress;
 	}
 	
