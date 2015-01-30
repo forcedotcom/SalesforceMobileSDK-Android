@@ -26,22 +26,11 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import android.net.Uri;
+import android.text.TextUtils;
+import android.util.Log;
+
+import com.salesforce.androidsdk.auth.HttpAccess.Execution;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -53,11 +42,17 @@ import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.net.Uri;
-import android.text.TextUtils;
-import android.util.Log;
-
-import com.salesforce.androidsdk.auth.HttpAccess.Execution;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Helper methods for common OAuth2 requests.
