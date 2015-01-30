@@ -101,7 +101,7 @@ public class OAuth2Test extends InstrumentationTestCase {
         	param = listor.next();
             if (param.getName().equalsIgnoreCase("scope")) {
                 scopesFound = true;
-                assertEquals("Wrong scopes included", "refresh_token foo bar", param.getValue());
+                assertEquals("Wrong scopes included", "bar foo refresh_token", param.getValue());
                 break;
             }
         }
@@ -118,7 +118,7 @@ public class OAuth2Test extends InstrumentationTestCase {
         	param = listor.next();
             if (param.getName().equalsIgnoreCase("scope")) {
                 scopesFound = true;
-                assertEquals("Wrong scopes included on redundant", "refresh_token foo bar", param.getValue());
+                assertEquals("Wrong scopes included on redundant", "bar foo refresh_token", param.getValue());
                 break;
             }
         }
