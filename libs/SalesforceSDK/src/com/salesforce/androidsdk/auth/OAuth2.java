@@ -32,11 +32,16 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -150,14 +155,14 @@ public class OAuth2 {
         sb.append(OAUTH_AUTH_PATH).append(displayType == null ? TOUCH : displayType);
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(clientSecret == null ? TOKEN : ACTIVATED_CLIENT_CODE);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
-        sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
+        if (scopes != null && scopes.length > 0) sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
         return URI.create(sb.toString());
     }
 
     private static String computeScopeParameter(String[] scopes) {
         final List<String> scopesList = Arrays.asList(scopes == null ? new String[]{} : scopes);
-        Set<String> scopesSet = new HashSet<String>(scopesList);
+        Set<String> scopesSet = new TreeSet<String>(scopesList); // sorted set to make tests easier
         scopesSet.add(REFRESH_TOKEN);
         return TextUtils.join(" ", scopesSet.toArray(new String[]{}));
     }
