@@ -66,6 +66,7 @@ usage ()
     echo "        TemplateApp"
     echo "        UserList"
     echo "        VFConnector"
+    echo "        ForcePluginsTest"
     echo "    <test_target> can be "
     echo "        all"
     echo "        ForcePluginsTest"
@@ -74,6 +75,7 @@ usage ()
     echo "        SmartStoreTest"
     echo "        SmartSyncTest"
     echo "        TemplateAppTest"
+    echo "        ForcePluginsTest"
 }
 
 verbose ()
@@ -202,6 +204,7 @@ else
         build_project_if_requested    "UserList"            $HYBRID_TOP/SampleApps/UserList            21 :hybrid:SampleApps:UserList
         build_project_if_requested    "SmartStoreExplorer"  $HYBRID_TOP/SampleApps/SmartStoreExplorer  21 :hybrid:SampleApps:SmartStoreExplorer
         build_project_if_requested    "VFConnector"         $HYBRID_TOP/SampleApps/VFConnector         21 :hybrid:SampleApps:VFConnector
+        build_project_if_requested    "ForcePluginsTest"    $HYBRID_TOP/test/ForcePluginsTest          21 :hybrid:test:ForcePluginsTest
     fi
 
     if ( should_do "test{all}" )
