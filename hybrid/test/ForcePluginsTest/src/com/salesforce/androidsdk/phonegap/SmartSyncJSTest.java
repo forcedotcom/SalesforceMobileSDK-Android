@@ -92,6 +92,7 @@ public class SmartSyncJSTest extends JSTestCase {
 				"testSObjectCollectionFetch",
 				"testSyncDown",
                 "testSyncDownWithNoOverwrite",
+                "testReSync",
 				"testSyncUpLocallyUpdated",
 				"testSyncUpLocallyDeleted",
 				"testSyncUpLocallyCreated"
@@ -268,6 +269,10 @@ public class SmartSyncJSTest extends JSTestCase {
 
     public void testSyncDownWithNoOverwrite() {
         runTest("testSyncDownWithNoOverwrite");
+    }
+
+    public void testReSync() {
+        runTest("testReSync");
     }
 
     public void testSyncUpLocallyUpdated() {
