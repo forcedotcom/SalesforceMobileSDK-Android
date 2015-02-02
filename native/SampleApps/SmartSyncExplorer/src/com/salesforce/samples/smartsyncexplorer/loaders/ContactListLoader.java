@@ -51,8 +51,8 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
-import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
+import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 /**
@@ -117,13 +117,13 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 * Pushes local changes up to the server.
 	 */
 	public synchronized void syncUp() {
-		final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS));
+		final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS_SYNC_UP));
 		try {
 			syncMgr.syncUp(options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
 
 				@Override
 				public void onUpdate(SyncState sync) {
-					if (!Status.RUNNING.equals(sync.getStatus())) {
+			        if (Status.DONE.equals(sync.getStatus())) {
 						syncDown();
 					}
 				}
@@ -144,13 +144,15 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 
             @Override
             public void onUpdate(SyncState sync) {
-				loadInBackground();
+		        if (Status.DONE.equals(sync.getStatus())) {
+		        	loadInBackground();
+		        }
             }
         };
         try {
             if (syncId == -1) {
                 final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
-                final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
+                final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS_SYNC_DOWN)
                         .from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
                 final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
                 final SyncState sync = syncMgr.syncDown(target, options,
