@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,6 +27,7 @@
 package com.salesforce.samples.smartsyncexplorer.loaders;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.json.JSONArray;
@@ -37,10 +38,21 @@ import android.content.Context;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager.SmartSyncException;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
+import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
+import com.salesforce.androidsdk.smartsync.util.SyncOptions;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
+import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 /**
@@ -53,8 +65,19 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	public static final String CONTACT_SOUP = "contacts";
 	public static final Integer LIMIT = 10000;
     private static final String TAG = "SmartSyncExplorer: ContactListLoader";
+    private static IndexSpec[] CONTACTS_INDEX_SPEC = {
+		new IndexSpec("Id", Type.string),
+		new IndexSpec("FirstName", Type.string),
+		new IndexSpec("LastName", Type.string),
+		new IndexSpec(SyncManager.LOCALLY_CREATED, Type.string),
+		new IndexSpec(SyncManager.LOCALLY_UPDATED, Type.string),
+		new IndexSpec(SyncManager.LOCALLY_DELETED, Type.string),
+		new IndexSpec(SyncManager.LOCAL, Type.string)
+	};
 
     private SmartStore smartStore;
+    private SyncManager syncMgr;
+    private long syncId = -1;
 
 	/**
 	 * Parameterized constructor.
@@ -65,6 +88,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	public ContactListLoader(Context context, UserAccount account) {
 		super(context);
 		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account);
+		syncMgr = SyncManager.getInstance(account);
 	}
 
 	@Override
@@ -87,5 +111,60 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
             Log.e(TAG, "SmartSqlException occurred while fetching data", e);
 		}
 		return contacts;
+	}
+
+	/**
+	 * Pushes local changes up to the server.
+	 */
+	public synchronized void syncUp() {
+		final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS_SYNC_UP));
+		try {
+			syncMgr.syncUp(options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
+
+				@Override
+				public void onUpdate(SyncState sync) {
+			        if (Status.DONE.equals(sync.getStatus())) {
+						syncDown();
+					}
+				}
+			});
+		} catch (JSONException e) {
+            Log.e(TAG, "JSONException occurred while parsing", e);
+		} catch (SmartSyncException e) {
+            Log.e(TAG, "SmartSyncException occurred while attempting to sync up", e);
+		}
+	}
+
+	/**
+	 * Pulls the latest records from the server.
+	 */
+	public synchronized void syncDown() {
+		smartStore.registerSoup(ContactListLoader.CONTACT_SOUP, CONTACTS_INDEX_SPEC);
+        final SyncUpdateCallback callback = new SyncUpdateCallback() {
+
+            @Override
+            public void onUpdate(SyncState sync) {
+		        if (Status.DONE.equals(sync.getStatus())) {
+		        	loadInBackground();
+		        }
+            }
+        };
+        try {
+            if (syncId == -1) {
+                final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
+                final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS_SYNC_DOWN)
+                        .from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
+                final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
+                final SyncState sync = syncMgr.syncDown(target, options,
+                		ContactListLoader.CONTACT_SOUP, callback);
+                syncId = sync.getId();
+            } else {
+                syncMgr.reSync(syncId, callback);
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "JSONException occurred while parsing", e);
+        } catch (SmartSyncException e) {
+            Log.e(TAG, "SmartSyncException occurred while attempting to sync down", e);
+		}
 	}
 }

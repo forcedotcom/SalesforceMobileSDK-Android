@@ -28,6 +28,25 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <!-- Contact sync service -->
+        <service android:name="com.salesforce.samples.smartsyncexplorer.sync.ContactSyncService"
+            android:exported="true"
+            android:process=":sync">
+            <intent-filter>
+                <action android:name="android.content.SyncAdapter"/>
+            </intent-filter>
+            <meta-data android:name="android.content.SyncAdapter"
+                android:resource="@xml/contact_sync_adapter" />
+        </service>
+
+        <!-- Contact data provider -->
+        <provider android:name="com.salesforce.samples.smartsyncexplorer.sync.ContactProvider"
+            android:authorities="com.salesforce.samples.smartsyncexplorer.sync.contactsyncadapter"
+            android:exported="true"
+            android:syncable="true"
+            android:enabled="true"
+            android:label="Sync Contacts" />
     </application>
 
     <uses-sdk android:minSdkVersion="17"
@@ -42,4 +61,6 @@
         android:protectionLevel="signature" />
 
     <uses-permission android:name="com.salesforce.samples.nativesqlaggregator.C2D_MESSAGE" />
+    <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
+    <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
 </manifest>
