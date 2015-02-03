@@ -71,7 +71,8 @@ import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
  * @author bhariharan
  */
 public class MainActivity extends SalesforceListActivity implements
-		OnQueryTextListener, OnCloseListener, LoaderManager.LoaderCallbacks<List<ContactObject>> {
+		OnQueryTextListener, OnCloseListener,
+		LoaderManager.LoaderCallbacks<List<ContactObject>> {
 
 	public static final String OBJECT_ID_KEY = "object_id";
 	public static final String OBJECT_TITLE_KEY = "object_title";
@@ -145,18 +146,18 @@ public class MainActivity extends SalesforceListActivity implements
 		 */
 		ContentResolver.setSyncAutomatically(account, SYNC_CONTENT_AUTHORITY, true);
 		ContentResolver.addPeriodicSync(account, SYNC_CONTENT_AUTHORITY,
-					Bundle.EMPTY, SYNC_FREQUENCY_ONE_HOUR);	
-    }
+					Bundle.EMPTY, SYNC_FREQUENCY_ONE_HOUR);
+	}
 
     private void refreshList() {
         getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
     }
 
     @Override
-	public void onDestroy() {
-		getLoaderManager().destroyLoader(CONTACT_LOADER_ID);
+	public void onPause() {
+    	getLoaderManager().destroyLoader(CONTACT_LOADER_ID);
 		contactLoader = null;
-		super.onDestroy();
+		super.onPause();
 	}
 
 	@Override
