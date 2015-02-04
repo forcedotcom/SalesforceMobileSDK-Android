@@ -364,7 +364,7 @@ public class SyncManager {
                 }
             }
         }
-        if (serverLastModified < lastModifiedDate) {
+        if (serverLastModified <= lastModifiedDate) {
         	isNewer = true;
         }
     	return isNewer;
@@ -390,13 +390,21 @@ public class SyncManager {
         // Getting type and id
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(Constants.ID);
-        final long lastModifiedDate = record.optLong(SmartStore.SOUP_LAST_MODIFIED_DATE, UNCHANGED);
+        long lastModifiedDate = UNCHANGED;
+        final String lastModStr = record.optString(Constants.LAST_MODIFIED_DATE);
+        if (!TextUtils.isEmpty(lastModStr)) {
+        	try {
+        		lastModifiedDate = TIMESTAMP_FORMAT.parse(lastModStr).getTime();
+        	} catch (ParseException e) {
+        		Log.e("SmartSyncManager:syncUpOneRecord", "Error during date parsing", e);
+        	}
+        }
 
         /*
          * Checks if we are attempting to update a record that has been updated
-         * on the server AFTER the client update. If the merge mode passed in
-         * tells us to leave the record alone under these circumstances, we will
-         * do nothing and return here.
+         * on the server AFTER the client's last sync down. If the merge mode
+         * passed in tells us to leave the record alone under these
+         * circumstances, we will do nothing and return here.
          */
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED &&
         		(action == Action.update || action == Action.delete) &&
