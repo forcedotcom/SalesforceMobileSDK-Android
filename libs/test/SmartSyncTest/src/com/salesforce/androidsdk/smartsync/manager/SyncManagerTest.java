@@ -224,14 +224,14 @@ public class SyncManagerTest extends ManagerTestCase {
 		Map<String, String> idToNamesLocallyUpdated = makeSomeLocalChanges();
 
 		// Update entries on server
-		final Map<String, String> idToNamesLocallyUpdatedAgain = new HashMap<String, String>();
+		final Map<String, String> idToNamesRemotelyUpdated = new HashMap<String, String>();
 		final Set<String> ids = idToNamesLocallyUpdated.keySet();
 		assertNotNull("List of IDs should not be null", ids);
 		for (final String id : ids) {
-            idToNamesLocallyUpdatedAgain.put(id,
+			idToNamesRemotelyUpdated.put(id,
             		idToNamesLocallyUpdated.get(id) + "_updated_again");
         }
-        updateAccountsOnServer(idToNamesLocallyUpdatedAgain);
+        updateAccountsOnServer(idToNamesRemotelyUpdated);
 
 		// Sync up
 		trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
@@ -258,7 +258,7 @@ public class SyncManagerTest extends ManagerTestCase {
 			idToNamesFromServer.put(row.getString(Constants.ID), row.getString(Constants.NAME));
 		}
 		JSONTestHelper.assertSameJSONObject("Wrong data on server",
-				new JSONObject(idToNamesLocallyUpdatedAgain), idToNamesFromServer);
+				new JSONObject(idToNamesRemotelyUpdated), idToNamesFromServer);
 	}
 
     /**
@@ -345,12 +345,12 @@ public class SyncManagerTest extends ManagerTestCase {
 		deleteAccountsLocally(idsLocallyDeleted);
 
 		// Update entries on server
-		final Map<String, String> idToNamesLocallyDeleted = new HashMap<String, String>();
+		final Map<String, String> idToNamesRemotelyUpdated = new HashMap<String, String>();
         for (int i = 0; i < idsLocallyDeleted.length; i++) {
             String id = idsLocallyDeleted[i];
-            idToNamesLocallyDeleted.put(id, idToNames.get(id) + "_updated");
+            idToNamesRemotelyUpdated.put(id, idToNames.get(id) + "_updated");
         }
-        updateAccountsOnServer(idToNamesLocallyDeleted);
+        updateAccountsOnServer(idToNamesRemotelyUpdated);
 
 		// Sync up
 		trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
