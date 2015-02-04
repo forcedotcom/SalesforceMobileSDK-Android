@@ -411,6 +411,8 @@ public class SyncManager {
         		!isNewerThanServer(objectType, objectId, lastModifiedDate)) {
 
         	// Nothing to do for this record
+    		Log.i("SmartSyncManager:syncUpOneRecord",
+    				"Record not synced since client does not have the latest from server");
         	return true;
         }
 

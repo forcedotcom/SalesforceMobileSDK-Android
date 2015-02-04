@@ -255,13 +255,13 @@ public class MainActivity extends SalesforceListActivity implements
 
 	private void syncDownContacts() {
 		contactLoader.syncDown();
-		Toast.makeText(MainActivity.this, "Sync down successful!",
+		Toast.makeText(MainActivity.this, "Sync down complete!",
 				Toast.LENGTH_LONG).show();
 	}
 
 	private void syncUpContacts() {
 		contactLoader.syncUp();
-		Toast.makeText(this, "Sync up successful!",
+		Toast.makeText(this, "Sync up complete!",
 				Toast.LENGTH_LONG).show();
 	}
 
