@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,6 +26,19 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Formatter;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -41,19 +54,6 @@ import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Formatter;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 
 /**
@@ -186,7 +186,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		Map<String, String> idToNamesLocallyUpdated = makeSomeLocalChanges();
 
 		// Sync up
-		trySyncUp(3);
+		trySyncUp(3, MergeMode.OVERWRITE);
 		
 		// Check that db doesn't show entries as locally modified anymore
         Set<String> ids = idToNamesLocallyUpdated.keySet();
@@ -214,6 +214,54 @@ public class SyncManagerTest extends ManagerTestCase {
 	}
 
     /**
+	 * Sync down the test accounts, modify a few, sync up with merge mode LEAVE_IF_CHANGED, check smartstore and server afterwards
+	 */
+	public void testSyncUpWithLocallyUpdatedRecordsWithoutOverwrite() throws Exception {
+		// First sync down
+        trySyncDown(MergeMode.LEAVE_IF_CHANGED);
+		
+		// Update a few entries locally
+		Map<String, String> idToNamesLocallyUpdated = makeSomeLocalChanges();
+
+		// Update entries on server
+		final Map<String, String> idToNamesLocallyUpdatedAgain = new HashMap<String, String>();
+		final Set<String> ids = idToNamesLocallyUpdated.keySet();
+		assertNotNull("List of IDs should not be null", ids);
+		for (final String id : ids) {
+            idToNamesLocallyUpdatedAgain.put(id,
+            		idToNamesLocallyUpdated.get(id) + "_updated_again");
+        }
+        updateAccountsOnServer(idToNamesLocallyUpdatedAgain);
+
+		// Sync up
+		trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
+
+		// Check that db shows entries as locally modified
+		String idsClause = "('" + TextUtils.join("', '", ids) + "')";
+		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, ids.size());
+		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+		for (int i = 0; i < accountsFromDb.length(); i++) {
+			JSONArray row = accountsFromDb.getJSONArray(i);
+			JSONObject soupElt = row.getJSONObject(0);
+			assertTrue("Wrong local flag", soupElt.getBoolean(SyncManager.LOCAL));
+			assertTrue("Wrong local flag", soupElt.getBoolean(SyncManager.LOCALLY_UPDATED));
+		}
+
+		// Check server
+		String soql = "SELECT Id, Name FROM Account WHERE Id IN " + idsClause;
+		RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.VERSION_NUMBER, soql);
+		JSONObject idToNamesFromServer = new JSONObject();
+		RestResponse response = restClient.sendSync(request);
+		JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
+		for (int i=0; i<records.length(); i++) {
+			JSONObject row = records.getJSONObject(i);
+			idToNamesFromServer.put(row.getString(Constants.ID), row.getString(Constants.NAME));
+		}
+		JSONTestHelper.assertSameJSONObject("Wrong data on server",
+				new JSONObject(idToNamesLocallyUpdatedAgain), idToNamesFromServer);
+	}
+
+    /**
 	 * Create accounts locally, sync up, check smartstore and server afterwards
 	 */
 	public void testSyncUpWithLocallyCreatedRecords() throws Exception {
@@ -222,7 +270,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		createAccountsLocally(names);
 		
 		// Sync up
-		trySyncUp(3);
+		trySyncUp(3, MergeMode.OVERWRITE);
 		
 		// Check that db doesn't show entries as locally created anymore and that they use sfdc id
 		String namesClause = "('" + TextUtils.join("', '", names) + "')";
@@ -254,7 +302,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		// Adding to idToNames so that they get deleted in tearDown
 		idToNames.putAll(idToNamesCreated);
 	}
-	
+
 	/**
 	 * Sync down the test accounts, delete a few, sync up, check smartstore and server afterwards
 	 */
@@ -268,7 +316,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		deleteAccountsLocally(idsLocallyDeleted);
 		
 		// Sync up
-		trySyncUp(3);
+		trySyncUp(3, MergeMode.OVERWRITE);
 		
 		// Check that db doesn't contain those entries anymore
 		String idsClause = "('" + TextUtils.join("', '", idsLocallyDeleted) + "')";
@@ -282,6 +330,43 @@ public class SyncManagerTest extends ManagerTestCase {
 		RestResponse response = restClient.sendSync(request);
 		JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
 		assertEquals("No accounts should have been returned from server", 0, records.length());
+	}
+
+	/**
+	 * Sync down the test accounts, delete a few, sync up with merge mode LEAVE_IF_CHANGED, check smartstore and server afterwards
+	 */
+	public void testSyncUpWithLocallyDeletedRecordsWithoutOverwrite() throws Exception {
+		// First sync down
+        trySyncDown(MergeMode.LEAVE_IF_CHANGED);
+		
+		// Delete a few entries locally
+		String[] allIds = idToNames.keySet().toArray(new String[0]);
+		String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
+		deleteAccountsLocally(idsLocallyDeleted);
+
+		// Update entries on server
+		final Map<String, String> idToNamesLocallyDeleted = new HashMap<String, String>();
+        for (int i = 0; i < idsLocallyDeleted.length; i++) {
+            String id = idsLocallyDeleted[i];
+            idToNamesLocallyDeleted.put(id, idToNames.get(id) + "_updated");
+        }
+        updateAccountsOnServer(idToNamesLocallyDeleted);
+
+		// Sync up
+		trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
+		
+		// Check that db still contains those entries
+		String idsClause = "('" + TextUtils.join("', '", idsLocallyDeleted) + "')";
+		QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup}, {accounts:Name} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, idsLocallyDeleted.length);
+		JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+		assertEquals("3 accounts should have been returned from smartstore", 3, accountsFromDb.length());
+
+		// Check server
+		String soql = "SELECT Id, Name FROM Account WHERE Id IN " + idsClause;
+		RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.VERSION_NUMBER, soql);
+		RestResponse response = restClient.sendSync(request);
+		JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
+		assertEquals("3 accounts should have been returned from server", 3, records.length());
 	}
 
     /**
@@ -332,11 +417,12 @@ public class SyncManagerTest extends ManagerTestCase {
 	/**
 	 * Sync up helper
 	 * @param numberChanges
+	 * @param mergeMode
 	 * @throws JSONException
 	 */
-	private void trySyncUp(int numberChanges) throws JSONException {
+	private void trySyncUp(int numberChanges, MergeMode mergeMode) throws JSONException {
 		// Create sync
-		SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME }));
+		SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME }), mergeMode);
 		SyncState sync = SyncState.createSyncUp(smartStore, options, ACCOUNTS_SOUP);
 		long syncId = sync.getId();
 		checkStatus(sync, SyncState.Type.syncUp, syncId, null, options, SyncState.Status.NEW, 0, -1);
@@ -348,7 +434,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		// Check status updates
 		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
 		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, 0, numberChanges);
-		for (int i=1; i<numberChanges; i++) {
+		for (int i = 1; i < numberChanges; i++) {
 			checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, i*100/numberChanges, numberChanges);
 		}
 		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.DONE, 100, numberChanges);
