@@ -224,7 +224,7 @@ public class SyncManager {
         if (sync == null) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": no sync found");
         }
-        if (sync.getType() != SyncState.Type.syncDown || sync.getTarget().getQueryType() != SyncTarget.QueryType.soql) {
+        if (sync.getType() != SyncState.Type.syncDown) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong type:" + sync.getType());
         }
         if (sync.getTarget().getQueryType() != SyncTarget.QueryType.soql) {
