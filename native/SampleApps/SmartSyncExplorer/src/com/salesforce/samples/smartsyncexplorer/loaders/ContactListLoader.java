@@ -51,6 +51,7 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
@@ -117,7 +118,8 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 * Pushes local changes up to the server.
 	 */
 	public synchronized void syncUp() {
-		final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS_SYNC_UP));
+		final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS_SYNC_UP),
+				MergeMode.LEAVE_IF_CHANGED);
 		try {
 			syncMgr.syncUp(options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
 

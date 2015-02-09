@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -62,14 +62,23 @@ public class SyncOptions {
 		List<String> fieldlist = toList(options.optJSONArray(FIELDLIST));
 		return new SyncOptions(fieldlist, mergeMode);
 	}
-	
+
 	/**
 	 * @param fieldlist
 	 * @return
 	 */
 	public static SyncOptions optionsForSyncUp(List<String> fieldlist) {
-		return new SyncOptions(fieldlist, null);
+		return new SyncOptions(fieldlist, MergeMode.OVERWRITE);
 	}
+
+    /**
+     * @param fieldlist
+     * @param mergeMode
+     * @return
+     */
+    public static SyncOptions optionsForSyncUp(List<String> fieldlist, MergeMode mergeMode) {
+        return new SyncOptions(fieldlist, mergeMode);
+    }
 
     /**
      * @param mergeMode
@@ -78,7 +87,7 @@ public class SyncOptions {
     public static SyncOptions optionsForSyncDown(MergeMode mergeMode) {
         return new SyncOptions(null, mergeMode);
     }
-	
+
 	/**
 	 * Private constructor
 	 * @param fieldlist
