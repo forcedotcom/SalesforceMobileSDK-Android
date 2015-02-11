@@ -64,6 +64,8 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
             "    </query>\n" +
             "</se:Body>\n" +
             "</se:Envelope>";
+    public static final String RESULT = "result";
+    public static final String RECORDS = "records";
 
 
     /**
@@ -160,12 +162,12 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
                     Log.i("----> Starting TAG", parser.getName());
                 }
 
-                if (next == XmlPullParser.START_TAG && parser.getName().equals("result")) {
+                if (next == XmlPullParser.START_TAG && parser.getName().equals(RESULT)) {
                     inResults = true;
                     records = new JSONArray();
                 }
 
-                if (next == XmlPullParser.START_TAG && parser.getName().equals("record")) {
+                if (next == XmlPullParser.START_TAG && parser.getName().equals(RECORDS)) {
                     inRecord = true;
                     record = new JSONObject();
                 }
@@ -174,12 +176,12 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
                     record.put(parser.getName(), parser.nextText());
                 }
 
-                if (next == XmlPullParser.END_TAG && parser.getName().equals("record")) {
+                if (next == XmlPullParser.END_TAG && parser.getName().equals(RECORDS)) {
                     inRecord = false;
                     records.put(record);
                 }
 
-                if (next == XmlPullParser.END_TAG && parser.getName().equals("result")) {
+                if (next == XmlPullParser.END_TAG && parser.getName().equals(RESULT)) {
                     inResults = false;
                 }
 
