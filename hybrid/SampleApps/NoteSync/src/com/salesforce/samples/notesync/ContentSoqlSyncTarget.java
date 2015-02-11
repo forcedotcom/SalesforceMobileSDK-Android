@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync.util;
+package com.salesforce.samples.notesync;
 
 import android.util.Log;
 import android.util.Xml;
@@ -32,6 +32,8 @@ import android.util.Xml;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.SoqlSyncTarget;
+import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 
 import org.apache.http.entity.StringEntity;
 import org.apache.http.protocol.HTTP;
