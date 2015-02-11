@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
 /**
  * This class contains commonly used constants, such as field names,
  * SObject types, attribute names, etc.
@@ -94,4 +97,10 @@ public class Constants {
      */
     public static final String LAYOUT_LIMITS_FIELD = "limitRows";
     public static final String LAYOUT_COLUMNS_FIELD = "searchColumns";
+
+    /**
+     * Salesforce timestamp format
+     */
+    public static final DateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+
 }

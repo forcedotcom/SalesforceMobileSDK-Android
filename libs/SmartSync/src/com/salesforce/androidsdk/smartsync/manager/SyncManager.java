@@ -87,12 +87,9 @@ public class SyncManager {
     // Static member
     private static Map<String, SyncManager> INSTANCES;
 
-    // Time stamp format
-    public static final DateFormat TIMESTAMP_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-
     // Members
+    public final String apiVersion;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
-    private String apiVersion;
 	private SmartStore smartStore;
 	private RestClient restClient;
 
@@ -355,7 +352,7 @@ public class SyncManager {
                     	final String lastModStr = obj.optString(Constants.LAST_MODIFIED_DATE);
                         if (!TextUtils.isEmpty(lastModStr)) {
                         	try {
-                        		serverLastModified = TIMESTAMP_FORMAT.parse(lastModStr).getTime();
+                        		serverLastModified = Constants.TIMESTAMP_FORMAT.parse(lastModStr).getTime();
                         	} catch (ParseException e) {
                         		Log.e("SmartSyncManager:isNewerThanServer", "Error during date parsing", e);
                         	}
@@ -394,7 +391,7 @@ public class SyncManager {
         final String lastModStr = record.optString(Constants.LAST_MODIFIED_DATE);
         if (!TextUtils.isEmpty(lastModStr)) {
         	try {
-        		lastModifiedDate = TIMESTAMP_FORMAT.parse(lastModStr).getTime();
+        		lastModifiedDate = Constants.TIMESTAMP_FORMAT.parse(lastModStr).getTime();
         	} catch (ParseException e) {
         		Log.e("SmartSyncManager:syncUpOneRecord", "Error during date parsing", e);
         	}
@@ -471,121 +468,31 @@ public class SyncManager {
     }
 
     private void syncDown(SyncState sync, SyncUpdateCallback callback) throws Exception {
-		switch(sync.getTarget().getQueryType()) {
-		case mru:  syncDownMru(sync, callback); break;
-		case soql: syncDownSoql(sync, callback); break;
-		case sosl: syncDownSosl(sync, callback); break;
-		}
-	}
-	
-	private void syncDownMru(SyncState sync, SyncUpdateCallback callback) throws Exception {
-		SyncTarget target = sync.getTarget();
+        String soupName = sync.getSoupName();
+        SyncTarget target = sync.getTarget();
         MergeMode mergeMode = sync.getMergeMode();
-		String sobjectType = target.getObjectType();
-		List<String>fieldlist = target.getFieldlist();
-    	String soupName = sync.getSoupName();
-    	
-    	// Get recent items ids from server
-		RestRequest request = RestRequest.getRequestForMetadata(apiVersion, sobjectType);
-		RestResponse response = sendSyncWithSmartSyncUserAgent(request);
-		List<String> recentItems = pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
-
-		// Building SOQL query to get requested at
-		String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(sobjectType).where("Id IN ('" + TextUtils.join("', '", recentItems) + "')").build();
-
-		// Get recent items attributes from server
-		request = RestRequest.getRequestForQuery(apiVersion, soql);
-		response = sendSyncWithSmartSyncUserAgent(request);
-		JSONObject responseJson = response.asJSONObject();
-		JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
-		int totalSize = records.length();
-        sync.setTotalSize(totalSize);
-
-		// Save to smartstore
-		updateSync(sync, SyncState.Status.RUNNING, 0, callback);
-		if (totalSize > 0)
-			saveRecordsToSmartStore(soupName, records, mergeMode);
-	}
-
-	private void syncDownSoql(SyncState sync, SyncUpdateCallback callback) throws Exception {
-		String soupName = sync.getSoupName();	
-		SyncTarget target = sync.getTarget();
-        MergeMode mergeMode = sync.getMergeMode();
-		String query = target.getQuery();
-
-        // Is is a resync?
         long maxTimeStamp = sync.getMaxTimeStamp();
-        query = addFilterForReSync(query, maxTimeStamp);
 
-        RestRequest request = RestRequest.getRequestForQuery(apiVersion, query);
-	
-		// Call server
-		RestResponse response = sendSyncWithSmartSyncUserAgent(request);
-		JSONObject responseJson = response.asJSONObject();
-
-		int countSaved = 0;
-		int totalSize = responseJson.getInt(Constants.TOTAL_SIZE);
+        JSONArray records = target.startFetch(this, maxTimeStamp);
+        int countSaved = 0;
+        int totalSize = target.getTotalSize();
         sync.setTotalSize(totalSize);
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
-		
-		do {
-			JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
-			// Save to smartstore
-			saveRecordsToSmartStore(soupName, records, mergeMode);
-			countSaved += records.length();
+
+        while (records != null) {
+            // Save to smartstore
+            saveRecordsToSmartStore(soupName, records, mergeMode);
+            countSaved += records.length();
             maxTimeStamp = Math.max(maxTimeStamp, getMaxTimeStamp(records));
 
-			// Update sync status
+            // Update sync status
             if (countSaved < totalSize)
                 updateSync(sync, SyncState.Status.RUNNING, countSaved*100 / totalSize, callback);
 
-			// Fetch next records if any
-			String nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);
-			RestRequest restRequest = new RestRequest(RestMethod.GET, nextRecordsUrl, null);
-			responseJson = nextRecordsUrl == null ? null : sendSyncWithSmartSyncUserAgent(restRequest).asJSONObject();
-		}
-		while (responseJson != null);
-        sync.setMaxTimeStamp(maxTimeStamp);
-	}
-
-    public String addFilterForReSync(String query, long maxTimeStamp) {
-        if (maxTimeStamp != UNCHANGED) {
-            String extraPredicate = Constants.LAST_MODIFIED_DATE + " > " + TIMESTAMP_FORMAT.format(new Date(maxTimeStamp));
-            query = query.toLowerCase().contains(" where ")
-                        ? query.replaceFirst("( [wW][hH][eE][rR][eE] )", "$1" + extraPredicate + " and ")
-                        : query.replaceFirst("( [fF][rR][oO][mM][ ]+[^ ]*)", "$1 where " + extraPredicate);
+            // Fetch next records if any
+            records = target.continueFetch(this);
         }
-        return query;
-    }
-
-    private void syncDownSosl(SyncState sync, SyncUpdateCallback callback) throws Exception {
-		String soupName = sync.getSoupName();	
-		SyncTarget target = sync.getTarget();
-        MergeMode mergeMode = sync.getMergeMode();
-        String query = target.getQuery();
-		RestRequest request = RestRequest.getRequestForSearch(apiVersion, query);
-	
-		// Call server
-		RestResponse response = sendSyncWithSmartSyncUserAgent(request);
-	
-		// Parse response
-		JSONArray records = response.asJSONArray();
-		int totalSize = records.length();
-        sync.setTotalSize(totalSize);
-
-		// Save to smartstore
-		updateSync(sync, SyncState.Status.RUNNING, 0, callback);
-		if (totalSize > 0)
-			saveRecordsToSmartStore(soupName, records, mergeMode);
-	}
-
-	@SuppressWarnings("unchecked")
-	private <T> List<T> pluck(JSONArray jsonArray, String key) throws JSONException {
-		List<T> arr = new ArrayList<T>();
-		for (int i=0; i<jsonArray.length(); i++) {
-			arr.add((T) jsonArray.getJSONObject(i).get(key));
-		}
-		return arr;
+        sync.setMaxTimeStamp(maxTimeStamp);
 	}
 
     private long getMaxTimeStamp(JSONArray jsonArray) throws JSONException {
@@ -597,7 +504,7 @@ public class SyncManager {
                 break; // LastModifiedDate field not present
             }
             try {
-                long timeStamp = TIMESTAMP_FORMAT.parse(timeStampStr).getTime();
+                long timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr).getTime();
                 maxTimeStamp = Math.max(timeStamp, maxTimeStamp);
             } catch (Exception e) {
                 Log.w("SmartSync.getMaxTimeStamp", "Could not parse LastModifiedDate", e);
@@ -665,7 +572,7 @@ public class SyncManager {
 	 * @return
 	 * @throws IOException
 	 */
-	private RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
+	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
 		Map<String, String> headers = restRequest.getAdditionalHttpHeaders();
 		if (headers == null)
 			headers = new HashMap<String, String>();
