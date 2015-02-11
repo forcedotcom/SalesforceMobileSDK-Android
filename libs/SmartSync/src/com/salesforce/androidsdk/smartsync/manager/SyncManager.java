@@ -224,9 +224,6 @@ public class SyncManager {
         if (sync.getType() != SyncState.Type.syncDown) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong type:" + sync.getType());
         }
-        if (sync.getTarget().getQueryType() != SyncTarget.QueryType.soql) {
-            throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong query type:" + sync.getTarget().getQueryType());
-        }
         if (sync.getStatus() != SyncState.Status.DONE) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": not done:" + sync.getStatus());
         }
@@ -612,6 +609,13 @@ public class SyncManager {
      */
     public void setRestClient(RestClient restClient) {
         this.restClient = restClient;
+    }
+
+    /**
+     * @return rest client in use
+     */
+    public RestClient getRestClient() {
+        return this.restClient;
     }
     
     

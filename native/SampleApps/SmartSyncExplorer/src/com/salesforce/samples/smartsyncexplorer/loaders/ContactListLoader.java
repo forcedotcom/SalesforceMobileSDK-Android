@@ -41,8 +41,8 @@ import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SmartSyncException;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.ContentSoqlSyncTarget;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
-import com.salesforce.androidsdk.smartsync.util.SoqlSyncTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
@@ -157,7 +157,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
                 final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
                 final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS_SYNC_DOWN)
                         .from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
-                final SyncTarget target = SoqlSyncTarget.targetForSOQLSyncDown(soqlQuery);
+                final SyncTarget target = ContentSoqlSyncTarget.targetForSOQLSyncDown(soqlQuery);
                 final SyncState sync = syncMgr.syncDown(target, options,
                 		ContactListLoader.CONTACT_SOUP, callback);
                 syncId = sync.getId();
