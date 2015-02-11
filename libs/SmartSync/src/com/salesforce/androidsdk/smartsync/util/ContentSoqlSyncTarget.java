@@ -64,8 +64,10 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
             "    </query>\n" +
             "</se:Body>\n" +
             "</se:Envelope>";
+
     public static final String RESULT = "result";
     public static final String RECORDS = "records";
+    public static final String SF = "sf:";
 
 
     /**
@@ -113,6 +115,7 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
         String queryToRun = maxTimeStamp > 0 ? SoqlSyncTarget.addFilterForReSync(getQuery(), maxTimeStamp) : getQuery();
+        syncManager.getRestClient().sendSync(RestRequest.getRequestForResources(syncManager.apiVersion)); // cheap call to refresh session
         RestRequest request = buildContentSoqlRequest(syncManager.getRestClient().getAuthToken(), queryToRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONArray records = parseContentSoqlResponse(response);
@@ -158,42 +161,43 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
             while(!done) {
                 int next = parser.next();
 
-                if (next == XmlPullParser.START_TAG) {
-                    Log.i("----> Starting TAG", parser.getName());
+                switch (next) {
+                    case XmlPullParser.START_TAG:
+                        Log.i("----> Starting TAG", parser.getName());
+
+                        if (parser.getName().equals(RESULT)) {
+                            inResults = true;
+                            records = new JSONArray();
+                        }
+                        else if (inResults && parser.getName().equals(RECORDS)) {
+                            inRecord = true;
+                            record = new JSONObject();
+                        }
+                        else if (inRecord && parser.getName().startsWith(SF)) {
+                            record.put(parser.getName().substring(SF.length()), parser.nextText());
+                        }
+                        break;
+
+                    case XmlPullParser.END_TAG:
+                        Log.i("----> Ending TAG", parser.getName());
+
+                        if (inRecord && parser.getName().equals(RECORDS)) {
+                            inRecord = false;
+                            records.put(record);
+                        }
+                        else if (inResults && parser.getName().equals(RESULT)) {
+                            inResults = false;
+                        }
+                        break;
+
+                    case XmlPullParser.END_DOCUMENT:
+                        done = true;
+                        break;
                 }
 
-                if (next == XmlPullParser.START_TAG && parser.getName().equals(RESULT)) {
-                    inResults = true;
-                    records = new JSONArray();
-                }
-
-                if (next == XmlPullParser.START_TAG && parser.getName().equals(RECORDS)) {
-                    inRecord = true;
-                    record = new JSONObject();
-                }
-
-                if (next == XmlPullParser.START_TAG && inRecord) {
-                    record.put(parser.getName(), parser.nextText());
-                }
-
-                if (next == XmlPullParser.END_TAG && parser.getName().equals(RECORDS)) {
-                    inRecord = false;
-                    records.put(record);
-                }
-
-                if (next == XmlPullParser.END_TAG && parser.getName().equals(RESULT)) {
-                    inResults = false;
-                }
-
-                if (next == XmlPullParser.END_DOCUMENT) {
-                    done = true;
-                }
             }
 
             totalSize = records.length();
-
-            //  String responseStr = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns=\"urn:partner.soap.sforce.com\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:sf=\"urn:sobject.partner.soap.sforce.com\"><soapenv:Header><LimitInfoHeader><limitInfo><current>6</current><limit>5000</limit><type>API REQUESTS</type></limitInfo></LimitInfoHeader></soapenv:Header><soapenv:Body><queryResponse><result xsi:type=\"QueryResult\"><done>true</done><queryLocator xsi:nil=\"true\"/><records xsi:type=\"sf:sObject\"><sf:type>Contact</sf:type><sf:Id>003R00000016BMRIA2</sf:Id><sf:Id>003R00000016BMRIA2</sf:Id><sf:FirstName>Geoff</sf:FirstName><sf:LastName>Minor</sf:LastName><sf:Title>President</sf:Title><sf:MobilePhone xsi:nil=\"true\"/><sf:Email>info@salesforce.com</sf:Email><sf:Department xsi:nil=\"true\"/><sf:HomePhone xsi:nil=\"true\"/><sf:LastModifiedDate>2015-02-10T01:56:14.000Z</sf:LastModifiedDate></records><records xsi:type=\"sf:sObject\"><sf:type>Contact</sf:type><sf:Id>003R00000016BMSIA2</sf:Id><sf:Id>003R00000016BMSIA2</sf:Id><sf:FirstName>Carole</sf:FirstName><sf:LastName>White</sf:LastName><sf:Title>VP Sales</sf:Title><sf:MobilePhone xsi:nil=\"true\"/><sf:Email>info@salesforce.com</sf:Email><sf:Department xsi:nil=\"true\"/><sf:HomePhone xsi:nil=\"true\"/><sf:LastModifiedDate>2015-02-10T01:56:14.000Z</sf:LastModifiedDate></records><records xsi:type=\"sf:sObject\"><sf:type>Contact</sf:type><sf:Id>003R00000016BMTIA2</sf:Id><sf:Id>003R00000016BMTIA2</sf:Id><sf:FirstName>Jon</sf:FirstName><sf:LastName>Amos</sf:LastName><sf:Title>Sales Manager</sf:Title><sf:MobilePhone xsi:nil=\"true\"/><sf:Email>info@salesforce.com</sf:Email><sf:Department xsi:nil=\"true\"/><sf:HomePhone xsi:nil=\"true\"/><sf:LastModifiedDate>2015-02-10T01:56:14.000Z</sf:LastModifiedDate></records><records xsi:type=\"sf:sObject\"><sf:type>Contact</sf:type><sf:Id>003R00000016BMUIA2</sf:Id><sf:Id>003R00000016BMUIA2</sf:Id><sf:FirstName>Edward</sf:FirstName><sf:LastName>Stamos</sf:LastName><sf:Title>President and CEO</sf:Title><sf:MobilePhone xsi:nil=\"true\"/><sf:Email>info@salesforce.com</sf:Email><sf:Department xsi:nil=\"true\"/><sf:HomePhone xsi:nil=\"true\"/><sf:LastModifiedDate>2015-02-10T01:56:14.000Z</sf:LastModifiedDate></records><records xsi:type=\"sf:sObject\"><sf:type>Contact</sf:type><sf:Id>003R00000016BMVIA2</sf:Id><sf:Id>003R00000016BMVIA2</sf:Id><sf:FirstName>Howard</sf:FirstName><sf:LastName>Jones</sf:LastName><sf:Title>Buyer</sf:Title><sf:MobilePhone xsi:nil=\"true\"/><sf:Email>info@salesforce.com</sf:Email><sf:Department xsi:nil=\"true\"/><sf:HomePhone xsi:nil=\"true\"/><sf:LastModifiedDate>2015-02-10T01:56:14.000Z</sf:LastModifiedDate></records><records xsi:type=\"sf:sObject\"><sf:type>Contact</sf:type><sf:Id>003R00000016BMWIA2</sf:Id><sf:Id>003R00000016BMWIA2</sf:Id><sf:FirstName>Leanne</sf:FirstName><sf:LastName>Tomlin</sf:LastName><sf:Title>VP Customer Support</sf:Title><sf:MobilePhone xsi:nil=\"true\"/><sf:Email>info@salesforce.com</sf:Email><sf:Department xsi:nil=\"true\"/><sf:HomePhone xsi:nil=\"true\"/><sf:LastModifiedDate>2015-02-10T01:56:14.000Z</sf:LastModifiedDate></records><records xsi:type=\"sf:sObject\"><sf:type>Contact</sf:type><sf:Id>003R00000016BMXIA2</sf:Id><sf:Id>003R00000016BMXIA2</sf:Id><sf:FirstName>Marc</sf:FirstName><sf:LastName>Benioff</sf:LastName><sf:Title>Executive Officer</sf:Title><sf:MobilePhone xsi:nil=\"true\"/><sf:Email>info@salesforce.com</sf:Email><sf:Department xsi:nil=\"true\"/><sf:HomePhone xsi:nil=\"true\"/><sf:LastModifiedDate>2015-02-10T01:56:14.000Z</sf:LastModifiedDate></records><size>7</size></result></queryResponse></soapenv:Body></soapenv:Envelope>";
-
         } catch (Exception e) {
             Log.e("ContentSoqlSyncTarget:parseContentSoqlResponse", "Parsing failed", e);
         }
