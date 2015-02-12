@@ -53,24 +53,30 @@ import java.util.Map;
  */
 public class ContentSoqlSyncTarget extends SoqlSyncTarget {
 
-    private static final String REQUEST_TEMPLATE = "<?xml version=\"1.0\"?>\n" +
-            "<se:Envelope xmlns:se=\"http://schemas.xmlsoap.org/soap/envelope/\">\n" +
-            "<se:Header xmlns:sfns=\"urn:partner.soap.sforce.com\">\n" +
-            "    <sfns:SessionHeader>\n" +
-            "        <sessionId>%s</sessionId>\n" +
-            "    </sfns:SessionHeader>\n" +
-            "</se:Header>\n" +
-            "<se:Body>\n" +
-            "    <query xmlns=\"urn:partner.soap.sforce.com\" xmlns:ns1=\"sobject.partner.soap.sforce.com\">\n" +
-            "        <queryString>%s</queryString>\n" +
-            "    </query>\n" +
-            "</se:Body>\n" +
+    private static final String REQUEST_TEMPLATE = "<?xml version=\"1.0\"?>" +
+            "<se:Envelope xmlns:se=\"http://schemas.xmlsoap.org/soap/envelope/\">" +
+            "<se:Header xmlns:sfns=\"urn:partner.soap.sforce.com\">" +
+            "<sfns:SessionHeader><sessionId>%s</sessionId></sfns:SessionHeader>" +
+            "</se:Header>" +
+            "<se:Body>%s</se:Body>" +
             "</se:Envelope>";
+
+    private static final String QUERY_TEMPLATE = "<query xmlns=\"urn:partner.soap.sforce.com\" xmlns:ns1=\"sobject.partner.soap.sforce.com\">" +
+            "<queryString>%s</queryString></query>";
+
+
+    private static final String QUERY_MORE_TEMPLATE = "<queryMore xmlns=\"urn:partner.soap.sforce.com\" xmlns:ns1=\"sobject.partner.soap.sforce.com\">\n"+
+            "        <queryLocator>%s</queryLocator>\n"+
+            "    </queryMore>";
 
     public static final String RESULT = "result";
     public static final String RECORDS = "records";
     public static final String SF = "sf:";
+    public static final String QUERY_LOCATOR = "queryLocator";
+    public static final String SIZE = "size";
+    public static final String DONE = "done";
 
+    private String queryLocator;
 
     /**
      * Build SyncTarget from json
@@ -118,37 +124,68 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
         String queryToRun = maxTimeStamp > 0 ? SoqlSyncTarget.addFilterForReSync(getQuery(), maxTimeStamp) : getQuery();
         syncManager.getRestClient().sendSync(RestRequest.getRequestForResources(syncManager.apiVersion)); // cheap call to refresh session
-        RestRequest request = buildContentSoqlRequest(syncManager.getRestClient().getAuthToken(), queryToRun);
+        RestRequest request = buildQueryRequest(syncManager.getRestClient().getAuthToken(), queryToRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-        JSONArray records = parseContentSoqlResponse(response);
+        JSONArray records = parseSoapResponse(response);
 
         return records;
     }
 
     @Override
     public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
-        return null;
+        if (queryLocator == null) {
+            return null;
+        }
+        RestRequest request = buildQueryMoreRequest(syncManager.getRestClient().getAuthToken(), queryLocator);
+        RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        JSONArray records = parseSoapResponse(response);
+
+        return records;
     }
 
     /**
+     * @param sessionId
      * @param query
-     * @return rest request to run a soql query that returns content fields (it uses SOAP)
+     * @return request to run a soql query
+     * @throws UnsupportedEncodingException
      */
-    private RestRequest buildContentSoqlRequest(String sessionId, String query) throws UnsupportedEncodingException {
+    private RestRequest buildQueryRequest(String sessionId, String query) throws UnsupportedEncodingException {
+        return buildSoapRequest(sessionId, String.format(QUERY_TEMPLATE, query));
+    }
+
+    /**
+     * @param sessionId
+     * @param locator
+     * @return request to do queryMore
+     * @throws UnsupportedEncodingException
+     */
+    private RestRequest buildQueryMoreRequest(String sessionId, String locator) throws UnsupportedEncodingException {
+        return buildSoapRequest(sessionId, String.format(QUERY_MORE_TEMPLATE, locator));
+    }
+
+    /**
+     *
+     * @param sessionId
+     * @param body
+     * @return request for soap call
+     * @throws UnsupportedEncodingException
+     */
+    private RestRequest buildSoapRequest(String sessionId, String body) throws UnsupportedEncodingException {
         Map<String, String> customHeaders = new HashMap<String, String>();
         customHeaders.put("SOAPAction", "\"\"");
 
-        StringEntity entity = new StringEntity(String.format(REQUEST_TEMPLATE, sessionId, query), HTTP.UTF_8); // XXX session might be invalid
+        StringEntity entity = new StringEntity(String.format(REQUEST_TEMPLATE, sessionId, body), HTTP.UTF_8);
         entity.setContentType("text/xml");
 
         return new RestRequest(RestRequest.RestMethod.POST, "/services/Soap/u/32.0", entity, customHeaders);
     }
 
+
     /**
      * @param response returned by soap soql request - also sets totalSize field
      * @return
      */
-    private JSONArray parseContentSoqlResponse(RestResponse response) {
+    private JSONArray parseSoapResponse(RestResponse response) {
         JSONArray records = null;
         try {
             XmlPullParser parser = Xml.newPullParser();
@@ -156,11 +193,12 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
             parser.setInput(new ByteArrayInputStream(response.asBytes()), null);
 
             JSONObject record = null;
-            boolean done = false;
+            boolean inDocument = true;
             boolean inResults = false;
             boolean inRecord = false;
+            boolean queryDone = false;
 
-            while(!done) {
+            while(inDocument) {
                 int next = parser.next();
 
                 switch (next) {
@@ -174,6 +212,15 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
                         else if (inResults && parser.getName().equals(RECORDS)) {
                             inRecord = true;
                             record = new JSONObject();
+                        }
+                        else if (inResults && parser.getName().equals(DONE)) {
+                            queryDone = Boolean.parseBoolean(parser.nextText());
+                        }
+                        else if (inResults && parser.getName().equals(QUERY_LOCATOR)) {
+                            queryLocator = queryDone ? null : parser.nextText();
+                        }
+                        else if (inResults && parser.getName().equals(SIZE)) {
+                            totalSize = Integer.parseInt(parser.nextText());
                         }
                         else if (inRecord && parser.getName().startsWith(SF)) {
                             record.put(parser.getName().substring(SF.length()), parser.nextText());
@@ -193,7 +240,7 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
                         break;
 
                     case XmlPullParser.END_DOCUMENT:
-                        done = true;
+                        inDocument = false;
                         break;
                 }
 
@@ -201,7 +248,7 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
 
             totalSize = records.length();
         } catch (Exception e) {
-            Log.e("ContentSoqlSyncTarget:parseContentSoqlResponse", "Parsing failed", e);
+            Log.e("ContentSoqlSyncTarget:parseSoapResponse", "Parsing failed", e);
         }
 
         return records;
