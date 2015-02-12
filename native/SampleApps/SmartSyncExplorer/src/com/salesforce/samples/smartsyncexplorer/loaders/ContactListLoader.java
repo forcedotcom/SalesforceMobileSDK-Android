@@ -26,13 +26,6 @@
  */
 package com.salesforce.samples.smartsyncexplorer.loaders;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-
 import android.content.AsyncTaskLoader;
 import android.content.Context;
 import android.util.Log;
@@ -49,12 +42,20 @@ import com.salesforce.androidsdk.smartsync.manager.SyncManager.SmartSyncExceptio
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
+import com.salesforce.androidsdk.smartsync.util.SoqlSyncTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * A simple AsyncTaskLoader to load a list of Salesforce contacts.
@@ -156,7 +157,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
                 final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
                 final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS_SYNC_DOWN)
                         .from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
-                final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
+                final SyncTarget target = SoqlSyncTarget.targetForSOQLSyncDown(soqlQuery);
                 final SyncState sync = syncMgr.syncDown(target, options,
                 		ContactListLoader.CONTACT_SOUP, callback);
                 syncId = sync.getId();

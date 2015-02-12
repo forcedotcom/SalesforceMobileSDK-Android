@@ -26,28 +26,34 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
- * Target for sync u i.e. set of objects to download from server
+ * Target for sync i.e. set of objects to download from server
  */
-public class SyncTarget {
-	
+public abstract class SyncTarget {
+
+    // Constants
 	public static final String QUERY_TYPE = "type";
-	public static final String QUERY = "query";
-	public static final String FIELDLIST = "fieldlist";
-	public static final String SOBJECT_TYPE = "sobjectType";	
-	
-	private QueryType queryType;
-	private String query;
-	private List<String> fieldlist;
-	private String objectType;
-	
+    public static final String ANDROID_IMPL = "androidImpl";
+
+    // Fields
+	protected QueryType queryType;
+    protected int totalSize; // set during a fetch
+
 	/**
 	 * Build SyncTarget from json
 	 * @param target as json
@@ -57,96 +63,70 @@ public class SyncTarget {
 	public static SyncTarget fromJSON(JSONObject target) throws JSONException {
 		if (target == null)
 			return null;
-		
+
 		QueryType queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
-		String query = target.optString(QUERY, null);
-		List<String> fieldlist = toList(target.optJSONArray(FIELDLIST));
-		String objectType = target.optString(SOBJECT_TYPE, null);
-		return new SyncTarget(queryType, query, fieldlist, objectType);
+
+        switch (queryType) {
+        case mru:     return MruSyncTarget.fromJSON(target);
+        case sosl:    return SoslSyncTarget.fromJSON(target);
+        case soql:    return SoqlSyncTarget.fromJSON(target);
+        case custom:
+        default:
+            try {
+                Class<? extends SyncTarget> implClass = (Class<? extends SyncTarget>) Class.forName(target.getString(ANDROID_IMPL));
+                Method method = implClass.getMethod("fromJSON", JSONObject.class);
+                return (SyncTarget) method.invoke(null, target);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
 	}
 
-	/**
-	 * Build SyncTarget for soql target
-	 * @param soql
-	 * @return
-	 */
-	public static SyncTarget targetForSOQLSyncDown(String soql) {
-		return new SyncTarget(QueryType.soql, soql, null, null);
-	}
-	
-	/**
-	 * Build SyncTarget for sosl target
-	 * @param soql
-	 * @return
-	 */
-	public static SyncTarget targetForSOSLSyncDown(String sosl) {
-		return new SyncTarget(QueryType.sosl, sosl, null, null);
-	}
+    /**
+     * @return query type of target
+     */
 
-	/**
-	 * Build SyncTarget for mru target
-	 * @param objectType
-	 * @param fieldlist
-	 * @return
-	 */
-	public static SyncTarget targetForMRUSyncDown(String objectType, List<String> fieldlist) {
-		return new SyncTarget(QueryType.mru, null, fieldlist, objectType);
-	}
-	
-	/**
-	 * Private constructor
-	 * @param queryType
-	 * @param query
-	 * @param fieldlist
-	 * @param objectType
-	 */
-	private SyncTarget(QueryType queryType, String query, List<String> fieldlist, String objectType) {
-		this.queryType = queryType;
-		this.query = query;
-		this.fieldlist = fieldlist;
-		this.objectType = objectType;
-	}
-	
 	/**
 	 * @return json representation of target
 	 * @throws JSONException
 	 */
-	public JSONObject asJSON() throws JSONException {
-		JSONObject target = new JSONObject();
-		target.put(QUERY_TYPE, queryType.name());
-		if (query != null) target.put(QUERY, query);
-		if (fieldlist != null) target.put(FIELDLIST, new JSONArray(fieldlist));
-		if (objectType != null) target.put(SOBJECT_TYPE, objectType);
-		return target;
-	}
+	public abstract JSONObject asJSON() throws JSONException;
 
-	public QueryType getQueryType() {
-		return queryType;
-	}
-	
-	public String getQuery() {
-		return query;
-	}
-	
-	public List<String> getFieldlist() {
-		return fieldlist;
-	}
-	
-	public String getObjectType() {
-		return objectType;
-	}
-	
-	@SuppressWarnings("unchecked")
-	private static <T> List<T> toList(JSONArray jsonArray) throws JSONException {
-		if (jsonArray == null) {
-			return null;
-		}
-		List<T> arr = new ArrayList<T>();
-		for (int i=0; i<jsonArray.length(); i++) {
-			arr.add((T) jsonArray.get(i));
-		}
-		return arr;
-	}
+    /**
+     * @param maxTimeStamp
+     * @return next record fetched
+     */
+
+    /**
+     * Start fetching records conforming to target
+     * If a value for maxTimeStamp greater than 0 is passed in, only records created/modified after maxTimeStamp should be returned
+     * @param syncManager
+     * @param maxTimeStamp
+     * @throws IOException, JSONException
+     */
+    public abstract JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException;
+
+    /**
+     * Continue fetching records conforming to target if any
+     * @param syncManager
+     * @return null if there are no more records to fetch
+     * @throws IOException, JSONException
+     */
+    public abstract JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException;
+
+    /**
+     * @return number of records expected to be fetched - is set when startFetch() is called
+     */
+    public int getTotalSize() {
+        return totalSize;
+    }
+
+    /**
+     * @return QueryType of this target
+     */
+    public QueryType getQueryType() {
+        return queryType;
+    }
 
     /**
      * Enum for query type
@@ -154,6 +134,7 @@ public class SyncTarget {
     public enum QueryType {
     	mru,
     	sosl,
-    	soql
+    	soql,
+        custom
     }
 }
