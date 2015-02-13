@@ -121,7 +121,8 @@ public class AuthenticatorService extends Service {
         	return options.containsKey(ANDROID_PACKAGE_NAME) && options.getString(ANDROID_PACKAGE_NAME).equals(SETTINGS_PACKAGE_NAME);
 		}
 
-        @Override
+        @SuppressWarnings("deprecation")
+		@Override
         public Bundle getAccountRemovalAllowed(AccountAuthenticatorResponse response, Account account) {
             final Bundle result = new Bundle();
             final ActivityManager manager = (ActivityManager) context.getSystemService(ACTIVITY_SERVICE);
@@ -135,6 +136,12 @@ public class AuthenticatorService extends Service {
              * gets a list of running tasks and get the topmost activity on
              * the task in focus. If the call is coming from the Settings app,
              * the topmost activity's package will be the Settings app.
+             *
+             * FIXME: The following piece of code does nothing on Lollipop and
+             * above, since Google has revoked the ability to get the list of
+             * running tasks outside of the application stack. We'll need to
+             * figure out a different strategy to handle this. One approach
+             * is to launch a custom logout flow for 'Settings' (if that's possible).
              */
             boolean isNotRemoveFromSettings = true;
             if (manager != null) {
