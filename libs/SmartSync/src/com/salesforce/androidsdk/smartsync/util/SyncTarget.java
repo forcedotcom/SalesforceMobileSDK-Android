@@ -26,20 +26,14 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import java.io.IOException;
+import java.lang.reflect.Method;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.Map;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 
 /**
  * Target for sync i.e. set of objects to download from server
@@ -60,6 +54,7 @@ public abstract class SyncTarget {
 	 * @return
 	 * @throws JSONException 
 	 */
+	@SuppressWarnings("unchecked")
 	public static SyncTarget fromJSON(JSONObject target) throws JSONException {
 		if (target == null)
 			return null;
