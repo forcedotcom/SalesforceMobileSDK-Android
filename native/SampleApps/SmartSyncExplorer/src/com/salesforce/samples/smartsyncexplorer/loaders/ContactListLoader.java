@@ -26,11 +26,20 @@
  */
 package com.salesforce.samples.smartsyncexplorer.loaders;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import android.content.AsyncTaskLoader;
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
@@ -50,13 +59,6 @@ import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 /**
  * A simple AsyncTaskLoader to load a list of Salesforce contacts.
  *
@@ -66,6 +68,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 
 	public static final String CONTACT_SOUP = "contacts";
 	public static final Integer LIMIT = 10000;
+	public static final String LOAD_COMPLETE_INTENT_ACTION = "com.salesforce.samples.smartsyncexplorer.loaders.LIST_LOAD_COMPLETE";
     private static final String TAG = "SmartSyncExplorer: ContactListLoader";
     private static IndexSpec[] CONTACTS_INDEX_SPEC = {
 		new IndexSpec("Id", Type.string),
@@ -148,7 +151,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
             @Override
             public void onUpdate(SyncState sync) {
 		        if (Status.DONE.equals(sync.getStatus())) {
-		        	loadInBackground();
+		        	fireLoadCompleteIntent();
 		        }
             }
         };
@@ -169,5 +172,17 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
         } catch (SmartSyncException e) {
             Log.e(TAG, "SmartSyncException occurred while attempting to sync down", e);
 		}
+	}
+
+	/**
+	 * Fires an intent notifying a registered receiver that fresh data is
+	 * available. This is for the special case where the data change has
+	 * been triggered by a background sync, even though the consuming
+	 * activity is in the foreground. Loaders don't trigger callbacks in
+	 * the activity unless the load has been triggered using a LoaderManager.
+	 */
+	private void fireLoadCompleteIntent() {
+		final Intent intent = new Intent(LOAD_COMPLETE_INTENT_ACTION);
+		SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
 	}
 }

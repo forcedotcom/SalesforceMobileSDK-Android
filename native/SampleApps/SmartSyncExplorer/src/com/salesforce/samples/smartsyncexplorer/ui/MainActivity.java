@@ -28,12 +28,15 @@ package com.salesforce.samples.smartsyncexplorer.ui;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import android.accounts.Account;
 import android.app.LoaderManager;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.Loader;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
@@ -110,6 +113,8 @@ public class MainActivity extends SalesforceListActivity implements
 	private SmartStore smartStore;
     private LogoutDialogFragment logoutConfirmationDialog;
     private ContactListLoader contactLoader;
+    private LoadCompleteReceiver loadCompleteReceiver;
+    private AtomicBoolean isRegistered;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -120,6 +125,8 @@ public class MainActivity extends SalesforceListActivity implements
 		getListView().setAdapter(listAdapter);
 		nameFilter = new NameFieldFilter(listAdapter, originalData);
 		logoutConfirmationDialog = new LogoutDialogFragment();
+		loadCompleteReceiver = new LoadCompleteReceiver();
+		isRegistered = new AtomicBoolean(false);
 	}
 
 	@Override
@@ -147,18 +154,29 @@ public class MainActivity extends SalesforceListActivity implements
 		ContentResolver.setSyncAutomatically(account, SYNC_CONTENT_AUTHORITY, true);
 		ContentResolver.addPeriodicSync(account, SYNC_CONTENT_AUTHORITY,
 					Bundle.EMPTY, SYNC_FREQUENCY_ONE_HOUR);
+		if (!isRegistered.get()) {
+			registerReceiver(loadCompleteReceiver,
+					new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION));
+		}
+		isRegistered.set(true);
 	}
-
-    private void refreshList() {
-        getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
-    }
 
     @Override
 	public void onPause() {
+    	if (isRegistered.get()) {
+        	unregisterReceiver(loadCompleteReceiver);
+    	}
+    	isRegistered.set(false);
     	getLoaderManager().destroyLoader(CONTACT_LOADER_ID);
 		contactLoader = null;
 		super.onPause();
 	}
+
+    @Override
+    public void onDestroy() {
+    	loadCompleteReceiver = null;
+    	super.onDestroy();
+    }
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -235,6 +253,14 @@ public class MainActivity extends SalesforceListActivity implements
 				sObject.getTitle());
 	}
 
+    private void refreshList() {
+        getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
+    }
+
+	private void refreshList(List<ContactObject> data) {
+		listAdapter.setData(data);
+	}
+
 	private void launchDetailActivity(String objId, String objName,
 			String objTitle) {
 		final Intent detailIntent = new Intent(this, DetailActivity.class);
@@ -243,10 +269,6 @@ public class MainActivity extends SalesforceListActivity implements
 		detailIntent.putExtra(OBJECT_TITLE_KEY, objTitle);
 		detailIntent.putExtra(OBJECT_NAME_KEY, objName);
 		startActivity(detailIntent);
-	}
-
-	private void refreshList(List<ContactObject> data) {
-		listAdapter.setData(data);
 	}
 
 	private void filterList(String filterTerm) {
@@ -261,8 +283,7 @@ public class MainActivity extends SalesforceListActivity implements
 
 	private void syncUpContacts() {
 		contactLoader.syncUp();
-		Toast.makeText(this, "Sync up complete!",
-				Toast.LENGTH_LONG).show();
+		Toast.makeText(this, "Sync up complete!", Toast.LENGTH_LONG).show();
 	}
 
 	/**
@@ -415,6 +436,24 @@ public class MainActivity extends SalesforceListActivity implements
 		protected void publishResults(CharSequence constraint, FilterResults results) {
 			if (results != null && results.values != null) {
 				adpater.setData((List<ContactObject>) results.values);
+			}
+		}
+	}
+
+	/**
+	 * A simple receiver for load complete events.
+	 *
+	 * @author bhariharan
+	 */
+	private class LoadCompleteReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (intent != null) {
+				final String action = intent.getAction();
+				if (ContactListLoader.LOAD_COMPLETE_INTENT_ACTION.equals(action)) {
+			        refreshList();
+				}
 			}
 		}
 	}
