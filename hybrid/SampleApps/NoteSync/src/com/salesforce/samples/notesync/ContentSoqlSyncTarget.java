@@ -32,6 +32,7 @@ import android.util.Xml;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SoqlSyncTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 
@@ -75,6 +76,7 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
     public static final String QUERY_LOCATOR = "queryLocator";
     public static final String SIZE = "size";
     public static final String DONE = "done";
+    public static final String TYPE = "type";
 
     private String queryLocator;
 
@@ -177,7 +179,7 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
         StringEntity entity = new StringEntity(String.format(REQUEST_TEMPLATE, sessionId, body), HTTP.UTF_8);
         entity.setContentType("text/xml");
 
-        return new RestRequest(RestRequest.RestMethod.POST, "/services/Soap/u/32.0", entity, customHeaders);
+        return new RestRequest(RestRequest.RestMethod.POST, "/services/Soap/u/33.0", entity, customHeaders);
     }
 
 
@@ -223,7 +225,16 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
                             totalSize = Integer.parseInt(parser.nextText());
                         }
                         else if (inRecord && parser.getName().startsWith(SF)) {
-                            record.put(parser.getName().substring(SF.length()), parser.nextText());
+                            String attributeName = parser.getName().substring(SF.length());
+                            String attributeValue = parser.nextText();
+                            if (attributeName.equals(TYPE)) {
+                                JSONObject t = new JSONObject();
+                                t.put(TYPE, attributeValue);
+                                record.put(Constants.ATTRIBUTES, t);
+                            }
+                            else {
+                                record.put(attributeName, attributeValue);
+                            }
                         }
                         break;
 
