@@ -764,11 +764,11 @@ public class SmartStore  {
         Object value = project(soupElt, indexSpec.path);
         switch (indexSpec.type) {
         case integer:
-            contentValues.put(indexSpec.columnName, ((Number) value).longValue()); break;
+            contentValues.put(indexSpec.columnName, value != null ? ((Number) value).longValue() : null); break;
         case string:
             contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
         case floating:
-        	contentValues.put(indexSpec.columnName, ((Number) value).doubleValue()); break;
+            contentValues.put(indexSpec.columnName, value != null ? ((Number) value).doubleValue() : null); break;
         }
     }
 
