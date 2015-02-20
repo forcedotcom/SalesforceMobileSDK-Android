@@ -179,7 +179,7 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
         StringEntity entity = new StringEntity(String.format(REQUEST_TEMPLATE, sessionId, body), HTTP.UTF_8);
         entity.setContentType("text/xml");
 
-        return new RestRequest(RestRequest.RestMethod.POST, "/services/Soap/u/32.0", entity, customHeaders);
+        return new RestRequest(RestRequest.RestMethod.POST, "/services/Soap/u/33.0", entity, customHeaders);
     }
 
 
