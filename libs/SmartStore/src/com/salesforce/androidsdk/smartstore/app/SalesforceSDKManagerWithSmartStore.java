@@ -262,7 +262,8 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     	final String passcodeHash = getPasscodeHash();
         final String passcode = (passcodeHash == null ?
         		getEncryptionKeyForPasscode(null) : passcodeHash);
-        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(context, account, communityId);
+        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(context,
+        		dbNamePrefix, account, communityId);
         return new SmartStore(dbOpenHelper, passcode);
     }
 
