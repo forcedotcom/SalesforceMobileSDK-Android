@@ -379,9 +379,11 @@ public class SyncManager {
 
         // Fields to save (in the case of create or update)
         Map<String, Object> fields = new HashMap<String, Object>();
-        for (String fieldName : fieldlist) {
-            if (!fieldName.equals(Constants.ID) && !fieldName.equals(Constants.LAST_MODIFIED_DATE)) {
-                fields.put(fieldName, record.get(fieldName));
+        if (action == Action.create || action == Action.update) {
+            for (String fieldName : fieldlist) {
+                if (!fieldName.equals(Constants.ID) && !fieldName.equals(Constants.LAST_MODIFIED_DATE)) {
+                    fields.put(fieldName, record.get(fieldName));
+                }
             }
         }
 
