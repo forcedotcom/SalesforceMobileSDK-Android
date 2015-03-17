@@ -26,19 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Formatter;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -53,9 +40,23 @@ import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
+import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Formatter;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 
 /**
@@ -430,19 +431,19 @@ public class SyncManagerTest extends ManagerTestCase {
 		SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME }), mergeMode);
 		SyncState sync = SyncState.createSyncUp(smartStore, target, options, ACCOUNTS_SOUP);
 		long syncId = sync.getId();
-		checkStatus(sync, SyncState.Type.syncUp, syncId, null, options, SyncState.Status.NEW, 0, -1);
+		checkStatus(sync, SyncState.Type.syncUp, syncId, target, options, SyncState.Status.NEW, 0, -1);
 		
 		// Run sync
 		SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
 		syncManager.runSync(sync, queue);
 		
 		// Check status updates
-		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
-		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, 0, numberChanges);
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, 0, numberChanges);
 		for (int i = 1; i < numberChanges; i++) {
-			checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.RUNNING, i*100/numberChanges, numberChanges);
+			checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, i*100/numberChanges, numberChanges);
 		}
-		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, null, options, SyncState.Status.DONE, 100, numberChanges);
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.DONE, 100, numberChanges);
 	}
 
 	/**
@@ -456,7 +457,7 @@ public class SyncManagerTest extends ManagerTestCase {
 	 * @param expectedProgress
 	 * @throws JSONException
 	 */
-	private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncDownTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress, int expectedTotalSize) throws JSONException {
+	private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress, int expectedTotalSize) throws JSONException {
 		assertEquals("Wrong type", expectedType, sync.getType());
 		assertEquals("Wrong id", expectedId, sync.getId());
 		JSONTestHelper.assertSameJSON("Wrong target", (expectedTarget == null ? null : expectedTarget.asJSON()), (sync.getTarget() == null ? null : sync.getTarget().asJSON()));
