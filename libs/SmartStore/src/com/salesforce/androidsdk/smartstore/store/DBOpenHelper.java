@@ -57,6 +57,16 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	private static Map<String, DBOpenHelper> openHelpers = new HashMap<String, DBOpenHelper>();
 
 	/**
+	 * Returns a map of all DBOpenHelper instances created. The key is the
+	 * database name and the value is the instance itself.
+	 *
+	 * @return Map of DBOpenHelper instances.
+	 */
+	public static synchronized Map<String, DBOpenHelper> getOpenHelpers() {
+		return openHelpers;
+	}
+
+	/**
 	 * Returns the DBOpenHelper instance associated with this user account.
 	 *
 	 * @param ctx Context.

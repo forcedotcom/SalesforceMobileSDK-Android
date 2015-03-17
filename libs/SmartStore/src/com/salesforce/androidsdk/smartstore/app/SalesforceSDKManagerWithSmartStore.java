@@ -26,7 +26,9 @@
  */
 package com.salesforce.androidsdk.smartstore.app;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
@@ -36,7 +38,6 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -200,22 +201,20 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     @Override
     public synchronized void changePasscode(String oldPass, String newPass) {
     	if (isNewPasscode(oldPass, newPass)) {
-    		final UserAccountManager accMgr = getUserAccountManager();
-    		final List<UserAccount> accounts = accMgr.getAuthenticatedUsers();
-    		if (accounts != null) {
-    			for (final UserAccount account : accounts) {
-    				if (hasSmartStore(account)) {
+    		final Map<String, DBOpenHelper> dbMap = DBOpenHelper.getOpenHelpers();
+    		if (dbMap != null) {
+    			final Collection<DBOpenHelper> dbHelpers = dbMap.values();
+    			if (dbHelpers != null) {
+    				for (final DBOpenHelper dbHelper : dbHelpers) {
+    					if (dbHelper != null) {
 
-    					/*
-    					 * TODO: Re-encrypt global DBs also (if any).
-    					 */
-    		            // If the old passcode is null, use the default key.
-    		            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context,
-    		            		account).getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
+        		            // If the old passcode is null, use the default key.
+        		            final SQLiteDatabase db = dbHelper.getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
 
-    		            // If the new passcode is null, use the default key.
-    		            SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
-    		        }
+        		            // If the new passcode is null, use the default key.
+        		            SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
+    					}
+    				}
     			}
     		}
 	        super.changePasscode(oldPass, newPass);
