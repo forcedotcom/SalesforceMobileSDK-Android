@@ -48,11 +48,12 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.util.Constants;
-import com.salesforce.androidsdk.smartsync.util.SoqlSyncTarget;
+import com.salesforce.androidsdk.smartsync.util.SoqlSyncDownTarget;
+import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
-import com.salesforce.androidsdk.smartsync.util.SyncTarget;
+import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
@@ -144,7 +145,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
         // Check sync time stamp
         SyncState sync = syncManager.getSyncStatus(syncId);
-        SyncTarget target = sync.getTarget();
+        SyncDownTarget target = (SyncDownTarget) sync.getTarget();
         SyncOptions options = sync.getOptions();
         long maxTimeStamp = sync.getMaxTimeStamp();
         assertTrue("Wrong time stamp", maxTimeStamp > 0);
@@ -286,7 +287,7 @@ public class SyncManagerTest extends ManagerTestCase {
 			idToNamesCreated .put(id, soupElt.getString(Constants.NAME));
 			assertEquals("Wrong local flag", false, soupElt.getBoolean(SyncManager.LOCAL));
 			assertEquals("Wrong local flag", false, soupElt.getBoolean(SyncManager.LOCALLY_CREATED));
-			assertEquals("Id was not udpated", false, id.startsWith(LOCAL_ID_PREFIX));
+			assertEquals("Id was not updated", false, id.startsWith(LOCAL_ID_PREFIX));
 		}
 		
 		// Check server
@@ -379,14 +380,14 @@ public class SyncManagerTest extends ManagerTestCase {
         Date date = new Date();
         long dateLong = date.getTime();
         String dateStr = Constants.TIMESTAMP_FORMAT.format(date);
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr, SoqlSyncTarget.addFilterForReSync("select Id from Account", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " limit 100", SoqlSyncTarget.addFilterForReSync("select Id from Account limit 100", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " and Name = 'John'", SoqlSyncTarget.addFilterForReSync("select Id from Account where Name = 'John'", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " and Name = 'John' limit 100", SoqlSyncTarget.addFilterForReSync("select Id from Account where Name = 'John' limit 100", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr, SoqlSyncTarget.addFilterForReSync("SELECT Id FROM Account", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr + " LIMIT 100", SoqlSyncTarget.addFilterForReSync("SELECT Id FROM Account LIMIT 100", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John'", SoqlSyncTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John'", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John' LIMIT 100", SoqlSyncTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John' LIMIT 100", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr, SoqlSyncDownTarget.addFilterForReSync("select Id from Account", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " limit 100", SoqlSyncDownTarget.addFilterForReSync("select Id from Account limit 100", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " and Name = 'John'", SoqlSyncDownTarget.addFilterForReSync("select Id from Account where Name = 'John'", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " and Name = 'John' limit 100", SoqlSyncDownTarget.addFilterForReSync("select Id from Account where Name = 'John' limit 100", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr, SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr + " LIMIT 100", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account LIMIT 100", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John'", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John'", dateLong));
+        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John' LIMIT 100", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John' LIMIT 100", dateLong));
     }
 
 	/**
@@ -399,7 +400,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		String idsClause = "('" + TextUtils.join("', '", idToNames.keySet()) + "')";
 		
 		// Create sync
-		SyncTarget target = SoqlSyncTarget.targetForSOQLSyncDown("SELECT Id, Name, LastModifiedDate FROM Account WHERE Id IN " + idsClause);
+		SyncDownTarget target = SoqlSyncDownTarget.targetForSOQLSyncDown("SELECT Id, Name, LastModifiedDate FROM Account WHERE Id IN " + idsClause);
         SyncOptions options = SyncOptions.optionsForSyncDown(mergeMode);
 		SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP);
 		long syncId = sync.getId();
@@ -425,8 +426,9 @@ public class SyncManagerTest extends ManagerTestCase {
 	 */
 	private void trySyncUp(int numberChanges, MergeMode mergeMode) throws JSONException {
 		// Create sync
+        SyncUpTarget target = SyncUpTarget.targetForSyncUp();
 		SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME }), mergeMode);
-		SyncState sync = SyncState.createSyncUp(smartStore, options, ACCOUNTS_SOUP);
+		SyncState sync = SyncState.createSyncUp(smartStore, target, options, ACCOUNTS_SOUP);
 		long syncId = sync.getId();
 		checkStatus(sync, SyncState.Type.syncUp, syncId, null, options, SyncState.Status.NEW, 0, -1);
 		
@@ -454,7 +456,7 @@ public class SyncManagerTest extends ManagerTestCase {
 	 * @param expectedProgress
 	 * @throws JSONException
 	 */
-	private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress, int expectedTotalSize) throws JSONException {
+	private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncDownTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress, int expectedTotalSize) throws JSONException {
 		assertEquals("Wrong type", expectedType, sync.getType());
 		assertEquals("Wrong id", expectedId, sync.getId());
 		JSONTestHelper.assertSameJSON("Wrong target", (expectedTarget == null ? null : expectedTarget.asJSON()), (sync.getTarget() == null ? null : sync.getTarget().asJSON()));

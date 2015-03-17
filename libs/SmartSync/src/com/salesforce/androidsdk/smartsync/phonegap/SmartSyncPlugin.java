@@ -32,9 +32,10 @@ import com.salesforce.androidsdk.phonegap.ForcePlugin;
 import com.salesforce.androidsdk.phonegap.JavaScriptPluginVersion;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
+import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
-import com.salesforce.androidsdk.smartsync.util.SyncTarget;
+import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 
 import org.apache.cordova.CallbackContext;
 import org.json.JSONArray;
@@ -115,11 +116,12 @@ public class SmartSyncPlugin extends ForcePlugin {
     private void syncUp(JSONArray args, CallbackContext callbackContext) throws JSONException {
         // Parse args
         JSONObject arg0 = args.getJSONObject(0);
+        JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.optJSONObject(OPTIONS);
 
         SyncManager syncManager = SyncManager.getInstance(null);
-        SyncState sync = syncManager.syncUp(SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
+        SyncState sync = syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
             @Override
             public void onUpdate(SyncState sync) {
                 handleSyncUpdate(sync);
@@ -142,7 +144,7 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject options = arg0.getJSONObject(OPTIONS);
         
         SyncManager syncManager = SyncManager.getInstance(null);
-        SyncState sync = syncManager.syncDown(SyncTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
+        SyncState sync = syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
             @Override
             public void onUpdate(SyncState sync) {
                 handleSyncUpdate(sync);

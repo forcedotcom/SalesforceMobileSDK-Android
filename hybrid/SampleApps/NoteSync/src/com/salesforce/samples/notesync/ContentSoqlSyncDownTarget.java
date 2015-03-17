@@ -33,8 +33,8 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
-import com.salesforce.androidsdk.smartsync.util.SoqlSyncTarget;
-import com.salesforce.androidsdk.smartsync.util.SyncTarget;
+import com.salesforce.androidsdk.smartsync.util.SoqlSyncDownTarget;
+import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 
 import org.apache.http.entity.StringEntity;
 import org.apache.http.protocol.HTTP;
@@ -52,7 +52,7 @@ import java.util.Map;
 /**
  * Target for sync defined by a SOQL query
  */
-public class ContentSoqlSyncTarget extends SoqlSyncTarget {
+public class ContentSoqlSyncDownTarget extends SoqlSyncDownTarget {
 
     private static final String REQUEST_TEMPLATE = "<?xml version=\"1.0\"?>" +
             "<se:Envelope xmlns:se=\"http://schemas.xmlsoap.org/soap/envelope/\">" +
@@ -81,33 +81,33 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
     private String queryLocator;
 
     /**
-     * Build SyncTarget from json
+     * Build SyncDownTarget from json
      * @param target as json
      * @return
      * @throws JSONException
      */
-    public static SyncTarget fromJSON(JSONObject target) throws JSONException {
+    public static SyncDownTarget fromJSON(JSONObject target) throws JSONException {
         if (target == null)
             return null;
 
         String query = target.getString(QUERY);
-        return new ContentSoqlSyncTarget(query);
+        return new ContentSoqlSyncDownTarget(query);
     }
 
     /**
-     * Build SyncTarget for soql target
+     * Build SyncDownTarget for soql target
      * @param soql
      * @return
      */
-    public static ContentSoqlSyncTarget targetForSOQLSyncDown(String soql) {
-        return new ContentSoqlSyncTarget(soql);
+    public static ContentSoqlSyncDownTarget targetForSOQLSyncDown(String soql) {
+        return new ContentSoqlSyncDownTarget(soql);
     }
 
     /**
      * Private constructor
      * @param query
      */
-    public ContentSoqlSyncTarget(String query) {
+    public ContentSoqlSyncDownTarget(String query) {
         super(query);
         this.queryType = QueryType.custom;
     }
@@ -124,7 +124,7 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        String queryToRun = maxTimeStamp > 0 ? SoqlSyncTarget.addFilterForReSync(getQuery(), maxTimeStamp) : getQuery();
+        String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(getQuery(), maxTimeStamp) : getQuery();
         syncManager.getRestClient().sendSync(RestRequest.getRequestForResources(syncManager.apiVersion)); // cheap call to refresh session
         RestRequest request = buildQueryRequest(syncManager.getRestClient().getAuthToken(), queryToRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
@@ -259,7 +259,7 @@ public class ContentSoqlSyncTarget extends SoqlSyncTarget {
 
             totalSize = records.length();
         } catch (Exception e) {
-            Log.e("ContentSoqlSyncTarget:parseSoapResponse", "Parsing failed", e);
+            Log.e("ContentSoqlSyncDownTarget:parseSoapResponse", "Parsing failed", e);
         }
 
         return records;
