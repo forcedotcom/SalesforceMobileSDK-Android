@@ -26,20 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -54,13 +40,26 @@ import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartSto
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.util.Constants;
-import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Sync Manager
@@ -307,7 +306,7 @@ public class SyncManager {
 		final SyncOptions options = sync.getOptions();
 		final List<String> fieldlist = options.getFieldlist();
 		final MergeMode mergeMode = options.getMergeMode();
-        final Set<String> dirtyRecordIds = getDirtyRecordIds(soupName, SmartStore.SOUP_ENTRY_ID);
+        final Set<String> dirtyRecordIds = target.getIdsOfRecordsToSyncUp(this, soupName);
 		int totalSize = dirtyRecordIds.size();
         sync.setTotalSize(totalSize);
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
@@ -504,7 +503,7 @@ public class SyncManager {
 		smartStore.endTransaction();
 	}
 
-    private Set<String> getDirtyRecordIds(String soupName, String idField) throws JSONException {
+    public Set<String> getDirtyRecordIds(String soupName, String idField) throws JSONException {
         Set<String> idsToSkip = new HashSet<String>();
         String dirtyRecordsSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true'", soupName, idField, soupName, soupName, LOCAL);
         final QuerySpec smartQuerySpec = QuerySpec.buildSmartQuerySpec(dirtyRecordsSql, PAGE_SIZE);

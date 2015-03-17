@@ -427,7 +427,7 @@ public class SyncManagerTest extends ManagerTestCase {
 	 */
 	private void trySyncUp(int numberChanges, MergeMode mergeMode) throws JSONException {
 		// Create sync
-        SyncUpTarget target = SyncUpTarget.targetForSyncUp();
+        SyncUpTarget target = SyncUpTarget.defaultSyncUpTarget();
 		SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME }), mergeMode);
 		SyncState sync = SyncState.createSyncUp(smartStore, target, options, ACCOUNTS_SOUP);
 		long syncId = sync.getId();

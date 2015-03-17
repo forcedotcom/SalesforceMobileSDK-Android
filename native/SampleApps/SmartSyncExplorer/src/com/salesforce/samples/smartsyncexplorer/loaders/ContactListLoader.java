@@ -123,7 +123,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 * Pushes local changes up to the server.
 	 */
 	public synchronized void syncUp() {
-        final SyncUpTarget target = SyncUpTarget.targetForSyncUp();
+        final SyncUpTarget target = SyncUpTarget.defaultSyncUpTarget();
 		final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS_SYNC_UP),
 				MergeMode.LEAVE_IF_CHANGED);
 		try {

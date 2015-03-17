@@ -31,6 +31,7 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 
 import org.json.JSONArray;
@@ -41,6 +42,7 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.text.ParseException;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Target for sync up:
@@ -56,7 +58,7 @@ public class SyncUpTarget implements SyncTarget {
      * Build default SyncUpTarget
      * @return
      */
-    public static SyncUpTarget targetForSyncUp() {
+    public static SyncUpTarget defaultSyncUpTarget() {
         return new SyncUpTarget();
     }
 
@@ -71,7 +73,7 @@ public class SyncUpTarget implements SyncTarget {
     public static SyncUpTarget fromJSON(JSONObject target) throws JSONException {
         // Default sync up target
         if (target == null || SyncUpTarget.class.getName().equals(target.getString(ANDROID_IMPL))) {
-            return new SyncUpTarget();
+            return SyncUpTarget.defaultSyncUpTarget();
         }
 
         // Non default sync up target
@@ -187,13 +189,12 @@ public class SyncUpTarget implements SyncTarget {
     }
 
     /**
-     * Enum for action
-     *
+     * Return ids of records to sync up
+     * @param syncManager
+     * @param soupName
+     * @return
      */
-    public enum Action {
-        create,
-        update,
-        delete
+    public Set<String> getIdsOfRecordsToSyncUp(SyncManager syncManager, String soupName) throws JSONException {
+        return syncManager.getDirtyRecordIds(soupName, SmartStore.SOUP_ENTRY_ID);
     }
-
 }
