@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -50,6 +50,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static final int DB_VERSION = 2;
 	public static final String DEFAULT_DB_NAME = "smartstore";
 	private static final String DB_NAME_SUFFIX = ".db";
+	private static final String ORG_KEY_PREFIX = "00D";
 
 	/*
 	 * Cache for the helper instances
@@ -238,16 +239,15 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	/**
-	 * Deletes all remaining databases.
+	 * Deletes all remaining authenticated databases. We pass in the key prefix
+	 * for an organization here, because all authenticated DBs will have to
+	 * go against an org, which means the org ID will be a part of the DB name.
+	 * This prevents the global DBs from being removed.
 	 *
 	 * @param ctx Context.
 	 */
 	public static synchronized void deleteAllUserDatabases(Context ctx) {
-
-		/*
-		 * TODO: This has got to change to exclude global smartstores.
-		 */
-		deleteFiles(ctx, "");
+		deleteFiles(ctx, ORG_KEY_PREFIX);
 	}
 
 	/**
@@ -333,7 +333,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 		@Override
 		public boolean accept(File dir, String filename) {
-			if (filename != null && filename.startsWith(dbNamePrefix)) {
+			if (filename != null && filename.contains(dbNamePrefix)) {
 				return true;
 			}
 			return false;
