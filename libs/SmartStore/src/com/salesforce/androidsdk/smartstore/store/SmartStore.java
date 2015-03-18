@@ -42,7 +42,9 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.SparseArray;
 
+import com.salesforce.androidsdk.smartstore.phonegap.StoreCursor;
 import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 
@@ -55,6 +57,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
  * The main challenge here is how to effectively store documents with dynamic fields, and still allow indexing and searching.
  */
 public class SmartStore  {
+
     // Default
     public static final int DEFAULT_PAGE_SIZE = 10;
 
@@ -92,6 +95,9 @@ public class SmartStore  {
     protected static final String SOUP_NAME_PREDICATE = SOUP_NAME_COL + " = ?";
     protected static final String PATH_PREDICATE = PATH_COL + " = ?";
 	protected static final String ID_PREDICATE = ID_COL + " = ?";
+
+	// Map of cursor id to StoreCursor (used only by hybrid).
+	public SparseArray<StoreCursor> STORE_CURSORS = new SparseArray<StoreCursor>();
 
     // Backing database
 	protected SQLiteDatabase dbLocal;
