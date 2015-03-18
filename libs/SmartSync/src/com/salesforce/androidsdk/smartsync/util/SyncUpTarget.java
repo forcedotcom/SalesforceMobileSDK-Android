@@ -72,7 +72,7 @@ public class SyncUpTarget implements SyncTarget {
     @SuppressWarnings("unchecked")
     public static SyncUpTarget fromJSON(JSONObject target) throws JSONException {
         // Default sync up target
-        if (target == null || SyncUpTarget.class.getName().equals(target.getString(ANDROID_IMPL))) {
+        if (target == null || target.isNull(ANDROID_IMPL) || SyncUpTarget.class.getName().equals(target.getString(ANDROID_IMPL))) {
             return SyncUpTarget.defaultSyncUpTarget();
         }
 
