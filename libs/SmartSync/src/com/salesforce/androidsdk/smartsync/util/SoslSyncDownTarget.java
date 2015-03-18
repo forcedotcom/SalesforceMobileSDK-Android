@@ -39,39 +39,39 @@ import java.io.IOException;
 /**
  * Target for sync defined by a SOSL query
  */
-public class SoslSyncTarget extends SyncTarget {
+public class SoslSyncDownTarget extends SyncDownTarget {
 	
 	public static final String QUERY = "query";
 	private String query;
 	
 	/**
-	 * Build SyncTarget from json
+	 * Build SyncDownTarget from json
 	 * @param target as json
 	 * @return
 	 * @throws JSONException 
 	 */
-	public static SyncTarget fromJSON(JSONObject target) throws JSONException {
+	public static SyncDownTarget fromJSON(JSONObject target) throws JSONException {
 		if (target == null)
 			return null;
 		
 		String query = target.getString(QUERY);
-		return new SoslSyncTarget(query);
+		return new SoslSyncDownTarget(query);
 	}
 
 	/**
-	 * Build SyncTarget for sosl target
+	 * Build SyncDownTarget for sosl target
 	 * @param sosl
 	 * @return
 	 */
-	public static SyncTarget targetForSOSLSyncDown(String sosl) {
-		return new SoslSyncTarget(sosl);
+	public static SyncDownTarget targetForSOSLSyncDown(String sosl) {
+		return new SoslSyncDownTarget(sosl);
 	}
 
 	/**
      * Private constructor
 	 * @param query
 	 */
-	private SoslSyncTarget(String query) {
+	private SoslSyncDownTarget(String query) {
 		this.queryType = QueryType.sosl;
 		this.query = query;
 	}

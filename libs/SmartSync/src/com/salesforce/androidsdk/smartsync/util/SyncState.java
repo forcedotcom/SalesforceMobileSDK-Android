@@ -26,12 +26,12 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 
 
 /**
@@ -52,7 +52,7 @@ public class SyncState {
 
 	private long id;
 	private Type type;
-	private SyncTarget target; // null for sync-up
+	private SyncTarget target;
 	private SyncOptions options;
 	private String soupName;
 	private Status status;
@@ -80,7 +80,7 @@ public class SyncState {
 	 * @return
 	 * @throws JSONException 
 	 */
-	public static SyncState createSyncDown(SmartStore store, SyncTarget target, SyncOptions options, String soupName) throws JSONException {
+	public static SyncState createSyncDown(SmartStore store, SyncDownTarget target, SyncOptions options, String soupName) throws JSONException {
     	JSONObject sync = new JSONObject();
     	sync.put(SYNC_TYPE, Type.syncDown);
     	sync.put(SYNC_TARGET, target.asJSON());
@@ -101,9 +101,10 @@ public class SyncState {
 	 * @return
 	 * @throws JSONException 
 	 */
-	public static SyncState createSyncUp(SmartStore store, SyncOptions options, String soupName) throws JSONException {
+	public static SyncState createSyncUp(SmartStore store, SyncUpTarget target, SyncOptions options, String soupName) throws JSONException {
     	JSONObject sync = new JSONObject();
     	sync.put(SYNC_TYPE, Type.syncUp);
+        sync.put(SYNC_TARGET, target.asJSON());
     	sync.put(SYNC_SOUP_NAME, soupName);
     	sync.put(SYNC_OPTIONS, options.asJSON());
     	sync.put(SYNC_STATUS, Status.NEW.name());
@@ -125,7 +126,8 @@ public class SyncState {
 		SyncState state = new SyncState();
 		state.id = sync.getLong(SmartStore.SOUP_ENTRY_ID);
 		state.type = Type.valueOf(sync.getString(SYNC_TYPE));
-		state.target = SyncTarget.fromJSON(sync.optJSONObject(SYNC_TARGET));
+        final JSONObject jsonTarget = sync.optJSONObject(SYNC_TARGET);
+        state.target = (state.type == Type.syncDown ? SyncDownTarget.fromJSON(jsonTarget) : SyncUpTarget.fromJSON(jsonTarget));
 		state.options = SyncOptions.fromJSON(sync.optJSONObject(SYNC_OPTIONS));
 		state.soupName = sync.getString(SYNC_SOUP_NAME);
 		state.status = Status.valueOf(sync.getString(SYNC_STATUS));
