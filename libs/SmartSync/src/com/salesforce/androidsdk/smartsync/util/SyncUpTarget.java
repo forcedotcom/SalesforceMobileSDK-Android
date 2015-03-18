@@ -156,36 +156,14 @@ public class SyncUpTarget implements SyncTarget {
      * @throws JSONException
      * @throws IOException
      */
-    public long fetchLastModifiedDate(SyncManager syncManager, String objectType, String objectId) throws JSONException, IOException {
-        boolean isNewer = false;
-        long serverLastModified = -1L;
+    public String fetchLastModifiedDate(SyncManager syncManager, String objectType, String objectId) throws JSONException, IOException {
         final String query = SOQLBuilder.getInstanceWithFields(Constants.LAST_MODIFIED_DATE)
                 .from(objectType)
                 .where(Constants.ID + " = '" + objectId + "'")
                 .build();
 
         RestResponse lastModResponse = syncManager.sendSyncWithSmartSyncUserAgent(RestRequest.getRequestForQuery(syncManager.apiVersion, query));
-        if (lastModResponse != null && lastModResponse.isSuccess()) {
-            final JSONObject responseJSON = lastModResponse.asJSONObject();
-            if (responseJSON != null) {
-                final JSONArray records = responseJSON.optJSONArray(Constants.RECORDS);
-                if (records != null && records.length() > 0) {
-                    final JSONObject obj = records.optJSONObject(0);
-                    if (obj != null) {
-                        final String lastModStr = obj.optString(Constants.LAST_MODIFIED_DATE);
-                        if (!TextUtils.isEmpty(lastModStr)) {
-                            try {
-                                serverLastModified = Constants.TIMESTAMP_FORMAT.parse(lastModStr).getTime();
-                            } catch (ParseException e) {
-                                Log.e("SyncUpTarget:fetchLastModifiedDate", "Error during date parsing", e);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return serverLastModified;
+        return lastModResponse.asJSONObject().optJSONArray(Constants.RECORDS).optJSONObject(0).optString(Constants.LAST_MODIFIED_DATE);
     }
 
     /**

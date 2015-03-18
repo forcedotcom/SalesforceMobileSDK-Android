@@ -326,9 +326,22 @@ public class SyncManager {
         }
 	}
 
-    private boolean isNewerThanServer(SyncUpTarget target, String objectType, String objectId, long lastModifiedDate) throws JSONException, IOException {
-    	long serverLastModified = target.fetchLastModifiedDate(this, objectType, objectId);
-        return (serverLastModified <= lastModifiedDate);
+    private boolean isNewerThanServer(SyncUpTarget target, String objectType, String objectId, String lastModStr) throws JSONException, IOException {
+        if (lastModStr == null) {
+            // We didn't capture the last modified date so we can't really enforce merge mode, returning true so that we will behave like an "overwrite" merge mode
+            return true;
+        }
+
+        try {
+            String serverLastModStr = target.fetchLastModifiedDate(this, objectType, objectId);
+            long lastModifiedDate = Constants.TIMESTAMP_FORMAT.parse(lastModStr).getTime();
+            long serverLastModifiedDate = Constants.TIMESTAMP_FORMAT.parse(serverLastModStr).getTime();
+
+            return (serverLastModifiedDate <= lastModifiedDate);
+        } catch (Exception e) {
+            Log.e("SmartSyncManager:isNewerThanServer", "Couldn't figure out last modified date", e);
+            throw new SmartSyncException(e);
+        }
     }
 
     private boolean syncUpOneRecord(SyncUpTarget target, String soupName, List<String> fieldlist,
@@ -351,15 +364,7 @@ public class SyncManager {
         // Getting type and id
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(Constants.ID);
-        long lastModifiedDate = UNCHANGED;
         final String lastModStr = record.optString(Constants.LAST_MODIFIED_DATE);
-        if (!TextUtils.isEmpty(lastModStr)) {
-        	try {
-        		lastModifiedDate = Constants.TIMESTAMP_FORMAT.parse(lastModStr).getTime();
-        	} catch (ParseException e) {
-        		Log.e("SmartSyncManager:syncUpOneRecord", "Error during date parsing", e);
-        	}
-        }
 
         /*
          * Checks if we are attempting to update a record that has been updated
@@ -369,7 +374,7 @@ public class SyncManager {
          */
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED &&
         		(action == Action.update || action == Action.delete) &&
-        		!isNewerThanServer(target, objectType, objectId, lastModifiedDate)) {
+        		!isNewerThanServer(target, objectType, objectId, lastModStr)) {
 
         	// Nothing to do for this record
     		Log.i("SmartSyncManager:syncUpOneRecord",
@@ -550,6 +555,10 @@ public class SyncManager {
 
     	public SmartSyncException(String message) {
             super(message);
+        }
+
+        public SmartSyncException(Throwable e) {
+            super(e);
         }
 
 		private static final long serialVersionUID = 1L;
