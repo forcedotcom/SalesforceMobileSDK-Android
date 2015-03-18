@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -50,11 +50,22 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static final int DB_VERSION = 2;
 	public static final String DEFAULT_DB_NAME = "smartstore";
 	private static final String DB_NAME_SUFFIX = ".db";
+	private static final String ORG_KEY_PREFIX = "00D";
 
 	/*
 	 * Cache for the helper instances
 	 */
 	private static Map<String, DBOpenHelper> openHelpers = new HashMap<String, DBOpenHelper>();
+
+	/**
+	 * Returns a map of all DBOpenHelper instances created. The key is the
+	 * database name and the value is the instance itself.
+	 *
+	 * @return Map of DBOpenHelper instances.
+	 */
+	public static synchronized Map<String, DBOpenHelper> getOpenHelpers() {
+		return openHelpers;
+	}
 
 	/**
 	 * Returns the DBOpenHelper instance associated with this user account.
@@ -95,20 +106,19 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param communityId Community ID.
 	 * @return DBOpenHelper instance.
 	 */
-	public static DBOpenHelper getOpenHelper(Context ctx, String dbNamePrefix, UserAccount account, String communityId) {
-		StringBuffer dbName = new StringBuffer(dbNamePrefix);
-		
-		// If we have account information, we will use it to create a database suffix for the user
+	public static DBOpenHelper getOpenHelper(Context ctx, String dbNamePrefix,
+			UserAccount account, String communityId) {
+		final StringBuffer dbName = new StringBuffer(dbNamePrefix);
+
+		// If we have account information, we will use it to create a database suffix for the user.
 		if (account != null) {
+
 			// Default user path for a user is 'internal', if community ID is null.
 			final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
 			dbName.append(accountSuffix);
 		}
-
 		dbName.append(DB_NAME_SUFFIX);
-		
 		final String fullDBName = dbName.toString();
-		
 		DBOpenHelper helper = openHelpers.get(fullDBName);
 		if (helper == null) {
 			helper = new DBOpenHelper(ctx, fullDBName);
@@ -194,28 +204,29 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static synchronized void deleteDatabase(Context ctx, String dbNamePrefix,
 			UserAccount account, String communityId) {
 		try {
-			StringBuffer dbName = new StringBuffer(dbNamePrefix);
-			
-			// If we have account information, we will use it to create a database suffix for the user
+			final StringBuffer dbName = new StringBuffer(dbNamePrefix);
+
+			// If we have account information, we will use it to create a database suffix for the user.
 			if (account != null) {
+
 				// Default user path for a user is 'internal', if community ID is null.
 				final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
 				dbName.append(accountSuffix);
 			}
 			dbName.append(DB_NAME_SUFFIX);
 			final String fullDBName = dbName.toString();
-	
-			// close and remove the helper from the cache if it exists
+
+			// Close and remove the helper from the cache if it exists.
 			final DBOpenHelper helper = openHelpers.get(fullDBName);
 			if (helper != null) {
 				helper.close();
 				openHelpers.remove(fullDBName);
 			}
-	
-			// physically delete the database from disk
+
+			// Physically delete the database from disk.
 			ctx.deleteDatabase(fullDBName);
-			
-			// if community id was not passed in, then we remove ALL databases for the account.
+
+			// If community id was not passed in, then we remove ALL databases for the account.
 			if (account != null && TextUtils.isEmpty(communityId)) {
 				StringBuffer communityDBNamePrefix = new StringBuffer(dbNamePrefix);
 				String accountSuffix = account.getUserLevelFilenameSuffix();
@@ -228,12 +239,15 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	/**
-	 * Deletes all remaining databases.
+	 * Deletes all remaining authenticated databases. We pass in the key prefix
+	 * for an organization here, because all authenticated DBs will have to
+	 * go against an org, which means the org ID will be a part of the DB name.
+	 * This prevents the global DBs from being removed.
 	 *
 	 * @param ctx Context.
 	 */
-	public static synchronized void deleteAllDatabases(Context ctx) {
-		deleteFiles(ctx, "");
+	public static synchronized void deleteAllUserDatabases(Context ctx) {
+		deleteFiles(ctx, ORG_KEY_PREFIX);
 	}
 
 	/**
@@ -262,7 +276,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 */
 	public static boolean smartStoreExists(Context ctx, String dbNamePrefix,
 			UserAccount account, String communityId) {
-		StringBuffer dbName = new StringBuffer(dbNamePrefix);
+		final StringBuffer dbName = new StringBuffer(dbNamePrefix);
 		if (account != null) {
 			final String dbSuffix = account.getCommunityLevelFilenameSuffix(communityId);
 			dbName.append(dbSuffix);
@@ -319,7 +333,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 		@Override
 		public boolean accept(File dir, String filename) {
-			if (filename != null && filename.startsWith(dbNamePrefix)) {
+			if (filename != null && filename.contains(dbNamePrefix)) {
 				return true;
 			}
 			return false;

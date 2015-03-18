@@ -26,16 +26,18 @@
  */
 package com.salesforce.androidsdk.smartstore.app;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
 import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
+import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -181,7 +183,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     			DBOpenHelper.deleteDatabase(getAppContext(), userAccount);
     		}
     	} else {
-    		DBOpenHelper.deleteAllDatabases(getAppContext());
+    		DBOpenHelper.deleteAllUserDatabases(getAppContext());
     	}
 
         /*
@@ -199,22 +201,43 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     @Override
     public synchronized void changePasscode(String oldPass, String newPass) {
     	if (isNewPasscode(oldPass, newPass)) {
-    		final UserAccountManager accMgr = getUserAccountManager();
-    		final List<UserAccount> accounts = accMgr.getAuthenticatedUsers();
-    		if (accounts != null) {
-    			for (final UserAccount account : accounts) {
-    				if (hasSmartStore(account)) {
+    		final Map<String, DBOpenHelper> dbMap = DBOpenHelper.getOpenHelpers();
+    		if (dbMap != null) {
+    			final Collection<DBOpenHelper> dbHelpers = dbMap.values();
+    			if (dbHelpers != null) {
+    				for (final DBOpenHelper dbHelper : dbHelpers) {
+    					if (dbHelper != null) {
 
-    		            // If the old passcode is null, use the default key.
-    		            final SQLiteDatabase db = DBOpenHelper.getOpenHelper(context, account).getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
+        		            // If the old passcode is null, use the default key.
+        		            final SQLiteDatabase db = dbHelper.getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
 
-    		            // If the new passcode is null, use the default key.
-    		            SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
-    		        }
+        		            // If the new passcode is null, use the default key.
+        		            SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
+    					}
+    				}
     			}
     		}
 	        super.changePasscode(oldPass, newPass);
 		}
+    }
+
+    /**
+     * Returns the database used by smart store in the global context.
+     *
+     * @param dbName The database name. This must be a valid file name without a
+     * 				 filename extension such as ".db". Pass 'null' for default.
+     * @return SmartStore instance.
+     */
+    public SmartStore getGlobalSmartStore(String dbName) {
+    	if (TextUtils.isEmpty(dbName)) {
+    		dbName = DBOpenHelper.DEFAULT_DB_NAME;
+    	}
+    	final String passcodeHash = getPasscodeHash();
+        final String passcode = (passcodeHash == null ?
+        		getEncryptionKeyForPasscode(null) : passcodeHash);
+        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(context,
+        		dbName, null, null);
+        return new SmartStore(dbOpenHelper, passcode);
     }
 
     /**
@@ -252,7 +275,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * Returns the database used by smart store for a specified database name and 
      * user in the specified community.
      *
-     * @param dbNamePrefix The database name. This must be a valid file name without a 
+     * @param dbNamePrefix The database name. This must be a valid file name without a
      * 					   filename extension such as ".db".
      * @param account UserAccount instance.
      * @param communityId Community ID.
@@ -265,6 +288,20 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
         final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(context,
         		dbNamePrefix, account, communityId);
         return new SmartStore(dbOpenHelper, passcode);
+    }
+
+    /**
+     * Returns whether global smart store is enabled or not.
+     *
+     * @param dbName Database name. This must be a valid file name without a
+     * 				 filename extension such as ".db". Pass 'null' for default.
+     * @return True - if the specified global database exists, False - otherwise.
+     */
+    public boolean hasGlobalSmartStore(String dbName) {
+    	if (TextUtils.isEmpty(dbName)) {
+    		dbName = DBOpenHelper.DEFAULT_DB_NAME;
+    	}
+     	return DBOpenHelper.smartStoreExists(context, dbName, null, null);
     }
 
     /**
@@ -309,4 +346,55 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      public boolean hasSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
      	return DBOpenHelper.smartStoreExists(context, dbNamePrefix, account, communityId);
      }
+
+     /**
+      * Removes the global smart store.
+      *
+      * @param dbName Database name. This must be a valid file name without a
+      * 			  filename extension such as ".db". Pass 'null' for default.
+      */
+     public void removeGlobalSmartStore(String dbName) {
+     	if (TextUtils.isEmpty(dbName)) {
+     		dbName = DBOpenHelper.DEFAULT_DB_NAME;
+     	}
+     	DBOpenHelper.deleteDatabase(context, dbName, null, null);
+     }
+
+     /**
+      * Removes the default smart store for the current user.
+      */
+     public void removeSmartStore() {
+    	 removeSmartStore(getUserAccountManager().getCurrentUser());
+     }
+
+     /**
+      * Removes the default smart store for the specified user.
+      *
+      * @param account UserAccount instance.
+      */
+     public void removeSmartStore(UserAccount account) {
+    	 removeSmartStore(account, null);
+     }
+
+     /**
+      * Removes the default smart store for the specified user and community.
+      *
+      * @param account UserAccount instance.
+      * @param communityId Community ID.
+      */
+      public void removeSmartStore(UserAccount account, String communityId) {
+    	  removeSmartStore(DBOpenHelper.DEFAULT_DB_NAME, account, communityId);
+      }
+ 	
+     /**
+      * Removes the named smart store for the specified user and community.
+      *
+      * @param dbNamePrefix The database name. This must be a valid file name without a 
+      * 					filename extension such as ".db".
+      * @param account UserAccount instance.
+      * @param communityId Community ID.
+      */
+      public void removeSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
+    	  DBOpenHelper.deleteDatabase(context, dbNamePrefix, account, communityId);
+      }
 }
