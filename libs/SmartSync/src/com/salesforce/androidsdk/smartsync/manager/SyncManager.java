@@ -387,7 +387,7 @@ public class SyncManager {
         if (action == Action.create || action == Action.update) {
             for (String fieldName : fieldlist) {
                 if (!fieldName.equals(Constants.ID) && !fieldName.equals(Constants.LAST_MODIFIED_DATE)) {
-                    fields.put(fieldName, record.get(fieldName));
+                    fields.put(fieldName, SmartStore.project(record, fieldName));
                 }
             }
         }
