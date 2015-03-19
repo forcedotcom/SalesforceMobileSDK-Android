@@ -27,7 +27,11 @@
 package com.salesforce.androidsdk.smartstore.phonegap;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import net.sqlcipher.database.SQLiteDatabase;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;
@@ -38,6 +42,7 @@ import org.json.JSONObject;
 import android.app.Activity;
 import android.content.Intent;
 import android.util.Log;
+import android.util.SparseArray;
 
 import com.salesforce.androidsdk.phonegap.ForcePlugin;
 import com.salesforce.androidsdk.phonegap.JavaScriptPluginVersion;
@@ -81,6 +86,17 @@ public class SmartStorePlugin extends ForcePlugin {
 	private static final String INDEX = "index";
 	private static final String INDEXES = "indexes";
 	private static final String IS_GLOBAL_STORE = "isGlobalStore";
+
+	// Map of cursor id to StoreCursor, per database.
+	private static Map<SQLiteDatabase, SparseArray<StoreCursor>> STORE_CURSORS = new HashMap<SQLiteDatabase, SparseArray<StoreCursor>>();
+
+	private static SparseArray<StoreCursor> getStoreCursor(SmartStore store) {
+		final SQLiteDatabase db = store.getDatabase();
+		if (!STORE_CURSORS.containsKey(db)) {
+			STORE_CURSORS.put(db, new SparseArray<StoreCursor>());
+		}
+		return STORE_CURSORS.get(db);
+	}
 
 	/**
 	 * Supported plugin actions that the client can take.
@@ -224,7 +240,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 
 		// Drop cursor from storeCursors map
-		smartStore.STORE_CURSORS.remove(cursorId);
+		getStoreCursor(smartStore).remove(cursorId);
 		callbackContext.success();		
 	}
 
@@ -245,7 +261,7 @@ public class SmartStorePlugin extends ForcePlugin {
 
 		// Get cursor
 		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
-		final StoreCursor storeCursor = smartStore.STORE_CURSORS.get(cursorId);
+		final StoreCursor storeCursor = getStoreCursor(smartStore).get(cursorId);
 		if (storeCursor == null) {
 			callbackContext.error("Invalid cursor id");
 		}
@@ -413,7 +429,7 @@ public class SmartStorePlugin extends ForcePlugin {
 
 		// Build store cursor
 		final StoreCursor storeCursor = new StoreCursor(smartStore, querySpec);
-		smartStore.STORE_CURSORS.put(storeCursor.cursorId, storeCursor);
+		getStoreCursor(smartStore).put(storeCursor.cursorId, storeCursor);
 
 		// Build json result
 		JSONObject result = storeCursor.getData(smartStore);

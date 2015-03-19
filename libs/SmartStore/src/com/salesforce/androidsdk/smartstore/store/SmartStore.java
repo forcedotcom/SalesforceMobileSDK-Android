@@ -42,9 +42,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.TextUtils;
 import android.util.Log;
-import android.util.SparseArray;
 
-import com.salesforce.androidsdk.smartstore.phonegap.StoreCursor;
 import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 
@@ -95,9 +93,6 @@ public class SmartStore  {
     protected static final String SOUP_NAME_PREDICATE = SOUP_NAME_COL + " = ?";
     protected static final String PATH_PREDICATE = PATH_COL + " = ?";
 	protected static final String ID_PREDICATE = ID_COL + " = ?";
-
-	// Map of cursor id to StoreCursor (used only by hybrid).
-	public SparseArray<StoreCursor> STORE_CURSORS = new SparseArray<StoreCursor>();
 
     // Backing database
 	protected SQLiteDatabase dbLocal;
@@ -196,7 +191,7 @@ public class SmartStore  {
     /**
      * Return db
      */
-    protected SQLiteDatabase getDatabase() {
+    public SQLiteDatabase getDatabase() {
     	if (dbLocal != null) {
             return dbLocal;
         } else {
