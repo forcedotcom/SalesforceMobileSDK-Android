@@ -55,6 +55,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
  * The main challenge here is how to effectively store documents with dynamic fields, and still allow indexing and searching.
  */
 public class SmartStore  {
+
     // Default
     public static final int DEFAULT_PAGE_SIZE = 10;
 
@@ -190,7 +191,7 @@ public class SmartStore  {
     /**
      * Return db
      */
-    protected SQLiteDatabase getDatabase() {
+    public SQLiteDatabase getDatabase() {
     	if (dbLocal != null) {
             return dbLocal;
         } else {
