@@ -48,18 +48,15 @@ public class TestSyncUpTarget extends SyncUpTarget {
     private static int seq = 0;
     private static ActionCollector actionCollector;
 
-    private final boolean failFetchDate;
     private final boolean failSync;
 
-    public TestSyncUpTarget(boolean failSync, boolean failFetchDate) {
+    public TestSyncUpTarget(boolean failSync) {
         this.failSync = failSync;
-        this.failFetchDate = failFetchDate;
     }
 
     public static SyncUpTarget fromJSON(JSONObject target) throws JSONException {
         boolean failSync = target.getBoolean(FAIL_SYNC);
-        boolean failFetchDate = target.getBoolean(FAIL_FETCH_DATE);
-        return new TestSyncUpTarget(failSync, failFetchDate);
+        return new TestSyncUpTarget(failSync);
     }
 
     @Override
@@ -67,15 +64,15 @@ public class TestSyncUpTarget extends SyncUpTarget {
         JSONObject target = new JSONObject();
         target.put(ANDROID_IMPL, getClass().getName());
         target.put(FAIL_SYNC, failSync);
-        target .put(FAIL_FETCH_DATE, failFetchDate);
         return target;
     }
 
     @Override
     public String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws JSONException, IOException {
         if (failSync) {
-            throw new RuntimeException("Failing sync");
+            return null;
         }
+
         String id = "ID." + seq++;
         if (actionCollector != null) {
             actionCollector.createdRecordIds.add(id);
@@ -85,35 +82,28 @@ public class TestSyncUpTarget extends SyncUpTarget {
 
     @Override
     public boolean deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws JSONException, IOException {
-        if (!failSync) {
-            if (actionCollector != null) {
-                actionCollector.deletedRecordIds.add(objectId);
-            }
+        if (failSync) {
+            return false;
         }
-        return !failSync;
+
+        if (actionCollector != null) {
+            actionCollector.deletedRecordIds.add(objectId);
+        }
+
+        return true;
     }
 
     @Override
     public boolean updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws JSONException, IOException {
-        if (!failSync) {
-            if (actionCollector != null) {
-                actionCollector.updatedRecordIds.add(objectId);
-            }
+        if (failSync) {
+            return false;
         }
-        return !failSync;
-    }
 
-    @Override
-    public String fetchLastModifiedDate(SyncManager syncManager, String objectType, String objectId) throws JSONException, IOException {
-        if (failFetchDate) {
-            throw new RuntimeException("Failing fetch last modified date");
+        if (actionCollector != null) {
+            actionCollector.updatedRecordIds.add(objectId);
         }
-        if (!failFetchDate) {
-            if (actionCollector != null) {
-                actionCollector.fetchLastModifiedDateRecordIds.add(objectId);
-            }
-        }
-        return null;
+
+        return true;
     }
 
     //

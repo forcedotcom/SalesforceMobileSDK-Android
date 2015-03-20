@@ -388,7 +388,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
-        TestSyncUpTarget target = new TestSyncUpTarget(false, false);
+        TestSyncUpTarget target = new TestSyncUpTarget(false);
         target.setActionCollector(collector);
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
@@ -406,7 +406,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
         // Check what got synched up
         List<String> idsUpdatedByTarget = collector.updatedRecordIds;
-        assertEquals("Wrong number of records updated by target", 3, idToNamesLocallyUpdated.size());
+        assertEquals("Wrong number of records updated by target", 3, idsUpdatedByTarget.size());
         for (String idUpdatedByTarget : idsUpdatedByTarget) {
             assertTrue("Unexpected id:" + idUpdatedByTarget, idToNamesLocallyUpdated.containsKey(idUpdatedByTarget));
         }
@@ -422,7 +422,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
-        TestSyncUpTarget target = new TestSyncUpTarget(false, false);
+        TestSyncUpTarget target = new TestSyncUpTarget(false);
         target.setActionCollector(collector);
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
@@ -463,7 +463,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
-        TestSyncUpTarget target = new TestSyncUpTarget(false, false);
+        TestSyncUpTarget target = new TestSyncUpTarget(false);
         target.setActionCollector(collector);
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
@@ -479,6 +479,107 @@ public class SyncManagerTest extends ManagerTestCase {
         for (String idDeleted : idsLocallyDeleted) {
             assertTrue("Id not synched up" + idDeleted, idsDeletedByTarget.contains(idDeleted));
         }
+    }
+
+    /**
+     * Sync down the test accounts, modify a few, sync up using a failing TestSyncUpTarget, check smartstore
+     */
+    public void testFailingCustomSyncUpWithLocallyUpdatedRecords() throws Exception {
+        // First sync down
+        trySyncDown(MergeMode.OVERWRITE);
+
+        // Update a few entries locally
+        Map<String, String> idToNamesLocallyUpdated = makeSomeLocalChanges();
+
+        // Sync up
+        TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
+        TestSyncUpTarget target = new TestSyncUpTarget(true);
+        target.setActionCollector(collector);
+        trySyncUp(target, 3, MergeMode.OVERWRITE);
+
+        // Check that db still shows entries as locally modified anymore
+        Set<String> ids = idToNamesLocallyUpdated.keySet();
+        String idsClause = "('" + TextUtils.join("', '", ids) + "')";
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, ids.size());
+        JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+        for (int i=0; i<accountsFromDb.length(); i++) {
+            JSONArray row = accountsFromDb.getJSONArray(i);
+            JSONObject soupElt = row.getJSONObject(0);
+            assertEquals("Wrong local flag", true, soupElt.getBoolean(SyncManager.LOCAL));
+            assertEquals("Wrong local flag", true, soupElt.getBoolean(SyncManager.LOCALLY_UPDATED));
+        }
+
+        // Check what got synched up
+        List<String> idsUpdatedByTarget = collector.updatedRecordIds;
+        assertEquals("Wrong number of records updated by target", 0, idsUpdatedByTarget.size());
+    }
+
+    /**
+     * Create accounts locally, sync up using failing TestSyncUpTarget, check smartstore
+     */
+    public void testFailingCustomSyncUpWithLocallyCreatedRecords() throws Exception {
+        // Create a few entries locally
+        String[] names = new String[]{createAccountName(), createAccountName(), createAccountName()};
+        createAccountsLocally(names);
+
+        // Sync up
+        TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
+        TestSyncUpTarget target = new TestSyncUpTarget(true);
+        target.setActionCollector(collector);
+        trySyncUp(target, 3, MergeMode.OVERWRITE);
+
+        // Check that db still show show entries as locally created anymore and that they use sfdc id
+        String namesClause = "('" + TextUtils.join("', '", names) + "')";
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup} FROM {accounts} WHERE {accounts:Name} IN " + namesClause, names.length);
+        JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+        Map<String, String> idToNamesCreated = new HashMap<String, String>();
+        for (int i = 0; i < accountsFromDb.length(); i++) {
+            JSONArray row = accountsFromDb.getJSONArray(i);
+            JSONObject soupElt = row.getJSONObject(0);
+            String id = soupElt.getString(Constants.ID);
+            idToNamesCreated.put(id, soupElt.getString(Constants.NAME));
+            assertEquals("Wrong local flag", true, soupElt.getBoolean(SyncManager.LOCAL));
+            assertEquals("Wrong local flag", true, soupElt.getBoolean(SyncManager.LOCALLY_CREATED));
+            assertEquals("Id was not updated", true, id.startsWith(LOCAL_ID_PREFIX));
+        }
+
+        // Check what got synched up
+        List<String> idsCreatedByTarget = collector.createdRecordIds;
+        assertEquals("Wrong number of records created by target", 0, idsCreatedByTarget.size());
+    }
+
+    /**
+     * Sync down the test accounts, delete a few, sync up using failing TestSyncUpTarget, check smartstore
+     */
+    public void testFailingCustomSyncUpWithLocallyDeletedRecords() throws Exception {
+        // First sync down
+        trySyncDown(MergeMode.OVERWRITE);
+
+        // Delete a few entries locally
+        String[] allIds = idToNames.keySet().toArray(new String[0]);
+        String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
+        deleteAccountsLocally(idsLocallyDeleted);
+
+        // Sync up
+        TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
+        TestSyncUpTarget target = new TestSyncUpTarget(true);
+        target.setActionCollector(collector);
+        trySyncUp(target, 3, MergeMode.OVERWRITE);
+
+        // Check that db doesn't contain those entries anymore
+        String idsClause = "('" + TextUtils.join("', '", idsLocallyDeleted) + "')";
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup}, {accounts:Name} FROM {accounts} WHERE {accounts:Id} IN " + idsClause, idsLocallyDeleted.length);
+        JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+        for (int i = 0; i < accountsFromDb.length(); i++) {
+            JSONArray row = accountsFromDb.getJSONArray(i);
+            JSONObject soupElt = row.getJSONObject(0);
+            assertEquals("Wrong local flag", true, soupElt.getBoolean(SyncManager.LOCAL));
+            assertEquals("Wrong local flag", true, soupElt.getBoolean(SyncManager.LOCALLY_DELETED));
+        }
+
+        // Check what got synched up
+        List<String> idsDeletedByTarget = collector.deletedRecordIds;
+        assertEquals("Wrong number of records created by target", 0, idsDeletedByTarget.size());
     }
 
     /**
