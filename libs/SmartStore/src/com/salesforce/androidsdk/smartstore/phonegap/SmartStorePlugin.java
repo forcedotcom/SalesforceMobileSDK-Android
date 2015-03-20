@@ -90,7 +90,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	// Map of cursor id to StoreCursor, per database.
 	private static Map<SQLiteDatabase, SparseArray<StoreCursor>> STORE_CURSORS = new HashMap<SQLiteDatabase, SparseArray<StoreCursor>>();
 
-	private static SparseArray<StoreCursor> getStoreCursor(SmartStore store) {
+	private synchronized static SparseArray<StoreCursor> getSmartStoreCursors(SmartStore store) {
 		final SQLiteDatabase db = store.getDatabase();
 		if (!STORE_CURSORS.containsKey(db)) {
 			STORE_CURSORS.put(db, new SparseArray<StoreCursor>());
@@ -240,7 +240,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 
 		// Drop cursor from storeCursors map
-		getStoreCursor(smartStore).remove(cursorId);
+		getSmartStoreCursors(smartStore).remove(cursorId);
 		callbackContext.success();		
 	}
 
@@ -261,7 +261,7 @@ public class SmartStorePlugin extends ForcePlugin {
 
 		// Get cursor
 		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
-		final StoreCursor storeCursor = getStoreCursor(smartStore).get(cursorId);
+		final StoreCursor storeCursor = getSmartStoreCursors(smartStore).get(cursorId);
 		if (storeCursor == null) {
 			callbackContext.error("Invalid cursor id");
 		}
@@ -429,7 +429,7 @@ public class SmartStorePlugin extends ForcePlugin {
 
 		// Build store cursor
 		final StoreCursor storeCursor = new StoreCursor(smartStore, querySpec);
-		getStoreCursor(smartStore).put(storeCursor.cursorId, storeCursor);
+		getSmartStoreCursors(smartStore).put(storeCursor.cursorId, storeCursor);
 
 		// Build json result
 		JSONObject result = storeCursor.getData(smartStore);
