@@ -124,12 +124,6 @@ public class MruSyncDownTarget extends SyncDownTarget {
         return null;
     }
 
-    @Override
-    public int getTotalSize() {
-        return totalSize;
-    }
-
-
     /**
      * @return field list for this target
      */
