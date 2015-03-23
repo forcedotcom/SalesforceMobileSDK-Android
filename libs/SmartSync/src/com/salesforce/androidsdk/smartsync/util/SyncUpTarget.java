@@ -26,21 +26,16 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
-import android.text.TextUtils;
-import android.util.Log;
-
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
-import java.text.ParseException;
+import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.Set;
 
@@ -49,18 +44,7 @@ import java.util.Set;
  * - what records to upload to server
  * - how to upload those records
  */
-public class SyncUpTarget implements SyncTarget {
-
-    // Constants
-    public static final String ANDROID_IMPL = "androidImpl";
-
-    /**
-     * Build default SyncUpTarget
-     * @return
-     */
-    public static SyncUpTarget defaultSyncUpTarget() {
-        return new SyncUpTarget();
-    }
+public class SyncUpTarget extends SyncTarget {
 
     /**
      * Build SyncUpTarget from json
@@ -73,27 +57,33 @@ public class SyncUpTarget implements SyncTarget {
     public static SyncUpTarget fromJSON(JSONObject target) throws JSONException {
         // Default sync up target
         if (target == null || target.isNull(ANDROID_IMPL) || SyncUpTarget.class.getName().equals(target.getString(ANDROID_IMPL))) {
-            return SyncUpTarget.defaultSyncUpTarget();
+            return new SyncUpTarget(target);
         }
 
         // Non default sync up target
         try {
             Class<? extends SyncUpTarget> implClass = (Class<? extends SyncUpTarget>) Class.forName(target.getString(ANDROID_IMPL));
-            Method method = implClass.getMethod("fromJSON", JSONObject.class);
-            return (SyncUpTarget) method.invoke(null, target);
+            Constructor<? extends SyncUpTarget> constructor = implClass.getConstructor(JSONObject.class);
+            return constructor.newInstance(target);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     /**
-     * @return json representation of target
+     * Construct SyncDownTarget
+     */
+    public SyncUpTarget() {
+        super();
+    }
+
+    /**
+     * Construct SyncUpTarget from json
+     * @param target
      * @throws JSONException
      */
-    public JSONObject asJSON() throws JSONException {
-        JSONObject target = new JSONObject();
-        target.put(ANDROID_IMPL, getClass().getName());
-        return target;
+    public SyncUpTarget(JSONObject target) throws JSONException {
+        super(target);
     }
 
     /**

@@ -609,7 +609,7 @@ public class SyncManagerTest extends ManagerTestCase {
 		String idsClause = "('" + TextUtils.join("', '", idToNames.keySet()) + "')";
 		
 		// Create sync
-		SyncDownTarget target = SoqlSyncDownTarget.targetForSOQLSyncDown("SELECT Id, Name, LastModifiedDate FROM Account WHERE Id IN " + idsClause);
+		SyncDownTarget target = new SoqlSyncDownTarget("SELECT Id, Name, LastModifiedDate FROM Account WHERE Id IN " + idsClause);
         SyncOptions options = SyncOptions.optionsForSyncDown(mergeMode);
 		SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP);
 		long syncId = sync.getId();
@@ -634,7 +634,7 @@ public class SyncManagerTest extends ManagerTestCase {
      * @throws JSONException
      */
     private void trySyncUp(int numberChanges, MergeMode mergeMode) throws JSONException {
-        trySyncUp(SyncUpTarget.defaultSyncUpTarget(), numberChanges, mergeMode);
+        trySyncUp(new SyncUpTarget(), numberChanges, mergeMode);
     }
 	/**
 	 * Sync up helper

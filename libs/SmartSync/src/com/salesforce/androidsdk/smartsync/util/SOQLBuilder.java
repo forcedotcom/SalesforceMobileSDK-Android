@@ -26,11 +26,11 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
-import java.util.HashMap;
-import java.util.List;
-
 import android.net.Uri;
 import android.text.TextUtils;
+
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * Helper class to build a SOQL statement.

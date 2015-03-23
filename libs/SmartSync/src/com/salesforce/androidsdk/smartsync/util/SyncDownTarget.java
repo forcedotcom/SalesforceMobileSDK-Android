@@ -26,35 +26,37 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
-import java.io.IOException;
-import java.lang.reflect.Method;
+import android.util.Log;
+
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
 
 /**
  * Target for sync down:
  * - what records to download from server
  * - how to download those records
  */
-public abstract class SyncDownTarget implements SyncTarget {
+public abstract class SyncDownTarget extends SyncTarget {
 
     // Constants
 	public static final String QUERY_TYPE = "type";
-    public static final String ANDROID_IMPL = "androidImpl";
 
     // Fields
 	protected QueryType queryType;
     protected int totalSize; // set during a fetch
 
-	/**
+    /**
 	 * Build SyncDownTarget from json
 	 * @param target as json
 	 * @return
-	 * @throws JSONException 
+	 * @throws JSONException
 	 */
 	@SuppressWarnings("unchecked")
 	public static SyncDownTarget fromJSON(JSONObject target) throws JSONException {
@@ -64,31 +66,47 @@ public abstract class SyncDownTarget implements SyncTarget {
 		QueryType queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
 
         switch (queryType) {
-        case mru:     return MruSyncDownTarget.fromJSON(target);
-        case sosl:    return SoslSyncDownTarget.fromJSON(target);
-        case soql:    return SoqlSyncDownTarget.fromJSON(target);
+        case mru:     return new MruSyncDownTarget(target);
+        case sosl:    return new SoslSyncDownTarget(target);
+        case soql:    return new SoqlSyncDownTarget(target);
         case custom:
         default:
             try {
                 Class<? extends SyncDownTarget> implClass = (Class<? extends SyncDownTarget>) Class.forName(target.getString(ANDROID_IMPL));
-                Method method = implClass.getMethod("fromJSON", JSONObject.class);
-                return (SyncDownTarget) method.invoke(null, target);
+                Constructor<? extends SyncDownTarget> constructor = implClass.getConstructor(JSONObject.class);
+                return constructor.newInstance(target);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
 	}
 
-	/**
-	 * @return json representation of target
-	 * @throws JSONException
-	 */
-	public abstract JSONObject asJSON() throws JSONException;
+    /**
+     * Construct SyncDownTarget
+     */
+    public SyncDownTarget() {
+        super();
+    }
 
     /**
-     * @param maxTimeStamp
-     * @return next record fetched
+     * Construct SyncDownTarget from json
+     * @param target
+     * @throws JSONException
      */
+    public SyncDownTarget(JSONObject target) throws JSONException {
+        super(target);
+        queryType = queryType.valueOf(target.getString(QUERY_TYPE));
+    }
+
+    /**
+     * @return json representation of target
+     * @throws JSONException
+     */
+    public JSONObject asJSON() throws JSONException {
+        JSONObject target = super.asJSON();
+        target.put(QUERY_TYPE, queryType.name());
+        return target;
+    }
 
     /**
      * Start fetching records conforming to target
@@ -119,6 +137,33 @@ public abstract class SyncDownTarget implements SyncTarget {
      */
     public QueryType getQueryType() {
         return queryType;
+    }
+
+
+    /**
+     * Gets the latest modification timestamp from the array of records.
+     * @param records
+     * @return latest modification time stamp
+     * @throws JSONException
+     */
+    public long getLatestModificationTimeStamp(JSONArray records) throws JSONException {
+        long maxTimeStamp = -1;
+        for (int i = 0; i < records.length(); i++) {
+            String timeStampStr = JSONObjectHelper.optString(records.getJSONObject(i), getModificationDateFieldName());
+            if (timeStampStr == null) {
+                maxTimeStamp = -1;
+                break; // field not present
+            }
+            try {
+                long timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr).getTime();
+                maxTimeStamp = Math.max(timeStamp, maxTimeStamp);
+            } catch (Exception e) {
+                Log.w("SyncDownTarget.getLatestModificationTimeStamp", "Could not parse modification date field " + getModificationDateFieldName(), e);
+                maxTimeStamp = -1;
+                break;
+            }
+        }
+        return maxTimeStamp;
     }
 
     /**

@@ -49,50 +49,36 @@ public class MruSyncDownTarget extends SyncDownTarget {
 	public static final String SOBJECT_TYPE = "sobjectType";	
 	private List<String> fieldlist;
 	private String objectType;
-	
-	/**
-	 * Build SyncDownTarget from json
-	 * @param target as json
-	 * @return
-	 * @throws JSONException 
-	 */
-	public static SyncDownTarget fromJSON(JSONObject target) throws JSONException {
-		if (target == null)
-			return null;
-		
-		List<String> fieldlist = toList(target.optJSONArray(FIELDLIST));
-		String objectType = target.optString(SOBJECT_TYPE, null);
-		return new MruSyncDownTarget(fieldlist, objectType);
+
+    /**
+     * Construct MruSyncDownTarget from json
+     * @param target
+     * @throws JSONException
+     */
+	public MruSyncDownTarget(JSONObject target) throws JSONException {
+        super(target);
+        this.fieldlist = toList(target.getJSONArray(FIELDLIST));
+        this.objectType = target.getString(SOBJECT_TYPE);
 	}
 
-	/**
-	 * Build SyncDownTarget for mru target
-	 * @param objectType
-	 * @param fieldlist
-	 * @return
-	 */
-	public static SyncDownTarget targetForMRUSyncDown(String objectType, List<String> fieldlist) {
-		return new MruSyncDownTarget(fieldlist, objectType);
-	}
-	
 	/**
 	 * Constructor
 	 * @param fieldlist
 	 * @param objectType
 	 */
-	public MruSyncDownTarget(List<String> fieldlist, String objectType) {
-		this.queryType = QueryType.mru;
-		this.fieldlist = fieldlist;
-		this.objectType = objectType;
+	public MruSyncDownTarget(List<String> fieldlist, String objectType) throws JSONException {
+        super();
+        this.queryType = QueryType.mru;
+        this.fieldlist = fieldlist;
+        this.objectType = objectType;
 	}
-	
-	/**
-	 * @return json representation of target
-	 * @throws JSONException
-	 */
-	public JSONObject asJSON() throws JSONException {
-		JSONObject target = new JSONObject();
-		target.put(QUERY_TYPE, queryType.name());
+
+    /**
+     * @return json representation of target
+     * @throws JSONException
+     */
+    public JSONObject asJSON() throws JSONException {
+        JSONObject target = super.asJSON();
 		target.put(FIELDLIST, new JSONArray(fieldlist));
 		target.put(SOBJECT_TYPE, objectType);
 		return target;

@@ -48,35 +48,23 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     private String nextRecordsUrl;
 
     /**
-	 * Build SyncDownTarget from json
-	 * @param target as json
-	 * @return
-	 * @throws JSONException 
-	 */
-	public static SyncDownTarget fromJSON(JSONObject target) throws JSONException {
-		if (target == null)
-			return null;
-
-		String query = target.getString(QUERY);
-		return new SoqlSyncDownTarget(query);
-	}
+     * Construct SoqlSyncDownTarget from json
+     * @param target
+     * @throws JSONException
+     */
+    public SoqlSyncDownTarget(JSONObject target) throws JSONException {
+        super(target);
+        this.query = target.getString(QUERY);
+    }
 
 	/**
-	 * Build SyncDownTarget for soql target
-	 * @param soql
-	 * @return
-	 */
-	public static SoqlSyncDownTarget targetForSOQLSyncDown(String soql) {
-		return new SoqlSyncDownTarget(soql);
-	}
-	
-	/**
-     * Private constructor
+     * Construct SoqlSyncDownTarget from soql query
 	 * @param query
 	 */
 	public SoqlSyncDownTarget(String query) {
-		this.queryType = QueryType.soql;
-		this.query = query;
+        super();
+        this.queryType = QueryType.soql;
+        this.query = query;
 	}
 	
 	/**
@@ -84,8 +72,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 	 * @throws JSONException
 	 */
 	public JSONObject asJSON() throws JSONException {
-		JSONObject target = new JSONObject();
-		target.put(QUERY_TYPE, queryType.name());
+		JSONObject target = super.asJSON();
         target.put(QUERY, query);
 		return target;
 	}
