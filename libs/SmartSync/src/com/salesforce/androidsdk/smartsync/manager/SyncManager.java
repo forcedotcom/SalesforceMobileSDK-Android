@@ -362,8 +362,8 @@ public class SyncManager {
 
         // Getting type and id
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
-        final String objectId = record.getString(Constants.ID);
-        final String lastModStr = record.optString(Constants.LAST_MODIFIED_DATE);
+        final String objectId = record.getString(target.getIdFieldName());
+        final String lastModStr = record.optString(target.getModificationDateFieldName());
 
         /*
          * Checks if we are attempting to update a record that has been updated
@@ -385,7 +385,7 @@ public class SyncManager {
         Map<String, Object> fields = new HashMap<String, Object>();
         if (action == Action.create || action == Action.update) {
             for (String fieldName : fieldlist) {
-                if (!fieldName.equals(Constants.ID) && !fieldName.equals(Constants.LAST_MODIFIED_DATE)) {
+                if (!fieldName.equals(target.getIdFieldName()) && !fieldName.equals(target.MODIFICATION_DATE_FIELD_NAME)) {
                     fields.put(fieldName, SmartStore.project(record, fieldName));
                 }
             }
@@ -396,7 +396,7 @@ public class SyncManager {
             case create:
                 String recordServerId = target.createOnServer(this, objectType, fields);
                 if (recordServerId != null) {
-                    record.put(Constants.ID, recordServerId);
+                    record.put(target.getIdFieldName(), recordServerId);
                     cleanAndSaveRecord(soupName, record);
                 }
                 break;
@@ -439,7 +439,7 @@ public class SyncManager {
             // Save to smartstore
             saveRecordsToSmartStore(soupName, records, mergeMode);
             countSaved += records.length();
-            maxTimeStamp = Math.max(maxTimeStamp, getMaxTimeStamp(records));
+            maxTimeStamp = Math.max(maxTimeStamp, target.getLatestModificationTimeStamp(records));
 
             // Update sync status
             if (countSaved < totalSize)
@@ -450,26 +450,6 @@ public class SyncManager {
         }
         sync.setMaxTimeStamp(maxTimeStamp);
 	}
-
-    private long getMaxTimeStamp(JSONArray jsonArray) throws JSONException {
-        long maxTimeStamp = UNCHANGED;
-        for (int i = 0; i < jsonArray.length(); i++) {
-            String timeStampStr = JSONObjectHelper.optString(jsonArray.getJSONObject(i), Constants.LAST_MODIFIED_DATE);
-            if (timeStampStr == null) {
-                maxTimeStamp = UNCHANGED;
-                break; // LastModifiedDate field not present
-            }
-            try {
-                long timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr).getTime();
-                maxTimeStamp = Math.max(timeStamp, maxTimeStamp);
-            } catch (Exception e) {
-                Log.w("SmartSync.getMaxTimeStamp", "Could not parse LastModifiedDate", e);
-                maxTimeStamp = UNCHANGED;
-                break;
-            }
-        }
-        return maxTimeStamp;
-    }
 
     private Set<String> toSet(JSONArray jsonArray) throws JSONException {
         Set<String> set = new HashSet<String>();

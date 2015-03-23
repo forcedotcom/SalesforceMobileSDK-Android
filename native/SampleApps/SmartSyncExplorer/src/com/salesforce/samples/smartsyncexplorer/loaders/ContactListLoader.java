@@ -123,9 +123,10 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 * Pushes local changes up to the server.
 	 */
 	public synchronized void syncUp() {
-        final SyncUpTarget target = SyncUpTarget.defaultSyncUpTarget();
-		final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS_SYNC_UP),
-				MergeMode.LEAVE_IF_CHANGED);
+        final SyncUpTarget target = new SyncUpTarget();
+        final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS_SYNC_UP),
+                MergeMode.LEAVE_IF_CHANGED);
+
 		try {
 			syncMgr.syncUp(target, options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
 
@@ -162,7 +163,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
                 final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
                 final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS_SYNC_DOWN)
                         .from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
-                final SyncDownTarget target = SoqlSyncDownTarget.targetForSOQLSyncDown(soqlQuery);
+                final SyncDownTarget target = new SoqlSyncDownTarget(soqlQuery);
                 final SyncState sync = syncMgr.syncDown(target, options,
                 		ContactListLoader.CONTACT_SOUP, callback);
                 syncId = sync.getId();

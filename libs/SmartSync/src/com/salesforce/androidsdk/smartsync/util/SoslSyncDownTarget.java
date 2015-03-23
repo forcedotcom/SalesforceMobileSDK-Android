@@ -43,49 +43,36 @@ public class SoslSyncDownTarget extends SyncDownTarget {
 	
 	public static final String QUERY = "query";
 	private String query;
-	
-	/**
-	 * Build SyncDownTarget from json
-	 * @param target as json
-	 * @return
-	 * @throws JSONException 
-	 */
-	public static SyncDownTarget fromJSON(JSONObject target) throws JSONException {
-		if (target == null)
-			return null;
-		
-		String query = target.getString(QUERY);
-		return new SoslSyncDownTarget(query);
-	}
+
+    /**
+     * Construct SoslSyncDownTarget from json
+     * @param target
+     * @throws JSONException
+     */
+    public SoslSyncDownTarget(JSONObject target) throws JSONException {
+        super(target);
+        this.query = target.getString(QUERY);
+    }
 
 	/**
-	 * Build SyncDownTarget for sosl target
-	 * @param sosl
-	 * @return
-	 */
-	public static SyncDownTarget targetForSOSLSyncDown(String sosl) {
-		return new SoslSyncDownTarget(sosl);
-	}
-
-	/**
-     * Private constructor
+     * Construct SoslSyncDownTarget from sosl query
 	 * @param query
 	 */
-	private SoslSyncDownTarget(String query) {
-		this.queryType = QueryType.sosl;
-		this.query = query;
+	public SoslSyncDownTarget(String query) {
+        super();
+        this.queryType = QueryType.soql;
+        this.query = query;
 	}
-	
-	/**
-	 * @return json representation of target
-	 * @throws JSONException
-	 */
-	public JSONObject asJSON() throws JSONException {
-		JSONObject target = new JSONObject();
-		target.put(QUERY_TYPE, queryType.name());
-		target.put(QUERY, query);
-		return target;
-	}
+
+    /**
+     * @return json representation of target
+     * @throws JSONException
+     */
+    public JSONObject asJSON() throws JSONException {
+        JSONObject target = super.asJSON();
+        target.put(QUERY, query);
+        return target;
+    }
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {

@@ -42,7 +42,6 @@ import java.util.Map;
  */
 public class TestSyncUpTarget extends SyncUpTarget {
 
-    public static final String FAIL_FETCH_DATE = "FAIL_FETCH_DATE";
     public static final String FAIL_SYNC = "FAIL_SYNC";
 
     private static int seq = 0;
@@ -50,13 +49,14 @@ public class TestSyncUpTarget extends SyncUpTarget {
 
     private final boolean failSync;
 
-    public TestSyncUpTarget(boolean failSync) {
-        this.failSync = failSync;
+    public TestSyncUpTarget(JSONObject target) throws JSONException {
+        super(target);
+        this.failSync = target.getBoolean(FAIL_SYNC);
     }
 
-    public static SyncUpTarget fromJSON(JSONObject target) throws JSONException {
-        boolean failSync = target.getBoolean(FAIL_SYNC);
-        return new TestSyncUpTarget(failSync);
+    public TestSyncUpTarget(boolean failSync) {
+        super();
+        this.failSync = failSync;
     }
 
     @Override

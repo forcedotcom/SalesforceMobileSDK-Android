@@ -81,45 +81,12 @@ public class ContentSoqlSyncDownTarget extends SoqlSyncDownTarget {
     private String queryLocator;
 
     /**
-     * Build SyncDownTarget from json
-     * @param target as json
-     * @return
+     * Construct ContentSoqlSyncDownTarget from json
+     * @param target
      * @throws JSONException
      */
-    public static SyncDownTarget fromJSON(JSONObject target) throws JSONException {
-        if (target == null)
-            return null;
-
-        String query = target.getString(QUERY);
-        return new ContentSoqlSyncDownTarget(query);
-    }
-
-    /**
-     * Build SyncDownTarget for soql target
-     * @param soql
-     * @return
-     */
-    public static ContentSoqlSyncDownTarget targetForSOQLSyncDown(String soql) {
-        return new ContentSoqlSyncDownTarget(soql);
-    }
-
-    /**
-     * Private constructor
-     * @param query
-     */
-    public ContentSoqlSyncDownTarget(String query) {
-        super(query);
-        this.queryType = QueryType.custom;
-    }
-
-    /**
-     * @return json representation of target
-     * @throws JSONException
-     */
-    public JSONObject asJSON() throws JSONException {
-        JSONObject target = super.asJSON();
-        target.put(ANDROID_IMPL, getClass().getName());
-        return target;
+    public ContentSoqlSyncDownTarget(JSONObject target) throws JSONException {
+        super(target);
     }
 
     @Override

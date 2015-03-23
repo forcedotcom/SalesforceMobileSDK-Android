@@ -30,15 +30,50 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * Target for sync down:
- * - what records to download from server
- * - how to download those records
+ * Abstract super class for SyncUpTarget and SyncDownTarget
  */
-public interface SyncTarget {
+public abstract class SyncTarget {
+
+    public static final String ANDROID_IMPL = "androidImpl";
+    public static final String ID_FIELD_NAME = "idFieldName";
+    public static final String MODIFICATION_DATE_FIELD_NAME = "modificationDateFieldName";
+
+    private String idFieldName;
+    private String modificationDateFieldName;
+
+    public SyncTarget() {
+        idFieldName = Constants.ID;
+        modificationDateFieldName = Constants.LAST_MODIFIED_DATE;
+    }
+
+    public SyncTarget(JSONObject target) throws JSONException {
+        idFieldName = target != null && target.has(ID_FIELD_NAME) ? target.getString(ID_FIELD_NAME) : Constants.ID;
+        modificationDateFieldName = target != null && target.has(MODIFICATION_DATE_FIELD_NAME) ? target.getString(MODIFICATION_DATE_FIELD_NAME) : Constants.LAST_MODIFIED_DATE;
+    }
 
     /**
      * @return json representation of target
      * @throws JSONException
      */
-    public JSONObject asJSON() throws JSONException;
+    public JSONObject asJSON() throws JSONException {
+        JSONObject target = new JSONObject();
+        target.put(ANDROID_IMPL, getClass().getName());
+        target.put(ID_FIELD_NAME, idFieldName);
+        target.put(MODIFICATION_DATE_FIELD_NAME, modificationDateFieldName);
+        return target;
+    }
+
+    /**
+     * @return The field name of the ID field of the record.  Defaults to "Id".
+     */
+    public String getIdFieldName() {
+        return idFieldName;
+    }
+
+    /**
+     * @return The field name of the modification date field of the record.  Defaults to "LastModifiedDate".
+     */
+    public String getModificationDateFieldName() {
+        return modificationDateFieldName;
+    }
 }

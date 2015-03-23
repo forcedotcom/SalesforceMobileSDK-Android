@@ -26,11 +26,11 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
+import android.net.Uri;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import android.net.Uri;
 
 /**
  * Helper class to build a SOSL statement.
