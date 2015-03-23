@@ -385,7 +385,8 @@ public class SyncManager {
         Map<String, Object> fields = new HashMap<String, Object>();
         if (action == Action.create || action == Action.update) {
             for (String fieldName : fieldlist) {
-                if (!fieldName.equals(target.getIdFieldName()) && !fieldName.equals(target.MODIFICATION_DATE_FIELD_NAME)) {
+                if (!fieldName.equals(target.getIdFieldName()) &&
+                		!fieldName.equals(SyncUpTarget.MODIFICATION_DATE_FIELD_NAME)) {
                     fields.put(fieldName, SmartStore.project(record, fieldName));
                 }
             }

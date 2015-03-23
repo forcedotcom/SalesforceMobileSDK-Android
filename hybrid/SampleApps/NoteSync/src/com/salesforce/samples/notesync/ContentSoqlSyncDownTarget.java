@@ -26,15 +26,11 @@
  */
 package com.salesforce.samples.notesync;
 
-import android.util.Log;
-import android.util.Xml;
-
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.smartsync.util.Constants;
-import com.salesforce.androidsdk.smartsync.util.SoqlSyncDownTarget;
-import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.http.entity.StringEntity;
 import org.apache.http.protocol.HTTP;
@@ -43,11 +39,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParser;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.Map;
+import android.util.Log;
+import android.util.Xml;
+
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SoqlSyncDownTarget;
 
 /**
  * Target for sync defined by a SOQL query
