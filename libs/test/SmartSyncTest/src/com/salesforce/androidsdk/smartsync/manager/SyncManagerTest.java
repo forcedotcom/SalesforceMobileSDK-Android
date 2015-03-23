@@ -389,7 +389,7 @@ public class SyncManagerTest extends ManagerTestCase {
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
         TestSyncUpTarget target = new TestSyncUpTarget(false);
-        target.setActionCollector(collector);
+        TestSyncUpTarget.setActionCollector(collector);
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
         // Check that db doesn't show entries as locally modified anymore
@@ -423,7 +423,7 @@ public class SyncManagerTest extends ManagerTestCase {
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
         TestSyncUpTarget target = new TestSyncUpTarget(false);
-        target.setActionCollector(collector);
+        TestSyncUpTarget.setActionCollector(collector);
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
         // Check that db doesn't show entries as locally created anymore and that they use sfdc id
@@ -464,7 +464,7 @@ public class SyncManagerTest extends ManagerTestCase {
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
         TestSyncUpTarget target = new TestSyncUpTarget(false);
-        target.setActionCollector(collector);
+        TestSyncUpTarget.setActionCollector(collector);
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
         // Check that db doesn't contain those entries anymore
@@ -494,7 +494,7 @@ public class SyncManagerTest extends ManagerTestCase {
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
         TestSyncUpTarget target = new TestSyncUpTarget(true);
-        target.setActionCollector(collector);
+        TestSyncUpTarget.setActionCollector(collector);
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
         // Check that db still shows entries as locally modified anymore
@@ -525,7 +525,7 @@ public class SyncManagerTest extends ManagerTestCase {
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
         TestSyncUpTarget target = new TestSyncUpTarget(true);
-        target.setActionCollector(collector);
+        TestSyncUpTarget.setActionCollector(collector);
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
         // Check that db still show show entries as locally created anymore and that they use sfdc id
@@ -563,7 +563,7 @@ public class SyncManagerTest extends ManagerTestCase {
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
         TestSyncUpTarget target = new TestSyncUpTarget(true);
-        target.setActionCollector(collector);
+        TestSyncUpTarget.setActionCollector(collector);
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
         // Check that db doesn't contain those entries anymore
