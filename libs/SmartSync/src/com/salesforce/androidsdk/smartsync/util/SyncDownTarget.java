@@ -95,7 +95,7 @@ public abstract class SyncDownTarget extends SyncTarget {
      */
     public SyncDownTarget(JSONObject target) throws JSONException {
         super(target);
-        queryType = queryType.valueOf(target.getString(QUERY_TYPE));
+        queryType = QueryType.valueOf(target.getString(QUERY_TYPE));
     }
 
     /**
