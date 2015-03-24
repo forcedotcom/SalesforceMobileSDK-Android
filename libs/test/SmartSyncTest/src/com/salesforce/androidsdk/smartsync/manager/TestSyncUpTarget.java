@@ -42,68 +42,84 @@ import java.util.Map;
  */
 public class TestSyncUpTarget extends SyncUpTarget {
 
-    public static final String FAIL_SYNC = "FAIL_SYNC";
+    public static final String SYNC_BEHAVIOR = "SYNC_BEHAVIOR";
 
     private static int seq = 0;
     private static ActionCollector actionCollector;
 
-    private final boolean failSync;
+    private final SyncBehavior syncBehavior;
+
+
+    public enum SyncBehavior {
+        SOFT_FAIL_ON_SYNC, // doesn't update server but doesn't throw exception, so sync should not end up in failed state
+        HARD_FAIL_ON_SYNC, // doesn't update server and throw exception, so sync should end up in failed state
+        NO_FAIL;
+    }
 
     public TestSyncUpTarget(JSONObject target) throws JSONException {
         super(target);
-        this.failSync = target.getBoolean(FAIL_SYNC);
+        this.syncBehavior = SyncBehavior.valueOf(target.getString(SYNC_BEHAVIOR));
     }
 
-    public TestSyncUpTarget(boolean failSync) {
+    public TestSyncUpTarget(SyncBehavior syncBehavior) {
         super();
-        this.failSync = failSync;
+        this.syncBehavior = syncBehavior;
     }
 
     @Override
     public JSONObject asJSON() throws JSONException {
         JSONObject target = new JSONObject();
         target.put(ANDROID_IMPL, getClass().getName());
-        target.put(FAIL_SYNC, failSync);
+        target.put(SYNC_BEHAVIOR, syncBehavior.name());
         return target;
     }
 
     @Override
     public String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws JSONException, IOException {
-        if (failSync) {
-            return null;
+        switch (syncBehavior) {
+            case SOFT_FAIL_ON_SYNC:
+                return null;
+            case HARD_FAIL_ON_SYNC:
+                throw new RuntimeException("create hard fail");
+            default: // case NO_FAIL:
+                String id = "ID." + seq++;
+                if (actionCollector != null) {
+                    actionCollector.createdRecordIds.add(id);
+                }
+                return id;
         }
-
-        String id = "ID." + seq++;
-        if (actionCollector != null) {
-            actionCollector.createdRecordIds.add(id);
-        }
-        return id;
     }
 
     @Override
     public boolean deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws JSONException, IOException {
-        if (failSync) {
-            return false;
-        }
+        switch (syncBehavior) {
+            case SOFT_FAIL_ON_SYNC:
+                return false;
+            case HARD_FAIL_ON_SYNC:
+                throw new RuntimeException("delete hard fail");
+            default: // case NO_FAIL:
+                if (actionCollector != null) {
+                    actionCollector.deletedRecordIds.add(objectId);
+                }
 
-        if (actionCollector != null) {
-            actionCollector.deletedRecordIds.add(objectId);
+                return true;
         }
-
-        return true;
     }
 
     @Override
     public boolean updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws JSONException, IOException {
-        if (failSync) {
-            return false;
-        }
+        switch (syncBehavior) {
+            case SOFT_FAIL_ON_SYNC:
+                return false;
+            case HARD_FAIL_ON_SYNC:
+                throw new RuntimeException("update hard fail");
+            default: // case NO_FAIL:
+                if (actionCollector != null) {
+                    actionCollector.updatedRecordIds.add(objectId);
+                }
 
-        if (actionCollector != null) {
-            actionCollector.updatedRecordIds.add(objectId);
+                return true;
         }
-
-        return true;
     }
 
     //
