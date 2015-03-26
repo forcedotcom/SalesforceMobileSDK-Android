@@ -48,7 +48,7 @@ public class SmartSyncJSTest extends JSTestCase {
     
     @Override
     public List<String> getTestNames() {
-		return Arrays.asList(new String[] { 
+		return Arrays.asList(new String[] {
 				"testStoreCacheInit",
 				"testStoreCacheRetrieve",
 				"testStoreCacheSave",
@@ -56,6 +56,7 @@ public class SmartSyncJSTest extends JSTestCase {
 				"testStoreCacheRemove",
 				"testStoreCacheFind",
 				"testStoreCacheAddLocalFields",
+                "testStoreCacheWithGlobalStore",
 				"testSObjectTypeDescribe",
 				"testSObjectTypeGetMetadata",
 				"testSObjectTypeDescribeLayout",
@@ -91,16 +92,18 @@ public class SmartSyncJSTest extends JSTestCase {
 				"testFetchSObjects",
 				"testSObjectCollectionFetch",
 				"testSyncDown",
+                "testSyncDownToGlobalStore",
                 "testSyncDownWithNoOverwrite",
                 "testReSync",
 				"testSyncUpLocallyUpdated",
+                "testSyncUpLocallyUpdatedWithGlobalStore",
 				"testSyncUpLocallyUpdatedWithNoOverwrite",
 				"testSyncUpLocallyDeleted",
 				"testSyncUpLocallyDeletedWithNoOverwrite",
 				"testSyncUpLocallyCreated"
 				});
 	}
-    
+
     public void testStoreCacheInit() {
         runTest("testStoreCacheInit");
     }
@@ -127,6 +130,10 @@ public class SmartSyncJSTest extends JSTestCase {
 
     public void testStoreCacheAddLocalFields() {
         runTest("testStoreCacheAddLocalFields");
+    }
+
+    public void testStoreCacheWithGlobalStore() {
+        runTest("testStoreCacheWithGlobalStore");
     }
 
     public void testSObjectTypeDescribe() {
@@ -269,6 +276,10 @@ public class SmartSyncJSTest extends JSTestCase {
         runTest("testSyncDown");
     }
 
+    public void testSyncDownToGlobalStore() {
+        runTest("testSyncDownToGlobalStore");
+    }
+
     public void testSyncDownWithNoOverwrite() {
         runTest("testSyncDownWithNoOverwrite");
     }
@@ -279,6 +290,10 @@ public class SmartSyncJSTest extends JSTestCase {
 
     public void testSyncUpLocallyUpdated() {
         runTest("testSyncUpLocallyUpdated");
+    }
+
+    public void testSyncUpLocallyUpdatedWithGlobalStore() {
+        runTest("testSyncUpLocallyUpdatedWithGlobalStore");
     }
 
     public void testSyncUpLocallyUpdatedWithNoOverwrite() {
