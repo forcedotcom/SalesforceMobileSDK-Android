@@ -42,12 +42,12 @@ public class SmartStoreJSTest extends JSTestCase {
     
     @Override
     protected int getMaxRuntimeInSecondsForTest(String testName) {
-    	return 10;
+        return 10;
     }
 
     @Override
     public List<String> getTestNames() {
-		return Arrays.asList(new String[] {
+        return Arrays.asList(new String[] {
                 "testGetDatabaseSize",
                 "testRegisterRemoveSoup",
                 "testRegisterRemoveSoupGlobalStore",
@@ -89,11 +89,11 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testReIndexSoup",
                 "testClearSoup"
         });
-	}
+    }
     
 
     public void testGetDatabaseSize() {
-    	runTest("testGetDatabaseSize");
+        runTest("testGetDatabaseSize");
     }
 
     public void testRegisterRemoveSoup()  {
@@ -197,11 +197,11 @@ public class SmartStoreJSTest extends JSTestCase {
     }
     
     public void testSmartQueryWithCount() {
-    	runTest("testSmartQueryWithCount");
+        runTest("testSmartQueryWithCount");
     }
 
     public void testSmartQueryWithSpecialFields() {
-    	runTest("testSmartQueryWithSpecialFields");
+        runTest("testSmartQueryWithSpecialFields");
     }
 
     public void testSmartQueryWithIntegerCompare() {
@@ -225,11 +225,11 @@ public class SmartStoreJSTest extends JSTestCase {
     }
 
     public void testGetSoupIndexSpecs() {
-    	runTest("testGetSoupIndexSpecs");
+        runTest("testGetSoupIndexSpecs");
     }
     
     public void testGetSoupIndexSpecsWithBogusSoupName() {
-    	runTest("testGetSoupIndexSpecsWithBogusSoupName");
+        runTest("testGetSoupIndexSpecsWithBogusSoupName");
     }
     
 

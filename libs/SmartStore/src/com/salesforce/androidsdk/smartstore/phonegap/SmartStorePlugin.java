@@ -185,7 +185,8 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SmartStore smartStore = getSmartStore(arg0);
+
 		JSONArray jsonSoupEntryIds = arg0.getJSONArray(ENTRY_IDS);
 		Long[] soupEntryIds = new Long[jsonSoupEntryIds.length()];
 		for (int i = 0; i < jsonSoupEntryIds.length(); i++) {
@@ -193,7 +194,6 @@ public class SmartStorePlugin extends ForcePlugin {
 		}
 		
 		// Run remove
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 		smartStore.delete(soupName, soupEntryIds);
 		callbackContext.success();
 	}
@@ -210,7 +210,8 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SmartStore smartStore = getSmartStore(arg0);
+
 		JSONArray jsonSoupEntryIds = arg0.getJSONArray(ENTRY_IDS);
 		Long[] soupEntryIds = new Long[jsonSoupEntryIds.length()];
 		for (int i = 0; i < jsonSoupEntryIds.length(); i++) {
@@ -218,7 +219,6 @@ public class SmartStorePlugin extends ForcePlugin {
 		}
 		
 		// Run retrieve
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 		JSONArray result = smartStore.retrieve(soupName, soupEntryIds);
 		PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, result);
 		callbackContext.sendPluginResult(pluginResult);
@@ -236,8 +236,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		Integer cursorId = arg0.getInt(CURSOR_ID);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
+        final SmartStore smartStore = getSmartStore(arg0);
 
 		// Drop cursor from storeCursors map
 		getSmartStoreCursors(smartStore).remove(cursorId);
@@ -257,10 +256,9 @@ public class SmartStorePlugin extends ForcePlugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		Integer cursorId = arg0.getInt(CURSOR_ID);
 		Integer index = arg0.getInt(INDEX);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SmartStore smartStore = getSmartStore(arg0);
 
 		// Get cursor
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 		final StoreCursor storeCursor = getSmartStoreCursors(smartStore).get(cursorId);
 		if (storeCursor == null) {
 			callbackContext.error("Invalid cursor id");
@@ -301,10 +299,9 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SmartStore smartStore = getSmartStore(arg0);
 
 		// Run upsert
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 		boolean exists = smartStore.hasSoup(soupName);
 		PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, exists);
 		callbackContext.sendPluginResult(pluginResult);
@@ -322,7 +319,8 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SmartStore smartStore = getSmartStore(arg0);
+
 		JSONArray entriesJson = arg0.getJSONArray(ENTRIES);
 		String externalIdPath = arg0.getString(EXTERNAL_ID_PATH);
 		List<JSONObject> entries = new ArrayList<JSONObject>();
@@ -331,7 +329,6 @@ public class SmartStorePlugin extends ForcePlugin {
 		}
 
 		// Run upsert
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 		smartStore.beginTransaction();
 		try {
 			JSONArray results = new JSONArray();			
@@ -359,7 +356,8 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.isNull(SOUP_NAME) ? null : arg0.getString(SOUP_NAME);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SmartStore smartStore = getSmartStore(arg0);
+
 		List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
 		JSONArray indexesJson = arg0.getJSONArray(INDEXES);
 		for (int i = 0; i < indexesJson.length(); i++) {
@@ -368,7 +366,6 @@ public class SmartStorePlugin extends ForcePlugin {
 		}
 
 		// Run register
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 		smartStore.registerSoup(soupName, indexSpecs.toArray(new IndexSpec[0]));
 		callbackContext.success(soupName);
 	}
@@ -385,9 +382,9 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SmartStore smartStore = getSmartStore(arg0);
+
 		JSONObject querySpecJson = arg0.getJSONObject(QUERY_SPEC);
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 		QuerySpec querySpec = QuerySpec.fromJSON(soupName, querySpecJson);
 		if (querySpec.queryType == QueryType.smart) {
 			throw new RuntimeException("Smart queries can only be run through runSmartQuery");
@@ -407,8 +404,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		JSONObject querySpecJson = arg0.getJSONObject(QUERY_SPEC);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
+        final SmartStore smartStore = getSmartStore(arg0);
 		QuerySpec querySpec = QuerySpec.fromJSON(null, querySpecJson);
 		if (querySpec.queryType != QueryType.smart) {
 			throw new RuntimeException("runSmartQuery can only run smart queries");
@@ -450,10 +446,9 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SmartStore smartStore = getSmartStore(arg0);
 
 		// Run remove
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 		smartStore.dropSoup(soupName);
 		callbackContext.success();
 	}
@@ -470,10 +465,9 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SmartStore smartStore = getSmartStore(arg0);
 
 		// Run clear
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 		smartStore.clearSoup(soupName);
 		callbackContext.success();
 	}
@@ -489,11 +483,7 @@ public class SmartStorePlugin extends ForcePlugin {
 
 		// Parse args
 		final JSONObject arg0 = args.optJSONObject(0);
-		boolean isGlobal = false;
-		if (arg0 != null) {
-			isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
-		}
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
+		final SmartStore smartStore = getSmartStore(arg0);
 		int databaseSize = smartStore.getDatabaseSize();
 		callbackContext.success(databaseSize);
 	}	
@@ -510,7 +500,8 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SmartStore smartStore = getSmartStore(arg0);
+
 		List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
 		JSONArray indexesJson = arg0.getJSONArray(INDEXES);
 		for (int i = 0; i < indexesJson.length(); i++) {
@@ -520,7 +511,6 @@ public class SmartStorePlugin extends ForcePlugin {
 		boolean reIndexData = arg0.getBoolean(RE_INDEX_DATA);
 
 		// Run register
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 		smartStore.alterSoup(soupName, indexSpecs.toArray(new IndexSpec[0]), reIndexData);
 		callbackContext.success(soupName);
 	}	
@@ -537,7 +527,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SmartStore smartStore = getSmartStore(arg0);
 		List<String> indexPaths = new ArrayList<String>();
 		JSONArray indexPathsJson = arg0.getJSONArray(PATHS);
 		for (int i = 0; i < indexPathsJson.length(); i++) {
@@ -545,7 +535,6 @@ public class SmartStorePlugin extends ForcePlugin {
 		}
 
 		// Run register
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 		smartStore.reIndexSoup(soupName, indexPaths.toArray(new String[0]), true);
 		callbackContext.success(soupName);
 	}
@@ -562,10 +551,9 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
-		boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SmartStore smartStore = getSmartStore(arg0);
 
 		// Get soup index specs
-		final SmartStore smartStore = (isGlobal ? getGlobalSmartStore() : getUserSmartStore());
 		IndexSpec[] indexSpecs = smartStore.getSoupIndexSpecs(soupName);
 		JSONArray indexSpecsJson = new JSONArray();
 		for (int i = 0; i < indexSpecs.length; i++) {
@@ -576,13 +564,18 @@ public class SmartStorePlugin extends ForcePlugin {
 			indexSpecsJson.put(indexSpecJson);
 		}
 		callbackContext.success(indexSpecsJson);
-	}	
-
-	private SmartStore getUserSmartStore() {
-		return SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore();
 	}
 
-	private SmartStore getGlobalSmartStore() {
-		return SalesforceSDKManagerWithSmartStore.getInstance().getGlobalSmartStore(null);
-	}
+    /**
+     * Return smartstore to use
+     * @param arg0 first argument passed in plugin call
+     * @return
+     */
+    private SmartStore getSmartStore(JSONObject arg0) {
+        boolean isGlobal = arg0 != null ? arg0.optBoolean(IS_GLOBAL_STORE, false) : false;
+        return (isGlobal
+                ? SalesforceSDKManagerWithSmartStore.getInstance().getGlobalSmartStore()
+                : SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore());
+    }
+
 }

@@ -52,6 +52,7 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
@@ -79,7 +80,7 @@ public class SyncManager {
     public static final String LOCAL = "__local__";
 
     // Static member
-    private static Map<String, SyncManager> INSTANCES;
+    private static Map<String, SyncManager> INSTANCES = new HashMap<String, SyncManager>();
 
     // Members
     public final String apiVersion;
@@ -87,8 +88,29 @@ public class SyncManager {
 	private SmartStore smartStore;
 	private RestClient restClient;
 
-	/**
+    /**
+     * Private constructor
+     * @param smartStore
+     */
+    private SyncManager(SmartStore smartStore) {
+        apiVersion = ApiVersionStrings.VERSION_NUMBER;
+        this.smartStore = smartStore;
+        SyncState.setupSyncsSoupIfNeeded(smartStore);
+    }
+
+    /**
+     * Returns the instance of this class associated with current user.
+     * Sync manager returns is ready to use.
+     *
+     * @return Instance of this class.
+     */
+    public static synchronized SyncManager getInstance() {
+        return getInstance(null, null);
+    }
+
+    /**
      * Returns the instance of this class associated with this user account.
+     * Sync manager returns is ready to use.
      *
      * @param account User account.
      * @return Instance of this class.
@@ -99,6 +121,7 @@ public class SyncManager {
 
     /**
      * Returns the instance of this class associated with this user and community.
+     * Sync manager returned is ready to use.
      *
      * @param account User account.
      * @param communityId Community ID.
@@ -108,62 +131,40 @@ public class SyncManager {
         if (account == null) {
             account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
         }
-        if (account == null) {
-            return null;
-        }
-        String uniqueId = account.getUserId();
-        if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
-            communityId = null;
-        }
-        if (!TextUtils.isEmpty(communityId)) {
-            uniqueId = uniqueId + communityId;
-        }
-        SyncManager instance = null;
-        if (INSTANCES == null) {
-            INSTANCES = new HashMap<String, SyncManager>();
-            instance = new SyncManager(account, communityId);
-            INSTANCES.put(uniqueId, instance);
-        } else {
-            instance = INSTANCES.get(uniqueId);
-        }
+
+        SmartStore smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
+        SyncManager syncManager = getInstanceForStore(smartStore);
+
+        // Setting up rest client
+        RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
+        syncManager.setRestClient(restClient);
+
+        return syncManager;
+    }
+
+    /**
+     * Returns the instance of this class associated with this smartstore.
+     * Sync manager returned might not be ready to use.
+     * Call getRestClient() to see if it has a rest client and set one up if needed before doing any sync.
+     *
+     * @param smartStore
+     * @return Instance of this class.
+     */
+    public static synchronized SyncManager getInstanceForStore(SmartStore smartStore) {
+        SyncManager instance = INSTANCES.get(smartStore.getDatabase().getPath());
         if (instance == null) {
-            instance = new SyncManager(account, communityId);
-            INSTANCES.put(uniqueId, instance);
+            instance = new SyncManager(smartStore);
+            INSTANCES.put(smartStore.getDatabase().getPath(), instance);
         }
+
         return instance;
     }
 
     /**
-     * Resets the Sync manager associated with this user account.
-     *
-     * @param account User account.
+     * Resets all the sync managers
      */
-    public static synchronized void reset(UserAccount account) {
-        reset(account, null);
-    }
-
-    /**
-     * Resets the Sync manager associated with this user and community.
-     *
-     * @param account User account.
-     * @param communityId Community ID.
-     */
-    public static synchronized void reset(UserAccount account, String communityId) {
-        if (account == null) {
-            account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
-        }
-        if (account != null) {
-            String uniqueId = account.getUserId();
-            if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
-                communityId = null;
-            }
-            if (!TextUtils.isEmpty(communityId)) {
-                uniqueId = uniqueId + communityId;
-            }
-            if (INSTANCES != null) {
-                INSTANCES.remove(uniqueId);
-            }
-        }
+    public static synchronized void reset() {
+        INSTANCES.clear();
     }
 
     /**
@@ -234,22 +235,25 @@ public class SyncManager {
 	public void runSync(final SyncState sync, final SyncUpdateCallback callback) {
 		updateSync(sync, SyncState.Status.RUNNING, 0, callback);
 		threadPool.execute(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					switch(sync.getType()) {
-					case syncDown: syncDown(sync, callback); break;
-					case syncUp:   syncUp(sync, callback); break;
-					}
-					updateSync(sync, SyncState.Status.DONE, 100, callback);
-				}
-				catch (Exception e) {
-					Log.e("SmartSyncManager:runSync", "Error during sync: " + sync.getId(), e);
-					// Update status to failed
-					updateSync(sync, SyncState.Status.FAILED,  UNCHANGED, callback);
-				}
-			}
-		});
+            @Override
+            public void run() {
+                try {
+                    switch (sync.getType()) {
+                        case syncDown:
+                            syncDown(sync, callback);
+                            break;
+                        case syncUp:
+                            syncUp(sync, callback);
+                            break;
+                    }
+                    updateSync(sync, SyncState.Status.DONE, 100, callback);
+                } catch (Exception e) {
+                    Log.e("SmartSyncManager:runSync", "Error during sync: " + sync.getId(), e);
+                    // Update status to failed
+                    updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
+                }
+            }
+        });
 	}
 
     /**
@@ -266,19 +270,6 @@ public class SyncManager {
     	runSync(sync, callback);
     	return sync;
     }
-
-    /**
-	 * Private parameterized constructor.
-	 *
-	 * @param account User account.
-	 * @param communityId Community ID.
-	 */
-	private SyncManager(UserAccount account, String communityId) {
-	    apiVersion = ApiVersionStrings.VERSION_NUMBER;
-	    smartStore = CacheManager.getInstance(account, communityId).getSmartStore();
-        restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
-		SyncState.setupSyncsSoupIfNeeded(smartStore);
-	}
 
 	/**
      * Update sync with new status, progress, totalSize
@@ -385,8 +376,7 @@ public class SyncManager {
         Map<String, Object> fields = new HashMap<String, Object>();
         if (action == Action.create || action == Action.update) {
             for (String fieldName : fieldlist) {
-                if (!fieldName.equals(target.getIdFieldName()) &&
-                		!fieldName.equals(SyncUpTarget.MODIFICATION_DATE_FIELD_NAME)) {
+                if (!fieldName.equals(target.getIdFieldName()) && !fieldName.equals(target.MODIFICATION_DATE_FIELD_NAME)) {
                     fields.put(fieldName, SmartStore.project(record, fieldName));
                 }
             }
@@ -547,8 +537,7 @@ public class SyncManager {
 
     /**
      * Sets the rest client to be used.
-     * This is primarily used only by tests.
-     * 
+     *
      * @param restClient
      */
     public void setRestClient(RestClient restClient) {
