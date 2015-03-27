@@ -222,12 +222,21 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     }
 
     /**
+     * Return default database used by smart store in the global context
+     * @return SmartStore instance
+     */
+    public SmartStore getGlobalSmartStore() {
+        return getGlobalSmartStore(null);
+    }
+
+    /**
      * Returns the database used by smart store in the global context.
      *
      * @param dbName The database name. This must be a valid file name without a
      * 				 filename extension such as ".db". Pass 'null' for default.
      * @return SmartStore instance.
      */
+
     public SmartStore getGlobalSmartStore(String dbName) {
     	if (TextUtils.isEmpty(dbName)) {
     		dbName = DBOpenHelper.DEFAULT_DB_NAME;

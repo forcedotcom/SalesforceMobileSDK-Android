@@ -43,64 +43,67 @@ public class SmartSyncJSTest extends JSTestCase {
 
     @Override
     protected int getMaxRuntimeInSecondsForTest(String testName) {
-    	return 30;
+        return 30;
     }    
     
     @Override
     public List<String> getTestNames() {
-		return Arrays.asList(new String[] { 
-				"testStoreCacheInit",
-				"testStoreCacheRetrieve",
-				"testStoreCacheSave",
-				"testStoreCacheSaveAll",
-				"testStoreCacheRemove",
-				"testStoreCacheFind",
-				"testStoreCacheAddLocalFields",
-				"testSObjectTypeDescribe",
-				"testSObjectTypeGetMetadata",
-				"testSObjectTypeDescribeLayout",
-				"testSObjectTypeCacheOnlyMode",
-				"testSObjectTypeCacheMerge",
-				"testMultiSObjectTypes",
-				"testSObjectTypeReset",
-				"testSyncRemoteObjectWithCacheCreate",
-				"testSyncRemoteObjectWithCacheRead",
-				"testSyncRemoteObjectWithCacheUpdate",
-				"testSyncRemoteObjectWithCacheDelete",
-				"testSyncSObjectWithServerCreate",
-				"testSyncSObjectWithServerRead",
-				"testSyncSObjectWithServerUpdate",
-				"testSyncSObjectWithServerDelete",
-				"testSyncSObjectCreate",
-				"testSyncSObjectRetrieve",
-				"testSyncSObjectUpdate",
-				"testSyncSObjectDelete",
-				"testSyncSObjectDetectConflictCreate",
-				"testSyncSObjectDetectConflictRetrieve",
-				"testSyncSObjectDetectConflictUpdate",
-				"testSyncSObjectDetectConflictDelete",
-				"testSObjectFetch",
-				"testSObjectSave",
-				"testSObjectDestroy",
-				"testSyncApexRestObjectWithServerCreate",
-				"testSyncApexRestObjectWithServerRead",
-				"testSyncApexRestObjectWithServerUpdate",
-				"testSyncApexRestObjectWithServerDelete",
-				"testFetchApexRestObjectsFromServer",
-				"testFetchSObjectsFromServer",
-				"testFetchSObjects",
-				"testSObjectCollectionFetch",
-				"testSyncDown",
+        return Arrays.asList(new String[] {
+                "testStoreCacheInit",
+                "testStoreCacheRetrieve",
+                "testStoreCacheSave",
+                "testStoreCacheSaveAll",
+                "testStoreCacheRemove",
+                "testStoreCacheFind",
+                "testStoreCacheAddLocalFields",
+                "testStoreCacheWithGlobalStore",
+                "testSObjectTypeDescribe",
+                "testSObjectTypeGetMetadata",
+                "testSObjectTypeDescribeLayout",
+                "testSObjectTypeCacheOnlyMode",
+                "testSObjectTypeCacheMerge",
+                "testMultiSObjectTypes",
+                "testSObjectTypeReset",
+                "testSyncRemoteObjectWithCacheCreate",
+                "testSyncRemoteObjectWithCacheRead",
+                "testSyncRemoteObjectWithCacheUpdate",
+                "testSyncRemoteObjectWithCacheDelete",
+                "testSyncSObjectWithServerCreate",
+                "testSyncSObjectWithServerRead",
+                "testSyncSObjectWithServerUpdate",
+                "testSyncSObjectWithServerDelete",
+                "testSyncSObjectCreate",
+                "testSyncSObjectRetrieve",
+                "testSyncSObjectUpdate",
+                "testSyncSObjectDelete",
+                "testSyncSObjectDetectConflictCreate",
+                "testSyncSObjectDetectConflictRetrieve",
+                "testSyncSObjectDetectConflictUpdate",
+                "testSyncSObjectDetectConflictDelete",
+                "testSObjectFetch",
+                "testSObjectSave",
+                "testSObjectDestroy",
+                "testSyncApexRestObjectWithServerCreate",
+                "testSyncApexRestObjectWithServerRead",
+                "testSyncApexRestObjectWithServerUpdate",
+                "testSyncApexRestObjectWithServerDelete",
+                "testFetchApexRestObjectsFromServer",
+                "testFetchSObjectsFromServer",
+                "testFetchSObjects",
+                "testSObjectCollectionFetch",
+                "testSyncDown",
+                "testSyncDownToGlobalStore",
                 "testSyncDownWithNoOverwrite",
                 "testReSync",
-				"testSyncUpLocallyUpdated",
-				"testSyncUpLocallyUpdatedWithNoOverwrite",
-				"testSyncUpLocallyDeleted",
-				"testSyncUpLocallyDeletedWithNoOverwrite",
-				"testSyncUpLocallyCreated"
-				});
-	}
-    
+                "testSyncUpLocallyUpdated",
+                "testSyncUpLocallyUpdatedWithGlobalStore",
+                "testSyncUpLocallyUpdatedWithNoOverwrite",
+                "testSyncUpLocallyDeleted",
+                "testSyncUpLocallyDeletedWithNoOverwrite",
+                "testSyncUpLocallyCreated"
+            });
+    }
+
     public void testStoreCacheInit() {
         runTest("testStoreCacheInit");
     }
@@ -127,6 +130,10 @@ public class SmartSyncJSTest extends JSTestCase {
 
     public void testStoreCacheAddLocalFields() {
         runTest("testStoreCacheAddLocalFields");
+    }
+
+    public void testStoreCacheWithGlobalStore() {
+        runTest("testStoreCacheWithGlobalStore");
     }
 
     public void testSObjectTypeDescribe() {
@@ -269,6 +276,10 @@ public class SmartSyncJSTest extends JSTestCase {
         runTest("testSyncDown");
     }
 
+    public void testSyncDownToGlobalStore() {
+        runTest("testSyncDownToGlobalStore");
+    }
+
     public void testSyncDownWithNoOverwrite() {
         runTest("testSyncDownWithNoOverwrite");
     }
@@ -279,6 +290,10 @@ public class SmartSyncJSTest extends JSTestCase {
 
     public void testSyncUpLocallyUpdated() {
         runTest("testSyncUpLocallyUpdated");
+    }
+
+    public void testSyncUpLocallyUpdatedWithGlobalStore() {
+        runTest("testSyncUpLocallyUpdatedWithGlobalStore");
     }
 
     public void testSyncUpLocallyUpdatedWithNoOverwrite() {

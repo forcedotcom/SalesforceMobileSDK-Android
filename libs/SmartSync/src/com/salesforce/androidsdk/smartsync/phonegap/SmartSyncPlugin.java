@@ -28,8 +28,14 @@ package com.salesforce.androidsdk.smartsync.phonegap;
 
 import android.util.Log;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.phonegap.ForcePlugin;
 import com.salesforce.androidsdk.phonegap.JavaScriptPluginVersion;
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
@@ -52,6 +58,7 @@ public class SmartSyncPlugin extends ForcePlugin {
     static final String SOUP_NAME = "soupName";
     static final String OPTIONS = "options";
     static final String SYNC_ID = "syncId";
+    private static final String IS_GLOBAL_STORE = "isGlobalStore";
 
     // Event
     private static final String SYNC_EVENT_TYPE = "sync";
@@ -119,12 +126,12 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.optJSONObject(OPTIONS);
-
-        SyncManager syncManager = SyncManager.getInstance(null);
+        final boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        SyncManager syncManager = getSyncManager(isGlobal);
         SyncState sync = syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
             @Override
             public void onUpdate(SyncState sync) {
-                handleSyncUpdate(sync);
+                handleSyncUpdate(sync, isGlobal);
             }
         });
         callbackContext.success(sync.asJSON());
@@ -142,12 +149,12 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.getJSONObject(OPTIONS);
-        
-        SyncManager syncManager = SyncManager.getInstance(null);
+        final boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        SyncManager syncManager = getSyncManager(isGlobal);
         SyncState sync = syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
             @Override
             public void onUpdate(SyncState sync) {
-                handleSyncUpdate(sync);
+                handleSyncUpdate(sync, isGlobal);
             }
         });
         callbackContext.success(sync.asJSON());
@@ -163,10 +170,9 @@ public class SmartSyncPlugin extends ForcePlugin {
         // Parse args
         JSONObject arg0 = args.getJSONObject(0);
         long syncId = arg0.getLong(SYNC_ID);
-        
-        SyncManager syncManager = SyncManager.getInstance(null);
+        boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        SyncManager syncManager = getSyncManager(isGlobal);
         SyncState sync = syncManager.getSyncStatus(syncId);
-        
         callbackContext.success(sync.asJSON());
     }
 
@@ -180,30 +186,56 @@ public class SmartSyncPlugin extends ForcePlugin {
         // Parse args
         JSONObject arg0 = args.getJSONObject(0);
         long syncId = arg0.getLong(SYNC_ID);
-
-        SyncManager syncManager = SyncManager.getInstance(null);
+        final boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        SyncManager syncManager = getSyncManager(isGlobal);
         SyncState sync = syncManager.reSync(syncId, new SyncUpdateCallback() {
             @Override
             public void onUpdate(SyncState sync) {
-                handleSyncUpdate(sync);
+                handleSyncUpdate(sync, isGlobal);
             }
         });
 
         callbackContext.success(sync.asJSON());
     }
 
-    private void handleSyncUpdate(final SyncState sync) {
+    /**
+     * Sync update handler
+     * @param sync
+     */
+    private void handleSyncUpdate(final SyncState sync, final boolean isGlobal) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
                 try {
-                    String syncAsString = sync.asJSON().toString();
+                    String syncAsString = sync.asJSON().put(IS_GLOBAL_STORE, isGlobal).toString();
                     String js = "javascript:document.dispatchEvent(new CustomEvent(\"" + SYNC_EVENT_TYPE + "\", { \"" + DETAIL + "\": " + syncAsString + "}))";
                     webView.loadUrl(js);
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     Log.e("SmartSyncPlugin.handleSyncUpdate", "Failed to dispatch event", e);
                 }
             }
         });
     }
+
+    /**
+     * Return sync manager to use
+     * @param isGlobal
+     * @return
+     */
+    private SyncManager getSyncManager(boolean isGlobal) {
+        final SmartStore smartStore = (isGlobal
+                ? SalesforceSDKManagerWithSmartStore.getInstance().getGlobalSmartStore()
+                : SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore());
+
+        SyncManager syncManager = SyncManager.getInstanceForStore(smartStore);
+
+        // Setting up rest client if necessary
+        if (syncManager.getRestClient() == null) {
+            UserAccount account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
+            RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
+            syncManager.setRestClient(restClient);
+        }
+
+        return syncManager;
+    }
+
 }
