@@ -92,15 +92,15 @@ public class SyncManager {
      * Private constructor
      * @param smartStore
      */
-    private SyncManager(SmartStore smartStore) {
+    private SyncManager(SmartStore smartStore, RestClient restClient) {
         apiVersion = ApiVersionStrings.VERSION_NUMBER;
         this.smartStore = smartStore;
+        this.restClient = restClient;
         SyncState.setupSyncsSoupIfNeeded(smartStore);
     }
 
     /**
      * Returns the instance of this class associated with current user.
-     * Sync manager returns is ready to use.
      *
      * @return Instance of this class.
      */
@@ -110,7 +110,6 @@ public class SyncManager {
 
     /**
      * Returns the instance of this class associated with this user account.
-     * Sync manager returns is ready to use.
      *
      * @param account User account.
      * @return Instance of this class.
@@ -128,33 +127,36 @@ public class SyncManager {
      * @return Instance of this class.
      */
     public static synchronized SyncManager getInstance(UserAccount account, String communityId) {
+        return getInstance(account, communityId, null);
+    }
+
+    /**
+     * Returns the instance of this class associated with this user, community and smartstore.
+     *
+     * @param account User account. Pass null to user current user.
+     * @param communityId Community ID. Pass null if not applicable
+     * @param smartStore SmartStore instance. Pass null to use current user default smartstore.
+     *
+     * @return Instance of this class.
+     */
+    public static synchronized SyncManager getInstance(UserAccount account, String communityId, SmartStore smartStore) {
         if (account == null) {
             account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
         }
 
-        SmartStore smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
-        SyncManager syncManager = getInstanceForStore(smartStore);
+        if (smartStore == null) {
+            smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
+        }
 
-        // Setting up rest client
-        RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
-        syncManager.setRestClient(restClient);
+        String uniqueId = (account != null ? account.getUserId() : "") + ":"
+                    + smartStore.getDatabase().getPath();
 
-        return syncManager;
-    }
 
-    /**
-     * Returns the instance of this class associated with this smartstore.
-     * Sync manager returned might not be ready to use.
-     * Call getRestClient() to see if it has a rest client and set one up if needed before doing any sync.
-     *
-     * @param smartStore
-     * @return Instance of this class.
-     */
-    public static synchronized SyncManager getInstanceForStore(SmartStore smartStore) {
-        SyncManager instance = INSTANCES.get(smartStore.getDatabase().getPath());
+        SyncManager instance = INSTANCES.get(uniqueId);
         if (instance == null) {
-            instance = new SyncManager(smartStore);
-            INSTANCES.put(smartStore.getDatabase().getPath(), instance);
+            RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
+            instance = new SyncManager(smartStore, restClient);
+            INSTANCES.put(uniqueId, instance);
         }
 
         return instance;

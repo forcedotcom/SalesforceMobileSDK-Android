@@ -222,18 +222,9 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @return
      */
     private SyncManager getSyncManager(boolean isGlobal) {
-        final SmartStore smartStore = (isGlobal
-                ? SalesforceSDKManagerWithSmartStore.getInstance().getGlobalSmartStore()
-                : SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore());
-
-        SyncManager syncManager = SyncManager.getInstanceForStore(smartStore);
-
-        // Setting up rest client if necessary
-        if (syncManager.getRestClient() == null) {
-            UserAccount account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
-            RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
-            syncManager.setRestClient(restClient);
-        }
+        SyncManager syncManager = isGlobal
+                ? SyncManager.getInstance(null, null, SalesforceSDKManagerWithSmartStore.getInstance().getGlobalSmartStore())
+                : SyncManager.getInstance();
 
         return syncManager;
     }

@@ -203,8 +203,7 @@ public class RestClient {
 	 * @param method				the HTTP method for the request (GET/POST/DELETE etc)
 	 * @param path					the URI path, this will automatically be resolved against the users current instance host.
 	 * @param httpEntity			the request body if there is one, can be null.
-	 * @param additionalHttpHeaders additional HTTP headers to add the generated HTTP request, can be null.
-	 * @return 						a RestResponse instance that has information about the HTTP response returned by the server. 
+	 * @return 						a RestResponse instance that has information about the HTTP response returned by the server.
 	 */
 	public RestResponse sendSync(RestMethod method, String path, HttpEntity httpEntity) throws IOException {
 		return sendSync(method, path, httpEntity, null);
