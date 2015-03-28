@@ -148,11 +148,7 @@ public class SyncManager {
             smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
         }
 
-        if (UserAccount.INTERNAL_COMMUNITY_ID.equals(communityId)) {
-            communityId = null;
-        }
         String uniqueId = (account != null ? account.getUserId() : "") + ":"
-                    + (communityId != null ? communityId : "") + ":"
                     + smartStore.getDatabase().getPath();
 
 
