@@ -63,7 +63,8 @@ import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
  */
 public class RestClient {
 
-	private static Map<String, RequestQueue> REQUEST_QUEUES;
+    public static final String NOUSER = "nouser";
+    private static Map<String, RequestQueue> REQUEST_QUEUES;
 
 	private ClientInfo clientInfo;
 	private RequestQueue requestQueue;
@@ -95,7 +96,7 @@ public class RestClient {
      * <li> If authTokenProvider is not null, it will ask the authTokenProvider for a new access token and retry the request a second time.</li>
      * <li> Otherwise it will return the 401 response.</li>
      * </ul>
-	 * @param clientInfo
+	 * @param clientInfo Pass null to make calls that don't require authentication or calls that don't go against a salesforce service
      * @param authToken
      * @param httpAccessor
      * @param authTokenProvider
@@ -119,7 +120,7 @@ public class RestClient {
 		if (REQUEST_QUEUES == null) {
 			REQUEST_QUEUES = new HashMap<String, RequestQueue>();
 		}
-		final String uniqueId = clientInfo.userId + clientInfo.orgId;
+		final String uniqueId = getRequestQueueId();
 		RequestQueue queue = null;
 		if (uniqueId != null) {
 			queue = REQUEST_QUEUES.get(uniqueId);
@@ -136,7 +137,7 @@ public class RestClient {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("RestClient: {\n")
-		  .append(getClientInfo())
+		  .append(getClientInfoAsString())
 		  // Un-comment if you must: tokens should not be printed to the log
 		  // .append("   authToken: ").append(getAuthToken()).append("\n")
 		  // .append("   refreshToken: ").append(getRefreshToken()).append("\n")
@@ -165,6 +166,54 @@ public class RestClient {
 	public ClientInfo getClientInfo() {
 		return clientInfo;
 	}
+
+    /**
+     * @return id to be used for request queue
+     */
+    private String getRequestQueueId() {
+        if (clientInfo == null) {
+            return NOUSER;
+        }
+        else {
+            return clientInfo.userId + clientInfo.orgId;
+        }
+    }
+
+    /**
+     * Resolve URL from path using clientInfo if available
+     * Path should be a complete URL if no clientInfo is available
+     * @param path
+     * @return
+     */
+    private URI resolveUrl(String path) {
+        if (clientInfo == null) {
+
+            try {
+                return new URI(path);
+            }
+            catch (URISyntaxException e) {
+
+                return null;
+            }
+        }
+        else {
+            return clientInfo.resolveUrl(path);
+        }
+    }
+
+    /**
+     * Return string description for clientInfo if available
+     * Return "nouser" if no client info is available
+     * @return
+     */
+    private String getClientInfoAsString() {
+        if (clientInfo == null) {
+            return NOUSER;
+        }
+        else {
+            return clientInfo.toString();
+        }
+    }
 	
 	/**
 	 * @return underlying RequestQueue (using when calling sendAsync)
@@ -222,9 +271,9 @@ public class RestClient {
 	 * @throws IOException
 	 */
 	public RestResponse sendSync(RestMethod method, String path, HttpEntity httpEntity, Map<String, String> additionalHttpHeaders) throws IOException {
-		return new RestResponse(httpStack.performRequest(method.asVolleyMethod(), clientInfo.resolveUrl(path), httpEntity, additionalHttpHeaders, true));
+		return new RestResponse(httpStack.performRequest(method.asVolleyMethod(), resolveUrl(path), httpEntity, additionalHttpHeaders, true));
 	}
-	
+
 	
 	/**
 	 * Only used in tests
@@ -548,8 +597,8 @@ public class RestClient {
 		 * @param callback
 		 */
 		public WrappedRestRequest(ClientInfo clientInfo, RestRequest restRequest, final AsyncRequestCallback callback) {
-			super(restRequest.getMethod().asVolleyMethod(), 
-				  clientInfo.resolveUrl(restRequest.getPath()).toString(), 
+			super(restRequest.getMethod().asVolleyMethod(),
+				  clientInfo == null ? restRequest.getPath() : clientInfo.resolveUrl(restRequest.getPath()).toString(),
 				  new Response.ErrorListener() {
 					@Override
 					public void onErrorResponse(VolleyError error) {

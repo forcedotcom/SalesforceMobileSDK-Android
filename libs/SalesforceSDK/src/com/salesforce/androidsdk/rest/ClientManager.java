@@ -128,6 +128,14 @@ public class ClientManager {
         }
     }
 
+    /**
+     * Method to create a unauthenticated RestClient.
+     * @return
+     */
+    public RestClient  peekUnauthenticatedRestClient() {
+        return new RestClient(null, null, HttpAccess.DEFAULT, null);
+    }
+
     public RestClient peekRestClient() {
         return peekRestClient(getAccount());
     }
