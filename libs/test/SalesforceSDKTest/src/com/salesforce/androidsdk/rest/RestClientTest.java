@@ -443,12 +443,12 @@ public class RestClientTest extends InstrumentationTestCase {
     }
 
     /**
-     * Testing doing a sync request against a non salesforce public api with a RestClient that doesn't have a client info
+     * Testing doing a sync request against a non salesforce public api with a RestClient that uses an UnauthenticatedClientInfo
      * @return
      * @throws Exception
      */
-    public void testRestClientNoClientInfo() throws Exception {
-        RestClient unauthenticatedRestClient = new RestClient(null, null, HttpAccess.DEFAULT, null);
+    public void testRestClientUnauthenticatedlientInfo() throws Exception {
+        RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
         RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist", null);
         RestResponse response = unauthenticatedRestClient.sendSync(request);
         checkResponse(response, HttpStatus.SC_OK, false);
@@ -458,12 +458,12 @@ public class RestClientTest extends InstrumentationTestCase {
     }
 
     /**
-     * Testing doing an async request against a non salesforce public api with a RestClient that doesn't have a client info
+     * Testing doing an async request against a non salesforce public api with a RestClient that uses an UnauthenticatedClientInfo
      * @return
      * @throws Exception
      */
-    public void testRestClientNoClientInfoAsync() throws Exception {
-        RestClient unauthenticatedRestClient = new RestClient(null, null, HttpAccess.DEFAULT, null);
+    public void testRestClientUnauthenticatedlientInfoAsync() throws Exception {
+        RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
         RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist", null);
         RestResponse response = sendAsync(unauthenticatedRestClient, request);
         checkResponse(response, HttpStatus.SC_OK, false);
