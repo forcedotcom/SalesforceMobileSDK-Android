@@ -95,7 +95,7 @@ public class RestClient {
      * <li> If authTokenProvider is not null, it will ask the authTokenProvider for a new access token and retry the request a second time.</li>
      * <li> Otherwise it will return the 401 response.</li>
      * </ul>
-	 * @param clientInfo Pass null to make calls that don't require authentication or calls that don't go against a salesforce service
+	 * @param clientInfo
      * @param authToken
      * @param httpAccessor
      * @param authTokenProvider
