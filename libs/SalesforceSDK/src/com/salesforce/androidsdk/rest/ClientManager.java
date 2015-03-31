@@ -129,7 +129,16 @@ public class ClientManager {
     }
 
     /**
-     * Method to create a unauthenticated RestClient.
+     * Method to created an unauthenticated RestClient asynchronously
+     * @param activityContext
+     * @param restClientCallback
+     */
+    public void getUnauthenticatedRestClient(Activity activityContext, RestClientCallback restClientCallback) {
+        restClientCallback.authenticatedRestClient(peekUnauthenticatedRestClient());
+    }
+
+    /**
+     * Method to create an unauthenticated RestClient.
      * @return
      */
     public RestClient  peekUnauthenticatedRestClient() {
