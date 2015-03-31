@@ -128,7 +128,7 @@ public class RestRequest {
 	 * 
 	 * @param method				the HTTP method for the request (GET/POST/DELETE etc)
 	 * @param path					the URI path, this will automatically be resolved against the users current instance host.
-	 * @param httpEntity			the request body if there is one, can be null.
+	 * @param requestEntity			the request body if there is one, can be null.
 	 */
 	public RestRequest(RestMethod method, String path, HttpEntity requestEntity) {
 		this(method, path, requestEntity, null);
@@ -178,8 +178,6 @@ public class RestRequest {
 	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_versions.htm
 	 * 
 	 * @return a JsonNode
-     * @throws IOException
-     * @throws RestException
      */
     public static RestRequest getRequestForVersions() {
         return new RestRequest(RestMethod.GET, RestAction.VERSIONS.getPath(), null);
@@ -191,8 +189,6 @@ public class RestRequest {
 	 *
 	 * @param apiVersion
 	 * @return a RestRequest
-	 * @throws IOException
-	 * @throws RestException
 	 */
 	public static RestRequest getRequestForResources(String apiVersion) {
 		return new RestRequest(RestMethod.GET, RestAction.RESOURCES.getPath(apiVersion), null);
@@ -204,8 +200,6 @@ public class RestRequest {
 	 *
 	 * @param apiVersion
 	 * @return a RestRequest
-	 * @throws IOException
-	 * @throws RestException
 	 */
 	public static RestRequest getRequestForDescribeGlobal(String apiVersion) {
 		return new RestRequest(RestMethod.GET, RestAction.DESCRIBE_GLOBAL.getPath(apiVersion), null);
@@ -219,7 +213,6 @@ public class RestRequest {
 	 * @param objectType
 	 * @return a RestRequest
 	 * @throws IOException
-	 * @throws RestException
 	 */
 	public static RestRequest getRequestForMetadata(String apiVersion, String objectType) {
         return new RestRequest(RestMethod.GET, RestAction.METADATA.getPath(apiVersion, objectType), null);
@@ -248,7 +241,7 @@ public class RestRequest {
 	 * @throws IOException 
 	 * @throws UnsupportedEncodingException 
 	 */
-	public static RestRequest getRequestForCreate(String apiVersion, String objectType, Map<String, Object> fields) throws UnsupportedEncodingException, IOException  {
+	public static RestRequest getRequestForCreate(String apiVersion, String objectType, Map<String, Object> fields) throws IOException  {
 		HttpEntity fieldsData = prepareFieldsData(fields); 
 		return new RestRequest(RestMethod.POST, RestAction.CREATE.getPath(apiVersion, objectType), fieldsData);	
 	}
@@ -295,11 +288,8 @@ public class RestRequest {
 	 * @param fields
 	 * @return a RestRequest
 	 * @throws IOException 
-	 * @throws UnsupportedEncodingException 
-	 * @throws JsonMappingException 
-	 * @throws JsonGenerationException 
 	 */
-	public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields) throws UnsupportedEncodingException, IOException  {
+	public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields) throws IOException  {
 		HttpEntity fieldsData = prepareFieldsData(fields);
 		return new RestRequest(RestMethod.PATCH, RestAction.UPDATE.getPath(apiVersion, objectType, objectId), fieldsData);	
 	}
@@ -316,11 +306,8 @@ public class RestRequest {
 	 * @param fields
 	 * @return a RestRequest
 	 * @throws IOException 
-	 * @throws UnsupportedEncodingException 
-	 * @throws JsonMappingException 
-	 * @throws JsonGenerationException 
 	 */
-	public static RestRequest getRequestForUpsert(String apiVersion, String objectType, String externalIdField, String externalId, Map<String, Object> fields) throws UnsupportedEncodingException, IOException  {
+	public static RestRequest getRequestForUpsert(String apiVersion, String objectType, String externalIdField, String externalId, Map<String, Object> fields) throws IOException  {
 		HttpEntity fieldsData = prepareFieldsData(fields); 
 		return new RestRequest(RestMethod.PATCH, RestAction.UPSERT.getPath(apiVersion, objectType, externalIdField, externalId), fieldsData);	
 	}

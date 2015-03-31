@@ -26,21 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.protocol.HTTP;
-import org.apache.http.util.EntityUtils;
-
 import android.util.Log;
 
 import com.android.volley.AuthFailureError;
@@ -58,12 +43,27 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.HttpAccess.Execution;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
+import org.apache.http.Header;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.protocol.HTTP;
+import org.apache.http.util.EntityUtils;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * RestClient allows you to send authenticated HTTP requests to a force.com server.
  */
 public class RestClient {
 
-	private static Map<String, RequestQueue> REQUEST_QUEUES;
+    private static Map<String, RequestQueue> REQUEST_QUEUES;
 
 	private ClientInfo clientInfo;
 	private RequestQueue requestQueue;
@@ -119,7 +119,7 @@ public class RestClient {
 		if (REQUEST_QUEUES == null) {
 			REQUEST_QUEUES = new HashMap<String, RequestQueue>();
 		}
-		final String uniqueId = clientInfo.userId + clientInfo.orgId;
+		final String uniqueId = clientInfo.buildUniqueId();
 		RequestQueue queue = null;
 		if (uniqueId != null) {
 			queue = REQUEST_QUEUES.get(uniqueId);
@@ -136,7 +136,7 @@ public class RestClient {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("RestClient: {\n")
-		  .append(getClientInfo())
+		  .append(clientInfo.toString())
 		  // Un-comment if you must: tokens should not be printed to the log
 		  // .append("   authToken: ").append(getAuthToken()).append("\n")
 		  // .append("   refreshToken: ").append(getRefreshToken()).append("\n")
@@ -165,7 +165,7 @@ public class RestClient {
 	public ClientInfo getClientInfo() {
 		return clientInfo;
 	}
-	
+
 	/**
 	 * @return underlying RequestQueue (using when calling sendAsync)
 	 */
@@ -224,7 +224,7 @@ public class RestClient {
 	public RestResponse sendSync(RestMethod method, String path, HttpEntity httpEntity, Map<String, String> additionalHttpHeaders) throws IOException {
 		return new RestResponse(httpStack.performRequest(method.asVolleyMethod(), clientInfo.resolveUrl(path), httpEntity, additionalHttpHeaders, true));
 	}
-	
+
 	
 	/**
 	 * Only used in tests
@@ -278,6 +278,13 @@ public class RestClient {
 			this.communityId = communityId;
 			this.communityUrl = communityUrl;
 		}
+
+        /**
+         * @return unique id built from user id and org id
+         */
+        public String buildUniqueId() {
+            return this.userId + this.orgId;
+        }
 
 		@Override
 		public String toString() {
@@ -362,6 +369,44 @@ public class RestClient {
 			return uri;
 		}
 	}
+
+    /**
+     * Use a unauthenticated client info when do not need authentication support (e.g.
+     * if you are talking to non-salesforce servers)
+     *
+     * NB: Your RestRequest's path will need to be a complete URL
+     */
+    public static class UnauthenticatedClientInfo extends ClientInfo {
+        public static final String NOUSER = "nouser";
+
+        public UnauthenticatedClientInfo() {
+            super(null, null, null, null, null, null, null, null, null, null);
+        }
+
+        @Override
+        public String buildUniqueId() {
+            return NOUSER;
+        }
+
+        @Override
+        public String toString() {
+            return getClass().getSimpleName();
+        }
+
+        @Override
+        public URI resolveUrl(String path) {
+            URI uri = null;
+            try {
+                uri = new URI(path);
+            }
+            catch (URISyntaxException e) {
+                Log.e("UnauthenticatedClientInfo: resolveUrl",
+                        "URISyntaxException thrown on URL: " + path);
+            }
+
+            return uri;
+        }
+    }
 
 	/**
 	 * HttpStack for talking to Salesforce (sets oauth header and does oauth refresh when needed)
@@ -548,8 +593,8 @@ public class RestClient {
 		 * @param callback
 		 */
 		public WrappedRestRequest(ClientInfo clientInfo, RestRequest restRequest, final AsyncRequestCallback callback) {
-			super(restRequest.getMethod().asVolleyMethod(), 
-				  clientInfo.resolveUrl(restRequest.getPath()).toString(), 
+			super(restRequest.getMethod().asVolleyMethod(),
+				  clientInfo.resolveUrl(restRequest.getPath()).toString(),
 				  new Response.ErrorListener() {
 					@Override
 					public void onErrorResponse(VolleyError error) {
