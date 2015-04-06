@@ -841,7 +841,7 @@ public class SalesforceSDKManager {
     		final AccountManager accMgr = AccountManager.get(context);
     		if (accMgr != null) {
     			final Account[] accounts = accMgr.getAccountsByType(getAccountType());
-    			if (accounts != null) {
+    			if (accounts.length > 0) {
     				for (int i = 0; i < accounts.length - 1; i++) {
     					clientMgr.removeAccounts(accounts);
     				}
