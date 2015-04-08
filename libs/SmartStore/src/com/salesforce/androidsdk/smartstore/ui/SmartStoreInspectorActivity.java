@@ -46,6 +46,7 @@ import android.widget.MultiAutoCompleteTextView.Tokenizer;
 
 import com.salesforce.androidsdk.smartstore.R;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -59,12 +60,20 @@ import java.util.List;
 
 public class SmartStoreInspectorActivity extends Activity {
 
+	// Keys for extras bundle
+	private static final String IS_GLOBAL_STORE = "isGlobalStore";
+	private static final String DB_NAME = "dbName";
+
+	// Default page size / index
 	private static final int DEFAULT_PAGE_SIZE = 10;
 	private static final int DEFAULT_PAGE_INDEX = 0;
-	private static final String IS_GLOBAL_STORE = "isGlobalStore";
 
+	// Store
+	private String dbName;
 	private boolean isGlobal;
 	private SmartStore smartStore;
+
+	// View elements
 	private MultiAutoCompleteTextView queryText;
 	private EditText pageSizeText;
 	private EditText pageIndexText;
@@ -77,13 +86,18 @@ public class SmartStoreInspectorActivity extends Activity {
 
 	/**
 	 * Create intent to bring up inspector
+	 * @param parentActivity
 	 * @param isGlobal pass true to get an inspector for the default global smartstore
 	 *                 pass false to get an inspector for the default user smartstore
+	 * @param dbName
+	 * @return
 	 */
-	public static Intent getIntent(Activity parentActivity, boolean isGlobal) {
-		final Intent intent = new Intent(parentActivity, SmartStoreInspectorActivity.class);
+	public static Intent getIntent(Activity parentActivity, boolean isGlobal, String dbName) {
 		final Bundle bundle = new Bundle();
-		bundle.putBoolean(SmartStoreInspectorActivity.IS_GLOBAL_STORE, isGlobal);
+		bundle.putBoolean(IS_GLOBAL_STORE, isGlobal);
+		bundle.putString(DB_NAME, dbName);
+
+		final Intent intent = new Intent(parentActivity, SmartStoreInspectorActivity.class);
 		intent.putExtras(bundle);
 		return intent;
 	}
@@ -91,7 +105,7 @@ public class SmartStoreInspectorActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		isGlobal = getIsGlobalFromExtras();
+		readExtras();
 		setContentView(R.layout.sf__inspector);
 		queryText = (MultiAutoCompleteTextView) findViewById(R.id.sf__inspector_query_text);
 		pageSizeText = (EditText) findViewById(R.id.sf__inspector_pagesize_text);
@@ -102,14 +116,17 @@ public class SmartStoreInspectorActivity extends Activity {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		final SalesforceSDKManagerWithSmartStore instance = SalesforceSDKManagerWithSmartStore.getInstance();
-		smartStore = isGlobal ? instance.getGlobalSmartStore() : instance.getSmartStore();
+		final SalesforceSDKManagerWithSmartStore manager = SalesforceSDKManagerWithSmartStore.getInstance();
+		smartStore = isGlobal
+				? manager.getGlobalSmartStore(dbName)
+				: manager.getSmartStore(dbName, manager.getUserAccountManager().getCurrentUser(), null);
 		setupAutocomplete(queryText);
 	}
 
-	private boolean getIsGlobalFromExtras() {
+	private void readExtras() {
 		Bundle bundle = getIntent().getExtras();
-		return bundle.getBoolean(IS_GLOBAL_STORE, false);
+		isGlobal = bundle.getBoolean(IS_GLOBAL_STORE, false);
+		dbName = bundle.getString(DB_NAME, DBOpenHelper.DEFAULT_DB_NAME);
 	}
 
 	/**

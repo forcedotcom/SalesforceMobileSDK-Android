@@ -287,7 +287,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		boolean isGlobal = getIsGlobal(arg0);
 
 		Activity activity = cordova.getActivity();
-		activity.startActivity(SmartStoreInspectorActivity.getIntent(activity, isGlobal));
+		activity.startActivity(SmartStoreInspectorActivity.getIntent(activity, isGlobal, null));
 	}
 
 	/**
