@@ -26,21 +26,7 @@
  */
 package com.salesforce.androidsdk.smartstore.phonegap;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import net.sqlcipher.database.SQLiteDatabase;
-
-import org.apache.cordova.CallbackContext;
-import org.apache.cordova.PluginResult;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.app.Activity;
-import android.content.Intent;
 import android.util.Log;
 import android.util.SparseArray;
 
@@ -53,6 +39,19 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
+
+import net.sqlcipher.database.SQLiteDatabase;
+
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.PluginResult;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * PhoneGap plugin for smart store.
@@ -282,9 +281,13 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @throws JSONException 
 	 */
 	private void showInspector(JSONArray args, CallbackContext callbackContext) throws JSONException {
+
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		boolean isGlobal = getIsGlobal(arg0);
+
 		Activity activity = cordova.getActivity();
-		final Intent i = new Intent(activity, SmartStoreInspectorActivity.class);
-		activity.startActivity(i);
+		activity.startActivity(SmartStoreInspectorActivity.getIntent(activity, isGlobal, null));
 	}
 
 	/**
@@ -572,10 +575,19 @@ public class SmartStorePlugin extends ForcePlugin {
      * @return
      */
     private SmartStore getSmartStore(JSONObject arg0) {
-        boolean isGlobal = arg0 != null ? arg0.optBoolean(IS_GLOBAL_STORE, false) : false;
+        boolean isGlobal = getIsGlobal(arg0);
         return (isGlobal
                 ? SalesforceSDKManagerWithSmartStore.getInstance().getGlobalSmartStore()
                 : SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore());
     }
+
+	/**
+	 * Return the value of the isGlobalStore argument
+	 * @param arg0
+	 * @return
+	 */
+	private boolean getIsGlobal(JSONObject arg0) {
+		return arg0 != null ? arg0.optBoolean(IS_GLOBAL_STORE, false) : false;
+	}
 
 }
