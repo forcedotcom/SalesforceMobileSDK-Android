@@ -31,7 +31,7 @@ Introduction
 
 **Sample App Updates**
 - SmartSyncExplorer has been updated to demonstrate periodic background sync at a specified interval.
-- A new sample app, `NoteSync`, has been added to demonstrate the syncing of notes.
+- A new sample app, `NoteSync`, has been added to demonstrate the syncing of content notes using custom targets.
 
 **Other Technical Improvements**
 - It is now possible to obtain an unauthenticated RestClient instance for use with APIs that do not require authentication.
