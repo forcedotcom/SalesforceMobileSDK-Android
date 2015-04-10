@@ -19,17 +19,22 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 3.1
+### What's New in 3.2
 
 **SmartSync Library Enhancements**
-- The sync down operation now offers multiple modes that let the developer decide whether to overwrite locally modified data.
+- SmartSync now supports incremental sync, which allows the developer to download only data that has been updated on the server, rather than the entire data set.
+- The sync up operation now offers merge modes that let the developer decide whether to overwrite data that has been modified on the server or discard local changes.
+- SmartSync now supports custom targets, which can manage the data interchange in sync operations. Custom targets let you tailor network interactions to the specific demands of the sync operation.
 
-**Advanced Authentication/MDM Features**
-- Mobile SDK 3.1 provides the ability to perform certificate based authentication of users.
-- MDM providers can now configure login hosts, remote access consumer key and callback URL at runtime, for applications built on Mobile SDK 3.1.
-- Note: The above features are supported only in Android Lollipop (API 21) and above.
+**SmartStore Library Enhancements**
+- SmartStore now provides the ability to obtain a global (app-level) SmartStore instance. A global SmartStore instance can be populated with user-agnostic data that will not be deleted when users log out.
+
+**Sample App Updates**
+- SmartSyncExplorer has been updated to demonstrate periodic background sync at a specified interval.
+- A new sample app, `NoteSync`, has been added to demonstrate the syncing of content notes using custom targets.
 
 **Other Technical Improvements**
+- It is now possible to obtain an unauthenticated RestClient instance for use with APIs that do not require authentication.
 - Various bug fixes.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials
