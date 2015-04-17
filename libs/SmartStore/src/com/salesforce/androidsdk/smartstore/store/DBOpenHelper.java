@@ -127,7 +127,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		return helper;
 	}
 
-	private DBOpenHelper(Context context, String dbName) {
+	protected DBOpenHelper(Context context, String dbName) {
 		super(context, dbName, null, DB_VERSION, new DBHook());
 		SQLiteDatabase.loadLibs(context);
 	}
