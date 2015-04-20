@@ -89,10 +89,10 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         		TestCredentials.USER_ID, null);
     	MetadataManager.reset(null);
     	CacheManager.hardReset(null);
-    	SyncManager.reset(null);
+    	SyncManager.reset();
         metadataManager = MetadataManager.getInstance(null);
         cacheManager = CacheManager.getInstance(null);
-        syncManager = SyncManager.getInstance(null);
+        syncManager = SyncManager.getInstance();
         restClient = initRestClient();
         metadataManager.setRestClient(restClient);
         syncManager.setRestClient(restClient);

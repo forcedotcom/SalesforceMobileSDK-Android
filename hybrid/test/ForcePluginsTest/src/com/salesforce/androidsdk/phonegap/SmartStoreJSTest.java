@@ -42,54 +42,66 @@ public class SmartStoreJSTest extends JSTestCase {
     
     @Override
     protected int getMaxRuntimeInSecondsForTest(String testName) {
-    	return 10;
+        return 10;
     }
 
     @Override
     public List<String> getTestNames() {
-		return Arrays.asList(new String[] { "testGetDatabaseSize",
-                                            "testRegisterRemoveSoup",
-                                            "testRegisterBogusSoup",
-                                            "testRegisterSoupNoIndices",
-                                            "testUpsertSoupEntries",
-                                            "testUpsertSoupEntriesWithExternalId",
-                                            "testUpsertToNonexistentSoup",
-                                            "testRetrieveSoupEntries",
-                                            "testRemoveFromSoup",
-                                            "testQuerySoup",
-                                            "testQuerySoupDescending",
-                                            "testQuerySoupBadQuerySpec",
-                                            "testQuerySoupEndKeyNoBeginKey",
-                                            "testQuerySoupBeginKeyNoEndKey",
-                                            "testManipulateCursor",
-                                            "testMoveCursorToPreviousPageFromFirstPage",
-                                            "testMoveCursorToNextPageFromLastPage",
-                                            "testArbitrarySoupNames",
-                                            "testQuerySpecFactories",
-                                            "testLikeQuerySpecStartsWith",
-                                            "testLikeQuerySpecEndsWith",
-                                            "testLikeQueryInnerText",
-                                            "testCompoundQueryPath",
-                                            "testEmptyQuerySpec",
-                                            "testIntegerQuerySpec",
-                                            "testSmartQueryWithCount",
-                                            "testSmartQueryWithSpecialFields",
-                                            "testGetSoupIndexSpecs",
-                                            "testGetSoupIndexSpecsWithBogusSoupName",
-                                            "testAlterSoupNoReIndexing",
-                                            "testAlterSoupWithReIndexing",
-                                            "testAlterSoupWithBogusSoupName",
-                                            "testReIndexSoup",
-                                            "testClearSoup"});
-	}
+        return Arrays.asList(new String[] {
+                "testGetDatabaseSize",
+                "testRegisterRemoveSoup",
+                "testRegisterRemoveSoupGlobalStore",
+                "testRegisterBogusSoup",
+                "testRegisterSoupNoIndices",
+                "testUpsertSoupEntries",
+                "testUpsertSoupEntriesWithExternalId",
+                "testUpsertToNonexistentSoup",
+                "testRetrieveSoupEntries",
+                "testRemoveFromSoup",
+                "testQuerySoup",
+                "testQuerySoupDescending",
+                "testQuerySoupBadQuerySpec",
+                "testQuerySoupEndKeyNoBeginKey",
+                "testQuerySoupBeginKeyNoEndKey",
+                "testManipulateCursor",
+                "testMoveCursorToPreviousPageFromFirstPage",
+                "testMoveCursorToNextPageFromLastPage",
+                "testArbitrarySoupNames",
+                "testQuerySpecFactories",
+                "testLikeQuerySpecStartsWith",
+                "testLikeQuerySpecEndsWith",
+                "testLikeQueryInnerText",
+                "testCompoundQueryPath",
+                "testEmptyQuerySpec",
+                "testIntegerQuerySpec",
+                "testSmartQueryWithCount",
+                "testSmartQueryWithSpecialFields",
+                "testSmartQueryWithIntegerCompare",
+                "testSmartQueryWithMultipleFieldsAndWhereInClause",
+                "testSmartQueryWithSingleFieldAndWhereInClause",
+                "testSmartQueryWithWhereLikeClause",
+                "testSmartQueryWithWhereLikeClauseOrdered",
+                "testGetSoupIndexSpecs",
+                "testGetSoupIndexSpecsWithBogusSoupName",
+                "testAlterSoupNoReIndexing",
+                "testAlterSoupWithReIndexing",
+                "testAlterSoupWithBogusSoupName",
+                "testReIndexSoup",
+                "testClearSoup"
+        });
+    }
     
 
     public void testGetDatabaseSize() {
-    	runTest("testGetDatabaseSize");
+        runTest("testGetDatabaseSize");
     }
 
     public void testRegisterRemoveSoup()  {
         runTest("testRegisterRemoveSoup");
+    }
+
+    public void testRegisterRemoveSoupGlobalStore()  {
+        runTest("testRegisterRemoveSoupGlobalStore");
     }
 
     public void testRegisterBogusSoup()  {
@@ -185,19 +197,39 @@ public class SmartStoreJSTest extends JSTestCase {
     }
     
     public void testSmartQueryWithCount() {
-    	runTest("testSmartQueryWithCount");
+        runTest("testSmartQueryWithCount");
     }
 
     public void testSmartQueryWithSpecialFields() {
-    	runTest("testSmartQueryWithSpecialFields");
+        runTest("testSmartQueryWithSpecialFields");
+    }
+
+    public void testSmartQueryWithIntegerCompare() {
+        runTest("testSmartQueryWithIntegerCompare");
+    }
+
+    public void testSmartQueryWithMultipleFieldsAndWhereInClause() {
+        runTest("testSmartQueryWithMultipleFieldsAndWhereInClause");
+    }
+
+    public void testSmartQueryWithSingleFieldAndWhereInClause() {
+        runTest("testSmartQueryWithSingleFieldAndWhereInClause");
+    }
+
+    public void testSmartQueryWithWhereLikeClause() {
+        runTest("testSmartQueryWithWhereLikeClause");
+    }
+
+    public void testSmartQueryWithWhereLikeClauseOrdered() {
+        runTest("testSmartQueryWithWhereLikeClauseOrdered");
     }
 
     public void testGetSoupIndexSpecs() {
-    	runTest("testGetSoupIndexSpecs");
+        runTest("testGetSoupIndexSpecs");
     }
     
     public void testGetSoupIndexSpecsWithBogusSoupName() {
-    	runTest("testGetSoupIndexSpecsWithBogusSoupName");
+        runTest("testGetSoupIndexSpecsWithBogusSoupName");
     }
     
 

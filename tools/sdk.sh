@@ -60,18 +60,14 @@ usage ()
     echo "        HybridFileExplorer"
     echo "        NativeSqlAggregator"
     echo "        RestExplorer"
+    echo "        NoteSync"
     echo "        SimpleSync"
     echo "        SmartStoreExplorer"
     echo "        SmartSyncExplorer"
     echo "        TemplateApp"
     echo "        UserList"
     echo "        VFConnector"
-    echo "        SalesforceSDKTest"
-    echo "        SmartStoreTest"
-    echo "        SmartSyncTest"
     echo "        ForcePluginsTest"
-    echo "        RestExplorerTest"
-    echo "        TemplateAppTest"
     echo "    <test_target> can be "
     echo "        all"
     echo "        ForcePluginsTest"
@@ -80,6 +76,7 @@ usage ()
     echo "        SmartStoreTest"
     echo "        SmartSyncTest"
     echo "        TemplateAppTest"
+    echo "        ForcePluginsTest"
 }
 
 verbose ()
@@ -204,10 +201,12 @@ else
         build_project_if_requested    "AccountEditor"       $HYBRID_TOP/SampleApps/AccountEditor       21 :hybrid:SampleApps:AccountEditor
         build_project_if_requested    "ContactExplorer"     $HYBRID_TOP/SampleApps/ContactExplorer     21 :hybrid:SampleApps:ContactExplorer
         build_project_if_requested    "HybridFileExplorer"  $HYBRID_TOP/SampleApps/HybridFileExplorer  21 :hybrid:SampleApps:HybridFileExplorer
+        build_project_if_requested    "NoteSync"            $HYBRID_TOP/SampleApps/NoteSync          21 :hybrid:SampleApps:NoteSync
         build_project_if_requested    "SimpleSync"          $HYBRID_TOP/SampleApps/SimpleSync          21 :hybrid:SampleApps:SimpleSync
         build_project_if_requested    "UserList"            $HYBRID_TOP/SampleApps/UserList            21 :hybrid:SampleApps:UserList
         build_project_if_requested    "SmartStoreExplorer"  $HYBRID_TOP/SampleApps/SmartStoreExplorer  21 :hybrid:SampleApps:SmartStoreExplorer
         build_project_if_requested    "VFConnector"         $HYBRID_TOP/SampleApps/VFConnector         21 :hybrid:SampleApps:VFConnector
+        build_project_if_requested    "ForcePluginsTest"    $HYBRID_TOP/test/ForcePluginsTest          21 :hybrid:test:ForcePluginsTest
     fi
 
     if ( should_do "test{all}" )

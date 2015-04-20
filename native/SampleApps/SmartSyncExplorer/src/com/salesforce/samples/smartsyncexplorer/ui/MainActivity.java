@@ -27,21 +27,21 @@
 package com.salesforce.samples.smartsyncexplorer.ui;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.json.JSONException;
-
+import android.accounts.Account;
 import android.app.LoaderManager;
+import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.Loader;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
-import android.os.Looper;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -60,17 +60,9 @@ import android.widget.Toast;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.smartsync.util.Constants;
-import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
-import com.salesforce.androidsdk.smartsync.util.SyncOptions;
-import com.salesforce.androidsdk.smartsync.util.SyncState;
-import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
@@ -82,22 +74,15 @@ import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
  * @author bhariharan
  */
 public class MainActivity extends SalesforceListActivity implements
-		OnQueryTextListener, OnCloseListener, LoaderManager.LoaderCallbacks<List<ContactObject>> {
+		OnQueryTextListener, OnCloseListener,
+		LoaderManager.LoaderCallbacks<List<ContactObject>> {
 
 	public static final String OBJECT_ID_KEY = "object_id";
 	public static final String OBJECT_TITLE_KEY = "object_title";
 	public static final String OBJECT_NAME_KEY = "object_name";
-    private static final String TAG = "SmartSyncExplorer: MainActivity";
+	private static final String SYNC_CONTENT_AUTHORITY = "com.salesforce.samples.smartsyncexplorer.sync.contactsyncadapter";
+	private static final long SYNC_FREQUENCY_ONE_HOUR = 1 * 60 * 60;
 	private static final int CONTACT_LOADER_ID = 1;
-	private static IndexSpec[] CONTACTS_INDEX_SPEC = {
-		new IndexSpec("Id", Type.string),
-		new IndexSpec("FirstName", Type.string),
-		new IndexSpec("LastName", Type.string),
-		new IndexSpec(SyncManager.LOCALLY_CREATED, Type.string),
-		new IndexSpec(SyncManager.LOCALLY_UPDATED, Type.string),
-		new IndexSpec(SyncManager.LOCALLY_DELETED, Type.string),
-		new IndexSpec(SyncManager.LOCAL, Type.string)
-	};
 	private static final int CONTACT_COLORS[] = {
 		Color.rgb(26, 188, 156),
 		Color.rgb(46, 204, 113),
@@ -125,9 +110,11 @@ public class MainActivity extends SalesforceListActivity implements
     private UserAccount curAccount;
 	private NameFieldFilter nameFilter;
 	private List<ContactObject> originalData;
-	private SyncManager syncMgr;
 	private SmartStore smartStore;
     private LogoutDialogFragment logoutConfirmationDialog;
+    private ContactListLoader contactLoader;
+    private LoadCompleteReceiver loadCompleteReceiver;
+    private AtomicBoolean isRegistered;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -138,12 +125,17 @@ public class MainActivity extends SalesforceListActivity implements
 		getListView().setAdapter(listAdapter);
 		nameFilter = new NameFieldFilter(listAdapter, originalData);
 		logoutConfirmationDialog = new LogoutDialogFragment();
+		loadCompleteReceiver = new LoadCompleteReceiver();
+		isRegistered = new AtomicBoolean(false);
 	}
 
 	@Override
 	public void onResume(RestClient client) {
 		curAccount = SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser();
-		syncMgr = SyncManager.getInstance(curAccount);
+		Account account = null;
+		if (curAccount != null) {
+			account = SmartSyncSDKManager.getInstance().getUserAccountManager().buildAccount(curAccount);
+		}
 		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(curAccount);
 		getLoaderManager().initLoader(CONTACT_LOADER_ID, null, this);
 		if (!smartStore.hasSoup(ContactListLoader.CONTACT_SOUP)) {
@@ -151,17 +143,40 @@ public class MainActivity extends SalesforceListActivity implements
 		} else {
             refreshList();
         }
-    }
 
-    private void refreshList() {
-        getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
-    }
+		/*
+		 * Enables sync automatically for this provider. To enable almost
+		 * instantaneous sync when records are modified locally, a call needs
+		 * to be made by the content provider to notify the sync provider
+		 * that the underlying data set has changed. Since we don't use cursors
+		 * in this sample application, we simply enable periodic sync every hour.
+		 */
+		ContentResolver.setSyncAutomatically(account, SYNC_CONTENT_AUTHORITY, true);
+		ContentResolver.addPeriodicSync(account, SYNC_CONTENT_AUTHORITY,
+					Bundle.EMPTY, SYNC_FREQUENCY_ONE_HOUR);
+		if (!isRegistered.get()) {
+			registerReceiver(loadCompleteReceiver,
+					new IntentFilter(ContactListLoader.LOAD_COMPLETE_INTENT_ACTION));
+		}
+		isRegistered.set(true);
+	}
 
     @Override
-	public void onDestroy() {
-		getLoaderManager().destroyLoader(CONTACT_LOADER_ID);
-		super.onDestroy();
+	public void onPause() {
+    	if (isRegistered.get()) {
+        	unregisterReceiver(loadCompleteReceiver);
+    	}
+    	isRegistered.set(false);
+    	getLoaderManager().destroyLoader(CONTACT_LOADER_ID);
+		contactLoader = null;
+		super.onPause();
 	}
+
+    @Override
+    public void onDestroy() {
+    	loadCompleteReceiver = null;
+    	super.onDestroy();
+    }
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -195,7 +210,8 @@ public class MainActivity extends SalesforceListActivity implements
 
 	@Override
 	public Loader<List<ContactObject>> onCreateLoader(int id, Bundle args) {
-		return new ContactListLoader(this, curAccount);
+		contactLoader = new ContactListLoader(this, curAccount);
+		return contactLoader;
 	}
 
 	@Override
@@ -237,6 +253,14 @@ public class MainActivity extends SalesforceListActivity implements
 				sObject.getTitle());
 	}
 
+    private void refreshList() {
+        getLoaderManager().getLoader(CONTACT_LOADER_ID).forceLoad();
+    }
+
+	private void refreshList(List<ContactObject> data) {
+		listAdapter.setData(data);
+	}
+
 	private void launchDetailActivity(String objId, String objName,
 			String objTitle) {
 		final Intent detailIntent = new Intent(this, DetailActivity.class);
@@ -247,71 +271,19 @@ public class MainActivity extends SalesforceListActivity implements
 		startActivity(detailIntent);
 	}
 
-	private void refreshList(List<ContactObject> data) {
-		listAdapter.setData(data);
-	}
-
 	private void filterList(String filterTerm) {
 		nameFilter.filter(filterTerm);
 	}
 
 	private void syncDownContacts() {
-		smartStore.registerSoup(ContactListLoader.CONTACT_SOUP, CONTACTS_INDEX_SPEC);
-        final SyncOptions options = SyncOptions.optionsForSyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED);
-		try {
-			final String soqlQuery = SOQLBuilder.getInstanceWithFields(ContactObject.CONTACT_FIELDS)
-					.from(Constants.CONTACT).limit(ContactListLoader.LIMIT).build();
-			final SyncTarget target = SyncTarget.targetForSOQLSyncDown(soqlQuery);
-			syncMgr.syncDown(target, options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
-				@Override
-				public void onUpdate(SyncState sync) {
-					handleSyncUpdate(sync);
-				}
-			});
-		} catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while parsing", e);
-		}
+		contactLoader.syncDown();
+		Toast.makeText(MainActivity.this, "Sync down complete!",
+				Toast.LENGTH_LONG).show();
 	}
 
 	private void syncUpContacts() {
-		final SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(ContactObject.CONTACT_FIELDS));
-		try {
-			syncMgr.syncUp(options, ContactListLoader.CONTACT_SOUP, new SyncUpdateCallback() {
-				@Override
-				public void onUpdate(SyncState sync) {
-					handleSyncUpdate(sync);
-				}
-			});
-		} catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while parsing", e);
-		}
-	}
-
-	private void handleSyncUpdate(SyncState sync) {
-		if (Looper.myLooper() == null) {
-            Looper.prepare();	
-    	}
-		if (sync.isDone()) {
-			if (Looper.myLooper() == null) {
-                Looper.prepare();	
-        	}
-			switch(sync.getType()) {
-			case syncDown:
-				Toast.makeText(MainActivity.this,
-						"Sync down successful!",
-						Toast.LENGTH_LONG).show();
-                refreshList();
-				break;
-			case syncUp:
-				Toast.makeText(MainActivity.this,
-						"Sync up successful!",
-						Toast.LENGTH_LONG).show();
-				syncDownContacts();
-				break;
-			default:
-				break;
-			}
-		}
+		contactLoader.syncUp();
+		Toast.makeText(this, "Sync up complete!", Toast.LENGTH_LONG).show();
 	}
 
 	/**
@@ -464,6 +436,24 @@ public class MainActivity extends SalesforceListActivity implements
 		protected void publishResults(CharSequence constraint, FilterResults results) {
 			if (results != null && results.values != null) {
 				adpater.setData((List<ContactObject>) results.values);
+			}
+		}
+	}
+
+	/**
+	 * A simple receiver for load complete events.
+	 *
+	 * @author bhariharan
+	 */
+	private class LoadCompleteReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if (intent != null) {
+				final String action = intent.getAction();
+				if (ContactListLoader.LOAD_COMPLETE_INTENT_ACTION.equals(action)) {
+			        refreshList();
+				}
 			}
 		}
 	}

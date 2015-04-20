@@ -12,5 +12,5 @@
    	<string name="oauth_display_type">touch</string>
 
    	<!-- Default API version used by the SDK and sample apps -->
-   	<string name="api_version">v31.0</string>
+   	<string name="api_version">v33.0</string>
 </resources>

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-14, salesforce.com, inc.
+ * Copyright (c) 2012-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -55,6 +55,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
  * The main challenge here is how to effectively store documents with dynamic fields, and still allow indexing and searching.
  */
 public class SmartStore  {
+
     // Default
     public static final int DEFAULT_PAGE_SIZE = 10;
 
@@ -190,7 +191,7 @@ public class SmartStore  {
     /**
      * Return db
      */
-    protected SQLiteDatabase getDatabase() {
+    public SQLiteDatabase getDatabase() {
     	if (dbLocal != null) {
             return dbLocal;
         } else {
@@ -764,11 +765,11 @@ public class SmartStore  {
         Object value = project(soupElt, indexSpec.path);
         switch (indexSpec.type) {
         case integer:
-            contentValues.put(indexSpec.columnName, ((Number) value).longValue()); break;
+            contentValues.put(indexSpec.columnName, value != null ? ((Number) value).longValue() : null); break;
         case string:
             contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
         case floating:
-        	contentValues.put(indexSpec.columnName, ((Number) value).doubleValue()); break;
+            contentValues.put(indexSpec.columnName, value != null ? ((Number) value).doubleValue() : null); break;
         }
     }
 

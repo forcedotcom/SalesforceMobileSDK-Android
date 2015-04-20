@@ -383,7 +383,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         }
 
-        @Override
+        @SafeVarargs
+		@Override
         protected final TokenEndpointResponse doInBackground(RequestType ... params) {
             try {
                 publishProgress(true);

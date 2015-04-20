@@ -48,7 +48,18 @@ public class ContactObject extends SalesforceObject {
 	public static final String EMAIL = "Email";
 	public static final String DEPARTMENT = "Department";
 	public static final String HOME_PHONE = "HomePhone";
-	public static final String[] CONTACT_FIELDS = {
+	public static final String[] CONTACT_FIELDS_SYNC_DOWN = {
+		Constants.ID,
+		FIRST_NAME,
+		LAST_NAME,
+		TITLE,
+		PHONE,
+		EMAIL,
+		DEPARTMENT,
+		HOME_PHONE,
+        Constants.LAST_MODIFIED_DATE
+	};
+	public static final String[] CONTACT_FIELDS_SYNC_UP = {
 		Constants.ID,
 		FIRST_NAME,
 		LAST_NAME,

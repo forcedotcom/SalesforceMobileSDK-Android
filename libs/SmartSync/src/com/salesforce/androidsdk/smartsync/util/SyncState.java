@@ -26,12 +26,12 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 
 
 /**
@@ -48,15 +48,17 @@ public class SyncState {
 	public static final String SYNC_STATUS = "status";
 	public static final String SYNC_PROGRESS = "progress";
 	public static final String SYNC_TOTAL_SIZE = "totalSize";
+    public static final String SYNC_MAX_TIME_STAMP = "maxTimeStamp";
 
 	private long id;
 	private Type type;
-	private SyncTarget target; // null for sync-up
+	private SyncTarget target;
 	private SyncOptions options;
 	private String soupName;
 	private Status status;
 	private int progress;
 	private int totalSize;
+    private long maxTimeStamp;
 	
 	
 	/**
@@ -78,7 +80,7 @@ public class SyncState {
 	 * @return
 	 * @throws JSONException 
 	 */
-	public static SyncState createSyncDown(SmartStore store, SyncTarget target, SyncOptions options, String soupName) throws JSONException {
+	public static SyncState createSyncDown(SmartStore store, SyncDownTarget target, SyncOptions options, String soupName) throws JSONException {
     	JSONObject sync = new JSONObject();
     	sync.put(SYNC_TYPE, Type.syncDown);
     	sync.put(SYNC_TARGET, target.asJSON());
@@ -87,6 +89,7 @@ public class SyncState {
     	sync.put(SYNC_STATUS, Status.NEW.name());
     	sync.put(SYNC_PROGRESS, 0);
     	sync.put(SYNC_TOTAL_SIZE, -1);
+        sync.put(SYNC_MAX_TIME_STAMP, -1);
 
     	sync = store.upsert(SYNCS_SOUP, sync);
     	return SyncState.fromJSON(sync);
@@ -98,14 +101,16 @@ public class SyncState {
 	 * @return
 	 * @throws JSONException 
 	 */
-	public static SyncState createSyncUp(SmartStore store, SyncOptions options, String soupName) throws JSONException {
+	public static SyncState createSyncUp(SmartStore store, SyncUpTarget target, SyncOptions options, String soupName) throws JSONException {
     	JSONObject sync = new JSONObject();
     	sync.put(SYNC_TYPE, Type.syncUp);
+        sync.put(SYNC_TARGET, target.asJSON());
     	sync.put(SYNC_SOUP_NAME, soupName);
     	sync.put(SYNC_OPTIONS, options.asJSON());
     	sync.put(SYNC_STATUS, Status.NEW.name());
     	sync.put(SYNC_PROGRESS, 0);
     	sync.put(SYNC_TOTAL_SIZE, -1);
+        sync.put(SYNC_MAX_TIME_STAMP, -1);
 
     	sync = store.upsert(SYNCS_SOUP, sync);
     	return SyncState.fromJSON(sync);
@@ -121,12 +126,14 @@ public class SyncState {
 		SyncState state = new SyncState();
 		state.id = sync.getLong(SmartStore.SOUP_ENTRY_ID);
 		state.type = Type.valueOf(sync.getString(SYNC_TYPE));
-		state.target = SyncTarget.fromJSON(sync.optJSONObject(SYNC_TARGET));
+        final JSONObject jsonTarget = sync.optJSONObject(SYNC_TARGET);
+        state.target = (state.type == Type.syncDown ? SyncDownTarget.fromJSON(jsonTarget) : SyncUpTarget.fromJSON(jsonTarget));
 		state.options = SyncOptions.fromJSON(sync.optJSONObject(SYNC_OPTIONS));
 		state.soupName = sync.getString(SYNC_SOUP_NAME);
 		state.status = Status.valueOf(sync.getString(SYNC_STATUS));
 		state.progress = sync.getInt(SYNC_PROGRESS);
 		state.totalSize = sync.getInt(SYNC_TOTAL_SIZE);
+        state.maxTimeStamp = sync.optLong(SYNC_MAX_TIME_STAMP, -1);
 		return state;
 	}
 	
@@ -160,6 +167,7 @@ public class SyncState {
 		sync.put(SYNC_STATUS, status.name());
 		sync.put(SYNC_PROGRESS, progress);
 		sync.put(SYNC_TOTAL_SIZE, totalSize);
+        sync.put(SYNC_MAX_TIME_STAMP, maxTimeStamp);
 		return sync;
 	}
 	
@@ -207,8 +215,16 @@ public class SyncState {
 	public int getTotalSize() {
 		return totalSize;
 	}
-	
-	public void setProgress(int progress) {
+
+    public long getMaxTimeStamp() {
+        return maxTimeStamp;
+    }
+
+    public void setMaxTimeStamp(long maxTimeStamp) {
+        this.maxTimeStamp = maxTimeStamp;
+    }
+
+    public void setProgress(int progress) {
 		this.progress = progress;
 	}
 	

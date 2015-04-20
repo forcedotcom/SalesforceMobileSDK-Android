@@ -34,6 +34,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.http.HttpStatus;
 import org.json.JSONArray;
@@ -212,6 +215,15 @@ public class RestClientTest extends InstrumentationTestCase {
         checkKeys(response.asJSONObject(), "sobjects", "search", "recent");
     }
 
+    /**
+     * Testing a get resources async call to the server - check response
+     * @throws Exception
+     */
+    public void testGetResourcesAsync() throws Exception {
+        RestResponse response = sendAsync(restClient, RestRequest.getRequestForResources(TestCredentials.API_VERSION));
+        checkResponse(response, HttpStatus.SC_OK, false);
+        checkKeys(response.asJSONObject(), "sobjects", "search", "recent");
+    }
 
     /**
      * Testing a describe global call to the server - check response
@@ -219,6 +231,18 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testDescribeGlobal() throws Exception {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForDescribeGlobal(TestCredentials.API_VERSION));
+        checkResponse(response, HttpStatus.SC_OK, false);
+        JSONObject jsonResponse = response.asJSONObject();
+        checkKeys(jsonResponse, "encoding", "maxBatchSize", "sobjects");
+        checkKeys(jsonResponse.getJSONArray("sobjects").getJSONObject(0), "name", "label", "custom", "keyPrefix");
+    }
+
+    /**
+     * Testing a describe global async call to the server - check response
+     * @throws Exception
+     */
+    public void testDescribeGlobalAsync() throws Exception {
+        RestResponse response = sendAsync(restClient, RestRequest.getRequestForDescribeGlobal(TestCredentials.API_VERSION));
         checkResponse(response, HttpStatus.SC_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "encoding", "maxBatchSize", "sobjects");
@@ -380,11 +404,6 @@ public class RestClientTest extends InstrumentationTestCase {
 		checkWrappedRestRequestUrl(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png"), clientInfo.instanceUrl + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/users/me/files");
     }
 
-    private void checkWrappedRestRequestUrl(RestRequest restRequest, String expectedUrl) throws Exception {
-    	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
-		assertEquals("Wrong url", expectedUrl, request.getUrl());
-    }      
-    
     /**
      * Testing that WrappedRestRequest's method field is correct with various RestRequest objects
      * @throws Exception
@@ -397,13 +416,7 @@ public class RestClientTest extends InstrumentationTestCase {
 		checkWrappedRestRequestMethod(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), RestMethod.MethodPATCH);
 		checkWrappedRestRequestMethod(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png"), Request.Method.POST);
     }
-    
-    private void checkWrappedRestRequestMethod(RestRequest restRequest, int expectedMethod) throws Exception {
-    	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
-		assertEquals("Wrong method", expectedMethod, request.getMethod());
-    }        
 
-    
     /**
      * Testing that WrappedRestRequest's body field is correct with various RestRequest objects
      * @throws Exception
@@ -416,6 +429,87 @@ public class RestClientTest extends InstrumentationTestCase {
 		checkWrappedRestRequestBody(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), "{\"name\":\"NewAccount\"}".getBytes());
     }
 
+    /**
+     * Testing that WrappedRestRequest's body content type field is correct with various RestRequest objects
+     * @throws Exception
+     */
+    public void testWrappedRestRequestBodyContentType() throws Exception {
+        checkWrappedRestRequestBodyContentType(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"), "application/x-www-form-urlencoded; charset=UTF-8");
+        Map<String, Object> fields = new HashMap<String, Object>();
+        fields.put("name", "NewAccount");
+        checkWrappedRestRequestBodyContentType(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), "application/json; charset=UTF-8");
+        checkWrappedRestRequestBodyContentType(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), "application/json; charset=UTF-8");
+        checkWrappedRestRequestBodyContentType(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png"), "multipart/form-data");
+    }
+
+    /**
+     * Testing doing a sync request against a non salesforce public api with a RestClient that uses an UnauthenticatedClientInfo
+     * @return
+     * @throws Exception
+     */
+    public void testRestClientUnauthenticatedlientInfo() throws Exception {
+        RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
+        RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist", null);
+        RestResponse response = unauthenticatedRestClient.sendSync(request);
+        checkResponse(response, HttpStatus.SC_OK, false);
+        JSONObject jsonResponse = response.asJSONObject();
+        checkKeys(jsonResponse, "artists");
+        checkKeys(jsonResponse.getJSONObject("artists"), "href", "items", "limit", "next", "offset", "previous", "total");
+    }
+
+    /**
+     * Testing doing an async request against a non salesforce public api with a RestClient that uses an UnauthenticatedClientInfo
+     * @return
+     * @throws Exception
+     */
+    public void testRestClientUnauthenticatedlientInfoAsync() throws Exception {
+        RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
+        RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist", null);
+        RestResponse response = sendAsync(unauthenticatedRestClient, request);
+        checkResponse(response, HttpStatus.SC_OK, false);
+        JSONObject jsonResponse = response.asJSONObject();
+        checkKeys(jsonResponse, "artists");
+        checkKeys(jsonResponse.getJSONObject("artists"), "href", "items", "limit", "next", "offset", "previous", "total");
+    }
+
+
+    //
+    // Helper methods
+    //
+
+    /**
+     * Send request using sendAsync method
+     * @param client
+     * @param request
+     * @return
+     * @throws InterruptedException
+     */
+    private RestResponse sendAsync(RestClient client, RestRequest request) throws InterruptedException {
+        final BlockingQueue<RestResponse> responseBlockingQueue = new ArrayBlockingQueue<>(1);
+        client.sendAsync(request, new RestClient.AsyncRequestCallback() {
+            @Override
+            public void onSuccess(RestRequest request, RestResponse response) {
+                responseBlockingQueue.add(response);
+            }
+
+            @Override
+            public void onError(Exception exception) {
+                responseBlockingQueue.add(null);
+            }
+        });
+        return responseBlockingQueue.poll(30, TimeUnit.SECONDS);
+    }
+
+    private void checkWrappedRestRequestUrl(RestRequest restRequest, String expectedUrl) throws Exception {
+        WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
+        assertEquals("Wrong url", expectedUrl, request.getUrl());
+    }
+
+    private void checkWrappedRestRequestMethod(RestRequest restRequest, int expectedMethod) throws Exception {
+        WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
+        assertEquals("Wrong method", expectedMethod, request.getMethod());
+    }
+
     private void checkWrappedRestRequestBody(RestRequest restRequest, byte[] expectedBody) throws Exception {
     	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
     	if (expectedBody == null) {
@@ -424,19 +518,6 @@ public class RestClientTest extends InstrumentationTestCase {
     	else {
     		assertEquals("Wrong body", new String(expectedBody), new String(request.getBody()));
     	}
-    }
-
-    /**
-     * Testing that WrappedRestRequest's body content type field is correct with various RestRequest objects
-     * @throws Exception
-     */
-    public void testWrappedRestRequestBodyContentType() throws Exception {
-    	checkWrappedRestRequestBodyContentType(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"), "application/x-www-form-urlencoded; charset=UTF-8");
-		Map<String, Object> fields = new HashMap<String, Object>();
-        fields.put("name", "NewAccount");
-		checkWrappedRestRequestBodyContentType(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), "application/json; charset=UTF-8");    	
-		checkWrappedRestRequestBodyContentType(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields),  "application/json; charset=UTF-8");
-		checkWrappedRestRequestBodyContentType(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png"),  "multipart/form-data");
     }
 
     private void checkWrappedRestRequestBodyContentType(RestRequest restRequest, String expectedBodyContentType) throws Exception {

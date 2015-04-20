@@ -178,7 +178,7 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
     	 * the underlying database will be wiped in the super class.
     	 */
     	CacheManager.softReset(userAccount);
-    	SyncManager.reset(userAccount);
+    	SyncManager.reset();
         super.cleanUp(frontActivity, account);
     }
 
