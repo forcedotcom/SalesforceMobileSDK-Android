@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2013-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -42,7 +42,7 @@ var fs = require('fs');
 var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
-var version = '3.2.0';
+var version = '3.3.0';
 var minimumCordovaVersion = '4.0';
 var minTargetApi = {'versionNumber': 21, 'versionName': 'Lollipop'};
 var androidExePath;
@@ -162,7 +162,7 @@ function createHybridApp(config) {
     shelljs.exec('cordova create "' + config.projectDir + '" ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android');
-    shelljs.exec('cordova plugin add https://github.com/forcedotcom/SalesforceMobileSDK-CordovaPlugin');
+    shelljs.exec('cordova plugin add https://github.com/forcedotcom/SalesforceMobileSDK-CordovaPlugin#unstable');
 
     // Remove the default Cordova app.
     shelljs.rm('-rf', path.join('www', '*'));
