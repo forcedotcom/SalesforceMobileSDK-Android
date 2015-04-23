@@ -142,22 +142,27 @@ public class SyncManager {
         if (account == null) {
             account = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
         }
-
         if (smartStore == null) {
             smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account, communityId);
         }
-
         String uniqueId = (account != null ? account.getUserId() : "") + ":"
                     + smartStore.getDatabase().getPath();
-
-
         SyncManager instance = INSTANCES.get(uniqueId);
         if (instance == null) {
-            RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
+            RestClient restClient = null;
+
+            /*
+             * If account is still null, there is no user logged in, which means, the default
+             * RestClient should be set to the unauthenticated RestClient instance.
+             */
+            if (account == null) {
+                restClient = SalesforceSDKManager.getInstance().getClientManager().peekUnauthenticatedRestClient();
+            } else {
+                restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
+            }
             instance = new SyncManager(smartStore, restClient);
             INSTANCES.put(uniqueId, instance);
         }
-
         return instance;
     }
 
