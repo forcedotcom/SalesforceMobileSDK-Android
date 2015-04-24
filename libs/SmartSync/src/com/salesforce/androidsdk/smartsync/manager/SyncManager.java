@@ -225,7 +225,7 @@ public class SyncManager {
         if (sync.getType() != SyncState.Type.syncDown) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong type:" + sync.getType());
         }
-        if (sync.getStatus() != SyncState.Status.DONE) {
+        if (sync.getStatus() == SyncState.Status.RUNNING) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": not done:" + sync.getStatus());
         }
         sync.setTotalSize(-1);
