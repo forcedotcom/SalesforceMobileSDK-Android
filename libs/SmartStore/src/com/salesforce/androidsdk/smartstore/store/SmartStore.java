@@ -59,10 +59,13 @@ public class SmartStore  {
     // Default
     public static final int DEFAULT_PAGE_SIZE = 10;
 
-    // Table to keep track of soup names
+	// Table to keep track of soup names
     protected static final String SOUP_NAMES_TABLE = "soup_names";
 
-    // Table to keep track of soup's index specs
+	// Fts table suffix
+	protected static final String FTS_SUFFIX = "_fts";
+
+	// Table to keep track of soup's index specs
     protected static final String SOUP_INDEX_MAP_TABLE = "soup_index_map";
     
     // Table to keep track of status of long operations in flight
@@ -80,6 +83,9 @@ public class SmartStore  {
     protected static final String LAST_MODIFIED_COL = "lastModified";
     protected static final String SOUP_COL = "soup";
 
+	// Column of a fts soup table
+	protected static final String DOCID_COL = "docid";
+
     // Columns of long operations status table
 	protected static final String TYPE_COL = "type";
     protected static final String DETAILS_COL = "details";
@@ -91,10 +97,10 @@ public class SmartStore  {
 
     // Predicates
     protected static final String SOUP_NAME_PREDICATE = SOUP_NAME_COL + " = ?";
-    protected static final String PATH_PREDICATE = PATH_COL + " = ?";
 	protected static final String ID_PREDICATE = ID_COL + " = ?";
+	protected static final String DOCID_PREDICATE = DOCID_COL + " =?";
 
-    // Backing database
+	// Backing database
 	protected SQLiteDatabase dbLocal;
 	protected SQLiteOpenHelper dbOpenHelper;
 	private String passcode;
@@ -273,8 +279,11 @@ public class SmartStore  {
 
         // Prepare SQL for creating soup table and its indices
         StringBuilder createTableStmt = new StringBuilder();          // to create new soup table
+		StringBuilder createFtsStmt = new StringBuilder();            // to create fts table
         List<String> createIndexStmts = new ArrayList<String>();      // to create indices on new soup table
         List<ContentValues> soupIndexMapInserts = new ArrayList<ContentValues>();  // to be inserted in soup index map table
+		IndexSpec[] indexSpecsToCache = new IndexSpec[indexSpecs.length];
+		List<String> columnsForFts = new ArrayList<String>();
 
         createTableStmt.append("CREATE TABLE ").append(soupTableName).append(" (")
                         .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
@@ -283,12 +292,16 @@ public class SmartStore  {
                         .append(", ").append(LAST_MODIFIED_COL).append(" INTEGER");
 
         int i = 0;
-        IndexSpec[] indexSpecsToCache = new IndexSpec[indexSpecs.length];
         for (IndexSpec indexSpec : indexSpecs) {
             // for create table
             String columnName = soupTableName + "_" + i;
             String columnType = indexSpec.type.getColumnType();
             createTableStmt.append(", ").append(columnName).append(" ").append(columnType);
+
+			// for fts
+			if (indexSpec.type == Type.full_text) {
+				columnsForFts.add(columnName);
+			}
 
             // for insert
             ContentValues values = new ContentValues();
@@ -308,13 +321,24 @@ public class SmartStore  {
             i++;
         }
         createTableStmt.append(")");
-        final SQLiteDatabase db = getDatabase();
+
+		// fts
+		if (columnsForFts.size() > 0) {
+			createFtsStmt.append(String.format("CREATE VIRTUAL TABLE %s%s USING fts4(%s)", soupTableName, FTS_SUFFIX, TextUtils.join(",", columnsForFts)));
+		}
 
         // Run SQL for creating soup table and its indices
+		final SQLiteDatabase db = getDatabase();
         db.execSQL(createTableStmt.toString());
+
+		if (columnsForFts.size() > 0) {
+			db.execSQL(createFtsStmt.toString());
+		}
+
         for (String createIndexStmt : createIndexStmts) {
             db.execSQL(createIndexStmt.toString());
         }
+
         try {
             db.beginTransaction();
             for (ContentValues values : soupIndexMapInserts) {
@@ -561,7 +585,7 @@ public class SmartStore  {
 	    	List<String> soupNames = new ArrayList<String>();
 	        Cursor cursor = null;
 	        try {
-	            cursor = DBHelper.getInstance(db).query(db, SOUP_NAMES_TABLE, new String[] {SOUP_NAME_COL}, null, null, null);
+	            cursor = DBHelper.getInstance(db).query(db, SOUP_NAMES_TABLE, new String[]{SOUP_NAME_COL}, null, null, null);
 	            if (cursor.moveToFirst()) {
 	                do {
 	                    soupNames.add(cursor.getString(0));
@@ -715,7 +739,7 @@ public class SmartStore  {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 	        IndexSpec[] indexSpecs = DBHelper.getInstance(db).getIndexSpecs(db, soupName);
-	
+
 	        try {
 	            if (handleTx) {
 	                db.beginTransaction();
@@ -732,13 +756,24 @@ public class SmartStore  {
 	            contentValues.put(CREATED_COL, now);
 	            contentValues.put(LAST_MODIFIED_COL, now);
 	            contentValues.put(SOUP_COL, soupElt.toString());
-	            for (IndexSpec indexSpec : indexSpecs) {
-	                projectIndexedPaths(soupElt, contentValues, indexSpec);
-	            }
-	
+
 	            // Inserting into database
 	            boolean success = DBHelper.getInstance(db).insert(db, soupTableName, contentValues) == soupEntryId;
-	
+
+				// Fts
+				if (success && hasFts(indexSpecs)) {
+					String soupTableNameFts = soupTableName + FTS_SUFFIX;
+					ContentValues contentValuesFts = new ContentValues();
+					contentValuesFts.put(DOCID_COL, soupEntryId);
+					for (IndexSpec indexSpec : indexSpecs) {
+						if (indexSpec.type == Type.full_text) {
+							projectIndexedPaths(soupElt, contentValuesFts, indexSpec);
+						}
+					}
+					// InsertHelper not working against virtual fts table
+					db.insert(soupTableNameFts, null, contentValuesFts);
+				}
+
 	            // Commit if successful
 	            if (success) {
 	                if (handleTx) {
@@ -748,7 +783,8 @@ public class SmartStore  {
 	            } else {
 	                return null;
 	            }
-	        } finally {
+	        }
+			finally {
 	            if (handleTx) {
 	                db.endTransaction();
 	            }
@@ -756,7 +792,23 @@ public class SmartStore  {
     	}
     }
 
-    /**
+	/**
+	 *
+	 * @param indexSpecs
+	 * @return true if at least one of the index specs is a full_text index
+	 */
+	private boolean hasFts(IndexSpec[] indexSpecs) {
+		boolean hasFts = false;
+		for (IndexSpec indexSpec : indexSpecs) {
+            if (indexSpec.type == Type.full_text) {
+                hasFts = true;
+                break;
+            }
+        }
+		return hasFts;
+	}
+
+	/**
      * @param soupElt
      * @param contentValues
      * @param indexSpec
@@ -767,7 +819,8 @@ public class SmartStore  {
         case integer:
             contentValues.put(indexSpec.columnName, value != null ? ((Number) value).longValue() : null); break;
         case string:
-            contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
+		case full_text:
+			contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
         case floating:
             contentValues.put(indexSpec.columnName, value != null ? ((Number) value).doubleValue() : null); break;
         }
@@ -853,12 +906,24 @@ public class SmartStore  {
 	        for (IndexSpec indexSpec : indexSpecs) {
 	            projectIndexedPaths(soupElt, contentValues, indexSpec);
 	        }
+
 	        try {
 	            if (handleTx) {
 	                db.beginTransaction();
 	            }
 	            boolean success = DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "") == 1;
-	            if (success) {
+
+				// Fts
+				if (success && hasFts(indexSpecs)) {
+					String soupTableNameFts = soupTableName + FTS_SUFFIX;
+					ContentValues contentValuesFts = new ContentValues();
+					for (IndexSpec indexSpec : indexSpecs) {
+						projectIndexedPaths(soupElt, contentValuesFts, indexSpec);
+					}
+					success = DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, DOCID_PREDICATE, soupEntryId + "") == 1;
+				}
+
+				if (success) {
 	                if (handleTx) {
 	                    db.setTransactionSuccessful();
 	                }
@@ -986,7 +1051,7 @@ public class SmartStore  {
     /**
      * Delete
      * @param soupName
-     * @param soupEntryId
+     * @param soupEntryIds
      * @param handleTx
      */
     public void delete(String soupName, Long[] soupEntryIds, boolean handleTx) {
@@ -999,6 +1064,7 @@ public class SmartStore  {
 	        }
 	        try {
 	            db.delete(soupTableName, getSoupEntryIdsPredicate(soupEntryIds), (String []) null);
+
 	            if (handleTx) {
 	                db.setTransactionSuccessful();
 	            }
@@ -1061,7 +1127,7 @@ public class SmartStore  {
      * Enum for column type
      */
     public enum Type {
-        string("TEXT"), integer("INTEGER"), floating("REAL");
+        string("TEXT"), integer("INTEGER"), floating("REAL"), full_text("TEXT");
 
         private String columnType;
 

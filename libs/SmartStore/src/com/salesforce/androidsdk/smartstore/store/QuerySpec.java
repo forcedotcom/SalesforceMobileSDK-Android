@@ -159,18 +159,31 @@ public class QuerySpec {
     }
 
     /**
-     * Compute smartSql for exact/like/range queries
+     * Return a query spec for a match query (full-text search)
+     * @param soupName
+     * @param path
+     * @param matchKey
+     * @param order
+     * @param pageSize
+     * @return
      */
-    private String computeSmartSql() {
-    	String selectClause = computeSelectClause();
-    	String fromClause = computeFromClause();
-    	String whereClause = computeWhereClause();
-    	String orderClause = computeOrderClause();
-    	return selectClause + fromClause + whereClause + orderClause;
+    public static QuerySpec buildMatchQuerySpec(String soupName, String path, String matchKey, Order order, int pageSize) {
+        return new QuerySpec(soupName, path, QueryType.match, matchKey, null, null, null, order, pageSize);
     }
 
     /**
-     * Compute countSmartSql for exact/like/range queries
+     * Compute smartSql for exact/like/range/match queries
+     */
+    private String computeSmartSql() {
+        String selectClause = computeSelectClause();
+        String fromClause = computeFromClause();
+        String whereClause = computeWhereClause();
+        String orderClause = computeOrderClause();
+        return selectClause + fromClause + whereClause + orderClause;
+    }
+
+    /**
+     * Compute countSmartSql for exact/like/range/match queries
      */
     private String computeCountSql() {
     	String fromClause = computeFromClause();
@@ -186,48 +199,75 @@ public class QuerySpec {
     }
 
     /**
-     * @return select clause for exact/like/range queries
+     * @return select clause for exact/like/range/match queries
      */
     private String computeSelectClause() {
-    	return SELECT  + computeFieldReference(SmartSqlHelper.SOUP) + " ";
+        return SELECT + computeFieldReference(SmartSqlHelper.SOUP) + " ";
     }
 
     /**
-     * @return from clause for exact/like/range queries
+     * @return from clause for exact/like/range/match queries
      */
     private String computeFromClause() {
-        return FROM  + computeSoupReference() + " ";
+        if (queryType == QueryType.match) {
+            return FROM + computeSoupReference() + "," + computeSoupFtsReference() + " ";
+        }
+        else {
+            return FROM + computeSoupReference() + " ";
+        }
+        
     }
     
     /**
-     * @return where clause for exact/like/range queries
+     * @return where clause for exact/like/range/match queries
      */
     private String computeWhereClause() {
-    	if (path == null) return "";
-    	
-    	String field = computeFieldReference(path);
-    	String pred = "";
-        switch(queryType) {
-        case exact: pred =  field + " = ? "; break;
-        case like: pred = field + " LIKE ? "; break;
-        case range:
-            if (beginKey == null && endKey == null) { break; }
-            if (endKey == null) { pred = field + " >= ? "; break; }
-            if (beginKey == null) { pred = field + " <= ? "; break; }
-            else { pred = field + " >= ?  AND " + field + " <= ? "; break; }
-        default:
-            throw new SmartStoreException("Fell through switch: " + queryType);
+        if (queryType == QueryType.match) {
+            String joinClause = computeSoupFtsReference() + "." + SmartStore.DOCID_COL + " = " + computeFieldReference(SmartStore.SOUP_ENTRY_ID);
+            String matchCause = computeSoupFtsReference() + " MATCH '" + matchKey + "' "; // matchKey only used for sorting
+            return WHERE + " " + joinClause + " AND " + matchCause;
         }
-        return (pred.equals("") ? "" : WHERE + pred);
+        else {
+            if (path == null) return "";
+
+            String field = computeFieldReference(path);
+            String pred = "";
+            switch (queryType) {
+                case exact:
+                    pred = field + " = ? ";
+                    break;
+                case like:
+                    pred = field + " LIKE ? ";
+                    break;
+                case range:
+                    if (beginKey == null && endKey == null) {
+                        break;
+                    }
+                    if (endKey == null) {
+                        pred = field + " >= ? ";
+                        break;
+                    }
+                    if (beginKey == null) {
+                        pred = field + " <= ? ";
+                        break;
+                    } else {
+                        pred = field + " >= ?  AND " + field + " <= ? ";
+                        break;
+                    }
+                default:
+                    throw new SmartStoreException("Fell through switch: " + queryType);
+            }
+            return (pred.equals("") ? "" : WHERE + pred);
+        }
     }
 
     /**
-     * @return order clause for exact/like/range queries
+     * @return order clause for exact/like/range/match queries
      */
     private String computeOrderClause() {
     	if (path == null) return "";
 
-    	return ORDER_BY + computeFieldReference(path) + " " + order.sql + " ";
+    	return ORDER_BY + computeSoupReference() + "." + computeFieldReference(path) + " " + order.sql + " ";
     }
     
 	/**
@@ -237,6 +277,12 @@ public class QuerySpec {
 		return "{" + soupName + "}";
 	}
 
+    /**
+     * @return fts soup table reference
+     */
+    private String computeSoupFtsReference() {
+        return "{" + soupName + "}" + SmartStore.FTS_SUFFIX;
+    }
     
     /**
      * @param field
@@ -264,6 +310,8 @@ public class QuerySpec {
                 return new String[] {endKey};
             else
                 return new String[] {beginKey, endKey};
+        case match:
+            return null; // baking match into query
         case smart:
         	return null;
         default:
@@ -297,6 +345,7 @@ public class QuerySpec {
 	    case range:   querySpec = buildRangeQuerySpec(soupName, path, beginKey, endKey, order, pageSize); break;
 	    case like:    querySpec = buildLikeQuerySpec(soupName, path, likeKey, order, pageSize); break;
 	    case smart:   querySpec = buildSmartQuerySpec(smartSql, pageSize); break;
+        case match:   querySpec = buildMatchQuerySpec(soupName, path, matchKey, order, pageSize); break;
 	    default: throw new RuntimeException("Fell through switch: " + queryType);
 		}
 		return querySpec;
@@ -309,7 +358,8 @@ public class QuerySpec {
         exact,
         range,
         like,
-        smart;
+        smart,
+        match;
     }
 
 
