@@ -63,7 +63,7 @@ public class SmartStore  {
     protected static final String SOUP_NAMES_TABLE = "soup_names";
 
 	// Fts table suffix
-	protected static final String FTS_SUFFIX = "_fts";
+	public static final String FTS_SUFFIX = "_fts";
 
 	// Table to keep track of soup's index specs
     protected static final String SOUP_INDEX_MAP_TABLE = "soup_index_map";
@@ -548,6 +548,8 @@ public class SmartStore  {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName != null) {
 	            db.execSQL("DROP TABLE IF EXISTS " + soupTableName);
+				db.execSQL("DROP TABLE IF EXISTS " + soupTableName + FTS_SUFFIX);
+
 	            try {
 	                db.beginTransaction();
 	                DBHelper.getInstance(db).delete(db, SOUP_NAMES_TABLE, SOUP_NAME_PREDICATE, soupName);
