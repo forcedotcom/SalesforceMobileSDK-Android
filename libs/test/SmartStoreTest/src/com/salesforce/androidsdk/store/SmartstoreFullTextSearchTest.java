@@ -30,9 +30,9 @@ import android.database.Cursor;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
@@ -40,11 +40,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Arrays;
+
 /**
  * Tests for full-text search with smartstore
  *
  */
-public class SmartstoreFullTextSearchTest extends SmartStoreTestCase {
+public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
 
     private static final String EMPLOYEE_ID = "employeeId";
     private static final String LAST_NAME = "lastName";
@@ -55,6 +57,15 @@ public class SmartstoreFullTextSearchTest extends SmartStoreTestCase {
     private static final String FIRST_NAME_COL = TABLE_NAME + "_0";
     private static final String LAST_NAME_COL = TABLE_NAME + "_1";
     private static final String EMPLOYEE_ID_COL = TABLE_NAME + "_2";
+    
+    // Populated by loadData()
+    private long christineHaasId;
+    private long michaelThompsonId;
+    private long aliHaasId;
+    private long johnGeyerId;
+    private long irvingSternId;
+    private long evaPulaskiId;
+    private long eileenEvaId;
 
     @Override
     protected String getPasscode() {
@@ -75,7 +86,7 @@ public class SmartstoreFullTextSearchTest extends SmartStoreTestCase {
     /**
      * Test register/drop soup that uses full-text search indices
      */
-    public void testRegisterDropSoupWithFTS() {
+    public void testRegisterDropSoup() {
         String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
         assertEquals("getSoupTableName should have returned TABLE_1", TABLE_NAME, soupTableName);
         assertTrue("Table for soup employees does exist", hasTable(soupTableName));
@@ -93,9 +104,9 @@ public class SmartstoreFullTextSearchTest extends SmartStoreTestCase {
     }
 
     /**
-     * Test inserting rows in soup that uses full-text search indices
+     * Test inserting rows
      */
-    public void testInsertWithFTS() throws JSONException {
+    public void testInsert() throws JSONException {
         // Insert a couple of rows
         long firstEmployeeId = createEmployee("Christine", "Haas", "00010");
         long secondEmployeeId = createEmployee("Michael", "Thompson", "00020");
@@ -113,7 +124,7 @@ public class SmartstoreFullTextSearchTest extends SmartStoreTestCase {
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
             assertEquals("Expected two rows", 2, c.getCount());
-            JSONTestHelper.assertSameJSONArray("Wrong columns", new JSONArray(new String[]{"id", "soup", "created", "lastModified", FIRST_NAME_COL, LAST_NAME_COL, EMPLOYEE_ID_COL}), new JSONArray(c.getColumnNames()));
+            assertTrue("Wrong columns", Arrays.deepEquals(new String[]{"id", "soup", "created", "lastModified", FIRST_NAME_COL, LAST_NAME_COL, EMPLOYEE_ID_COL}, c.getColumnNames()));
 
             assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("id")));
             assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
@@ -131,7 +142,7 @@ public class SmartstoreFullTextSearchTest extends SmartStoreTestCase {
             // Check fts table columns
             c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "docid ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
-            JSONTestHelper.assertSameJSONArray("Wrong columns", new JSONArray(new String[]{FIRST_NAME_COL, LAST_NAME_COL}), new JSONArray(c.getColumnNames()));
+            assertTrue("Wrong columns", Arrays.deepEquals(new String[]{FIRST_NAME_COL, LAST_NAME_COL}, c.getColumnNames()));
 
             safeClose(c);
 
@@ -155,9 +166,9 @@ public class SmartstoreFullTextSearchTest extends SmartStoreTestCase {
     }
 
     /**
-     * Test deleting rows in soup that uses full-text search indices
+     * Test deleting rows
      */
-    public void testDeleteWithFTS() throws JSONException {
+    public void testDelete() throws JSONException {
         // Insert a couple of rows
         long firstEmployeeId = createEmployee("Christine", "Haas", "00010");
         long secondEmployeeId = createEmployee("Michael", "Thompson", "00020");
@@ -234,9 +245,9 @@ public class SmartstoreFullTextSearchTest extends SmartStoreTestCase {
     }
 
     /**
-     * Test updating rows in soup that uses full-text search indices
+     * Test updating rows
      */
-    public void testUpdateWithFTS() throws JSONException {
+    public void testUpdate() throws JSONException {
         // Insert a couple of rows
         long firstEmployeeId = createEmployee("Christine", "Haas", "00010");
         long secondEmployeeId = createEmployee("Michael", "Thompson", "00020");
@@ -297,26 +308,81 @@ public class SmartstoreFullTextSearchTest extends SmartStoreTestCase {
 
 
     /**
-     * Test search rows in soup that uses full-text search indices
+     * Test search rows matching single field
      */
-    public void testSearchWithFTS() throws JSONException {
+    public void testSearchSingleField() throws JSONException {
+        loadData();
+        
+        // One field - full word - one result
+        trySearch(new long[]{christineHaasId}, FIRST_NAME, "Christine", null);
+        trySearch(new long[]{irvingSternId}, LAST_NAME, "Stern", null);
+
+        // One field - prefix - one result
+        trySearch(new long[]{christineHaasId}, FIRST_NAME, "Christ*", null);
+        trySearch(new long[]{irvingSternId}, LAST_NAME, "Ste*", null);
     }
 
     /**
-     * Load some datq in the smart store
-     * @throws JSONException
+     * Test search rows ordering matching single field
      */
-    private void loadData() throws JSONException {
-        // Employees
-        createEmployee("Christine", "Haas", "00010");
-        createEmployee("Michael", "Thompson", "00020");
-        createEmployee("Sally", "Kwan", "00310");
-        createEmployee("John", "Geyer", "00040");
-        createEmployee("Irving", "Stern", "00050");
-        createEmployee("Eva", "Pulaski", "00060");
-        createEmployee("Eileen", "Henderson", "00070");
+    public void testSearchOrderingSingleField() throws JSONException {
+        loadData();
+        
+        // One field - full word - more than one results
+        trySearch(new long[]{christineHaasId, aliHaasId}, LAST_NAME, "Haas", EMPLOYEE_ID);
+        trySearch(new long[]{aliHaasId, christineHaasId}, LAST_NAME, "Haas", FIRST_NAME);
+
+        // One field - prefix - more than one results
+        trySearch(new long[]{evaPulaskiId, eileenEvaId}, FIRST_NAME, "E*", EMPLOYEE_ID);
+        trySearch(new long[]{eileenEvaId, evaPulaskiId}, FIRST_NAME, "E*", FIRST_NAME);
     }
 
+    /**
+     * Test search rows matching all fields
+     */
+    public void testSearchAllFields() throws JSONException {
+        loadData();
+
+        // All fields - full word - one result
+        trySearch(new long[]{irvingSternId}, null, "Stern", null);
+
+        // All fields - prefix - one result
+        trySearch(new long[]{irvingSternId}, null, "St*", null);
+    }
+
+    /**
+     * Test search rows ordering matching all fields
+     */
+    public void testOrderingSearchAllFieldsh() throws JSONException {
+        loadData();
+
+        // All fields - full word - more than one results
+        trySearch(new long[]{evaPulaskiId, eileenEvaId}, null, "Eva", EMPLOYEE_ID);
+        trySearch(new long[]{eileenEvaId, evaPulaskiId}, null, "Eva", LAST_NAME);
+
+        // All fields - prefix - more than one results
+        trySearch(new long[]{evaPulaskiId, eileenEvaId}, null, "Ev*", EMPLOYEE_ID);
+        trySearch(new long[]{eileenEvaId, evaPulaskiId}, null, "Ev*", LAST_NAME);
+    }
+
+    private void trySearch(long[] expectedIds, String path, String matchKey, String orderPath) throws JSONException {
+        JSONArray results = store.query(QuerySpec.buildMatchQuerySpec(EMPLOYEES_SOUP, path, matchKey, orderPath, QuerySpec.Order.ascending, 25), 0);
+        assertEquals("Wrong number of results", expectedIds.length, results.length());
+        for (int i=0; i<results.length(); i++) {
+            assertEquals("Wrong result", expectedIds[i], idOf(results.getJSONObject(i)));
+        }
+    }
+
+    private void loadData() throws JSONException {
+        christineHaasId = createEmployee("Christine", "Haas", "00010");
+        michaelThompsonId = createEmployee("Michael", "Thompson", "00020");
+        aliHaasId = createEmployee("Ali", "Haas", "00310");
+        johnGeyerId = createEmployee("John", "Geyer", "00040");
+        irvingSternId = createEmployee("Irving", "Stern", "00050");
+        evaPulaskiId = createEmployee("Eva", "Pulaski", "00060");
+        eileenEvaId = createEmployee("Eileen", "Eva", "00070");
+    }
+    
     private long createEmployee(String firstName, String lastName, String employeeId) throws JSONException {
         JSONObject employee = new JSONObject();
         employee.put(FIRST_NAME, firstName);
