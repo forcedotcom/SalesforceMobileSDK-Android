@@ -65,6 +65,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	public static final String LIKE_KEY = "likeKey";
 	public static final String MATCH_KEY = "matchKey";
 	public static final String SMART_SQL = "smartSql";
+	public static final String ORDER_PATH = "orderPath";
 	public static final String ORDER = "order";
 	public static final String PAGE_SIZE = "pageSize";
 	public static final String QUERY_TYPE = "queryType";

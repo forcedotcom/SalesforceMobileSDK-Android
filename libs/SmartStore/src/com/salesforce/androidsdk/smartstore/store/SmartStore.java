@@ -757,6 +757,10 @@ public class SmartStore  {
 	            contentValues.put(LAST_MODIFIED_COL, now);
 	            contentValues.put(SOUP_COL, soupElt.toString());
 
+				for (IndexSpec indexSpec : indexSpecs) {
+					projectIndexedPaths(soupElt, contentValues, indexSpec);
+				}
+
 	            // Inserting into database
 	            boolean success = DBHelper.getInstance(db).insert(db, soupTableName, contentValues) == soupEntryId;
 
@@ -888,30 +892,32 @@ public class SmartStore  {
     public JSONObject update(String soupName, JSONObject soupElt, long soupEntryId, boolean handleTx) throws JSONException {
     	final SQLiteDatabase db = getDatabase();
     	synchronized(db) {
-	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
-	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
-	        IndexSpec[] indexSpecs = DBHelper.getInstance(db).getIndexSpecs(db, soupName);
-	
-	        long now = System.currentTimeMillis();
-	
-	        // In the case of an upsert with external id, _soupEntryId won't be in soupElt
-	        soupElt.put(SOUP_ENTRY_ID, soupEntryId);
-	        // Updating last modified field in soup element
-	        soupElt.put(SOUP_LAST_MODIFIED_DATE, now);
-	
-	        // Preparing data for row
-	        ContentValues contentValues = new ContentValues();
-	        contentValues.put(SOUP_COL, soupElt.toString());
-	        contentValues.put(LAST_MODIFIED_COL, now);
-	        for (IndexSpec indexSpec : indexSpecs) {
-	            projectIndexedPaths(soupElt, contentValues, indexSpec);
-	        }
+			try {
+				if (handleTx) {
+					db.beginTransaction();
+				}
 
-	        try {
-	            if (handleTx) {
-	                db.beginTransaction();
-	            }
-	            boolean success = DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "") == 1;
+				String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
+				if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
+				IndexSpec[] indexSpecs = DBHelper.getInstance(db).getIndexSpecs(db, soupName);
+
+				long now = System.currentTimeMillis();
+
+				// In the case of an upsert with external id, _soupEntryId won't be in soupElt
+				soupElt.put(SOUP_ENTRY_ID, soupEntryId);
+				// Updating last modified field in soup element
+				soupElt.put(SOUP_LAST_MODIFIED_DATE, now);
+
+				// Preparing data for row
+				ContentValues contentValues = new ContentValues();
+				contentValues.put(SOUP_COL, soupElt.toString());
+				contentValues.put(LAST_MODIFIED_COL, now);
+				for (IndexSpec indexSpec : indexSpecs) {
+					projectIndexedPaths(soupElt, contentValues, indexSpec);
+				}
+
+				// Updating database
+				boolean success = DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "") == 1;
 
 				// Fts
 				if (success && hasFts(indexSpecs)) {
@@ -924,18 +930,18 @@ public class SmartStore  {
 				}
 
 				if (success) {
-	                if (handleTx) {
-	                    db.setTransactionSuccessful();
-	                }
-	                return soupElt;
-	            } else {
-	                return null;
-	            }
-	        } finally {
-	            if (handleTx) {
-	                db.endTransaction();
-	            }
-	        }
+					if (handleTx) {
+						db.setTransactionSuccessful();
+					}
+					return soupElt;
+				} else {
+					return null;
+				}
+			} finally {
+				if (handleTx) {
+					db.endTransaction();
+				}
+			}
     	}
     }
 

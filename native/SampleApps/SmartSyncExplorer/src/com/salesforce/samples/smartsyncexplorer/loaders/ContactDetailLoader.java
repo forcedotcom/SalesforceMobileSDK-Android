@@ -78,7 +78,7 @@ public class ContactDetailLoader extends AsyncTaskLoader<ContactObject> {
 			return null;
 		}
 		final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(
-				ContactListLoader.CONTACT_SOUP, Constants.ID, objectId, 1);
+				ContactListLoader.CONTACT_SOUP, Constants.ID, objectId, null, null, 1);
 		JSONArray results = null;
 		try {
 			results = smartStore.query(querySpec, 0);
