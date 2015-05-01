@@ -923,7 +923,9 @@ public class SmartStore  {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
 					for (IndexSpec indexSpec : indexSpecs) {
-						projectIndexedPaths(soupElt, contentValuesFts, indexSpec);
+						if (indexSpec.type == Type.full_text) {
+							projectIndexedPaths(soupElt, contentValuesFts, indexSpec);
+						}
 					}
 					success = DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, DOCID_PREDICATE, soupEntryId + "") == 1;
 				}

@@ -152,7 +152,6 @@ public class SmartstoreFullTextSearchTest extends SmartStoreTestCase {
         finally {
             safeClose(c);
         }
-
     }
 
     /**
@@ -232,6 +231,75 @@ public class SmartstoreFullTextSearchTest extends SmartStoreTestCase {
         finally {
             safeClose(c);
         }
+    }
+
+    /**
+     * Test updating rows in soup that uses full-text search indices
+     */
+    public void testUpdateWithFTS() throws JSONException {
+        // Insert a couple of rows
+        long firstEmployeeId = createEmployee("Christine", "Haas", "00010");
+        long secondEmployeeId = createEmployee("Michael", "Thompson", "00020");
+
+
+        // Update second employee
+        JSONObject updatedEmployee = new JSONObject();
+        updatedEmployee.put(FIRST_NAME, "Michael-updated");
+        updatedEmployee.put(LAST_NAME, "Thompson");
+        updatedEmployee.put(EMPLOYEE_ID, "00020-updated");
+        store.update(EMPLOYEES_SOUP, updatedEmployee, secondEmployeeId);
+
+        // Check DB
+        Cursor c = null;
+        try {
+            String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
+            assertEquals("getSoupTableName should have returned TABLE_1", "TABLE_1", soupTableName);
+            assertTrue("Table for soup employees does exist", hasTable(soupTableName));
+
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+
+            // Check soup table
+            c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
+            assertTrue("Expected a row", c.moveToFirst());
+            assertEquals("Expected two rows", 2, c.getCount());
+
+            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("id")));
+            assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            assertEquals("Wrong value in index column", "Haas", c.getString(c.getColumnIndex(LAST_NAME_COL)));
+            assertEquals("Wrong value in index column", "00010", c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
+
+            c.moveToNext();
+            assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("id")));
+            assertEquals("Wrong value in index column", "Michael-updated", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
+            assertEquals("Wrong value in index column", "00020-updated", c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
+
+            safeClose(c);
+
+            // Check fts table data
+            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, new String[] {"docid", FIRST_NAME_COL, LAST_NAME_COL}, "docid ASC", null, null);
+            assertTrue("Expected a row", c.moveToFirst());
+            assertEquals("Expected two rows", 2, c.getCount());
+
+            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("docid")));
+            assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            assertEquals("Wrong value in index column", "Haas", c.getString(c.getColumnIndex(LAST_NAME_COL)));
+
+            c.moveToNext();
+            assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("docid")));
+            assertEquals("Wrong value in index column", "Michael-updated", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
+        }
+        finally {
+            safeClose(c);
+        }
+    }
+
+
+    /**
+     * Test search rows in soup that uses full-text search indices
+     */
+    public void testSearchWithFTS() throws JSONException {
     }
 
     /**
