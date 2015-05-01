@@ -515,6 +515,9 @@ public class SmartStore  {
 			db.beginTransaction();
 			try {
 				DBHelper.getInstance(db).delete(db, soupTableName, null);
+				if (hasFTS(soupName)) {
+					DBHelper.getInstance(db).delete(db, soupTableName + FTS_SUFFIX, null);
+				}
 			} finally {
 				db.setTransactionSuccessful();
 				db.endTransaction();

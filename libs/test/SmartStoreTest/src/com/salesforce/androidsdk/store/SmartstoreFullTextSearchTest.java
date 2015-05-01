@@ -245,6 +245,59 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     }
 
     /**
+     * Test clearing soup
+     */
+    public void testClear() throws JSONException {
+        // Insert a couple of rows
+        long firstEmployeeId = createEmployee("Christine", "Haas", "00010");
+        long secondEmployeeId = createEmployee("Michael", "Thompson", "00020");
+
+        // Check DB
+        Cursor c = null;
+        try {
+            String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+
+            // Check soup table
+            c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
+            assertTrue("Expected a row", c.moveToFirst());
+            assertEquals("Expected two rows", 2, c.getCount());
+
+            safeClose(c);
+
+            // Check fts table data
+            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "docid ASC", null, null);
+            assertTrue("Expected a row", c.moveToFirst());
+            assertEquals("Expected two rows", 2, c.getCount());
+        }
+        finally {
+            safeClose(c);
+        }
+
+        // Clear soup
+        store.clearSoup(EMPLOYEES_SOUP);
+
+        // Check DB
+        try {
+            String soupTableName = getSoupTableName(EMPLOYEES_SOUP);
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+
+            // Check soup table
+            c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
+            assertFalse("Expected no rows", c.moveToFirst());
+
+            safeClose(c);
+
+            // Check fts table data
+            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "docid ASC", null, null);
+            assertFalse("Expected no rows", c.moveToFirst());
+        }
+        finally {
+            safeClose(c);
+        }
+    }
+
+    /**
      * Test updating rows
      */
     public void testUpdate() throws JSONException {
@@ -308,9 +361,9 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
 
 
     /**
-     * Test search rows matching single field
+     * Test search on single field returning a single result
      */
-    public void testSearchSingleField() throws JSONException {
+    public void testSearchSingleFieldSingleResult() throws JSONException {
         loadData();
         
         // One field - full word - one result
@@ -320,12 +373,15 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // One field - prefix - one result
         trySearch(new long[]{christineHaasId}, FIRST_NAME, "Christ*", null);
         trySearch(new long[]{irvingSternId}, LAST_NAME, "Ste*", null);
+
+        // One field - set operation - one result
+        trySearch(new long[]{eileenEvaId}, FIRST_NAME, "E* -Eva", null);
     }
 
     /**
-     * Test search rows ordering matching single field
+     * Test search on single field returning multiple results - testing ordering
      */
-    public void testSearchOrderingSingleField() throws JSONException {
+    public void testSearchSingleFieldMultipleResults() throws JSONException {
         loadData();
         
         // One field - full word - more than one results
@@ -335,12 +391,17 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // One field - prefix - more than one results
         trySearch(new long[]{evaPulaskiId, eileenEvaId}, FIRST_NAME, "E*", EMPLOYEE_ID);
         trySearch(new long[]{eileenEvaId, evaPulaskiId}, FIRST_NAME, "E*", FIRST_NAME);
+
+        // One field - set operation - more than one results
+        trySearch(new long[]{evaPulaskiId, eileenEvaId}, FIRST_NAME, "Eva OR Eileen", EMPLOYEE_ID);
+        trySearch(new long[]{eileenEvaId, evaPulaskiId}, FIRST_NAME, "Eva OR Eileen", FIRST_NAME);
+
     }
 
     /**
-     * Test search rows matching all fields
+     * Test search on all fields returning a single result
      */
-    public void testSearchAllFields() throws JSONException {
+    public void testSearchAllFieldsSingleResult() throws JSONException {
         loadData();
 
         // All fields - full word - one result
@@ -348,12 +409,18 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
 
         // All fields - prefix - one result
         trySearch(new long[]{irvingSternId}, null, "St*", null);
+
+        // All fields - multiple words - one result
+        trySearch(new long[]{christineHaasId}, null, "Haas Christine", null);
+
+        // All fields - set operation - one result
+        trySearch(new long[]{aliHaasId}, null, "Haas -Christine", null);
     }
 
     /**
-     * Test search rows ordering matching all fields
+     * Test search on all fields returning multiple results - testing ordering
      */
-    public void testOrderingSearchAllFieldsh() throws JSONException {
+    public void testSearchAllFieldMultipleResults() throws JSONException {
         loadData();
 
         // All fields - full word - more than one results
@@ -363,6 +430,12 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // All fields - prefix - more than one results
         trySearch(new long[]{evaPulaskiId, eileenEvaId}, null, "Ev*", EMPLOYEE_ID);
         trySearch(new long[]{eileenEvaId, evaPulaskiId}, null, "Ev*", LAST_NAME);
+
+        // All fields - set operation - more than result
+        trySearch(new long[]{michaelThompsonId, aliHaasId}, null, "Thompson OR Ali", EMPLOYEE_ID);
+        trySearch(new long[]{aliHaasId, michaelThompsonId}, null, "Thompson OR Ali", FIRST_NAME);
+        trySearch(new long[]{christineHaasId, evaPulaskiId, eileenEvaId}, null, "Eva OR Haas -Ali", EMPLOYEE_ID);
+        trySearch(new long[]{christineHaasId, eileenEvaId, evaPulaskiId}, null, "Eva OR Haas -Ali", FIRST_NAME);
     }
 
     private void trySearch(long[] expectedIds, String path, String matchKey, String orderPath) throws JSONException {
@@ -376,7 +449,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     private void loadData() throws JSONException {
         christineHaasId = createEmployee("Christine", "Haas", "00010");
         michaelThompsonId = createEmployee("Michael", "Thompson", "00020");
-        aliHaasId = createEmployee("Ali", "Haas", "00310");
+        aliHaasId = createEmployee("Ali", "Haas", "00030");
         johnGeyerId = createEmployee("John", "Geyer", "00040");
         irvingSternId = createEmployee("Irving", "Stern", "00050");
         evaPulaskiId = createEmployee("Eva", "Pulaski", "00060");
