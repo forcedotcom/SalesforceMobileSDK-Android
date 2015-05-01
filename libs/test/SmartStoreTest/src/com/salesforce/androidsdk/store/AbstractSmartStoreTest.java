@@ -137,32 +137,6 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 	}
 
 	/**
-	 * Test register/drop soup that uses full-text search indices
-	 */
-	public void testRegisterDropSoupWithFTS() {
-		// Before
-		assertNull("getSoupTableName should have returned null", getSoupTableName(THIRD_TEST_SOUP));
-		assertFalse("Soup third_test_soup should not exist", store.hasSoup(THIRD_TEST_SOUP));
-
-		// Register
-		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.full_text), new IndexSpec("value", Type.string)});
-		String soupTableName = getSoupTableName(THIRD_TEST_SOUP);
-		assertEquals("getSoupTableName should have returned TABLE_2", "TABLE_2", soupTableName);
-		assertTrue("Table for soup third_test_soup does exist", hasTable(soupTableName));
-		assertTrue("FTS table for soup third_test_soup does exist", hasTable(soupTableName + SmartStore.FTS_SUFFIX));
-		assertTrue("Register soup call failed", store.hasSoup(THIRD_TEST_SOUP));
-
-		// Drop
-		store.dropSoup(THIRD_TEST_SOUP);
-
-		// After
-		assertFalse("Soup third_test_soup should no longer exist", store.hasSoup(THIRD_TEST_SOUP));
-		assertNull("getSoupTableName should have returned null", getSoupTableName(THIRD_TEST_SOUP));
-		assertFalse("Table for soup third_test_soup should not exist", hasTable(soupTableName));
-		assertFalse("FTS table for soup third_test_soup should not exist", hasTable(soupTableName + SmartStore.FTS_SUFFIX));
-	}
-
-	/**
 	 * Testing getAllSoupNames: register a new soup and then drop it and call getAllSoupNames before and after
 	 */
 	public void testGetAllSoupNames() {

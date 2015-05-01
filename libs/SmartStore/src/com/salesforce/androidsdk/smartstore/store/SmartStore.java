@@ -26,10 +26,13 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.text.TextUtils;
+import android.util.Log;
+
+import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
@@ -38,13 +41,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.ContentValues;
-import android.database.Cursor;
-import android.text.TextUtils;
-import android.util.Log;
-
-import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Smart store
@@ -548,7 +548,9 @@ public class SmartStore  {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName != null) {
 	            db.execSQL("DROP TABLE IF EXISTS " + soupTableName);
-				db.execSQL("DROP TABLE IF EXISTS " + soupTableName + FTS_SUFFIX);
+				if (hasFTS(soupName)) {
+					db.execSQL("DROP TABLE IF EXISTS " + soupTableName + FTS_SUFFIX);
+				}
 
 	            try {
 	                db.beginTransaction();
@@ -767,7 +769,7 @@ public class SmartStore  {
 	            boolean success = DBHelper.getInstance(db).insert(db, soupTableName, contentValues) == soupEntryId;
 
 				// Fts
-				if (success && hasFts(indexSpecs)) {
+				if (success && hasFTS(soupName)) {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
 					contentValuesFts.put(DOCID_COL, soupEntryId);
@@ -799,19 +801,14 @@ public class SmartStore  {
     }
 
 	/**
-	 *
-	 * @param indexSpecs
-	 * @return true if at least one of the index specs is a full_text index
+	 * @soupName
+	 * @return true if soup has at least one full-text search index
 	 */
-	private boolean hasFts(IndexSpec[] indexSpecs) {
-		boolean hasFts = false;
-		for (IndexSpec indexSpec : indexSpecs) {
-            if (indexSpec.type == Type.full_text) {
-                hasFts = true;
-                break;
-            }
-        }
-		return hasFts;
+	private boolean hasFTS(String soupName) {
+		SQLiteDatabase db = getDatabase();
+		synchronized (db) {
+			return DBHelper.getInstance(db).hasFTS(db, soupName);
+		}
 	}
 
 	/**
@@ -922,7 +919,7 @@ public class SmartStore  {
 				boolean success = DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "") == 1;
 
 				// Fts
-				if (success && hasFts(indexSpecs)) {
+				if (success && hasFTS(soupName)) {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
 					for (IndexSpec indexSpec : indexSpecs) {
@@ -1073,6 +1070,10 @@ public class SmartStore  {
 	        try {
 	            db.delete(soupTableName, getSoupEntryIdsPredicate(soupEntryIds), (String []) null);
 
+				if (hasFTS(soupName)) {
+					db.delete(soupTableName + FTS_SUFFIX, getDocidsPredicate(soupEntryIds), (String[]) null);
+				}
+
 	            if (handleTx) {
 	                db.setTransactionSuccessful();
 	            }
@@ -1091,6 +1092,13 @@ public class SmartStore  {
         return ID_COL + " IN (" + TextUtils.join(",", soupEntryIds)+ ")";
     }
 
+
+	/**
+	 * @return predicate to match entries by docid
+	 */
+	private String getDocidsPredicate(Long[] docids) {
+		return DOCID_COL + " IN (" + TextUtils.join(",", docids)+ ")";
+	}
 
     /**
      * @param soupId

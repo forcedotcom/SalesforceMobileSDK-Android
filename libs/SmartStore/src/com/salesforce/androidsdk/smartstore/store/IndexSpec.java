@@ -121,7 +121,7 @@ public class IndexSpec {
 	}
 	
 	/**
-	 * @param json
+	 * @param jsonArray
 	 * @return IndexSpec[] from a JSONArray
 	 * @throws JSONException
 	 */
@@ -154,6 +154,19 @@ public class IndexSpec {
 			map.put(indexSpec.path, indexSpec);
 		}
 		return map;
+	}
+
+	/**
+	 * @param indexSpecs
+	 * @return true if at least one of the indexSpec is of type full_text
+	 */
+	public static boolean hasFTS(IndexSpec[] indexSpecs) {
+		for (IndexSpec indexSpec : indexSpecs) {
+			if (indexSpec.type == Type.full_text) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 }
