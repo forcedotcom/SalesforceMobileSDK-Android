@@ -115,13 +115,15 @@ public class SmartStoreFTSSpeedTest extends InstrumentationTestCase {
         double avgQueryTimeFullText = queryData(Type.full_text, rowsPerAnimal, matchingRowsPerAnimal);
         store.dropAllSoups();
 
-            Log.i(TAG, String.format("Search rows=%d matchingRows=%d totalInsertTimeString=%.3fs avgQueryTimeString=%.3fs totalInsertTimeFullText=%.0f%% avgQueryTimeFullText=%.0f%%",
+            Log.i(TAG, String.format("Search rows=%d matchingRows=%d avgQueryTimeString=%.4fs avgQueryTimeFullText=%.4fs (%.2f%%) totalInsertTimeString=%.3fs totalInsertTimeFullText=%.3fs (%.2f%%)",
                     rowsPerAnimal * 25,
                     matchingRowsPerAnimal,
-                    totalInsertTimeString,
                     avgQueryTimeString,
-                    100*totalInsertTimeFullText / totalInsertTimeString,
-                    100*avgQueryTimeFullText / avgQueryTimeString));
+                    avgQueryTimeFullText,
+                    100*avgQueryTimeFullText / avgQueryTimeString,
+                    totalInsertTimeString,
+                    totalInsertTimeFullText,
+                    100*totalInsertTimeFullText / totalInsertTimeString));
     }
 
     /**
