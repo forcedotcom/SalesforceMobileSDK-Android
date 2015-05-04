@@ -26,16 +26,6 @@
  */
 package com.salesforce.androidsdk.store;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
@@ -44,9 +34,15 @@ import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteOpenHelper;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Set of tests for the smart store full-text-search
@@ -55,13 +51,14 @@ public class SmartStoreFTSSpeedTest extends InstrumentationTestCase {
 
     public static final String TAG = "SmartStoreFTSSpeedTest";
 
+    // Animals A..Y
     public static final String[] ANIMALS = new String[]{"alligator", "ant", "bear", "bee", "bird", "camel", "cat",
             "cheetah", "chicken", "chimpanzee", "cow", "crocodile", "deer", "dog", "dolphin",
             "duck", "eagle", "elephant", "fish", "fly", "fox", "frog", "giraffe", "goat",
-            "goldfish", "hamster", "hippopotamus", "horse", "kangaroo", "kitten", "lion",
-            "lobster", "monkey", "octopus", "owl", "panda", "pig", "puppy", "rabbit", "rat",
+            "goldfish", "hamster", "hippopotamus", "horse", "iguana", "impala", "jaguar", "jellyfish", "kangaroo", "kitten", "lion",
+            "lobster", "monkey", "nightingale", "octopus", "owl", "panda", "pig", "puppy", "quail", "rabbit", "rat",
             "scorpion", "seal", "shark", "sheep", "snail", "snake", "spider", "squirrel",
-            "tiger", "turtle", "wolf", "zebra"};
+            "tiger", "turtle", "umbrellabird", "vulture", "wolf", "xantus", "xerus", "yak"};
 
     public static final String ANIMALS_SOUP = "animals";
     public static final String TEXT_COL = "text";
@@ -90,57 +87,108 @@ public class SmartStoreFTSSpeedTest extends InstrumentationTestCase {
         super.tearDown();
     }
 
-    public void testSearch1000() throws JSONException {
-        trySearch(1000, Type.string);
-        store.dropAllSoups();
-        trySearch(1000, Type.full_text);
+    public void testSearch1000RowsOneMatch() throws JSONException {
+        trySearch(40, 1);
     }
 
-    private long setupData(int rowsPerAnimal, Type textFieldType) throws JSONException {
-        long start = System.nanoTime();
+    public void testSearch1000RowsManyMatches() throws JSONException {
+        trySearch(40, 40);
+    }
+
+    public void testSearch10000RowsOneMatch() throws JSONException {
+        trySearch(400, 1);
+    }
+
+    public void testSearch10000RowsManyMatches() throws JSONException {
+        trySearch(400, 400);
+    }
+
+    public void testSearch100000RowsOneMatch() throws JSONException {
+        trySearch(4000, 1);
+    }
+
+    private void trySearch(int rowsPerAnimal, int matchingRowsPerAnimal) throws JSONException {
+        double totalInsertTimeString = setupData(Type.string, rowsPerAnimal, matchingRowsPerAnimal);
+        double avgQueryTimeString = queryData(Type.string, rowsPerAnimal, matchingRowsPerAnimal);
+        store.dropAllSoups();
+        double totalInsertTimeFullText = setupData(Type.full_text, rowsPerAnimal, matchingRowsPerAnimal);
+        double avgQueryTimeFullText = queryData(Type.full_text, rowsPerAnimal, matchingRowsPerAnimal);
+        store.dropAllSoups();
+
+            Log.i(TAG, String.format("Search rows=%d matchingRows=%d totalInsertTimeString=%.3fs avgQueryTimeString=%.3fs totalInsertTimeFullText=%.0f%% avgQueryTimeFullText=%.0f%%",
+                    rowsPerAnimal * 25,
+                    matchingRowsPerAnimal,
+                    totalInsertTimeString,
+                    avgQueryTimeString,
+                    100*totalInsertTimeFullText / totalInsertTimeString,
+                    100*avgQueryTimeFullText / avgQueryTimeString));
+    }
+
+    /**
+     * @return total insert time in seconds
+     */
+    private double setupData(Type textFieldType, int rowsPerAnimal, int matchingRowsPerAnimal) throws JSONException {
+        long totalInsertTime = 0;
         store.registerSoup(ANIMALS_SOUP, new IndexSpec[]{new IndexSpec(TEXT_COL, textFieldType)});
-        store.beginTransaction();
-        for (int i = 0; i < 26*rowsPerAnimal; i++) {
-            StringBuilder text = new StringBuilder();
-            int charToMatch = (i%26) + 'a';
-            for (String animal : ANIMALS) {
-                if (animal.charAt(0) == charToMatch) {
-                    text.append(animal).append(" ");
+        try {
+            store.beginTransaction();
+
+            for (int i=0; i < 25; i++) {
+                int charToMatch = i + 'a';
+                for (int j=0; j < rowsPerAnimal; j++) {
+                    String prefix = String.format("%07d", j % (rowsPerAnimal / matchingRowsPerAnimal));
+                    StringBuilder text = new StringBuilder();
+                    for (String animal : ANIMALS) {
+                        if (animal.charAt(0) == charToMatch) {
+                            text.append(prefix).append(animal).append(" ");
+                        }
+                    }
+                    JSONObject elt = new JSONObject();
+                    elt.put(TEXT_COL, text.toString());
+                    long start = System.nanoTime();
+                    store.create(ANIMALS_SOUP, elt, false);
+                    totalInsertTime += System.nanoTime() - start;
                 }
             }
-            JSONObject elt =  new JSONObject();
-            elt.put(TEXT_COL, text.toString());
-            store.create(ANIMALS_SOUP, elt, false);
+
+            store.setTransactionSuccessful();
+        } finally {
+            store.endTransaction();
         }
-        store.endTransaction();
-        return System.nanoTime() - start;
+        return nanosToSeconds(totalInsertTime);
     }
 
-    private void trySearch(int rowsPerAnimal, Type textFieldType) throws JSONException {
-        long setupTime = setupData(rowsPerAnimal, textFieldType);
-
+    /**
+     * @return avg query time in seconds
+     */
+    private double queryData(Type textFieldType, int rowsPerAnimal, int matchingRowsPerAnimal) throws JSONException {
         long totalQueryTime = 0;
         for (String animal : ANIMALS) {
+            String prefix = String.format("%07d", (int) Math.random()*matchingRowsPerAnimal);
+            String stringToMatch = prefix + animal;
+
             QuerySpec querySpec = textFieldType == Type.full_text
-                    ? QuerySpec.buildMatchQuerySpec(ANIMALS_SOUP, TEXT_COL, animal, null, null, rowsPerAnimal)
-                    : QuerySpec.buildLikeQuerySpec(ANIMALS_SOUP, TEXT_COL, "%" + animal + "%", null, null, rowsPerAnimal);
+                    ? QuerySpec.buildMatchQuerySpec(ANIMALS_SOUP, TEXT_COL, stringToMatch, null, null, rowsPerAnimal)
+                    : QuerySpec.buildLikeQuerySpec(ANIMALS_SOUP, TEXT_COL, "%" + stringToMatch + "%", null, null, rowsPerAnimal);
             long start = System.nanoTime();
             JSONArray results = store.query(querySpec, 0);
             totalQueryTime += System.nanoTime() - start;
-            validateResults(results, animal, rowsPerAnimal);
+            validateResults(matchingRowsPerAnimal, stringToMatch, results);
         }
 
-        Log.i(TAG, String.format("\nSearch Speed Test\nRows %d\nSetup time %.2f ms\nQuery time %.2f ms\n",
-                rowsPerAnimal*26,
-                setupTime/1000000.0, (1.0*totalQueryTime)/ANIMALS.length));
+        return nanosToSeconds(totalQueryTime)/ANIMALS.length;
     }
 
-    private void validateResults(JSONArray results, String animal, int rowsPerAnimal) throws JSONException {
-        assertEquals("Wrong number of results", rowsPerAnimal, results.length());
+    private void validateResults(int expectedRows, String stringToMatch, JSONArray results) throws JSONException {
+        assertEquals("Wrong number of results", expectedRows, results.length());
         for (int i=0; i<results.length(); i++) {
             String text = results.getJSONObject(i).getString(TEXT_COL);
-            assertTrue("Invalid result [" + text + "] for search on [" + animal + "]", text.contains(animal));
+            assertTrue("Invalid result [" + text + "] for search on [" + stringToMatch + "]", text.contains(stringToMatch));
         }
     }
 
+
+    private double nanosToSeconds(long nanos) {
+        return nanos / 1000000000.0;
+    }
 }
