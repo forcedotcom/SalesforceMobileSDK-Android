@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.store;
 
 import android.content.Context;
-import android.test.InstrumentationTestCase;
 import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
@@ -45,9 +44,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * Set of tests for the smart store full-text-search
+ * Tests to compare speed of smartstore full-text-search indices with regular indices
  */
-public class SmartStoreFullTextSearchSpeedTest extends InstrumentationTestCase {
+public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
 
     public static final String TAG = "SmartStoreFTSSpeedTest";
 
@@ -63,28 +62,8 @@ public class SmartStoreFullTextSearchSpeedTest extends InstrumentationTestCase {
     public static final String ANIMALS_SOUP = "animals";
     public static final String TEXT_COL = "text";
 
-    protected Context targetContext;
-    private SmartStore store;
-
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        targetContext = getInstrumentation().getTargetContext();
-        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
-        DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getPasscode())).reset(targetContext, null);
-        store = new SmartStore(dbOpenHelper, getPasscode());
-        store.dropAllSoups();
-    }
-
     protected String getPasscode() {
         return "";
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase(getPasscode());
-        db.close();
-        super.tearDown();
     }
 
     public void testSearch1000RowsOneMatch() throws JSONException {
