@@ -47,7 +47,7 @@ import org.json.JSONObject;
 /**
  * Set of tests for the smart store full-text-search
  */
-public class SmartStoreFTSSpeedTest extends InstrumentationTestCase {
+public class SmartStoreFullTextSearchSpeedTest extends InstrumentationTestCase {
 
     public static final String TAG = "SmartStoreFTSSpeedTest";
 
