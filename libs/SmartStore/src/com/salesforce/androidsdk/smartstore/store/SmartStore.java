@@ -450,6 +450,8 @@ public class SmartStore  {
 				// Nothing to do
 				return;
 			}
+
+			boolean hasFts = IndexSpec.hasFTS(indexSpecs);
 			
 			if (handleTx) {
 				db.beginTransaction();
@@ -463,12 +465,19 @@ public class SmartStore  {
 			        	String soupEntryId = cursor.getString(0);
 			        	String soupRaw = cursor.getString(1);
 			        	try {
-			            	JSONObject soupElt = new JSONObject(soupRaw); 
-			            	ContentValues contentValues = new ContentValues();
-			            	for (IndexSpec indexSpec : indexSpecs) {
-				                projectIndexedPaths(soupElt, contentValues, indexSpec);
-				            }
+			            	JSONObject soupElt = new JSONObject(soupRaw);
+							ContentValues contentValues = new ContentValues();
+							projectIndexedPaths(soupElt, contentValues, indexSpecs, null);
 			                DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "");
+
+							// Fts
+							if (hasFts) {
+								String soupTableNameFts = soupTableName + FTS_SUFFIX;
+								ContentValues contentValuesFts = new ContentValues();
+								projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
+								// InsertHelper not working against virtual fts table
+								db.insert(soupTableNameFts, null, contentValuesFts);
+							}
 			        	}
 			        	catch (JSONException e) {
 			        		Log.w("SmartStore.alterSoup", "Could not parse soup element " + soupEntryId, e);
@@ -487,7 +496,7 @@ public class SmartStore  {
 			}
 		}
 	}
-	
+
 	/**
 	 * Return indexSpecs of soup
 	 * 
@@ -548,7 +557,7 @@ public class SmartStore  {
     public void dropSoup(String soupName) {
     	final SQLiteDatabase db = getDatabase();
     	synchronized(db) {
-	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
+			String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName != null) {
 	            db.execSQL("DROP TABLE IF EXISTS " + soupTableName);
 				if (hasFTS(soupName)) {
@@ -591,8 +600,8 @@ public class SmartStore  {
     	synchronized(db) {
 	    	List<String> soupNames = new ArrayList<String>();
 	        Cursor cursor = null;
-	        try {
-	            cursor = DBHelper.getInstance(db).query(db, SOUP_NAMES_TABLE, new String[]{SOUP_NAME_COL}, null, null, null);
+			try {
+				cursor = DBHelper.getInstance(db).query(db, SOUP_NAMES_TABLE, new String[]{SOUP_NAME_COL}, null, null, null);
 	            if (cursor.moveToFirst()) {
 	                do {
 	                    soupNames.add(cursor.getString(0));
@@ -645,6 +654,7 @@ public class SmartStore  {
 	    	}
     	}
 	}
+
 
 	/**
 	 * Return JSONArray for one row of data from cursor
@@ -711,8 +721,8 @@ public class SmartStore  {
 	 */
 	public String convertSmartSql(String smartSql) {
 		final SQLiteDatabase db = getDatabase();
-    	synchronized(db) {
-    		return SmartSqlHelper.getInstance(db).convertSmartSql(db, smartSql);
+    	synchronized (db) {
+			return SmartSqlHelper.getInstance(db).convertSmartSql(db, smartSql);
     	}
 	}
 
@@ -763,10 +773,7 @@ public class SmartStore  {
 	            contentValues.put(CREATED_COL, now);
 	            contentValues.put(LAST_MODIFIED_COL, now);
 	            contentValues.put(SOUP_COL, soupElt.toString());
-
-				for (IndexSpec indexSpec : indexSpecs) {
-					projectIndexedPaths(soupElt, contentValues, indexSpec);
-				}
+				projectIndexedPaths(soupElt, contentValues, indexSpecs, null);
 
 	            // Inserting into database
 	            boolean success = DBHelper.getInstance(db).insert(db, soupTableName, contentValues) == soupEntryId;
@@ -775,12 +782,7 @@ public class SmartStore  {
 				if (success && hasFTS(soupName)) {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
-					contentValuesFts.put(DOCID_COL, soupEntryId);
-					for (IndexSpec indexSpec : indexSpecs) {
-						if (indexSpec.type == Type.full_text) {
-							projectIndexedPaths(soupElt, contentValuesFts, indexSpec);
-						}
-					}
+					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
 					// InsertHelper not working against virtual fts table
 					db.insert(soupTableNameFts, null, contentValuesFts);
 				}
@@ -815,11 +817,26 @@ public class SmartStore  {
 	}
 
 	/**
+	 * Populate content values by projecting index specs that match typeFilter (or all if typeFilter is null)
+	 * @param soupElt
+	 * @param contentValues
+	 * @param indexSpecs
+	 * @param typeFilter pass null for all
+	 */
+	private void projectIndexedPaths(JSONObject soupElt, ContentValues contentValues, IndexSpec[] indexSpecs, Type typeFilter) {
+		for (IndexSpec indexSpec : indexSpecs) {
+			if (typeFilter == null || typeFilter == indexSpec.type) {
+				projectIndexedPath(soupElt, contentValues, indexSpec);
+			}
+		}
+	}
+
+	/**
      * @param soupElt
      * @param contentValues
      * @param indexSpec
      */
-    private void projectIndexedPaths(JSONObject soupElt, ContentValues contentValues, IndexSpec indexSpec) {
+    private void projectIndexedPath(JSONObject soupElt, ContentValues contentValues, IndexSpec indexSpec) {
         Object value = project(soupElt, indexSpec.path);
         switch (indexSpec.type) {
         case integer:
@@ -914,9 +931,7 @@ public class SmartStore  {
 				ContentValues contentValues = new ContentValues();
 				contentValues.put(SOUP_COL, soupElt.toString());
 				contentValues.put(LAST_MODIFIED_COL, now);
-				for (IndexSpec indexSpec : indexSpecs) {
-					projectIndexedPaths(soupElt, contentValues, indexSpec);
-				}
+				projectIndexedPaths(soupElt, contentValues, indexSpecs, null);
 
 				// Updating database
 				boolean success = DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "") == 1;
@@ -925,11 +940,7 @@ public class SmartStore  {
 				if (success && hasFTS(soupName)) {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
-					for (IndexSpec indexSpec : indexSpecs) {
-						if (indexSpec.type == Type.full_text) {
-							projectIndexedPaths(soupElt, contentValuesFts, indexSpec);
-						}
-					}
+					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
 					success = DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, DOCID_PREDICATE, soupEntryId + "") == 1;
 				}
 

@@ -43,12 +43,18 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Arrays;
+import java.util.Map;
+
 /**
  * Tests to compare speed of smartstore full-text-search indices with regular indices
  */
 public class SmartStoreAlterTest extends SmartStoreTestCase {
 
     private static final String TEST_SOUP = "test_soup";
+    private static final String TEST_SOUP_TABLE_NAME = "TABLE_1";
+    private static final String NAME = "name";
+    private static final String NAME_COL = TEST_SOUP_TABLE_NAME + "_0";
 
     protected String getPasscode() {
         return "";
@@ -61,7 +67,13 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
      * @throws JSONException
      */
     public void testGetSoupIndexSpecs() throws JSONException {
-        IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("lastName", SmartStore.Type.string), new IndexSpec("address.city", SmartStore.Type.string)};
+        IndexSpec[] indexSpecs = new IndexSpec[] {
+                new IndexSpec("lastName", SmartStore.Type.string),
+                new IndexSpec("address.city", SmartStore.Type.string),
+                new IndexSpec("salary", SmartStore.Type.integer),
+                new IndexSpec("interest", SmartStore.Type.floating),
+                new IndexSpec("note", SmartStore.Type.full_text)
+        };
 
         assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
         store.registerSoup(TEST_SOUP, indexSpecs);
@@ -89,11 +101,11 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
     }
 
     /**
-     * Test for alterSoup with column type change
+     * Test for alterSoup with column type change from string to integer
      *
      * throws JSONException
      */
-    public void testAlterSoupTypeChange() throws JSONException {
+    public void testAlterSoupTypeChangeStringToInteger() throws JSONException {
         IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("name", SmartStore.Type.string), new IndexSpec("population", SmartStore.Type.string)};
 
         assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
@@ -119,6 +131,71 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         JSONArray results2 = store.query(QuerySpec.buildAllQuerySpec(TEST_SOUP, "population", QuerySpec.Order.ascending, 2), 0);
         assertEquals("San Francisco should be first", "San Francisco", results2.getJSONObject(0).get("name"));
         assertEquals("Paris should be first", "Paris", results2.getJSONObject(1).get("name"));
+    }
+
+    /**
+     * Test for alterSoup with column type change from string to full_text
+     *
+     * throws JSONException
+     */
+    public void testAlterSoupTypeChangeStringToFullText() throws JSONException {
+        IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("name", SmartStore.Type.string)};
+
+        assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
+        store.registerSoup(TEST_SOUP, indexSpecs);
+        assertTrue("Register soup call failed", store.hasSoup(TEST_SOUP));
+
+        JSONObject soupElt1 = new JSONObject("{'name': 'San Francisco'}");
+        JSONObject soupElt2 = new JSONObject("{'name': 'Paris'}");
+
+        long elt1Id = idOf(store.create(TEST_SOUP, soupElt1));
+        long elt2Id = idOf(store.create(TEST_SOUP, soupElt2));
+
+        // Checking db
+        assertFalse("No FTS table expected", hasTable(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX));
+        checkTable(TEST_SOUP_TABLE_NAME, "id", NAME_COL, new long[]{elt1Id, elt2Id}, new String[]{"San Francisco", "Paris"});
+
+        // Alter soup - index population as integer
+        IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec("name", SmartStore.Type.full_text)};
+        store.alterSoup(TEST_SOUP, indexSpecsNew, true);
+
+        // Checking db
+        assertTrue("FTS table expected", hasTable(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX));
+        checkTable(TEST_SOUP_TABLE_NAME, "id", NAME_COL, new long[]{elt1Id, elt2Id}, new String[]{"San Francisco", "Paris"});
+        checkTable(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, "docid", NAME_COL, new long[]{elt1Id, elt2Id}, new String[]{"San Francisco", "Paris"});
+
+    }
+
+    /**
+     * Test for alterSoup with column type change from full_text to string
+     *
+     * throws JSONException
+     */
+    public void testAlterSoupTypeChangeFullTextToString() throws JSONException {
+        IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("name", SmartStore.Type.full_text)};
+
+        assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
+        store.registerSoup(TEST_SOUP, indexSpecs);
+        assertTrue("Register soup call failed", store.hasSoup(TEST_SOUP));
+
+        JSONObject soupElt1 = new JSONObject("{'name': 'San Francisco'}");
+        JSONObject soupElt2 = new JSONObject("{'name': 'Paris'}");
+
+        long elt1Id = idOf(store.create(TEST_SOUP, soupElt1));
+        long elt2Id = idOf(store.create(TEST_SOUP, soupElt2));
+
+        // Checking db
+        assertTrue("FTS table expected", hasTable(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX));
+        checkTable(TEST_SOUP_TABLE_NAME, "id", NAME_COL, new long[]{elt1Id, elt2Id}, new String[]{"San Francisco", "Paris"});
+        checkTable(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, "docid", NAME_COL, new long[]{elt1Id, elt2Id}, new String[]{"San Francisco", "Paris"});
+
+        // Alter soup - index population as integer
+        IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec("name", SmartStore.Type.string)};
+        store.alterSoup(TEST_SOUP, indexSpecsNew, true);
+
+        // Checking db
+        assertFalse("No FTS table expected", hasTable(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX));
+        checkTable(TEST_SOUP_TABLE_NAME, "id", NAME_COL, new long[]{elt1Id, elt2Id}, new String[]{"San Francisco", "Paris"});
     }
 
     /**
@@ -396,4 +473,22 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         }
     }
 
+    private void checkTable(String tableName, String idCol, String nameCol, long[] expectedIds, String[] expectedNames) {
+        Cursor c = null;
+        try {
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            c = DBHelper.getInstance(db).query(db, tableName, new String[]{idCol, nameCol}, idCol + " ASC", null, null);
+            assertTrue("Expected a row", c.moveToFirst());
+            assertEquals("Expected two rows", expectedIds.length, c.getCount());
+
+            for (int i=0; i<expectedIds.length; i++) {
+                assertEquals("Wrong id", expectedIds[i], c.getLong(c.getColumnIndex(idCol)));
+                assertEquals("Wrong value in index column", expectedNames[i], c.getString(c.getColumnIndex(nameCol)));
+                c.moveToNext();
+            }
+        }
+        finally {
+            safeClose(c);
+        }
+    }
 }

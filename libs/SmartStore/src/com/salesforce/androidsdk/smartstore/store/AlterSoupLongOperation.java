@@ -247,6 +247,12 @@ public class AlterSoupLongOperation extends LongOperation {
 		    db.execSQL("DROP INDEX IF EXISTS "  + indexName);
 		}
 
+		// Dropping FTS table if any
+		if (IndexSpec.hasFTS(oldIndexSpecs)) {
+			db.execSQL("DROP TABLE IF EXISTS " + soupTableName + SmartStore.FTS_SUFFIX);
+		}
+
+		// Cleaning up soup index map table and cache
         try {
             db.beginTransaction();
             DBHelper.getInstance(db).delete(db, SmartStore.SOUP_INDEX_MAP_TABLE, SmartStore.SOUP_NAME_PREDICATE, soupName);
@@ -422,7 +428,7 @@ public class AlterSoupLongOperation extends LongOperation {
 		for (String keptPath : keptPaths) {
 			IndexSpec oldIndexSpec = mapOldSpecs.get(keptPath);
 			IndexSpec newIndexSpec = mapNewSpecs.get(keptPath);
-			if (oldIndexSpec.type == newIndexSpec.type) {
+			if (oldIndexSpec.type.getColumnType().equals(newIndexSpec.type.getColumnType())) {
 				oldColumns.add(oldIndexSpec.columnName);
 				newColumns.add(newIndexSpec.columnName);
 			}
