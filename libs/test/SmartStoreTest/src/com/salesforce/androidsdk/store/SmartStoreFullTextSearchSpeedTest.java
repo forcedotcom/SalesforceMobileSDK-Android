@@ -82,9 +82,12 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
         trySearch(400, 400);
     }
 
+    /*
+    // Slow - uncomment when collecting performance data
     public void testSearch100000RowsOneMatch() throws JSONException {
         trySearch(4000, 1);
     }
+    */
 
     private void trySearch(int rowsPerAnimal, int matchingRowsPerAnimal) throws JSONException {
         double totalInsertTimeString = setupData(Type.string, rowsPerAnimal, matchingRowsPerAnimal);
