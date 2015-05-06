@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -45,9 +45,8 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
-
 /**
- * Helper class for SalesforceWebViewClient, SalesforceIceCreamWebViewClient
+ * Helper class for SalesforceWebViewClient.
  * 
  */
 public class SalesforceWebViewClientHelper {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -33,14 +33,15 @@ import org.apache.cordova.CordovaInterface;
 import org.apache.cordova.CordovaResourceApi;
 import org.apache.cordova.CordovaResourceApi.OpenForReadResult;
 import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.IceCreamCordovaWebViewClient;
+import org.apache.cordova.engine.SystemWebViewClient;
+import org.apache.cordova.engine.SystemWebViewEngine;
 
 import android.net.Uri;
 import android.util.Log;
 import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 
-public class SalesforceIceCreamWebViewClient extends IceCreamCordovaWebViewClient {
+public class SalesforceWebViewClient extends SystemWebViewClient {
 
 	static final String WWW_DIR = "/android_asset/www";
 	
@@ -50,16 +51,10 @@ public class SalesforceIceCreamWebViewClient extends IceCreamCordovaWebViewClien
     protected SalesforceDroidGapActivity ctx;
     protected CordovaWebView cordovaWebView;
 
-    /**
-     * Constructor.
-     * 
-     * @param cordova
-     * @param view
-     */
-    public SalesforceIceCreamWebViewClient(CordovaInterface cordova, CordovaWebView view) {
-        super(cordova, view);
+    public SalesforceWebViewClient(SystemWebViewEngine parentEngine) {
+    	super(parentEngine);
         this.ctx = (SalesforceDroidGapActivity) cordova.getActivity();
-        this.cordovaWebView = view;
+        this.cordovaWebView = parentEngine.getCordovaWebView();
     }
 
     @Override
@@ -67,10 +62,10 @@ public class SalesforceIceCreamWebViewClient extends IceCreamCordovaWebViewClien
     	if (SalesforceWebViewClientHelper.shouldOverrideUrlLoading(ctx, view, url)) {
     		return true;
         } else {
-        	return super.shouldOverrideUrlLoading(view,  url);
+        	return super.shouldOverrideUrlLoading(view, url);
         }
     }
-    
+
     @Override
     public void onPageFinished(WebView view, String url) {
         if (!this.foundHomeUrl && SalesforceWebViewClientHelper.onHomePage(ctx, view, url)) {
@@ -107,12 +102,12 @@ public class SalesforceIceCreamWebViewClient extends IceCreamCordovaWebViewClien
 				Uri localUri = Uri.parse("file://" + localPath);
 				CordovaResourceApi resourceApi = cordovaWebView.getResourceApi();
 				OpenForReadResult result = resourceApi.openForRead(localUri, true);
-				Log.i("SalesforceIceCreamWebViewClient.shouldInterceptRequest", "Loading local file:" + localUri);
+				Log.i("SalesforceWebViewClient.shouldInterceptRequest", "Loading local file:" + localUri);
 				return new WebResourceResponse(result.mimeType, "UTF-8", result.inputStream);
 			}
 			
 		} catch (IOException e) {    	
-			Log.e("SalesforceIceCreamWebViewClient.shouldInterceptRequest", "Invalid localhost url:" + url, e);
+			Log.e("SalesforceWebViewClient.shouldInterceptRequest", "Invalid localhost url:" + url, e);
 			return new WebResourceResponse("text/plain", "UTF-8", null); 
 		}
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-12, salesforce.com, inc.
+ * Copyright (c) 2011-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -35,7 +35,9 @@ import java.util.Map;
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaActivity;
 import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.CordovaWebViewClient;
+import org.apache.cordova.CordovaWebViewEngine;
+import org.apache.cordova.CordovaWebViewImpl;
+import org.apache.cordova.engine.SystemWebViewClient;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
@@ -131,8 +133,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 	}
 
 	@Override
-	public void init()
-	{
+	public void init() {
     	Log.i("SalesforceDroidGapActivity.init", "init called");
     	super.init();
     	final String uaStr = SalesforceSDKManager.getInstance().getUserAgent();
@@ -154,8 +155,8 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 	}
 
 	@Override
-    protected CordovaWebViewClient makeWebViewClient(CordovaWebView webView) {
-        return new SalesforceIceCreamWebViewClient(this, webView);
+    protected SystemWebViewClient makeWebViewClient(CordovaWebView webView) {
+        return new SalesforceWebViewClient(this, webView);
     }
 
     @Override
