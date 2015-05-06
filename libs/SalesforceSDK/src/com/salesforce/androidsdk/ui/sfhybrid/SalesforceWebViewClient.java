@@ -26,17 +26,6 @@
  */
 package com.salesforce.androidsdk.ui.sfhybrid;
 
-import java.io.File;
-import java.io.IOException;
-
-import org.apache.cordova.CordovaInterface;
-import org.apache.cordova.CordovaResourceApi;
-import org.apache.cordova.CordovaResourceApi.OpenForReadResult;
-import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.engine.SystemWebView;
-import org.apache.cordova.engine.SystemWebViewClient;
-import org.apache.cordova.engine.SystemWebViewEngine;
-
 import android.net.Uri;
 import android.util.Log;
 import android.webkit.WebResourceResponse;
@@ -45,12 +34,23 @@ import android.webkit.WebView;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
+import org.apache.cordova.CordovaInterface;
+import org.apache.cordova.CordovaResourceApi;
+import org.apache.cordova.CordovaResourceApi.OpenForReadResult;
+import org.apache.cordova.CordovaWebView;
+import org.apache.cordova.engine.SystemWebView;
+import org.apache.cordova.engine.SystemWebViewClient;
+
+import java.io.File;
+import java.io.IOException;
+
 public class SalesforceWebViewClient extends SystemWebViewClient {
 
 	static final String WWW_DIR = "/android_asset/www";
 	
     // The first non-reserved URL that's loaded will be considered the app's "home page", for caching purposes.
     protected boolean foundHomeUrl = false;
+    protected SalesforceDroidGapActivity ctx;
     protected CordovaWebView cordovaWebView;
 
 	/**
@@ -58,13 +58,19 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
 	 *
 	 * @param parentEngine SystemWebViewEngine instance.
 	 */
-    public SalesforceWebViewClient(SystemWebViewEngine parentEngine) {
+    public SalesforceWebViewClient(SalesforceWebViewEngine parentEngine) {
     	super(parentEngine);
-    	this.cordovaWebView = parentEngine.getCordovaWebView();
+    	cordovaWebView = parentEngine.getCordovaWebView();
+    	final CordovaInterface cordova = parentEngine.getCordovaInterface();
+    	if (cordova != null) {
+        	ctx = (SalesforceDroidGapActivity) cordova.getActivity();
+    	}
         final SystemWebView webView = (SystemWebView) parentEngine.getView();
     	final String uaStr = SalesforceSDKManager.getInstance().getUserAgent();
         if (webView != null) {
     		final WebSettings webSettings = webView.getSettings();
+
+    		// Setting custom user agent and a bunch of other settings.
     		final String origUserAgent = webSettings.getUserAgentString();
     		final String extendedUserAgentString = uaStr + " Hybrid " + (origUserAgent == null ? "" : origUserAgent);
     		webSettings.setUserAgentString(extendedUserAgentString);

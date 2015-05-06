@@ -70,7 +70,7 @@ public class SalesforceWebViewClientHelper {
     public static boolean shouldOverrideUrlLoading(SalesforceDroidGapActivity ctx,
     		WebView view, String url) {
     	final String startURL = SalesforceWebViewClientHelper.isLoginRedirect(url);
-        if (startURL != null) {
+        if (startURL != null && ctx != null) {
         	ctx.refresh(startURL);
         	return true;
         } else {

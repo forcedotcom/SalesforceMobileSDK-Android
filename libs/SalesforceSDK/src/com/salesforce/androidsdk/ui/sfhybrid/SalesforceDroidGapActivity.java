@@ -34,10 +34,8 @@ import java.util.Map;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaActivity;
-import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewEngine;
 import org.apache.cordova.CordovaWebViewImpl;
-import org.apache.cordova.engine.SystemWebViewClient;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
@@ -49,7 +47,6 @@ import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
-import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
@@ -102,7 +99,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     private UserSwitchReceiver userSwitchReceiver;
 
 	// Web app loaded?
-	private boolean webAppLoaded = false;	
+	private boolean webAppLoaded = false;
 	
     /** Called when the activity is first created. */
     @Override
@@ -140,8 +137,10 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 	}
 
 	@Override
-    protected SystemWebViewClient makeWebViewClient(CordovaWebView webView) {
-        return new SalesforceWebViewClient(this, webView);
+    protected CordovaWebViewEngine makeWebViewEngine() {
+		final String className = SalesforceWebViewEngine.class.getCanonicalName();
+		preferences.set("webview", className);
+        return CordovaWebViewImpl.createEngine(this, preferences);
     }
 
     @Override
