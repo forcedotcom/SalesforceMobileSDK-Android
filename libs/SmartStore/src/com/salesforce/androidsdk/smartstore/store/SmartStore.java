@@ -475,8 +475,7 @@ public class SmartStore  {
 								String soupTableNameFts = soupTableName + FTS_SUFFIX;
 								ContentValues contentValuesFts = new ContentValues();
 								projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
-								// InsertHelper not working against virtual fts table
-								db.insert(soupTableNameFts, null, contentValuesFts);
+								DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, DOCID_PREDICATE, soupEntryId + "");
 							}
 			        	}
 			        	catch (JSONException e) {

@@ -26,22 +26,22 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import android.content.ContentValues;
+import android.text.TextUtils;
+import android.util.Log;
+
+import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.ContentValues;
-import android.text.TextUtils;
-import android.util.Log;
-
-import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Class taking care of alter soup
@@ -232,6 +232,11 @@ public class AlterSoupLongOperation extends LongOperation {
 	protected void renameOldSoupTable() {
 		// Rename backing table for soup
 		db.execSQL("ALTER TABLE " + soupTableName + " RENAME TO " + getOldSoupTableName());
+
+		// Renaming fts table if any
+		if (IndexSpec.hasFTS(oldIndexSpecs)) {
+			db.execSQL("ALTER TABLE " + soupTableName + SmartStore.FTS_SUFFIX + " RENAME TO " + getOldSoupTableName() + SmartStore.FTS_SUFFIX);
+		}
 	
 		// Update row in alter status table - auto commit
 		updateLongOperationDbRow(AlterSoupStep.RENAME_OLD_SOUP_TABLE);
@@ -245,11 +250,6 @@ public class AlterSoupLongOperation extends LongOperation {
 		for (int i=0; i<oldIndexSpecs.length; i++) {
 		    String indexName = soupTableName + "_" + i + "_idx";
 		    db.execSQL("DROP INDEX IF EXISTS "  + indexName);
-		}
-
-		// Dropping FTS table if any
-		if (IndexSpec.hasFTS(oldIndexSpecs)) {
-			db.execSQL("DROP TABLE IF EXISTS " + soupTableName + SmartStore.FTS_SUFFIX);
 		}
 
 		// Cleaning up soup index map table and cache
@@ -292,8 +292,8 @@ public class AlterSoupLongOperation extends LongOperation {
 			this.newIndexSpecs = store.getSoupIndexSpecs(soupName);
 		
 			// Move data (core columns + indexed paths that we are still indexing)
-			db.execSQL(computeCopyTableStatement());
-	
+			copyOldData();
+
 			// Update row in alter status table 
 			updateLongOperationDbRow(AlterSoupStep.COPY_TABLE);
 		}
@@ -340,7 +340,12 @@ public class AlterSoupLongOperation extends LongOperation {
 	protected void dropOldTable() {
 		// Drop old table
 		db.execSQL("DROP TABLE " + getOldSoupTableName());
-		
+
+		// Dropping FTS table if any
+		if (IndexSpec.hasFTS(oldIndexSpecs)) {
+			db.execSQL("DROP TABLE IF EXISTS " + getOldSoupTableName() + SmartStore.FTS_SUFFIX);
+		}
+
 		// Update status row - auto commit
 		updateLongOperationDbRow(AlterSoupStep.DROP_OLD_TABLE);
 	}
@@ -405,7 +410,7 @@ public class AlterSoupLongOperation extends LongOperation {
 	 * Helper method
 	 * @return insert statement to copy data from soup old backing table to soup new backing table
 	 */
-	private String computeCopyTableStatement() {
+	private void copyOldData() {
 		Map<String, IndexSpec> mapOldSpecs = IndexSpec.mapForIndexSpecs(oldIndexSpecs);
 		Map<String, IndexSpec> mapNewSpecs = IndexSpec.mapForIndexSpecs(newIndexSpecs);
 
@@ -417,13 +422,13 @@ public class AlterSoupLongOperation extends LongOperation {
 		// Compute list of columns to copy from / list of columns to copy into
 		List<String> oldColumns = new ArrayList<String>(); 
 		List<String> newColumns = new ArrayList<String>();
-		
+
 		// Adding core columns
 		for (String column : new String[] {SmartStore.ID_COL, SmartStore.SOUP_COL, SmartStore.CREATED_COL, SmartStore.LAST_MODIFIED_COL}) {
 			oldColumns.add(column);
 			newColumns.add(column);
 		}
-		
+
 		// Adding indexed path columns that we are keeping 
 		for (String keptPath : keptPaths) {
 			IndexSpec oldIndexSpec = mapOldSpecs.get(keptPath);
@@ -434,10 +439,44 @@ public class AlterSoupLongOperation extends LongOperation {
 			}
 		}
 
-		// Compute and return statement
-		return String.format("INSERT INTO %s (%s) SELECT %s FROM %s",
+		// Compute copy statement
+		String copyToSoupTable = String.format("INSERT INTO %s (%s) SELECT %s FROM %s",
 							soupTableName, TextUtils.join(",", newColumns),
 							TextUtils.join(",", oldColumns), getOldSoupTableName());
+
+		// Execute copy
+		db.execSQL(copyToSoupTable);
+
+		// Fts
+		if (IndexSpec.hasFTS(newIndexSpecs)) {
+
+			// Compute list of columns to copy from / list of columns to copy into for the fts table
+			List<String> oldColumnsFts = new ArrayList<String>();
+			List<String> newColumnsFts = new ArrayList<String>();
+
+			// Adding docid column
+			oldColumnsFts.add(SmartStore.ID_COL);
+			newColumnsFts.add(SmartStore.DOCID_COL);
+
+			// Adding indexed path columns that we are keeping
+			for (String keptPath : keptPaths) {
+				IndexSpec oldIndexSpec = mapOldSpecs.get(keptPath);
+				IndexSpec newIndexSpec = mapNewSpecs.get(keptPath);
+				if (oldIndexSpec.type.getColumnType().equals(newIndexSpec.type.getColumnType())
+					&& newIndexSpec.type == SmartStore.Type.full_text) {
+					oldColumnsFts.add(oldIndexSpec.columnName);
+					newColumnsFts.add(newIndexSpec.columnName);
+				}
+			}
+
+			// Compute copy statement for fts table
+			String copyToFtsTable = String.format("INSERT INTO %s%s (%s) SELECT %s FROM %s",
+					soupTableName, SmartStore.FTS_SUFFIX, TextUtils.join(",", newColumnsFts),
+					TextUtils.join(",", oldColumnsFts), getOldSoupTableName());
+
+			// Execute copy
+			db.execSQL(copyToFtsTable);
+		}
 	}
 	
 	/**
