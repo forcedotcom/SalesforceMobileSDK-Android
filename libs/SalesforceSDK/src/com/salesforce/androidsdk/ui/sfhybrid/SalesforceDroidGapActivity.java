@@ -136,22 +136,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 	public void init() {
     	Log.i("SalesforceDroidGapActivity.init", "init called");
     	super.init();
-    	final String uaStr = SalesforceSDKManager.getInstance().getUserAgent();
-    	if (null != this.appView) {
-    		WebSettings webSettings = this.appView.getSettings();
-    		String origUserAgent = webSettings.getUserAgentString();
-    		final String extendedUserAgentString = uaStr + " Hybrid " + (origUserAgent == null ? "" : origUserAgent);
-    		webSettings.setUserAgentString(extendedUserAgentString);
-
-    		// Configure HTML5 cache support.
-    		webSettings.setDomStorageEnabled(true);
-    		String cachePath = getApplicationContext().getCacheDir().getAbsolutePath();
-    		webSettings.setAppCachePath(cachePath);
-    		webSettings.setAppCacheEnabled(true);
-    		webSettings.setAllowFileAccess(true);
-    		webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
-    		EventsObservable.get().notifyEvent(EventType.GapWebViewCreateComplete, appView);
-      	}
+    	EventsObservable.get().notifyEvent(EventType.GapWebViewCreateComplete, appView);
 	}
 
 	@Override
@@ -501,8 +486,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     }
     
    /**
-    * Set cookies on cookie manager
-    * @param client
+    * Set cookies on cookie manager.
     */
    private void setSidCookies() {
        Log.i("SalesforceDroidGapActivity.setSidCookies", "setting cookies");
