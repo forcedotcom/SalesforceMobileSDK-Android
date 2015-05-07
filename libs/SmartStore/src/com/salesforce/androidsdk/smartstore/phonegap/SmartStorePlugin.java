@@ -165,11 +165,12 @@ public class SmartStorePlugin extends ForcePlugin {
 	        		} catch (Exception e) {
 	            		Log.w("SmartStorePlugin.execute", e.getMessage(), e);
 	            		callbackContext.error(e.getMessage());
-	            	}	        		
+	            	}
 	            	Log.d("SmartSTorePlugin.execute", "Total time for " + action + "->" + (System.currentTimeMillis() - start));
 	        	}
 			}
-    	});
+		});
+
     	Log.d("SmartSTorePlugin.execute", "Main thread time for " + action + "->" + (System.currentTimeMillis() - start));
     	return true;
     }
@@ -360,17 +361,12 @@ public class SmartStorePlugin extends ForcePlugin {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.isNull(SOUP_NAME) ? null : arg0.getString(SOUP_NAME);
-        final SmartStore smartStore = getSmartStore(arg0);
-
-		List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
 		JSONArray indexesJson = arg0.getJSONArray(INDEXES);
-		for (int i = 0; i < indexesJson.length(); i++) {
-			JSONObject indexJson = indexesJson.getJSONObject(i);
-			indexSpecs.add(new IndexSpec(indexJson.getString(PATH), SmartStore.Type.valueOf(indexJson.getString(TYPE))));
-		}
+		IndexSpec[] indexSpecs = IndexSpec.fromJSON(indexesJson);
 
 		// Run register
-		smartStore.registerSoup(soupName, indexSpecs.toArray(new IndexSpec[0]));
+		final SmartStore smartStore = getSmartStore(arg0);
+		smartStore.registerSoup(soupName, indexSpecs);
 		callbackContext.success(soupName);
 	}
 
