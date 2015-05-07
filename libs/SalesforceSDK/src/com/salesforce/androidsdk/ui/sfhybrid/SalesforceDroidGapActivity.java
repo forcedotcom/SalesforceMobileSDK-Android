@@ -26,21 +26,6 @@
  */
 package com.salesforce.androidsdk.ui.sfhybrid;
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaActivity;
-import org.apache.cordova.CordovaWebViewEngine;
-import org.apache.cordova.CordovaWebViewImpl;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.message.BasicNameValuePair;
-import org.json.JSONObject;
-
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -67,6 +52,22 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
+
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaActivity;
+import org.apache.cordova.CordovaWebView;
+import org.apache.cordova.CordovaWebViewEngine;
+import org.apache.cordova.CordovaWebViewImpl;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONObject;
+
+import java.net.URI;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Class that defines the main activity for a PhoneGap-based application.
@@ -352,32 +353,32 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     public void refresh(final String url) {
         Log.i("SalesforceDroidGapActivity.refresh", "refresh called");
         client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
-    
-        	@Override
-            public void onSuccess(RestRequest request, RestResponse response) {
-        		Log.i("SalesforceDroidGapActivity.refresh", "Refresh succeeded");
+
+			@Override
+			public void onSuccess(RestRequest request, RestResponse response) {
+				Log.i("SalesforceDroidGapActivity.refresh", "Refresh succeeded");
 
             	/*
             	 * The client instance being used here needs to be
             	 * refreshed, to ensure we use the new access token. 
             	 */
-                SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-                setSidCookies();
-                loadVFPingPage();
-                final String frontDoorUrl = getFrontDoorUrl(url, true);
-                loadUrl(frontDoorUrl);
-            }
+				SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+				setSidCookies();
+				loadVFPingPage();
+				final String frontDoorUrl = getFrontDoorUrl(url, true);
+				loadUrl(frontDoorUrl);
+			}
 
-        	@Override
-            public void onError(Exception exception) {
-        		Log.w("SalesforceDroidGapActivity.refresh", "Refresh failed - " + exception);
+			@Override
+			public void onError(Exception exception) {
+				Log.w("SalesforceDroidGapActivity.refresh", "Refresh failed - " + exception);
 
-        		// Only logout if we are NOT offline
-                if (!(exception instanceof NoNetworkException)) {
-                	SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
-                }
-            }
-        });
+				// Only logout if we are NOT offline
+				if (!(exception instanceof NoNetworkException)) {
+					SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
+				}
+			}
+		});
     }        
 
     /**
@@ -483,7 +484,16 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     	Log.i("SalesforceDroidGapActivity.getErrorPageUrl", "local error page: " + errorPage);
 		loadUrl("file:///android_asset/www/" + errorPage);
     }
-    
+
+	/**
+	 * Returns the WebView being used.
+	 *
+	 * @return WebView being used.
+	 */
+	public CordovaWebView getAppView() {
+		return appView;
+	}
+
    /**
     * Set cookies on cookie manager.
     */

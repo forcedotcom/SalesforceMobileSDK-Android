@@ -42,6 +42,8 @@ import com.salesforce.androidsdk.phonegap.TestRunnerPlugin.TestResult;
 import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
+import org.apache.cordova.CordovaWebView;
+
 /**
  * Extend this class to run tests written in JavaScript
  */
@@ -87,8 +89,11 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 			for (String testName : getTestNames()) {
 		        String jsCmd = "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
 		            "navigator.testrunner.startTest('" + testName + "');";
-		        activity.sendJavascript(jsCmd);
-		        Log.i(getClass().getSimpleName(), "running test:" + testName);
+				final CordovaWebView appView = activity.getAppView();
+				if (appView != null) {
+					appView.sendJavascript(jsCmd);
+				}
+				Log.i(getClass().getSimpleName(), "running test:" + testName);
 		        
 		        // Block until test completes or times out
 		        TestResult result = null;
