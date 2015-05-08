@@ -89,7 +89,7 @@ public class SDKInfoPlugin extends ForcePlugin {
      * @throws JSONException
      */
     protected void getInfo(JSONArray args, final CallbackContext callbackContext) throws JSONException {
-        Log.i("SalesforceOAuthPlugin.authenticate", "authenticate called");
+        Log.i("SDKInfoPlugin.getInfo", "getInfo called");
         try {
             callbackContext.success(getSDKInfo(cordova.getActivity()));
         }
