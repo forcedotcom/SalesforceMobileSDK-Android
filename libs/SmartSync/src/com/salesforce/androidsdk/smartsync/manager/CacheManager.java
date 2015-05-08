@@ -305,7 +305,7 @@ public class CacheManager {
                 return 0;
             }
             final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(cacheType,
-            		CACHE_KEY, cacheKey, 1);
+            		CACHE_KEY, cacheKey, null, null, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
                 final JSONObject jObj = results.optJSONObject(0);
@@ -352,7 +352,7 @@ public class CacheManager {
         // Falls back on smart store cache if in memory cache is empty.
         try {
             final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(cacheType,
-            		CACHE_KEY, cacheKey, 1);
+            		CACHE_KEY, cacheKey, null, null, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
             	final JSONObject jObj = results.optJSONObject(0);
@@ -416,7 +416,7 @@ public class CacheManager {
         // Falls back on smart store cache if in memory cache is empty.
         try {
             final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(cacheType,
-            		CACHE_KEY, cacheKey, 1);
+            		CACHE_KEY, cacheKey, null, null, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
             	final JSONObject jObj = results.optJSONObject(0);
@@ -480,7 +480,7 @@ public class CacheManager {
         // Falls back on smart store cache if in memory cache is empty.
         try {
             final QuerySpec querySpec = QuerySpec.buildExactQuerySpec(cacheType,
-            		CACHE_KEY, cacheKey, 1);
+            		CACHE_KEY, cacheKey, null, null, 1);
             final JSONArray results = smartStore.query(querySpec, 0);
             if (results != null && results.length() > 0) {
             	final JSONObject jObj = results.optJSONObject(0);

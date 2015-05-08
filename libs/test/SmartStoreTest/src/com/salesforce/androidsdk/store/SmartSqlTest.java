@@ -213,7 +213,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	 */
 	public void testSmartQueryReturningSoupStringAndInteger() throws JSONException {
 		loadData();
-		JSONObject christineJson = store.query(QuerySpec.buildExactQuerySpec(EMPLOYEES_SOUP, "employeeId", "00010", 1), 0).getJSONObject(0);
+		JSONObject christineJson = store.query(QuerySpec.buildExactQuerySpec(EMPLOYEES_SOUP, "employeeId", "00010", null, null, 1), 0).getJSONObject(0);
 		assertEquals("Wrong elt", "Christine", christineJson.getString(FIRST_NAME));
 		
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:_soup}, {employees:firstName}, {employees:salary} from {employees} where {employees:lastName} = 'Haas'", 1) , 0);
@@ -246,7 +246,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	public void testSmartQueryWithSpecialFields() throws JSONException {
 		loadData();
 
-		JSONObject christineJson = store.query(QuerySpec.buildExactQuerySpec(EMPLOYEES_SOUP, "employeeId", "00010", 1), 0).getJSONObject(0);
+		JSONObject christineJson = store.query(QuerySpec.buildExactQuerySpec(EMPLOYEES_SOUP, "employeeId", "00010", null, null, 1), 0).getJSONObject(0);
 		assertEquals("Wrong elt", "Christine", christineJson.getString(FIRST_NAME));
 		
 		JSONArray result = store.query(QuerySpec.buildSmartQuerySpec("select {employees:_soup}, {employees:_soupEntryId}, {employees:_soupLastModifiedDate}, {employees:salary} from {employees} where {employees:lastName} = 'Haas'", 1) , 0);
