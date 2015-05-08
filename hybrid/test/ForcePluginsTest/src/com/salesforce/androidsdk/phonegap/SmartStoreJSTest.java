@@ -58,8 +58,9 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testUpsertToNonexistentSoup",
                 "testRetrieveSoupEntries",
                 "testRemoveFromSoup",
-                "testQuerySoup",
-                "testQuerySoupDescending",
+                "testQuerySoupWithExactQuery",
+                "testQuerySoupWithAllQueryDescending",
+                "testQuerySoupWithRangeQueryWithOrderPath",
                 "testQuerySoupBadQuerySpec",
                 "testQuerySoupEndKeyNoBeginKey",
                 "testQuerySoupBeginKeyNoEndKey",
@@ -71,6 +72,7 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testLikeQuerySpecStartsWith",
                 "testLikeQuerySpecEndsWith",
                 "testLikeQueryInnerText",
+                "testFullTextSearch",
                 "testCompoundQueryPath",
                 "testEmptyQuerySpec",
                 "testIntegerQuerySpec",
@@ -132,14 +134,18 @@ public class SmartStoreJSTest extends JSTestCase {
         runTest("testRemoveFromSoup");
     }
 
-    public void testQuerySoup()  {
-        runTest("testQuerySoup");
+    public void testQuerySoupWithExactQuery()  {
+        runTest("testQuerySoupWithExactQuery");
     }
 
-    public void testQuerySoupDescending()  {
-        runTest("testQuerySoupDescending");
+    public void testQuerySoupWithAllQueryDescending()  {
+        runTest("testQuerySoupWithAllQueryDescending");
     }
-    
+
+    public void testQuerySoupWithRangeQueryWithOrderPath() {
+        runTest("testQuerySoupWithRangeQueryWithOrderPath");
+    }
+
     public void testQuerySoupBadQuerySpec()  {
         runTest("testQuerySoupBadQuerySpec");
     }
@@ -182,6 +188,10 @@ public class SmartStoreJSTest extends JSTestCase {
 
     public void testLikeQueryInnerText()  {
         runTest("testLikeQueryInnerText");
+    }
+
+    public void testFullTextSearch() {
+        runTest("testFullTextSearch");
     }
 
     public void testCompoundQueryPath()  {
