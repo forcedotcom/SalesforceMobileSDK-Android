@@ -359,6 +359,23 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         }
     }
 
+    /**
+     * Test search on single field returning no results
+     */
+    public void testSearchSingleFielNoResults() throws JSONException {
+        loadData();
+
+        // One field - full word - no results
+        trySearch(new long[]{}, FIRST_NAME, "Christina", null);
+        trySearch(new long[]{}, LAST_NAME, "Sternn", null);
+
+        // One field - prefix - no results
+        trySearch(new long[]{}, FIRST_NAME, "Christo*", null);
+        trySearch(new long[]{}, LAST_NAME, "Stel*", null);
+
+        // One field - set operation - no results
+        trySearch(new long[]{}, FIRST_NAME, "Ei* -Eileen", null);
+    }
 
     /**
      * Test search on single field returning a single result
@@ -399,6 +416,25 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     }
 
     /**
+     * Test search on all fields returning no results
+     */
+    public void testSearchAllFieldsNoResults() throws JSONException {
+        loadData();
+
+        // All fields - full word - no results
+        trySearch(new long[]{}, null, "Sternn", null);
+
+        // All fields - prefix - no results
+        trySearch(new long[]{}, null, "Stel*", null);
+
+        // All fields - multiple words - no results
+        trySearch(new long[]{}, null, "Haas Christina", null);
+
+        // All fields - set operation - no results
+        trySearch(new long[]{}, null, "Christine -Haas", null);
+    }
+
+    /**
      * Test search on all fields returning a single result
      */
     public void testSearchAllFieldsSingleResult() throws JSONException {
@@ -436,6 +472,33 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         trySearch(new long[]{aliHaasId, michaelThompsonId}, null, "Thompson OR Ali", FIRST_NAME);
         trySearch(new long[]{christineHaasId, evaPulaskiId, eileenEvaId}, null, "Eva OR Haas -Ali", EMPLOYEE_ID);
         trySearch(new long[]{christineHaasId, eileenEvaId, evaPulaskiId}, null, "Eva OR Haas -Ali", FIRST_NAME);
+    }
+
+    /**
+     * Test search with queries that have field:value predicates
+     */
+    public void testSearchWithFieldColonQueries() throws JSONException {
+        loadData();
+
+        // All fields - full word - no results
+        trySearch(new long[]{}, null, "{employees:firstName}:Haas", null);
+
+        // All fields - full word - one result
+        trySearch(new long[]{evaPulaskiId}, null, "{employees:firstName}:Eva", null);
+        trySearch(new long[]{eileenEvaId}, null, "{employees:lastName}:Eva", null);
+
+        // All fields - full word - more than one results
+        trySearch(new long[]{christineHaasId, aliHaasId}, null, "{employees:lastName}:Haas", EMPLOYEE_ID);
+
+        // All fields - prefix - more than one results
+        trySearch(new long[]{evaPulaskiId, eileenEvaId}, null, "{employees:firstName}:E*", EMPLOYEE_ID);
+        trySearch(new long[]{christineHaasId, aliHaasId}, null, "{employees:lastName}:H*", EMPLOYEE_ID);
+
+        // All fields - set operation - more than result
+        trySearch(new long[]{michaelThompsonId, aliHaasId}, null, "{employees:lastName}:Thompson OR {employees:firstName}:Ali", EMPLOYEE_ID);
+        trySearch(new long[]{aliHaasId, michaelThompsonId}, null, "{employees:lastName}:Thompson OR {employees:firstName}:Ali", FIRST_NAME);
+        trySearch(new long[]{christineHaasId, eileenEvaId}, null, "{employees:lastName}:Eva OR Haas -Ali", EMPLOYEE_ID);
+        trySearch(new long[]{eileenEvaId, christineHaasId}, null, "{employees:lastName}:Eva OR Haas -Ali", LAST_NAME);
     }
 
     private void trySearch(long[] expectedIds, String path, String matchKey, String orderPath) throws JSONException {
