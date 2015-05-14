@@ -26,22 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.http.HttpStatus;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import android.test.InstrumentationTestCase;
 
 import com.android.volley.Request;
@@ -53,7 +37,24 @@ import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestClient.WrappedRestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
-import com.salesforce.androidsdk.rest.files.FileRequests;
+
+import org.apache.http.HttpStatus;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for RestClient
@@ -183,11 +184,9 @@ public class RestClientTest extends InstrumentationTestCase {
             }
         };
         RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, authTokenProvider);
-
         assertEquals("RestClient should be using the bad token initially", BAD_TOKEN, unauthenticatedRestClient.getAuthToken());
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
         assertEquals("RestClient should now be using the good token", authToken, unauthenticatedRestClient.getAuthToken());
-
         assertTrue("Expected success", response.isSuccess());
         checkResponse(response, HttpStatus.SC_OK, false);
     }
@@ -309,6 +308,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws Exception
      */
     public void testUpdate() throws Exception {
+
         // Create
         IdName newAccountIdName = createAccount();
 
@@ -320,7 +320,7 @@ public class RestClientTest extends InstrumentationTestCase {
         assertTrue("Update failed", updateResponse.isSuccess());
 
         // Retrieve - expect updated name
-        RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, "account", newAccountIdName.id, Arrays.asList(new String[] {"name"})));
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, "account", newAccountIdName.id, Arrays.asList(new String[]{"name"})));
         assertEquals("Wrong row returned", updatedAccountName, response.asJSONObject().getString("Name"));
     }
 
@@ -331,6 +331,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws Exception
      */
     public void testDelete() throws Exception {
+
         // Create
         IdName newAccountIdName = createAccount();
 
@@ -401,7 +402,6 @@ public class RestClientTest extends InstrumentationTestCase {
         fields.put("name", "NewAccount");
 		checkWrappedRestRequestUrl(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), clientInfo.instanceUrl + "/services/data/" + TestCredentials.API_VERSION + "/sobjects/account");
 		checkWrappedRestRequestUrl(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), clientInfo.instanceUrl + "/services/data/" + TestCredentials.API_VERSION + "/sobjects/account/fakeId");
-		checkWrappedRestRequestUrl(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png"), clientInfo.instanceUrl + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/users/me/files");
     }
 
     /**
@@ -414,7 +414,6 @@ public class RestClientTest extends InstrumentationTestCase {
         fields.put("name", "NewAccount");
 		checkWrappedRestRequestMethod(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), Request.Method.POST);
 		checkWrappedRestRequestMethod(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), RestMethod.MethodPATCH);
-		checkWrappedRestRequestMethod(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png"), Request.Method.POST);
     }
 
     /**
@@ -439,7 +438,6 @@ public class RestClientTest extends InstrumentationTestCase {
         fields.put("name", "NewAccount");
         checkWrappedRestRequestBodyContentType(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), "application/json; charset=UTF-8");
         checkWrappedRestRequestBodyContentType(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), "application/json; charset=UTF-8");
-        checkWrappedRestRequestBodyContentType(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png"), "multipart/form-data");
     }
 
     /**
@@ -472,6 +470,27 @@ public class RestClientTest extends InstrumentationTestCase {
         checkKeys(jsonResponse.getJSONObject("artists"), "href", "items", "limit", "next", "offset", "previous", "total");
     }
 
+    /**
+     * Tests if the file upload API is working per design.
+     *
+     * @throws Exception
+     */
+    public void testFileUpload() throws Exception {
+        final String filename  = "MyFile.txt";
+        final File file = new File("/sdcard/" + filename);
+        if (!file.exists()) {
+            file.createNewFile();
+            final OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
+            out.write("This is a test!");
+            out.close();
+        }
+        assertTrue("File should exist", file.exists());
+        final RestResponse response = restClient.uploadFile(file, filename, "Test Title", "Test Description");
+        assertNotNull("Response should not be null", response);
+        assertEquals("Status code should be 201 CREATED", HttpStatus.SC_CREATED, response.getStatusCode());
+        file.delete();
+        assertFalse("File should not exist", file.exists());
+    }
 
     //
     // Helper methods
@@ -514,8 +533,7 @@ public class RestClientTest extends InstrumentationTestCase {
     	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
     	if (expectedBody == null) {
     		assertNull("Body should be null", request.getBody());
-    	}
-    	else {
+    	} else {
     		assertEquals("Wrong body", new String(expectedBody), new String(request.getBody()));
     	}
     }
