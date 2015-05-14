@@ -401,7 +401,6 @@ public class RestClientTest extends InstrumentationTestCase {
         fields.put("name", "NewAccount");
 		checkWrappedRestRequestUrl(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), clientInfo.instanceUrl + "/services/data/" + TestCredentials.API_VERSION + "/sobjects/account");
 		checkWrappedRestRequestUrl(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), clientInfo.instanceUrl + "/services/data/" + TestCredentials.API_VERSION + "/sobjects/account/fakeId");
-		checkWrappedRestRequestUrl(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png"), clientInfo.instanceUrl + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/users/me/files");
     }
 
     /**
@@ -414,7 +413,6 @@ public class RestClientTest extends InstrumentationTestCase {
         fields.put("name", "NewAccount");
 		checkWrappedRestRequestMethod(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), Request.Method.POST);
 		checkWrappedRestRequestMethod(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), RestMethod.MethodPATCH);
-		checkWrappedRestRequestMethod(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png"), Request.Method.POST);
     }
 
     /**
@@ -439,7 +437,6 @@ public class RestClientTest extends InstrumentationTestCase {
         fields.put("name", "NewAccount");
         checkWrappedRestRequestBodyContentType(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), "application/json; charset=UTF-8");
         checkWrappedRestRequestBodyContentType(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), "application/json; charset=UTF-8");
-        checkWrappedRestRequestBodyContentType(FileRequests.uploadFile(new File("fakePath"), "MyFile", "Description", "image/png"), "multipart/form-data");
     }
 
     /**

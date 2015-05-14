@@ -26,28 +26,40 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.http.Consts;
-import org.apache.http.HttpEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.entity.mime.HttpMultipartMode;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.entity.mime.content.FileBody;
-import org.apache.http.entity.mime.content.StringBody;
-import org.apache.http.protocol.HTTP;
-
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.common.collect.Maps;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
+import com.salesforce.androidsdk.rest.RestResponse;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
+import org.apache.http.ProtocolVersion;
+import org.apache.http.StatusLine;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.BasicHttpEntity;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicHttpResponse;
+import org.apache.http.message.BasicStatusLine;
+import org.apache.http.protocol.HTTP;
+
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This defines the HTTP requests in the connect API for files functionality.
@@ -55,6 +67,11 @@ import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
  * @author sfell
  */
 public class FileRequests extends ApiRequests {
+
+    // Constants used for multipart requests.
+    private static final String MPE_BOUNDARY = "************************";
+    private static final String MPE_SEPARATOR = "--";
+    private static final String NEWLINE = "\r\n";
 
     // files i follow
     static final String CONTENT_DOCUMENT_LINK = ApiVersionStrings.BASE_SOBJECT_PATH + "ContentDocumentLink";
@@ -240,38 +257,88 @@ public class FileRequests extends ApiRequests {
     }
 
     /**
-     * Build a request that can upload a new file to the server, this will
-     * create a new file at version 1.
-     * 
-     * @param theFile
-     *            The path of the local file to upload to the server.
-     * @param name
-     *            The name/title of this file.
-     * @param description
-     *            A description of the file.
-     * @param mimeType
-     *            The mime-type of the file, if known.
-     * @return A RestRequest that can perform this upload.
-     * 
-     * @throws UnsupportedEncodingException
+     * Uploads a new file to the server. This will create a new file at version 1.
+     *
+     * @param theFile The path of the local file to upload to the server.
+     * @param name The name/title of this file.
+     * @return The response received from the server.
      */
-    public static RestRequest uploadFile(File theFile, String name, String description,
-    		String mimeType) throws UnsupportedEncodingException {
-    	final MultipartEntityBuilder mpeBuilder = MultipartEntityBuilder.create();
-    	mpeBuilder.setMode(HttpMultipartMode.STRICT);
-        final FileBody bin = (mimeType == null ? new FileBody(theFile)
-        		: new FileBody(theFile, ContentType.create(mimeType)));
-        if (name != null) {
-            mpeBuilder.addPart("title", new StringBody(name,
-            		ContentType.create("text/plain", Consts.ASCII)));
+    public static RestResponse uploadFile(File theFile, String name) {
+        HttpURLConnection conn = null;
+        RestResponse restResponse = null;
+        byte[] buf = new byte[1024];
+        try {
+            final String contentDisposition = "Content-Disposition: form-data; name=\""
+                    + "fileData" + "\"; filename=\"" + name + "\"";
+
+            // Reads the contents of the file.
+            final FileInputStream fileInputStream = new FileInputStream(theFile);
+
+            // Establishes a connection with the server.
+            final String path = base("users").appendPath("me/files").toString();
+            final RestClient client = SalesforceSDKManager.getInstance().getClientManager().peekRestClient();
+            final URI uri = client.getClientInfo().resolveUrl(path);
+            conn = (HttpURLConnection) uri.toURL().openConnection();
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            conn.setUseCaches(false);
+            conn.setRequestMethod(HttpPost.METHOD_NAME);
+            conn.setRequestProperty(HttpAccess.USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent());
+            conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + MPE_BOUNDARY);
+            conn.setRequestProperty("Connection", "Keep-Alive");
+
+            // Adds the auth token to the header.
+            conn.setRequestProperty("Authorization", "Bearer " + client.getAuthToken());
+
+            // Builds the request in parts.
+            final DataOutputStream dataOutputStream = new DataOutputStream(conn.getOutputStream());
+            dataOutputStream.writeBytes(MPE_SEPARATOR + MPE_BOUNDARY + NEWLINE);
+            dataOutputStream.writeBytes(contentDisposition + NEWLINE);
+            dataOutputStream.writeBytes(NEWLINE);
+            try {
+                for (int readNum; (readNum = fileInputStream.read(buf)) != -1;) {
+                    dataOutputStream.write(buf, 0, readNum);
+                }
+            } catch (IOException ex) {
+                throw ex;
+            }
+            dataOutputStream.writeBytes(NEWLINE);
+            dataOutputStream.writeBytes(MPE_SEPARATOR + MPE_BOUNDARY + MPE_SEPARATOR + NEWLINE);
+            fileInputStream.close();
+            dataOutputStream.flush();
+            dataOutputStream.close();
+
+            // Processes the response received from the server.
+            final int statusCode = conn.getResponseCode();
+            final String reasonPhrase = conn.getResponseMessage();
+            final ProtocolVersion protocolVersion = new HttpVersion(1, 1);
+            final StatusLine statusLine = new BasicStatusLine(protocolVersion,
+                    statusCode, reasonPhrase);
+            final HttpResponse response = new BasicHttpResponse(statusLine);
+            InputStream responseInputStream = null;
+
+    	    /*
+    	     * Tries to read the response stream here. If it fails with a
+    	     * FileNotFoundException, tries to read the error stream instead.
+    	     */
+            try {
+                responseInputStream = conn.getInputStream();
+            } catch (FileNotFoundException e) {
+                responseInputStream = conn.getErrorStream();
+            }
+            if (responseInputStream != null) {
+                final BasicHttpEntity entity = new BasicHttpEntity();
+                entity.setContent(responseInputStream);
+                response.setEntity(entity);
+            }
+            restResponse = new RestResponse(response);
+        } catch (Exception e) {
+            Log.e("FileRequests:uploadFile", "Exception thrown while uploading file", e);
+        } finally {
+            if (conn != null) {
+                conn.disconnect();
+            }
         }
-        if (description != null) {
-            mpeBuilder.addPart("desc", new StringBody(description,
-            		ContentType.create("text/plain", Consts.ASCII)));
-        }
-        mpeBuilder.addPart("fileData", bin);
-        final HttpEntity mpe = mpeBuilder.build();
-        return new RestRequest(RestMethod.POST, base("users").appendPath("me/files").toString(),
-        		mpe, HTTP_HEADERS);
+        return restResponse;
     }
 }
