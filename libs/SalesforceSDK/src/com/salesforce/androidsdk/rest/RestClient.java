@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.android.volley.AuthFailureError;
@@ -59,6 +60,7 @@ import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONObject;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -249,10 +251,12 @@ public class RestClient {
 	 *
 	 * @param theFile The path of the local file to upload to the server.
 	 * @param name The name/title of this file.
+	 * @param title Title.
+	 * @param description Description.
 	 * @return The response received from the server.
 	 */
-	public RestResponse uploadFile(File theFile, String name) {
-		return httpStack.uploadFile(theFile, name, this);
+	public RestResponse uploadFile(File theFile, String name, String title, String description) {
+		return httpStack.uploadFile(theFile, name, this, title, description);
 	}
 
 	/**
@@ -497,10 +501,14 @@ public class RestClient {
 		 *
 		 * @param theFile The path of the local file to upload to the server.
 		 * @param name The name/title of this file.
+		 * @param client RestClient instance.
+		 * @param title Title.
+		 * @param description Description.
 		 * @return The response received from the server.
 		 */
-		public RestResponse uploadFile(File theFile, String name, RestClient client) {
-			return uploadFile(theFile, name, client, true);
+		public RestResponse uploadFile(File theFile, String name, RestClient client,
+				String title, String description) {
+			return uploadFile(theFile, name, client, title, description, true);
 		}
 
 		/**
@@ -615,12 +623,13 @@ public class RestClient {
 			}
 		}
 
-		private RestResponse uploadFile(File theFile, String name, RestClient client, boolean retryInvalidToken) {
+		private RestResponse uploadFile(File theFile, String name, RestClient client,
+				String title, String description, boolean retryInvalidToken) {
 			HttpURLConnection conn = null;
 			RestResponse restResponse = null;
 			byte[] buf = new byte[1024];
 			try {
-				final String contentDisposition = "Content-Disposition: form-data; name=\""
+				final String bodyContentDisposition = "Content-Disposition: form-data; name=\""
 						+ "fileData" + "\"; filename=\"" + name + "\"";
 
 				// Reads the contents of the file.
@@ -646,7 +655,18 @@ public class RestClient {
 				// Builds the request in parts.
 				final DataOutputStream dataOutputStream = new DataOutputStream(conn.getOutputStream());
 				dataOutputStream.writeBytes(MPE_SEPARATOR + MPE_BOUNDARY + NEWLINE);
-				dataOutputStream.writeBytes(contentDisposition + NEWLINE);
+				dataOutputStream.writeBytes("Content-Type: application/json; charset=UTF-8" + NEWLINE);
+				dataOutputStream.writeBytes("Content-Disposition: form-data; name=\"json\"" + NEWLINE);
+				final JSONObject header = new JSONObject();
+				if (!TextUtils.isEmpty(title)) {
+					header.put("title", title);
+				}
+				if (!TextUtils.isEmpty(description)) {
+					header.put("desc", description);
+				}
+				dataOutputStream.writeBytes(header.toString());
+				dataOutputStream.writeBytes(MPE_SEPARATOR + MPE_BOUNDARY + NEWLINE);
+				dataOutputStream.writeBytes(bodyContentDisposition + NEWLINE);
 				dataOutputStream.writeBytes(NEWLINE);
 				try {
 					for (int readNum; (readNum = fileInputStream.read(buf)) != -1;) {
@@ -694,7 +714,7 @@ public class RestClient {
 						}
 					}
 					refreshAccessToken();
-					return uploadFile(theFile, name, client, false);
+					return uploadFile(theFile, name, client, title, description, false);
 				}
 				restResponse = new RestResponse(response);
 			} catch (Exception e) {

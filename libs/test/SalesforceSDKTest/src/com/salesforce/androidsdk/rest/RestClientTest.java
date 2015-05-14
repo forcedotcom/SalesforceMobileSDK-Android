@@ -184,11 +184,9 @@ public class RestClientTest extends InstrumentationTestCase {
             }
         };
         RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, authTokenProvider);
-
         assertEquals("RestClient should be using the bad token initially", BAD_TOKEN, unauthenticatedRestClient.getAuthToken());
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
         assertEquals("RestClient should now be using the good token", authToken, unauthenticatedRestClient.getAuthToken());
-
         assertTrue("Expected success", response.isSuccess());
         checkResponse(response, HttpStatus.SC_OK, false);
     }
@@ -310,6 +308,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws Exception
      */
     public void testUpdate() throws Exception {
+
         // Create
         IdName newAccountIdName = createAccount();
 
@@ -332,6 +331,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws Exception
      */
     public void testDelete() throws Exception {
+
         // Create
         IdName newAccountIdName = createAccount();
 
@@ -485,16 +485,9 @@ public class RestClientTest extends InstrumentationTestCase {
             out.close();
         }
         assertTrue("File should exist", file.exists());
-        final RestResponse response = restClient.uploadFile(file, filename);
+        final RestResponse response = restClient.uploadFile(file, filename, "Test Title", "Test Description");
         assertNotNull("Response should not be null", response);
-        assertEquals("Status code should be 200 OK", HttpStatus.SC_OK, response.getStatusCode());
-
-        // TODO: Read objectId.
-        final String objectId = null;
-        final RestRequest request = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER, "ContentDocument", objectId);
-        final RestResponse delResponse = restClient.sendSync(request);
-        assertNotNull("Response should not be null", delResponse);
-        assertEquals("Status code should be 204 NO CONTENT", HttpStatus.SC_NO_CONTENT, delResponse.getStatusCode());
+        assertEquals("Status code should be 201 CREATED", HttpStatus.SC_CREATED, response.getStatusCode());
         file.delete();
         assertFalse("File should not exist", file.exists());
     }
@@ -540,8 +533,7 @@ public class RestClientTest extends InstrumentationTestCase {
     	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
     	if (expectedBody == null) {
     		assertNull("Body should be null", request.getBody());
-    	}
-    	else {
+    	} else {
     		assertEquals("Wrong body", new String(expectedBody), new String(request.getBody()));
     	}
     }
