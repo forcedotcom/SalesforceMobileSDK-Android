@@ -68,11 +68,6 @@ import java.util.Map;
  */
 public class FileRequests extends ApiRequests {
 
-    // Constants used for multipart requests.
-    private static final String MPE_BOUNDARY = "************************";
-    private static final String MPE_SEPARATOR = "--";
-    private static final String NEWLINE = "\r\n";
-
     // files i follow
     static final String CONTENT_DOCUMENT_LINK = ApiVersionStrings.BASE_SOBJECT_PATH + "ContentDocumentLink";
 
@@ -254,91 +249,5 @@ public class FileRequests extends ApiRequests {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Uploads a new file to the server. This will create a new file at version 1.
-     *
-     * @param theFile The path of the local file to upload to the server.
-     * @param name The name/title of this file.
-     * @return The response received from the server.
-     */
-    public static RestResponse uploadFile(File theFile, String name) {
-        HttpURLConnection conn = null;
-        RestResponse restResponse = null;
-        byte[] buf = new byte[1024];
-        try {
-            final String contentDisposition = "Content-Disposition: form-data; name=\""
-                    + "fileData" + "\"; filename=\"" + name + "\"";
-
-            // Reads the contents of the file.
-            final FileInputStream fileInputStream = new FileInputStream(theFile);
-
-            // Establishes a connection with the server.
-            final String path = base("users").appendPath("me/files").toString();
-            final RestClient client = SalesforceSDKManager.getInstance().getClientManager().peekRestClient();
-            final URI uri = client.getClientInfo().resolveUrl(path);
-            conn = (HttpURLConnection) uri.toURL().openConnection();
-            conn.setDoOutput(true);
-            conn.setDoInput(true);
-            conn.setUseCaches(false);
-            conn.setRequestMethod(HttpPost.METHOD_NAME);
-            conn.setRequestProperty(HttpAccess.USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent());
-            conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + MPE_BOUNDARY);
-            conn.setRequestProperty("Connection", "Keep-Alive");
-
-            // Adds the auth token to the header.
-            conn.setRequestProperty("Authorization", "Bearer " + client.getAuthToken());
-
-            // Builds the request in parts.
-            final DataOutputStream dataOutputStream = new DataOutputStream(conn.getOutputStream());
-            dataOutputStream.writeBytes(MPE_SEPARATOR + MPE_BOUNDARY + NEWLINE);
-            dataOutputStream.writeBytes(contentDisposition + NEWLINE);
-            dataOutputStream.writeBytes(NEWLINE);
-            try {
-                for (int readNum; (readNum = fileInputStream.read(buf)) != -1;) {
-                    dataOutputStream.write(buf, 0, readNum);
-                }
-            } catch (IOException ex) {
-                throw ex;
-            }
-            dataOutputStream.writeBytes(NEWLINE);
-            dataOutputStream.writeBytes(MPE_SEPARATOR + MPE_BOUNDARY + MPE_SEPARATOR + NEWLINE);
-            fileInputStream.close();
-            dataOutputStream.flush();
-            dataOutputStream.close();
-
-            // Processes the response received from the server.
-            final int statusCode = conn.getResponseCode();
-            final String reasonPhrase = conn.getResponseMessage();
-            final ProtocolVersion protocolVersion = new HttpVersion(1, 1);
-            final StatusLine statusLine = new BasicStatusLine(protocolVersion,
-                    statusCode, reasonPhrase);
-            final HttpResponse response = new BasicHttpResponse(statusLine);
-            InputStream responseInputStream = null;
-
-    	    /*
-    	     * Tries to read the response stream here. If it fails with a
-    	     * FileNotFoundException, tries to read the error stream instead.
-    	     */
-            try {
-                responseInputStream = conn.getInputStream();
-            } catch (FileNotFoundException e) {
-                responseInputStream = conn.getErrorStream();
-            }
-            if (responseInputStream != null) {
-                final BasicHttpEntity entity = new BasicHttpEntity();
-                entity.setContent(responseInputStream);
-                response.setEntity(entity);
-            }
-            restResponse = new RestResponse(response);
-        } catch (Exception e) {
-            Log.e("FileRequests:uploadFile", "Exception thrown while uploading file", e);
-        } finally {
-            if (conn != null) {
-                conn.disconnect();
-            }
-        }
-        return restResponse;
     }
 }

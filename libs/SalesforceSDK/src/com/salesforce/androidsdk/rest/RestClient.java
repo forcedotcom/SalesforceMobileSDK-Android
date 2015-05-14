@@ -39,20 +39,34 @@ import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.HttpStack;
 import com.android.volley.toolbox.NoCache;
 import com.google.common.collect.Maps;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.HttpAccess.Execution;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
+import com.salesforce.androidsdk.rest.files.ConnectUriBuilder;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.HttpVersion;
+import org.apache.http.ProtocolVersion;
+import org.apache.http.StatusLine;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.message.BasicHttpResponse;
+import org.apache.http.message.BasicStatusLine;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
 
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -62,6 +76,11 @@ import java.util.Map;
  * RestClient allows you to send authenticated HTTP requests to a force.com server.
  */
 public class RestClient {
+
+	// Constants used for multipart requests.
+	private static final String MPE_BOUNDARY = "************************";
+	private static final String MPE_SEPARATOR = "--";
+	private static final String NEWLINE = "\r\n";
 
     private static Map<String, RequestQueue> REQUEST_QUEUES;
 
@@ -225,7 +244,17 @@ public class RestClient {
 		return new RestResponse(httpStack.performRequest(method.asVolleyMethod(), clientInfo.resolveUrl(path), httpEntity, additionalHttpHeaders, true));
 	}
 
-	
+	/**
+	 * Uploads a new file to the server. This will create a new file at version 1.
+	 *
+	 * @param theFile The path of the local file to upload to the server.
+	 * @param name The name/title of this file.
+	 * @return The response received from the server.
+	 */
+	public RestResponse uploadFile(File theFile, String name) {
+		return httpStack.uploadFile(theFile, name, this);
+	}
+
 	/**
 	 * Only used in tests
 	 * @param httpAccessor
@@ -437,11 +466,9 @@ public class RestClient {
 		@Override
 		public HttpResponse performRequest(Request<?> request, Map<String, String> additionalHeaders)
 				throws IOException, AuthFailureError {
-
 			int method = request.getMethod();
 			URI url = URI.create(request.getUrl());
 			HttpEntity requestEntity = null;
-					
 			if (request instanceof WrappedRestRequest) {
 				RestRequest restRequest = ((WrappedRestRequest) request).getRestRequest();
 				
@@ -452,23 +479,30 @@ public class RestClient {
 				if (restRequest.getAdditionalHttpHeaders() != null) {
 					if (additionalHeaders == null) {
 						additionalHeaders = restRequest.getAdditionalHttpHeaders(); 
-					}
-					else {
+					} else {
 						additionalHeaders = Maps.newHashMap(additionalHeaders);
 						additionalHeaders.putAll(restRequest.getAdditionalHttpHeaders());
-						
 					}
 				}
-			}
-			else {
+			} else {
 				if (request.getBody() != null) {
 					requestEntity = new ByteArrayEntity(request.getBody());
 				}
 			}
-			
 			return performRequest(method, url, requestEntity, additionalHeaders, true);
 		}
-		
+
+		/**
+		 * Uploads a new file to the server. This will create a new file at version 1.
+		 *
+		 * @param theFile The path of the local file to upload to the server.
+		 * @param name The name/title of this file.
+		 * @return The response received from the server.
+		 */
+		public RestResponse uploadFile(File theFile, String name, RestClient client) {
+			return uploadFile(theFile, name, client, true);
+		}
+
 		/**
 		 * @return The authToken for this RestClient.
 		 */
@@ -521,10 +555,11 @@ public class RestClient {
 		 * @return
 		 * @throws IOException
 		 */
-		public HttpResponse performRequest(int method, URI url, HttpEntity httpEntity, Map<String, String> additionalHttpHeaders, boolean retryInvalidToken) throws IOException {
+		public HttpResponse performRequest(int method, URI url, HttpEntity httpEntity,
+				Map<String, String> additionalHttpHeaders, boolean retryInvalidToken) throws IOException {
 			Execution exec = null;
 
-			// Prepare headers
+			// Prepare headers.
 			Map<String, String> headers = new HashMap<String, String>();
 			if (additionalHttpHeaders != null) {
 				headers.putAll(additionalHttpHeaders);
@@ -533,7 +568,7 @@ public class RestClient {
 				headers.put("Authorization", "Bearer " + authToken);
 			}
 
-			// Do the actual call
+			// Do the actual call.
 			switch(method) {
 			case Request.Method.DELETE:
 				exec = httpAccessor.doDelete(headers, url); break;
@@ -548,37 +583,131 @@ public class RestClient {
 			case Request.Method.PUT:
 				exec = httpAccessor.doPut(headers, url, httpEntity); break;
 			}
-
-			HttpResponse response = exec.response;
+			final HttpResponse response = exec.response;
 			int statusCode = response.getStatusLine().getStatusCode();
 
-			// 401 bad access token *
-			if (statusCode == HttpStatus.SC_UNAUTHORIZED) {
-				// If we haven't retried already and we have an accessTokenProvider
-				// Then let's try to get a new authToken
-				if (retryInvalidToken && authTokenProvider != null) {
-					// remember to consume this response so the connection can get re-used
-					HttpEntity entity = response.getEntity();
-					if (entity != null && entity.isStreaming()) {
-						InputStream instream = entity.getContent();
-						if (instream != null) {
-							instream.close();
-						}
-					}
-					String newAuthToken = authTokenProvider.getNewAuthToken();
-					if (newAuthToken != null) {
-						setAuthToken(newAuthToken);
-						// Retry with the new authToken
-						return performRequest(method, url, httpEntity, additionalHttpHeaders, false);
+			// 401 bad access token.
+			if (retryInvalidToken && statusCode == HttpStatus.SC_UNAUTHORIZED) {
+				final HttpEntity entity = response.getEntity();
+				if (entity != null && entity.isStreaming()) {
+					final InputStream instream = entity.getContent();
+					if (instream != null) {
+						instream.close();
 					}
 				}
+				refreshAccessToken();
+				return performRequest(method, url, httpEntity, additionalHttpHeaders, false);
 			}
-			
-			// Done
+
+			// Done.
 			return response;
 		}
+
+		/**
+		 * Swaps the existing access token for a new one.
+		 */
+		private void refreshAccessToken() {
+			if (authTokenProvider != null) {
+				final String newAuthToken = authTokenProvider.getNewAuthToken();
+				if (newAuthToken != null) {
+					setAuthToken(newAuthToken);
+				}
+			}
+		}
+
+		private RestResponse uploadFile(File theFile, String name, RestClient client, boolean retryInvalidToken) {
+			HttpURLConnection conn = null;
+			RestResponse restResponse = null;
+			byte[] buf = new byte[1024];
+			try {
+				final String contentDisposition = "Content-Disposition: form-data; name=\""
+						+ "fileData" + "\"; filename=\"" + name + "\"";
+
+				// Reads the contents of the file.
+				final FileInputStream fileInputStream = new FileInputStream(theFile);
+
+				// Establishes a connection with the server.
+				final String path = (new ConnectUriBuilder()).appendPath("users").appendPath("me/files").toString();
+				final URI uri = client.getClientInfo().resolveUrl(path);
+				conn = (HttpURLConnection) uri.toURL().openConnection();
+				conn.setDoOutput(true);
+				conn.setDoInput(true);
+				conn.setUseCaches(false);
+				conn.setRequestMethod(HttpPost.METHOD_NAME);
+				conn.setRequestProperty(HttpAccess.USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent());
+				conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + MPE_BOUNDARY);
+				conn.setRequestProperty("Connection", "Keep-Alive");
+
+				// Adds the auth token to the header.
+				if (getAuthToken() != null) {
+					conn.setRequestProperty("Authorization", "Bearer " + authToken);
+				}
+
+				// Builds the request in parts.
+				final DataOutputStream dataOutputStream = new DataOutputStream(conn.getOutputStream());
+				dataOutputStream.writeBytes(MPE_SEPARATOR + MPE_BOUNDARY + NEWLINE);
+				dataOutputStream.writeBytes(contentDisposition + NEWLINE);
+				dataOutputStream.writeBytes(NEWLINE);
+				try {
+					for (int readNum; (readNum = fileInputStream.read(buf)) != -1;) {
+						dataOutputStream.write(buf, 0, readNum);
+					}
+				} catch (IOException ex) {
+					throw ex;
+				}
+				dataOutputStream.writeBytes(NEWLINE);
+				dataOutputStream.writeBytes(MPE_SEPARATOR + MPE_BOUNDARY + MPE_SEPARATOR + NEWLINE);
+				fileInputStream.close();
+				dataOutputStream.flush();
+				dataOutputStream.close();
+
+				// Processes the response received from the server.
+				final int statusCode = conn.getResponseCode();
+				final String reasonPhrase = conn.getResponseMessage();
+				final ProtocolVersion protocolVersion = new HttpVersion(1, 1);
+				final StatusLine statusLine = new BasicStatusLine(protocolVersion,
+						statusCode, reasonPhrase);
+				final HttpResponse response = new BasicHttpResponse(statusLine);
+				InputStream responseInputStream = null;
+
+    	    	/*
+    	     	 * Tries to read the response stream here. If it fails with a
+    	     	 * FileNotFoundException, tries to read the error stream instead.
+    	     	 */
+				try {
+					responseInputStream = conn.getInputStream();
+				} catch (FileNotFoundException e) {
+					responseInputStream = conn.getErrorStream();
+				}
+				if (responseInputStream != null) {
+					final BasicHttpEntity entity = new BasicHttpEntity();
+					entity.setContent(responseInputStream);
+					response.setEntity(entity);
+				}
+
+				// 401 bad access token.
+				if (retryInvalidToken && statusCode == HttpStatus.SC_UNAUTHORIZED) {
+					final HttpEntity entity = response.getEntity();
+					if (entity != null && entity.isStreaming()) {
+						if (responseInputStream != null) {
+							responseInputStream.close();
+						}
+					}
+					refreshAccessToken();
+					return uploadFile(theFile, name, client, false);
+				}
+				restResponse = new RestResponse(response);
+			} catch (Exception e) {
+				Log.e("SalesforceHttpStack:uploadFile", "Exception thrown while uploading file", e);
+			} finally {
+				if (conn != null) {
+					conn.disconnect();
+				}
+			}
+			return restResponse;
+		}
 	}
-	
+
 	/**
 	 * A RestRequest wrapped in a Request<?>
 	 */

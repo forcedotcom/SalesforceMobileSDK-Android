@@ -26,17 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
@@ -51,17 +40,20 @@ import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
-import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
-import com.salesforce.androidsdk.rest.files.FileRequests;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
-import org.apache.http.HttpStatus;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class ClientManagerTest extends InstrumentationTestCase {
 
@@ -424,44 +416,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
         } catch (InterruptedException e) {
             fail("removeAccountAsync did not return after 5s");
         }
-    }
-
-    /**
-     * Tests if the file upload API is working per design.
-     *
-     * @throws Exception
-     */
-    public void testFileUpload() throws Exception {
-        assertNoAccounts();
-        final OAuth2.TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(HttpAccess.DEFAULT,
-                new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
-        clientManager.createNewAccount(TEST_OTHER_ACCOUNT_NAME, TEST_OTHER_USERNAME,
-                TestCredentials.REFRESH_TOKEN, refreshResponse.authToken, TestCredentials.INSTANCE_URL, TEST_LOGIN_URL,
-                TEST_IDENTITY_URL, TestCredentials.CLIENT_ID, TEST_ORG_ID_2, TEST_USER_ID_2, TEST_PASSCODE_HASH);
-        final String filename  = "MyFile.txt";
-        final File file = new File("/sdcard/" + filename);
-        if (!file.exists()) {
-            file.createNewFile();
-            final OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
-            out.write("This is a test!");
-            out.close();
-        }
-        assertTrue("File should exist", file.exists());
-        final RestResponse response = FileRequests.uploadFile(file, filename);
-        assertNotNull("Response should not be null", response);
-        assertEquals("Status code should be 200 OK", HttpStatus.SC_OK, response.getStatusCode());
-
-        // TODO: Read objectId.
-        final String objectId = null;
-        final RestRequest request = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER, "ContentDocument", objectId);
-        final RestClient restClient = clientManager.peekRestClient();
-        assertNotNull("Rest client should not be null", restClient);
-        final RestResponse delResponse = restClient.sendSync(request);
-        assertNotNull("Response should not be null", delResponse);
-        assertEquals("Status code should be 204 NO CONTENT", HttpStatus.SC_NO_CONTENT, delResponse.getStatusCode());
-        file.delete();
-        assertFalse("File should not exist", file.exists());
-        cleanupAccounts();
     }
 
     /**

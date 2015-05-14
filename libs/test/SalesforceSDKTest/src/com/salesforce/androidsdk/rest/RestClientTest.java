@@ -26,22 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.http.HttpStatus;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import android.test.InstrumentationTestCase;
 
 import com.android.volley.Request;
@@ -53,7 +37,24 @@ import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestClient.WrappedRestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
-import com.salesforce.androidsdk.rest.files.FileRequests;
+
+import org.apache.http.HttpStatus;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests for RestClient
@@ -320,7 +321,7 @@ public class RestClientTest extends InstrumentationTestCase {
         assertTrue("Update failed", updateResponse.isSuccess());
 
         // Retrieve - expect updated name
-        RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, "account", newAccountIdName.id, Arrays.asList(new String[] {"name"})));
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, "account", newAccountIdName.id, Arrays.asList(new String[]{"name"})));
         assertEquals("Wrong row returned", updatedAccountName, response.asJSONObject().getString("Name"));
     }
 
@@ -469,6 +470,34 @@ public class RestClientTest extends InstrumentationTestCase {
         checkKeys(jsonResponse.getJSONObject("artists"), "href", "items", "limit", "next", "offset", "previous", "total");
     }
 
+    /**
+     * Tests if the file upload API is working per design.
+     *
+     * @throws Exception
+     */
+    public void testFileUpload() throws Exception {
+        final String filename  = "MyFile.txt";
+        final File file = new File("/sdcard/" + filename);
+        if (!file.exists()) {
+            file.createNewFile();
+            final OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
+            out.write("This is a test!");
+            out.close();
+        }
+        assertTrue("File should exist", file.exists());
+        final RestResponse response = restClient.uploadFile(file, filename);
+        assertNotNull("Response should not be null", response);
+        assertEquals("Status code should be 200 OK", HttpStatus.SC_OK, response.getStatusCode());
+
+        // TODO: Read objectId.
+        final String objectId = null;
+        final RestRequest request = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER, "ContentDocument", objectId);
+        final RestResponse delResponse = restClient.sendSync(request);
+        assertNotNull("Response should not be null", delResponse);
+        assertEquals("Status code should be 204 NO CONTENT", HttpStatus.SC_NO_CONTENT, delResponse.getStatusCode());
+        file.delete();
+        assertFalse("File should not exist", file.exists());
+    }
 
     //
     // Helper methods
