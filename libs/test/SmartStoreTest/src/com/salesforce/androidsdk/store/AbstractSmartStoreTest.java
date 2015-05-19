@@ -47,6 +47,8 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
+import java.util.ArrayList;
+
 /**
  * Abstract super class for plain and encrypted smart store tests
  *
@@ -67,6 +69,27 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		assertEquals("Table for test_soup was expected to be called TABLE_1", "TABLE_1", getSoupTableName(TEST_SOUP));
 		assertTrue("Table for test_soup should now exist", hasTable("TABLE_1"));
 		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
+	}
+
+	/**
+	 * Checking compile options
+	 */
+	public void testCompileOptions() {
+		ArrayList<String> compileOptions = new ArrayList<String>();
+		Cursor c = null;
+		try {
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			c = db.rawQuery("PRAGMA compile_options", null);
+			for (c.moveToFirst(); c.moveToNext(); ) {
+				compileOptions.add(c.getString(0));
+			}
+		}
+		finally {
+			safeClose(c);
+		}
+
+		assertTrue(compileOptions.contains("ENABLE_FTS3"));
+		assertFalse(compileOptions.contains("ENABLE_FTS3_PARENTHESIS")); // we use the standard syntax
 	}
 
 	/**
