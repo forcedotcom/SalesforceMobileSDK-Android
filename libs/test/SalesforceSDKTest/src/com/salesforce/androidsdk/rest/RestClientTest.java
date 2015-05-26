@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -111,6 +111,13 @@ public class RestClientTest extends InstrumentationTestCase {
     public void testClientInfoResolveUrl() {
     	assertEquals("Wrong url", TestCredentials.INSTANCE_URL + "/a/b/", clientInfo.resolveUrl("a/b/").toString());
     	assertEquals("Wrong url", TestCredentials.INSTANCE_URL + "/a/b/", clientInfo.resolveUrl("/a/b/").toString());
+    }
+
+    public void testClientInfoResolveUrlForHttpsUrl() {
+        assertEquals("Wrong url", "https://testurl", clientInfo.resolveUrl("https://testurl").toString());
+        assertEquals("Wrong url", "http://testurl", clientInfo.resolveUrl("http://testurl").toString());
+        assertEquals("Wrong url", "HTTPS://testurl", clientInfo.resolveUrl("HTTPS://testurl").toString());
+        assertEquals("Wrong url", "HTTP://testurl", clientInfo.resolveUrl("HTTP://testurl").toString());
     }
 
     public void testClientInfoResolveUrlForCommunityUrl() throws Exception {

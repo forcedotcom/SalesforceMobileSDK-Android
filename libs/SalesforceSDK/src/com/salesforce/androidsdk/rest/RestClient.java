@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -379,25 +379,31 @@ public class RestClient {
 		 * @return Resolved URL.
 		 */
 		public URI resolveUrl(String path) {
-			final StringBuilder commInstanceUrl = new StringBuilder();
-			if (communityUrl != null && !"".equals(communityUrl.trim())) {
-				commInstanceUrl.append(communityUrl);
-			} else {
-				commInstanceUrl.append(instanceUrl.toString());
+			String resolvedPathStr = path;
+
+			// Resolve URL only for a relative URL.
+			if (!path.matches("[hH][tT][tT][pP][sS]?://.*")) {
+				final StringBuilder commInstanceUrl = new StringBuilder();
+				if (communityUrl != null && !"".equals(communityUrl.trim())) {
+					commInstanceUrl.append(communityUrl);
+				} else {
+					commInstanceUrl.append(instanceUrl.toString());
+				}
+				if (!commInstanceUrl.toString().endsWith("/")) {
+					commInstanceUrl.append("/");
+				}
+				if (path.startsWith("/")) {
+					path = path.substring(1);
+				}
+				commInstanceUrl.append(path);
+				resolvedPathStr = commInstanceUrl.toString();
 			}
-			if (!commInstanceUrl.toString().endsWith("/")) {
-				commInstanceUrl.append("/");
-			}
-			if (path.startsWith("/")) {
-				path = path.substring(1);
-			}
-			commInstanceUrl.append(path);
 			URI uri = null;
 			try {
-				uri = new URI(commInstanceUrl.toString());
+				uri = new URI(resolvedPathStr);
 			} catch (URISyntaxException e) {
 				Log.e("ClientInfo: resolveUrl",
-						"URISyntaxException thrown on URL: " + commInstanceUrl.toString());
+						"URISyntaxException thrown on URL: " + resolvedPathStr);
 			}
 			return uri;
 		}
