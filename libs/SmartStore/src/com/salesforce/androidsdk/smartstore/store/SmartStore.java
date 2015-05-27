@@ -600,7 +600,7 @@ public class SmartStore  {
 	    	List<String> soupNames = new ArrayList<String>();
 	        Cursor cursor = null;
 			try {
-				cursor = DBHelper.getInstance(db).query(db, SOUP_NAMES_TABLE, new String[]{SOUP_NAME_COL}, null, null, null);
+				cursor = DBHelper.getInstance(db).query(db, SOUP_NAMES_TABLE, new String[]{SOUP_NAME_COL}, SOUP_NAME_COL, null, null);
 	            if (cursor.moveToFirst()) {
 	                do {
 	                    soupNames.add(cursor.getString(0));
