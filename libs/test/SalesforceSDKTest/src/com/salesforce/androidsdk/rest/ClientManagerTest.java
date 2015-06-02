@@ -26,14 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
-
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
@@ -54,6 +46,14 @@ import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
+
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 public class ClientManagerTest extends InstrumentationTestCase {
 
@@ -117,7 +117,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      */
     public void testGetAccountType() {
         assertEquals("Wrong account type", TEST_ACCOUNT_TYPE,
-        		clientManager.getAccountType());
+                clientManager.getAccountType());
     }
 
     /**
@@ -207,7 +207,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
             @Override
             public int compare(Account account1, Account account2) {
                 return account1.name.compareTo(account2.name);
-            }});
+            }
+        });
         assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
         assertEquals("Wrong account name", TEST_OTHER_ACCOUNT_NAME, accounts[1].name);
     }
@@ -279,7 +280,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         assertEquals("Two accounts should have been returned", 2, accounts.length);
 
         // Remove one of them
-        clientManager.removeAccounts(new Account[] {accounts[0]});
+        clientManager.removeAccounts(new Account[]{accounts[0]});
 
         // Make sure the other account is still there
         Account[] accountsLeft = clientManager.getAccounts();
