@@ -88,8 +88,8 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 			safeClose(c);
 		}
 
-		assertTrue(compileOptions.contains("ENABLE_FTS3"));
-		assertFalse(compileOptions.contains("ENABLE_FTS3_PARENTHESIS")); // we use the standard syntax
+		assertTrue("ENABLE_FTS4 flag not found in compile options", compileOptions.contains("ENABLE_FTS4"));
+		assertTrue("ENABLE_FTS3_PARENTHESIS flag not found in compile options", compileOptions.contains("ENABLE_FTS3_PARENTHESIS"));
 	}
 
 	/**
