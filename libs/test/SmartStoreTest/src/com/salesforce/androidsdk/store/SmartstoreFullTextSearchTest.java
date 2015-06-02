@@ -374,7 +374,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         trySearch(new long[]{}, LAST_NAME, "Stel*", null);
 
         // One field - set operation - no results
-        trySearch(new long[]{}, FIRST_NAME, "Ei* -Eileen", null);
+        trySearch(new long[]{}, FIRST_NAME, "Ei* NOT Eileen", null);
     }
 
     /**
@@ -392,7 +392,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         trySearch(new long[]{irvingSternId}, LAST_NAME, "Ste*", null);
 
         // One field - set operation - one result
-        trySearch(new long[]{eileenEvaId}, FIRST_NAME, "E* -Eva", null);
+        trySearch(new long[]{eileenEvaId}, FIRST_NAME, "E* NOT Eva", null);
     }
 
     /**
@@ -431,7 +431,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         trySearch(new long[]{}, null, "Haas Christina", null);
 
         // All fields - set operation - no results
-        trySearch(new long[]{}, null, "Christine -Haas", null);
+        trySearch(new long[]{}, null, "Christine NOt Haas", null);
     }
 
     /**
@@ -450,7 +450,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         trySearch(new long[]{christineHaasId}, null, "Haas Christine", null);
 
         // All fields - set operation - one result
-        trySearch(new long[]{aliHaasId}, null, "Haas -Christine", null);
+        trySearch(new long[]{aliHaasId}, null, "Haas NOT Christine", null);
     }
 
     /**
@@ -470,8 +470,8 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // All fields - set operation - more than result
         trySearch(new long[]{michaelThompsonId, aliHaasId}, null, "Thompson OR Ali", EMPLOYEE_ID);
         trySearch(new long[]{aliHaasId, michaelThompsonId}, null, "Thompson OR Ali", FIRST_NAME);
-        trySearch(new long[]{christineHaasId, evaPulaskiId, eileenEvaId}, null, "Eva OR Haas -Ali", EMPLOYEE_ID);
-        trySearch(new long[]{christineHaasId, eileenEvaId, evaPulaskiId}, null, "Eva OR Haas -Ali", FIRST_NAME);
+        trySearch(new long[]{christineHaasId, evaPulaskiId, eileenEvaId}, null, "Eva OR Haas NOT Ali", EMPLOYEE_ID);
+        trySearch(new long[]{christineHaasId, eileenEvaId, evaPulaskiId}, null, "Eva OR Haas NOT Ali", FIRST_NAME);
     }
 
     /**
@@ -497,8 +497,8 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // All fields - set operation - more than result
         trySearch(new long[]{michaelThompsonId, aliHaasId}, null, "{employees:lastName}:Thompson OR {employees:firstName}:Ali", EMPLOYEE_ID);
         trySearch(new long[]{aliHaasId, michaelThompsonId}, null, "{employees:lastName}:Thompson OR {employees:firstName}:Ali", FIRST_NAME);
-        trySearch(new long[]{christineHaasId, eileenEvaId}, null, "{employees:lastName}:Eva OR Haas -Ali", EMPLOYEE_ID);
-        trySearch(new long[]{eileenEvaId, christineHaasId}, null, "{employees:lastName}:Eva OR Haas -Ali", LAST_NAME);
+        trySearch(new long[]{christineHaasId, eileenEvaId}, null, "{employees:lastName}:Eva OR Haas NOT Ali", EMPLOYEE_ID);
+        trySearch(new long[]{eileenEvaId, christineHaasId}, null, "{employees:lastName}:Eva OR Haas NOT Ali", LAST_NAME);
     }
 
     private void trySearch(long[] expectedIds, String path, String matchKey, String orderPath) throws JSONException {
