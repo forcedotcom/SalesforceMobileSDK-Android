@@ -44,6 +44,7 @@ var miscUtils = require('../external/shared/node/utils');
 
 var version = '3.3.0';
 var minimumCordovaVersion = '4.0';
+var cordovaPlatformVersion = '3.6.4';
 var minTargetApi = {'versionNumber': 21, 'versionName': 'Lollipop'};
 var androidExePath;
 
@@ -161,7 +162,7 @@ function createHybridApp(config) {
 
     shelljs.exec('cordova create "' + config.projectDir + '" ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
-    shelljs.exec('cordova platform add android');
+    shelljs.exec('cordova platform add android@' + cordovaPlatformVersion);
     shelljs.exec('cordova plugin add https://github.com/forcedotcom/SalesforceMobileSDK-CordovaPlugin#unstable');
 
     // Remove the default Cordova app.
