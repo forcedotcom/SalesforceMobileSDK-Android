@@ -559,6 +559,46 @@ public class SyncManagerTest extends ManagerTestCase {
         assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John' LIMIT 100", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John' LIMIT 100", dateLong));
     }
 
+    /**
+     * Test reSync while sync is running
+     */
+    public void testReSyncRunningSync() throws JSONException {
+        // Create sync
+        SlowSoqlSyncDownTarget target = new SlowSoqlSyncDownTarget("SELECT Id, Name, LastModifiedDate FROM Account WHERE Id IN " + makeInClause(idToNames.keySet()));
+        SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED);
+        SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP);
+        long syncId = sync.getId();
+        checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
+
+        // Run sync - will freeze during fetch
+        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        syncManager.runSync(sync, queue);
+
+        // Wait for sync to be running
+        queue.getNextSyncUpdate();
+
+        // Calling reSync -- expect exception
+        try {
+            syncManager.reSync(syncId, null);
+            fail("Re sync should have failed");
+        } catch (SyncManager.SmartSyncException e) {
+            assertTrue("Re sync should have failed because sync is already running", e.getMessage().contains("still running"));
+        }
+
+        // Wait for sync to complete successfully
+        while (!queue.getNextSyncUpdate().isDone());
+
+        // Calling reSync again -- does not expect exception
+        try {
+            syncManager.reSync(syncId, queue);
+        } catch (SyncManager.SmartSyncException e) {
+            fail("Re sync should not have failed");
+        }
+
+        // Waiting for reSync to complete successfully
+        while (!queue.getNextSyncUpdate().isDone());
+    }
+
 	/**
 	 * Sync down helper
 	 * @throws JSONException
@@ -942,5 +982,31 @@ public class SyncManagerTest extends ManagerTestCase {
 
     private String makeInClause(Collection<String> values) {
         return "('" + TextUtils.join("', '", values) + "')";
+    }
+
+    /**
+     Soql sync down target that pauses for a second at the beginning of the fetch
+     */
+    static class SlowSoqlSyncDownTarget extends SoqlSyncDownTarget {
+
+        public SlowSoqlSyncDownTarget(String query) throws JSONException {
+            super(query);
+            this.queryType = QueryType.custom;
+        }
+
+        public SlowSoqlSyncDownTarget(JSONObject target) throws JSONException {
+            super(target);
+        }
+
+
+        @Override
+        public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+
+            }
+            return super.startFetch(syncManager, maxTimeStamp);
+        }
     }
 }
