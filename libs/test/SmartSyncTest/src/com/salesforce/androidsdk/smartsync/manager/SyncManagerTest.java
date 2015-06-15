@@ -562,7 +562,7 @@ public class SyncManagerTest extends ManagerTestCase {
     /**
      * Test reSync while sync is running
      */
-    public void testResyncRunningSync() throws JSONException {
+    public void testReSyncRunningSync() throws JSONException {
         // Create sync
         SlowSoqlSyncDownTarget target = new SlowSoqlSyncDownTarget("SELECT Id, Name, LastModifiedDate FROM Account WHERE Id IN " + makeInClause(idToNames.keySet()));
         SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED);
