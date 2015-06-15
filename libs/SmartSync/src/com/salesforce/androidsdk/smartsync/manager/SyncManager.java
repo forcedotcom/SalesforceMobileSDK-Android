@@ -82,6 +82,7 @@ public class SyncManager {
     private static Map<String, SyncManager> INSTANCES = new HashMap<String, SyncManager>();
 
     // Members
+    private long syncIdRunning = -1;
     public final String apiVersion;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 	private SmartStore smartStore;
@@ -218,15 +219,17 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState reSync(long syncId, SyncUpdateCallback callback) throws JSONException {
+        // Currently we only allow one sync to run at any given time
+        if (syncId == syncIdRunning) {
+            throw new SmartSyncException("Cannot run reSync:" + syncId + ": still running");
+        }
+
         SyncState sync = SyncState.byId(smartStore, syncId);
         if (sync == null) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": no sync found");
         }
         if (sync.getType() != SyncState.Type.syncDown) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong type:" + sync.getType());
-        }
-        if (sync.getStatus() == SyncState.Status.RUNNING) {
-            throw new SmartSyncException("Cannot run reSync:" + syncId + ": not done:" + sync.getStatus());
         }
         sync.setTotalSize(-1);
         runSync(sync, callback);
@@ -289,6 +292,20 @@ public class SyncManager {
     		sync.setStatus(status);
     		if (progress != UNCHANGED) sync.setProgress(progress);
     		sync.save(smartStore);
+
+            switch (status) {
+
+                case NEW:
+                    break;
+                case RUNNING:
+                    syncIdRunning = sync.getId();
+                    break;
+                case DONE:
+                case FAILED:
+                    syncIdRunning = -1;
+                    break;
+            }
+
 	    	callback.onUpdate(sync);
     	}
     	catch (JSONException e) {
