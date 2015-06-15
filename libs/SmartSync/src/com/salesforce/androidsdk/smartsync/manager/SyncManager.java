@@ -82,7 +82,7 @@ public class SyncManager {
     private static Map<String, SyncManager> INSTANCES = new HashMap<String, SyncManager>();
 
     // Members
-    private long syncIdRunning = -1;
+    private Set<Long> runningSyncIds = new HashSet<Long>();
     public final String apiVersion;
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 	private SmartStore smartStore;
@@ -214,8 +214,7 @@ public class SyncManager {
      * @throws JSONException
      */
     public SyncState reSync(long syncId, SyncUpdateCallback callback) throws JSONException {
-        // Currently we only allow one sync to run at any given time
-        if (syncId == syncIdRunning) {
+        if (runningSyncIds.contains(syncId)) {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": still running");
         }
 
@@ -293,11 +292,11 @@ public class SyncManager {
                 case NEW:
                     break;
                 case RUNNING:
-                    syncIdRunning = sync.getId();
+                    runningSyncIds.add(sync.getId());
                     break;
                 case DONE:
                 case FAILED:
-                    syncIdRunning = -1;
+                    runningSyncIds.remove(sync.getId());
                     break;
             }
 
