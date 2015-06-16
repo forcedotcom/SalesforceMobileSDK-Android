@@ -43,7 +43,7 @@ var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
 var version = '3.2.1';
-var minimumCordovaVersion = '4.0';
+var minimumCordovaCliVersion = '4.0';
 var cordovaPlatformVersion = '3.6.4';
 var minTargetApi = {'versionNumber': 21, 'versionName': 'Lollipop'};
 var androidExePath;
@@ -153,10 +153,10 @@ function createHybridApp(config) {
         process.exit(6);
     }
 
-    var minimumCordovaVersionNum = miscUtils.getVersionNumberFromString(minimumCordovaVersion);
+    var minimumCordovaVersionNum = miscUtils.getVersionNumberFromString(minimumCordovaCliVersion);
     var cordovaCliVersionNum = miscUtils.getVersionNumberFromString(cordovaCliVersion);
     if (cordovaCliVersionNum < minimumCordovaVersionNum) {
-        console.log('Installed cordova command line tool version (' + cordovaCliVersion + ') is less than the minimum required version (' + minimumCordovaVersion + ').  Please update your version of Cordova.');
+        console.log('Installed cordova command line tool version (' + cordovaCliVersion + ') is less than the minimum required version (' + minimumCordovaCliVersion + ').  Please update your version of Cordova.');
         process.exit(7);
     }
 
