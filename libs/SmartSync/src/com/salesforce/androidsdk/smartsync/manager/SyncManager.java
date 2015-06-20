@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -356,7 +357,7 @@ public class SyncManager {
         }
     }
 
-    private boolean syncUpOneRecord(SyncUpTarget target, String soupName, List<String> fieldlist,
+    private void syncUpOneRecord(SyncUpTarget target, String soupName, List<String> fieldlist,
                                     JSONObject record, MergeMode mergeMode) throws JSONException, IOException {
 
         // Do we need to do a create, update or delete
@@ -367,10 +368,11 @@ public class SyncManager {
             action = Action.create;
         else if (record.getBoolean(LOCALLY_UPDATED))
             action = Action.update;
+
         if (action == null) {
 
             // Nothing to do for this record
-            return true;
+            return;
         }
 
         // Getting type and id
@@ -391,7 +393,7 @@ public class SyncManager {
         	// Nothing to do for this record
     		Log.i("SmartSyncManager:syncUpOneRecord",
     				"Record not synced since client does not have the latest from server");
-        	return true;
+        	return;
         }
 
         // Fields to save (in the case of create or update)
@@ -405,27 +407,42 @@ public class SyncManager {
         }
 
         // Create/update/delete record on server and update smartstore
+        String recordServerId;
+        int statusCode;
         switch (action) {
             case create:
-                String recordServerId = target.createOnServer(this, objectType, fields);
+                recordServerId = target.createOnServer(this, objectType, fields);
                 if (recordServerId != null) {
                     record.put(target.getIdFieldName(), recordServerId);
                     cleanAndSaveRecord(soupName, record);
                 }
                 break;
             case delete:
-                if (target.deleteOnServer(this, objectType, objectId)) {
+                statusCode = target.deleteOnServer(this, objectType, objectId);
+                if (RestResponse.isSuccess(statusCode) || statusCode == HttpStatus.SC_NOT_FOUND) {
                     smartStore.delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
                 }
                 break;
             case update:
-                if (target.updateOnServer(this, objectType, objectId, fields)) {
+                statusCode = target.updateOnServer(this, objectType, objectId, fields);
+                if (RestResponse.isSuccess(statusCode)) {
                     cleanAndSaveRecord(soupName, record);
+                }
+                // Handling remotely deleted records
+                else if (statusCode == HttpStatus.SC_NOT_FOUND) {
+                    if (mergeMode == MergeMode.OVERWRITE) {
+                        recordServerId = target.createOnServer(this, objectType, fields);
+                        if (recordServerId != null) {
+                            record.put(target.getIdFieldName(), recordServerId);
+                            cleanAndSaveRecord(soupName, record);
+                        }
+                    }
+                    else {
+                        // Leave local record alone
+                    }
                 }
                 break;
         }
-
-        return false;
     }
 
     private void cleanAndSaveRecord(String soupName, JSONObject record) throws JSONException {

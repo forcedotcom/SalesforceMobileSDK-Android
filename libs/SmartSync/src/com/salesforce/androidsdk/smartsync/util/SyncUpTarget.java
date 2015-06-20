@@ -113,11 +113,11 @@ public class SyncUpTarget extends SyncTarget {
      * @throws JSONException
      * @throws IOException
      */
-    public boolean deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws JSONException, IOException {
+    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws JSONException, IOException {
         RestRequest request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
-        return response.isSuccess();
+        return response.getStatusCode();
     }
 
     /**
@@ -130,11 +130,11 @@ public class SyncUpTarget extends SyncTarget {
      * @throws JSONException
      * @throws IOException
      */
-    public boolean updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws JSONException, IOException {
+    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws JSONException, IOException {
         RestRequest request = RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
-        return response.isSuccess();
+        return response.getStatusCode();
     }
 
     /**

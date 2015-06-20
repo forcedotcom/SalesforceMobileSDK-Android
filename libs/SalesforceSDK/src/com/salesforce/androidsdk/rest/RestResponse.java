@@ -117,7 +117,13 @@ public class RestResponse {
 	 * @return true for response with 2xx status codes
 	 */
 	public boolean isSuccess() {
-		// 2xx success
+		return RestResponse.isSuccess(statusCode);
+	}
+
+	/**
+	 * @return true for response with 2xx status codes
+	 */
+	public static boolean isSuccess(int statusCode) {
 		return (statusCode >= HttpStatus.SC_OK && statusCode < HttpStatus.SC_MULTIPLE_CHOICES);
 	}
 
