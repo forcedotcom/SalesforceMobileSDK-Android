@@ -447,10 +447,10 @@ public class SyncManager {
         int totalSize = target.getTotalSize();
         sync.setTotalSize(totalSize);
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
-
+        final String idField = sync.getTarget().getIdFieldName();
         while (records != null) {
             // Save to smartstore
-            saveRecordsToSmartStore(soupName, records, mergeMode);
+            saveRecordsToSmartStore(soupName, records, mergeMode, idField);
             countSaved += records.length();
             maxTimeStamp = Math.max(maxTimeStamp, target.getLatestModificationTimeStamp(records));
 
@@ -472,12 +472,12 @@ public class SyncManager {
         return set;
     }
 	
-	private void saveRecordsToSmartStore(String soupName, JSONArray records, MergeMode mergeMode)
+	private void saveRecordsToSmartStore(String soupName, JSONArray records, MergeMode mergeMode, String idField)
 			throws JSONException {
         // Gather ids of dirty records
         Set<String> idsToSkip = null;
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
-            idsToSkip = getDirtyRecordIds(soupName, Constants.ID);
+            idsToSkip = getDirtyRecordIds(soupName, idField);
         }
         smartStore.beginTransaction();
 		for (int i = 0; i < records.length(); i++) {
@@ -485,7 +485,7 @@ public class SyncManager {
 
             // Skip?
             if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
-                String id = JSONObjectHelper.optString(record, Constants.ID);
+                String id = JSONObjectHelper.optString(record, idField);
                 if (id != null && idsToSkip.contains(id)) {
                     continue; // don't write over dirty record
                 }
@@ -496,7 +496,7 @@ public class SyncManager {
             record.put(LOCALLY_CREATED, false);
             record.put(LOCALLY_UPDATED, false);
             record.put(LOCALLY_DELETED, false);
-            smartStore.upsert(soupName, records.getJSONObject(i), Constants.ID, false);
+            smartStore.upsert(soupName, records.getJSONObject(i), idField, false);
 		}
 		smartStore.setTransactionSuccessful();
 		smartStore.endTransaction();
