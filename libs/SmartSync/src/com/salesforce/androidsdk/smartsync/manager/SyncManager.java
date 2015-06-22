@@ -347,6 +347,12 @@ public class SyncManager {
 
         try {
             String serverLastModStr = target.fetchLastModifiedDate(this, objectType, objectId);
+
+            if (serverLastModStr == null) {
+                // We were unable to get the last modified date from the server
+                return true;
+            }
+
             long lastModifiedDate = Constants.TIMESTAMP_FORMAT.parse(lastModStr).getTime();
             long serverLastModifiedDate = Constants.TIMESTAMP_FORMAT.parse(serverLastModStr).getTime();
 

@@ -31,6 +31,7 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -153,7 +154,8 @@ public class SyncUpTarget extends SyncTarget {
                 .build();
 
         RestResponse lastModResponse = syncManager.sendSyncWithSmartSyncUserAgent(RestRequest.getRequestForQuery(syncManager.apiVersion, query));
-        return lastModResponse.asJSONObject().optJSONArray(Constants.RECORDS).optJSONObject(0).optString(Constants.LAST_MODIFIED_DATE);
+        JSONArray records = lastModResponse.asJSONObject().optJSONArray(Constants.RECORDS);
+        return records != null && records.length() > 0 ? records.optJSONObject(0).optString(Constants.LAST_MODIFIED_DATE) : null;
     }
 
     /**
