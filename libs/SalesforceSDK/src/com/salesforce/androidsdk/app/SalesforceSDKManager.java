@@ -105,6 +105,11 @@ public class SalesforceSDKManager {
      */
     private static final int PUSH_UNREGISTER_TIMEOUT_MILLIS = 30000;
 
+    /*
+     * Random id to uniquely identify user
+     */
+    private static final String uid = randomStringWithLength(12);
+
     protected Context context;
     protected KeyInterface keyImpl;
     protected LoginOptions loginOptions;
@@ -121,6 +126,7 @@ public class SalesforceSDKManager {
     private AdminSettingsManager adminSettingsManager;
     private AdminPermsManager adminPermsManager;
     private PushNotificationInterface pushNotificationInterface;
+    private int countForegrounds = 1;
     private volatile boolean loggedOut = false;
 
     /**
@@ -908,8 +914,8 @@ public class SalesforceSDKManager {
             Log.w("SalesforceSDKManager:getUserAgent", nfe);
         }
 	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native") + qualifier;
-	    return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s",
-	            SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, nativeOrHybrid);
+	    return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s/fg_%s",
+	            SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, nativeOrHybrid, uid, countForegrounds);
 	}
 
 	/**
@@ -979,6 +985,13 @@ public class SalesforceSDKManager {
      */
     public static String decryptWithPasscode(String data, String passcode) {
         return Encryptor.decrypt(data, SalesforceSDKManager.INSTANCE.getEncryptionKeyForPasscode(passcode));
+    }
+
+    /**
+     * Should be called from your activity onResume method
+     */
+    public void onEnterForeground() {
+        countForegrounds++;
     }
 
     /**
@@ -1083,5 +1096,14 @@ public class SalesforceSDKManager {
 	        CookieSyncManager.createInstance(context);
 	        CookieSyncManager.getInstance().sync();
 		}
+    }
+
+    private static final String letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static String randomStringWithLength(int len) {
+        StringBuilder sb = new StringBuilder(len);
+        for (int i = 0; i < len; i++) {
+            sb.append(letters.charAt((int)(Math.random() * letters.length())));
+        }
+        return sb.toString();
     }
 }
