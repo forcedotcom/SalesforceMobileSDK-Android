@@ -26,9 +26,6 @@
  */
 package com.salesforce.androidsdk.app;
 
-import java.net.URI;
-import java.util.List;
-
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
@@ -46,6 +43,7 @@ import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -73,6 +71,9 @@ import com.salesforce.androidsdk.ui.SalesforceR;
 import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+
+import java.net.URI;
+import java.util.List;
 
 /**
  * This class serves as an interface to the various
@@ -105,11 +106,6 @@ public class SalesforceSDKManager {
      */
     private static final int PUSH_UNREGISTER_TIMEOUT_MILLIS = 30000;
 
-    /*
-     * Random id to uniquely identify user
-     */
-    private static final String uid = randomStringWithLength(12);
-
     protected Context context;
     protected KeyInterface keyImpl;
     protected LoginOptions loginOptions;
@@ -126,7 +122,7 @@ public class SalesforceSDKManager {
     private AdminSettingsManager adminSettingsManager;
     private AdminPermsManager adminPermsManager;
     private PushNotificationInterface pushNotificationInterface;
-    private int countForegrounds = 1;
+    private String uid; // device id
     private volatile boolean loggedOut = false;
 
     /**
@@ -157,7 +153,8 @@ public class SalesforceSDKManager {
      */
     protected SalesforceSDKManager(Context context, KeyInterface keyImpl, 
     		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-    	this.context = context;
+        this.uid = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+        this.context = context;
     	this.keyImpl = keyImpl;
     	this.mainActivityClass = mainActivity;
     	if (loginActivity != null) {
@@ -326,7 +323,7 @@ public class SalesforceSDKManager {
 	 *
 	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
-	 */
+     */
     public static void initHybrid(Context context, KeyInterface keyImpl) {
     	SalesforceSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class, LoginActivity.class);
     }
@@ -813,7 +810,7 @@ public class SalesforceSDKManager {
     				loginServer, account, frontActivity);
     	} else {
     		removeAccount(clientMgr, showLoginPage, refreshToken, clientId,
-    				loginServer, account, frontActivity);
+                    loginServer, account, frontActivity);
     	}
     }
 
@@ -891,7 +888,7 @@ public class SalesforceSDKManager {
 
     /**
      * Returns a user agent string based on the Mobile SDK version. The user agent takes the following form:
-     *   SalesforceMobileSDK/<salesforceSDK version> android/<android OS version> appName/appVersion <Native|Hybrid>
+     *   SalesforceMobileSDK/{salesforceSDK version} android/{android OS version} appName/appVersion {Native|Hybrid} uid_{device id}
      *
      * @return The user agent string to use for all requests.
      */
@@ -913,9 +910,9 @@ public class SalesforceSDKManager {
     	   	// A test harness such as Gradle does NOT have an application name.
             Log.w("SalesforceSDKManager:getUserAgent", nfe);
         }
-	    String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native") + qualifier;
-	    return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s/fg_%s",
-	            SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, nativeOrHybrid, uid, countForegrounds);
+        String nativeOrHybrid = (isHybrid() ? "Hybrid" : "Native") + qualifier;
+        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s",
+                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, nativeOrHybrid, uid);
 	}
 
 	/**
@@ -985,13 +982,6 @@ public class SalesforceSDKManager {
      */
     public static String decryptWithPasscode(String data, String passcode) {
         return Encryptor.decrypt(data, SalesforceSDKManager.INSTANCE.getEncryptionKeyForPasscode(passcode));
-    }
-
-    /**
-     * Should be called from your activity onResume method
-     */
-    public void onEnterForeground() {
-        countForegrounds++;
     }
 
     /**
