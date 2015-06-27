@@ -1087,13 +1087,4 @@ public class SalesforceSDKManager {
 	        CookieSyncManager.getInstance().sync();
 		}
     }
-
-    private static final String letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    private static String randomStringWithLength(int len) {
-        StringBuilder sb = new StringBuilder(len);
-        for (int i = 0; i < len; i++) {
-            sb.append(letters.charAt((int)(Math.random() * letters.length())));
-        }
-        return sb.toString();
-    }
 }
