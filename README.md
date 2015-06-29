@@ -22,11 +22,11 @@ Introduction
 ### What's New in 3.3
 
 **SmartStore Library Enhancements**
-- SmartStore now provides the ability to perform full text search (FTS). Refer the SmartStore chapter in the developer guide for details on how to use this feature.
+- SmartStore now provides the ability to perform full text search (FTS). Refer to the SmartStore chapter in the Mobile SDK Development Guide for details on how to use this feature.
 - An enhanced query syntax has been added to support this feature.
 
 **Other Technical Improvements**
-- The Mobile SDK no longer depends on the `httpcore` library.
+- Mobile SDK no longer depends on the `httpcore` library.
 - Upgraded SQLCipher to 3.3.
 - Various bug fixes.
 
