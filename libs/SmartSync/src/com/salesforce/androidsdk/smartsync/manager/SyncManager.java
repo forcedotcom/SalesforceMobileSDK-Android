@@ -502,27 +502,34 @@ public class SyncManager {
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
             idsToSkip = getDirtyRecordIds(soupName, idField);
         }
-        smartStore.beginTransaction();
-		for (int i = 0; i < records.length(); i++) {
-			JSONObject record = records.getJSONObject(i);
 
-            // Skip?
-            if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
-                String id = JSONObjectHelper.optString(record, idField);
-                if (id != null && idsToSkip.contains(id)) {
-                    continue; // don't write over dirty record
+        synchronized(smartStore.getDatabase()) {
+            try {
+                smartStore.beginTransaction();
+                for (int i = 0; i < records.length(); i++) {
+                    JSONObject record = records.getJSONObject(i);
+
+                    // Skip?
+                    if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
+                        String id = JSONObjectHelper.optString(record, idField);
+                        if (id != null && idsToSkip.contains(id)) {
+                            continue; // don't write over dirty record
+                        }
+                    }
+
+                    // Save
+                    record.put(LOCAL, false);
+                    record.put(LOCALLY_CREATED, false);
+                    record.put(LOCALLY_UPDATED, false);
+                    record.put(LOCALLY_DELETED, false);
+                    smartStore.upsert(soupName, records.getJSONObject(i), idField, false);
                 }
+                smartStore.setTransactionSuccessful();
             }
-
-            // Save
-            record.put(LOCAL, false);
-            record.put(LOCALLY_CREATED, false);
-            record.put(LOCALLY_UPDATED, false);
-            record.put(LOCALLY_DELETED, false);
-            smartStore.upsert(soupName, records.getJSONObject(i), idField, false);
-		}
-		smartStore.setTransactionSuccessful();
-		smartStore.endTransaction();
+            finally {
+                smartStore.endTransaction();
+            }
+        }
 	}
 
     public Set<String> getDirtyRecordIds(String soupName, String idField) throws JSONException {

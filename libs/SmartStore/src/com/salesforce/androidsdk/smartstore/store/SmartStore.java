@@ -161,7 +161,7 @@ public class SmartStore  {
      * @param db
      */
     public static void createLongOperationsStatusTable(SQLiteDatabase db) {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
     		StringBuilder sb = new StringBuilder();
 	    	sb.append("CREATE TABLE IF NOT EXISTS ").append(LONG_OPERATIONS_STATUS_TABLE).append(" (")
 	        .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
@@ -214,6 +214,7 @@ public class SmartStore  {
     
     /**
      * Start transaction
+	 * NB: to avoid deadlock, caller should have synchronized(store.getDatabase()) around the whole transaction
      */
     public void beginTransaction() {
     	getDatabase().beginTransaction();
@@ -360,7 +361,8 @@ public class SmartStore  {
 	 * Finish long operations that were interrupted
 	 */
 	public void resumeLongOperations() {
-		synchronized(SmartStore.class) {
+		final SQLiteDatabase db = getDatabase();
+		synchronized(db) {
 			for (LongOperation longOperation :  getLongOperations()) {
 				try {
 					longOperation.run();
@@ -375,10 +377,10 @@ public class SmartStore  {
 	 * @return unfinished long operations
 	 */
 	public LongOperation[] getLongOperations() {
+		final SQLiteDatabase db = getDatabase();
 		List<LongOperation> longOperations = new ArrayList<LongOperation>();
-		synchronized(SmartStore.class) {
+		synchronized(db) {
 			Cursor cursor = null;
-			final SQLiteDatabase db = getDatabase();
 			try {
 				cursor = DBHelper.getInstance(db).query(db,
 						LONG_OPERATIONS_STATUS_TABLE, new String[] {ID_COL, TYPE_COL, DETAILS_COL, STATUS_COL},
@@ -429,8 +431,8 @@ public class SmartStore  {
 	 * @param handleTx
 	 */
 	public void reIndexSoup(String soupName, String[] indexPaths, boolean handleTx) {
-		synchronized(SmartStore.class) {
-			final SQLiteDatabase db = getDatabase();
+		final SQLiteDatabase db = getDatabase();
+		synchronized(db) {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 
@@ -503,8 +505,8 @@ public class SmartStore  {
 	 * @return
 	 */
 	public IndexSpec[] getSoupIndexSpecs(String soupName) {
-    	synchronized(SmartStore.class) {
-    		final SQLiteDatabase db = getDatabase();
+		final SQLiteDatabase db = getDatabase();
+    	synchronized(db) {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 	        return DBHelper.getInstance(db).getIndexSpecs(db, soupName);
@@ -516,8 +518,8 @@ public class SmartStore  {
 	 * @param soupName
 	 */
 	public void clearSoup(String soupName) {
-    	synchronized(SmartStore.class) {
-    		final SQLiteDatabase db = getDatabase();
+		final SQLiteDatabase db = getDatabase();
+    	synchronized(db) {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 			db.beginTransaction();
