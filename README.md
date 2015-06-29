@@ -27,6 +27,7 @@ Introduction
 
 **Other Technical Improvements**
 - The Mobile SDK no longer depends on the `httpcore` library.
+- Upgraded SQLCipher to 3.3.
 - Various bug fixes.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials
