@@ -43,7 +43,8 @@ var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
 var version = '3.3.0';
-var minimumCordovaVersion = '4.0';
+var minimumCordovaCliVersion = '4.0';
+var cordovaPlatformVersion = '3.6.4';
 var minTargetApi = {'versionNumber': 21, 'versionName': 'Lollipop'};
 var androidExePath;
 
@@ -152,16 +153,16 @@ function createHybridApp(config) {
         process.exit(6);
     }
 
-    var minimumCordovaVersionNum = miscUtils.getVersionNumberFromString(minimumCordovaVersion);
+    var minimumCordovaVersionNum = miscUtils.getVersionNumberFromString(minimumCordovaCliVersion);
     var cordovaCliVersionNum = miscUtils.getVersionNumberFromString(cordovaCliVersion);
     if (cordovaCliVersionNum < minimumCordovaVersionNum) {
-        console.log('Installed cordova command line tool version (' + cordovaCliVersion + ') is less than the minimum required version (' + minimumCordovaVersion + ').  Please update your version of Cordova.');
+        console.log('Installed cordova command line tool version (' + cordovaCliVersion + ') is less than the minimum required version (' + minimumCordovaCliVersion + ').  Please update your version of Cordova.');
         process.exit(7);
     }
 
     shelljs.exec('cordova create "' + config.projectDir + '" ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
-    shelljs.exec('cordova platform add android');
+    shelljs.exec('cordova platform add android@' + cordovaPlatformVersion);
     shelljs.exec('cordova plugin add https://github.com/forcedotcom/SalesforceMobileSDK-CordovaPlugin#unstable');
 
     // Remove the default Cordova app.
