@@ -2,8 +2,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.salesforce.androidsdk.smartsync"
-    android:versionCode="44"
-    android:versionName="3.3.0">
+    android:versionCode="45"
+    android:versionName="4.0.0.unstable">
 
     <uses-sdk android:minSdkVersion="17"
         android:targetSdkVersion="21" />
