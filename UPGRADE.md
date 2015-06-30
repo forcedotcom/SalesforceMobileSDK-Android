@@ -1,6 +1,6 @@
-## Upgrade steps from v. 3.1.x to v. 3.2 for native apps
+## Upgrade steps from v. 3.2.x to v. 3.3 for native apps
 
-- Replace the existing `Cordova` project in Eclipse with the Mobile SDK 3.2 `Cordova` project.
+- Replace the existing `Cordova` project in Eclipse with the Mobile SDK 3.3 `Cordova` project.
 - Replace the existing `SalesforceSDK` project in Eclipse with the new `SalesforceSDK` project.
 - If your app uses `SmartStore`, replace the existing `SmartStore` project in Eclipse with the new `SmartStore` project.
 - If your app uses `SmartSync`, replace the existing `SmartSync` project in Eclipse with the new `SmartSync` project.
@@ -10,8 +10,8 @@
 - If your app uses `SmartStore`, repeat the previous step for the `SmartStore` project.
 - If your app uses `SmartSync`, repeat the previous step for the `SmartSync` project.
 
-## Upgrade steps from v. 3.1.x to v. 3.2 for hybrid apps
+## Upgrade steps from v. 3.2.x to v. 3.3 for hybrid apps
 
-- Existing hybrid apps should continue to work with Mobile SDK 3.2.
+- Existing hybrid apps should continue to work with Mobile SDK 3.3.
 
-See the [Mobile SDK Development Guide](https://github.com/forcedotcom/SalesforceMobileSDK-Shared/blob/master/doc/mobile_sdk.pdf?raw=true) for more information about developing hybrid apps with the 3.1 SDK and Cordova 3.6.4.
+See the [Mobile SDK Development Guide](https://github.com/forcedotcom/SalesforceMobileSDK-Shared/blob/master/doc/mobile_sdk.pdf?raw=true) for more information about developing hybrid apps with the 3.3 SDK and Cordova 3.6.4.

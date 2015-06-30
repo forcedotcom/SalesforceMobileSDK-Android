@@ -1,0 +1,14 @@
+Binaries in this folder were obtained from: https://www.zetetic.net/sqlcipher/open-source/
+
+However sqlcipher was recompiled with FTS support by doing (see https://www.zetetic.net/sqlcipher/sqlcipher-for-android/ for more details):
+- get android ndk
+- git clone git://github.com/forcedotcom/android-database-sqlcipher.git
+- git checkout sdk
+- run: make init
+- run: make
+- copy generated .so files from external/libs to external/sqlcipher/libs
+  For instance, if you clone SalesforceMobileSDK-Android next to android-database-sqlcipher
+  Go into SalesforceMobileSDK-Android/external/sqlcipher/libs and do:
+  cp ../../../../android-database-sqlcipher/external/libs/armeabi/*.so armeabi/
+  cp ../../../../android-database-sqlcipher/external/libs/armeabi-v7a/*.so armeabi-v7a/
+  cp ../../../../android-database-sqlcipher/external/libs/x86/*.so x86/

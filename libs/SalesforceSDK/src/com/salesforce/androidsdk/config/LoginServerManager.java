@@ -199,6 +199,8 @@ public class LoginServerManager {
 		} catch (Exception e) {
 			Log.w("LoginServerManager.getLoginServersFromRuntimeConfig",
 					"Exception thrown while attempting to read array, attempting to read string value instead");
+		}
+		if (mdmLoginServers == null) {
 			final String loginServer = runtimeConfig.getString(ConfigKey.AppServiceHosts);
 			if (!TextUtils.isEmpty(loginServer)) {
 				mdmLoginServers = new String[] {loginServer};
@@ -212,6 +214,8 @@ public class LoginServerManager {
 			} catch (Exception e) {
 				Log.w("LoginServerManager.getLoginServersFromRuntimeConfig",
 						"Exception thrown while attempting to read array, attempting to read string value instead");
+			}
+			if (mdmLoginServersLabels == null) {
 				final String loginServerLabel = runtimeConfig.getString(ConfigKey.AppServiceHostLabels);
 				if (!TextUtils.isEmpty(loginServerLabel)) {
 					mdmLoginServersLabels = new String[] {loginServerLabel};

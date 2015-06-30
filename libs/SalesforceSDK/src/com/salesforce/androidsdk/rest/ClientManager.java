@@ -141,7 +141,7 @@ public class ClientManager {
      * Method to create an unauthenticated RestClient.
      * @return
      */
-    public RestClient  peekUnauthenticatedRestClient() {
+    public RestClient peekUnauthenticatedRestClient() {
         return new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
     }
 

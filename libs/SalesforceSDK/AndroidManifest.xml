@@ -2,8 +2,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk" 
-	android:versionCode="43"
-	android:versionName="3.2.1">
+	android:versionCode="44"
+	android:versionName="3.3.0">
 
     <uses-sdk android:minSdkVersion="17"
         android:targetSdkVersion="21" />
