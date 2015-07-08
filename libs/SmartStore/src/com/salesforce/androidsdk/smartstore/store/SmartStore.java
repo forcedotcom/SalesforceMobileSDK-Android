@@ -832,7 +832,7 @@ public class SmartStore  {
 		}
 	}
 
-	/**
+    /**
      * @param soupElt
      * @param contentValues
      * @param indexSpec
@@ -841,12 +841,26 @@ public class SmartStore  {
         Object value = project(soupElt, indexSpec.path);
         switch (indexSpec.type) {
         case integer:
-            contentValues.put(indexSpec.columnName, value != null ? ((Number) value).longValue() : null); break;
+            Long longValToUse = null;
+            try {
+                longValToUse = ((Number) value).longValue();
+            }
+            catch (Exception e) {
+                // Ignore and use the null value
+            }
+            contentValues.put(indexSpec.columnName, longValToUse); break;
         case string:
-		case full_text:
-			contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
+        case full_text:
+            contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
         case floating:
-            contentValues.put(indexSpec.columnName, value != null ? ((Number) value).doubleValue() : null); break;
+            Double doubleValToUse = null;
+            try {
+                doubleValToUse = ((Number) value).doubleValue();
+            }
+            catch (Exception e) {
+                // Ignore and use the null value
+            }
+            contentValues.put(indexSpec.columnName, doubleValToUse); break;
         }
     }
 
