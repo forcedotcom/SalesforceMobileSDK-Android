@@ -306,7 +306,12 @@ public class HttpAccess extends BroadcastReceiver {
         		outputStream.write(content);
     		}
     	}
-        final int statusCode = httpConn.getResponseCode();
+        int statusCode;
+        try {
+            statusCode = httpConn.getResponseCode();
+        } catch (IOException ioe) {
+            statusCode = httpConn.getResponseCode();
+        }
         final String reasonPhrase = httpConn.getResponseMessage();
         final ProtocolVersion protocolVersion = new HttpVersion(1, 1);
         final StatusLine statusLine = new BasicStatusLine(protocolVersion,
