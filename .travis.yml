@@ -5,6 +5,22 @@ android:
    components:
       - build-tools-21.1.1
       - android-21
+      - sys-img-x86-android-17
+env:
+   global:
+      # install timeout in minutes
+      - ADB_INSTALL_TIMEOUT=8
+
+# Create and start the emulator
+before_script:
+   - echo no | android create avd --force -n test -t android-21 --abi x86
+   - emulator -avd test -no-skin -no-audio -no-window &
+   - android-wait-for-emulator
+   - adb shell inout keyevent 82 & 
+
+script:
+   - android list target
+   - ./gradlew connectedAndroidTest -PdisablePreDex
    
 
     
