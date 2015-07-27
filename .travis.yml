@@ -17,14 +17,12 @@ env:
 
 # Create and start the emulator
 before_script:
-   - android list targets
-   - echo no | android create avd --force -n test -t "Google Inc.:Google APIs (x86 System Image):21" --abi default/x86
+   - echo no | android create avd --force -n test -t android-21  --abi default/x86
    - emulator -avd test -no-skin -no-audio -no-window &
    - android-wait-for-emulator
    - adb shell inout keyevent 82 & 
 
 script:
-   - android list target
    - ./gradlew connectedAndroidTest -PdisablePreDex
    
 
