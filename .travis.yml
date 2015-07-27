@@ -10,7 +10,6 @@ android:
       - build-tools-21.1.1
       - android-21
       - sys-img-x86-android-21
-      - addon-google_apis_x86-google-21
 env:
    global:
       # install timeout in minutes
@@ -18,6 +17,7 @@ env:
 
 # Create and start the emulator
 before_script:
+   - android list targets
    - echo no | android create avd --force -n test -t "Google Inc.:Google APIs (x86 System Image):21" --abi default/x86
    - emulator -avd test -no-skin -no-audio -no-window &
    - android-wait-for-emulator
