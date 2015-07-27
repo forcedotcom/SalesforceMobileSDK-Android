@@ -1,5 +1,6 @@
 language: android
 jdk: oraclejdk7
+sudo: false
 
 branches:
    only:
@@ -17,9 +18,6 @@ env:
 
 # Create and start the emulator
 before_script:
-   - sudo apt-get update -qq
-   - sudo apt-get install -qq libstdc++6:i386 lib32z1 expect
-   - sudo apt-get install qemu-kvm libvirt-bin ubuntu-vm-builder bridge-utils
    - echo no | android create avd --force -n test -t android-21  --abi default/x86
    - emulator -avd test -no-skin -no-audio -no-window &
    - android-wait-for-emulator
