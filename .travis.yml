@@ -9,7 +9,8 @@ android:
    components:
       - build-tools-21.1.1
       - android-21
-      - sys-img-x86-android-17
+      - sys-img-x86-android-21
+      - addon-google_apis_x86-google-21
 env:
    global:
       # install timeout in minutes
@@ -17,7 +18,7 @@ env:
 
 # Create and start the emulator
 before_script:
-   - echo no | android create avd --force -n android_x86 -t android-21 --abi x86
+   - echo no | android create avd --force -n test -t "Google Inc.:Google APIs (x86 System Image):21" --abi default/x86
    - emulator -avd test -no-skin -no-audio -no-window &
    - android-wait-for-emulator
    - adb shell inout keyevent 82 & 
