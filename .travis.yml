@@ -11,6 +11,7 @@ android:
       - build-tools-21.1.1
       - android-21
       - sys-img-x86-android-21
+      - addon-google_apis_x86-google-21
 env:
    global:
       # install timeout in minutes
@@ -18,13 +19,10 @@ env:
 
 # Create and start the emulator
 before_script:
-   - echo no | android create avd --force -n test -t android-21  --abi default/x86
+   - echo no | android create avd --force -n test -t "Google Inc.:Google APIs:21"  --abi google_apis/x86
    - emulator -avd test -no-skin -no-audio -no-window &
    - android-wait-for-emulator
-   - adb shell inout keyevent 82 & 
+   - adb shell inout keyevent 82 &
 
 script:
    - ./gradlew connectedAndroidTest -PdisablePreDex
-   
-
-    
