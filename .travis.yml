@@ -18,7 +18,7 @@ env:
 
 # Create and start the emulator
 before_script:
-   - andoird list targets
+   - android list targets
 
 script:
    - ./gradlew connectedAndroidTest -PdisablePreDex
