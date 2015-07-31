@@ -1,0 +1,19 @@
+language: android
+jdk: oraclejdk7
+sudo: false
+
+branches:
+   only:
+      - unstable
+
+android:
+   components:
+      - build-tools-21.1.1
+      - android-21
+env:
+   global:
+      # install timeout in minutes
+      - ADB_INSTALL_TIMEOUT=8
+
+script:
+   - ./gradlew assembleRelease
