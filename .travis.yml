@@ -16,4 +16,4 @@ env:
       - ADB_INSTALL_TIMEOUT=8
 
 script:
-   - ./gradlew
+   - ./gradlew assembleRelease
