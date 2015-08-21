@@ -60,7 +60,7 @@ public class SoslSyncDownTarget extends SyncDownTarget {
 	 */
 	public SoslSyncDownTarget(String query) {
         super();
-        this.queryType = QueryType.soql;
+        this.queryType = QueryType.sosl;
         this.query = query;
 	}
 
