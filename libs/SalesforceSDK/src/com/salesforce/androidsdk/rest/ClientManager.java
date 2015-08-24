@@ -59,6 +59,7 @@ public class ClientManager {
 
 	public static final String ACCESS_TOKEN_REVOKE_INTENT = "access_token_revoked";
     public static final String ACCESS_TOKEN_REFRESH_INTENT = "access_token_refeshed";
+    public static final String INSTANCE_URL_UPDATE_INTENT = "instance_url_updated";
 
     private final AccountManager accountManager;
     private final String accountType;
@@ -205,7 +206,7 @@ public class ClientManager {
             throw new AccountInfoNotFoundException(AuthenticatorService.KEY_ORG_ID);
 
         try {
-            AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, authToken, refreshToken);
+            AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(this, instanceServer, authToken, refreshToken);
             ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer),
             		new URI(loginServer), new URI(idUrl), accountName, username,
             		userId, orgId, communityId, communityUrl);
@@ -490,6 +491,7 @@ public class ClientManager {
         private final ClientManager clientManager;
         private static String lastNewAuthToken;
         private final String refreshToken;
+        private static String lastNewInstanceUrl;
         private long lastRefreshTime = -1 /* never refreshed */;
 
         /**
@@ -497,10 +499,11 @@ public class ClientManager {
          * @param clientManager
          * @param refreshToken
          */
-        public AccMgrAuthTokenProvider(ClientManager clientManager, String authToken, String refreshToken) {
+        public AccMgrAuthTokenProvider(ClientManager clientManager, String instanceUrl, String authToken, String refreshToken) {
             this.clientManager = clientManager;
             this.refreshToken = refreshToken;
             lastNewAuthToken = authToken;
+            lastNewInstanceUrl = instanceUrl;
         }
 
         /**
@@ -531,12 +534,16 @@ public class ClientManager {
             // Invalidate current auth token
             clientManager.invalidateToken(lastNewAuthToken);
             String newAuthToken = null;
+            String newInstanceUrl = null;
+
             try {
                 final Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, null, false, null, null).getResult();
                 if (bundle == null) {
                     Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
                 } else {
                     newAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                    newInstanceUrl = bundle.getString(AuthenticatorService.KEY_INSTANCE_URL);
+                    Intent broadcastIntent;
                     if (newAuthToken == null) {
                         if (clientManager.revokedTokenShouldLogout) {
 
@@ -548,16 +555,18 @@ public class ClientManager {
                         }
 
                         // Broadcasts an intent that the access token has been revoked.
-                        final Intent revokeIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
-                        revokeIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
-                        SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(revokeIntent);
+                        broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
+                    } else if (newInstanceUrl != null && !newInstanceUrl.equalsIgnoreCase(lastNewInstanceUrl)) {
+                        // Broadcasts an intent that the instance server has changed (implicitly token refreshed too)
+                        broadcastIntent = new Intent(INSTANCE_URL_UPDATE_INTENT);
                     } else {
 
                         // Broadcasts an intent that the access token has been refreshed.
-                        final Intent refreshIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
-                        refreshIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
-                        SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(refreshIntent);
+                        broadcastIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
                     }
+
+                    broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
+                    SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
                 }
             } catch (Exception e) {
                 Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken:getNewAuthToken",
@@ -566,6 +575,7 @@ public class ClientManager {
                 synchronized (lock) {
                     gettingAuthToken = false;
                     lastNewAuthToken = newAuthToken;
+                    lastNewInstanceUrl = newInstanceUrl;
                     lastRefreshTime  = System.currentTimeMillis();
                     lock.notifyAll();
                 }
@@ -582,6 +592,9 @@ public class ClientManager {
         public long getLastRefreshTime() {
             return lastRefreshTime;
         }
+
+        @Override
+        public String getInstanceUrl() { return lastNewInstanceUrl; }
     }
 
     /**

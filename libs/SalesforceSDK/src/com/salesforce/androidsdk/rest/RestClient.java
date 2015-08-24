@@ -95,6 +95,7 @@ public class RestClient {
 	 * RestClient will call its authTokenProvider to refresh its authToken once it has expired. 
 	 */
 	public interface AuthTokenProvider {
+		String getInstanceUrl();
 		String getNewAuthToken();
 		String getRefreshToken();
 		long getLastRefreshTime();
@@ -122,7 +123,7 @@ public class RestClient {
      * @param authTokenProvider
 	 */
 	public RestClient(ClientInfo clientInfo, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
-		this(clientInfo, new SalesforceHttpStack(authToken, httpAccessor, authTokenProvider));
+		this(clientInfo, new SalesforceHttpStack(clientInfo, authToken, httpAccessor, authTokenProvider));
 	}
 
 	public RestClient(ClientInfo clientInfo, SalesforceHttpStack httpStack) {
@@ -243,7 +244,7 @@ public class RestClient {
 	 * @throws IOException
 	 */
 	public RestResponse sendSync(RestMethod method, String path, HttpEntity httpEntity, Map<String, String> additionalHttpHeaders) throws IOException {
-		return new RestResponse(httpStack.performRequest(method.asVolleyMethod(), clientInfo.resolveUrl(path), httpEntity, additionalHttpHeaders, true));
+		return new RestResponse(httpStack.performRequest(method.asVolleyMethod(), path, httpEntity, additionalHttpHeaders, true));
 	}
 
 	/**
@@ -455,6 +456,7 @@ public class RestClient {
 		private final AuthTokenProvider authTokenProvider;
 		private HttpAccess httpAccessor;
 		private String authToken;
+		private ClientInfo clientInfo;
 		
 	    /**
 	     * Constructs a SalesforceHttpStack with the given clientInfo, authToken, httpAccessor and authTokenProvider.
@@ -463,11 +465,13 @@ public class RestClient {
 	     * <li> If authTokenProvider is not null, it will ask the authTokenProvider for a new access token and retry the request a second time.</li>
 	     * <li> Otherwise it will return the 401 response.</li>
 	     * </ul>
-	     * @param authToken
+	     * @param clientInfo
+		 * @param authToken
 	     * @param httpAccessor
 	     * @param authTokenProvider
 		 */
-		public SalesforceHttpStack(String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
+		public SalesforceHttpStack(ClientInfo clientInfo, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
+			this.clientInfo = clientInfo;
 			this.authToken = authToken;
 			this.httpAccessor = httpAccessor;
 			this.authTokenProvider = authTokenProvider;
@@ -499,6 +503,7 @@ public class RestClient {
 					requestEntity = new ByteArrayEntity(request.getBody());
 				}
 			}
+
 			return performRequest(method, url, requestEntity, additionalHeaders, true);
 		}
 
@@ -565,12 +570,11 @@ public class RestClient {
 		 * @param url
 		 * @param httpEntity
 		 * @param additionalHttpHeaders
-		 * @param retryInvalidToken
 		 * @return
 		 * @throws IOException
 		 */
-		public HttpResponse performRequest(int method, URI url, HttpEntity httpEntity,
-				Map<String, String> additionalHttpHeaders, boolean retryInvalidToken) throws IOException {
+		public HttpResponse doRequest(int method, URI url, HttpEntity httpEntity,
+				Map<String, String> additionalHttpHeaders) throws IOException {
 			Execution exec = null;
 
 			// Prepare headers.
@@ -597,37 +601,86 @@ public class RestClient {
 			case Request.Method.PUT:
 				exec = httpAccessor.doPut(headers, url, httpEntity); break;
 			}
-			final HttpResponse response = exec.response;
-			int statusCode = response.getStatusLine().getStatusCode();
 
-			// 401 bad access token.
-			if (retryInvalidToken && statusCode == HttpStatus.SC_UNAUTHORIZED) {
-				final HttpEntity entity = response.getEntity();
-				if (entity != null && entity.isStreaming()) {
-					final InputStream instream = entity.getContent();
-					if (instream != null) {
-						instream.close();
-					}
-				}
-				refreshAccessToken();
-				return performRequest(method, url, httpEntity, additionalHttpHeaders, false);
-			}
-
-			// Done.
-			return response;
+			return exec.response;
 		}
 
 		/**
 		 * Swaps the existing access token for a new one.
 		 */
-		private void refreshAccessToken() {
-			if (authTokenProvider != null) {
+		private void refreshAccessToken(HttpResponse response) throws IOException {
+            // If we haven't retried already and we have an accessTokenProvider
+            // Then let's try to get a new authToken
+            if (authTokenProvider != null) {
+                // remember to consume this response so the connection can get re-used
+                HttpEntity entity = response.getEntity();
+                if (entity != null && entity.isStreaming()) {
+                    InputStream instream = entity.getContent();
+                    if (instream != null) {
+                        instream.close();
+                    }
+                }
 				final String newAuthToken = authTokenProvider.getNewAuthToken();
 				if (newAuthToken != null) {
 					setAuthToken(newAuthToken);
 				}
+                // Check if the instanceUrl changed
+                String instanceUrl = authTokenProvider.getInstanceUrl();
+                if (!clientInfo.instanceUrl.toString().equalsIgnoreCase(instanceUrl)) {
+                    try {
+                            // Create a new ClientInfo
+                            clientInfo = new ClientInfo(clientInfo.clientId, new URI(instanceUrl),
+                                clientInfo.loginUrl, clientInfo.identityUrl,
+                                clientInfo.accountName, clientInfo.username,
+                                clientInfo.userId, clientInfo.orgId, clientInfo.communityId,
+                                clientInfo.communityUrl);
+                    } catch (URISyntaxException ex) {
+                        Log.w("RestClient", "Invalid server URL", ex);
+                    }
+                }
 			}
 		}
+
+        /**
+         * @param method
+         * @param url
+         * @param httpEntity
+         * @param additionalHttpHeaders
+         * @param retryInvalidToken
+         * @return
+         * @throws IOException
+         */
+        public HttpResponse performRequest(int method, URI url, HttpEntity httpEntity, Map<String, String> additionalHttpHeaders, boolean retryInvalidToken) throws IOException {
+            HttpResponse response = doRequest(method, url, httpEntity, additionalHttpHeaders);
+            // 401 bad access token
+            if (retryInvalidToken && response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
+                refreshAccessToken(response);
+                return performRequest(method, url, httpEntity, additionalHttpHeaders, false);
+            }
+            // Done
+            return response;
+        }
+
+        /**
+         * @param method
+         * @param path
+         * @param httpEntity
+         * @param additionalHttpHeaders
+         * @param retryInvalidToken
+         * @return
+         * @throws IOException
+         */
+        public HttpResponse performRequest(int method, String path, HttpEntity httpEntity, Map<String, String> additionalHttpHeaders, boolean retryInvalidToken) throws IOException {
+            HttpResponse response = doRequest(method, clientInfo.resolveUrl(path), httpEntity, additionalHttpHeaders);
+            // 401 bad access token
+            if (retryInvalidToken && response.getStatusLine().getStatusCode() == HttpStatus.SC_UNAUTHORIZED) {
+                refreshAccessToken(response);
+                return performRequest(method, path, httpEntity, additionalHttpHeaders, false);
+            }
+
+            // Done
+            return response;
+        }
 
 		private RestResponse uploadFile(File theFile, String name, RestClient client,
 				String title, String description, boolean retryInvalidToken) {
@@ -719,7 +772,7 @@ public class RestClient {
 							responseInputStream.close();
 						}
 					}
-					refreshAccessToken();
+					refreshAccessToken(response);
 					return uploadFile(theFile, name, client, title, description, false);
 				}
 				restResponse = new RestResponse(response);
