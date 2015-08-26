@@ -204,6 +204,5 @@
 "external\sqlcipher\assets\icudt46l.zip" "native\SampleApps\NativeSqlAggregator\assets\icudt46l.zip"
 "external\sqlcipher\assets\icudt46l.zip" "native\SampleApps\SmartSyncExplorer\assets\icudt46l.zip"
 "external\sqlcipher\libs\armeabi" "libs\SmartStore\libs\armeabi"
-"external\sqlcipher\libs\commons-codec.jar" "libs\SmartStore\libs\commons-codec.jar"
 "external\sqlcipher\libs\sqlcipher.jar" "libs\SmartStore\libs\sqlcipher.jar"
 "external\sqlcipher\libs\x86" "libs\SmartStore\libs\x86"

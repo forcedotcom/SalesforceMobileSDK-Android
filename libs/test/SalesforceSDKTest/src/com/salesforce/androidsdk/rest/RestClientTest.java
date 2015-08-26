@@ -72,6 +72,7 @@ public class RestClientTest extends InstrumentationTestCase {
     private HttpAccess httpAccess;
     private RestClient restClient;
     private String authToken;
+    private String instanceUrl;
 
     @Override
     public void setUp() throws Exception {
@@ -80,6 +81,7 @@ public class RestClientTest extends InstrumentationTestCase {
         httpAccess = new HttpAccess(null, null);
         TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
         authToken = refreshResponse.authToken;
+        instanceUrl = refreshResponse.instanceUrl;
         clientInfo = new ClientInfo(TestCredentials.CLIENT_ID,
         		new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
@@ -189,11 +191,48 @@ public class RestClientTest extends InstrumentationTestCase {
             public long getLastRefreshTime() {
                 return -1;
             }
+
+            @Override
+            public String getInstanceUrl() { return instanceUrl; }
         };
         RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, authTokenProvider);
         assertEquals("RestClient should be using the bad token initially", BAD_TOKEN, unauthenticatedRestClient.getAuthToken());
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
         assertEquals("RestClient should now be using the good token", authToken, unauthenticatedRestClient.getAuthToken());
+        assertTrue("Expected success", response.isSuccess());
+        checkResponse(response, HttpStatus.SC_OK, false);
+    }
+
+    /**
+     * Testing a call with a bad auth token when restClient has a token provider
+     * Expect token provider to be invoked and new token to be used and a new instance url to be returned.
+     * @throws URISyntaxException
+     * @throws IOException
+     */
+    public void testCallWithBadInstanceUrl() throws URISyntaxException, IOException {
+        AuthTokenProvider authTokenProvider = new AuthTokenProvider() {
+            @Override
+            public String getNewAuthToken() {
+                return authToken;
+            }
+
+            @Override
+            public String getRefreshToken() {
+                return null;
+            }
+
+            @Override
+            public long getLastRefreshTime() {
+                return -1;
+            }
+
+            @Override
+            public String getInstanceUrl() { return instanceUrl; }
+        };
+        RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, authTokenProvider);
+        assertEquals("RestClient has bad instance url", new URI(TestCredentials.INSTANCE_URL), unauthenticatedRestClient.getClientInfo().instanceUrl);
+        RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
+        assertEquals("RestClient should now have the correct instance url", new URI(instanceUrl), unauthenticatedRestClient.getClientInfo().instanceUrl);
         assertTrue("Expected success", response.isSuccess());
         checkResponse(response, HttpStatus.SC_OK, false);
     }
