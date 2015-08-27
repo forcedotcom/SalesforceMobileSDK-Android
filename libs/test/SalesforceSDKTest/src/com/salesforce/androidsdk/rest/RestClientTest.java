@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import android.os.Environment;
 import android.test.InstrumentationTestCase;
 
 import com.android.volley.Request;
@@ -523,7 +524,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testFileUpload() throws Exception {
         final String filename  = "MyFile.txt";
-        final File file = new File("/sdcard/" + filename);
+        final File file = new File(Environment.getExternalStorageDirectory() + File.separator + filename);
         if (!file.exists()) {
             file.createNewFile();
             final OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
