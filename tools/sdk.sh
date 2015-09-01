@@ -190,7 +190,7 @@ else
         build_project_if_requested    "ConfiguredApp"       $NATIVE_TOP/SampleApps/ConfiguredApp       21 :native:SampleApps:ConfiguredApp
         build_project_if_requested    "SmartSyncExplorer"   $NATIVE_TOP/SampleApps/SmartSyncExplorer   21 :native:SampleApps:SmartSyncExplorer
         build_project_if_requested    "AccountEditor"       $HYBRID_TOP/SampleApps/AccountEditor       21 :hybrid:SampleApps:AccountEditor
-        build_project_if_requested    "NoteSync"            $HYBRID_TOP/SampleApps/NoteSync          21 :hybrid:SampleApps:NoteSync
+        build_project_if_requested    "NoteSync"            $HYBRID_TOP/SampleApps/NoteSync            21 :hybrid:SampleApps:NoteSync
         build_project_if_requested    "SimpleSync"          $HYBRID_TOP/SampleApps/SimpleSync          21 :hybrid:SampleApps:SimpleSync
         build_project_if_requested    "ForcePluginsTest"    $HYBRID_TOP/test/ForcePluginsTest          21 :hybrid:test:ForcePluginsTest
     fi
