@@ -57,7 +57,7 @@ usage ()
     echo "        ConfiguredApp"
     echo "        RestExplorer"
     echo "        NoteSync"
-    echo "        SimpleSync"
+    echo "        SmartSyncExplorerHybrid"
     echo "        SmartSyncExplorer"
     echo "        TemplateApp"
     echo "        ForcePluginsTest"
@@ -180,19 +180,19 @@ else
         header "Building all"
         ./gradlew assembleDebug  | grep "$TEST_OUTPUT_FILTER"
     else
-        build_project_if_requested    "Cordova"             $CORDOVA_TOP/framework                     19
-        build_project_if_requested    "SalesforceSDK"       $LIBS_TOP/SalesforceSDK                    21 :libs:SalesforceSDK
-        build_project_if_requested    "SmartStore"          $LIBS_TOP/SmartStore                       21 :libs:SmartStore
-        build_project_if_requested    "SmartSync"           $LIBS_TOP/SmartSync                        21 :libs:SmartSync
-        build_project_if_requested    "TemplateApp"         $NATIVE_TOP/TemplateApp                    21 :native:TemplateApp
-        build_project_if_requested    "RestExplorer"        $NATIVE_TOP/SampleApps/RestExplorer        21 :native:SampleApps:RestExplorer 
-        build_project_if_requested    "AppConfigurator"     $NATIVE_TOP/SampleApps/AppConfigurator     21 :native:SampleApps:AppConfigurator
-        build_project_if_requested    "ConfiguredApp"       $NATIVE_TOP/SampleApps/ConfiguredApp       21 :native:SampleApps:ConfiguredApp
-        build_project_if_requested    "SmartSyncExplorer"   $NATIVE_TOP/SampleApps/SmartSyncExplorer   21 :native:SampleApps:SmartSyncExplorer
-        build_project_if_requested    "AccountEditor"       $HYBRID_TOP/SampleApps/AccountEditor       21 :hybrid:SampleApps:AccountEditor
-        build_project_if_requested    "NoteSync"            $HYBRID_TOP/SampleApps/NoteSync            21 :hybrid:SampleApps:NoteSync
-        build_project_if_requested    "SimpleSync"          $HYBRID_TOP/SampleApps/SimpleSync          21 :hybrid:SampleApps:SimpleSync
-        build_project_if_requested    "ForcePluginsTest"    $HYBRID_TOP/test/ForcePluginsTest          21 :hybrid:test:ForcePluginsTest
+        build_project_if_requested    "Cordova"                  $CORDOVA_TOP/framework                          19
+        build_project_if_requested    "SalesforceSDK"            $LIBS_TOP/SalesforceSDK                         21 :libs:SalesforceSDK
+        build_project_if_requested    "SmartStore"               $LIBS_TOP/SmartStore                            21 :libs:SmartStore
+        build_project_if_requested    "SmartSync"                $LIBS_TOP/SmartSync                             21 :libs:SmartSync
+        build_project_if_requested    "TemplateApp"              $NATIVE_TOP/TemplateApp                         21 :native:TemplateApp
+        build_project_if_requested    "RestExplorer"             $NATIVE_TOP/SampleApps/RestExplorer             21 :native:SampleApps:RestExplorer 
+        build_project_if_requested    "AppConfigurator"          $NATIVE_TOP/SampleApps/AppConfigurator          21 :native:SampleApps:AppConfigurator
+        build_project_if_requested    "ConfiguredApp"            $NATIVE_TOP/SampleApps/ConfiguredApp            21 :native:SampleApps:ConfiguredApp
+        build_project_if_requested    "SmartSyncExplorer"        $NATIVE_TOP/SampleApps/SmartSyncExplorer        21 :native:SampleApps:SmartSyncExplorer
+        build_project_if_requested    "AccountEditor"            $HYBRID_TOP/SampleApps/AccountEditor            21 :hybrid:SampleApps:AccountEditor
+        build_project_if_requested    "NoteSync"                 $HYBRID_TOP/SampleApps/NoteSync                 21 :hybrid:SampleApps:NoteSync
+        build_project_if_requested    "SmartSyncExplorerHybrid"  $HYBRID_TOP/SampleApps/SmartSyncExplorerHybrid  21 :hybrid:SampleApps:SmartSyncExplorerHybrid
+        build_project_if_requested    "ForcePluginsTest"         $HYBRID_TOP/test/ForcePluginsTest               21 :hybrid:test:ForcePluginsTest
     fi
 
     if ( should_do "test{all}" )
