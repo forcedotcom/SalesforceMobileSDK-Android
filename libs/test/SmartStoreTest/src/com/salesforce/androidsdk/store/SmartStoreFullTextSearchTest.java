@@ -110,6 +110,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         // Insert a couple of rows
         long firstEmployeeId = createEmployee("Christine", "Haas", "00010");
         long secondEmployeeId = createEmployee("Michael", "Thompson", "00020");
+        long thirdEmployeeId = createEmployee(null, null, null);
 
         // Check DB
         Cursor c = null;
@@ -123,7 +124,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             // Check soup table
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected two rows", 2, c.getCount());
+            assertEquals("Expected two rows", 3, c.getCount());
             assertTrue("Wrong columns", Arrays.deepEquals(new String[]{"id", "soup", "created", "lastModified", FIRST_NAME_COL, LAST_NAME_COL, EMPLOYEE_ID_COL}, c.getColumnNames()));
 
             assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("id")));
@@ -137,6 +138,12 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
             assertEquals("Wrong value in index column", "00020", c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
 
+            c.moveToNext();
+            assertEquals("Wrong id", thirdEmployeeId, c.getLong(c.getColumnIndex("id")));
+            assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(LAST_NAME_COL)));
+            assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(EMPLOYEE_ID_COL)));
+
             safeClose(c);
 
             // Check fts table columns
@@ -149,7 +156,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             // Check fts table data
             c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, new String[] {"docid", FIRST_NAME_COL, LAST_NAME_COL}, "docid ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected two rows", 2, c.getCount());
+            assertEquals("Expected two rows", 3, c.getCount());
 
             assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("docid")));
             assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
@@ -159,6 +166,11 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("docid")));
             assertEquals("Wrong value in index column", "Michael", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
             assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
+
+            c.moveToNext();
+            assertEquals("Wrong id", thirdEmployeeId, c.getLong(c.getColumnIndex("docid")));
+            assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(FIRST_NAME_COL)));
+            assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(LAST_NAME_COL)));
         }
         finally {
             safeClose(c);
@@ -359,6 +371,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         }
     }
 
+
     /**
      * Test search on single field returning no results
      */
@@ -521,9 +534,9 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     
     private long createEmployee(String firstName, String lastName, String employeeId) throws JSONException {
         JSONObject employee = new JSONObject();
-        employee.put(FIRST_NAME, firstName);
-        employee.put(LAST_NAME, lastName);
-        employee.put(EMPLOYEE_ID, employeeId);
+        if (firstName != null) employee.put(FIRST_NAME, firstName);
+        if (lastName != null) employee.put(LAST_NAME, lastName);
+        if (employeeId != null) employee.put(EMPLOYEE_ID, employeeId);
         JSONObject employeeSaved = store.create(EMPLOYEES_SOUP, employee);
         return idOf(employeeSaved);
     }
