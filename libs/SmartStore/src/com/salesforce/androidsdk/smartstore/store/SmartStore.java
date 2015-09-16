@@ -787,6 +787,7 @@ public class SmartStore  {
 				if (success && hasFTS(soupName)) {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
+					contentValuesFts.put(DOCID_COL, soupEntryId);
 					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
 					// InsertHelper not working against virtual fts table
 					db.insert(soupTableNameFts, null, contentValuesFts);

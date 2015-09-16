@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.salesforce.samples.simplesync"
+    package="com.salesforce.samples.smartsyncexplorerhybrid"
     android:versionCode="1"
     android:versionName="1.0"
 	android:installLocation="internalOnly">
@@ -36,8 +36,8 @@
         receive the messages and registration result. This must be of
         the format <app-package-name>.C2D_MESSAGE for it to work.
     -->
-    <permission android:name="com.salesforce.samples.simplesync.C2D_MESSAGE"
+    <permission android:name="com.salesforce.samples.smartsyncexplorerhybrid.C2D_MESSAGE"
         android:protectionLevel="signature" />
 
-    <uses-permission android:name="com.salesforce.samples.simplesync.C2D_MESSAGE" />
+    <uses-permission android:name="com.salesforce.samples.smartsyncexplorerhybrid.C2D_MESSAGE" />
 </manifest>
