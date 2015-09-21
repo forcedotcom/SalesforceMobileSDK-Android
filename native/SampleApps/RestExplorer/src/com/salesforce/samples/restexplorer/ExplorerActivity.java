@@ -118,6 +118,16 @@ public class ExplorerActivity extends Activity {
 		addTab("query", R.string.query_tab, R.id.query_tab);
 		addTab("search", R.string.search_tab, R.id.search_tab);
 		addTab("manual", R.string.manual_request_tab, R.id.manual_request_tab);
+		addTab("search_scope_and_order", R.string.search_scope_and_order_tab, R.id.search_scope_and_order_tab);
+		addTab("search_result_layout", R.string.search_result_layout_tab, R.id.search_result_layout_tab);
+		addTab("owned_files_list", R.string.owned_files_list_tab, R.id.owned_files_list_tab);
+		addTab("files_in_users_groups", R.string.files_in_users_groups_tab, R.id.files_in_users_groups_tab);
+		addTab("files_shared_with_user", R.string.files_shared_with_user_tab, R.id.files_shared_with_user_tab);
+		addTab("file_details", R.string.file_details_tab, R.id.file_details_tab);
+		addTab("batch_file_details", R.string.batch_file_details_tab, R.id.batch_file_details_tab);
+		addTab("files_shares", R.string.file_shares_tab, R.id.file_shares_tab);
+		addTab("add_file_share", R.string.add_file_share_tab, R.id.add_file_share_tab);
+		addTab("delete_file_share", R.string.delete_file_share_tab, R.id.delete_file_share_tab);
 
 		// Makes the result area scrollable.
 		resultText = (TextView) findViewById(R.id.result_text);
@@ -303,11 +313,11 @@ public class ExplorerActivity extends Activity {
 				.getText().toString();
 		final String objectId = ((EditText) findViewById(R.id.retrieve_object_id_text))
 				.getText().toString();
-		final List<String> fieldList = parseFieldList(R.id.retrieve_field_list_text);
+		final List<String> fieldList = parseCommaSeparatedList(R.id.retrieve_field_list_text);
 		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForRetrieve(apiVersion, objectType,
-					objectId, fieldList);
+                    objectId, fieldList);
 		} catch (Exception e) {
 			printHeader("Could not build retrieve request");
 			printException(e);
@@ -330,7 +340,7 @@ public class ExplorerActivity extends Activity {
 		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForUpdate(apiVersion, objectType,
-					objectId, fields);
+                    objectId, fields);
 		} catch (Exception e) {
 			printHeader("Could not build update request");
 			printException(e);
@@ -355,7 +365,7 @@ public class ExplorerActivity extends Activity {
 		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForUpsert(apiVersion, objectType,
-					externalIdField, externalId, fields);
+                    externalIdField, externalId, fields);
 		} catch (Exception e) {
 			printHeader("Could not build upsert request");
 			printException(e);
@@ -440,6 +450,41 @@ public class ExplorerActivity extends Activity {
 		sendRequest(request);
 	}
 
+    /**
+     * Called when the "search scope and order" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onSearchScopeAndOrderClick(View v) {
+        RestRequest request = null;
+        try {
+            request = RestRequest.getRequestForSearchScopeAndOrder(getResources().getString(R.string.api_version));
+        } catch (UnsupportedEncodingException e) {
+            printHeader("Could not build search scope and order request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "search scope and order" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onSearchResultLayoutClick(View v) {
+        RestRequest request = null;
+        final List<String> objectList = parseCommaSeparatedList(R.id.object_list_text);
+        try {
+            request = RestRequest.getRequestForSearchResultLayout(getResources().getString(R.string.api_version), objectList);
+        } catch (UnsupportedEncodingException e) {
+            printHeader("Could not build search result layout request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
+
 	private HttpEntity getParamsEntity(int manualRequestParamsText)
 			throws UnsupportedEncodingException {
 		Map<String, Object> params = parseFieldMap(R.id.manual_request_params_text);
@@ -500,8 +545,8 @@ public class ExplorerActivity extends Activity {
 		}
 	}
 
-	private List<String> parseFieldList(int retrieveFieldsListText) {
-		String fieldsCsv = ((EditText) findViewById(retrieveFieldsListText))
+	private List<String> parseCommaSeparatedList(int textField) {
+		String fieldsCsv = ((EditText) findViewById(textField))
 				.getText().toString();
 		return Arrays.asList(fieldsCsv.split(","));
 	}

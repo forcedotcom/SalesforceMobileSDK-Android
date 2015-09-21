@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-	android:orientation="vertical" android:layout_width="match_parent"
+	android:layout_width="match_parent"
 	android:layout_height="match_parent" android:background="#454545"
-	android:id="@+id/root">
+	android:id="@+id/root"
+	android:orientation="vertical">
 
 	<include layout="@layout/explorer_header" />
 
@@ -12,8 +13,14 @@
 		<LinearLayout android:orientation="vertical"
 			android:layout_width="match_parent" android:layout_height="match_parent">
 
-			<TabWidget android:id="@android:id/tabs"
-				android:layout_width="match_parent" android:layout_height="wrap_content" />
+			<HorizontalScrollView
+				android:id="@+id/horizontalScrollView1"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content"
+				android:fillViewport="true">
+				<TabWidget android:id="@android:id/tabs"
+					android:layout_width="match_parent" android:layout_height="wrap_content" />
+			</HorizontalScrollView>
 
 			<LinearLayout android:orientation="horizontal"
 				android:layout_width="match_parent" android:layout_height="match_parent"
@@ -36,6 +43,16 @@
 					<include android:id="@+id/query_tab" layout="@layout/action_query_tile" />
 					<include android:id="@+id/search_tab" layout="@layout/action_search_tile" />
 					<include android:id="@+id/manual_request_tab" layout="@layout/action_manual_request_tile" />
+					<include android:id="@+id/search_scope_and_order_tab" layout="@layout/action_search_scope_and_order_tile" />
+					<include android:id="@+id/search_result_layout_tab" layout="@layout/action_search_result_layout_tile" />
+					<include android:id="@+id/owned_files_list_tab" layout="@layout/action_owned_files_list_tile" />
+					<include android:id="@+id/files_in_users_groups_tab" layout="@layout/action_files_in_users_groups_tile" />
+					<include android:id="@+id/files_shared_with_user_tab" layout="@layout/action_files_shared_with_user_tile" />
+					<include android:id="@+id/file_details_tab" layout="@layout/action_file_details_tile" />
+					<include android:id="@+id/batch_file_details_tab" layout="@layout/action_batch_file_details_tile" />
+					<include android:id="@+id/file_shares_tab" layout="@layout/action_file_shares_tile" />
+					<include android:id="@+id/add_file_share_tab" layout="@layout/action_add_file_share_tile" />
+					<include android:id="@+id/delete_file_share_tab" layout="@layout/action_delete_file_share_tile" />
 
 				</FrameLayout>
 

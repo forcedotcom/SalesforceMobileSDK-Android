@@ -358,11 +358,10 @@ public class RestRequest {
 	}
 
 	/**
-	 * Request to execute the specified SOQL search. 
+	 * Request to get search scope and order.
 	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_scope_order.htm
 	 * 
 	 * @param apiVersion
-	 * @param q
 	 * @return a RestRequest
 	 * @throws UnsupportedEncodingException 
 	 */
@@ -372,7 +371,7 @@ public class RestRequest {
 	}	
 	
 	/**
-	 * Request to execute the specified SOQL search. 
+	 * Request to get search result layouts
 	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search_layouts.htm
 	 * 
 	 * @param apiVersion
