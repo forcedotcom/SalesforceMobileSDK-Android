@@ -16,4 +16,10 @@
     <item android:id="@+id/action_logout"
         android:title="@string/logout_button"
         android:showAsAction="never" />
+    <item android:id="@+id/action_switch_user"
+        android:title="@string/switch_user_button"
+        android:showAsAction="never" />
+    <item android:id="@+id/action_inspect_db"
+        android:title="@string/inspect_db_button"
+        android:showAsAction="never" />
 </menu>
