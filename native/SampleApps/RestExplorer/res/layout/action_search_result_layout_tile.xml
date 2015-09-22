@@ -15,7 +15,7 @@
 			android:onClick="onSearchResultLayoutClick" android:text="@string/search_result_layout_button" />
 	</LinearLayout>
 
-	<EditText android:id="@+id/object_list_text"
+	<EditText android:id="@+id/search_result_layout_object_list_text"
 		android:layout_width="match_parent" android:layout_height="match_parent"
 		android:textColor="#000000" android:hint="@string/object_list_hint"
 		android:gravity="top" android:imeOptions="actionDone" />

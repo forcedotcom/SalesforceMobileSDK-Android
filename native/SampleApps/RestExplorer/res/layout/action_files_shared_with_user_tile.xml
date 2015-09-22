@@ -12,8 +12,19 @@
 
 		<Button android:id="@+id/retrieve_button" android:layout_width="match_parent"
 			android:layout_height="match_parent" android:layout_weight="2"
-			android:onClick="onFileSharedWithUserClick" android:text="@string/files_shared_with_user_button" />
+			android:onClick="onFilesSharedWithUserClick" android:text="@string/files_shared_with_user_button" />
 	</LinearLayout>
+
+	<EditText android:id="@+id/files_shared_with_user_user_id_text"
+		android:layout_width="match_parent" android:layout_height="wrap_content"
+		android:textColor="#000000" android:hint="@string/user_id_hint"
+		android:maxLines="1" android:imeOptions="actionNext" />
+
+	<EditText android:id="@+id/files_shared_with_user_page_text"
+		android:inputType="number"
+		android:layout_width="match_parent" android:layout_height="wrap_content"
+		android:textColor="#000000" android:hint="@string/page_hint"
+		android:maxLines="1" android:imeOptions="actionDone" />
 
 </LinearLayout>
 

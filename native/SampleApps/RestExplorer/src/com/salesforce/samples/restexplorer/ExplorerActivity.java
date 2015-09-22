@@ -27,6 +27,7 @@
 package com.salesforce.samples.restexplorer;
 
 import java.io.UnsupportedEncodingException;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -69,6 +70,7 @@ import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.rest.files.FileRequests;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -468,13 +470,13 @@ public class ExplorerActivity extends Activity {
     }
 
     /**
-     * Called when the "search scope and order" button is clicked.
+     * Called when the "search result layout" button is clicked.
      *
      * @param v View that was clicked.
      */
     public void onSearchResultLayoutClick(View v) {
         RestRequest request = null;
-        final List<String> objectList = parseCommaSeparatedList(R.id.object_list_text);
+        final List<String> objectList = parseCommaSeparatedList(R.id.search_result_layout_object_list_text);
         try {
             request = RestRequest.getRequestForSearchResultLayout(getResources().getString(R.string.api_version), objectList);
         } catch (UnsupportedEncodingException e) {
@@ -485,9 +487,145 @@ public class ExplorerActivity extends Activity {
         sendRequest(request);
     }
 
-	private HttpEntity getParamsEntity(int manualRequestParamsText)
+    /**
+     * Called when the "owned files list" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onOwnedFilesListClick(View v) {
+        RestRequest request = null;
+		final String userId = ((EditText) findViewById(R.id.owned_files_list_user_id_text))
+				.getText().toString();
+        final String pageStr = ((EditText) findViewById(R.id.owned_files_list_page_text)).getText().toString();
+        try {
+            int page = Integer.parseInt(pageStr);
+            request = FileRequests.ownedFilesList(userId, page);
+        } catch (NumberFormatException e) {
+            printHeader("Could not build owned files list request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "files in users groups" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onFilesInUsersGroupsClick(View v) {
+        RestRequest request = null;
+        final String userId = ((EditText) findViewById(R.id.files_in_users_groups_user_id_text))
+                .getText().toString();
+        final String pageStr = ((EditText) findViewById(R.id.files_in_users_groups_page_text)).getText().toString();
+        try {
+            int page = Integer.parseInt(pageStr);
+            request = FileRequests.filesInUsersGroups(userId, page);
+        } catch (NumberFormatException e) {
+            printHeader("Could not build files in users groups request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "files shared with user" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onFilesSharedWithUserClick(View v) {
+        RestRequest request = null;
+        final String userId = ((EditText) findViewById(R.id.files_shared_with_user_user_id_text))
+                .getText().toString();
+        final String pageStr = ((EditText) findViewById(R.id.files_shared_with_user_page_text)).getText().toString();
+        try {
+            int page = Integer.parseInt(pageStr);
+            request = FileRequests.filesSharedWithUser(userId, page);
+        } catch (NumberFormatException e) {
+            printHeader("Could not build files shared with user request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "file details" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onFileDetailsClick(View v) {
+        final String objectId = ((EditText) findViewById(R.id.file_details_object_id_text))
+                .getText().toString();
+        final String version = ((EditText) findViewById(R.id.file_details_version_text)).getText().toString();
+        RestRequest request = FileRequests.fileDetails(objectId, version);
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "batch file details" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onBatchFileDetailsClick(View v) {
+        final List<String> objectIdList = parseCommaSeparatedList(R.id.batch_file_details_text);
+        RestRequest request = FileRequests.batchFileDetails(objectIdList);
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "files shares" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onFileSharesClick(View v) {
+        RestRequest request = null;
+        final String objectId = ((EditText) findViewById(R.id.file_shares_object_id_text))
+                .getText().toString();
+        final String pageStr = ((EditText) findViewById(R.id.file_shares_page_text)).getText().toString();
+        try {
+            int page = Integer.parseInt(pageStr);
+            request = FileRequests.fileShares(objectId, page);
+        } catch (NumberFormatException e) {
+            printHeader("Could not build files shares request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "add file share" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onAddFileShareClick(View v) {
+        final String objectId = ((EditText) findViewById(R.id.add_file_share_object_id_text))
+                .getText().toString();
+        final String entityId = ((EditText) findViewById(R.id.add_file_share_entity_id_text))
+                .getText().toString();
+        final String shareType = ((EditText) findViewById(R.id.add_file_share_share_type_text))
+                .getText().toString();
+        RestRequest request = FileRequests.addFileShare(objectId, entityId, shareType);
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "delete file share" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onDeleteFileShareClick(View v) {
+        final String objectId = ((EditText) findViewById(R.id.add_file_share_object_id_text))
+                .getText().toString();
+        RestRequest request = FileRequests.deleteFileShare(objectId);
+        sendRequest(request);
+    }
+
+    private HttpEntity getParamsEntity(int manualRequestParamsText)
 			throws UnsupportedEncodingException {
-		Map<String, Object> params = parseFieldMap(R.id.manual_request_params_text);
+		Map<String, Object> params = parseFieldMap(manualRequestParamsText);
 		if (params == null) {
 			params = new HashMap<String, Object>();
 		}
