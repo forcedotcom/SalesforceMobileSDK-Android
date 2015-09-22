@@ -569,7 +569,7 @@ public class ExplorerActivity extends Activity {
      * @param v View that was clicked.
      */
     public void onBatchFileDetailsClick(View v) {
-        final List<String> objectIdList = parseCommaSeparatedList(R.id.batch_file_details_text);
+        final List<String> objectIdList = parseCommaSeparatedList(R.id.batch_file_details_object_id_list_text);
         RestRequest request = FileRequests.batchFileDetails(objectIdList);
         sendRequest(request);
     }

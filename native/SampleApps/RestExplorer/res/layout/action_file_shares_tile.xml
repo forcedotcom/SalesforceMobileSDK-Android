@@ -10,7 +10,7 @@
 			android:layout_weight="1" android:layout_height="match_parent"
 			android:textColor="#000000" android:gravity="top" android:text="@string/file_shares_title" />
 
-		<Button android:id="@+id/retrieve_button" android:layout_width="match_parent"
+		<Button android:id="@+id/file_shares_button" android:layout_width="match_parent"
 			android:layout_height="match_parent" android:layout_weight="2"
 			android:onClick="onFileSharesClick" android:text="@string/file_shares_button" />
 	</LinearLayout>
