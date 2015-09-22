@@ -92,6 +92,16 @@ public class ExplorerActivityTest extends
     private static final int QUERY_TAB = 10;
     private static final int SEARCH_TAB = 11;
     private static final int MANUAL_REQUEST_TAB = 12;
+    private static final int SEARCH_SCOPE_AND_ORDER_TAB = 13;
+    private static final int SEARCH_RESULT_LAYOUT_TAB = 14;
+    private static final int OWNED_FILES_LIST_TAB = 15;
+    private static final int FILES_IN_USERS_GROUPS_TAB = 16;
+    private static final int FILES_SHARED_WITH_USER_TAB = 17;
+    private static final int FILE_DETAILS_TAB = 18;
+    private static final int BATCH_FILE_DETAILS_TAB = 19;
+    private static final int FILE_SHARES_TAB = 20;
+    private static final int ADD_FILE_SHARE_TAB = 21;
+    private static final int DELETE_FILE_SHARE_TAB = 22;
 
     private EventsListenerQueue eq;
     private Context targetContext;
@@ -164,6 +174,7 @@ public class ExplorerActivityTest extends
         // Click on logout
         clickView(getActivity().findViewById(R.id.logout_button));
         waitSome();
+        waitSome(); // wait more to avoid flapping
 
         // Check that confirmation dialog is shown
         final ExplorerActivity activity = getActivity();
@@ -193,6 +204,7 @@ public class ExplorerActivityTest extends
         // Click on logout
         clickView(getActivity().findViewById(R.id.logout_button));
         waitSome();
+        waitSome(); // wait more to avoid flapping
 
         // Check that confirmation dialog is shown
         final ExplorerActivity activity = getActivity();
@@ -215,28 +227,28 @@ public class ExplorerActivityTest extends
     }
 
     /**
-     * Test going to versions tab - check UI and click get versions.
+     * Test going to versions tab - check UI and click "Go".
      */
     public void testGetVersions() {
-        gotoTabAndRunAction(VERSIONS_TAB, R.id.versions_button, "Get Versions", null, "[GET " + TEST_INSTANCE_URL + "/services/data/]");
+        gotoTabAndRunAction(VERSIONS_TAB, R.id.versions_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/]");
     }
 
     /**
-     * Test going to resources tab - check UI and click get resources.
+     * Test going to resources tab - check UI and click "Go".
      */
     public void testGetResources() {
-        gotoTabAndRunAction(RESOURCES_TAB, R.id.resources_button, "Get Resources", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/]");
+        gotoTabAndRunAction(RESOURCES_TAB, R.id.resources_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/]");
     }
 
     /**
-     * Test going to describe global tab - check UI and click describe global.
+     * Test going to describe global tab - check UI and click "Go".
      */
     public void testDescribeGlobal() {
-        gotoTabAndRunAction(DESCRIBE_GLOBAL_TAB, R.id.describe_global_button, "Describe Global", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/]");
+        gotoTabAndRunAction(DESCRIBE_GLOBAL_TAB, R.id.describe_global_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/]");
     }
 
     /**
-     * Test going to metadata tab - check UI and click get metadata.
+     * Test going to metadata tab - check UI and click "Go".
      */
     public void testGetMetadata() {
         Runnable extraSetup = new Runnable() {
@@ -245,11 +257,11 @@ public class ExplorerActivityTest extends
                 setText(R.id.metadata_object_type_text, "objTypeMetadata");
             }
         };
-        gotoTabAndRunAction(METADATA_TAB, R.id.metadata_button, "Get Metadata", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeMetadata/]");
+        gotoTabAndRunAction(METADATA_TAB, R.id.metadata_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeMetadata/]");
     }
 
     /**
-     * Test going to describe tab - check UI and click describe.
+     * Test going to describe tab - check UI and click "Go".
      */
     public void testDescribe() {
         Runnable extraSetup = new Runnable() {
@@ -258,11 +270,11 @@ public class ExplorerActivityTest extends
                 setText(R.id.describe_object_type_text, "objTypeDescribe");
             }
         };
-        gotoTabAndRunAction(DESCRIBE_TAB, R.id.describe_button, "Describe", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeDescribe/describe/]");
+        gotoTabAndRunAction(DESCRIBE_TAB, R.id.describe_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeDescribe/describe/]");
     }
 
     /**
-     * Test going to create tab - check UI and click create.
+     * Test going to create tab - check UI and click "Go".
      */
     public void testCreate() {
         Runnable extraSetup = new Runnable() {
@@ -272,11 +284,11 @@ public class ExplorerActivityTest extends
                 setText(R.id.create_fields_text, "{\"field1\":\"create1\",\"field2\":\"create2\"}");
             }
         };
-        gotoTabAndRunAction(CREATE_TAB, R.id.create_button, "Create", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeCreate {\"field1\":\"create1\",\"field2\":\"create2\"}]");
+        gotoTabAndRunAction(CREATE_TAB, R.id.create_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeCreate {\"field1\":\"create1\",\"field2\":\"create2\"}]");
     }
 
     /**
-     * Test going to retrieve tab - check UI and click retrieve.
+     * Test going to retrieve tab - check UI and click "Go".
      */
     public void testRetrieve() {
         Runnable extraSetup = new Runnable() {
@@ -287,12 +299,12 @@ public class ExplorerActivityTest extends
                 setText(R.id.retrieve_field_list_text, "field1,field2");
             }
         };
-        gotoTabAndRunAction(RETRIEVE_TAB, R.id.retrieve_button, "Retrieve", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeRetrieve/objIdRetrieve?fields=field1%2Cfield2]");
+        gotoTabAndRunAction(RETRIEVE_TAB, R.id.retrieve_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeRetrieve/objIdRetrieve?fields=field1%2Cfield2]");
     }
 
 
     /**
-     * Test going to update tab - check UI and click update.
+     * Test going to update tab - check UI and click "Go".
      */
     public void testUpdate() {
         Runnable extraSetup = new Runnable() {
@@ -303,11 +315,11 @@ public class ExplorerActivityTest extends
                 setText(R.id.update_fields_text, "{\"field1\":\"update1\",\"field2\":\"update2\"}");
             }
         };
-        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Update", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpdate/objIdUpdate?_HttpMethod=PATCH {\"field1\":\"update1\",\"field2\":\"update2\"}]");
+        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpdate/objIdUpdate?_HttpMethod=PATCH {\"field1\":\"update1\",\"field2\":\"update2\"}]");
     }
 
     /**
-     * Test going to upsert tab - check UI and click upsert.
+     * Test going to upsert tab - check UI and click "Go".
      */
     public void testUpsert() {
         Runnable extraSetup = new Runnable() {
@@ -319,11 +331,11 @@ public class ExplorerActivityTest extends
                 setText(R.id.upsert_fields_text, "{\"field1\":\"upsert1\",\"field2\":\"upsert2\"}");
             }
         };
-        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Upsert", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpsert/extIdField/extId?_HttpMethod=PATCH {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
+        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpsert/extIdField/extId?_HttpMethod=PATCH {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
     }
 
     /**
-     * Test going to delete tab - check UI and click delete.
+     * Test going to delete tab - check UI and click "Go".
      */
     public void testDelete() {
         Runnable extraSetup = new Runnable() {
@@ -333,12 +345,12 @@ public class ExplorerActivityTest extends
                 setText(R.id.delete_object_id_text, "objIdDelete");
             }
         };
-        gotoTabAndRunAction(DELETE_TAB, R.id.delete_button, "Delete", extraSetup, "[DELETE " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeDelete/objIdDelete]");
+        gotoTabAndRunAction(DELETE_TAB, R.id.delete_button, "Go", extraSetup, "[DELETE " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeDelete/objIdDelete]");
     }
 
 
     /**
-     * Test going to query tab - check UI and click query.
+     * Test going to query tab - check UI and click "Go".
      */
     public void testQuery() {
         Runnable extraSetup = new Runnable() {
@@ -347,12 +359,12 @@ public class ExplorerActivityTest extends
                 setText(R.id.query_soql_text, "fake query");
             }
         };
-        gotoTabAndRunAction(QUERY_TAB, R.id.query_button, "Query", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/query?q=fake+query]");
+        gotoTabAndRunAction(QUERY_TAB, R.id.query_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/query?q=fake+query]");
     }
 
 
     /**
-     * Test going to search tab - check UI and click search.
+     * Test going to search tab - check UI and click "Go".
      */
     public void testSearch() {
         Runnable extraSetup = new Runnable() {
@@ -361,12 +373,12 @@ public class ExplorerActivityTest extends
                 setText(R.id.search_sosl_text, "fake search");
             }
         };
-        gotoTabAndRunAction(SEARCH_TAB, R.id.search_button, "Search", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/search?q=fake+search]");
+        gotoTabAndRunAction(SEARCH_TAB, R.id.search_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/search?q=fake+search]");
     }
 
 
     /**
-     * Test going to manual request tab - check UI and click run.
+     * Test going to manual request tab - check UI and click "Go".
      */
     public void testManualRequest() {
         Runnable extraSetup = new Runnable() {
@@ -377,9 +389,139 @@ public class ExplorerActivityTest extends
                 checkRadioButton(R.id.manual_request_put_radio);
             }
         };
-        gotoTabAndRunAction(MANUAL_REQUEST_TAB, R.id.manual_request_button, "Run Manual Request", extraSetup, "[PUT " + TEST_INSTANCE_URL + "/manualRequestPath field1=manual1&field2=manual2]");
+        gotoTabAndRunAction(MANUAL_REQUEST_TAB, R.id.manual_request_button, "Go", extraSetup, "[PUT " + TEST_INSTANCE_URL + "/manualRequestPath field1=manual1&field2=manual2]");
     }
 
+    /**
+     * Test going to search scope and order tab - check UI and click "Go".
+     */
+    public void testSearchScopeAndOrderTab() {
+        gotoTabAndRunAction(SEARCH_SCOPE_AND_ORDER_TAB, R.id.search_scope_and_order_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/search/scopeOrder]");
+    }
+
+    /**
+     * Test going to search result layout tab - check UI and click "Go".
+     */
+    public void testSearchResultLayout() {
+        Runnable extraSetup = new Runnable() {
+            @Override
+            public void run() {
+                setText(R.id.search_result_layout_object_list_text, "Account,Contact");
+            }
+        };
+        gotoTabAndRunAction(SEARCH_RESULT_LAYOUT_TAB, R.id.search_result_layout_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/search/layout?q=Account%2CContact]");
+    }
+
+    /**
+     * Test going to owned files list tab - check UI and click "Go".
+     */
+    public void testOwnedFilesList() {
+        Runnable extraSetup = new Runnable() {
+            @Override
+            public void run() {
+                setText(R.id.owned_files_list_user_id_text, "filesOwnedByUserId");
+                setText(R.id.owned_files_list_page_text, "0");
+            }
+        };
+        gotoTabAndRunAction(OWNED_FILES_LIST_TAB, R.id.owned_files_list_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/users/filesOwnedByUserId/files?page=0]");
+    }
+
+    /**
+     * Test going to files in users groups tab - check UI and click "Go".
+     */
+    public void testFilesInUsersGroups() {
+        Runnable extraSetup = new Runnable() {
+            @Override
+            public void run() {
+                setText(R.id.files_in_users_groups_user_or_group_id_text, "filesInUsersGroupsId");
+                setText(R.id.files_in_users_groups_page_text, "0");
+            }
+        };
+        gotoTabAndRunAction(FILES_IN_USERS_GROUPS_TAB, R.id.files_in_users_groups_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/users/filesInUsersGroupsId/files/filter/groups?page=0]");
+    }
+
+    /**
+     * Test going to files shared with user tab - check UI and click "Go".
+     */
+    public void testFilesSharedWithUser() {
+        Runnable extraSetup = new Runnable() {
+            @Override
+            public void run() {
+                setText(R.id.files_shared_with_user_user_id_text, "fileSharedWithUserId");
+                setText(R.id.files_shared_with_user_page_text, "0");
+            }
+        };
+        gotoTabAndRunAction(FILES_SHARED_WITH_USER_TAB, R.id.files_shared_with_user_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/users/fileSharedWithUserId/files/filter/sharedwithme?page=0]");
+    }
+
+    /**
+     * Test going to file details tab - check UI and click "Go".
+     */
+    public void testFileDetails() {
+        Runnable extraSetup = new Runnable() {
+            @Override
+            public void run() {
+                setText(R.id.file_details_document_id_text, "detailsForFileId");
+                setText(R.id.file_details_version_text, "1");
+            }
+        };
+        gotoTabAndRunAction(FILE_DETAILS_TAB, R.id.file_details_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/files/detailsForFileId?versionNumber=1]");
+    }
+
+    /**
+     * Test going to batch file details tab - check UI and click "Go".
+     */
+    public void testBatchFileDetails() {
+        Runnable extraSetup = new Runnable() {
+            @Override
+            public void run() {
+                setText(R.id.batch_file_details_document_id_list_text, "fileId1,fileId2");
+            }
+        };
+        gotoTabAndRunAction(BATCH_FILE_DETAILS_TAB, R.id.batch_file_details_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/files/batch/fileId1,fileId2]");
+    }
+
+    /**
+     * Test going to file shares tab - check UI and click "Go".
+     */
+    public void testFileShares() {
+        Runnable extraSetup = new Runnable() {
+            @Override
+            public void run() {
+                setText(R.id.file_shares_document_id_text, "sharesForFileId");
+                setText(R.id.file_shares_page_text, "0");
+            }
+        };
+        gotoTabAndRunAction(FILE_SHARES_TAB, R.id.file_shares_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/files/sharesForFileId/file-shares?page=0]");
+    }
+
+    /**
+     * Test going to add file share tab - check UI and click "Go".
+     */
+    public void testAddFileShare() {
+        Runnable extraSetup = new Runnable() {
+            @Override
+            public void run() {
+                setText(R.id.add_file_share_document_id_text, "objectIdForAdd");
+                setText(R.id.add_file_share_entity_id_text, "entityIdForAdd");
+                setText(R.id.add_file_share_share_type_text, "shareType");
+            }
+        };
+        gotoTabAndRunAction(ADD_FILE_SHARE_TAB, R.id.add_file_share_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/ContentDocumentLink {\"ContentDocumentId\":\"objectIdForAdd\",\"LinkedEntityId\":\"entityIdForAdd\",\"ShareType\":\"shareType\"}]");
+    }
+
+    /**
+     * Test going to delete file share tab - check UI and click "Go".
+     */
+    public void testDeleteFileShare() {
+        Runnable extraSetup = new Runnable() {
+            @Override
+            public void run() {
+                setText(R.id.delete_file_share_share_id_text, "shareIdToDelete");
+           }
+        };
+        gotoTabAndRunAction(DELETE_FILE_SHARE_TAB, R.id.delete_file_share_button, "Go", extraSetup, "[DELETE " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/ContentDocumentLink/shareIdToDelete]");
+    }
 
     /**
      * Go to tab (tabId), check button (goButtonId) label is as expected (goButtonLabel)
@@ -415,7 +557,8 @@ public class ExplorerActivityTest extends
         // Wait for call to complete
         long curTime = System.currentTimeMillis();
         while (RESPONSE == null) {
-        	if (System.currentTimeMillis() - curTime > 5000) {
+            waitSome();
+            if (System.currentTimeMillis() - curTime > 5000) {
         		break;
         	}
         }

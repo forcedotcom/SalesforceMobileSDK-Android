@@ -15,9 +15,9 @@
 			android:onClick="onBatchFileDetailsClick" android:text="@string/batch_file_details_button" />
 	</LinearLayout>
 
-	<EditText android:id="@+id/batch_file_details_object_id_list_text"
+	<EditText android:id="@+id/batch_file_details_document_id_list_text"
 		android:layout_width="match_parent" android:layout_height="match_parent"
-		android:textColor="#000000" android:hint="@string/object_id_list_hint"
+		android:textColor="#000000" android:hint="@string/document_id_list_hint"
 		android:gravity="top" android:imeOptions="actionDone" />
 
 </LinearLayout>

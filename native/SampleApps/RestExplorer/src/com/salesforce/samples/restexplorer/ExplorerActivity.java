@@ -515,7 +515,7 @@ public class ExplorerActivity extends Activity {
      */
     public void onFilesInUsersGroupsClick(View v) {
         RestRequest request = null;
-        final String userId = ((EditText) findViewById(R.id.files_in_users_groups_user_id_text))
+        final String userId = ((EditText) findViewById(R.id.files_in_users_groups_user_or_group_id_text))
                 .getText().toString();
         final String pageStr = ((EditText) findViewById(R.id.files_in_users_groups_page_text)).getText().toString();
         try {
@@ -556,10 +556,10 @@ public class ExplorerActivity extends Activity {
      * @param v View that was clicked.
      */
     public void onFileDetailsClick(View v) {
-        final String objectId = ((EditText) findViewById(R.id.file_details_object_id_text))
+        final String documentId = ((EditText) findViewById(R.id.file_details_document_id_text))
                 .getText().toString();
         final String version = ((EditText) findViewById(R.id.file_details_version_text)).getText().toString();
-        RestRequest request = FileRequests.fileDetails(objectId, version);
+        RestRequest request = FileRequests.fileDetails(documentId, version);
         sendRequest(request);
     }
 
@@ -569,8 +569,8 @@ public class ExplorerActivity extends Activity {
      * @param v View that was clicked.
      */
     public void onBatchFileDetailsClick(View v) {
-        final List<String> objectIdList = parseCommaSeparatedList(R.id.batch_file_details_object_id_list_text);
-        RestRequest request = FileRequests.batchFileDetails(objectIdList);
+        final List<String> documentIdList = parseCommaSeparatedList(R.id.batch_file_details_document_id_list_text);
+        RestRequest request = FileRequests.batchFileDetails(documentIdList);
         sendRequest(request);
     }
 
@@ -581,12 +581,12 @@ public class ExplorerActivity extends Activity {
      */
     public void onFileSharesClick(View v) {
         RestRequest request = null;
-        final String objectId = ((EditText) findViewById(R.id.file_shares_object_id_text))
+        final String documentId = ((EditText) findViewById(R.id.file_shares_document_id_text))
                 .getText().toString();
         final String pageStr = ((EditText) findViewById(R.id.file_shares_page_text)).getText().toString();
         try {
             int page = Integer.parseInt(pageStr);
-            request = FileRequests.fileShares(objectId, page);
+            request = FileRequests.fileShares(documentId, page);
         } catch (NumberFormatException e) {
             printHeader("Could not build files shares request");
             printException(e);
@@ -601,13 +601,13 @@ public class ExplorerActivity extends Activity {
      * @param v View that was clicked.
      */
     public void onAddFileShareClick(View v) {
-        final String objectId = ((EditText) findViewById(R.id.add_file_share_object_id_text))
+        final String documentId = ((EditText) findViewById(R.id.add_file_share_document_id_text))
                 .getText().toString();
         final String entityId = ((EditText) findViewById(R.id.add_file_share_entity_id_text))
                 .getText().toString();
         final String shareType = ((EditText) findViewById(R.id.add_file_share_share_type_text))
                 .getText().toString();
-        RestRequest request = FileRequests.addFileShare(objectId, entityId, shareType);
+        RestRequest request = FileRequests.addFileShare(documentId, entityId, shareType);
         sendRequest(request);
     }
 
@@ -617,9 +617,9 @@ public class ExplorerActivity extends Activity {
      * @param v View that was clicked.
      */
     public void onDeleteFileShareClick(View v) {
-        final String objectId = ((EditText) findViewById(R.id.add_file_share_object_id_text))
+        final String shareId = ((EditText) findViewById(R.id.delete_file_share_share_id_text))
                 .getText().toString();
-        RestRequest request = FileRequests.deleteFileShare(objectId);
+        RestRequest request = FileRequests.deleteFileShare(shareId);
         sendRequest(request);
     }
 
