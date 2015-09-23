@@ -49,6 +49,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
 import org.apache.http.protocol.HTTP;
+import org.json.JSONObject;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -242,7 +243,7 @@ public class FileRequests extends ApiRequests {
         share.put("LinkedEntityId", entityId);
         share.put("ShareType", shareType);
         try {
-            String json = null; // FIXME ConnectParser.toJson(share);
+            String json = new JSONObject(share).toString();
             StringEntity e = new StringEntity(json, HTTP.UTF_8);
             e.setContentType("application/json");
             return e;

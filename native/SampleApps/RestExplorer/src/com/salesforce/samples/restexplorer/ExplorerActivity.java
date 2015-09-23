@@ -27,6 +27,7 @@
 package com.salesforce.samples.restexplorer;
 
 import java.io.UnsupportedEncodingException;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -69,6 +70,7 @@ import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.rest.files.FileRequests;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -118,6 +120,16 @@ public class ExplorerActivity extends Activity {
 		addTab("query", R.string.query_tab, R.id.query_tab);
 		addTab("search", R.string.search_tab, R.id.search_tab);
 		addTab("manual", R.string.manual_request_tab, R.id.manual_request_tab);
+		addTab("search_scope_and_order", R.string.search_scope_and_order_tab, R.id.search_scope_and_order_tab);
+		addTab("search_result_layout", R.string.search_result_layout_tab, R.id.search_result_layout_tab);
+		addTab("owned_files_list", R.string.owned_files_list_tab, R.id.owned_files_list_tab);
+		addTab("files_in_users_groups", R.string.files_in_users_groups_tab, R.id.files_in_users_groups_tab);
+		addTab("files_shared_with_user", R.string.files_shared_with_user_tab, R.id.files_shared_with_user_tab);
+		addTab("file_details", R.string.file_details_tab, R.id.file_details_tab);
+		addTab("batch_file_details", R.string.batch_file_details_tab, R.id.batch_file_details_tab);
+		addTab("files_shares", R.string.file_shares_tab, R.id.file_shares_tab);
+		addTab("add_file_share", R.string.add_file_share_tab, R.id.add_file_share_tab);
+		addTab("delete_file_share", R.string.delete_file_share_tab, R.id.delete_file_share_tab);
 
 		// Makes the result area scrollable.
 		resultText = (TextView) findViewById(R.id.result_text);
@@ -303,11 +315,11 @@ public class ExplorerActivity extends Activity {
 				.getText().toString();
 		final String objectId = ((EditText) findViewById(R.id.retrieve_object_id_text))
 				.getText().toString();
-		final List<String> fieldList = parseFieldList(R.id.retrieve_field_list_text);
+		final List<String> fieldList = parseCommaSeparatedList(R.id.retrieve_field_list_text);
 		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForRetrieve(apiVersion, objectType,
-					objectId, fieldList);
+                    objectId, fieldList);
 		} catch (Exception e) {
 			printHeader("Could not build retrieve request");
 			printException(e);
@@ -330,7 +342,7 @@ public class ExplorerActivity extends Activity {
 		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForUpdate(apiVersion, objectType,
-					objectId, fields);
+                    objectId, fields);
 		} catch (Exception e) {
 			printHeader("Could not build update request");
 			printException(e);
@@ -355,7 +367,7 @@ public class ExplorerActivity extends Activity {
 		RestRequest request = null;
 		try {
 			request = RestRequest.getRequestForUpsert(apiVersion, objectType,
-					externalIdField, externalId, fields);
+                    externalIdField, externalId, fields);
 		} catch (Exception e) {
 			printHeader("Could not build upsert request");
 			printException(e);
@@ -440,9 +452,180 @@ public class ExplorerActivity extends Activity {
 		sendRequest(request);
 	}
 
-	private HttpEntity getParamsEntity(int manualRequestParamsText)
+    /**
+     * Called when the "search scope and order" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onSearchScopeAndOrderClick(View v) {
+        RestRequest request = null;
+        try {
+            request = RestRequest.getRequestForSearchScopeAndOrder(getResources().getString(R.string.api_version));
+        } catch (UnsupportedEncodingException e) {
+            printHeader("Could not build search scope and order request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "search result layout" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onSearchResultLayoutClick(View v) {
+        RestRequest request = null;
+        final List<String> objectList = parseCommaSeparatedList(R.id.search_result_layout_object_list_text);
+        try {
+            request = RestRequest.getRequestForSearchResultLayout(getResources().getString(R.string.api_version), objectList);
+        } catch (UnsupportedEncodingException e) {
+            printHeader("Could not build search result layout request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "owned files list" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onOwnedFilesListClick(View v) {
+        RestRequest request = null;
+		final String userId = ((EditText) findViewById(R.id.owned_files_list_user_id_text))
+				.getText().toString();
+        final String pageStr = ((EditText) findViewById(R.id.owned_files_list_page_text)).getText().toString();
+        try {
+            int page = Integer.parseInt(pageStr);
+            request = FileRequests.ownedFilesList(userId, page);
+        } catch (NumberFormatException e) {
+            printHeader("Could not build owned files list request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "files in users groups" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onFilesInUsersGroupsClick(View v) {
+        RestRequest request = null;
+        final String userId = ((EditText) findViewById(R.id.files_in_users_groups_user_or_group_id_text))
+                .getText().toString();
+        final String pageStr = ((EditText) findViewById(R.id.files_in_users_groups_page_text)).getText().toString();
+        try {
+            int page = Integer.parseInt(pageStr);
+            request = FileRequests.filesInUsersGroups(userId, page);
+        } catch (NumberFormatException e) {
+            printHeader("Could not build files in users groups request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "files shared with user" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onFilesSharedWithUserClick(View v) {
+        RestRequest request = null;
+        final String userId = ((EditText) findViewById(R.id.files_shared_with_user_user_id_text))
+                .getText().toString();
+        final String pageStr = ((EditText) findViewById(R.id.files_shared_with_user_page_text)).getText().toString();
+        try {
+            int page = Integer.parseInt(pageStr);
+            request = FileRequests.filesSharedWithUser(userId, page);
+        } catch (NumberFormatException e) {
+            printHeader("Could not build files shared with user request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "file details" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onFileDetailsClick(View v) {
+        final String documentId = ((EditText) findViewById(R.id.file_details_document_id_text))
+                .getText().toString();
+        final String version = ((EditText) findViewById(R.id.file_details_version_text)).getText().toString();
+        RestRequest request = FileRequests.fileDetails(documentId, version);
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "batch file details" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onBatchFileDetailsClick(View v) {
+        final List<String> documentIdList = parseCommaSeparatedList(R.id.batch_file_details_document_id_list_text);
+        RestRequest request = FileRequests.batchFileDetails(documentIdList);
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "files shares" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onFileSharesClick(View v) {
+        RestRequest request = null;
+        final String documentId = ((EditText) findViewById(R.id.file_shares_document_id_text))
+                .getText().toString();
+        final String pageStr = ((EditText) findViewById(R.id.file_shares_page_text)).getText().toString();
+        try {
+            int page = Integer.parseInt(pageStr);
+            request = FileRequests.fileShares(documentId, page);
+        } catch (NumberFormatException e) {
+            printHeader("Could not build files shares request");
+            printException(e);
+            return;
+        }
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "add file share" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onAddFileShareClick(View v) {
+        final String documentId = ((EditText) findViewById(R.id.add_file_share_document_id_text))
+                .getText().toString();
+        final String entityId = ((EditText) findViewById(R.id.add_file_share_entity_id_text))
+                .getText().toString();
+        final String shareType = ((EditText) findViewById(R.id.add_file_share_share_type_text))
+                .getText().toString();
+        RestRequest request = FileRequests.addFileShare(documentId, entityId, shareType);
+        sendRequest(request);
+    }
+
+    /**
+     * Called when the "delete file share" button is clicked.
+     *
+     * @param v View that was clicked.
+     */
+    public void onDeleteFileShareClick(View v) {
+        final String shareId = ((EditText) findViewById(R.id.delete_file_share_share_id_text))
+                .getText().toString();
+        RestRequest request = FileRequests.deleteFileShare(shareId);
+        sendRequest(request);
+    }
+
+    private HttpEntity getParamsEntity(int manualRequestParamsText)
 			throws UnsupportedEncodingException {
-		Map<String, Object> params = parseFieldMap(R.id.manual_request_params_text);
+		Map<String, Object> params = parseFieldMap(manualRequestParamsText);
 		if (params == null) {
 			params = new HashMap<String, Object>();
 		}
@@ -500,8 +683,8 @@ public class ExplorerActivity extends Activity {
 		}
 	}
 
-	private List<String> parseFieldList(int retrieveFieldsListText) {
-		String fieldsCsv = ((EditText) findViewById(retrieveFieldsListText))
+	private List<String> parseCommaSeparatedList(int textField) {
+		String fieldsCsv = ((EditText) findViewById(textField))
 				.getText().toString();
 		return Arrays.asList(fieldsCsv.split(","));
 	}

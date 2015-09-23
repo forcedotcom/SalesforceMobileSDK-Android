@@ -5,11 +5,12 @@
 
 	<TextView android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:textColor="#000000" android:gravity="top" android:text="@string/resources_title" />
+		android:textColor="#000000" android:gravity="top" android:text="@string/search_scope_and_order_title" />
 
-	<Button android:id="@+id/resources_button" android:layout_width="match_parent"
+	<Button android:id="@+id/search_scope_and_order_button" android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-	    android:onClick="onGetResourcesClick"
-		android:text="@string/resources_button" />
+		android:onClick="onSearchScopeAndOrderClick" android:text="@string/search_scope_and_order_button" />
 
 </LinearLayout>
+
+

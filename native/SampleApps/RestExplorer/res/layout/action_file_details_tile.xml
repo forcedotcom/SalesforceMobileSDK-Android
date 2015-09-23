@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="match_parent"
+	android:layout_height="match_parent">
+
+	<TextView android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textColor="#000000" android:gravity="top" android:text="@string/file_details_title" />
+
+	<Button android:id="@+id/file_details_button" android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:onClick="onFileDetailsClick" android:text="@string/file_details_button" />
+
+	<EditText android:id="@+id/file_details_document_id_text"
+		android:layout_width="match_parent" android:layout_height="wrap_content"
+		android:textColor="#000000" android:hint="@string/document_id_hint"
+		android:maxLines="1" android:imeOptions="actionNext" />
+
+	<EditText android:id="@+id/file_details_version_text"
+		android:inputType="number"
+		android:layout_width="match_parent" android:layout_height="wrap_content"
+		android:textColor="#000000" android:hint="@string/version_hint"
+		android:maxLines="1" android:imeOptions="actionDone" />
+
+</LinearLayout>
+
+
