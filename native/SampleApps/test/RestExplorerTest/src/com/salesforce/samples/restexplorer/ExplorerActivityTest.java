@@ -204,7 +204,6 @@ public class ExplorerActivityTest extends
         // Click on logout
         clickView(getActivity().findViewById(R.id.logout_button));
         waitSome();
-        waitSome(); // wait more to avoid flapping
 
         // Check that confirmation dialog is shown
         final ExplorerActivity activity = getActivity();
