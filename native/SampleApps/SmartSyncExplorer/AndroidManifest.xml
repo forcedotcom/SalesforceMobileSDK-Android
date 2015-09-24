@@ -57,10 +57,10 @@
         receive the messages and registration result. This must be of
         the format <app-package-name>.C2D_MESSAGE for it to work.
     -->
-    <permission android:name="com.salesforce.samples.nativesqlaggregator.C2D_MESSAGE"
+    <permission android:name="com.salesforce.samples.smartsyncexplorer.C2D_MESSAGE"
         android:protectionLevel="signature" />
 
-    <uses-permission android:name="com.salesforce.samples.nativesqlaggregator.C2D_MESSAGE" />
+    <uses-permission android:name="com.salesforce.samples.smartsyncexplorer.C2D_MESSAGE" />
     <uses-permission android:name="android.permission.READ_SYNC_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_SYNC_SETTINGS" />
 </manifest>
