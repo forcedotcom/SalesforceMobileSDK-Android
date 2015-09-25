@@ -50,12 +50,15 @@ import org.apache.http.entity.BasicHttpEntity;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
 
+import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 
 /**
  * Generic HTTP Access layer - used internally by {@link com.salesforce.androidsdk.rest.RestClient}
@@ -63,14 +66,14 @@ import android.net.NetworkInfo;
  */
 public class HttpAccess extends BroadcastReceiver {
 
-	public static final String USER_AGENT = "User-Agent";
+    public static final String USER_AGENT = "User-Agent";
 
-	/*
-	 * FIXME: Remove this when PATCH is available out of the box.
-	 *
-	 * https://code.google.com/p/android/issues/detail?id=76611
-	 */
-	private static final String PATCH = "PATCH";
+    /*
+     * FIXME: Remove this when PATCH is available out of the box.
+     *
+     * https://code.google.com/p/android/issues/detail?id=76611
+     */
+    private static final String PATCH = "PATCH";
 
     // Fields to keep track of network.
     private boolean hasNetwork = true;
@@ -83,6 +86,11 @@ public class HttpAccess extends BroadcastReceiver {
     public static HttpAccess DEFAULT;
 
     /**
+     * A reasonable default chunk length when sending POST data.
+     */
+    private static final long DEFAULT_POST_CHUNK_LENGTH_IN_BYTES = 1048576L;
+
+    /**
      * Initializes HttpAccess. Should be called from the application.
      */
     public static void init(Context app, String userAgent) {
@@ -93,8 +101,10 @@ public class HttpAccess extends BroadcastReceiver {
     /**
      * Parameterized constructor.
      *
-     * @param app Reference to the application.
-     * @param userAgent The user agent to be used with requests.
+     * @param app
+     *         Reference to the application.
+     * @param userAgent
+     *         The user agent to be used with requests.
      */
     public HttpAccess(Context app, String userAgent) {
         this.userAgent = userAgent;
@@ -115,8 +125,10 @@ public class HttpAccess extends BroadcastReceiver {
     /**
      * Detects network changes and sets the network connectivity status.
      *
-     * @param context The context of the request.
-     * @param intent Intent.
+     * @param context
+     *         The context of the request.
+     * @param intent
+     *         Intent.
      */
     @Override
     public void onReceive(Context context, Intent intent) {
@@ -154,20 +166,21 @@ public class HttpAccess extends BroadcastReceiver {
     public synchronized boolean hasNetwork() {
         return hasNetwork;
     }
-    
+
     /**
      * Returns the current user agent.
      *
      * @return User agent.
      */
     public String getUserAgent() {
-    	return userAgent;
+        return userAgent;
     }
 
     /**
      * Sets the status of network connectivity.
      *
-     * @param b True - if network connectivity is available, False - otherwise.
+     * @param b
+     *         True - if network connectivity is available, False - otherwise.
      */
     private synchronized void setHasNetwork(boolean b) {
         hasNetwork = b;
@@ -188,124 +201,172 @@ public class HttpAccess extends BroadcastReceiver {
     /**
      * Executes an HTTP POST.
      *
-     * @param headers The headers associated with the post.
-     * @param uri The URI to post to.
-     * @param requestEntity The entity to post.
+     * @param headers
+     *         The headers associated with the post.
+     * @param uri
+     *         The URI to post to.
+     * @param requestEntity
+     *         The entity to post.
+     *
      * @return The execution response.
+     *
      * @throws IOException
      */
+    @TargetApi(19)
     public Execution doPost(Map<String, String> headers, URI uri, HttpEntity requestEntity) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpPost.METHOD_NAME);
-    	addHeaders(httpConn, headers);
-    	return execute(httpConn, requestEntity);
+        final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpPost.METHOD_NAME);
+        addHeaders(httpConn, headers);
+
+        // Allow input and output on this connection
+        httpConn.setDoOutput(true);
+        httpConn.setDoInput(true);
+        httpConn.setUseCaches(false);
+
+        if (VERSION.SDK_INT >= VERSION_CODES.KITKAT) {
+            long contentLength = requestEntity.getContentLength();
+
+            if (contentLength >= 0) {
+                // Let the connection know the size of the data being sent so that it can chunk it appropriately.
+                httpConn.setFixedLengthStreamingMode(contentLength);
+            } else {
+                // The size isn't known - i.e. data is probably being streamed. Choose a concrete chunk size to prevent OOM errors.
+                httpConn.setFixedLengthStreamingMode(DEFAULT_POST_CHUNK_LENGTH_IN_BYTES);
+            }
+        }
+
+        return execute(httpConn, requestEntity);
     }
 
     /**
      * Executes an HTTP PATCH.
      *
-     * @param headers The headers associated with the post.
-     * @param uri The URI to post to.
-     * @param requestEntity The entity to post.
+     * @param headers
+     *         The headers associated with the post.
+     * @param uri
+     *         The URI to post to.
+     * @param requestEntity
+     *         The entity to post.
+     *
      * @return The execution response.
+     *
      * @throws IOException
      */
     public Execution doPatch(Map<String, String> headers, URI uri, HttpEntity requestEntity) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, PATCH);
-    	addHeaders(httpConn, headers);
-    	return execute(httpConn, requestEntity);
+        final HttpURLConnection httpConn = createHttpUrlConnection(uri, PATCH);
+        addHeaders(httpConn, headers);
+        return execute(httpConn, requestEntity);
     }
 
     /**
      * Executes an HTTP PUT.
      *
-     * @param headers The headers associated with the post.
-     * @param uri The URI to post to.
-     * @param requestEntity The entity to post.
+     * @param headers
+     *         The headers associated with the post.
+     * @param uri
+     *         The URI to post to.
+     * @param requestEntity
+     *         The entity to post.
+     *
      * @return The execution response.
+     *
      * @throws IOException
      */
     public Execution doPut(Map<String, String> headers, URI uri, HttpEntity requestEntity) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpPut.METHOD_NAME);
-    	addHeaders(httpConn, headers);
-    	return execute(httpConn, requestEntity);
+        final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpPut.METHOD_NAME);
+        addHeaders(httpConn, headers);
+        return execute(httpConn, requestEntity);
     }
 
     /**
      * Executes an HTTP GET.
      *
-     * @param headers The headers associated with the get.
-     * @param uri The URI to get.
+     * @param headers
+     *         The headers associated with the get.
+     * @param uri
+     *         The URI to get.
+     *
      * @return The execution response.
+     *
      * @throws IOException
      */
     public Execution doGet(Map<String, String> headers, URI uri) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpGet.METHOD_NAME);
-    	addHeaders(httpConn, headers);
-    	return execute(httpConn, null);
+        final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpGet.METHOD_NAME);
+        addHeaders(httpConn, headers);
+        return execute(httpConn, null);
     }
 
     /**
      * Executes an HTTP HEAD.
      *
-     * @param headers The headers associated with the get.
-     * @param uri The URI to get.
+     * @param headers
+     *         The headers associated with the get.
+     * @param uri
+     *         The URI to get.
+     *
      * @return The execution response.
+     *
      * @throws IOException
      */
     public Execution doHead(Map<String, String> headers, URI uri) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpHead.METHOD_NAME);
-    	addHeaders(httpConn, headers);
-    	return execute(httpConn, null);
+        final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpHead.METHOD_NAME);
+        addHeaders(httpConn, headers);
+        return execute(httpConn, null);
     }
 
     /**
      * Executes an HTTP DELETE.
      *
-     * @param headers The headers associated with the delete.
-     * @param uri The URI to delete from.
+     * @param headers
+     *         The headers associated with the delete.
+     * @param uri
+     *         The URI to delete from.
+     *
      * @return The execution response.
+     *
      * @throws IOException
      */
     public Execution doDelete(Map<String, String> headers, URI uri) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpDelete.METHOD_NAME);
-    	addHeaders(httpConn, headers);
-    	return execute(httpConn, null);
+        final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpDelete.METHOD_NAME);
+        addHeaders(httpConn, headers);
+        return execute(httpConn, null);
     }
 
     /**
      * Executes a fully formed request, and returns the results.
      *
-     * @param httpConn HTTP connection object.
-     * @param reqEntity Request entity.
+     * @param httpConn
+     *         HTTP connection object.
+     * @param reqEntity
+     *         Request entity.
+     *
      * @return The execution response.
+     *
      * @throws IOException
      */
     protected Execution execute(HttpURLConnection httpConn, HttpEntity reqEntity) throws IOException {
-    	if (httpConn == null) {
-    		return null;
-    	}
-    	Execution exec = null;
-    	if (reqEntity != null) {
-    		final Header contentType = reqEntity.getContentType();
-    		if (contentType != null) {
-        		httpConn.setRequestProperty(contentType.getName(), contentType.getValue());
-    		}
-    		final Header contentEncoding = reqEntity.getContentEncoding();
-    		if (contentEncoding != null) {
-        		httpConn.setRequestProperty(contentEncoding.getName(), contentEncoding.getValue());
-    		}
-    		final long contentLen = reqEntity.getContentLength();
-    		if (contentLen > 0) {
-        		httpConn.setRequestProperty("Content-Length", Long.toString(contentLen));
-    		}
-    		final InputStream contentStream = reqEntity.getContent();
-    		byte[] content = new byte[(int) contentLen];
-    		contentStream.read(content);
-    		final OutputStream outputStream = httpConn.getOutputStream();
-    		if (outputStream != null) {
-        		outputStream.write(content);
-    		}
-    	}
+        if (httpConn == null) {
+            return null;
+        }
+        Execution exec = null;
+        if (reqEntity != null) {
+            final Header contentType = reqEntity.getContentType();
+            if (contentType != null) {
+                httpConn.setRequestProperty(contentType.getName(), contentType.getValue());
+            }
+            final Header contentEncoding = reqEntity.getContentEncoding();
+            if (contentEncoding != null) {
+                httpConn.setRequestProperty(contentEncoding.getName(), contentEncoding.getValue());
+            }
+            final long contentLen = reqEntity.getContentLength();
+            if (contentLen > 0) {
+                httpConn.setRequestProperty("Content-Length", Long.toString(contentLen));
+            }
+            final OutputStream outputStream = httpConn.getOutputStream();
+
+            if (outputStream != null) {
+                reqEntity.writeTo(outputStream);
+            }
+        }
         int statusCode;
         try {
             statusCode = httpConn.getResponseCode();
@@ -315,18 +376,18 @@ public class HttpAccess extends BroadcastReceiver {
         final String reasonPhrase = httpConn.getResponseMessage();
         final ProtocolVersion protocolVersion = new HttpVersion(1, 1);
         final StatusLine statusLine = new BasicStatusLine(protocolVersion,
-        		statusCode, reasonPhrase);
+                                                          statusCode, reasonPhrase);
         final HttpResponse response = new BasicHttpResponse(statusLine);
-    	InputStream responseInputStream = null;
+        InputStream responseInputStream = null;
 
     	/*
-    	 * Tries to read the response stream here. If it fails with a
+         * Tries to read the response stream here. If it fails with a
     	 * FileNotFoundException, tries to read the error stream instead.
     	 */
         try {
-        	responseInputStream = httpConn.getInputStream();
+            responseInputStream = httpConn.getInputStream();
         } catch (FileNotFoundException e) {
-        	responseInputStream = httpConn.getErrorStream();
+            responseInputStream = httpConn.getErrorStream();
         }
         if (responseInputStream != null) {
             final BasicHttpEntity entity = new BasicHttpEntity();
@@ -334,37 +395,43 @@ public class HttpAccess extends BroadcastReceiver {
             response.setEntity(entity);
         }
         exec = new Execution(response);
-    	return exec;
+        return exec;
     }
 
     /**
      * Adds headers to the HTTP request.
      *
-     * @param httpConn HTTP connection object.
-     * @param headers Headers.
+     * @param httpConn
+     *         HTTP connection object.
+     * @param headers
+     *         Headers.
      */
     private void addHeaders(HttpURLConnection httpConn, Map<String, String> headers) {
         if (headers == null || httpConn == null) {
-        	return;
+            return;
         }
         for (final Map.Entry<String, String> h : headers.entrySet()) {
-        	httpConn.setRequestProperty(h.getKey(), h.getValue());
+            httpConn.setRequestProperty(h.getKey(), h.getValue());
         }
     }
 
     /**
      * Creates a HTTP connection to the URI specified.
      *
-     * @param uri URI.
-     * @param requestMethod HTTP method.
+     * @param uri
+     *         URI.
+     * @param requestMethod
+     *         HTTP method.
+     *
      * @return HttpUrlConnection instance.
+     *
      * @throws IOException
      */
     private HttpURLConnection createHttpUrlConnection(URI uri, String requestMethod) throws IOException {
-    	HttpURLConnection httpConn = null;
-    	if (uri != null) {
-    		URL url = uri.toURL();
-    		if (url != null) {
+        HttpURLConnection httpConn = null;
+        if (uri != null) {
+            URL url = uri.toURL();
+            if (url != null) {
 
     			/*
     			 * FIXME: PATCH has been added to the latest OkHttp library,
@@ -374,17 +441,17 @@ public class HttpAccess extends BroadcastReceiver {
     			 *
     			 * https://code.google.com/p/android/issues/detail?id=76611
     			 */
-    			if (PATCH.equals(requestMethod)) {
-    				final String urlString = url.toString() + "?_HttpMethod=PATCH";
-    				url = new URL(urlString);
-    				requestMethod = HttpPost.METHOD_NAME;
-    			}
-    			httpConn = (HttpURLConnection) url.openConnection();
-    			httpConn.setRequestMethod(requestMethod);
-    			httpConn.setRequestProperty(USER_AGENT, userAgent);
-    		}
-    	}
-    	return httpConn;
+                if (PATCH.equals(requestMethod)) {
+                    final String urlString = url.toString() + "?_HttpMethod=PATCH";
+                    url = new URL(urlString);
+                    requestMethod = HttpPost.METHOD_NAME;
+                }
+                httpConn = (HttpURLConnection) url.openConnection();
+                httpConn.setRequestMethod(requestMethod);
+                httpConn.setRequestProperty(USER_AGENT, userAgent);
+            }
+        }
+        return httpConn;
     }
 
     /**
