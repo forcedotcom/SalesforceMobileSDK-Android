@@ -47,15 +47,20 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.BasicHttpEntity;
+import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
 
+import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.http.AndroidHttpClient;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 
 /**
  * Generic HTTP Access layer - used internally by {@link com.salesforce.androidsdk.rest.RestClient}
@@ -81,6 +86,11 @@ public class HttpAccess extends BroadcastReceiver {
 
     // Singleton instance.
     public static HttpAccess DEFAULT;
+
+    /**
+     * A reasonable default chunk length when sending POST data.
+     */
+    private static final long DEFAULT_POST_CHUNK_LENGTH_IN_BYTES = 1048576L;
 
     /**
      * Initializes HttpAccess. Should be called from the application.
@@ -194,9 +204,28 @@ public class HttpAccess extends BroadcastReceiver {
      * @return The execution response.
      * @throws IOException
      */
+    @TargetApi(19)
     public Execution doPost(Map<String, String> headers, URI uri, HttpEntity requestEntity) throws IOException {
     	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpPost.METHOD_NAME);
     	addHeaders(httpConn, headers);
+
+        // Allow input and output on this connection
+        httpConn.setDoOutput(true);
+        httpConn.setDoInput(true);
+        httpConn.setUseCaches(false);
+
+        if (VERSION.SDK_INT >= VERSION_CODES.KITKAT) {
+            long contentLength = requestEntity.getContentLength();
+
+            if (contentLength >= 0) {
+                // Let the connection know the size of the data being sent so that it can chunk it appropriately.
+                httpConn.setFixedLengthStreamingMode(contentLength);
+            } else {
+                // The size isn't known - i.e. data is probably being streamed. Choose a concrete chunk size to prevent OOM errors.
+                httpConn.setFixedLengthStreamingMode(DEFAULT_POST_CHUNK_LENGTH_IN_BYTES);
+            }
+        }
+
     	return execute(httpConn, requestEntity);
     }
 
@@ -298,14 +327,12 @@ public class HttpAccess extends BroadcastReceiver {
     		if (contentLen > 0) {
         		httpConn.setRequestProperty("Content-Length", Long.toString(contentLen));
     		}
-    		final InputStream contentStream = reqEntity.getContent();
-    		byte[] content = new byte[(int) contentLen];
-    		contentStream.read(content);
-    		final OutputStream outputStream = httpConn.getOutputStream();
-    		if (outputStream != null) {
-        		outputStream.write(content);
-    		}
-    	}
+            final OutputStream outputStream = httpConn.getOutputStream();
+
+            if (outputStream != null) {
+                reqEntity.writeTo(outputStream);
+            }
+        }
         int statusCode;
         try {
             statusCode = httpConn.getResponseCode();
