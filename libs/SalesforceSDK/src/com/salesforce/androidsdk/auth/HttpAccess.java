@@ -388,10 +388,10 @@ public class HttpAccess extends BroadcastReceiver {
      * @throws IOException
      */
     private HttpURLConnection createHttpUrlConnection(URI uri, String requestMethod) throws IOException {
-        HttpURLConnection httpConn = null;
-        if (uri != null) {
-            URL url = uri.toURL();
-            if (url != null) {
+    	HttpURLConnection httpConn = null;
+    	if (uri != null) {
+    		URL url = uri.toURL();
+    		if (url != null) {
 
     			/*
     			 * FIXME: PATCH has been added to the latest OkHttp library,
