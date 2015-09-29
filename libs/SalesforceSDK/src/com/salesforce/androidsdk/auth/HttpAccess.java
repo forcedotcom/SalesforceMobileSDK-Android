@@ -68,14 +68,14 @@ import android.os.Build.VERSION_CODES;
  */
 public class HttpAccess extends BroadcastReceiver {
 
-    public static final String USER_AGENT = "User-Agent";
+	public static final String USER_AGENT = "User-Agent";
 
-    /*
-     * FIXME: Remove this when PATCH is available out of the box.
-     *
-     * https://code.google.com/p/android/issues/detail?id=76611
-     */
-    private static final String PATCH = "PATCH";
+	/*
+	 * FIXME: Remove this when PATCH is available out of the box.
+	 *
+	 * https://code.google.com/p/android/issues/detail?id=76611
+	 */
+	private static final String PATCH = "PATCH";
 
     // Fields to keep track of network.
     private boolean hasNetwork = true;
@@ -164,7 +164,7 @@ public class HttpAccess extends BroadcastReceiver {
     public synchronized boolean hasNetwork() {
         return hasNetwork;
     }
-
+    
     /**
      * Returns the current user agent.
      *
@@ -239,9 +239,9 @@ public class HttpAccess extends BroadcastReceiver {
      * @throws IOException
      */
     public Execution doPatch(Map<String, String> headers, URI uri, HttpEntity requestEntity) throws IOException {
-        final HttpURLConnection httpConn = createHttpUrlConnection(uri, PATCH);
-        addHeaders(httpConn, headers);
-        return execute(httpConn, requestEntity);
+    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, PATCH);
+    	addHeaders(httpConn, headers);
+    	return execute(httpConn, requestEntity);
     }
 
     /**
@@ -401,17 +401,17 @@ public class HttpAccess extends BroadcastReceiver {
     			 *
     			 * https://code.google.com/p/android/issues/detail?id=76611
     			 */
-                if (PATCH.equals(requestMethod)) {
-                    final String urlString = url.toString() + "?_HttpMethod=PATCH";
-                    url = new URL(urlString);
-                    requestMethod = HttpPost.METHOD_NAME;
-                }
-                httpConn = (HttpURLConnection) url.openConnection();
-                httpConn.setRequestMethod(requestMethod);
-                httpConn.setRequestProperty(USER_AGENT, userAgent);
-            }
-        }
-        return httpConn;
+    			if (PATCH.equals(requestMethod)) {
+    				final String urlString = url.toString() + "?_HttpMethod=PATCH";
+    				url = new URL(urlString);
+    				requestMethod = HttpPost.METHOD_NAME;
+    			}
+    			httpConn = (HttpURLConnection) url.openConnection();
+    			httpConn.setRequestMethod(requestMethod);
+    			httpConn.setRequestProperty(USER_AGENT, userAgent);
+    		}
+    	}
+    	return httpConn;
     }
 
     /**
