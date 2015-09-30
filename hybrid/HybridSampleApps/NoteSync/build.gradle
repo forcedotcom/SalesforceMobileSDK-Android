@@ -1,12 +1,13 @@
 apply plugin: 'android'
 
 dependencies {
-  compile project(':libs:SmartStore')
+  compile project(':libs:SmartSync')
 }
 
 android {
-  compileSdkVersion 21
-  buildToolsVersion "21.1.1"
+  compileSdkVersion 23
+  buildToolsVersion '23.0.1'
+  useLibrary  'org.apache.http.legacy'
 
   sourceSets {
 
