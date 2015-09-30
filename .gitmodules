@@ -4,6 +4,3 @@
 [submodule "external/cordova"]
 	path = external/cordova
 	url = https://github.com/apache/cordova-android.git
-[submodule "external/react-native"]
-	path = external/react-native
-	url = https://github.com/forcedotcom/react-native.git
