@@ -21,8 +21,9 @@ Inside the $NATIVE_DIR, you will find several projects:
 2. **test/TemplateAppTest**: Test project for the TemplateApp project
 3. **SampleApps/RestExplorer**: An app using SalesforceSDK to explore the REST API calls
 4. **SampleApps/test/RestExplorerTest**: Test project for the RestExplorer project
-5. **SampleApps/NativeSqlAggregator**: An app using SalesforceSDK and SmartStore to demonstrate complex aggregate smart SQL queries
-6. **SampleApps/SmartSyncExplorer**: An app using SmartSync to demonstrate synching a list of contacts from and to the server
+5. **SampleApps/SmartSyncExplorer**: An app using SmartSync to demonstrate synching a list of contacts from and to the server
+6. **SampleApps/AppConfigurator**: An app to specify runtime configurations for ConfiguredApp (it allows configuration of login server and oauth consumer key and redirect uri) 
+7. **SampleApps/ConfiguredApp**: An app that consumes the runtime configurations specified with AppConfigurator
 
 # Running sample apps from Eclipse
 

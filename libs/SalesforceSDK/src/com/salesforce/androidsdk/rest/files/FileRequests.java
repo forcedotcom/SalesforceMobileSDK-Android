@@ -26,28 +26,41 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.http.Consts;
-import org.apache.http.HttpEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.entity.mime.HttpMultipartMode;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.entity.mime.content.FileBody;
-import org.apache.http.entity.mime.content.StringBody;
-import org.apache.http.protocol.HTTP;
-
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.google.common.collect.Maps;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
+import com.salesforce.androidsdk.rest.RestResponse;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
+import org.apache.http.ProtocolVersion;
+import org.apache.http.StatusLine;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.BasicHttpEntity;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicHttpResponse;
+import org.apache.http.message.BasicStatusLine;
+import org.apache.http.protocol.HTTP;
+import org.json.JSONObject;
+
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This defines the HTTP requests in the connect API for files functionality.
@@ -230,48 +243,12 @@ public class FileRequests extends ApiRequests {
         share.put("LinkedEntityId", entityId);
         share.put("ShareType", shareType);
         try {
-            String json = null; // FIXME ConnectParser.toJson(share);
+            String json = new JSONObject(share).toString();
             StringEntity e = new StringEntity(json, HTTP.UTF_8);
             e.setContentType("application/json");
             return e;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    /**
-     * Build a request that can upload a new file to the server, this will
-     * create a new file at version 1.
-     * 
-     * @param theFile
-     *            The path of the local file to upload to the server.
-     * @param name
-     *            The name/title of this file.
-     * @param description
-     *            A description of the file.
-     * @param mimeType
-     *            The mime-type of the file, if known.
-     * @return A RestRequest that can perform this upload.
-     * 
-     * @throws UnsupportedEncodingException
-     */
-    public static RestRequest uploadFile(File theFile, String name, String description,
-    		String mimeType) throws UnsupportedEncodingException {
-    	final MultipartEntityBuilder mpeBuilder = MultipartEntityBuilder.create();
-    	mpeBuilder.setMode(HttpMultipartMode.STRICT);
-        final FileBody bin = (mimeType == null ? new FileBody(theFile)
-        		: new FileBody(theFile, ContentType.create(mimeType)));
-        if (name != null) {
-            mpeBuilder.addPart("title", new StringBody(name,
-            		ContentType.create("text/plain", Consts.ASCII)));
-        }
-        if (description != null) {
-            mpeBuilder.addPart("desc", new StringBody(description,
-            		ContentType.create("text/plain", Consts.ASCII)));
-        }
-        mpeBuilder.addPart("fileData", bin);
-        final HttpEntity mpe = mpeBuilder.build();
-        return new RestRequest(RestMethod.POST, base("users").appendPath("me/files").toString(),
-        		mpe, HTTP_HEADERS);
     }
 }

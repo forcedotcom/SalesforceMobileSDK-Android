@@ -84,12 +84,12 @@ public class SyncManagerTest extends ManagerTestCase {
     public void setUp() throws Exception {
     	super.setUp();
     	createAccountsSoup();
-    	idToNames = createTestAccountsOnServer(COUNT_TEST_ACCOUNTS);
+    	idToNames = createAccountsOnServer(COUNT_TEST_ACCOUNTS);
     }
     
     @Override 
     public void tearDown() throws Exception {
-    	deleteTestAccountsOnServer(idToNames);
+    	deleteAccountsOnServer(idToNames.keySet().toArray(new String[0]));
     	dropAccountsSoup();
     	deleteSyncs();
     	super.tearDown();
@@ -541,6 +541,118 @@ public class SyncManagerTest extends ManagerTestCase {
         assertEquals("Wrong number of records created by target", 0, idsDeletedByTarget.size());
     }
 
+    /**
+     * Sync down the test accounts, delete record on server and locally, sync up, check smartstore and server afterwards
+     */
+    public void testSyncUpWithLocallyDeletedRemotelyDeletedRecords() throws Exception {
+        // First sync down
+        trySyncDown(MergeMode.OVERWRITE);
+
+        // Delete record locally
+        String[] allIds = idToNames.keySet().toArray(new String[0]);
+        String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
+        deleteAccountsLocally(idsLocallyDeleted);
+
+        // Delete same records on server
+        deleteAccountsOnServer(idsLocallyDeleted);
+
+        // Sync up
+        trySyncUp(3, MergeMode.OVERWRITE);
+
+        // Check that db doesn't contain those entries anymore
+        checkDbDeleted(idsLocallyDeleted);
+
+        // Check server
+        checkServerDeleted(idsLocallyDeleted);
+    }
+
+    /**
+     * Sync down the test accounts, delete record on server and update same record locally, sync up, check smartstore and server afterwards
+     */
+    public void testSyncUpWithLocallyUpdatedRemotelyDeletedRecords() throws Exception {
+        // First sync down
+        trySyncDown(MergeMode.OVERWRITE);
+
+        // Update a few entries locally
+        Map<String, String> idToNamesLocallyUpdated = makeSomeLocalChanges();
+
+        // Delete record on server
+        String remotelyDeletedId = idToNamesLocallyUpdated.keySet().toArray(new String[0])[0];
+        deleteAccountsOnServer(new String[]{remotelyDeletedId});
+
+        // Name of locally recorded record that was deleted on server
+        String locallyUpdatedRemotelyDeletedName = idToNamesLocallyUpdated.get(remotelyDeletedId);
+
+        // Sync up
+        trySyncUp(3, MergeMode.OVERWRITE);
+
+        // Getting id / names of updated records looking up by name
+        Map<String, String> idToNamesUpdated = getIdsForNames(idToNamesLocallyUpdated.values().toArray(new String[0]));
+
+        // Check db
+        checkDb(idToNamesUpdated);
+
+        // Expect 3 records
+        assertEquals(3, idToNamesUpdated.size());
+
+        // Expect remotely deleted record to have a new id
+        assertFalse(idToNamesUpdated.containsKey(remotelyDeletedId));
+        for (Entry<String, String> idName : idToNamesUpdated.entrySet()) {
+            String accountId = idName.getKey();
+            String accountName = idName.getValue();
+
+            // Check that locally updated / remotely deleted record has new id (not in idToNames)
+            if (accountName.equals(locallyUpdatedRemotelyDeletedName)) {
+                assertFalse(idToNames.containsKey(accountId));
+            }
+            // Otherwise should be a known id (in idToNames)
+            else {
+                 assertTrue(idToNames.containsKey(accountId));
+            }
+        }
+
+        // Check server
+        checkServer(idToNamesUpdated);
+    }
+
+    /**
+     * Sync down the test accounts, delete record on server and update same record locally, sync up with merge mode LEAVE_IF_CHANGED, check smartstore and server afterwards
+     */
+    public void testSyncUpWithLocallyUpdatedRemotelyDeletedRecordsWithoutOverwrite() throws Exception {
+        // First sync down
+        trySyncDown(MergeMode.OVERWRITE);
+
+        // Update a few entries locally
+        Map<String, String> idToNamesLocallyUpdated = makeSomeLocalChanges();
+
+        // Delete record on server
+        String remotelyDeletedId = idToNamesLocallyUpdated.keySet().toArray(new String[0])[0];
+        deleteAccountsOnServer(new String[]{remotelyDeletedId});
+
+        // Sync up
+        trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
+
+        // Getting id / names of updated records looking up by name
+        Map<String, String> idToNamesUpdated = getIdsForNames(idToNamesLocallyUpdated.values().toArray(new String[0]));
+
+        // Expect 3 records
+        assertEquals(3, idToNamesUpdated.size());
+
+        // Expect remotely deleted record to be there
+        assertTrue(idToNamesUpdated.containsKey(remotelyDeletedId));
+
+        // Checking the remotely deleted record locally
+        checkDbStateFlags(Arrays.asList(new String[]{remotelyDeletedId}), false, true, false);
+
+        // Check the other 2 records in db
+        idToNamesUpdated.remove(remotelyDeletedId);
+        checkDb(idToNamesUpdated);
+
+        // Check server
+        checkServer(idToNamesUpdated);
+        checkServerDeleted(new String[] {remotelyDeletedId});
+    }
+
 
     /**
      * Test addFilterForReSync with various queries
@@ -557,6 +669,46 @@ public class SyncManagerTest extends ManagerTestCase {
         assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr + " LIMIT 100", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account LIMIT 100", dateLong));
         assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John'", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John'", dateLong));
         assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John' LIMIT 100", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John' LIMIT 100", dateLong));
+    }
+
+    /**
+     * Test reSync while sync is running
+     */
+    public void testReSyncRunningSync() throws JSONException {
+        // Create sync
+        SlowSoqlSyncDownTarget target = new SlowSoqlSyncDownTarget("SELECT Id, Name, LastModifiedDate FROM Account WHERE Id IN " + makeInClause(idToNames.keySet()));
+        SyncOptions options = SyncOptions.optionsForSyncDown(MergeMode.LEAVE_IF_CHANGED);
+        SyncState sync = SyncState.createSyncDown(smartStore, target, options, ACCOUNTS_SOUP);
+        long syncId = sync.getId();
+        checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
+
+        // Run sync - will freeze during fetch
+        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        syncManager.runSync(sync, queue);
+
+        // Wait for sync to be running
+        queue.getNextSyncUpdate();
+
+        // Calling reSync -- expect exception
+        try {
+            syncManager.reSync(syncId, null);
+            fail("Re sync should have failed");
+        } catch (SyncManager.SmartSyncException e) {
+            assertTrue("Re sync should have failed because sync is already running", e.getMessage().contains("still running"));
+        }
+
+        // Wait for sync to complete successfully
+        while (!queue.getNextSyncUpdate().isDone());
+
+        // Calling reSync again -- does not expect exception
+        try {
+            syncManager.reSync(syncId, queue);
+        } catch (SyncManager.SmartSyncException e) {
+            fail("Re sync should not have failed");
+        }
+
+        // Waiting for reSync to complete successfully
+        while (!queue.getNextSyncUpdate().isDone());
     }
 
 	/**
@@ -665,7 +817,7 @@ public class SyncManagerTest extends ManagerTestCase {
 	 * @return map of id to name for the created accounts
 	 * @throws Exception
 	 */
-	private Map<String, String> createTestAccountsOnServer(int count) throws Exception {
+	private Map<String, String> createAccountsOnServer(int count) throws Exception {
 		Map<String, String> idToNames = new HashMap<String, String>();
 		for (int i=0; i<count; i++) {
 			// Request
@@ -683,11 +835,11 @@ public class SyncManagerTest extends ManagerTestCase {
 
 	/**
 	 * Delete accounts specified in idToNames
-	 * @param idToNames
+	 * @param ids
 	 * @throws Exception
 	 */
-	private void deleteTestAccountsOnServer(Map<String, String> idToNames) throws Exception {
-		for (String id : idToNames.keySet()) {
+	private void deleteAccountsOnServer(String[] ids) throws Exception {
+		for (String id : ids) {
 			RestRequest request = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER, Constants.ACCOUNT, id);
 			restClient.sendSync(request);
 		}
@@ -942,5 +1094,31 @@ public class SyncManagerTest extends ManagerTestCase {
 
     private String makeInClause(Collection<String> values) {
         return "('" + TextUtils.join("', '", values) + "')";
+    }
+
+    /**
+     Soql sync down target that pauses for a second at the beginning of the fetch
+     */
+    static class SlowSoqlSyncDownTarget extends SoqlSyncDownTarget {
+
+        public SlowSoqlSyncDownTarget(String query) throws JSONException {
+            super(query);
+            this.queryType = QueryType.custom;
+        }
+
+        public SlowSoqlSyncDownTarget(JSONObject target) throws JSONException {
+            super(target);
+        }
+
+
+        @Override
+        public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+
+            }
+            return super.startFetch(syncManager, maxTimeStamp);
+        }
     }
 }

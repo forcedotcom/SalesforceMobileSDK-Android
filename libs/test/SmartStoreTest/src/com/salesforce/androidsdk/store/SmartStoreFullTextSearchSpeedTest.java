@@ -148,7 +148,7 @@ public class SmartStoreFullTextSearchSpeedTest extends SmartStoreTestCase {
     private double queryData(Type textFieldType, int rowsPerAnimal, int matchingRowsPerAnimal) throws JSONException {
         long totalQueryTime = 0;
         for (String animal : ANIMALS) {
-            String prefix = String.format("%07d", (int) Math.random()*matchingRowsPerAnimal);
+            String prefix = String.format("%07d", (int) (Math.random()*(rowsPerAnimal/matchingRowsPerAnimal)));
             String stringToMatch = prefix + animal;
 
             QuerySpec querySpec = textFieldType == Type.full_text

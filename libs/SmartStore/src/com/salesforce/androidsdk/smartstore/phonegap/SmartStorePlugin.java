@@ -140,10 +140,10 @@ public class SmartStorePlugin extends ForcePlugin {
 			@Override
 			public void run() {
 
-		    	// All smart store action need to be serialized
-				synchronized(SmartStorePlugin.class) {
-	        		try {
-		        		switch(action) {
+				// All smart store action need to be serialized
+				synchronized (SmartStorePlugin.class) {
+					try {
+						switch (action) {
 		        		  case pgAlterSoup:             alterSoup(args, callbackContext); break;
 		        		  case pgClearSoup:				clearSoup(args, callbackContext); break;
 		                  case pgCloseCursor:           closeCursor(args, callbackContext); break;
@@ -161,13 +161,13 @@ public class SmartStorePlugin extends ForcePlugin {
 		                  case pgSoupExists:            soupExists(args, callbackContext); break;
 		                  case pgUpsertSoupEntries:     upsertSoupEntries(args, callbackContext); break;
 		                  default: throw new SmartStoreException("No handler for action " + action);
-		    	    	}
-	        		} catch (Exception e) {
-	            		Log.w("SmartStorePlugin.execute", e.getMessage(), e);
-	            		callbackContext.error(e.getMessage());
-	            	}
-	            	Log.d("SmartSTorePlugin.execute", "Total time for " + action + "->" + (System.currentTimeMillis() - start));
-	        	}
+						}
+					} catch (Exception e) {
+						Log.w("SmartStorePlugin.execute", e.getMessage(), e);
+						callbackContext.error(e.getMessage());
+					}
+					Log.d("SmartSTorePlugin.execute", "Total time for " + action + "->" + (System.currentTimeMillis() - start));
+				}
 			}
 		});
 
@@ -334,19 +334,20 @@ public class SmartStorePlugin extends ForcePlugin {
 		}
 
 		// Run upsert
-		smartStore.beginTransaction();
-		try {
-			JSONArray results = new JSONArray();			
-			for (JSONObject entry : entries) {
-				results.put(smartStore.upsert(soupName, entry, externalIdPath, false));
+		synchronized(smartStore.getDatabase()) {
+			smartStore.beginTransaction();
+			try {
+				JSONArray results = new JSONArray();
+				for (JSONObject entry : entries) {
+					results.put(smartStore.upsert(soupName, entry, externalIdPath, false));
+				}
+				smartStore.setTransactionSuccessful();
+				PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, results);
+				callbackContext.sendPluginResult(pluginResult);
+			} finally {
+				smartStore.endTransaction();
 			}
-			smartStore.setTransactionSuccessful();
-			PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, results);
-			callbackContext.sendPluginResult(pluginResult);
-	    } finally {
-			smartStore.endTransaction();
 		}
-		
 	}
 
 	/**

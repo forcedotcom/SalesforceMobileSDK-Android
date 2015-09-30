@@ -59,8 +59,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
@@ -200,12 +202,29 @@ public class MainActivity extends SalesforceListActivity implements
 	        case R.id.action_logout:
 	    		logoutConfirmationDialog.show(getFragmentManager(), "LogoutDialog");
 	            return true;
+			case R.id.action_switch_user:
+				launchAccountSwitcherActivity();
+				return true;
+			case R.id.action_inspect_db:
+				launchSmartStoreInspectorActivity();
+				return true;
 	        case R.id.action_add:
 	        	launchDetailActivity(Constants.EMPTY_STRING, "New Contact",
 	        			Constants.EMPTY_STRING);
+				return true;
 	        default:
 	            return super.onOptionsItemSelected(item);
 	    }
+	}
+
+	private void launchSmartStoreInspectorActivity() {
+		this.startActivity(SmartStoreInspectorActivity.getIntent(this, false, null));
+	}
+
+	private void launchAccountSwitcherActivity() {
+		final Intent i = new Intent(this, SalesforceSDKManager.getInstance().getAccountSwitcherActivityClass());
+		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+		this.startActivity(i);
 	}
 
 	@Override

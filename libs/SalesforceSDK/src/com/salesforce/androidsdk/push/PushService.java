@@ -26,16 +26,6 @@
  */
 package com.salesforce.androidsdk.push;
 
-import java.io.IOException;
-import java.net.URI;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.http.HttpStatus;
-import org.json.JSONObject;
-
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.PendingIntent;
@@ -53,11 +43,21 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.rest.ClientManager.AccMgrAuthTokenProvider;
-import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
+
+import org.apache.http.HttpStatus;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class houses functionality related to push notifications.
@@ -294,7 +294,9 @@ public class PushService extends IntentService {
         cal.add(Calendar.MILLISECOND, (int) when);
         final Intent retryIntent = new Intent(context, SFDCRegistrationRetryAlarmReceiver.class);
         if (account == null) {
-            retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE);
+			final Bundle bundle = new Bundle();
+			bundle.putString(PushMessaging.ACCOUNT_BUNDLE_KEY, PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE);
+			retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, bundle);
         } else {
             retryIntent.putExtra(PushMessaging.ACCOUNT_BUNDLE_KEY, account.toBundle());
         }
@@ -439,7 +441,7 @@ public class PushService extends IntentService {
     	if (cm != null) {
     		try {
     	        final AccMgrAuthTokenProvider authTokenProvider = new AccMgrAuthTokenProvider(cm,
-    	        		account.getAuthToken(), account.getRefreshToken());
+						account.getInstanceServer(), account.getAuthToken(), account.getRefreshToken());
     			final ClientInfo clientInfo = new ClientInfo(account.getClientId(),
     					new URI(account.getInstanceServer()), new URI(account.getLoginServer()),
     					new URI(account.getIdUrl()), account.getAccountName(), account.getUsername(),
@@ -482,17 +484,17 @@ public class PushService extends IntentService {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-        	if (intent != null) {
-        		final Bundle accBundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
-        		if (accBundle != null) {
-                    PushMessaging.register(context, new UserAccount(accBundle));
-                } else {
-                    if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(intent
-                            .getStringExtra(PushMessaging.ACCOUNT_BUNDLE_KEY))) {
-                        PushMessaging.register(context, null);
-                    }
-                }
-            }
+			if (intent != null) {
+				final Bundle accBundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
+				if (accBundle != null) {
+					final String allAccountsValue = accBundle.getString(PushMessaging.ACCOUNT_BUNDLE_KEY);
+					if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(allAccountsValue)) {
+						PushMessaging.register(context, null);
+					} else {
+						PushMessaging.register(context, new UserAccount(accBundle));
+					}
+				}
+			}
         }
     }
 
@@ -505,19 +507,19 @@ public class PushService extends IntentService {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-        	if (intent != null) {
-        		final Bundle accBundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
-        		if (accBundle != null) {
-                    PushMessaging.registerSFDCPush(context, new UserAccount(accBundle));
-                } else {
-                    if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(intent
-                            .getStringExtra(PushMessaging.ACCOUNT_BUNDLE_KEY))) {
-                        PushMessaging.registerSFDCPush(context, null);
-                    }
-                }
-            }
-        }
-    }
+			if (intent != null) {
+				final Bundle accBundle = intent.getBundleExtra(PushMessaging.ACCOUNT_BUNDLE_KEY);
+				if (accBundle != null) {
+					final String allAccountsValue = accBundle.getString(PushMessaging.ACCOUNT_BUNDLE_KEY);
+					if (PushMessaging.ALL_ACCOUNTS_BUNDLE_VALUE.equals(allAccountsValue)) {
+						PushMessaging.registerSFDCPush(context, null);
+					} else {
+						PushMessaging.registerSFDCPush(context, new UserAccount(accBundle));
+					}
+				}
+			}
+		}
+	}
 
     /**
      * Broadcast receiver to retry GCM registration.

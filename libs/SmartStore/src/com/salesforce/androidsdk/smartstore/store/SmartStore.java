@@ -161,7 +161,7 @@ public class SmartStore  {
      * @param db
      */
     public static void createLongOperationsStatusTable(SQLiteDatabase db) {
-    	synchronized(SmartStore.class) {
+    	synchronized(db) {
     		StringBuilder sb = new StringBuilder();
 	    	sb.append("CREATE TABLE IF NOT EXISTS ").append(LONG_OPERATIONS_STATUS_TABLE).append(" (")
 	        .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
@@ -214,6 +214,7 @@ public class SmartStore  {
     
     /**
      * Start transaction
+	 * NB: to avoid deadlock, caller should have synchronized(store.getDatabase()) around the whole transaction
      */
     public void beginTransaction() {
     	getDatabase().beginTransaction();
@@ -360,7 +361,8 @@ public class SmartStore  {
 	 * Finish long operations that were interrupted
 	 */
 	public void resumeLongOperations() {
-		synchronized(SmartStore.class) {
+		final SQLiteDatabase db = getDatabase();
+		synchronized(db) {
 			for (LongOperation longOperation :  getLongOperations()) {
 				try {
 					longOperation.run();
@@ -375,10 +377,10 @@ public class SmartStore  {
 	 * @return unfinished long operations
 	 */
 	public LongOperation[] getLongOperations() {
+		final SQLiteDatabase db = getDatabase();
 		List<LongOperation> longOperations = new ArrayList<LongOperation>();
-		synchronized(SmartStore.class) {
+		synchronized(db) {
 			Cursor cursor = null;
-			final SQLiteDatabase db = getDatabase();
 			try {
 				cursor = DBHelper.getInstance(db).query(db,
 						LONG_OPERATIONS_STATUS_TABLE, new String[] {ID_COL, TYPE_COL, DETAILS_COL, STATUS_COL},
@@ -429,8 +431,8 @@ public class SmartStore  {
 	 * @param handleTx
 	 */
 	public void reIndexSoup(String soupName, String[] indexPaths, boolean handleTx) {
-		synchronized(SmartStore.class) {
-			final SQLiteDatabase db = getDatabase();
+		final SQLiteDatabase db = getDatabase();
+		synchronized(db) {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 
@@ -503,8 +505,8 @@ public class SmartStore  {
 	 * @return
 	 */
 	public IndexSpec[] getSoupIndexSpecs(String soupName) {
-    	synchronized(SmartStore.class) {
-    		final SQLiteDatabase db = getDatabase();
+		final SQLiteDatabase db = getDatabase();
+    	synchronized(db) {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 	        return DBHelper.getInstance(db).getIndexSpecs(db, soupName);
@@ -516,8 +518,8 @@ public class SmartStore  {
 	 * @param soupName
 	 */
 	public void clearSoup(String soupName) {
-    	synchronized(SmartStore.class) {
-    		final SQLiteDatabase db = getDatabase();
+		final SQLiteDatabase db = getDatabase();
+    	synchronized(db) {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 			db.beginTransaction();
@@ -600,7 +602,7 @@ public class SmartStore  {
 	    	List<String> soupNames = new ArrayList<String>();
 	        Cursor cursor = null;
 			try {
-				cursor = DBHelper.getInstance(db).query(db, SOUP_NAMES_TABLE, new String[]{SOUP_NAME_COL}, null, null, null);
+				cursor = DBHelper.getInstance(db).query(db, SOUP_NAMES_TABLE, new String[]{SOUP_NAME_COL}, SOUP_NAME_COL, null, null);
 	            if (cursor.moveToFirst()) {
 	                do {
 	                    soupNames.add(cursor.getString(0));
@@ -667,37 +669,41 @@ public class SmartStore  {
 		for (int i=0; i<columnCount; i++) {
 			String raw = cursor.getString(i);
 
-			// Is this column holding a serialized json object?
-			if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
-				row.put(new JSONObject(raw));
-				// Note: we could end up returning a string if you aliased the column
-			}
-			else {
-				// TODO Leverage cursor.getType once our min api is 11 or above
-				// For now, we do our best to guess
-				
-				// Is it holding a integer ?
-	    		try {
-	    			Long n = Long.parseLong(raw);
-	    			row.put(n);
-	    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
-	    		}
-	    		// Is it holding a floating ?
-	    		catch (NumberFormatException e) {
-	    			try { 
-		    			Double d = Double.parseDouble(raw);
-		    			// No exception, let's get the value straight from the cursor
-		    			// XXX Double.parseDouble(cursor.getString(i)) is sometimes different from cursor.getDouble(i) !!!
-		    			d = cursor.getDouble(i);
-		    			row.put(d);
-		    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
-	    			}
-		    		// It must be holding a string then
-	    			catch (NumberFormatException ne) {
-		    			row.put(raw);
-	    			}
-	    		}
-			}
+            if (raw == null) {
+                row.put(raw);
+            } else {
+    			// Is this column holding a serialized json object?
+    			if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
+    				row.put(new JSONObject(raw));
+    				// Note: we could end up returning a string if you aliased the column
+    			}
+    			else {
+    				// TODO Leverage cursor.getType once our min api is 11 or above
+    				// For now, we do our best to guess
+    				
+    				// Is it holding a integer ?
+    	    		try {
+    	    			Long n = Long.parseLong(raw);
+    	    			row.put(n);
+    	    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
+    	    		}
+    	    		// Is it holding a floating ?
+    	    		catch (NumberFormatException e) {
+    	    			try { 
+    		    			Double d = Double.parseDouble(raw);
+    		    			// No exception, let's get the value straight from the cursor
+    		    			// XXX Double.parseDouble(cursor.getString(i)) is sometimes different from cursor.getDouble(i) !!!
+    		    			d = cursor.getDouble(i);
+    		    			row.put(d);
+    		    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
+    	    			}
+    		    		// It must be holding a string then
+    	    			catch (NumberFormatException ne) {
+    		    			row.put(raw);
+    	    			}
+    	    		}
+    			}
+            }
 		}
 		return row;
 	}
@@ -781,6 +787,7 @@ public class SmartStore  {
 				if (success && hasFTS(soupName)) {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
+					contentValuesFts.put(DOCID_COL, soupEntryId);
 					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
 					// InsertHelper not working against virtual fts table
 					db.insert(soupTableNameFts, null, contentValuesFts);
@@ -830,7 +837,7 @@ public class SmartStore  {
 		}
 	}
 
-	/**
+    /**
      * @param soupElt
      * @param contentValues
      * @param indexSpec
@@ -839,12 +846,26 @@ public class SmartStore  {
         Object value = project(soupElt, indexSpec.path);
         switch (indexSpec.type) {
         case integer:
-            contentValues.put(indexSpec.columnName, value != null ? ((Number) value).longValue() : null); break;
+            Long longValToUse = null;
+            try {
+                longValToUse = ((Number) value).longValue();
+            }
+            catch (Exception e) {
+                // Ignore and use the null value
+            }
+            contentValues.put(indexSpec.columnName, longValToUse); break;
         case string:
-		case full_text:
-			contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
+        case full_text:
+            contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
         case floating:
-            contentValues.put(indexSpec.columnName, value != null ? ((Number) value).doubleValue() : null); break;
+            Double doubleValToUse = null;
+            try {
+                doubleValToUse = ((Number) value).doubleValue();
+            }
+            catch (Exception e) {
+                // Ignore and use the null value
+            }
+            contentValues.put(indexSpec.columnName, doubleValToUse); break;
         }
     }
 

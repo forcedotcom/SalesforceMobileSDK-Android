@@ -60,6 +60,7 @@ public class LoginServerManager {
 
 	// Keys used in shared preferences.
 	private static final String SERVER_URL_FILE = "server_url_file";
+	private static final String RUNTIME_PREFS_FILE = "runtime_prefs_file";
 	private static final String NUMBER_OF_ENTRIES = "number_of_entries";
 	private static final String SERVER_NAME = "server_name_%d";
 	private static final String SERVER_URL = "server_url_%d";
@@ -68,6 +69,7 @@ public class LoginServerManager {
 	private Context ctx;
 	private LoginServer selectedServer;
 	private SharedPreferences settings;
+	private SharedPreferences runtimePrefs;
 
     /**
      * Parameterized constructor.
@@ -78,10 +80,11 @@ public class LoginServerManager {
     	this.ctx = ctx;
     	settings = ctx.getSharedPreferences(SERVER_URL_FILE,
     			Context.MODE_PRIVATE);
+		runtimePrefs = ctx.getSharedPreferences(RUNTIME_PREFS_FILE,
+				Context.MODE_PRIVATE);
     	initSharedPrefFile();
     	final List<LoginServer> allServers = getLoginServers();
     	selectedServer = new LoginServer("Production", PRODUCTION_LOGIN_URL, false);
-
     	if (allServers != null) {
     		final LoginServer server = allServers.get(0);
     		if (server != null) {
@@ -147,16 +150,11 @@ public class LoginServerManager {
 	 * @param url Server URL.
 	 */
 	public void addCustomLoginServer(String name, String url) {
-		if (name == null || url == null) {
-			return;
-		}
-		int numServers = settings.getInt(NUMBER_OF_ENTRIES, 0);
-        final Editor edit = settings.edit();
-        edit.putString(String.format(SERVER_NAME, numServers), name);
-        edit.putString(String.format(SERVER_URL, numServers), url);
-        edit.putBoolean(String.format(IS_CUSTOM, numServers), true);
-        edit.putInt(NUMBER_OF_ENTRIES, ++numServers);
-        edit.commit();
+        if (getLoginServersFromRuntimeConfig() == null) {
+            persistLoginServer(name, url, true, settings);
+        } else {
+            persistLoginServer(name, url, true, runtimePrefs);
+        }
         setSelectedLoginServer(new LoginServer(name, url, true));
 	}
 
@@ -164,7 +162,10 @@ public class LoginServerManager {
 	 * Clears all saved custom servers.
 	 */
 	public void reset() {
-		final Editor edit = settings.edit();
+		Editor edit = settings.edit();
+		edit.clear();
+		edit.commit();
+		edit = runtimePrefs.edit();
 		edit.clear();
 		edit.commit();
 		initSharedPrefFile();
@@ -181,7 +182,9 @@ public class LoginServerManager {
 		List<LoginServer> allServers = getLoginServersFromRuntimeConfig();
 		if (allServers == null) {
 			allServers = getLoginServersFromPreferences();
-		}
+		} else {
+            allServers = getLoginServersFromPreferences(runtimePrefs);
+        }
 		return allServers;
 	}
 
@@ -199,6 +202,8 @@ public class LoginServerManager {
 		} catch (Exception e) {
 			Log.w("LoginServerManager.getLoginServersFromRuntimeConfig",
 					"Exception thrown while attempting to read array, attempting to read string value instead");
+		}
+		if (mdmLoginServers == null) {
 			final String loginServer = runtimeConfig.getString(ConfigKey.AppServiceHosts);
 			if (!TextUtils.isEmpty(loginServer)) {
 				mdmLoginServers = new String[] {loginServer};
@@ -212,6 +217,8 @@ public class LoginServerManager {
 			} catch (Exception e) {
 				Log.w("LoginServerManager.getLoginServersFromRuntimeConfig",
 						"Exception thrown while attempting to read array, attempting to read string value instead");
+			}
+			if (mdmLoginServersLabels == null) {
 				final String loginServerLabel = runtimeConfig.getString(ConfigKey.AppServiceHostLabels);
 				if (!TextUtils.isEmpty(loginServerLabel)) {
 					mdmLoginServersLabels = new String[] {loginServerLabel};
@@ -222,10 +229,14 @@ public class LoginServerManager {
 						"No login servers labels provided or wrong number of login servers labels provided - Using URLs for the labels");
 				mdmLoginServersLabels = mdmLoginServers;
 			}
+            final List<LoginServer> storedServers = getLoginServersFromPreferences(runtimePrefs);
 			for (int i = 0; i < mdmLoginServers.length; i++) {
 				String name = mdmLoginServersLabels[i];
 				String url = mdmLoginServers[i];
 				final LoginServer server = new LoginServer(name, url, false);
+                if (storedServers == null || !storedServers.contains(server)) {
+                    persistLoginServer(name, url, false, runtimePrefs);
+                }
 				allServers.add(server);
 			}
 		}
@@ -238,23 +249,9 @@ public class LoginServerManager {
 	 * @return List of all saved servers.
 	 */
 	public List<LoginServer> getLoginServersFromPreferences() {
-		int numServers = settings.getInt(NUMBER_OF_ENTRIES, 0);
-		if (numServers == 0) {
-			return null;
-		}
-		final List<LoginServer> allServers = new ArrayList<LoginServer>();
-		for (int i = 0; i < numServers; i++) {
-			final String name = settings.getString(String.format(SERVER_NAME, i), null);
-			final String url = settings.getString(String.format(SERVER_URL, i), null);
-			boolean isCustom = settings.getBoolean(String.format(IS_CUSTOM, i), false);
-			if (name != null && url != null) {
-				final LoginServer server = new LoginServer(name, url, isCustom);
-				allServers.add(server);
-			}
-		}
-		return (allServers.size() > 0 ? allServers : null);
+		return getLoginServersFromPreferences(settings);
 	}
-	
+
 	/**
 	 * Returns production and sandbox as the login servers
 	 * (only called when servers.xml is missing).
@@ -335,6 +332,51 @@ public class LoginServerManager {
 	}
 
 	/**
+	 * Adds a custom login server to the specified shared pref file.
+	 *
+	 * @param name Server name.
+	 * @param url Server URL.
+	 * @param isCustom True - if it is a custom server, False - otherwise.
+	 * @param sharedPrefs SharedPreferences file.
+	 */
+	private void persistLoginServer(String name, String url, boolean isCustom, SharedPreferences sharedPrefs) {
+		if (name == null || url == null) {
+			return;
+		}
+		int numServers = sharedPrefs.getInt(NUMBER_OF_ENTRIES, 0);
+		final Editor edit = sharedPrefs.edit();
+		edit.putString(String.format(SERVER_NAME, numServers), name);
+		edit.putString(String.format(SERVER_URL, numServers), url);
+		edit.putBoolean(String.format(IS_CUSTOM, numServers), isCustom);
+		edit.putInt(NUMBER_OF_ENTRIES, ++numServers);
+		edit.commit();
+	}
+
+	/**
+	 * Returns the list of all saved servers, including custom servers.
+	 *
+	 * @param prefs SharedPreferences file.
+	 * @return List of all saved servers.
+	 */
+	private List<LoginServer> getLoginServersFromPreferences(SharedPreferences prefs) {
+		int numServers = prefs.getInt(NUMBER_OF_ENTRIES, 0);
+		if (numServers == 0) {
+			return null;
+		}
+		final List<LoginServer> allServers = new ArrayList<LoginServer>();
+		for (int i = 0; i < numServers; i++) {
+			final String name = prefs.getString(String.format(SERVER_NAME, i), null);
+			final String url = prefs.getString(String.format(SERVER_URL, i), null);
+			boolean isCustom = prefs.getBoolean(String.format(IS_CUSTOM, i), false);
+			if (name != null && url != null) {
+				final LoginServer server = new LoginServer(name, url, isCustom);
+				allServers.add(server);
+			}
+		}
+		return (allServers.size() > 0 ? allServers : null);
+	}
+
+	/**
 	 * Class to encapsulate a login server name, URL, index and type (custom or not).
 	 */
 	public static class LoginServer {
@@ -359,6 +401,16 @@ public class LoginServerManager {
 		@Override 
 		public String toString() {
 			return "Name: " + name + ", URL: " + url + ", Custom URL: " + isCustom;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == null || obj.getClass() != getClass()) {
+				return false;
+			}
+			final LoginServer server = (LoginServer) obj;
+			return (name.trim().equals(server.name.trim()) &&
+					url.trim().equals(server.url.trim()) && (isCustom == server.isCustom));
 		}
 	}
 }

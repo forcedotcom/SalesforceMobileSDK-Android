@@ -125,8 +125,8 @@ public class SmartStoreInspectorActivity extends Activity {
 
 	private void readExtras() {
 		Bundle bundle = getIntent().getExtras();
-		isGlobal = bundle.getBoolean(IS_GLOBAL_STORE, false);
-		dbName = bundle.getString(DB_NAME, DBOpenHelper.DEFAULT_DB_NAME);
+		isGlobal = bundle == null ? false : bundle.getBoolean(IS_GLOBAL_STORE, false);
+		dbName = bundle == null ? DBOpenHelper.DEFAULT_DB_NAME : bundle.getString(DB_NAME, DBOpenHelper.DEFAULT_DB_NAME);
 	}
 
 	/**

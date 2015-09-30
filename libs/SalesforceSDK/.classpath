@@ -3,7 +3,6 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry exported="true" kind="lib" path="libs/httpcore-4.3.2-modified.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/httpmime-4.3.2.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/apache-mime4j-0.7.2.jar"/>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
