@@ -180,7 +180,7 @@ else
         header "Building all"
         ./gradlew assembleDebug  | grep "$TEST_OUTPUT_FILTER"
     else
-        build_project_if_requested    "Cordova"                  $CORDOVA_TOP/framework                          23
+        build_project_if_requested    "Cordova"                  $CORDOVA_TOP/framework                          21
         build_project_if_requested    "SalesforceSDK"            $LIBS_TOP/SalesforceSDK                         23 :libs:SalesforceSDK
         build_project_if_requested    "SmartStore"               $LIBS_TOP/SmartStore                            23 :libs:SmartStore
         build_project_if_requested    "SmartSync"                $LIBS_TOP/SmartSync                             23 :libs:SmartSync
