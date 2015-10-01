@@ -45,7 +45,7 @@ var miscUtils = require('../external/shared/node/utils');
 var version = '4.0.0';
 var minimumCordovaCliVersion = '4.0';
 var cordovaPlatformVersion = '3.6.4';
-var minTargetApi = {'versionNumber': 21, 'versionName': 'Lollipop'};
+var minTargetApi = {'versionNumber': 23, 'versionName': 'Marshmallow'};
 var androidExePath;
 
 // Calling main
