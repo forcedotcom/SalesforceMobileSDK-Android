@@ -1,12 +1,12 @@
 apply plugin: 'android'
 
 dependencies {
-  compile project(':libs:SmartSync')
+  compile project(':libs:SmartStore')
 }
 
 android {
-  compileSdkVersion 21
-  buildToolsVersion "21.1.1"
+  compileSdkVersion 23
+  buildToolsVersion '23.0.1'
 
   sourceSets {
 
@@ -19,7 +19,6 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
-    
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.salesforce.samples.notesync"
+    package="com.salesforce.samples.accounteditor"
     android:versionCode="1"
     android:versionName="1.0"
 	android:installLocation="internalOnly">
@@ -13,10 +13,10 @@
         android:anyDensity="true" />
 
     <uses-sdk android:minSdkVersion="17"
-        android:targetSdkVersion="21" />
+        android:targetSdkVersion="23" />
 
     <application android:label="@string/app_name"
-        android:name="com.salesforce.androidsdk.smartsync.app.HybridAppWithSmartSync"
+        android:name="com.salesforce.androidsdk.smartstore.app.HybridAppWithSmartStore"
         android:manageSpaceActivity="com.salesforce.androidsdk.ui.ManageSpaceActivity"
 		android:icon="@drawable/sf__icon">
 
@@ -36,8 +36,8 @@
         receive the messages and registration result. This must be of
         the format <app-package-name>.C2D_MESSAGE for it to work.
     -->
-    <permission android:name="com.salesforce.samples.notesync.C2D_MESSAGE"
+    <permission android:name="com.salesforce.samples.accounteditor.C2D_MESSAGE"
         android:protectionLevel="signature" />
 
-    <uses-permission android:name="com.salesforce.samples.notesync.C2D_MESSAGE" />
+    <uses-permission android:name="com.salesforce.samples.accounteditor.C2D_MESSAGE" />
 </manifest>
