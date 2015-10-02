@@ -214,7 +214,7 @@ public class HttpAccess extends BroadcastReceiver {
         httpConn.setDoInput(true);
         httpConn.setUseCaches(false);
 
-        if (VERSION.SDK_INT >= VERSION_CODES.KITKAT) {
+        if (VERSION.SDK_INT >= VERSION_CODES.KITKAT && requestEntity != null) {
             long contentLength = requestEntity.getContentLength();
 
             if (contentLength >= 0) {
