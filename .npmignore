@@ -28,8 +28,8 @@ libs/SmartStore/gen/
 libs/SmartSync/gen/
 native/TemplateApp/gen/
 
-hybrid/SampleApps/
-native/SampleApps/
+hybrid/HybridSampleApps/
+native/NativeSampleApps/
 external/shared/test/
 hybrid/test/
 native/test/

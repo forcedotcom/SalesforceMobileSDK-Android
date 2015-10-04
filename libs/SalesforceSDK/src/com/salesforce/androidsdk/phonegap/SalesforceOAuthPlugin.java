@@ -26,17 +26,17 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
-import org.apache.cordova.CallbackContext;
-import org.apache.cordova.PluginResult;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.ui.sfhybrid.SalesforceWebViewClientHelper;
+
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.PluginResult;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * PhoneGap plugin for Salesforce OAuth.
@@ -54,22 +54,33 @@ public class SalesforceOAuthPlugin extends ForcePlugin {
     }
     
     @Override
-    public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, CallbackContext callbackContext) throws JSONException {
+    public boolean execute(final String actionStr, JavaScriptPluginVersion jsVersion,
+                           final JSONArray args, final CallbackContext callbackContext) throws JSONException {
 
-        // Figure out action.
-        Action action = null;
-        try {
-            action = Action.valueOf(actionStr);
-            switch(action) {
-                case authenticate:       	authenticate(callbackContext); return true;
-                case getAuthCredentials: 	getAuthCredentials(callbackContext); return true;
-                case logoutCurrentUser:		logoutCurrentUser(callbackContext); return true;
-                case getAppHomeUrl:			getAppHomeUrl(callbackContext); return true;
-                default: return false;
+        // Not running plugin actions on the main thread.
+        cordova.getThreadPool().execute(new Runnable() {
+
+            @Override
+            public void run() {
+
+            // Figure out action.
+            Action action = null;
+            try {
+                action = Action.valueOf(actionStr);
+                switch(action) {
+                    case authenticate:       	authenticate(callbackContext); break;
+                    case getAuthCredentials: 	getAuthCredentials(callbackContext); break;
+                    case logoutCurrentUser:		logoutCurrentUser(callbackContext); break;
+                    case getAppHomeUrl:			getAppHomeUrl(callbackContext); break;
+                    default: throw new Exception("No handler for action " + action);
+                }
+            } catch (Exception e) {
+                Log.w("SalesforceOAuthPlugin.execute", e.getMessage(), e);
+                callbackContext.error(e.getMessage());
             }
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
+            }
+        });
+        return true;
     }
 
     /**

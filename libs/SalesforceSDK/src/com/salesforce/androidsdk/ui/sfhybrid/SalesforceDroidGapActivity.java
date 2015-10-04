@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-12, salesforce.com, inc.
+ * Copyright (c) 2011-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,28 +26,12 @@
  */
 package com.salesforce.androidsdk.ui.sfhybrid;
 
-import java.net.URI;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.cordova.CallbackContext;
-import org.apache.cordova.CordovaActivity;
-import org.apache.cordova.CordovaWebView;
-import org.apache.cordova.CordovaWebViewClient;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
-import org.apache.http.message.BasicNameValuePair;
-import org.json.JSONObject;
-
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
-import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
@@ -68,6 +52,22 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
+
+import org.apache.cordova.CallbackContext;
+import org.apache.cordova.CordovaActivity;
+import org.apache.cordova.CordovaWebView;
+import org.apache.cordova.CordovaWebViewEngine;
+import org.apache.cordova.CordovaWebViewImpl;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONObject;
+
+import java.net.URI;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Class that defines the main activity for a PhoneGap-based application.
@@ -100,7 +100,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     private UserSwitchReceiver userSwitchReceiver;
 
 	// Web app loaded?
-	private boolean webAppLoaded = false;	
+	private boolean webAppLoaded = false;
 	
     /** Called when the activity is first created. */
     @Override
@@ -131,31 +131,17 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 	}
 
 	@Override
-	public void init()
-	{
+	public void init() {
     	Log.i("SalesforceDroidGapActivity.init", "init called");
     	super.init();
-    	final String uaStr = SalesforceSDKManager.getInstance().getUserAgent();
-    	if (null != this.appView) {
-    		WebSettings webSettings = this.appView.getSettings();
-    		String origUserAgent = webSettings.getUserAgentString();
-    		final String extendedUserAgentString = uaStr + " Hybrid " + (origUserAgent == null ? "" : origUserAgent);
-    		webSettings.setUserAgentString(extendedUserAgentString);
-
-    		// Configure HTML5 cache support.
-    		webSettings.setDomStorageEnabled(true);
-    		String cachePath = getApplicationContext().getCacheDir().getAbsolutePath();
-    		webSettings.setAppCachePath(cachePath);
-    		webSettings.setAppCacheEnabled(true);
-    		webSettings.setAllowFileAccess(true);
-    		webSettings.setCacheMode(WebSettings.LOAD_DEFAULT);
-    		EventsObservable.get().notifyEvent(EventType.GapWebViewCreateComplete, appView);
-      	}
+    	EventsObservable.get().notifyEvent(EventType.GapWebViewCreateComplete, appView);
 	}
 
 	@Override
-    protected CordovaWebViewClient makeWebViewClient(CordovaWebView webView) {
-        return new SalesforceIceCreamWebViewClient(this, webView);
+    protected CordovaWebViewEngine makeWebViewEngine() {
+		final String className = SalesforceWebViewEngine.class.getCanonicalName();
+		preferences.set("webview", className);
+        return CordovaWebViewImpl.createEngine(this, preferences);
     }
 
     @Override
@@ -367,32 +353,32 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     public void refresh(final String url) {
         Log.i("SalesforceDroidGapActivity.refresh", "refresh called");
         client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
-    
-        	@Override
-            public void onSuccess(RestRequest request, RestResponse response) {
-        		Log.i("SalesforceDroidGapActivity.refresh", "Refresh succeeded");
+
+			@Override
+			public void onSuccess(RestRequest request, RestResponse response) {
+				Log.i("SalesforceDroidGapActivity.refresh", "Refresh succeeded");
 
             	/*
             	 * The client instance being used here needs to be
             	 * refreshed, to ensure we use the new access token. 
             	 */
-                SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-                setSidCookies();
-                loadVFPingPage();
-                final String frontDoorUrl = getFrontDoorUrl(url, true);
-                loadUrl(frontDoorUrl);
-            }
+				SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+				setSidCookies();
+				loadVFPingPage();
+				final String frontDoorUrl = getFrontDoorUrl(url, true);
+				loadUrl(frontDoorUrl);
+			}
 
-        	@Override
-            public void onError(Exception exception) {
-        		Log.w("SalesforceDroidGapActivity.refresh", "Refresh failed - " + exception);
+			@Override
+			public void onError(Exception exception) {
+				Log.w("SalesforceDroidGapActivity.refresh", "Refresh failed - " + exception);
 
-        		// Only logout if we are NOT offline
-                if (!(exception instanceof NoNetworkException)) {
-                	SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
-                }
-            }
-        });
+				// Only logout if we are NOT offline
+				if (!(exception instanceof NoNetworkException)) {
+					SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
+				}
+			}
+		});
     }        
 
     /**
@@ -498,10 +484,18 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     	Log.i("SalesforceDroidGapActivity.getErrorPageUrl", "local error page: " + errorPage);
 		loadUrl("file:///android_asset/www/" + errorPage);
     }
-    
+
+	/**
+	 * Returns the WebView being used.
+	 *
+	 * @return WebView being used.
+	 */
+	public CordovaWebView getAppView() {
+		return appView;
+	}
+
    /**
-    * Set cookies on cookie manager
-    * @param client
+    * Set cookies on cookie manager.
     */
    private void setSidCookies() {
        Log.i("SalesforceDroidGapActivity.setSidCookies", "setting cookies");
