@@ -325,9 +325,7 @@ function createNativeApp(config, showNextSteps) {
              '   - If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`',
              '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
              '',
-             outputColors.cyan + 'To work with your new project from the command line, use the following instructions:',
-             '',
-             'To build the new application, do the following:' + outputColors.reset,
+             outputColors.cyan + 'To work with your new project from the command line, use the following instructions:' + outputColors.reset,
              '   - cd ' + config.projectDir,
              '   - ./gradlew assembleDebug',
              ''].join('\n');
