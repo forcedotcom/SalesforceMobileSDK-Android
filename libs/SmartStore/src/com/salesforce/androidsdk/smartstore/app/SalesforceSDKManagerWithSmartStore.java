@@ -53,31 +53,31 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
 
     /**
      * Protected constructor.
-     *
-     * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface. 
+     *  @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
+     * @param appType
      */
     protected SalesforceSDKManagerWithSmartStore(Context context, KeyInterface keyImpl,
-    		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-    	super(context, keyImpl, mainActivity, loginActivity);
+                                                 Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
+    	super(context, keyImpl, mainActivity, loginActivity, appType);
     }
 
 	/**
 	 * Initializes components required for this class
 	 * to properly function. This method should be called
 	 * by apps using the Salesforce Mobile SDK.
-	 *
-	 * @param context Application context.
+	 *  @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
-	 */
+     * @param appType
+     */
 	private static void init(Context context, KeyInterface keyImpl,
-			Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+                             Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
 		if (INSTANCE == null) {
-    		INSTANCE = new SalesforceSDKManagerWithSmartStore(context, keyImpl, mainActivity, loginActivity);
+    		INSTANCE = new SalesforceSDKManagerWithSmartStore(context, keyImpl, mainActivity, loginActivity, appType);
     	}
 		initInternal(context);
 
@@ -96,7 +96,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
 	 */
     public static void initHybrid(Context context, KeyInterface keyImpl) {
     	SalesforceSDKManagerWithSmartStore.init(context, keyImpl,
-    			SalesforceDroidGapActivity.class, LoginActivity.class);
+                SalesforceDroidGapActivity.class, LoginActivity.class, AppType.Hybrid);
     }
 
 	/**
@@ -111,7 +111,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     public static void initHybrid(Context context, KeyInterface keyImpl,
     		Class<? extends Activity> loginActivity) {
     	SalesforceSDKManagerWithSmartStore.init(context, keyImpl,
-    			SalesforceDroidGapActivity.class, loginActivity);
+                SalesforceDroidGapActivity.class, loginActivity, AppType.Hybrid);
     }
 
 	/**
@@ -128,7 +128,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     		Class<? extends SalesforceDroidGapActivity> mainActivity,
     		Class<? extends Activity> loginActivity) {
     	SalesforceSDKManagerWithSmartStore.init(context, keyImpl,
-    			mainActivity, loginActivity);
+    			mainActivity, loginActivity, AppType.Hybrid);
     }
     
 	/**
@@ -143,7 +143,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     public static void initNative(Context context, KeyInterface keyImpl,
     		Class<? extends Activity> mainActivity) {
     	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity,
-    			LoginActivity.class);
+    			LoginActivity.class, AppType.Native);
     }
 
 	/**
@@ -158,13 +158,42 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
 	 */
     public static void initNative(Context context, KeyInterface keyImpl,
     		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity, loginActivity);
+    	SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity, loginActivity, AppType.Native);
+    }
+
+    /**
+     * Initializes components required for this class
+     * to properly function. This method should be called
+     * by react native apps using the Salesforce Mobile SDK.
+     *
+     * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param mainActivity Activity that should be launched after the login flow.
+     */
+    public static void initReactNative(Context context, KeyInterface keyImpl,
+                                  Class<? extends Activity> mainActivity) {
+        SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity,
+                LoginActivity.class, AppType.ReactNative);
+    }
+
+    /**
+     * Initializes components required for this class
+     * to properly function. This method should be called
+     * by react native apps using the Salesforce Mobile SDK.
+     *
+     * @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+     * @param mainActivity Activity that should be launched after the login flow.
+     * @param loginActivity Login activity.
+     */
+    public static void initReactNative(Context context, KeyInterface keyImpl,
+                                  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+        SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity, loginActivity, AppType.ReactNative);
     }
 
     /**
      * Returns a singleton instance of this class.
      *
-     * @param context Application context.
      * @return Singleton instance of SalesforceSDKManagerWithSmartStore.
      */
     public static SalesforceSDKManagerWithSmartStore getInstance() {

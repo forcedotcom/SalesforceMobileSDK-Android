@@ -49,31 +49,31 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
 
     /**
      * Protected constructor.
-     *
-     * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface. 
-     * @param mainActivity Activity that should be launched after the login flow.
-     * @param loginActivity Login activity.
-     */
+     *  @param context Application context.
+     * @param keyImpl Implementation of KeyInterface.
+	 * @param mainActivity Activity that should be launched after the login flow.
+	 * @param loginActivity Login activity.
+	 * @param appType
+	 */
     protected SmartSyncSDKManager(Context context, KeyInterface keyImpl,
-    		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-    	super(context, keyImpl, mainActivity, loginActivity);
+								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
+    	super(context, keyImpl, mainActivity, loginActivity, appType);
     }
 
 	/**
 	 * Initializes components required for this class
 	 * to properly function. This method should be called
 	 * by apps using the Salesforce Mobile SDK.
-	 *
-	 * @param context Application context.
+	 *  @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
-     * @param mainActivity Activity that should be launched after the login flow.
-     * @param loginActivity Login activity.
+	 * @param mainActivity Activity that should be launched after the login flow.
+	 * @param loginActivity Login activity.
+	 * @param appType
 	 */
 	private static void init(Context context, KeyInterface keyImpl,
-			Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+							 Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
 		if (INSTANCE == null) {
-    		INSTANCE = new SmartSyncSDKManager(context, keyImpl, mainActivity, loginActivity);
+    		INSTANCE = new SmartSyncSDKManager(context, keyImpl, mainActivity, loginActivity, appType);
     	}
 		initInternal(context);
 
@@ -92,7 +92,7 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
 	 */
     public static void initHybrid(Context context, KeyInterface keyImpl) {
     	SmartSyncSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class,
-    			LoginActivity.class);
+				LoginActivity.class, AppType.Hybrid);
     }
 
 	/**
@@ -107,7 +107,7 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
     public static void initHybrid(Context context, KeyInterface keyImpl,
     		Class<? extends Activity> loginActivity) {
     	SmartSyncSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class,
-    			loginActivity);
+				loginActivity, AppType.Hybrid);
     }
 
 	/**
@@ -123,7 +123,7 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
     public static void initHybrid(Context context, KeyInterface keyImpl,
     		Class<? extends SalesforceDroidGapActivity> mainActivity,
     		Class<? extends Activity> loginActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity);
+    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.Hybrid);
     }
     
 	/**
@@ -137,7 +137,7 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
 	 */
     public static void initNative(Context context, KeyInterface keyImpl,
     		Class<? extends Activity> mainActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class);
+    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class, AppType.Native);
     }
 
 	/**
@@ -152,8 +152,37 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
 	 */
     public static void initNative(Context context, KeyInterface keyImpl,
     		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity);
+    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.Native);
     }
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by react native apps using the Salesforce Mobile SDK.
+	 *
+	 * @param context Application context.
+	 * @param keyImpl Implementation of KeyInterface.
+	 * @param mainActivity Activity that should be launched after the login flow.
+	 */
+	public static void initReactNative(Context context, KeyInterface keyImpl,
+								  Class<? extends Activity> mainActivity) {
+		SmartSyncSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class, AppType.ReactNative);
+	}
+
+	/**
+	 * Initializes components required for this class
+	 * to properly function. This method should be called
+	 * by react native apps using the Salesforce Mobile SDK.
+	 *
+	 * @param context Application context.
+	 * @param keyImpl Implementation of KeyInterface.
+	 * @param mainActivity Activity that should be launched after the login flow.
+	 * @param loginActivity Login activity.
+	 */
+	public static void initReactNative(Context context, KeyInterface keyImpl,
+								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+		SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.ReactNative);
+	}
 
     /**
      * Returns a singleton instance of this class.
