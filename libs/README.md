@@ -27,61 +27,22 @@ Inside the $NATIVE_DIR, you will find several projects:
 5. **test/SmartStoreTest**: Test project for SmartStore
 6. **test/SmartSyncTest**: Test project for SmartSync
 
-# Running sample apps from Eclipse
+# Running sample apps from Android Studio
 
-1. Launch Eclipse and select $SALESFORCE_SDK_DIR as your workspace 
-2. Go to Window -> Preferences, choose the Android section, and enter the the Android SDK location.
-3. Go to File -> Import and select General -> Existing Projects into Workspace.
-4. Select $SALESFORCE_SDK_DIR as your root directory and import the projects described above.
-5. Right click on any of the sample apps and choose Run As -> Android Application to run it.
-6. Right click on any of the test project and choose Run As -> Android JUnit Test to run the tests.
+1. Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)`.
+2. Navigate to $SALESFORCE_SDK_DIR, select it and click `Ok`.
+3. If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`.
+4. From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button.
 
 # Creating a new native application using SalesforceSDK
 
-There is a build.xml in $SALESFORCE_SDK_DIR.
-If you type:
-<pre>
-ant
-</pre>
+To create a new native application, follow the instructions here:
 
-It will print out information about available targets.
+* [Using forcedroid to create Mobile SDK apps](https://www.npmjs.org/package/forcedroid)
 
-To create a new native application simply do:
-<pre>
-ant create_native -Dapp.name={appName} -Dtarget.dir={targetDir} -Dpackage.name={packageName} [-Duse.smartstore=true]
-</pre>
+# Running your new native application from Android Studio
 
-Where:
-* appName: the name for the new application 
-* targetDir: the directory where the code should reside 
-* packageName: the java package for the new application e.g. com.acme.mobileapp
-* only pass -Duse.smartstore=true if you want SmartStore support
-
-If it's your first time build an application with the Salesforce SDK, do the following:
-cd $LIBS_DIR/SalesforceSDK
-$ANDROID_SDK_DIR/android update project -p .
-
-To build the new application, do the following:
-<pre>
-CD $TARGET_DIR
-$ANDROID_SDK_DIR/android update project -p .
-ant clean debug
-</pre>
-
-To deploy the application, start an emulator or plugin your device and run:
-<pre>
-ant installd
-</pre>
-
-Before you ship, make sure to plug in your oauth client id and callback url in:
-<pre>
-$TARGET_DIR/res/values/rest.xml
-</pre>
-
-# Running your new native application from Eclipse
-
-1. Launch Eclipse
-2. Go to File -> Import and select General -> Existing Projects into Workspace.
-3. Import the $SALESFORCE_SDK_DIR/libs/SalesforceSDK library project and your newly created project $TARGET_DIR into the workspace
-4. Right click on the your project and choose Run As -> Android Application
-
+1. Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)`.
+2. Navigate to your application's directory, select it and click `Ok`.
+3. If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`.
+4. From the dropdown that displays the available targets, choose your application and click the play button.
