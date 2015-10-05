@@ -165,7 +165,10 @@ public class ServerPickerActivity extends Activity implements
      */
     public void showCustomUrlDialog(View v) {
     	final FragmentManager fragMgr = getFragmentManager();
-    	urlEditDialog.show(fragMgr, SERVER_DIALOG_NAME);
+        //Add fragment only if it has not been added already
+        if(!urlEditDialog.isAdded()) {
+            urlEditDialog.show(fragMgr, SERVER_DIALOG_NAME);
+        }
     }
 
     /**

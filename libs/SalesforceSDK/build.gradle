@@ -4,6 +4,8 @@ apply plugin: 'android-library'
 dependencies {
   compile 'com.android.support:appcompat-v7:23.0.0'
   compile 'com.facebook.react:react-native:0.11.+'
+  compile project(':external:cordova:framework')
+
   // TODO: Replace the following libs with MavenCentral when they're available.
   compile files('libs/volley_android-4.4.2_r2.jar')
   compile files('libs/android-junit-report-1.5.8.jar')
@@ -20,17 +22,13 @@ android {
   sourceSets {
     main {
       manifest.srcFile 'AndroidManifest.xml'
-
-      // TODO: Replace this Cordova source here with library project entry above, once we move to Cordova 4.x, which has support for Gradle.
-      // Until then, include Cordova as a source dependency since it exists in a submodule.
-      java.srcDirs = ['src', '../../external/cordova/framework/src']
+      java.srcDirs = ['src']
       resources.srcDirs = ['src']
       aidl.srcDirs = ['src']
       renderscript.srcDirs = ['src']
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
-
     androidTest.setRoot('../test/SalesforceSDKTest')
     androidTest {
       java.srcDirs = ['../test/SalesforceSDKTest/src']

@@ -20,8 +20,8 @@ Inside the HYBRID_DIR, you will find several projects:
 
 1. **test/ForcePluginsTest**: Test project for the phonegap plugins
 2. **SampleApps/AccountEditor**: The AccountEditor sample app allows you to search / create / edit / delete accounts online and offline using the new SmartSync library (smartsync.js)
-3. **SampleApps/SimpleSync**: The SimpleSync sample app demonstrates two way synching of Salesforce records
-4. **SampleApps/NoteSync**: The SimpleSync sample app demonstrates two way synching of Salesforce Note objects with custom sync down and sync up targets
+3. **SampleApps/SmartSyncExplorerHybrid**: The SmartSyncExplorerHybrid sample app demonstrates two way synching of Salesforce records
+4. **SampleApps/NoteSync**: The NoteSync sample app demonstrates two way synching of Salesforce Note objects with custom sync down and sync up targets
 
 # Running sample apps from Eclipse
 

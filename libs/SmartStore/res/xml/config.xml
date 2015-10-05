@@ -3,7 +3,13 @@
     id        = "com.salesforce.androidsdk"
     version   = "4.0.0">
 
-    <access origin="https://localhost"/> <!-- allow local pages -->
+    <!-- To allow XHR requests with the new Whitelist plugin -->
+    <allow-navigation href="https://localhost" />
+    <allow-navigation href="https://*.force.com" />
+    <allow-navigation href="https://*.salesforce.com" />
+
+    <!-- For legacy apps that don't use CSP -->
+    <access origin="https://localhost" />
     <access origin="https://*.force.com" />
     <access origin="https://*.salesforce.com" />
 

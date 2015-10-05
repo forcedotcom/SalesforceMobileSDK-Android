@@ -43,9 +43,9 @@ var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
 var version = '4.0.0';
-var minimumCordovaCliVersion = '4.0';
-var cordovaPlatformVersion = '3.6.4';
-var minTargetApi = {'versionNumber': 21, 'versionName': 'Lollipop'};
+var targetApi = {'versionNumber': 23, 'versionName': 'Marshmallow'};
+var minimumCordovaCliVersion = '5.0';
+var cordovaPlatformVersion = '4.0.0';
 var androidExePath;
 
 // Calling main
@@ -89,7 +89,6 @@ function usage() {
     console.log('    --appname=<Application Name>');
     console.log('    --targetdir=<Target App Folder>');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
-    console.log('    --targetandroidapi=<Target API> (e.g. 21 for Lollipop — Only required/used for \'native\')');
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
     console.log('    [--usesmartstore=<Whether or not to use SmartStore/SmartSync> (\'yes\' or \'no\'. no by default — Only required/used for \'native\')]');
     console.log(outputColors.cyan + '\nOR\n');
@@ -334,7 +333,7 @@ function createNativeApp(config, showNextSteps) {
     var libProject = config.usesmartstore
         ? path.join('..', path.basename(packageSdkRootDir), smartSyncRelativePath)
         : path.join('..', path.basename(packageSdkRootDir), salesforceSDKRelativePath);
-    shelljs.exec(androidExePath + ' update project -p ' + config.projectDir + ' -t "android-' + config.targetandroidapi + '" -l ' + libProject);
+    shelljs.exec(androidExePath + ' update project -p ' + config.projectDir + ' -t "android-' + targetApi.versionNumber + '" -l ' + libProject);
     '\nmanifestmerger.enabled=true\n'.toEnd(projectPropertiesFilePath);
 
     // Inform the user of next steps if requested.
@@ -425,9 +424,6 @@ function createArgsProcessorList() {
     // Target dir
     addProcessorFor(argProcessorList, 'targetdir', 'Enter the target directory of your app:', 'Invalid value for target dir: \'$val\'.',  /^\S+$/);
 
-    // Target API 
-    addProcessorForAndroidApi(argProcessorList);
-
     // Package name
     addProcessorFor(argProcessorList, 'packagename', 'Enter the package name for your app (com.mycompany.my_app):', '\'$val\' is not a valid Java package name.', /^[a-z]+[a-z0-9_]*(\.[a-z]+[a-z0-9_]*)*$/);
 
@@ -446,17 +442,6 @@ function createArgsProcessorList() {
 
     return argProcessorList;
 }
-
-//
-// Add processor for target android api
-// 
-function addProcessorForAndroidApi(argProcessorList) { 
-    // Target API
-    addProcessorFor(argProcessorList, 'targetandroidapi', 'Enter the target Android API version number for your application (at least ' + minTargetApi.versionNumber + ' (' + minTargetApi.versionName + ')):', 'Target API must be at least ' + minTargetApi.versionNumber, 
-                    function(val) { var intVal = parseInt(val); return intVal >= minTargetApi.versionNumber; },
-                    function(argsMap) { return (argsMap['apptype'] === 'native'); });
-}
-
 
 //
 // Helper function to add arg processor

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -45,9 +45,8 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
-
 /**
- * Helper class for SalesforceWebViewClient, SalesforceIceCreamWebViewClient
+ * Helper class for SalesforceWebViewClient.
  * 
  */
 public class SalesforceWebViewClientHelper {
@@ -71,7 +70,7 @@ public class SalesforceWebViewClientHelper {
     public static boolean shouldOverrideUrlLoading(SalesforceDroidGapActivity ctx,
     		WebView view, String url) {
     	final String startURL = SalesforceWebViewClientHelper.isLoginRedirect(url);
-        if (startURL != null) {
+        if (startURL != null && ctx != null) {
         	ctx.refresh(startURL);
         	return true;
         } else {
@@ -92,14 +91,11 @@ public class SalesforceWebViewClientHelper {
         // be considered the "app home URL", which can be loaded directly in the event that the app is offline.
         if (!isReservedUrl(url)) {
             Log.i(TAG,"Setting '" + url + "' as the home page URL for this app");
-
             SharedPreferences sp = ctx.getSharedPreferences(SFDC_WEB_VIEW_CLIENT_SETTINGS, Context.MODE_PRIVATE);
             Editor e = sp.edit();
             e.putString(APP_HOME_URL_PROP_KEY, url);
             e.commit();
-
             EventsObservable.get().notifyEvent(EventType.GapWebViewPageFinished, url);
-            
             return true;
         } else {
         	return false;
