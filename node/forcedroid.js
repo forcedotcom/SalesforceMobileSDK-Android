@@ -143,7 +143,6 @@ function getAndroidSDKToolPath() {
 //
 function createHybridApp(config) {
     config.projectDir = path.join(config.targetdir, config.appname);
-    // console.log("Config:" + JSON.stringify(config, null, 2));
 
     // Make sure the Cordova CLI client exists.
     var cordovaCliVersion = cordovaHelper.getCordovaCliVersion();
@@ -184,7 +183,6 @@ function createHybridApp(config) {
         "attemptOfflineLoad": false,
         "androidPushNotificationClientId": ""
     };
-    // console.log("Bootconfig:" + JSON.stringify(bootconfig, null, 2));
 
     fs.writeFileSync(path.join('www', 'bootconfig.json'), JSON.stringify(bootconfig, null, 2));
     shelljs.exec('cordova prepare android');
@@ -195,13 +193,11 @@ function createHybridApp(config) {
         ['',
          outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
          '',
-         outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
-         '   - Go to File -> Import... ',
-         '   - Choose Android -> Existing Android Code into Workspace, and click Next >',
-         '   - For the root directory, browse to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder',
-         '   - Pick the following projects: ' + config.appname + '/platforms/android, ' + config.appname + '/platforms/android/CordovaLib, ' + config.appname + '/plugins/com.salesforce/android/libs/SmartSync, ' + config.appname + '/plugins/com.salesforce/android/libs/SmartStore and ' + config.appname + '/plugins/com.salesforce/android/libs/SalesforceSDK',
-         '   - Click Finish',
-         '   - Run your application by right-clicking the ' + config.appname + ' project in Project Explorer, and choosing Run As -> Android Application',
+         outputColors.cyan + 'To use your new application in Android Studio, do the following:' + outputColors.reset,
+         '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` ',
+         '   - Navigate to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder, select it and click `Ok`',
+         '   - If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`',
+         '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
          ''].join('\n');
     console.log(nextStepsOutput);
     console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
@@ -219,8 +215,6 @@ function createNativeApp(config, showNextSteps) {
     var packageSdkRootDir = path.resolve(__dirname, '..');
     config.templateDir = path.join(packageSdkRootDir, config.relativeTemplateDir);
     config.templateAppClassName = config.templateAppName + 'App';
-    
-    // console.log("Config:" + JSON.stringify(config, null, 2));
 
     // Checking if config.projectDir already exists
     if (fs.existsSync(config.projectDir)) {
@@ -231,8 +225,6 @@ function createNativeApp(config, showNextSteps) {
     // Copy the template files to the destination directory.
     shelljs.mkdir('-p', config.projectDir);
     shelljs.cp('-R', path.join(config.templateDir, '*'), config.projectDir);
-    shelljs.cp(path.join(config.templateDir, '.project'), config.projectDir);
-    shelljs.cp(path.join(config.templateDir, '.classpath'), config.projectDir);
     if (shelljs.error()) {
         console.log('There was an error copying the template files from \'' + config.templateDir + '\' to \'' + config.projectDir + '\': ' + shelljs.error());
         process.exit(4);
@@ -287,7 +279,6 @@ function createNativeApp(config, showNextSteps) {
         console.log('Adding SmartStore/SmartSync support.');
         shelljs.mkdir('-p', path.join(config.projectDir, 'assets'));  // May not exist for native.
         shelljs.cp(path.join(packageSdkRootDir, 'external', 'sqlcipher', 'assets', 'icudt46l.zip'), path.join(config.projectDir, 'assets', 'icudt46l.zip'));
-
         console.log('Extending SmartSyncSDKManager instead of SalesforceSDKManager.');
         shelljs.sed('-i', /SalesforceSDKManager/g, 'SmartSyncSDKManager', appClassPath);
         shelljs.sed('-i',
@@ -326,38 +317,23 @@ function createNativeApp(config, showNextSteps) {
         copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
 
-    // Library project reference
-    console.log(outputColors.yellow + 'Fixing project.properties.');
-    var projectPropertiesFilePath = path.join(config.projectDir, 'project.properties');
-    shelljs.rm(projectPropertiesFilePath);
-    var libProject = config.usesmartstore
-        ? path.join('..', path.basename(packageSdkRootDir), smartSyncRelativePath)
-        : path.join('..', path.basename(packageSdkRootDir), salesforceSDKRelativePath);
-    shelljs.exec(androidExePath + ' update project -p ' + config.projectDir + ' -t "android-' + targetApi.versionNumber + '" -l ' + libProject);
-    '\nmanifestmerger.enabled=true\n'.toEnd(projectPropertiesFilePath);
-
     // Inform the user of next steps if requested.
     if (showNextSteps) {
         var nextStepsOutput =
             ['',
              outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
              '',
-             outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
-             '   - Go to File -> Import... ',
-             '   - Select General -> Existing Projects into Workspace, and click Next >',
-             '   - For the root directory, browse to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder',
-             '   - Select the ' + path.basename(libProject) + ', Cordova, and ' + outputColors.magenta + config.appname + outputColors.reset + ' projects, and click Finish',
-             '   - Choose \'Build All\' from the Project menu',
-             '   - Run your application by right-clicking the project in Project Explorer, and choosing Run As -> Android Application',
+             outputColors.cyan + 'To use your new application in Android Studio, do the following:' + outputColors.reset,
+             '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` ',
+             '   - Navigate to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder, select it and click `Ok`',
+             '   - If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`',
+             '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
              '',
              outputColors.cyan + 'To work with your new project from the command line, use the following instructions:',
              '',
              'To build the new application, do the following:' + outputColors.reset,
              '   - cd ' + config.projectDir,
-             '   - ant clean debug',
-             '',
-             outputColors.cyan + 'To run the application, start an emulator or plug in your device and run:' + outputColors.reset,
-             '   - ant installd',
+             '   - ./gradlew assembleDebug',
              ''].join('\n');
         console.log(nextStepsOutput);
         var relativeBootConfigPath = path.relative(config.targetdir, config.bootConfigPath);
@@ -369,8 +345,6 @@ function createNativeApp(config, showNextSteps) {
 function makeContentReplacementPathsArray(config) {
     var returnArray = [];
     returnArray.push(path.join(config.projectDir, 'AndroidManifest.xml'));
-    returnArray.push(path.join(config.projectDir, '.project'));
-    returnArray.push(path.join(config.projectDir, 'build.xml'));
     returnArray.push(path.join(config.projectDir, 'res', 'values', 'strings.xml'));
     returnArray.push(config.bootConfigPath);
     var srcFilePaths = getTemplateSourceFilePaths(config);
