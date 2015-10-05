@@ -291,7 +291,6 @@ function createNativeApp(config, showNextSteps) {
     // copy <Android Package>/libs/SalesforceSDK -> <App Folder>/forcedroid/libs/SalesforceSDK
     var salesforceSDKRelativePath = path.join('libs', 'SalesforceSDK');
     copyFromSDK(packageSdkRootDir, config.targetdir, salesforceSDKRelativePath);
-    shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), salesforceSDKRelativePath));
 
     // Copy Cordova library project into the app folder as well, if it's not already there.
     // copy <Android Package>/external/cordova/framework -> <App Folder>/forcedroid/external/cordova/framework
@@ -300,7 +299,6 @@ function createNativeApp(config, showNextSteps) {
     copyFromSDK(packageSdkRootDir, config.targetdir, path.join(cordovaRelativePath, 'framework'));
     shelljs.cp(path.join(packageSdkRootDir, cordovaRelativePath, 'VERSION'), destCordovaDir);
     console.log(destCordovaDir);
-    shelljs.exec(androidExePath + ' update project -p ' + path.join(destCordovaDir, 'framework'));
     console.log('update done');
 
     // Copy SmartStore and SmartSync library projects into the app folder as well, if it's not already there - if required.
@@ -310,10 +308,8 @@ function createNativeApp(config, showNextSteps) {
     if (config.usesmartstore) {
         var smartStoreRelativePath = path.join('libs', 'SmartStore');
         copyFromSDK(packageSdkRootDir, config.targetdir, smartStoreRelativePath);
-        shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), smartStoreRelativePath));
         var smartSyncRelativePath = path.join('libs', 'SmartSync');
         copyFromSDK(packageSdkRootDir, config.targetdir, smartSyncRelativePath);
-        shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), smartSyncRelativePath));
         copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
 
