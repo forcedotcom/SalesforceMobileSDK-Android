@@ -99,6 +99,7 @@ function usage() {
 // Helper for 'create' command
 //
 function createApp(config) {
+
     // Verify necessary Android prerequisites.
     androidExePath = getAndroidSDKToolPath();
     if (androidExePath === null) {
@@ -112,6 +113,7 @@ function createApp(config) {
         config.templatePackageName = 'com.salesforce.samples.templateapp';
         createNativeApp(config, true);
     }
+
     // Hybrid app creation
     else {
         createHybridApp(config);
@@ -124,7 +126,6 @@ function getAndroidSDKToolPath() {
         console.log(outputColors.red + 'You must set the ANDROID_HOME environment variable to the path of your installation of the Android SDK.' + outputColors.reset);
         return null;
     }
-
     var androidExePath = path.join(androidHomeDir, 'tools', 'android');
     var isWindows = (/^win/i).test(process.platform);
     if (isWindows) {
@@ -134,7 +135,6 @@ function getAndroidSDKToolPath() {
         console.log(outputColors.red + 'The "android" utility does not exist at ' + androidExePath + '.  Make sure you\'ve properly installed the Android SDK.' + outputColors.reset);
         return null;
     }
-
     return androidExePath;
 }
 
@@ -143,7 +143,6 @@ function getAndroidSDKToolPath() {
 //
 function createHybridApp(config) {
     config.projectDir = path.join(config.targetdir, config.appname);
-    // console.log("Config:" + JSON.stringify(config, null, 2));
 
     // Make sure the Cordova CLI client exists.
     var cordovaCliVersion = cordovaHelper.getCordovaCliVersion();
@@ -151,14 +150,12 @@ function createHybridApp(config) {
         console.log('cordova command line tool could not be found.  Make sure you install the cordova CLI from https://www.npmjs.org/package/cordova.');
         process.exit(6);
     }
-
     var minimumCordovaVersionNum = miscUtils.getVersionNumberFromString(minimumCordovaCliVersion);
     var cordovaCliVersionNum = miscUtils.getVersionNumberFromString(cordovaCliVersion);
     if (cordovaCliVersionNum < minimumCordovaVersionNum) {
         console.log('Installed cordova command line tool version (' + cordovaCliVersion + ') is less than the minimum required version (' + minimumCordovaCliVersion + ').  Please update your version of Cordova.');
         process.exit(7);
     }
-
     shelljs.exec('cordova create "' + config.projectDir + '" ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android@' + cordovaPlatformVersion);
@@ -172,7 +169,6 @@ function createHybridApp(config) {
         var sampleAppFolder = path.join(__dirname, '..', 'external', 'shared', 'samples', 'userlist');
         shelljs.cp('-R', path.join(sampleAppFolder, '*'), 'www');
     }
-
     var bootconfig = {
         "remoteAccessConsumerKey": "3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa",
         "oauthRedirectURI": "testsfdc:///mobilesdk/detect/oauth/done",
@@ -184,8 +180,6 @@ function createHybridApp(config) {
         "attemptOfflineLoad": false,
         "androidPushNotificationClientId": ""
     };
-    // console.log("Bootconfig:" + JSON.stringify(bootconfig, null, 2));
-
     fs.writeFileSync(path.join('www', 'bootconfig.json'), JSON.stringify(bootconfig, null, 2));
     shelljs.exec('cordova prepare android');
     shelljs.popd();
@@ -195,13 +189,11 @@ function createHybridApp(config) {
         ['',
          outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
          '',
-         outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
-         '   - Go to File -> Import... ',
-         '   - Choose Android -> Existing Android Code into Workspace, and click Next >',
-         '   - For the root directory, browse to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder',
-         '   - Pick the following projects: ' + config.appname + '/platforms/android, ' + config.appname + '/platforms/android/CordovaLib, ' + config.appname + '/plugins/com.salesforce/android/libs/SmartSync, ' + config.appname + '/plugins/com.salesforce/android/libs/SmartStore and ' + config.appname + '/plugins/com.salesforce/android/libs/SalesforceSDK',
-         '   - Click Finish',
-         '   - Run your application by right-clicking the ' + config.appname + ' project in Project Explorer, and choosing Run As -> Android Application',
+         outputColors.cyan + 'To use your new application in Android Studio, do the following:' + outputColors.reset,
+         '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` ',
+         '   - Navigate to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder, select it and click `Ok`',
+         '   - If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`',
+         '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
          ''].join('\n');
     console.log(nextStepsOutput);
     console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
@@ -212,6 +204,7 @@ function createHybridApp(config) {
 // Helper to create native application
 //
 function createNativeApp(config, showNextSteps) {
+
     // Computed config
     config.projectDir = path.join(config.targetdir, config.appname);
     config.bootConfigPath = path.join(config.projectDir, 'res', 'values', 'bootconfig.xml');
@@ -219,8 +212,6 @@ function createNativeApp(config, showNextSteps) {
     var packageSdkRootDir = path.resolve(__dirname, '..');
     config.templateDir = path.join(packageSdkRootDir, config.relativeTemplateDir);
     config.templateAppClassName = config.templateAppName + 'App';
-    
-    // console.log("Config:" + JSON.stringify(config, null, 2));
 
     // Checking if config.projectDir already exists
     if (fs.existsSync(config.projectDir)) {
@@ -231,13 +222,10 @@ function createNativeApp(config, showNextSteps) {
     // Copy the template files to the destination directory.
     shelljs.mkdir('-p', config.projectDir);
     shelljs.cp('-R', path.join(config.templateDir, '*'), config.projectDir);
-    shelljs.cp(path.join(config.templateDir, '.project'), config.projectDir);
-    shelljs.cp(path.join(config.templateDir, '.classpath'), config.projectDir);
     if (shelljs.error()) {
         console.log('There was an error copying the template files from \'' + config.templateDir + '\' to \'' + config.projectDir + '\': ' + shelljs.error());
         process.exit(4);
     }
-
     var contentFilesWithReplacements = makeContentReplacementPathsArray(config);
 
     // Substitute app class name
@@ -287,7 +275,6 @@ function createNativeApp(config, showNextSteps) {
         console.log('Adding SmartStore/SmartSync support.');
         shelljs.mkdir('-p', path.join(config.projectDir, 'assets'));  // May not exist for native.
         shelljs.cp(path.join(packageSdkRootDir, 'external', 'sqlcipher', 'assets', 'icudt46l.zip'), path.join(config.projectDir, 'assets', 'icudt46l.zip'));
-
         console.log('Extending SmartSyncSDKManager instead of SalesforceSDKManager.');
         shelljs.sed('-i', /SalesforceSDKManager/g, 'SmartSyncSDKManager', appClassPath);
         shelljs.sed('-i',
@@ -300,7 +287,6 @@ function createNativeApp(config, showNextSteps) {
     // copy <Android Package>/libs/SalesforceSDK -> <App Folder>/forcedroid/libs/SalesforceSDK
     var salesforceSDKRelativePath = path.join('libs', 'SalesforceSDK');
     copyFromSDK(packageSdkRootDir, config.targetdir, salesforceSDKRelativePath);
-    shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), salesforceSDKRelativePath));
 
     // Copy Cordova library project into the app folder as well, if it's not already there.
     // copy <Android Package>/external/cordova/framework -> <App Folder>/forcedroid/external/cordova/framework
@@ -309,7 +295,6 @@ function createNativeApp(config, showNextSteps) {
     copyFromSDK(packageSdkRootDir, config.targetdir, path.join(cordovaRelativePath, 'framework'));
     shelljs.cp(path.join(packageSdkRootDir, cordovaRelativePath, 'VERSION'), destCordovaDir);
     console.log(destCordovaDir);
-    shelljs.exec(androidExePath + ' update project -p ' + path.join(destCordovaDir, 'framework'));
     console.log('update done');
 
     // Copy SmartStore and SmartSync library projects into the app folder as well, if it's not already there - if required.
@@ -319,22 +304,11 @@ function createNativeApp(config, showNextSteps) {
     if (config.usesmartstore) {
         var smartStoreRelativePath = path.join('libs', 'SmartStore');
         copyFromSDK(packageSdkRootDir, config.targetdir, smartStoreRelativePath);
-        shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), smartStoreRelativePath));
         var smartSyncRelativePath = path.join('libs', 'SmartSync');
         copyFromSDK(packageSdkRootDir, config.targetdir, smartSyncRelativePath);
-        shelljs.exec(androidExePath + ' update project -p ' + path.join(config.targetdir, path.basename(packageSdkRootDir), smartSyncRelativePath));
         copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
-
-    // Library project reference
-    console.log(outputColors.yellow + 'Fixing project.properties.');
-    var projectPropertiesFilePath = path.join(config.projectDir, 'project.properties');
-    shelljs.rm(projectPropertiesFilePath);
-    var libProject = config.usesmartstore
-        ? path.join('..', path.basename(packageSdkRootDir), smartSyncRelativePath)
-        : path.join('..', path.basename(packageSdkRootDir), salesforceSDKRelativePath);
-    shelljs.exec(androidExePath + ' update project -p ' + config.projectDir + ' -t "android-' + targetApi.versionNumber + '" -l ' + libProject);
-    '\nmanifestmerger.enabled=true\n'.toEnd(projectPropertiesFilePath);
+    createAppGradleFile(config.targetdir, config.appname, config.usesmartstore);
 
     // Inform the user of next steps if requested.
     if (showNextSteps) {
@@ -342,22 +316,15 @@ function createNativeApp(config, showNextSteps) {
             ['',
              outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
              '',
-             outputColors.cyan + 'To use your new application in Eclipse, do the following:' + outputColors.reset,
-             '   - Go to File -> Import... ',
-             '   - Select General -> Existing Projects into Workspace, and click Next >',
-             '   - For the root directory, browse to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder',
-             '   - Select the ' + path.basename(libProject) + ', Cordova, and ' + outputColors.magenta + config.appname + outputColors.reset + ' projects, and click Finish',
-             '   - Choose \'Build All\' from the Project menu',
-             '   - Run your application by right-clicking the project in Project Explorer, and choosing Run As -> Android Application',
+             outputColors.cyan + 'To use your new application in Android Studio, do the following:' + outputColors.reset,
+             '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` ',
+             '   - Navigate to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder, select it and click `Ok`',
+             '   - If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`',
+             '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
              '',
-             outputColors.cyan + 'To work with your new project from the command line, use the following instructions:',
-             '',
-             'To build the new application, do the following:' + outputColors.reset,
+             outputColors.cyan + 'To work with your new project from the command line, use the following instructions:' + outputColors.reset,
              '   - cd ' + config.projectDir,
-             '   - ant clean debug',
-             '',
-             outputColors.cyan + 'To run the application, start an emulator or plug in your device and run:' + outputColors.reset,
-             '   - ant installd',
+             '   - ./gradlew assembleDebug',
              ''].join('\n');
         console.log(nextStepsOutput);
         var relativeBootConfigPath = path.relative(config.targetdir, config.bootConfigPath);
@@ -369,8 +336,6 @@ function createNativeApp(config, showNextSteps) {
 function makeContentReplacementPathsArray(config) {
     var returnArray = [];
     returnArray.push(path.join(config.projectDir, 'AndroidManifest.xml'));
-    returnArray.push(path.join(config.projectDir, '.project'));
-    returnArray.push(path.join(config.projectDir, 'build.xml'));
     returnArray.push(path.join(config.projectDir, 'res', 'values', 'strings.xml'));
     returnArray.push(config.bootConfigPath);
     var srcFilePaths = getTemplateSourceFilePaths(config);
@@ -405,6 +370,24 @@ function copyFromSDK(packageSdkRootDir, targetDir, srcDirRelative) {
         }
     } else {
         console.log(outputColors.cyan + 'INFO:' + outputColors.reset + ' ' + srcDirRelative + ' already exists.  Skipping copy.');
+    }
+}
+
+//
+// Creates a root level 'settings.gradle' file for the app
+//
+function createAppGradleFile(appFolderName, appName, usesSmartStore) {
+    console.log('Creating settings.gradle in ' + appFolderName);
+    var pathPrefix = (appFolderName === '.' ? '' : appFolderName);
+    var cordovaGradleSpec = "include 'forcedroid:external:cordova:framework'\n";
+    var salesforceSdkGradleSpec = "include 'forcedroid:libs:SalesforceSDK'\n";
+    var smartStoreGradleSpec = "include 'forcedroid:libs:SmartStore'\n";
+    var smartSyncGradleSpec = "include 'forcedroid:libs:SmartSync'\n";
+    var appGradleSpec = "include '" + pathPrefix + ":" + appName + "'";
+    if (usesSmartStore) {
+        fs.writeFileSync(path.join(appFolderName, 'settings.gradle'), cordovaGradleSpec + salesforceSdkGradleSpec + smartStoreGradleSpec + smartSyncGradleSpec + appGradleSpec);
+    } else {
+        fs.writeFileSync(path.join(appFolderName, 'settings.gradle'), cordovaGradleSpec + salesforceSdkGradleSpec + appGradleSpec);
     }
 }
 
