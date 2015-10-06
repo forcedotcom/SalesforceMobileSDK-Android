@@ -30,6 +30,7 @@ import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.ReadableMap;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -63,8 +64,8 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void logoutCurrentUser(Callback errorCallback,
-                                  Callback successCallback) {
+    public void logoutCurrentUser(ReadableMap args,
+                                  Callback successCallback, Callback errorCallback) {
         UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         SalesforceSDKManager.getInstance().getUserAccountManager().signoutUser(account, null);
 
@@ -72,8 +73,8 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void getAuthCredentials(Callback errorCallback,
-                                   Callback successCallback) {
+    public void getAuthCredentials(ReadableMap args,
+                                   Callback successCallback, Callback errorCallback) {
         ClientManager clientManager = new ClientManager(getReactApplicationContext(), SalesforceSDKManager.getInstance().getAccountType(),
                 SalesforceSDKManager.getInstance().getLoginOptions(),
                 SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
