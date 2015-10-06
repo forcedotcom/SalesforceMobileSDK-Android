@@ -25,14 +25,12 @@ Inside the $NATIVE_DIR, you will find several projects:
 6. **SampleApps/AppConfigurator**: An app to specify runtime configurations for ConfiguredApp (it allows configuration of login server and oauth consumer key and redirect uri) 
 7. **SampleApps/ConfiguredApp**: An app that consumes the runtime configurations specified with AppConfigurator
 
-# Running sample apps from Eclipse
+# Running sample apps from Android Studio
 
-1. Launch Eclipse and select $SALESFORCE_SDK_DIR as your workspace 
-2. Go to Window -> Preferences, choose the Android section, and enter the the Android SDK location.
-3. Go to File -> Import and select General -> Existing Projects into Workspace.
-4. Select $SALESFORCE_SDK_DIR as your root directory and import the projects described above.
-5. Right click on any of the sample apps and choose Run As -> Android Application to run it.
-6. Right click on any of the test project and choose Run As -> Android JUnit Test to run the tests.
+1. Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)`.
+2. Navigate to $SALESFORCE_SDK_DIR, select it and click `Ok`.
+3. If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`.
+4. From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button.
 
 # Creating a new native application using SalesforceSDK
 
@@ -40,10 +38,10 @@ To create a new native application, follow the instructions here:
 
 * [Using forcedroid to create Mobile SDK apps](https://www.npmjs.org/package/forcedroid)
 
-# Running your new native application from Eclipse
+# Running your new native application from Android Studio
 
-1. Launch Eclipse
-2. Go to File -> Import and select General -> Existing Projects into Workspace.
-3. Import the $SALESFORCE_SDK_DIR/libs/SalesforceSDK, the $SALESFORCE_SDK_DIR/libs/SmartStore, and the $SALESFORCE_SDK_DIR/libs/SmartSync library projects and your newly created project into the workspace
-4. Right click on the your project and choose Run As -> Android Application
+1. Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)`.
+2. Navigate to your application's directory, select it and click `Ok`.
+3. If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`.
+4. From the dropdown that displays the available targets, choose your application and click the play button.
 
