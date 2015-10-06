@@ -308,7 +308,9 @@ function createNativeApp(config, showNextSteps) {
         copyFromSDK(packageSdkRootDir, config.targetdir, smartSyncRelativePath);
         copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
-    createAppGradleFile(config.targetdir, config.appname, config.usesmartstore);
+    createAppRootGradleFile(config.targetdir, config.appname, config.usesmartstore);
+    fixSdkGradleFiles(config.targetdir, config.usessmartstore);
+    fixAppGradleFiles(config.targetdir, config.appname, config.usessmartstore);
 
     // Inform the user of next steps if requested.
     if (showNextSteps) {
@@ -376,7 +378,7 @@ function copyFromSDK(packageSdkRootDir, targetDir, srcDirRelative) {
 //
 // Creates a root level 'settings.gradle' file for the app
 //
-function createAppGradleFile(appFolderName, appName, usesSmartStore) {
+function createAppRootGradleFile(appFolderName, appName, usesSmartStore) {
     console.log('Creating settings.gradle in ' + appFolderName);
     var pathPrefix = (appFolderName === '.' ? '' : appFolderName);
     var cordovaGradleSpec = "include 'forcedroid:external:cordova:framework'\n";
@@ -389,6 +391,45 @@ function createAppGradleFile(appFolderName, appName, usesSmartStore) {
     } else {
         fs.writeFileSync(path.join(appFolderName, 'settings.gradle'), cordovaGradleSpec + salesforceSdkGradleSpec + appGradleSpec);
     }
+}
+
+//
+// Fixes library dependency references in the app's build.gradle file
+//
+function fixAppGradleFile(appFolderName, appName, usesSmartStore) {
+    console.log('Tweaking build.gradle in ' + appFolderName + "/" + appName);
+    removeApplyPluginLine(path.join(appFolderName, appName, "build.gradle"));
+
+
+    var originalDep = "compile project(':libs:SalesforceSDK')";
+    var newSdkDep = "compile project(':forcedroid:libs:SalesforceSDK')";
+    var newSmartSyncDep = "compile project(':forcedroid:libs:SmartSync')";
+
+
+sed -i.bu "s/compile project(':libs:SalesforceSDK')/compile project(':forcedroid:libs:SalesforceSDK')/g" Test/build.gradle
+
+    shelljs.exec("sed -i.bu '/apply\ plugin/ d' " + pathStr);
+    shelljs.exec("rm " + pathStr + ".bu");
+
+}
+
+//
+// Fixes library dependency references in the SDK's build.gradle files
+//
+function fixSdkGradleFiles(appFolderName, usesSmartStore) {
+    removeApplyPluginLine(path.join(appFolderName, "forcedroid", "libs", "SalesforceSDK", "build.gradle"));
+    if (usesSmartStore) {
+        removeApplyPluginLine(path.join(appFolderName, "forcedroid", "libs", "SmartStore", "build.gradle"));
+        removeApplyPluginLine(path.join(appFolderName, "forcedroid", "libs", "SmartSync", "build.gradle"));
+    }
+}
+
+//
+// Removes unnecessary lines from the Gradle files.
+//
+function removeApplyPluginLine(pathStr) {
+    shelljs.exec("sed -i.bu '/apply\ plugin/ d' " + pathStr);
+    shelljs.exec("rm " + pathStr + ".bu");
 }
 
 //
