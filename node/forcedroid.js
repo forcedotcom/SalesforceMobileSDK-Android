@@ -99,6 +99,7 @@ function usage() {
 // Helper for 'create' command
 //
 function createApp(config) {
+
     // Verify necessary Android prerequisites.
     androidExePath = getAndroidSDKToolPath();
     if (androidExePath === null) {
@@ -112,6 +113,7 @@ function createApp(config) {
         config.templatePackageName = 'com.salesforce.samples.templateapp';
         createNativeApp(config, true);
     }
+
     // Hybrid app creation
     else {
         createHybridApp(config);
@@ -124,7 +126,6 @@ function getAndroidSDKToolPath() {
         console.log(outputColors.red + 'You must set the ANDROID_HOME environment variable to the path of your installation of the Android SDK.' + outputColors.reset);
         return null;
     }
-
     var androidExePath = path.join(androidHomeDir, 'tools', 'android');
     var isWindows = (/^win/i).test(process.platform);
     if (isWindows) {
@@ -134,7 +135,6 @@ function getAndroidSDKToolPath() {
         console.log(outputColors.red + 'The "android" utility does not exist at ' + androidExePath + '.  Make sure you\'ve properly installed the Android SDK.' + outputColors.reset);
         return null;
     }
-
     return androidExePath;
 }
 
@@ -150,14 +150,12 @@ function createHybridApp(config) {
         console.log('cordova command line tool could not be found.  Make sure you install the cordova CLI from https://www.npmjs.org/package/cordova.');
         process.exit(6);
     }
-
     var minimumCordovaVersionNum = miscUtils.getVersionNumberFromString(minimumCordovaCliVersion);
     var cordovaCliVersionNum = miscUtils.getVersionNumberFromString(cordovaCliVersion);
     if (cordovaCliVersionNum < minimumCordovaVersionNum) {
         console.log('Installed cordova command line tool version (' + cordovaCliVersion + ') is less than the minimum required version (' + minimumCordovaCliVersion + ').  Please update your version of Cordova.');
         process.exit(7);
     }
-
     shelljs.exec('cordova create "' + config.projectDir + '" ' + config.packagename + ' ' + config.appname);
     shelljs.pushd(config.projectDir);
     shelljs.exec('cordova platform add android@' + cordovaPlatformVersion);
@@ -171,7 +169,6 @@ function createHybridApp(config) {
         var sampleAppFolder = path.join(__dirname, '..', 'external', 'shared', 'samples', 'userlist');
         shelljs.cp('-R', path.join(sampleAppFolder, '*'), 'www');
     }
-
     var bootconfig = {
         "remoteAccessConsumerKey": "3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa",
         "oauthRedirectURI": "testsfdc:///mobilesdk/detect/oauth/done",
@@ -183,7 +180,6 @@ function createHybridApp(config) {
         "attemptOfflineLoad": false,
         "androidPushNotificationClientId": ""
     };
-
     fs.writeFileSync(path.join('www', 'bootconfig.json'), JSON.stringify(bootconfig, null, 2));
     shelljs.exec('cordova prepare android');
     shelljs.popd();
@@ -208,6 +204,7 @@ function createHybridApp(config) {
 // Helper to create native application
 //
 function createNativeApp(config, showNextSteps) {
+
     // Computed config
     config.projectDir = path.join(config.targetdir, config.appname);
     config.bootConfigPath = path.join(config.projectDir, 'res', 'values', 'bootconfig.xml');
@@ -229,7 +226,6 @@ function createNativeApp(config, showNextSteps) {
         console.log('There was an error copying the template files from \'' + config.templateDir + '\' to \'' + config.projectDir + '\': ' + shelljs.error());
         process.exit(4);
     }
-
     var contentFilesWithReplacements = makeContentReplacementPathsArray(config);
 
     // Substitute app class name
@@ -312,6 +308,7 @@ function createNativeApp(config, showNextSteps) {
         copyFromSDK(packageSdkRootDir, config.targetdir, smartSyncRelativePath);
         copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
+    createAppGradleFile(config.targetdir, config.appname, config.usesmartstore);
 
     // Inform the user of next steps if requested.
     if (showNextSteps) {
@@ -373,6 +370,24 @@ function copyFromSDK(packageSdkRootDir, targetDir, srcDirRelative) {
         }
     } else {
         console.log(outputColors.cyan + 'INFO:' + outputColors.reset + ' ' + srcDirRelative + ' already exists.  Skipping copy.');
+    }
+}
+
+//
+// Creates a root level 'settings.gradle' file for the app
+//
+function createAppGradleFile(appFolderName, appName, usesSmartStore) {
+    console.log('Creating settings.gradle in ' + appFolderName);
+    var pathPrefix = (appFolderName === '.' ? '' : appFolderName);
+    var cordovaGradleSpec = "include 'forcedroid:external:cordova:framework'\n";
+    var salesforceSdkGradleSpec = "include 'forcedroid:libs:SalesforceSDK'\n";
+    var smartStoreGradleSpec = "include 'forcedroid:libs:SmartStore'\n";
+    var smartSyncGradleSpec = "include 'forcedroid:libs:SmartSync'\n";
+    var appGradleSpec = "include '" + pathPrefix + ":" + appName + "'";
+    if (usesSmartStore) {
+        fs.writeFileSync(path.join(appFolderName, 'settings.gradle'), cordovaGradleSpec + salesforceSdkGradleSpec + smartStoreGradleSpec + smartSyncGradleSpec + appGradleSpec);
+    } else {
+        fs.writeFileSync(path.join(appFolderName, 'settings.gradle'), cordovaGradleSpec + salesforceSdkGradleSpec + appGradleSpec);
     }
 }
 
