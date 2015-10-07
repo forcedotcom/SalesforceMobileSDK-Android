@@ -40,6 +40,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.modules.core.DefaultHardwareBackBtnHandler;
 import com.facebook.react.shell.MainReactPackage;
 import com.facebook.react.uimanager.ViewManager;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.reactnative.SalesforceNetReactBridge;
 import com.salesforce.androidsdk.reactnative.SalesforceOauthReactBridge;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -71,7 +72,7 @@ public class SalesforceReactNativeActivity extends SalesforceActivity implements
                 .setBundleAssetName("index.android.bundle")
                 .setJSMainModuleName("index.android")
                 .addPackage(new MainReactPackage())
-                .addPackage(new AppReactPackage())
+                .addPackage(SalesforceSDKManager.getInstance().getReactPackage())
                 .setUseDeveloperSupport(BuildConfig.DEBUG)
                 .setInitialLifecycleState(LifecycleState.RESUMED)
                 .build();
@@ -112,30 +113,4 @@ public class SalesforceReactNativeActivity extends SalesforceActivity implements
             mReactInstanceManager.onResume(this);
         }
     }
-}
-
-// FIXME this should be returned by SalesforceSDKManager and its subclasses
-class AppReactPackage implements ReactPackage {
-
-    @Override
-    public List<NativeModule> createNativeModules(
-            ReactApplicationContext reactContext) {
-        List<NativeModule> modules = new ArrayList<>();
-
-        modules.add(new SalesforceOauthReactBridge(reactContext));
-        // modules.add(new SalesforceNetReactBridge(reactContext));
-
-        return modules;
-    }
-
-    @Override
-    public List<Class<? extends JavaScriptModule>> createJSModules() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public List<ViewManager> createViewManagers(ReactApplicationContext reactContext) {
-        return Collections.emptyList();
-    }
-
 }
