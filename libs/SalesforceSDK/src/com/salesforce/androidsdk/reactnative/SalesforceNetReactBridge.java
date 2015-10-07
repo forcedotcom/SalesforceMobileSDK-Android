@@ -50,6 +50,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,6 +63,8 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
     public static final String PATH_KEY = "path";
     private static final String QUERY_PARAMS_KEY = "queryParams";
     private static final String HEADER_PARAMS_KEY = "headerParams";
+
+    private RestClient restClient;
 
 
     public SalesforceNetReactBridge(ReactApplicationContext reactContext) {
@@ -79,7 +82,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
         // args parsing
         RestRequest.RestMethod method = RestRequest.RestMethod.valueOf(args.getString(METHOD_KEY));
-        String path = args.getString(PATH_KEY);
+        String path = "/services/data" + args.getString(PATH_KEY);
         ReadableMap queryParams = args.getMap(QUERY_PARAMS_KEY);
         ReadableMap headerParams = args.getMap(HEADER_PARAMS_KEY);
 
@@ -93,29 +96,33 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         restClient.sendAsync(request, new RestClient.AsyncRequestCallback() {
             @Override
             public void onSuccess(RestRequest request, RestResponse response) {
-                // FIXME successCallback.invoke();
+                try {
+                    String responseAsString = response.asString();
+                    successCallback.invoke(responseAsString);
+                } catch (IOException e) {
+                    Log.e("NetReactBridge", "sendRequest", e);
+                    onError(e);
+                }
             }
 
             @Override
             public void onError(Exception exception) {
-                // FIXME errorCallback.invoke();
+                errorCallback.invoke(exception.getMessage());
             }
         });
 
     }
 
     private RestClient getRestClient() {
-        return null; // FIXME
-        /*
-        RestClient restClient = null;
-        UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
-        if (account == null) {
-            restClient = SalesforceSDKManager.getInstance().getClientManager().peekUnauthenticatedRestClient();
-        } else {
-            restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
+        if (restClient == null) {
+            UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+            if (account == null) {
+                restClient = SalesforceSDKManager.getInstance().getClientManager().peekUnauthenticatedRestClient();
+            } else {
+                restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
+            }
         }
         return restClient;
-        */
     }
 
     private static HttpEntity buildEntity(ReadableMap params) {
@@ -203,5 +210,4 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         }
         return result;
     }
-
 }
