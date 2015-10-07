@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -30,23 +30,24 @@ import android.app.Application;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
 import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.ui.sfreactnative.SalesforceReactNativeActivity;
 
 /**
  * Application class used by hybrid applications
  */
-public class HybridApp extends Application {
+public class ReactNativeApp extends Application {
 
-	@Override
-	public void onCreate() {
-		super.onCreate();
-		SalesforceSDKManager.initHybrid(getApplicationContext(), new HybridKeyImpl());
-	}
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        SalesforceSDKManager.initReactNative(getApplicationContext(), new ReactNativeKeyImpl(), SalesforceReactNativeActivity.class);
+    }
 }
 
-class HybridKeyImpl implements KeyInterface {
+class ReactNativeKeyImpl implements KeyInterface {
 
-	@Override
-	public String getKey(String name) {
-		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
-	}
+    @Override
+    public String getKey(String name) {
+        return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
+    }
 }
