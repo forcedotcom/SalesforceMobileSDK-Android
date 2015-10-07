@@ -93,6 +93,6 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
         data.put(COMMUNITY_ID, clientInfo.communityId);
         data.put(COMMUNITY_URL, clientInfo.communityUrl);
 
-        successCallback.invoke(data);
+        successCallback.invoke(data.toString());
     }
 }
