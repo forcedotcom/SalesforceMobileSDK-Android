@@ -1146,12 +1146,7 @@ public class SalesforceSDKManager {
             @Override
             public List<NativeModule> createNativeModules(
                     ReactApplicationContext reactContext) {
-                List<NativeModule> modules = new ArrayList<>();
-
-                modules.add(new SalesforceOauthReactBridge(reactContext));
-                modules.add(new SalesforceNetReactBridge(reactContext));
-
-                return modules;
+                return getNativeModules(reactContext);
             }
 
             @Override
@@ -1164,5 +1159,15 @@ public class SalesforceSDKManager {
                 return Collections.emptyList();
             }
         };
+    }
+
+    protected List<NativeModule> getNativeModules(
+            ReactApplicationContext reactContext) {
+        List<NativeModule> modules = new ArrayList<>();
+
+        modules.add(new SalesforceOauthReactBridge(reactContext));
+        modules.add(new SalesforceNetReactBridge(reactContext));
+
+        return modules;
     }
 }

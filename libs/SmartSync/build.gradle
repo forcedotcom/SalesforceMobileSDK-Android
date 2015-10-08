@@ -3,6 +3,7 @@ apply plugin: 'android-library'
 
 dependencies {
   compile project(':libs:SmartStore')
+  compile 'com.facebook.react:react-native:0.11.+'
 }
 
 android {

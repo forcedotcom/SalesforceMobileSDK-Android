@@ -30,6 +30,8 @@ import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
 
+import com.facebook.react.bridge.NativeModule;
+import com.facebook.react.bridge.ReactApplicationContext;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
@@ -37,10 +39,13 @@ import com.salesforce.androidsdk.smartsync.SmartSyncUserAccountManager;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.reactnative.SmartSyncReactBridge;
 import com.salesforce.androidsdk.ui.LoginActivity;
 import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+
+import java.util.List;
 
 /**
  * Super class for all applications that use the SmartSync SDK.
@@ -214,5 +219,15 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
     @Override
     public UserAccountManager getUserAccountManager() {
     	return SmartSyncUserAccountManager.getInstance();
+    }
+
+    @Override
+    protected List<NativeModule> getNativeModules(
+            ReactApplicationContext reactContext) {
+        List<NativeModule> modules = super.getNativeModules(reactContext);
+
+        modules.add(new SmartSyncReactBridge(reactContext));
+
+        return modules;
     }
 }
