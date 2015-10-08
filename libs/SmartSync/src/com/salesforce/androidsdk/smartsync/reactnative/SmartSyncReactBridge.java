@@ -26,10 +26,28 @@
  */
 package com.salesforce.androidsdk.smartsync.reactnative;
 
-import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.ReadableMap;
+import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
+import com.salesforce.androidsdk.smartsync.util.SyncOptions;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
+
+import org.json.JSONException;
 
 public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
+
+    // Keys in json from/to javascript
+    static final String TARGET = "target";
+    static final String SOUP_NAME = "soupName";
+    static final String OPTIONS = "options";
+    static final String SYNC_ID = "syncId";
+    static final String IS_GLOBAL_STORE = "isGlobalStore";
 
     public SmartSyncReactBridge(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -39,4 +57,149 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     public String getName() {
         return "SmartSyncReactBridge";
     }
+
+    // Event
+    private static final String SYNC_EVENT_TYPE = "sync";
+    private static final String DETAIL = "detail";
+
+    /**
+     * Native implementation of syncUp
+     * @param args
+     * @param successCallback
+     * @param errorCallback
+     */
+    @ReactMethod
+    public void syncUp(ReadableMap args,
+                       final Callback successCallback, final Callback errorCallback) {
+        // Parse args
+        ReadableMap target = args.getMap(TARGET);
+        String soupName = args.getString(SOUP_NAME);
+        ReadableMap options = args.getMap(OPTIONS);
+        final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
+
+        SyncManager syncManager = getSyncManager(isGlobal);
+        SyncState sync = null;
+        try {
+            sync = syncManager.syncUp(SyncUpTarget.fromJSON(null /*fixme target*/), SyncOptions.fromJSON(null /*fixme options*/), soupName, new SyncManager.SyncUpdateCallback() {
+                @Override
+                public void onUpdate(SyncState sync) {
+                    handleSyncUpdate(sync, isGlobal);
+                }
+            });
+            successCallback.invoke(sync.asJSON().toString());
+        } catch (JSONException e) {
+            errorCallback.invoke(e.toString());
+        }
+    }
+
+    /**
+     * Native implementation of syncDown
+     * @param args
+     * @param successCallback
+     * @param errorCallback
+     */
+    public void syncDown(ReadableMap args,
+                         final Callback successCallback, final Callback errorCallback) {
+        // Parse args
+        ReadableMap target = args.getMap(TARGET);
+        String soupName = args.getString(SOUP_NAME);
+        ReadableMap options = args.getMap(OPTIONS);
+        final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
+
+        SyncManager syncManager = getSyncManager(isGlobal);
+        SyncState sync = null;
+        try {
+            sync = syncManager.syncDown(SyncDownTarget.fromJSON(null /*fixme target%/), SyncOptions.fromJSON(null /*options*/), soupName, new SyncManager.SyncUpdateCallback() {
+                @Override
+                public void onUpdate(SyncState sync) {
+                    handleSyncUpdate(sync, isGlobal);
+                }
+            });
+            successCallback.invoke(sync.asJSON().toString());
+        } catch (JSONException e) {
+            errorCallback.invoke(e.toString());
+        }
+    }
+
+    /**
+     * Native implementation of getSyncStatus
+     * @param args
+     * @param successCallback
+     * @param errorCallback
+     */
+    public void getSyncStatus(ReadableMap args,
+                              final Callback successCallback, final Callback errorCallback) {
+        // Parse args
+        long syncId = args.getInt(SYNC_ID);
+        boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
+        SyncManager syncManager = getSyncManager(isGlobal);
+        SyncState sync = null;
+        try {
+            sync = syncManager.getSyncStatus(syncId);
+            successCallback.invoke(sync.asJSON().toString());
+        } catch (JSONException e) {
+            errorCallback.invoke(e.toString());
+        }
+    }
+
+    /**
+     * Native implementatino of reSync
+     * @param args
+     * @param successCallback
+     * @param errorCallback
+     */
+    public void reSync(ReadableMap args,
+                       final Callback successCallback, final Callback errorCallback) {
+        // Parse args
+        long syncId = args.getInt(SYNC_ID);
+        final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
+        SyncManager syncManager = getSyncManager(isGlobal);
+        SyncState sync = null;
+        try {
+            sync = syncManager.reSync(syncId, new SyncManager.SyncUpdateCallback() {
+                @Override
+                public void onUpdate(SyncState sync) {
+                    handleSyncUpdate(sync, isGlobal);
+                }
+            });
+            successCallback.invoke(sync.asJSON().toString());
+        } catch (JSONException e) {
+            errorCallback.invoke(e.toString());
+        }
+    }
+
+    /**
+     * Sync update handler
+     * @param sync
+     * @param isGlobal
+     */
+    private void handleSyncUpdate(final SyncState sync, final boolean isGlobal) {
+    // fixme
+
+//        cordova.getActivity().runOnUiThread(new Runnable() {
+//            public void run() {
+//                try {
+//                    String syncAsString = sync.asJSON().put(IS_GLOBAL_STORE, isGlobal).toString();
+//                    String js = "javascript:document.dispatchEvent(new CustomEvent(\"" + SYNC_EVENT_TYPE + "\", { \"" + DETAIL + "\": " + syncAsString + "}))";
+//                    webView.loadUrl(js);
+//                } catch (Exception e) {
+//                    Log.e("SmartSyncPlugin.handleSyncUpdate", "Failed to dispatch event", e);
+//                }
+//            }
+//        });
+    }
+
+    /**
+     * Return sync manager to use
+     * @param isGlobal
+     * @return
+     */
+    private SyncManager getSyncManager(boolean isGlobal) {
+        SyncManager syncManager = isGlobal
+                ? SyncManager.getInstance(null, null, SalesforceSDKManagerWithSmartStore.getInstance().getGlobalSmartStore())
+                : SyncManager.getInstance();
+
+        return syncManager;
+    }
+
 }
