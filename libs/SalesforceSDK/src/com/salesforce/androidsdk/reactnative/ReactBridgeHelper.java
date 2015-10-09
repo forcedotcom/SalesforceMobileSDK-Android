@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.reactnative;
 
+import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.NativeArray;
 import com.facebook.react.bridge.NativeMap;
 import com.facebook.react.bridge.ReadableArray;
@@ -43,15 +44,33 @@ import java.util.Map;
 
 public class ReactBridgeHelper  {
 
-    public static NativeMap toNativeMap(JSONObject jsonObject) {
-        // TODO
-        return null;
+    public static void invokeSuccess(Callback successCallback, JSONObject json) {
+        // XXX it would be better to user a NativeMap
+        //     for now we serialize the object and do a JSON.parse(result) on the javascript side
+        successCallback.invoke(json.toString());
     }
 
-    public static NativeArray toNativeArray(JSONArray jsonArray) {
-        // TODO
-        return null;
+    public static void invokeSuccess(Callback successCallback, JSONArray json) {
+        // XXX it would be better to user a NativeArray
+        //     for now we serialize the object and do a JSON.parse(result) on the javascript side
+        successCallback.invoke(json.toString());
     }
+
+    public static void invokeSuccess(Callback successCallback, String value) {
+        // XXX we need to turn "xyz" into "\"xyz\"" so that JSON.parse() returns "xyz"
+        successCallback.invoke("\"" + value + "\"");
+    }
+
+    public static void invokeSuccess(Callback successCallback, boolean value) {
+        // XXX we need to turn true|false into "true"|"false" so that JSON.parse() returns true|false
+        successCallback.invoke("" + value);
+    }
+
+    public static void invokeSuccess(Callback successCallback, int value) {
+        // XXX we need to turn 123 into "123" so that JSON.parse() returns 123
+        successCallback.invoke("" + value);
+    }
+
 
     public static Map<String, Object> toJavaMap(ReadableMap map) {
         Map<String, Object> result = new HashMap<>();
@@ -140,4 +159,6 @@ public class ReactBridgeHelper  {
         }
         return result;
     }
+
+
 }

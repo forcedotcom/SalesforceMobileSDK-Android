@@ -30,8 +30,8 @@ import android.util.Log;
 import android.util.SparseArray;
 
 import com.facebook.react.bridge.Callback;
-import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReadableMap;
 import com.salesforce.androidsdk.reactnative.ReactBridgeHelper;
 import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
@@ -53,22 +53,11 @@ import java.util.Map;
 
 public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 
-    // Keys in json from/to javascript
-	static final String BEGIN_KEY = "beginKey";
-	static final String END_KEY = "endKey";
-	static final String INDEX_PATH = "indexPath";
-	static final String LIKE_KEY = "likeKey";
-	static final String MATCH_KEY = "matchKey";
-	static final String SMART_SQL = "smartSql";
-	static final String ORDER_PATH = "orderPath";
-	static final String ORDER = "order";
-	static final String PAGE_SIZE = "pageSize";
-	static final String QUERY_TYPE = "queryType";
-	static final String TOTAL_ENTRIES = "totalEntries";
-	static final String TOTAL_PAGES = "totalPages";
+	// Log tag
+	static final String LOG_TAG = "SmartStoreReactBridge";
+
+	// Keys in json from/to javascript
 	static final String RE_INDEX_DATA = "reIndexData";
-	static final String CURRENT_PAGE_INDEX = "currentPageIndex";
-	static final String CURRENT_PAGE_ORDERED_ENTRIES = "currentPageOrderedEntries";
 	static final String CURSOR_ID = "cursorId";
 	static final String TYPE = "type";
 	static final String SOUP_NAME = "soupName";
@@ -141,9 +130,9 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		// Run retrieve
 		try {
 			JSONArray result = smartStore.retrieve(soupName, soupEntryIds);
-			successCallback.invoke(result.toString());
+			ReactBridgeHelper.invokeSuccess(successCallback, result);
 		} catch (JSONException e) {
-			Log.e("SmartStoreReactBridge", "retrieveSoupEntries", e);
+			Log.e(LOG_TAG, "retrieveSoupEntries", e);
 			errorCallback.invoke(e.toString());
 		}
 	}
@@ -186,6 +175,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		final StoreCursor storeCursor = getSmartStoreCursors(smartStore).get(cursorId);
 		if (storeCursor == null) {
 			errorCallback.invoke("Invalid cursor id");
+            return;
 		}
 
 		// Change page
@@ -194,9 +184,9 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		// Build json result
 		try {
 			JSONObject result = storeCursor.getData(smartStore);
-			successCallback.invoke(result);
+			ReactBridgeHelper.invokeSuccess(successCallback, result);
 		} catch (JSONException e) {
-			Log.e("SmartStoreReactBridge", "moveCursorToPageIndex", e);
+			Log.e(LOG_TAG, "moveCursorToPageIndex", e);
 			errorCallback.invoke(e.toString());
 		}
 	}
@@ -235,7 +225,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 
 		// Run upsert
 		boolean exists = smartStore.hasSoup(soupName);
-		successCallback.invoke(exists);
+		ReactBridgeHelper.invokeSuccess(successCallback, exists);
 	}
 
 	/**
@@ -271,7 +261,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 				successCallback.invoke();
 			}
 			catch (JSONException e) {
-				Log.e("SmartStoreReactBridge", "upsertSoupEntries", e);
+				Log.e(LOG_TAG, "upsertSoupEntries", e);
 				errorCallback.invoke(e.toString());
 			} finally {
 				smartStore.endTransaction();
@@ -298,10 +288,10 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 			// Run register
 			final SmartStore smartStore = getSmartStore(args);
 			smartStore.registerSoup(soupName, indexSpecs);
-			successCallback.invoke(soupName);
+			ReactBridgeHelper.invokeSuccess(successCallback, soupName);
 		}
 		catch (JSONException e) {
-			Log.e("SmartStoreReactBridge", "registerSoup", e);
+			Log.e(LOG_TAG, "registerSoup", e);
 			errorCallback.invoke(e.toString());
 		}
 	}
@@ -331,7 +321,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 			runQuery(smartStore, querySpec, successCallback);
 
 		} catch (Exception e) {
-			Log.e("SmartStoreReactBridge", "querySoup", e);
+			Log.e(LOG_TAG, "querySoup", e);
 			errorCallback.invoke(e.toString());
 		}
 	}
@@ -358,7 +348,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 			// Run query
 			runQuery(smartStore, querySpec, successCallback);
 		} catch (Exception e) {
-			Log.e("SmartStoreReactBridge", "runSmartQuery", e);
+			Log.e(LOG_TAG, "runSmartQuery", e);
 			errorCallback.invoke(e.toString());
 		}
 	}
@@ -380,7 +370,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		JSONObject result = storeCursor.getData(smartStore);
 
 		// Done
-		successCallback.invoke(result.toString());
+        ReactBridgeHelper.invokeSuccess(successCallback, result);
 	}
 
 	/**
@@ -434,8 +424,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		// Parse args
 		final SmartStore smartStore = getSmartStore(args);
 		int databaseSize = smartStore.getDatabaseSize();
-		successCallback.invoke(databaseSize);
-	}	
+		ReactBridgeHelper.invokeSuccess(successCallback, databaseSize);
+	}
 
 	/**
 	 * Native implementation of alterSoup
@@ -457,10 +447,10 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 
 			// Run register
 			smartStore.alterSoup(soupName, indexSpecs, reIndexData);
-			successCallback.invoke(soupName);
+			ReactBridgeHelper.invokeSuccess(successCallback, soupName);
 		}
 		catch (JSONException e) {
-			Log.e("SmartStoreReactBridge", "alterSoup", e);
+			Log.e(LOG_TAG, "alterSoup", e);
 			errorCallback.invoke(e.toString());
 		}
 	}
@@ -482,7 +472,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 
 		// Run register
 		smartStore.reIndexSoup(soupName, indexPaths.toArray(new String[0]), true);
-		successCallback.invoke(soupName);
+		ReactBridgeHelper.invokeSuccess(successCallback, soupName);
 	}
 
 	/**
@@ -510,10 +500,10 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 				indexSpecJson.put(TYPE, indexSpec.type);
 				indexSpecsJson.put(indexSpecJson);
 			}
-			successCallback.invoke(indexSpecsJson);
+			ReactBridgeHelper.invokeSuccess(successCallback, indexSpecsJson);
 		}
 		catch (JSONException e) {
-			Log.e("SmartStoreReactBridge", "getSoupIndexSpecs", e);
+			Log.e(LOG_TAG, "getSoupIndexSpecs", e);
 			errorCallback.invoke(e.toString());
 		}
 	}

@@ -89,6 +89,12 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
             public void onSuccess(RestRequest request, RestResponse response) {
                 try {
                     String responseAsString = response.asString();
+                    // XXX Sending the string over and letting javascript do a JSON.parse(result)
+                    //     It would be better to using NativeMap/NativeArray
+                    //     Although the absence of a common super class would force us to
+                    //     introduce two sendRequest methods:
+                    //     - one that expects map back from the server
+                    //     - one that expects array back from the server
                     successCallback.invoke(responseAsString);
                 } catch (IOException e) {
                     Log.e("NetReactBridge", "sendRequest", e);

@@ -52,6 +52,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     static final String OPTIONS = "options";
     static final String SYNC_ID = "syncId";
     static final String IS_GLOBAL_STORE = "isGlobalStore";
+    public static final String LOG_TAG = "SmartSyncReactBridge";
 
     public SmartSyncReactBridge(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -59,7 +60,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
 
     @Override
     public String getName() {
-        return "SmartSyncReactBridge";
+        return LOG_TAG;
     }
 
     /**
@@ -86,6 +87,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                 }
             });
         } catch (JSONException e) {
+            Log.e(LOG_TAG, "syncUp", e);
             errorCallback.invoke(e.toString());
         }
     }
@@ -113,6 +115,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                 }
             });
         } catch (JSONException e) {
+            Log.e(LOG_TAG, "syncDown", e);
             errorCallback.invoke(e.toString());
         }
     }
@@ -132,8 +135,9 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         SyncManager syncManager = getSyncManager(isGlobal);
         try {
             SyncState sync = syncManager.getSyncStatus(syncId);
-            successCallback.invoke(sync.asJSON().toString());
+            ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
         } catch (JSONException e) {
+            Log.e(LOG_TAG, "getSyncStatus", e);
             errorCallback.invoke(e.toString());
         }
     }
@@ -159,6 +163,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                 }
             });
         } catch (JSONException e) {
+            Log.e(LOG_TAG, "reSync", e);
             errorCallback.invoke(e.toString());
         }
     }
@@ -171,9 +176,9 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     private void handleSyncUpdate(final SyncState sync, Callback successCallback) {
         if (sync.getStatus() == SyncState.Status.DONE) {
             try {
-                successCallback.invoke(sync.asJSON().toString());
+                ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
             } catch (JSONException e) {
-                Log.e("SmartSyncReactBridge", "handleSyncUpdate", e);
+                Log.e(LOG_TAG, "handleSyncUpdate", e);
             }
         }
     }

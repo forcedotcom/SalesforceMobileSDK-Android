@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.reactnative;
 
+import android.util.Log;
+
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -36,8 +38,8 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
 
@@ -81,18 +83,24 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
         RestClient client = clientManager.peekRestClient();
 
         RestClient.ClientInfo clientInfo = client.getClientInfo();
-        Map<String, String> data = new HashMap<String, String>();
-        data.put(ACCESS_TOKEN, client.getAuthToken());
-        data.put(REFRESH_TOKEN, client.getRefreshToken());
-        data.put(USER_ID, clientInfo.userId);
-        data.put(ORG_ID, clientInfo.orgId);
-        data.put(CLIENT_ID, clientInfo.clientId);
-        data.put(LOGIN_URL, clientInfo.loginUrl.toString());
-        data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
-        data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
-        data.put(COMMUNITY_ID, clientInfo.communityId);
-        data.put(COMMUNITY_URL, clientInfo.communityUrl);
+        try {
+            JSONObject data = new JSONObject();
+            data.put(ACCESS_TOKEN, client.getAuthToken());
+            data.put(REFRESH_TOKEN, client.getRefreshToken());
+            data.put(USER_ID, clientInfo.userId);
+            data.put(ORG_ID, clientInfo.orgId);
+            data.put(CLIENT_ID, clientInfo.clientId);
+            data.put(LOGIN_URL, clientInfo.loginUrl.toString());
+            data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
+            data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
+            data.put(COMMUNITY_ID, clientInfo.communityId);
+            data.put(COMMUNITY_URL, clientInfo.communityUrl);
 
-        successCallback.invoke(data.toString());
+            ReactBridgeHelper.invokeSuccess(successCallback, data);
+        }
+        catch (JSONException e) {
+            Log.e("OauthReactBridge", "getAuthCredentials", e);
+            errorCallback.invoke(e.toString());
+        }
     }
 }
