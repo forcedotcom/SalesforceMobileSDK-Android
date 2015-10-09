@@ -72,9 +72,9 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     public void syncUp(ReadableMap args,
                        final Callback successCallback, final Callback errorCallback) {
         // Parse args
-        JSONObject target = new JSONObject(ReactBridgeHelper.toMap(args.getMap(TARGET)));
+        JSONObject target = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(TARGET)));
         String soupName = args.getString(SOUP_NAME);
-        JSONObject options = new JSONObject(ReactBridgeHelper.toMap(args.getMap(OPTIONS)));
+        JSONObject options = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(OPTIONS)));
         final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
 
         SyncManager syncManager = getSyncManager(isGlobal);
@@ -99,9 +99,9 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     public void syncDown(ReadableMap args,
                          final Callback successCallback, final Callback errorCallback) {
         // Parse args
-        JSONObject target = new JSONObject(ReactBridgeHelper.toMap(args.getMap(TARGET)));
+        JSONObject target = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(TARGET)));
         String soupName = args.getString(SOUP_NAME);
-        JSONObject options = new JSONObject(ReactBridgeHelper.toMap(args.getMap(OPTIONS)));
+        JSONObject options = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(OPTIONS)));
         final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
 
         SyncManager syncManager = getSyncManager(isGlobal);

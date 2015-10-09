@@ -79,7 +79,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
         // Preparing request
         HttpEntity requestEntity = buildEntity(queryParams);
-        Map<String, String> additionalHeaders = ReactBridgeHelper.toStringMap(headerParams);
+        Map<String, String> additionalHeaders = ReactBridgeHelper.toJavaStringMap(headerParams);
         RestRequest request = new RestRequest(method, path, requestEntity, additionalHeaders);
 
         // Sending request
@@ -120,7 +120,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         HttpEntity entity = null;
         if (params != null) {
             try {
-                JSONObject json = new JSONObject(ReactBridgeHelper.toMap(params));
+                JSONObject json = new JSONObject(ReactBridgeHelper.toJavaMap(params));
                 entity = new StringEntity(json.toString(), HTTP.UTF_8);
             } catch (UnsupportedEncodingException e) {
                 Log.e("NetReactBridge", "buildEntity failed", e);

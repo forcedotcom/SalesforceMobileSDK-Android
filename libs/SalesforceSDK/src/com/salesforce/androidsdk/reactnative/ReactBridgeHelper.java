@@ -26,9 +26,15 @@
  */
 package com.salesforce.androidsdk.reactnative;
 
+import com.facebook.react.bridge.NativeArray;
+import com.facebook.react.bridge.NativeMap;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableMapKeySeyIterator;
+import com.facebook.react.bridge.WritableNativeMap;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,7 +43,17 @@ import java.util.Map;
 
 public class ReactBridgeHelper  {
 
-    public static Map<String, Object> toMap(ReadableMap map) {
+    public static NativeMap toNativeMap(JSONObject jsonObject) {
+        // TODO
+        return null;
+    }
+
+    public static NativeArray toNativeArray(JSONArray jsonArray) {
+        // TODO
+        return null;
+    }
+
+    public static Map<String, Object> toJavaMap(ReadableMap map) {
         Map<String, Object> result = new HashMap<>();
         ReadableMapKeySeyIterator iterator = map.keySetIterator();
         while (iterator.hasNextKey()) {
@@ -56,17 +72,17 @@ public class ReactBridgeHelper  {
                     result.put(key, map.getString(key));
                     break;
                 case Map:
-                    result.put(key, toMap(map.getMap(key)));
+                    result.put(key, toJavaMap(map.getMap(key)));
                     break;
                 case Array:
-                    result.put(key, toArray(map.getArray(key)));
+                    result.put(key, toJavaList(map.getArray(key)));
                     break;
             }
         }
         return result;
     }
 
-    public static Map<String, String> toStringMap(ReadableMap map) {
+    public static Map<String, String> toJavaStringMap(ReadableMap map) {
         Map<String, String> result = new HashMap<>();
         ReadableMapKeySeyIterator iterator = map.keySetIterator();
         while (iterator.hasNextKey()) {
@@ -83,7 +99,22 @@ public class ReactBridgeHelper  {
         return result;
     }
 
-    public static List<Object> toArray(ReadableArray array) {
+    public static List<String> toJavaStringList(ReadableArray array) {
+        List<String> result = new ArrayList<>();
+        for (int i = 0; i<array.size(); i++) {
+            switch (array.getType(i)) {
+                case String:
+                    result.add(i, array.getString(i));
+                    break;
+                default:
+                    // Only expected strings
+                    break;
+            }
+        }
+        return result;
+    }
+
+    public static List<Object> toJavaList(ReadableArray array) {
         List<Object> result = new ArrayList<>();
         for (int i = 0; i<array.size(); i++) {
             switch (array.getType(i)) {
@@ -100,10 +131,10 @@ public class ReactBridgeHelper  {
                     result.add(i, array.getString(i));
                     break;
                 case Map:
-                    result.add(i, toMap(array.getMap(i)));
+                    result.add(i, toJavaMap(array.getMap(i)));
                     break;
                 case Array:
-                    result.add(i, toArray(array.getArray(i)));
+                    result.add(i, toJavaList(array.getArray(i)));
                     break;
             }
         }
