@@ -32,13 +32,9 @@ import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
-import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.bridge.ReadableMapKeySeyIterator;
-import com.fasterxml.jackson.core.JsonGenerator;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -46,15 +42,10 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.protocol.HTTP;
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
@@ -88,7 +79,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
         // Preparing request
         HttpEntity requestEntity = buildEntity(queryParams);
-        Map<String, String> additionalHeaders = toStringMap(headerParams);
+        Map<String, String> additionalHeaders = ReactBridgeHelper.toStringMap(headerParams);
         RestRequest request = new RestRequest(method, path, requestEntity, additionalHeaders);
 
         // Sending request
@@ -129,85 +120,12 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         HttpEntity entity = null;
         if (params != null) {
             try {
-                JSONObject json = new JSONObject(toMap(params));
+                JSONObject json = new JSONObject(ReactBridgeHelper.toMap(params));
                 entity = new StringEntity(json.toString(), HTTP.UTF_8);
             } catch (UnsupportedEncodingException e) {
                 Log.e("NetReactBridge", "buildEntity failed", e);
             }
         }
         return entity;
-    }
-
-    private static Map<String, Object> toMap(ReadableMap map) {
-        Map<String, Object> result = new HashMap<>();
-        ReadableMapKeySeyIterator iterator = map.keySetIterator();
-        while (iterator.hasNextKey()) {
-            String key = iterator.nextKey();
-            switch (map.getType(key)) {
-                case Null:
-                    result.put(key, null);
-                    break;
-                case Boolean:
-                    result.put(key, map.getBoolean(key));
-                    break;
-                case Number:
-                    result.put(key, map.getDouble(key)); // XXX what about integers
-                    break;
-                case String:
-                    result.put(key, map.getString(key));
-                    break;
-                case Map:
-                    result.put(key, toMap(map.getMap(key)));
-                    break;
-                case Array:
-                    result.put(key, toArray(map.getArray(key)));
-                    break;
-            }
-        }
-        return result;
-    }
-
-    private static Map<String, String> toStringMap(ReadableMap map) {
-        Map<String, String> result = new HashMap<>();
-        ReadableMapKeySeyIterator iterator = map.keySetIterator();
-        while (iterator.hasNextKey()) {
-            String key = iterator.nextKey();
-            switch (map.getType(key)) {
-                case String:
-                    result.put(key, map.getString(key));
-                    break;
-                default:
-                    // Only expected strings
-                    break;
-            }
-        }
-        return result;
-    }
-
-    private static List<Object> toArray(ReadableArray array) {
-        List<Object> result = new ArrayList<>();
-        for (int i = 0; i<array.size(); i++) {
-            switch (array.getType(i)) {
-                case Null:
-                    result.add(i, null);
-                    break;
-                case Boolean:
-                    result.add(i, array.getBoolean(i));
-                    break;
-                case Number:
-                    result.add(i, array.getDouble(i)); // XXX what about integers
-                    break;
-                case String:
-                    result.add(i, array.getString(i));
-                    break;
-                case Map:
-                    result.add(i, toMap(array.getMap(i)));
-                    break;
-                case Array:
-                    result.add(i, toArray(array.getArray(i)));
-                    break;
-            }
-        }
-        return result;
     }
 }
