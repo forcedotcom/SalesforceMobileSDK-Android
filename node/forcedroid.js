@@ -321,6 +321,8 @@ function createNativeApp(config, showNextSteps) {
     shelljs.exec("mv " + path.join(config.targetdir, "forcedroid", "gradlew") + " " + path.join(config.targetdir, "gradlew"));
     shelljs.exec("mv " + path.join(config.targetdir, "forcedroid", "gradle") + " " + path.join(config.targetdir, "gradle"));
     shelljs.exec("mv " + path.join(config.targetdir, "forcedroid", "build.gradle") + " " + path.join(config.targetdir, "build.gradle"));
+    shelljs.exec("sed -i.bu '/group = \'com.salesforce.androidsdk\'/ d' " + path.join(config.targetdir, "build.gradle"));
+    shelljs.exec("rm " + path.join(config.targetdir, "build.gradle") + ".bu");
 
     // Inform the user of next steps if requested.
     if (showNextSteps) {
@@ -395,7 +397,7 @@ function createAppRootGradleFile(appFolderName, appName, usesSmartStore) {
     var salesforceSdkGradleSpec = "include 'forcedroid:libs:SalesforceSDK'\n";
     var smartStoreGradleSpec = "include 'forcedroid:libs:SmartStore'\n";
     var smartSyncGradleSpec = "include 'forcedroid:libs:SmartSync'\n";
-    var appGradleSpec = "include '" + pathPrefix + ":" + appName + "'";
+    var appGradleSpec = "include '" + appName + "'";
     if (usesSmartStore) {
         fs.writeFileSync(path.join(appFolderName, 'settings.gradle'), cordovaGradleSpec + salesforceSdkGradleSpec + smartStoreGradleSpec + smartSyncGradleSpec + appGradleSpec);
     } else {
