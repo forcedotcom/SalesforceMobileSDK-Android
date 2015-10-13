@@ -47,7 +47,7 @@ var UserList = React.createClass({
     getInitialState: function() {
       var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2});
       return {
-          dataSource: ds.cloneWithRows([{Id:'a',Name:'aa'},{Id:'b', Name:'bb'}]),
+          dataSource: ds.cloneWithRows([]),
       };
     },
     

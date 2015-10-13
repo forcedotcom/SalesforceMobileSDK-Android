@@ -3,9 +3,4 @@
     <string name="account_type">com.salesforce.samples.reactnativetemplateapp.login</string>
 	<string name="app_name"><b>ReactNativeTemplate</b></string>
 	<string name="app_package">com.salesforce.samples.reactnativetemplateapp</string>
-    <string name="welcome">Welcome %s</string>
-	<string name="logout_button">Logout</string>
-	<string name="fetch_contacts_button">Fetch Contacts</string>
-	<string name="fetch_accounts_button">Fetch Accounts</string>
-	<string name="clear_button">Clear</string>
 </resources>
