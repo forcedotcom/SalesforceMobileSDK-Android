@@ -123,5 +123,5 @@ var styles = StyleSheet.create({
 });
 
 
-AppRegistry.registerComponent('AwesomeProject', () => App);
+AppRegistry.registerComponent('ReactNativeTemplateApp', () => App);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,17 +24,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.templateapp;
+package com.salesforce.samples.reactnativetemplateapp;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
+import android.app.Application;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.Encryptor;
 
 /**
- * This class provides an implementation of KeyInterface.
- *
- * @author bhariharan
+ * Application class for our application.
  */
-public class KeyImpl implements KeyInterface {
+public class ReactNativeTemplateApp extends Application {
+
+	@Override
+	public void onCreate() {
+		super.onCreate();
+		SalesforceSDKManager.initReactNative(getApplicationContext(), new ReactNativeKeyImpl(), MainActivity.class);
+	}
+}
+
+class ReactNativeKeyImpl implements SalesforceSDKManager.KeyInterface {
 
 	@Override
 	public String getKey(String name) {
