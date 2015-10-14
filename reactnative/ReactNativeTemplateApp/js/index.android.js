@@ -34,14 +34,46 @@ var {
     View,
     ListView,
     PixelRatio,
+    Navigator
 } = React;
 var forceClient = require('./react.force.net.js');
 
 var App = React.createClass({
     render: function() {
-        return (<UserList/>);
+        return (<Navigator
+                  style={styles.container}
+                  initialRoute={{name: 'Mobile SDK Sample App', index: 0}}
+                  renderScene={(route, navigator) => (<UserList/>)}
+                  navigationBar={
+                          <Navigator.NavigationBar
+                            routeMapper={NavigationBarRouteMapper}
+                          />
+                  }
+                />);
     }
 });
+
+var NavigationBarRouteMapper = {
+
+  LeftButton: function(route, navigator, index, navState) {
+      return null;
+  },
+
+  RightButton: function(route, navigator, index, navState) {
+      return null;
+  },
+
+  Title: function(route, navigator, index, navState) {
+      return (
+              <View style={styles.navBar}>
+                <Text style={styles.navBarText}>
+                  {route.name}
+                </Text>
+              </View>
+      );
+  },
+};
+
 
 var UserList = React.createClass({
     getInitialState: function() {
@@ -75,7 +107,7 @@ var UserList = React.createClass({
 
     render: function() {
         return (
-            <ListView
+            <ListView style={styles.scene}
               dataSource={this.state.dataSource}
               renderRow={this.renderRow} />
       );
@@ -96,16 +128,20 @@ var UserList = React.createClass({
 });
 
 var styles = StyleSheet.create({
-    navBar: {
-        backgroundColor: 'red'
-    },
     container: {
-        flex: 1,
         backgroundColor: 'white',
     },
-    header: {
+    navBar: {
         height: 50,
-        alignItems:'center'
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    navBarText: {
+        fontSize: 18,
+    },
+    scene: {
+        flex: 1,
+        paddingTop: 50,
     },
     row: {
         flex: 1,
