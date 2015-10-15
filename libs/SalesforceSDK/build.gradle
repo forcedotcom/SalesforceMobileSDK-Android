@@ -2,6 +2,7 @@
 apply plugin: 'android-library'
 
 dependencies {
+  compile 'com.facebook.react:react-native:0.12.+'
   compile project(':external:cordova:framework')
 
   // TODO: Replace the following libs with MavenCentral when they're available.

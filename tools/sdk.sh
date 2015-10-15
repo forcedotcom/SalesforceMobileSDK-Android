@@ -2,6 +2,7 @@
 TOP=`pwd`
 LIBS_TOP=$TOP/libs/
 NATIVE_TOP=$TOP/native/
+REACT_NATIVE_TOP=$TOP/reactnative/
 HYBRID_TOP=$TOP/hybrid/
 CORDOVA_TOP=$TOP/external/cordova/
 TRUE=0
@@ -60,6 +61,7 @@ usage ()
     echo "        SmartSyncExplorerHybrid"
     echo "        SmartSyncExplorer"
     echo "        TemplateApp"
+    echo "        ReactNativeTemplateApp"
     echo "        ForcePluginsTest"
     echo "    <test_target> can be "
     echo "        all"
@@ -185,6 +187,7 @@ else
         build_project_if_requested    "SmartStore"               $LIBS_TOP/SmartStore                            23 :libs:SmartStore
         build_project_if_requested    "SmartSync"                $LIBS_TOP/SmartSync                             23 :libs:SmartSync
         build_project_if_requested    "TemplateApp"              $NATIVE_TOP/TemplateApp                         23 :native:TemplateApp
+        build_project_if_requested    "ReactNativeTemplateApp"   $REACT_NATIVE_TOP/ReactNativeTemplateApp        23 :reactnative:ReactNativeTemplateApp
         build_project_if_requested    "RestExplorer"             $NATIVE_TOP/SampleApps/RestExplorer             23 :native:NativeSampleApps:RestExplorer 
         build_project_if_requested    "AppConfigurator"          $NATIVE_TOP/SampleApps/AppConfigurator          23 :native:NativeSampleApps:AppConfigurator
         build_project_if_requested    "ConfiguredApp"            $NATIVE_TOP/SampleApps/ConfiguredApp            23 :native:NativeSampleApps:ConfiguredApp

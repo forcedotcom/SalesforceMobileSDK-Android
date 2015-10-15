@@ -39,11 +39,11 @@ public class HybridApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.initHybrid(getApplicationContext(), new KeyImpl());
+		SalesforceSDKManager.initHybrid(getApplicationContext(), new HybridKeyImpl());
 	}
 }
 
-class KeyImpl implements KeyInterface {
+class HybridKeyImpl implements KeyInterface {
 
 	@Override
 	public String getKey(String name) {
