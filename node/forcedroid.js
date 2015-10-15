@@ -85,7 +85,7 @@ function usage() {
     console.log(outputColors.cyan + 'Usage:');
     console.log();
     console.log(outputColors.magenta + 'forcedroid create');
-    console.log('    --apptype=<Application Type> (native, hybrid_remote, hybrid_local)');
+    console.log('    --apptype=<Application Type> (native, react_native, hybrid_remote, hybrid_local)');
     console.log('    --appname=<Application Name>');
     console.log('    --targetdir=<Target App Folder>');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
@@ -112,6 +112,15 @@ function createApp(config) {
         config.templateAppName = 'Template';
         config.templatePackageName = 'com.salesforce.samples.templateapp';
         createNativeApp(config, true);
+    }
+
+    // React Native app creation
+    else if (config.apptype === 'react_native') {
+        config.relativeTemplateDir = path.join('reactnative', 'ReactNativeTemplateApp');
+        config.templateAppName = 'ReactNativeTemplate';
+        config.templatePackageName = 'com.salesforce.samples.reactnativetemplateapp';
+        config.usesmartstore = true;
+        createReactNativeApp(config);
     }
 
     // Hybrid app creation
@@ -347,6 +356,13 @@ function createNativeApp(config, showNextSteps) {
     }
 }
 
+//
+// Helper to create native application
+//
+function createReactNativeApp(config) {
+    createNativeApp(config, true);
+}
+
 function makeContentReplacementPathsArray(config) {
     var returnArray = [];
     returnArray.push(path.join(config.projectDir, 'AndroidManifest.xml'));
@@ -444,8 +460,8 @@ function createArgsProcessorList() {
     var argProcessorList = new commandLineUtils.ArgProcessorList();
 
     // App type
-    addProcessorFor(argProcessorList, 'apptype', 'Enter your application type (native, hybrid_remote, or hybrid_local):', 'App type must be native, hybrid_remote, or hybrid_local.', 
-                    function(val) { return ['native', 'hybrid_remote', 'hybrid_local'].indexOf(val) >= 0; });
+    addProcessorFor(argProcessorList, 'apptype', 'Enter your application type (native, react_native, hybrid_remote, or hybrid_local):', 'App type must be native, react_native, hybrid_remote, or hybrid_local.', 
+                    function(val) { return ['native', 'react_native', 'hybrid_remote', 'hybrid_local'].indexOf(val) >= 0; });
 
     // App name
     addProcessorFor(argProcessorList, 'appname', 'Enter your application name:', 'Invalid value for application name: \'$val\'.', /^\S+$/);
