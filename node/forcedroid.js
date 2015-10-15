@@ -111,7 +111,7 @@ function createApp(config) {
         config.relativeTemplateDir = path.join('native', 'TemplateApp');
         config.templateAppName = 'Template';
         config.templatePackageName = 'com.salesforce.samples.templateapp';
-        createNativeApp(config, true);
+        createNativeOrReactNativeApp(config);
     }
 
     // React Native app creation
@@ -120,7 +120,7 @@ function createApp(config) {
         config.templateAppName = 'ReactNativeTemplate';
         config.templatePackageName = 'com.salesforce.samples.reactnativetemplateapp';
         config.usesmartstore = true;
-        createReactNativeApp(config);
+        createNativeOrReactNativeApp(config);
     }
 
     // Hybrid app creation
@@ -210,9 +210,9 @@ function createHybridApp(config) {
 }
 
 //
-// Helper to create native application
+// Helper to create native or react native application
 //
-function createNativeApp(config, showNextSteps) {
+function createNativeOrReactNativeApp(config) {
 
     // Computed config
     config.projectDir = path.join(config.targetdir, config.appname);
@@ -236,6 +236,14 @@ function createNativeApp(config, showNextSteps) {
         process.exit(4);
     }
     var contentFilesWithReplacements = makeContentReplacementPathsArray(config);
+
+    // React native specific fixes
+    if (config.apptype === 'react_native') {
+        console.log('Changing dependency in build.gradle.');
+        shelljs.sed('-i', 'compile\ project\(\':libs:SmartSync\'\)', 'compile project(\':libs:SmartSync\')', path.join(config.projectDir, 'build.gradle'));
+        console.log('Changing name in package.json.');
+        selljs.sed('-i', 'ReactNativeTemplateApp', config.appname, path.join(config.projectDir, 'package.json'));
+    }
 
     // Substitute app class name
     var appClassName = config.appname + 'App';
@@ -334,33 +342,24 @@ function createNativeApp(config, showNextSteps) {
     shelljs.exec("rm " + path.join(config.targetdir, "build.gradle") + ".bu");
 
     // Inform the user of next steps if requested.
-    if (showNextSteps) {
-        var nextStepsOutput =
-            ['',
-             outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
-             '',
-             outputColors.cyan + 'To use your new application in Android Studio, do the following:' + outputColors.reset,
-             '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` ',
-             '   - Navigate to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder, select it and click `Ok`',
-             '   - If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`',
-             '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
-             '',
-             outputColors.cyan + 'To work with your new project from the command line, use the following instructions:' + outputColors.reset,
-             '   - cd ' + config.projectDir,
-             '   - ./gradlew assembleDebug',
-             ''].join('\n');
-        console.log(nextStepsOutput);
-        var relativeBootConfigPath = path.relative(config.targetdir, config.bootConfigPath);
-        console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
-                    + outputColors.magenta + relativeBootConfigPath + '.' + outputColors.reset);
-    }
-}
-
-//
-// Helper to create native application
-//
-function createReactNativeApp(config) {
-    createNativeApp(config, true);
+    var nextStepsOutput =
+        ['',
+         outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
+         '',
+         outputColors.cyan + 'To use your new application in Android Studio, do the following:' + outputColors.reset,
+         '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` ',
+         '   - Navigate to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder, select it and click `Ok`',
+         '   - If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`',
+         '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
+         '',
+         outputColors.cyan + 'To work with your new project from the command line, use the following instructions:' + outputColors.reset,
+         '   - cd ' + config.projectDir,
+         '   - ./gradlew assembleDebug',
+         ''].join('\n');
+    console.log(nextStepsOutput);
+    var relativeBootConfigPath = path.relative(config.targetdir, config.bootConfigPath);
+    console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
+                + outputColors.magenta + relativeBootConfigPath + '.' + outputColors.reset);
 }
 
 function makeContentReplacementPathsArray(config) {
