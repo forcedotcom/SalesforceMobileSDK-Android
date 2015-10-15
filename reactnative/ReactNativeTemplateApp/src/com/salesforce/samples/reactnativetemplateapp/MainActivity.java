@@ -45,7 +45,8 @@ public class MainActivity extends SalesforceActivity implements DefaultHardwareB
 
 	@Override
 	public void onResume(RestClient restClient) {
-		mReactInstanceManager = ReactInstanceManager.builder()
+        if (mReactInstanceManager == null) {
+            mReactInstanceManager = ReactInstanceManager.builder()
 				.setApplication(getApplication())
 				.setBundleAssetName("index.android.bundle")
 				.setJSMainModuleName("index.android")
@@ -55,7 +56,8 @@ public class MainActivity extends SalesforceActivity implements DefaultHardwareB
 				.setInitialLifecycleState(LifecycleState.RESUMED)
 				.build();
 
-		mReactRootView.startReactApplication(mReactInstanceManager, "ReactNativeTemplateApp", null);
+            mReactRootView.startReactApplication(mReactInstanceManager, "ReactNativeTemplateApp", null);
+        }
 	}
 
 	@Override
