@@ -240,7 +240,9 @@ function createNativeOrReactNativeApp(config) {
     // React native specific fixes
     if (config.apptype === 'react_native') {
         console.log('Changing name in package.json.');
-        shelljs.sed('-i', 'ReactNativeTemplateApp', config.appname, path.join(config.projectDir, 'package.json'));
+        shelljs.sed('-i', config.templateAppName, config.appname, path.join(config.projectDir, 'package.json'));
+        console.log('Changing app name in index.android.js.');
+        shelljs.sed('-i', config.templateAppName, config.appname, path.join(config.projectDir, 'js', 'index.android.js'));
     }
 
     // Substitute app class name
