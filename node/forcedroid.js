@@ -85,7 +85,7 @@ function usage() {
     console.log(outputColors.cyan + 'Usage:');
     console.log();
     console.log(outputColors.magenta + 'forcedroid create');
-    console.log('    --apptype=<Application Type> (native, hybrid_remote, hybrid_local)');
+    console.log('    --apptype=<Application Type> (native, react_native, hybrid_remote, hybrid_local)');
     console.log('    --appname=<Application Name>');
     console.log('    --targetdir=<Target App Folder>');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
@@ -111,7 +111,16 @@ function createApp(config) {
         config.relativeTemplateDir = path.join('native', 'TemplateApp');
         config.templateAppName = 'Template';
         config.templatePackageName = 'com.salesforce.samples.templateapp';
-        createNativeApp(config, true);
+        createNativeOrReactNativeApp(config);
+    }
+
+    // React Native app creation
+    else if (config.apptype === 'react_native') {
+        config.relativeTemplateDir = path.join('reactnative', 'ReactNativeTemplateApp');
+        config.templateAppName = 'ReactNativeTemplate';
+        config.templatePackageName = 'com.salesforce.samples.reactnativetemplateapp';
+        config.usesmartstore = true;
+        createNativeOrReactNativeApp(config);
     }
 
     // Hybrid app creation
@@ -201,9 +210,9 @@ function createHybridApp(config) {
 }
 
 //
-// Helper to create native application
+// Helper to create native or react native application
 //
-function createNativeApp(config, showNextSteps) {
+function createNativeOrReactNativeApp(config) {
 
     // Computed config
     config.projectDir = path.join(config.targetdir, config.appname);
@@ -227,6 +236,14 @@ function createNativeApp(config, showNextSteps) {
         process.exit(4);
     }
     var contentFilesWithReplacements = makeContentReplacementPathsArray(config);
+
+    // React native specific fixes
+    if (config.apptype === 'react_native') {
+        console.log('Changing name in package.json.');
+        shelljs.sed('-i', config.templateAppName, config.appname, path.join(config.projectDir, 'package.json'));
+        console.log('Changing app name in index.android.js.');
+        shelljs.sed('-i', config.templateAppName, config.appname, path.join(config.projectDir, 'js', 'index.android.js'));
+    }
 
     // Substitute app class name
     var appClassName = config.appname + 'App';
@@ -325,26 +342,24 @@ function createNativeApp(config, showNextSteps) {
     shelljs.exec("rm " + path.join(config.targetdir, "build.gradle") + ".bu");
 
     // Inform the user of next steps if requested.
-    if (showNextSteps) {
-        var nextStepsOutput =
-            ['',
-             outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
-             '',
-             outputColors.cyan + 'To use your new application in Android Studio, do the following:' + outputColors.reset,
-             '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` ',
-             '   - Navigate to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder, select it and click `Ok`',
-             '   - If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`',
-             '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
-             '',
-             outputColors.cyan + 'To work with your new project from the command line, use the following instructions:' + outputColors.reset,
-             '   - cd ' + config.projectDir,
-             '   - ./gradlew assembleDebug',
-             ''].join('\n');
-        console.log(nextStepsOutput);
-        var relativeBootConfigPath = path.relative(config.targetdir, config.bootConfigPath);
-        console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
-                    + outputColors.magenta + relativeBootConfigPath + '.' + outputColors.reset);
-    }
+    var nextStepsOutput =
+        ['',
+         outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
+         '',
+         outputColors.cyan + 'To use your new application in Android Studio, do the following:' + outputColors.reset,
+         '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` ',
+         '   - Navigate to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder, select it and click `Ok`',
+         '   - If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`',
+         '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
+         '',
+         outputColors.cyan + 'To work with your new project from the command line, use the following instructions:' + outputColors.reset,
+         '   - cd ' + config.projectDir,
+         '   - ./gradlew assembleDebug',
+         ''].join('\n');
+    console.log(nextStepsOutput);
+    var relativeBootConfigPath = path.relative(config.targetdir, config.bootConfigPath);
+    console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
+                + outputColors.magenta + relativeBootConfigPath + '.' + outputColors.reset);
 }
 
 function makeContentReplacementPathsArray(config) {
@@ -444,8 +459,8 @@ function createArgsProcessorList() {
     var argProcessorList = new commandLineUtils.ArgProcessorList();
 
     // App type
-    addProcessorFor(argProcessorList, 'apptype', 'Enter your application type (native, hybrid_remote, or hybrid_local):', 'App type must be native, hybrid_remote, or hybrid_local.', 
-                    function(val) { return ['native', 'hybrid_remote', 'hybrid_local'].indexOf(val) >= 0; });
+    addProcessorFor(argProcessorList, 'apptype', 'Enter your application type (native, react_native, hybrid_remote, or hybrid_local):', 'App type must be native, react_native, hybrid_remote, or hybrid_local.', 
+                    function(val) { return ['native', 'react_native', 'hybrid_remote', 'hybrid_local'].indexOf(val) >= 0; });
 
     // App name
     addProcessorFor(argProcessorList, 'appname', 'Enter your application name:', 'Invalid value for application name: \'$val\'.', /^\S+$/);
