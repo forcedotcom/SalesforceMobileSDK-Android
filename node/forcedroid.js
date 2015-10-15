@@ -239,10 +239,8 @@ function createNativeOrReactNativeApp(config) {
 
     // React native specific fixes
     if (config.apptype === 'react_native') {
-        console.log('Changing dependency in build.gradle.');
-        shelljs.sed('-i', 'compile\ project\(\':libs:SmartSync\'\)', 'compile project(\':libs:SmartSync\')', path.join(config.projectDir, 'build.gradle'));
         console.log('Changing name in package.json.');
-        selljs.sed('-i', 'ReactNativeTemplateApp', config.appname, path.join(config.projectDir, 'package.json'));
+        shelljs.sed('-i', 'ReactNativeTemplateApp', config.appname, path.join(config.projectDir, 'package.json'));
     }
 
     // Substitute app class name

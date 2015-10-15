@@ -1,7 +1,7 @@
 apply plugin: 'android'
 
 dependencies {
-    compile project(':libs:SmartSync')
+    compile project(':libs:SalesforceSDK')
 }
 
 android {
