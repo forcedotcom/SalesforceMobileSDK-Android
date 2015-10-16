@@ -1,10 +1,5 @@
 #!/bin/bash
 TOP=`pwd`
-LIBS_TOP=$TOP/libs/
-NATIVE_TOP=$TOP/native/
-REACT_NATIVE_TOP=$TOP/reactnative/
-HYBRID_TOP=$TOP/hybrid/
-CORDOVA_TOP=$TOP/external/cordova/
 TRUE=0
 FALSE=1
 TARGETS=""
@@ -142,23 +137,7 @@ build_project_if_requested ()
     if ( should_do "build{$1}" )
     then
         header "Building project $1"
-        cd $2
-        if [ -z $3 ]
-        then
-            API_VERSION=`cat AndroidManifest.xml | grep minSdkVersion | cut -d"\"" -f2`
-        else
-            API_VERSION=$3
-        fi
-        android update project -p . -t "android-$API_VERSION" | grep "$BUILD_OUTPUT_FILTER"
-
-        if [ -z $4 ]
-        then
-            ant clean debug | grep "$BUILD_OUTPUT_FILTER"
-            cd $TOP
-        else
-            cd $TOP
-            ./gradlew $4:assembleDebug  | grep "$BUILD_OUTPUT_FILTER"
-        fi
+        ./gradlew $2:assembleDebug  | grep "$BUILD_OUTPUT_FILTER"
     fi
 }
 
@@ -182,20 +161,20 @@ else
         header "Building all"
         ./gradlew assembleDebug  | grep "$TEST_OUTPUT_FILTER"
     else
-        build_project_if_requested    "Cordova"                  $CORDOVA_TOP/framework                          21
-        build_project_if_requested    "SalesforceSDK"            $LIBS_TOP/SalesforceSDK                         23 :libs:SalesforceSDK
-        build_project_if_requested    "SmartStore"               $LIBS_TOP/SmartStore                            23 :libs:SmartStore
-        build_project_if_requested    "SmartSync"                $LIBS_TOP/SmartSync                             23 :libs:SmartSync
-        build_project_if_requested    "TemplateApp"              $NATIVE_TOP/TemplateApp                         23 :native:TemplateApp
-        build_project_if_requested    "ReactNativeTemplateApp"   $REACT_NATIVE_TOP/ReactNativeTemplateApp        23 :reactnative:ReactNativeTemplateApp
-        build_project_if_requested    "RestExplorer"             $NATIVE_TOP/SampleApps/RestExplorer             23 :native:NativeSampleApps:RestExplorer 
-        build_project_if_requested    "AppConfigurator"          $NATIVE_TOP/SampleApps/AppConfigurator          23 :native:NativeSampleApps:AppConfigurator
-        build_project_if_requested    "ConfiguredApp"            $NATIVE_TOP/SampleApps/ConfiguredApp            23 :native:NativeSampleApps:ConfiguredApp
-        build_project_if_requested    "SmartSyncExplorer"        $NATIVE_TOP/SampleApps/SmartSyncExplorer        23 :native:NativeSampleApps:SmartSyncExplorer
-        build_project_if_requested    "AccountEditor"            $HYBRID_TOP/SampleApps/AccountEditor            23 :hybrid:HybridSampleApps:AccountEditor
-        build_project_if_requested    "NoteSync"                 $HYBRID_TOP/SampleApps/NoteSync                 23 :hybrid:HybridSampleApps:NoteSync
-        build_project_if_requested    "SmartSyncExplorerHybrid"  $HYBRID_TOP/SampleApps/SmartSyncExplorerHybrid  23 :hybrid:HybridSampleApps:SmartSyncExplorerHybrid
-        build_project_if_requested    "ForcePluginsTest"         $HYBRID_TOP/test/ForcePluginsTest               23 :hybrid:test:ForcePluginsTest
+        build_project_if_requested    "Cordova"                       :external:cordova:framework
+        build_project_if_requested    "SalesforceSDK"                 :libs:SalesforceSDK
+        build_project_if_requested    "SmartStore"                    :libs:SmartStore
+        build_project_if_requested    "SmartSync"                     :libs:SmartSync
+        build_project_if_requested    "TemplateApp"                   :native:TemplateApp
+        build_project_if_requested    "ReactNativeTemplateApp"        :reactnative:ReactNativeTemplateApp
+        build_project_if_requested    "RestExplorer"                  :native:NativeSampleApps:RestExplorer 
+        build_project_if_requested    "AppConfigurator"               :native:NativeSampleApps:AppConfigurator
+        build_project_if_requested    "ConfiguredApp"                 :native:NativeSampleApps:ConfiguredApp
+        build_project_if_requested    "SmartSyncExplorer"             :native:NativeSampleApps:SmartSyncExplorer
+        build_project_if_requested    "AccountEditor"                 :hybrid:HybridSampleApps:AccountEditor
+        build_project_if_requested    "NoteSync"                      :hybrid:HybridSampleApps:NoteSync
+        build_project_if_requested    "SmartSyncExplorerHybrid"       :hybrid:HybridSampleApps:SmartSyncExplorerHybrid
+        build_project_if_requested    "ForcePluginsTest"              :hybrid:test:ForcePluginsTest
     fi
 
     if ( should_do "test{all}" )
