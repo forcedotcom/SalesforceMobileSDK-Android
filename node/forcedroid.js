@@ -333,13 +333,12 @@ function createNativeOrReactNativeApp(config) {
     copyFromSDK(packageSdkRootDir, config.targetdir, "gradlew");
     copyFromSDK(packageSdkRootDir, config.targetdir, "gradle");
     copyFromSDK(packageSdkRootDir, config.targetdir, "build.gradle");
-    shelljs.exec("mv " + path.join(config.targetdir, "forcedroid", "gradle.properties") + " " + path.join(config.targetdir, "gradle.properties"));
-    shelljs.exec("mv " + path.join(config.targetdir, "forcedroid", "gradlew.bat") + " " + path.join(config.targetdir, "gradlew.bat"));
-    shelljs.exec("mv " + path.join(config.targetdir, "forcedroid", "gradlew") + " " + path.join(config.targetdir, "gradlew"));
-    shelljs.exec("mv " + path.join(config.targetdir, "forcedroid", "gradle") + " " + path.join(config.targetdir, "gradle"));
-    shelljs.exec("mv " + path.join(config.targetdir, "forcedroid", "build.gradle") + " " + path.join(config.targetdir, "build.gradle"));
-    shelljs.exec("sed -i.bu '/group = \'com.salesforce.androidsdk\'/ d' " + path.join(config.targetdir, "build.gradle"));
-    shelljs.exec("rm " + path.join(config.targetdir, "build.gradle") + ".bu");
+    shelljs.mv(path.join(config.targetdir, "forcedroid", "gradle.properties"), path.join(config.targetdir, "gradle.properties"));
+    shelljs.mv(path.join(config.targetdir, "forcedroid", "gradlew.bat"), path.join(config.targetdir, "gradlew.bat"));
+    shelljs.mv(path.join(config.targetdir, "forcedroid", "gradlew"), path.join(config.targetdir, "gradlew"));
+    shelljs.mv(path.join(config.targetdir, "forcedroid", "gradle"), path.join(config.targetdir, "gradle"));
+    shelljs.mv(path.join(config.targetdir, "forcedroid", "build.gradle"), path.join(config.targetdir, "build.gradle"));
+    shelljs.sed('-i', 'group = \'com.salesforce.androidsdk\'', '', path.join(config.targetdir, "build.gradle"));
 
     // Inform the user of next steps if requested.
     var nextStepsOutput =
@@ -428,8 +427,7 @@ function fixAppGradleFiles(appFolderName, appName, usesSmartStore) {
     var pathStr = path.join(appFolderName, appName, "build.gradle");
     var originalDep = "compile project(':libs:SalesforceSDK')";
     var newSdkDep = (usesSmartStore ? "compile project(':forcedroid:libs:SmartSync')" : "compile project(':forcedroid:libs:SalesforceSDK')");
-    shelljs.exec("sed -i.bu " + "\"s/" + originalDep + "/" + newSdkDep + "/g\" " + pathStr);
-    shelljs.exec("rm " + pathStr + ".bu");
+    shelljs.sed('-i', originalDep, newSdkDep, pathStr);
 }
 
 //
@@ -438,17 +436,14 @@ function fixAppGradleFiles(appFolderName, appName, usesSmartStore) {
 function fixSdkGradleFiles(appFolderName, usesSmartStore) {
     var originalCordovaDep = "compile project(':external:cordova:framework')";
     var newCordovaDep = "compile project(':forcedroid:external:cordova:framework')";
-    shelljs.exec("sed -i.bu " + "\"s/" + originalCordovaDep + "/" + newCordovaDep + "/g\" " + path.join(appFolderName, "forcedroid", "libs", "SalesforceSDK", "build.gradle"));
-    shelljs.exec("rm " + path.join(appFolderName, "forcedroid", "libs", "SalesforceSDK", "build.gradle") + ".bu");
+    shelljs.sed('-i', originalCordovaDep, newCordovaDep, path.join(appFolderName, "forcedroid", "libs", "SalesforceSDK", "build.gradle"));
     if (usesSmartStore) {
         var originalSdkDep = "compile project(':libs:SalesforceSDK')";
         var originalSSDep = "compile project(':libs:SmartStore')";
         var newSdkDep = "compile project(':forcedroid:libs:SalesforceSDK')";
         var newSSDep = "compile project(':forcedroid:libs:SmartStore')";
-        shelljs.exec("sed -i.bu " + "\"s/" + originalSdkDep + "/" + newSdkDep + "/g\" " + path.join(appFolderName, "forcedroid", "libs", "SmartStore", "build.gradle"));
-        shelljs.exec("rm " + path.join(appFolderName, "forcedroid", "libs", "SmartStore", "build.gradle") + ".bu");
-        shelljs.exec("sed -i.bu " + "\"s/" + originalSSDep + "/" + newSSDep + "/g\" " + path.join(appFolderName, "forcedroid", "libs", "SmartSync", "build.gradle"));
-        shelljs.exec("rm " + path.join(appFolderName, "forcedroid", "libs", "SmartSync", "build.gradle") + ".bu");
+        shelljs.sed('-i', originalSdkDep, newSdkDep, path.join(appFolderName, "forcedroid", "libs", "SmartStore", "build.gradle"));
+        shelljs.sed('-i', originalSSDep, newSSDep, path.join(appFolderName, "forcedroid", "libs", "SmartSync", "build.gradle"));
     }
 }
 
