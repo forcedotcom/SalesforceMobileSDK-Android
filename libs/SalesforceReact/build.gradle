@@ -1,7 +1,9 @@
-apply plugin: 'android'
+
+apply plugin: 'android-library'
 
 dependencies {
-  compile project(':libs:SalesforceHybrid')
+  compile project(':libs:SmartSync')
+  compile 'com.facebook.react:react-native:0.12.+'
 }
 
 android {
@@ -10,7 +12,6 @@ android {
   useLibrary  'org.apache.http.legacy'
 
   sourceSets {
-
     main {
       manifest.srcFile 'AndroidManifest.xml'
       java.srcDirs = ['src']
@@ -20,6 +21,17 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
+
+    androidTest.setRoot('../test/SmartSyncTest')
+    androidTest {
+      java.srcDirs = ['../test/SmartSyncTest/src']
+      resources.srcDirs = ['../test/SmartSyncTest/src']
+      res.srcDirs = ['../test/SmartSyncTest/res']
+    }
+  }
+  defaultConfig {
+    testApplicationId "com.salesforce.androidsdk.smartsync.tests"
+    testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

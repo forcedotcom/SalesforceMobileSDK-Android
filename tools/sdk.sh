@@ -47,6 +47,8 @@ usage ()
     echo "        SalesforceSDK"
     echo "        SmartStore"
     echo "        SmartSync"
+    echo "        SalesforceHybrid"
+    echo "        SalesforceReact"
     echo "        Cordova"
     echo "        AccountEditor"
     echo "        AppConfigurator"
@@ -165,6 +167,8 @@ else
         build_project_if_requested    "SalesforceSDK"                 :libs:SalesforceSDK
         build_project_if_requested    "SmartStore"                    :libs:SmartStore
         build_project_if_requested    "SmartSync"                     :libs:SmartSync
+        build_project_if_requested    "SalesforceHybrid"              :libs:SalesforceHybrid
+        build_project_if_requested    "SalesforceReact"               :libs:SalesforceReact
         build_project_if_requested    "TemplateApp"                   :native:TemplateApp
         build_project_if_requested    "ReactNativeTemplateApp"        :reactnative:ReactNativeTemplateApp
         build_project_if_requested    "RestExplorer"                  :native:NativeSampleApps:RestExplorer 
