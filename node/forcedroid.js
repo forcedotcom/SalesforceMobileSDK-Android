@@ -200,7 +200,7 @@ function createHybridApp(config) {
          '',
          outputColors.cyan + 'To use your new application in Android Studio, do the following:' + outputColors.reset,
          '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` ',
-         '   - Navigate to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder, select it and click `Ok`',
+         '   - Navigate to the ' + outputColors.magenta + config.targetdir + '/' + config.appname + '/platforms/android' + outputColors.reset + ' folder, select it and click `Ok`',
          '   - If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`',
          '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
          ''].join('\n');
