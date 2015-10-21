@@ -49,7 +49,7 @@ import com.salesforce.androidsdk.security.PasscodeManager;
  *
  * @author bhariharan
  */
-public class UpgradeManager {
+public class SalesforceSDKUpgradeManager {
 
     /**
      * Name of the shared preference file that contains version information.
@@ -61,25 +61,32 @@ public class UpgradeManager {
      */
     private static final String ACC_MGR_KEY = "acc_mgr_version";
 
-    private static UpgradeManager instance = null;
+    private static SalesforceSDKUpgradeManager instance = null;
 
     /**
      * Returns an instance of this class.
      *
      * @return Instance of this class.
      */
-    public static synchronized UpgradeManager getInstance() {
+    public static synchronized SalesforceSDKUpgradeManager getInstance() {
         if (instance == null) {
-            instance = new UpgradeManager();
+            instance = new SalesforceSDKUpgradeManager();
         }
         return instance;
+    }
+
+    /**
+     * Upgrade method
+     */
+    public void upgrade() {
+        upgradeAccMgr();
     }
 
     /**
      * Upgrades account manager data from existing client
      * version to the current version.
      */
-    public synchronized void upgradeAccMgr() {
+    protected synchronized void upgradeAccMgr() {
         String installedVersion = getInstalledAccMgrVersion();
         if (installedVersion.equals(SalesforceSDKManager.SDK_VERSION)) {
             return;

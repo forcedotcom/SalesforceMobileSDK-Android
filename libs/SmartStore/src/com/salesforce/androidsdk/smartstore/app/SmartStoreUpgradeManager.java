@@ -31,14 +31,14 @@ import java.io.File;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.app.UpgradeManager;
+import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
 
 /**
  * This class handles upgrades from one version to another.
  *
  * @author bhariharan
  */
-public class UpgradeManagerWithSmartStore extends UpgradeManager {
+public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
 
     /**
      * Key in shared preference file for smart store version.
@@ -47,32 +47,38 @@ public class UpgradeManagerWithSmartStore extends UpgradeManager {
 
     private static final String DB_NAME_2DOT3_FORMAT = "smartstore%s.db";
 
-    private static UpgradeManagerWithSmartStore instance = null;
+    private static SmartStoreUpgradeManager instance = null;
 
     /**
      * Returns an instance of this class.
      *
      * @return Instance of this class.
      */
-    public static synchronized UpgradeManagerWithSmartStore getInstance() {
+    public static synchronized SmartStoreUpgradeManager getInstance() {
         if (instance == null) {
-            instance = new UpgradeManagerWithSmartStore();
+            instance = new SmartStoreUpgradeManager();
         }
         return instance;
+    }
+
+    @Override
+    public void upgrade() {
+        super.upgrade();
+        upgradeSmartStore();
     }
 
     /**
      * Upgrades smartstore data from existing client
      * version to the current version.
      */
-    public synchronized void upgradeSmartStore() {
+    protected synchronized void upgradeSmartStore() {
         String installedVersion = getInstalledSmartStoreVersion();
-        if (installedVersion.equals(SalesforceSDKManagerWithSmartStore.SDK_VERSION)) {
+        if (installedVersion.equals(SmarStoreSDKManager.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
-        writeCurVersion(SMART_STORE_KEY, SalesforceSDKManagerWithSmartStore.SDK_VERSION);
+        writeCurVersion(SMART_STORE_KEY, SmarStoreSDKManager.SDK_VERSION);
 
         /*
          * We need to update this variable, since the app will not
@@ -102,8 +108,8 @@ public class UpgradeManagerWithSmartStore extends UpgradeManager {
     	 * If not, nothing is done.
     	 */
     	final String oldDbName = String.format(DB_NAME_2DOT3_FORMAT, "");
-    	if (SalesforceSDKManagerWithSmartStore.getInstance().getAppContext().getDatabasePath(oldDbName).exists()) {
-    		final UserAccount curAccount = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getCurrentUser();
+    	if (SmarStoreSDKManager.getInstance().getAppContext().getDatabasePath(oldDbName).exists()) {
+    		final UserAccount curAccount = SmarStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 
     		/*
     		 * If no account exists at this point, there is nothing
@@ -113,7 +119,7 @@ public class UpgradeManagerWithSmartStore extends UpgradeManager {
         		final String dbPath = curAccount.getCommunityLevelFilenameSuffix(null);
         		if (!TextUtils.isEmpty(dbPath)) {
         			final String newDbName = String.format(DB_NAME_2DOT3_FORMAT, dbPath);
-        			final String dbDir = SalesforceSDKManagerWithSmartStore.getInstance().getAppContext().getApplicationInfo().dataDir
+        			final String dbDir = SmarStoreSDKManager.getInstance().getAppContext().getApplicationInfo().dataDir
         					+ "/databases";
         			final File from = new File(dbDir, oldDbName);
         			final File to = new File(dbDir, newDbName);

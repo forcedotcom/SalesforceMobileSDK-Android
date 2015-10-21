@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2011, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,48 +24,22 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync;
+package com.salesforce.androidsdk.phonegap.app;
 
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.smartsync.manager.CacheManager;
-import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
+import android.app.Application;
+
+import com.salesforce.androidsdk.phonegap.ui.ForcePluginsTestActivity;
+import com.salesforce.androidsdk.smartsync.app.SalesforceHybridSDKManager;
+import com.salesforce.androidsdk.ui.LoginActivity;
 
 /**
- * This class acts as a manager that provides methods to access
- * user accounts that are currently logged in, and can be used
- * to add new user accounts.
- *
- * @author bhariharan
+ * Test application for smart store plugin.
  */
-public class SmartSyncUserAccountManager extends UserAccountManager {
-
-	private static SmartSyncUserAccountManager INSTANCE;
-
-	/**
-	 * Returns a singleton instance of this class.
-	 *
-	 * @return Instance of this class.
-	 */
-	public static SmartSyncUserAccountManager getInstance() {
-		if (INSTANCE == null) {
-			INSTANCE = new SmartSyncUserAccountManager();
-		}
-		return INSTANCE;
-	}
+public class ForcePluginsTestApp extends Application {
 
 	@Override
-	public void switchToUser(UserAccount user) {
-		super.switchToUser(user);
-		CacheManager.softReset(user);
-		MetadataManager.reset(user);
-	}
-
-	@Override
-	public void switchToNewUser() {
-		super.switchToNewUser();
-    	final UserAccount userAccount = SmartSyncUserAccountManager.getInstance().getCurrentUser();
-		CacheManager.softReset(userAccount);
-		MetadataManager.reset(userAccount);
+	public void onCreate() {
+		super.onCreate();
+		SalesforceHybridSDKManager.initHybrid(getApplicationContext(), null, ForcePluginsTestActivity.class, LoginActivity.class);
 	}
 }

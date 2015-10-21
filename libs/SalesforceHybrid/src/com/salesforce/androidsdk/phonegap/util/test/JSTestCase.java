@@ -37,9 +37,9 @@ import android.test.InstrumentationTestCase;
 import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.phonegap.TestRunnerPlugin;
-import com.salesforce.androidsdk.phonegap.TestRunnerPlugin.TestResult;
-import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.phonegap.plugin.TestRunnerPlugin;
+import com.salesforce.androidsdk.phonegap.plugin.TestRunnerPlugin.TestResult;
+import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 import org.apache.cordova.CordovaWebView;

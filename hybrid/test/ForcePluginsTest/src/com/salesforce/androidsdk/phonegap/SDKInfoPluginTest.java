@@ -26,19 +26,20 @@
  */
 package com.salesforce.androidsdk.phonegap;
 
-import java.util.ArrayList;
-import java.util.List;
+import android.content.Context;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.test.InstrumentationTestCase;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.config.BootConfig;
+import com.salesforce.androidsdk.phonegap.plugin.SDKInfoPlugin;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.config.BootConfig;
-
-import android.content.Context;
-import android.content.pm.PackageManager.NameNotFoundException;
-import android.test.InstrumentationTestCase;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**

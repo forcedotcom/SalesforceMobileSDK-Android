@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartstore.reactnative;
+package com.salesforce.androidsdk.reactnative.bridge;
 
 import android.util.Log;
 import android.util.SparseArray;
@@ -33,12 +33,11 @@ import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReadableMap;
-import com.salesforce.androidsdk.reactnative.ReactBridgeHelper;
-import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
-import com.salesforce.androidsdk.smartstore.phonegap.StoreCursor;
+import com.salesforce.androidsdk.smartstore.app.SmarStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.StoreCursor;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
@@ -516,8 +515,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
     private SmartStore getSmartStore(ReadableMap args) {
         boolean isGlobal = getIsGlobal(args);
         return (isGlobal
-                ? SalesforceSDKManagerWithSmartStore.getInstance().getGlobalSmartStore()
-                : SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore());
+                ? SmarStoreSDKManager.getInstance().getGlobalSmartStore()
+                : SmarStoreSDKManager.getInstance().getSmartStore());
     }
 
 	/**

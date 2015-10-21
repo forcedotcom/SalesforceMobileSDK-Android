@@ -31,15 +31,11 @@ import android.app.Activity;
 import android.content.Context;
 import android.text.TextUtils;
 
-import com.facebook.react.bridge.NativeModule;
-import com.facebook.react.bridge.ReactApplicationContext;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.smartstore.reactnative.SmartStoreReactBridge;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.ui.LoginActivity;
-import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
@@ -53,7 +49,7 @@ import java.util.Map;
 /**
  * Super class for all force applications that use the smartstore.
  */
-public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
+public class SmarStoreSDKManager extends SalesforceSDKManager {
 
     /**
      * Protected constructor.
@@ -64,8 +60,8 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      * @param loginActivity Login activity.
      * @param appType
      */
-    protected SalesforceSDKManagerWithSmartStore(Context context, KeyInterface keyImpl,
-                                                 Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
+    protected SmarStoreSDKManager(Context context, KeyInterface keyImpl,
+                                  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
         super(context, keyImpl, mainActivity, loginActivity, appType);
     }
 
@@ -83,58 +79,13 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
     private static void init(Context context, KeyInterface keyImpl,
                              Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
         if (INSTANCE == null) {
-            INSTANCE = new SalesforceSDKManagerWithSmartStore(context, keyImpl, mainActivity, loginActivity, appType);
+            INSTANCE = new SmarStoreSDKManager(context, keyImpl, mainActivity, loginActivity, appType);
         }
         initInternal(context);
 
         // Upgrade to the latest version.
-        UpgradeManagerWithSmartStore.getInstance().upgradeSmartStore();
+        SmartStoreUpgradeManager.getInstance().upgrade();
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
-    }
-
-    /**
-     * Initializes components required for this class
-     * to properly function. This method should be called
-     * by hybrid apps using the Salesforce Mobile SDK.
-     *
-     * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     */
-    public static void initHybrid(Context context, KeyInterface keyImpl) {
-        SalesforceSDKManagerWithSmartStore.init(context, keyImpl,
-                SalesforceDroidGapActivity.class, LoginActivity.class, AppType.Hybrid);
-    }
-
-    /**
-     * Initializes components required for this class
-     * to properly function. This method should be called
-     * by hybrid apps using the Salesforce Mobile SDK.
-     *
-     * @param context       Application context.
-     * @param keyImpl       Implementation of KeyInterface.
-     * @param loginActivity Login activity.
-     */
-    public static void initHybrid(Context context, KeyInterface keyImpl,
-                                  Class<? extends Activity> loginActivity) {
-        SalesforceSDKManagerWithSmartStore.init(context, keyImpl,
-                SalesforceDroidGapActivity.class, loginActivity, AppType.Hybrid);
-    }
-
-    /**
-     * Initializes components required for this class
-     * to properly function. This method should be called
-     * by hybrid apps that use a subclass of SalesforceDroidGapActivity.
-     *
-     * @param context       Application context.
-     * @param keyImpl       Implementation of KeyInterface.
-     * @param mainActivity  Main activity.
-     * @param loginActivity Login activity.
-     */
-    public static void initHybrid(Context context, KeyInterface keyImpl,
-                                  Class<? extends SalesforceDroidGapActivity> mainActivity,
-                                  Class<? extends Activity> loginActivity) {
-        SalesforceSDKManagerWithSmartStore.init(context, keyImpl,
-                mainActivity, loginActivity, AppType.Hybrid);
     }
 
     /**
@@ -148,7 +99,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      */
     public static void initNative(Context context, KeyInterface keyImpl,
                                   Class<? extends Activity> mainActivity) {
-        SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity,
+        SmarStoreSDKManager.init(context, keyImpl, mainActivity,
                 LoginActivity.class, AppType.Native);
     }
 
@@ -164,37 +115,7 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      */
     public static void initNative(Context context, KeyInterface keyImpl,
                                   Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-        SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity, loginActivity, AppType.Native);
-    }
-
-    /**
-     * Initializes components required for this class
-     * to properly function. This method should be called
-     * by react native apps using the Salesforce Mobile SDK.
-     *
-     * @param context      Application context.
-     * @param keyImpl      Implementation of KeyInterface.
-     * @param mainActivity Activity that should be launched after the login flow.
-     */
-    public static void initReactNative(Context context, KeyInterface keyImpl,
-                                       Class<? extends Activity> mainActivity) {
-        SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity,
-                LoginActivity.class, AppType.ReactNative);
-    }
-
-    /**
-     * Initializes components required for this class
-     * to properly function. This method should be called
-     * by react native apps using the Salesforce Mobile SDK.
-     *
-     * @param context       Application context.
-     * @param keyImpl       Implementation of KeyInterface.
-     * @param mainActivity  Activity that should be launched after the login flow.
-     * @param loginActivity Login activity.
-     */
-    public static void initReactNative(Context context, KeyInterface keyImpl,
-                                       Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-        SalesforceSDKManagerWithSmartStore.init(context, keyImpl, mainActivity, loginActivity, AppType.ReactNative);
+        SmarStoreSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.Native);
     }
 
     /**
@@ -202,9 +123,9 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
      *
      * @return Singleton instance of SalesforceSDKManagerWithSmartStore.
      */
-    public static SalesforceSDKManagerWithSmartStore getInstance() {
+    public static SmarStoreSDKManager getInstance() {
         if (INSTANCE != null) {
-            return (SalesforceSDKManagerWithSmartStore) INSTANCE;
+            return (SmarStoreSDKManager) INSTANCE;
         } else {
             throw new RuntimeException("Applications need to call SalesforceSDKManagerWithSmartStore.init() first.");
         }
@@ -254,16 +175,6 @@ public class SalesforceSDKManagerWithSmartStore extends SalesforceSDKManager {
             }
             super.changePasscode(oldPass, newPass);
         }
-    }
-
-    @Override
-    protected List<NativeModule> getNativeModules(
-            ReactApplicationContext reactContext) {
-        List<NativeModule> modules = super.getNativeModules(reactContext);
-
-        modules.add(new SmartStoreReactBridge(reactContext));
-
-        return modules;
     }
 
     /**

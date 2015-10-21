@@ -24,15 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.ui.sfhybrid;
-
-import java.io.File;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import org.apache.http.HttpStatus;
+package com.salesforce.androidsdk.phonegap.ui;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -44,6 +36,14 @@ import android.webkit.WebView;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UriFragmentParser;
+
+import org.apache.http.HttpStatus;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Helper class for SalesforceWebViewClient.

@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.ui.sfhybrid;
+package com.salesforce.androidsdk.phonegap.ui;
 
 import android.content.IntentFilter;
 import android.os.Bundle;
@@ -49,6 +49,7 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
+import com.salesforce.androidsdk.phonegap.ui.SalesforceWebViewEngine;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;

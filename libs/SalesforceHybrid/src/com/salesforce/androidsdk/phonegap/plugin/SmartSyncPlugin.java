@@ -24,24 +24,22 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync.phonegap;
-
-import org.apache.cordova.CallbackContext;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+package com.salesforce.androidsdk.phonegap.plugin;
 
 import android.util.Log;
 
-import com.salesforce.androidsdk.phonegap.ForcePlugin;
-import com.salesforce.androidsdk.phonegap.JavaScriptPluginVersion;
-import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
+import com.salesforce.androidsdk.smartstore.app.SmarStoreSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
+
+import org.apache.cordova.CallbackContext;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * PhoneGap plugin for smart sync.
@@ -218,7 +216,7 @@ public class SmartSyncPlugin extends ForcePlugin {
      */
     private SyncManager getSyncManager(boolean isGlobal) {
         SyncManager syncManager = isGlobal
-                ? SyncManager.getInstance(null, null, SalesforceSDKManagerWithSmartStore.getInstance().getGlobalSmartStore())
+                ? SyncManager.getInstance(null, null, SmarStoreSDKManager.getInstance().getGlobalSmartStore())
                 : SyncManager.getInstance();
 
         return syncManager;

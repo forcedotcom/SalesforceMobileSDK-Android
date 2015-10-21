@@ -34,9 +34,9 @@ import com.facebook.react.ReactInstanceManager;
 import com.facebook.react.ReactRootView;
 import com.facebook.react.modules.core.DefaultHardwareBackBtnHandler;
 import com.facebook.react.shell.MainReactPackage;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
+import com.salesforce.androidsdk.ui.SalesforceActivity;
 
 public class MainActivity extends SalesforceActivity implements DefaultHardwareBackBtnHandler {
 
@@ -51,7 +51,7 @@ public class MainActivity extends SalesforceActivity implements DefaultHardwareB
 				.setBundleAssetName("index.android.bundle")
 				.setJSMainModuleName("index.android")
 				.addPackage(new MainReactPackage())
-				.addPackage(SalesforceSDKManager.getInstance().getReactPackage())
+				.addPackage(SalesforceReactSDKManager.getInstance().getReactPackage())
 				.setUseDeveloperSupport(BuildConfig.DEBUG)
 				.setInitialLifecycleState(LifecycleState.RESUMED)
 				.build();

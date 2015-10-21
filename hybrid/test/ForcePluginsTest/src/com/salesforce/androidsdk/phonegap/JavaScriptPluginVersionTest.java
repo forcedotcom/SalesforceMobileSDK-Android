@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.phonegap;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.phonegap.plugin.JavaScriptPluginVersion;
 
 
 /**

@@ -29,6 +29,7 @@ package com.salesforce.samples.reactnativetemplateapp;
 import android.app.Application;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
 import com.salesforce.androidsdk.security.Encryptor;
 
 /**
@@ -39,7 +40,7 @@ public class ReactNativeTemplateApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.initReactNative(getApplicationContext(), new ReactNativeKeyImpl(), MainActivity.class);
+		SalesforceReactSDKManager.initReactNative(getApplicationContext(), new ReactNativeKeyImpl(), MainActivity.class);
 	}
 }
 

@@ -22,16 +22,6 @@ android {
       assets.srcDirs = ['assets']
     }
 
-    androidTest.setRoot('../test/SmartSyncTest')
-    androidTest {
-      java.srcDirs = ['../test/SmartSyncTest/src']
-      resources.srcDirs = ['../test/SmartSyncTest/src']
-      res.srcDirs = ['../test/SmartSyncTest/res']
-    }
-  }
-  defaultConfig {
-    testApplicationId "com.salesforce.androidsdk.smartsync.tests"
-    testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2013, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,29 +24,41 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync.app;
 
-import android.app.Application;
+package com.salesforce.androidsdk.phonegap.ui;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
-import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 
 /**
- * Application class used by hybrid applications that use SmartStore
+ * Sub-class of SalesforceDroidGapActivity that authenticates using hard-coded credentials
+ *
  */
-public class HybridAppWithSmartSync extends Application {
+public class ForcePluginsTestActivity extends SalesforceDroidGapActivity {
 
+	static String username = "sdktest@cs1.com";
+	static String accountName = username + " (ForcePluginsTest)";
+	static String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5LuEc0OGFQRIHGNkCvWU1XiK0TI7w==";
+	static String authToken = "--will-be-set-through-refresh--";
+	static String identityUrl = "https://test.salesforce.com";
+	static String instanceUrl = "https://cs1.salesforce.com";
+	static String loginUrl = "https://test.salesforce.com";
+	static String orgId = "00DS0000000HDptMAG";
+	static String userId = "005S0000003yO7jIAE";
+	
 	@Override
-	public void onCreate() {
-		super.onCreate();
-		SmartSyncSDKManager.initHybrid(getApplicationContext(), new KeyImpl());
-	}
-}
+	protected ClientManager buildClientManager() {
+		final ClientManager clientManager = super.buildClientManager();
+		final LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
 
-class KeyImpl implements KeyInterface {
-
-	@Override
-	public String getKey(String name) {
-		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
+		clientManager.createNewAccount(accountName,
+        		username, refreshToken,
+        		authToken, instanceUrl,
+        		loginUrl, identityUrl,
+        		loginOptions.oauthClientId, orgId,
+        		userId, null);
+	
+		return clientManager;
 	}
 }

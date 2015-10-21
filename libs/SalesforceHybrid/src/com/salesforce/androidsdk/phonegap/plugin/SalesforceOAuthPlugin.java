@@ -24,13 +24,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.phonegap;
+package com.salesforce.androidsdk.phonegap.plugin;
 
 import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
-import com.salesforce.androidsdk.ui.sfhybrid.SalesforceWebViewClientHelper;
+import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
+import com.salesforce.androidsdk.phonegap.ui.SalesforceWebViewClientHelper;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.PluginResult;

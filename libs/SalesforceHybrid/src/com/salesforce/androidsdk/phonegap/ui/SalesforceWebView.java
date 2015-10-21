@@ -24,11 +24,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.ui.sfhybrid;
-
-import org.apache.cordova.engine.SystemWebView;
+package com.salesforce.androidsdk.phonegap.ui;
 
 import android.content.Context;
+
+import org.apache.cordova.engine.SystemWebView;
 
 /**
  * Salesforce specific implementation of Cordova's SystemWebView.

@@ -24,29 +24,34 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync.app;
+package com.salesforce.androidsdk.reactnative.app;
 
-import android.app.Application;
-
-import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
-import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.smartsync.app.SmartSyncUpgradeManager;
 
 /**
- * Application class used by hybrid applications that use SmartStore
+ * This class handles upgrades from one version to another.
+ *
+ * @author bhariharan
  */
-public class HybridAppWithSmartSync extends Application {
+public class SalesforceReactUpgradeManager extends SmartSyncUpgradeManager {
 
-	@Override
-	public void onCreate() {
-		super.onCreate();
-		SmartSyncSDKManager.initHybrid(getApplicationContext(), new KeyImpl());
-	}
-}
+    private static SalesforceReactUpgradeManager INSTANCE = null;
 
-class KeyImpl implements KeyInterface {
+    /**
+     * Returns an instance of this class.
+     *
+     * @return Instance of this class.
+     */
+    public static synchronized SalesforceReactUpgradeManager getInstance() {
+        if (INSTANCE == null) {
+            INSTANCE = new SalesforceReactUpgradeManager();
+        }
+        return INSTANCE;
+    }
 
-	@Override
-	public String getKey(String name) {
-		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
-	}
+    @Override
+    public void upgrade() {
+        super.upgrade();
+    }
+
 }

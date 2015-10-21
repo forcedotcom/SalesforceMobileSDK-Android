@@ -24,12 +24,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.app;
+package com.salesforce.androidsdk.phonegap.app;
 
 import android.app.Application;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
 import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.smartsync.app.SalesforceHybridSDKManager;
 
 /**
  * Application class used by hybrid applications
@@ -39,7 +40,7 @@ public class HybridApp extends Application {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		SalesforceSDKManager.initHybrid(getApplicationContext(), new HybridKeyImpl());
+		SalesforceHybridSDKManager.initHybrid(getApplicationContext(), new HybridKeyImpl());
 	}
 }
 

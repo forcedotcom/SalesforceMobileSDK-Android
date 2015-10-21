@@ -24,33 +24,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync.app;
+package com.salesforce.androidsdk.reactnative.app;
 
-import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
 
+import com.facebook.react.ReactPackage;
+import com.facebook.react.bridge.JavaScriptModule;
 import com.facebook.react.bridge.NativeModule;
 import com.facebook.react.bridge.ReactApplicationContext;
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
-import com.salesforce.androidsdk.smartsync.SmartSyncUserAccountManager;
-import com.salesforce.androidsdk.smartsync.manager.CacheManager;
-import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.smartsync.reactnative.SmartSyncReactBridge;
+import com.facebook.react.uimanager.ViewManager;
+import com.salesforce.androidsdk.reactnative.bridge.SalesforceNetReactBridge;
+import com.salesforce.androidsdk.reactnative.bridge.SalesforceOauthReactBridge;
+import com.salesforce.androidsdk.reactnative.bridge.SmartStoreReactBridge;
+import com.salesforce.androidsdk.reactnative.bridge.SmartSyncReactBridge;
+import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
-import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Super class for all applications that use the SmartSync SDK.
+ * SDK Manager for all applications that use SalesforceSDK and ReactNative
  */
-public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
+public class SalesforceReactSDKManager extends SmartSyncSDKManager {
 
     /**
      * Protected constructor.
@@ -60,7 +60,7 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
 	 * @param loginActivity Login activity.
 	 * @param appType
 	 */
-    protected SmartSyncSDKManager(Context context, KeyInterface keyImpl,
+    protected SalesforceReactSDKManager(Context context, KeyInterface keyImpl,
 								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
     	super(context, keyImpl, mainActivity, loginActivity, appType);
     }
@@ -78,87 +78,14 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
 	private static void init(Context context, KeyInterface keyImpl,
 							 Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
 		if (INSTANCE == null) {
-    		INSTANCE = new SmartSyncSDKManager(context, keyImpl, mainActivity, loginActivity, appType);
+    		INSTANCE = new SalesforceReactSDKManager(context, keyImpl, mainActivity, loginActivity, appType);
     	}
 		initInternal(context);
 
         // Upgrade to the latest version.
-        SmartSyncUpgradeManager.getInstance().upgradeSObject();
+        SalesforceReactUpgradeManager.getInstance().upgrade();
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
-
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by hybrid apps using the Salesforce Mobile SDK.
-	 *
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-	 */
-    public static void initHybrid(Context context, KeyInterface keyImpl) {
-    	SmartSyncSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class,
-				LoginActivity.class, AppType.Hybrid);
-    }
-
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by hybrid apps using the Salesforce Mobile SDK.
-	 *
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     * @param loginActivity Login activity.
-	 */
-    public static void initHybrid(Context context, KeyInterface keyImpl,
-    		Class<? extends Activity> loginActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class,
-				loginActivity, AppType.Hybrid);
-    }
-
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by hybrid apps that use a subclass of SalesforceDroidGapActivity.
-	 *
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     * @param mainActivity Main activity.
-     * @param loginActivity Login activity.
-	 */
-    public static void initHybrid(Context context, KeyInterface keyImpl,
-    		Class<? extends SalesforceDroidGapActivity> mainActivity,
-    		Class<? extends Activity> loginActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.Hybrid);
-    }
-    
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by native apps using the Salesforce Mobile SDK.
-	 *
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     * @param mainActivity Activity that should be launched after the login flow.
-	 */
-    public static void initNative(Context context, KeyInterface keyImpl,
-    		Class<? extends Activity> mainActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class, AppType.Native);
-    }
-
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by native apps using the Salesforce Mobile SDK.
-	 *
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     * @param mainActivity Activity that should be launched after the login flow.
-     * @param loginActivity Login activity.
-	 */
-    public static void initNative(Context context, KeyInterface keyImpl,
-    		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.Native);
-    }
 
 	/**
 	 * Initializes components required for this class
@@ -171,7 +98,7 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
 	 */
 	public static void initReactNative(Context context, KeyInterface keyImpl,
 								  Class<? extends Activity> mainActivity) {
-		SmartSyncSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class, AppType.ReactNative);
+		SalesforceReactSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class, AppType.ReactNative);
 	}
 
 	/**
@@ -186,48 +113,50 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
 	 */
 	public static void initReactNative(Context context, KeyInterface keyImpl,
 								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-		SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.ReactNative);
+		SalesforceReactSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.ReactNative);
 	}
 
     /**
      * Returns a singleton instance of this class.
      *
-     * @return Singleton instance of SmartSyncSDKManager.
+     * @return Singleton instance of SalesforceReactSDKManager.
      */
-    public static SmartSyncSDKManager getInstance() {
+    public static SalesforceReactSDKManager getInstance() {
     	if (INSTANCE != null) {
-    		return (SmartSyncSDKManager) INSTANCE;
+    		return (SalesforceReactSDKManager) INSTANCE;
     	} else {
             throw new RuntimeException("Applications need to call SmartSyncSDKManager.init() first.");
     	}
     }
 
-    @Override
-    protected void cleanUp(Activity frontActivity, Account account) {
-    	final UserAccount userAccount = SmartSyncUserAccountManager.getInstance().buildUserAccount(account);
-    	MetadataManager.reset(userAccount);
+	/**
+	 * Call this method when setting up ReactInstanceManager
+	 * @return ReactPackage for this application
+	 */
+	public ReactPackage getReactPackage() {
+		return new ReactPackage() {
+			@Override
+			public List<NativeModule> createNativeModules(
+					ReactApplicationContext reactContext) {
+				List<NativeModule> modules = new ArrayList<>();
 
-    	/*
-    	 * We don't have to do a hard reset on the cache manager here, since
-    	 * the underlying database will be wiped in the super class.
-    	 */
-    	CacheManager.softReset(userAccount);
-    	SyncManager.reset();
-        super.cleanUp(frontActivity, account);
-    }
+				modules.add(new SalesforceOauthReactBridge(reactContext));
+				modules.add(new SalesforceNetReactBridge(reactContext));
+				modules.add(new SmartStoreReactBridge(reactContext));
+				modules.add(new SmartSyncReactBridge(reactContext));
 
-    @Override
-    public UserAccountManager getUserAccountManager() {
-    	return SmartSyncUserAccountManager.getInstance();
-    }
+				return modules;
+			}
 
-    @Override
-    protected List<NativeModule> getNativeModules(
-            ReactApplicationContext reactContext) {
-        List<NativeModule> modules = super.getNativeModules(reactContext);
+			@Override
+			public List<Class<? extends JavaScriptModule>> createJSModules() {
+				return Collections.emptyList();
+			}
 
-        modules.add(new SmartSyncReactBridge(reactContext));
-
-        return modules;
-    }
+			@Override
+			public List<ViewManager> createViewManagers(ReactApplicationContext reactContext) {
+				return Collections.emptyList();
+			}
+		};
+	}
 }

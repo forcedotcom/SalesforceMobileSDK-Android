@@ -24,20 +24,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartstore.phonegap;
+package com.salesforce.androidsdk.smartstore.phonegap.plugin;
 
 import android.app.Activity;
 import android.util.Log;
 import android.util.SparseArray;
 
-import com.salesforce.androidsdk.phonegap.ForcePlugin;
-import com.salesforce.androidsdk.phonegap.JavaScriptPluginVersion;
-import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
+import com.salesforce.androidsdk.phonegap.plugin.ForcePlugin;
+import com.salesforce.androidsdk.phonegap.plugin.JavaScriptPluginVersion;
+import com.salesforce.androidsdk.smartstore.app.SmarStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.smartstore.store.StoreCursor;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 
 import net.sqlcipher.database.SQLiteDatabase;
@@ -575,8 +576,8 @@ public class SmartStorePlugin extends ForcePlugin {
     private SmartStore getSmartStore(JSONObject arg0) {
         boolean isGlobal = getIsGlobal(arg0);
         return (isGlobal
-                ? SalesforceSDKManagerWithSmartStore.getInstance().getGlobalSmartStore()
-                : SalesforceSDKManagerWithSmartStore.getInstance().getSmartStore());
+                ? SmarStoreSDKManager.getInstance().getGlobalSmartStore()
+                : SmarStoreSDKManager.getInstance().getSmartStore());
     }
 
 	/**

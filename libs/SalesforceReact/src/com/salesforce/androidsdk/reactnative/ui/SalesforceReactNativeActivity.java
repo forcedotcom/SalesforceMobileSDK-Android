@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.ui.sfreactnative;
+package com.salesforce.androidsdk.reactnative.ui;
 
 import android.os.Bundle;
 import android.view.KeyEvent;
@@ -32,23 +32,12 @@ import android.view.KeyEvent;
 import com.facebook.fbcore.BuildConfig;
 import com.facebook.react.LifecycleState;
 import com.facebook.react.ReactInstanceManager;
-import com.facebook.react.ReactPackage;
 import com.facebook.react.ReactRootView;
-import com.facebook.react.bridge.JavaScriptModule;
-import com.facebook.react.bridge.NativeModule;
-import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.modules.core.DefaultHardwareBackBtnHandler;
 import com.facebook.react.shell.MainReactPackage;
-import com.facebook.react.uimanager.ViewManager;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.reactnative.SalesforceNetReactBridge;
-import com.salesforce.androidsdk.reactnative.SalesforceOauthReactBridge;
+import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import com.salesforce.androidsdk.ui.SalesforceActivity;
 
 
 public class SalesforceReactNativeActivity extends SalesforceActivity implements DefaultHardwareBackBtnHandler {
@@ -72,7 +61,7 @@ public class SalesforceReactNativeActivity extends SalesforceActivity implements
                 .setBundleAssetName("index.android.bundle")
                 .setJSMainModuleName("index.android")
                 .addPackage(new MainReactPackage())
-                .addPackage(SalesforceSDKManager.getInstance().getReactPackage())
+                .addPackage(SalesforceReactSDKManager.getInstance().getReactPackage())
                 .setUseDeveloperSupport(BuildConfig.DEBUG)
                 .setInitialLifecycleState(LifecycleState.RESUMED)
                 .build();
