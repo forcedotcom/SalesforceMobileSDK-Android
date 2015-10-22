@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2011, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,41 +24,21 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+package com.salesforce.androidsdk.phonegap.app;
 
-package com.salesforce.androidsdk.phonegap.ui;
+import android.app.Application;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import com.salesforce.androidsdk.phonegap.ui.SalesforceHybridTestActivity;
+import com.salesforce.androidsdk.ui.LoginActivity;
 
 /**
- * Sub-class of SalesforceDroidGapActivity that authenticates using hard-coded credentials
- *
+ * Test application for smart store plugin.
  */
-public class ForcePluginsTestActivity extends SalesforceDroidGapActivity {
+public class SalesforceHybridTestApp extends Application {
 
-	static String username = "sdktest@cs1.com";
-	static String accountName = username + " (ForcePluginsTest)";
-	static String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5LuEc0OGFQRIHGNkCvWU1XiK0TI7w==";
-	static String authToken = "--will-be-set-through-refresh--";
-	static String identityUrl = "https://test.salesforce.com";
-	static String instanceUrl = "https://cs1.salesforce.com";
-	static String loginUrl = "https://test.salesforce.com";
-	static String orgId = "00DS0000000HDptMAG";
-	static String userId = "005S0000003yO7jIAE";
-	
 	@Override
-	protected ClientManager buildClientManager() {
-		final ClientManager clientManager = super.buildClientManager();
-		final LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
-
-		clientManager.createNewAccount(accountName,
-        		username, refreshToken,
-        		authToken, instanceUrl,
-        		loginUrl, identityUrl,
-        		loginOptions.oauthClientId, orgId,
-        		userId, null);
-	
-		return clientManager;
+	public void onCreate() {
+		super.onCreate();
+		SalesforceHybridSDKManager.initHybrid(getApplicationContext(), null, SalesforceHybridTestActivity.class, LoginActivity.class);
 	}
 }

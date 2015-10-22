@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2013, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,21 +24,41 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.phonegap.app;
 
-import android.app.Application;
+package com.salesforce.androidsdk.phonegap.ui;
 
-import com.salesforce.androidsdk.phonegap.ui.ForcePluginsTestActivity;
-import com.salesforce.androidsdk.ui.LoginActivity;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ClientManager;
+import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 
 /**
- * Test application for smart store plugin.
+ * Sub-class of SalesforceDroidGapActivity that authenticates using hard-coded credentials
+ *
  */
-public class ForcePluginsTestApp extends Application {
+public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 
+	static String username = "sdktest@cs1.com";
+	static String accountName = username + " (ForcePluginsTest)";
+	static String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5LuEc0OGFQRIHGNkCvWU1XiK0TI7w==";
+	static String authToken = "--will-be-set-through-refresh--";
+	static String identityUrl = "https://test.salesforce.com";
+	static String instanceUrl = "https://cs1.salesforce.com";
+	static String loginUrl = "https://test.salesforce.com";
+	static String orgId = "00DS0000000HDptMAG";
+	static String userId = "005S0000003yO7jIAE";
+	
 	@Override
-	public void onCreate() {
-		super.onCreate();
-		SalesforceHybridSDKManager.initHybrid(getApplicationContext(), null, ForcePluginsTestActivity.class, LoginActivity.class);
+	protected ClientManager buildClientManager() {
+		final ClientManager clientManager = super.buildClientManager();
+		final LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
+
+		clientManager.createNewAccount(accountName,
+        		username, refreshToken,
+        		authToken, instanceUrl,
+        		loginUrl, identityUrl,
+        		loginOptions.oauthClientId, orgId,
+        		userId, null);
+	
+		return clientManager;
 	}
 }
