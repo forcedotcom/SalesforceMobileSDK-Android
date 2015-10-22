@@ -26,18 +26,17 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import com.salesforce.androidsdk.smartstore.phonegap.SmartStorePlugin;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Simple class to represent a query spec
  */
 public class QuerySpec {
-	private static final String SELECT_COUNT = "SELECT count(*) ";
+    private static final String SELECT_COUNT = "SELECT count(*) ";
     private static final String SELECT_COUNT_FROM = SELECT_COUNT + " FROM (%s)";
 
 	// Constants
@@ -45,8 +44,20 @@ public class QuerySpec {
 	private static final String FROM = "FROM ";
 	private static final String WHERE = "WHERE ";
 	private static final String ORDER_BY = "ORDER BY ";
-	
-	// Key members
+
+    // Keys in json
+    public static final String BEGIN_KEY = "beginKey";
+    public static final String END_KEY = "endKey";
+    public static final String INDEX_PATH = "indexPath";
+    public static final String LIKE_KEY = "likeKey";
+    public static final String MATCH_KEY = "matchKey";
+    public static final String SMART_SQL = "smartSql";
+    public static final String ORDER_PATH = "orderPath";
+    public static final String ORDER = "order";
+    public static final String PAGE_SIZE = "pageSize";
+    public static final String QUERY_TYPE = "queryType";
+
+    // Key members
 	public final QueryType queryType;
     public final int pageSize;
     public final String smartSql;
@@ -342,16 +353,16 @@ public class QuerySpec {
 	 */
 	public static QuerySpec fromJSON(String soupName, JSONObject querySpecJson)
 			throws JSONException {
-		QueryType queryType = QueryType.valueOf(querySpecJson.getString(SmartStorePlugin.QUERY_TYPE));
-		String path = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.INDEX_PATH);
-		String matchKey = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.MATCH_KEY);
-		String beginKey = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.BEGIN_KEY);
-		String endKey = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.END_KEY);
-		String likeKey = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.LIKE_KEY);
-		String smartSql = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.SMART_SQL);
-		String orderPath = JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.ORDER_PATH);
-		Order order = Order.valueOf(JSONObjectHelper.optString(querySpecJson, SmartStorePlugin.ORDER, "ascending"));
-		int pageSize = querySpecJson.getInt(SmartStorePlugin.PAGE_SIZE); 
+		QueryType queryType = QueryType.valueOf(querySpecJson.getString(QUERY_TYPE));
+		String path = JSONObjectHelper.optString(querySpecJson, INDEX_PATH);
+		String matchKey = JSONObjectHelper.optString(querySpecJson, MATCH_KEY);
+		String beginKey = JSONObjectHelper.optString(querySpecJson, BEGIN_KEY);
+		String endKey = JSONObjectHelper.optString(querySpecJson, END_KEY);
+		String likeKey = JSONObjectHelper.optString(querySpecJson, LIKE_KEY);
+		String smartSql = JSONObjectHelper.optString(querySpecJson, SMART_SQL);
+		String orderPath = JSONObjectHelper.optString(querySpecJson, ORDER_PATH);
+		Order order = Order.valueOf(JSONObjectHelper.optString(querySpecJson, ORDER, "ascending"));
+		int pageSize = querySpecJson.getInt(PAGE_SIZE); 
 	
 		// Building query spec
 		QuerySpec querySpec = null;

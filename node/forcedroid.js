@@ -237,14 +237,6 @@ function createNativeOrReactNativeApp(config) {
     }
     var contentFilesWithReplacements = makeContentReplacementPathsArray(config);
 
-    // React native specific fixes
-    if (config.apptype === 'react_native') {
-        console.log('Changing name in package.json.');
-        shelljs.sed('-i', config.templateAppName, config.appname, path.join(config.projectDir, 'package.json'));
-        console.log('Changing app name in index.android.js.');
-        shelljs.sed('-i', config.templateAppName, config.appname, path.join(config.projectDir, 'js', 'index.android.js'));
-    }
-
     // Substitute app class name
     var appClassName = config.appname + 'App';
     console.log('Renaming application class to ' + appClassName + ' in source.');
@@ -305,15 +297,6 @@ function createNativeOrReactNativeApp(config) {
     var salesforceSDKRelativePath = path.join('libs', 'SalesforceSDK');
     copyFromSDK(packageSdkRootDir, config.targetdir, salesforceSDKRelativePath);
 
-    // Copy Cordova library project into the app folder as well, if it's not already there.
-    // copy <Android Package>/external/cordova/framework -> <App Folder>/forcedroid/external/cordova/framework
-    var cordovaRelativePath = path.join('external', 'cordova');
-    var destCordovaDir = path.join(config.targetdir, path.basename(packageSdkRootDir), cordovaRelativePath);
-    copyFromSDK(packageSdkRootDir, config.targetdir, path.join(cordovaRelativePath, 'framework'));
-    shelljs.cp(path.join(packageSdkRootDir, cordovaRelativePath, 'VERSION'), destCordovaDir);
-    console.log(destCordovaDir);
-    console.log('update done');
-
     // Copy SmartStore and SmartSync library projects into the app folder as well, if it's not already there - if required.
     // copy <Android Package>/libs/SmartStore -> <App Folder>/forcedroid/libs/SmartStore
     // copy <Android Package>/libs/SmartSync -> <App Folder>/forcedroid/libs/SmartSync
@@ -325,9 +308,28 @@ function createNativeOrReactNativeApp(config) {
         copyFromSDK(packageSdkRootDir, config.targetdir, smartSyncRelativePath);
         copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
-    createAppRootGradleFile(config.targetdir, config.appname, config.usesmartstore);
-    fixSdkGradleFiles(config.targetdir, config.usesmartstore);
-    fixAppGradleFiles(config.targetdir, config.appname, config.usesmartstore);
+
+    // React native specific fixes
+    if (config.apptype === 'react_native') {
+        console.log('Changing name in package.json.');
+        shelljs.sed('-i', config.templateAppName, config.appname, path.join(config.projectDir, 'package.json'));
+        console.log('Changing app name in index.android.js.');
+        shelljs.sed('-i', config.templateAppName, config.appname, path.join(config.projectDir, 'js', 'index.android.js'));
+
+        // Copy SalesforceReact library project into the app folder as well.
+        var salesforceReactRelativePath = path.join('libs', 'SalesforceReact');
+        copyFromSDK(packageSdkRootDir, config.targetdir, salesforceReactRelativePath);
+
+        // Moving up js directory and package.json
+        console.log("Moving js directory up");
+        shelljs.mv(path.join(config.projectDir, "js"), config.targetdir);
+        console.log("Moving package.json up");
+        shelljs.mv(path.join(config.projectDir, "package.json"), path.join(config.targetdir, 'package.json'))
+    }
+
+    createAppRootGradleFile(config);
+    fixAppGradleFile(config);
+    fixSdkGradleFiles(config);
     copyFromSDK(packageSdkRootDir, config.targetdir, "gradle.properties");
     copyFromSDK(packageSdkRootDir, config.targetdir, "gradlew.bat");
     copyFromSDK(packageSdkRootDir, config.targetdir, "gradlew");
@@ -339,6 +341,14 @@ function createNativeOrReactNativeApp(config) {
     shelljs.mv(path.join(config.targetdir, "forcedroid", "gradle"), path.join(config.targetdir, "gradle"));
     shelljs.mv(path.join(config.targetdir, "forcedroid", "build.gradle"), path.join(config.targetdir, "build.gradle"));
     shelljs.sed('-i', 'group = \'com.salesforce.androidsdk\'', '', path.join(config.targetdir, "build.gradle"));
+
+    // Running npm install for react native apps
+    if (config.apptype === 'react_native') {
+        console.log("Running npm install to install npm packages required by react native.");
+        shelljs.pushd(config.targetdir);
+        shelljs.exec('npm install');
+        shelljs.popd();
+    }
 
     // Inform the user of next steps if requested.
     var nextStepsOutput =
@@ -352,7 +362,7 @@ function createNativeOrReactNativeApp(config) {
          '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
          '',
          outputColors.cyan + 'To work with your new project from the command line, use the following instructions:' + outputColors.reset,
-         '   - cd ' + config.projectDir,
+         '   - cd ' + config.targetdir,
          '   - ./gradlew assembleDebug',
          ''].join('\n');
     console.log(nextStepsOutput);
@@ -404,47 +414,59 @@ function copyFromSDK(packageSdkRootDir, targetDir, srcDirRelative) {
 //
 // Creates a root level 'settings.gradle' file for the app
 //
-function createAppRootGradleFile(appFolderName, appName, usesSmartStore) {
-    console.log('Creating settings.gradle in ' + appFolderName);
-    var pathPrefix = (appFolderName === '.' ? '' : appFolderName);
-    var cordovaGradleSpec = "include 'forcedroid:external:cordova:framework'\n";
+function createAppRootGradleFile(config) {
+    console.log('Creating settings.gradle in ' + config.targetdir);
+    var pathPrefix = (config.targetdir === '.' ? '' : config.targetdir);
     var salesforceSdkGradleSpec = "include 'forcedroid:libs:SalesforceSDK'\n";
     var smartStoreGradleSpec = "include 'forcedroid:libs:SmartStore'\n";
     var smartSyncGradleSpec = "include 'forcedroid:libs:SmartSync'\n";
-    var appGradleSpec = "include '" + appName + "'";
-    if (usesSmartStore) {
-        fs.writeFileSync(path.join(appFolderName, 'settings.gradle'), cordovaGradleSpec + salesforceSdkGradleSpec + smartStoreGradleSpec + smartSyncGradleSpec + appGradleSpec);
-    } else {
-        fs.writeFileSync(path.join(appFolderName, 'settings.gradle'), cordovaGradleSpec + salesforceSdkGradleSpec + appGradleSpec);
-    }
+    var salesforceReactGradleSpec = "include 'forcedroid:libs:SalesforceReact'\n";
+    var appGradleSpec = "include '" + config.appname + "'";
+
+    var gradleSpec = salesforceSdkGradleSpec
+        + (config.usesmartstore ? smartStoreGradleSpec + smartSyncGradleSpec : "")
+        + (config.apptype === 'react_native' ? salesforceReactGradleSpec : "")
+        + appGradleSpec;
+
+    fs.writeFileSync(path.join(config.targetdir, 'settings.gradle'), gradleSpec);
 }
 
 //
 // Fixes library dependency references in the app's build.gradle files
 //
-function fixAppGradleFiles(appFolderName, appName, usesSmartStore) {
+function fixAppGradleFile(config) {
+    if (config.apptype === 'react_native') {
+        fixAppGradleFileHelper(config.targetdir, config.appname, "SalesforceReact", "SalesforceReact");
+    }
+    else {
+        fixAppGradleFileHelper(config.targetdir, config.appname, "SalesforceSDK", config.usesmartstore ? "SmartSync" : "SalesforceSDK");
+    }
+}
+
+function fixAppGradleFileHelper(appFolderName, appName, originalDependency, newDependency) {
     console.log('Tweaking build.gradle in ' + appFolderName + "/" + appName);
-    var pathStr = path.join(appFolderName, appName, "build.gradle");
-    var originalDep = "compile project(':libs:SalesforceSDK')";
-    var newSdkDep = (usesSmartStore ? "compile project(':forcedroid:libs:SmartSync')" : "compile project(':forcedroid:libs:SalesforceSDK')");
-    shelljs.sed('-i', originalDep, newSdkDep, pathStr);
+    var originalDependency = "compile project(':libs:" + originalDependency + "')";
+    var newDependency = "compile project(':forcedroid:libs:" + newDependency + "')";
+    shelljs.sed('-i', originalDependency, newDependency, path.join(appFolderName, appName, "build.gradle"));
 }
 
 //
 // Fixes library dependency references in the SDK's build.gradle files
 //
-function fixSdkGradleFiles(appFolderName, usesSmartStore) {
-    var originalCordovaDep = "compile project(':external:cordova:framework')";
-    var newCordovaDep = "compile project(':forcedroid:external:cordova:framework')";
-    shelljs.sed('-i', originalCordovaDep, newCordovaDep, path.join(appFolderName, "forcedroid", "libs", "SalesforceSDK", "build.gradle"));
-    if (usesSmartStore) {
-        var originalSdkDep = "compile project(':libs:SalesforceSDK')";
-        var originalSSDep = "compile project(':libs:SmartStore')";
-        var newSdkDep = "compile project(':forcedroid:libs:SalesforceSDK')";
-        var newSSDep = "compile project(':forcedroid:libs:SmartStore')";
-        shelljs.sed('-i', originalSdkDep, newSdkDep, path.join(appFolderName, "forcedroid", "libs", "SmartStore", "build.gradle"));
-        shelljs.sed('-i', originalSSDep, newSSDep, path.join(appFolderName, "forcedroid", "libs", "SmartSync", "build.gradle"));
+function fixSdkGradleFiles(config) {
+    fixSdkGradleFileHelper(config.targetdir, "SalesforceSDK");
+    if (config.usesmartstore) {
+        fixSdkGradleFileHelper(config.targetdir, "SmartStore");
+        fixSdkGradleFileHelper(config.targetdir, "SmartSync");
     }
+    if (config.apptype === 'react_native') {
+        fixSdkGradleFileHelper(config.targetdir, "SalesforceReact");
+    }
+}    
+
+function fixSdkGradleFileHelper(appFolderName, lib) {
+    console.log('Tweaking build.gradle for library ' + lib);
+    shelljs.sed('-i', "compile project(':libs:", "compile project(':forcedroid:libs:", path.join(appFolderName, "forcedroid", "libs", lib, "build.gradle"));    
 }
 
 //

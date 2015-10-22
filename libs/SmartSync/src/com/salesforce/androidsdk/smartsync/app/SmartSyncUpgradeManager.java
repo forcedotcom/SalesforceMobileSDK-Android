@@ -28,14 +28,14 @@ package com.salesforce.androidsdk.smartsync.app;
 
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.smartstore.app.UpgradeManagerWithSmartStore;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreUpgradeManager;
 
 /**
  * This class handles upgrades from one version to another.
  *
  * @author bhariharan
  */
-public class SmartSyncUpgradeManager extends UpgradeManagerWithSmartStore {
+public class SmartSyncUpgradeManager extends SmartStoreUpgradeManager {
 
     /**
      * Key in shared preference file for smart sync version.
@@ -56,10 +56,17 @@ public class SmartSyncUpgradeManager extends UpgradeManagerWithSmartStore {
         return INSTANCE;
     }
 
+    @Override
+    public void upgrade() {
+        super.upgrade();
+        upgradeSObject();
+    }
+
+
     /**
      * Upgrades smart sync data from existing client version to the current version.
      */
-    public synchronized void upgradeSObject() {
+    protected synchronized void upgradeSObject() {
         String installedVersion = getInstalledSobjectVersion();
         if (installedVersion.equals(SmartSyncSDKManager.SDK_VERSION)) {
             return;

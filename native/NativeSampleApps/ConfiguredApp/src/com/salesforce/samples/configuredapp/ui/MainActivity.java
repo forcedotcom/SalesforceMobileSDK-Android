@@ -32,7 +32,7 @@ import android.widget.TextView;
 
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.ui.sfnative.SalesforceActivity;
+import com.salesforce.androidsdk.ui.SalesforceActivity;
 import com.salesforce.samples.configuredapp.R;
 
 import org.json.JSONException;

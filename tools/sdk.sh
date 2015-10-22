@@ -47,6 +47,8 @@ usage ()
     echo "        SalesforceSDK"
     echo "        SmartStore"
     echo "        SmartSync"
+    echo "        SalesforceHybrid"
+    echo "        SalesforceReact"
     echo "        Cordova"
     echo "        AccountEditor"
     echo "        AppConfigurator"
@@ -57,16 +59,15 @@ usage ()
     echo "        SmartSyncExplorer"
     echo "        TemplateApp"
     echo "        ReactNativeTemplateApp"
-    echo "        ForcePluginsTest"
+    echo "        SalesforceHybridTest"
     echo "    <test_target> can be "
     echo "        all"
-    echo "        ForcePluginsTest"
     echo "        RestExplorerTest"
     echo "        SalesforceSDKTest"
     echo "        SmartStoreTest"
     echo "        SmartSyncTest"
     echo "        TemplateAppTest"
-    echo "        ForcePluginsTest"
+    echo "        SalesforceHybridTest"
 }
 
 verbose ()
@@ -165,8 +166,9 @@ else
         build_project_if_requested    "SalesforceSDK"                 :libs:SalesforceSDK
         build_project_if_requested    "SmartStore"                    :libs:SmartStore
         build_project_if_requested    "SmartSync"                     :libs:SmartSync
+        build_project_if_requested    "SalesforceHybrid"              :libs:SalesforceHybrid
+        build_project_if_requested    "SalesforceReact"               :libs:SalesforceReact
         build_project_if_requested    "TemplateApp"                   :native:TemplateApp
-        build_project_if_requested    "ReactNativeTemplateApp"        :reactnative:ReactNativeTemplateApp
         build_project_if_requested    "RestExplorer"                  :native:NativeSampleApps:RestExplorer 
         build_project_if_requested    "AppConfigurator"               :native:NativeSampleApps:AppConfigurator
         build_project_if_requested    "ConfiguredApp"                 :native:NativeSampleApps:ConfiguredApp
@@ -174,7 +176,8 @@ else
         build_project_if_requested    "AccountEditor"                 :hybrid:HybridSampleApps:AccountEditor
         build_project_if_requested    "NoteSync"                      :hybrid:HybridSampleApps:NoteSync
         build_project_if_requested    "SmartSyncExplorerHybrid"       :hybrid:HybridSampleApps:SmartSyncExplorerHybrid
-        build_project_if_requested    "ForcePluginsTest"              :hybrid:test:ForcePluginsTest
+        build_project_if_requested    "SalesforceHybridTest"          :libs:test:SalesforceHybridTest
+        build_project_if_requested    "ReactNativeTemplateApp"        :reactnative:ReactNativeTemplateApp
     fi
 
     if ( should_do "test{all}" )
@@ -182,11 +185,11 @@ else
         header "Testing all"
         ./gradlew connectedAndroidTest  | grep "$TEST_OUTPUT_FILTER"
     else
-        run_test_project_if_requested "SalesforceSDKTest"   :libs:SalesforceSDK
-        run_test_project_if_requested "SmartStoreTest"      :libs:SmartStore
-        run_test_project_if_requested "SmartSyncTest"       :libs:SmartSync
-        run_test_project_if_requested "TemplateAppTest"     :native:TemplateApp
-        run_test_project_if_requested "RestExplorerTest"    :native:NativeSampleApps:RestExplorer
-        run_test_project_if_requested "ForcePluginsTest"    :hybrid:test:ForcePluginsTest
+        run_test_project_if_requested "SalesforceSDKTest"    :libs:SalesforceSDK
+        run_test_project_if_requested "SmartStoreTest"       :libs:SmartStore
+        run_test_project_if_requested "SmartSyncTest"        :libs:SmartSync
+        run_test_project_if_requested "SalesforceHybridTest" :libs:test:SalesforceHybridTest
+        run_test_project_if_requested "TemplateAppTest"      :native:TemplateApp
+        run_test_project_if_requested "RestExplorerTest"     :native:NativeSampleApps:RestExplorer
     fi
 fi

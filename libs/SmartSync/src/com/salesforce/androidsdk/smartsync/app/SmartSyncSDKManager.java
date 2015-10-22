@@ -30,107 +30,55 @@ import android.accounts.Account;
 import android.app.Activity;
 import android.content.Context;
 
-import com.facebook.react.bridge.NativeModule;
-import com.facebook.react.bridge.ReactApplicationContext;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
-import com.salesforce.androidsdk.smartsync.SmartSyncUserAccountManager;
+import com.salesforce.androidsdk.smartstore.app.SmarStoreSDKManager;
+import com.salesforce.androidsdk.smartsync.accounts.SmartSyncUserAccountManager;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.smartsync.reactnative.SmartSyncReactBridge;
 import com.salesforce.androidsdk.ui.LoginActivity;
-import com.salesforce.androidsdk.ui.sfhybrid.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
-import java.util.List;
-
 /**
- * Super class for all applications that use the SmartSync SDK.
+ * SDK Manager for all native applications that use SmartSync
  */
-public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
+public class SmartSyncSDKManager extends SmarStoreSDKManager {
 
     /**
      * Protected constructor.
-     *  @param context Application context.
+     * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
 	 * @param mainActivity Activity that should be launched after the login flow.
 	 * @param loginActivity Login activity.
-	 * @param appType
 	 */
     protected SmartSyncSDKManager(Context context, KeyInterface keyImpl,
-								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
-    	super(context, keyImpl, mainActivity, loginActivity, appType);
+								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    	super(context, keyImpl, mainActivity, loginActivity);
     }
 
 	/**
 	 * Initializes components required for this class
 	 * to properly function. This method should be called
 	 * by apps using the Salesforce Mobile SDK.
-	 *  @param context Application context.
+	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
 	 * @param mainActivity Activity that should be launched after the login flow.
 	 * @param loginActivity Login activity.
-	 * @param appType
 	 */
 	private static void init(Context context, KeyInterface keyImpl,
-							 Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
+							 Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
 		if (INSTANCE == null) {
-    		INSTANCE = new SmartSyncSDKManager(context, keyImpl, mainActivity, loginActivity, appType);
+    		INSTANCE = new SmartSyncSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
 		initInternal(context);
 
         // Upgrade to the latest version.
-        SmartSyncUpgradeManager.getInstance().upgradeSObject();
+        SmartSyncUpgradeManager.getInstance().upgrade();
         EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
 	}
 
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by hybrid apps using the Salesforce Mobile SDK.
-	 *
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-	 */
-    public static void initHybrid(Context context, KeyInterface keyImpl) {
-    	SmartSyncSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class,
-				LoginActivity.class, AppType.Hybrid);
-    }
-
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by hybrid apps using the Salesforce Mobile SDK.
-	 *
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     * @param loginActivity Login activity.
-	 */
-    public static void initHybrid(Context context, KeyInterface keyImpl,
-    		Class<? extends Activity> loginActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class,
-				loginActivity, AppType.Hybrid);
-    }
-
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by hybrid apps that use a subclass of SalesforceDroidGapActivity.
-	 *
-	 * @param context Application context.
-     * @param keyImpl Implementation of KeyInterface.
-     * @param mainActivity Main activity.
-     * @param loginActivity Login activity.
-	 */
-    public static void initHybrid(Context context, KeyInterface keyImpl,
-    		Class<? extends SalesforceDroidGapActivity> mainActivity,
-    		Class<? extends Activity> loginActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.Hybrid);
-    }
-    
 	/**
 	 * Initializes components required for this class
 	 * to properly function. This method should be called
@@ -142,7 +90,7 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
 	 */
     public static void initNative(Context context, KeyInterface keyImpl,
     		Class<? extends Activity> mainActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class, AppType.Native);
+    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class);
     }
 
 	/**
@@ -157,37 +105,8 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
 	 */
     public static void initNative(Context context, KeyInterface keyImpl,
     		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.Native);
+    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity);
     }
-
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by react native apps using the Salesforce Mobile SDK.
-	 *
-	 * @param context Application context.
-	 * @param keyImpl Implementation of KeyInterface.
-	 * @param mainActivity Activity that should be launched after the login flow.
-	 */
-	public static void initReactNative(Context context, KeyInterface keyImpl,
-								  Class<? extends Activity> mainActivity) {
-		SmartSyncSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class, AppType.ReactNative);
-	}
-
-	/**
-	 * Initializes components required for this class
-	 * to properly function. This method should be called
-	 * by react native apps using the Salesforce Mobile SDK.
-	 *
-	 * @param context Application context.
-	 * @param keyImpl Implementation of KeyInterface.
-	 * @param mainActivity Activity that should be launched after the login flow.
-	 * @param loginActivity Login activity.
-	 */
-	public static void initReactNative(Context context, KeyInterface keyImpl,
-								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-		SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.ReactNative);
-	}
 
     /**
      * Returns a singleton instance of this class.
@@ -219,15 +138,5 @@ public class SmartSyncSDKManager extends SalesforceSDKManagerWithSmartStore {
     @Override
     public UserAccountManager getUserAccountManager() {
     	return SmartSyncUserAccountManager.getInstance();
-    }
-
-    @Override
-    protected List<NativeModule> getNativeModules(
-            ReactApplicationContext reactContext) {
-        List<NativeModule> modules = super.getNativeModules(reactContext);
-
-        modules.add(new SmartSyncReactBridge(reactContext));
-
-        return modules;
     }
 }
