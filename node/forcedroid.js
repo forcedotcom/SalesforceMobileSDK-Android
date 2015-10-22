@@ -290,6 +290,10 @@ function createNativeOrReactNativeApp(config) {
             /com\.salesforce\.androidsdk\.app\.SmartSyncSDKManager/g,
             'com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager',
             appClassPath);
+        shelljs.sed('-i',
+            'com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager.KeyInterface',
+            'com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface',
+            appClassPath);
     }
 
     // Copy SalesforceSDK library project into the app folder as well, if it's not already there.

@@ -33,7 +33,7 @@ import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReadableMap;
-import com.salesforce.androidsdk.smartstore.app.SmarStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -515,8 +515,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
     private SmartStore getSmartStore(ReadableMap args) {
         boolean isGlobal = getIsGlobal(args);
         return (isGlobal
-                ? SmarStoreSDKManager.getInstance().getGlobalSmartStore()
-                : SmarStoreSDKManager.getInstance().getSmartStore());
+                ? SmartStoreSDKManager.getInstance().getGlobalSmartStore()
+                : SmartStoreSDKManager.getInstance().getSmartStore());
     }
 
 	/**

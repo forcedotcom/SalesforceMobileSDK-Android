@@ -33,7 +33,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
-import com.salesforce.androidsdk.smartstore.app.SmarStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
@@ -189,7 +189,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
      */
     private SyncManager getSyncManager(boolean isGlobal) {
         SyncManager syncManager = isGlobal
-                ? SyncManager.getInstance(null, null, SmarStoreSDKManager.getInstance().getGlobalSmartStore())
+                ? SyncManager.getInstance(null, null, SmartStoreSDKManager.getInstance().getGlobalSmartStore())
                 : SyncManager.getInstance();
 
         return syncManager;
