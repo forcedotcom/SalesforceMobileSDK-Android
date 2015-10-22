@@ -452,9 +452,7 @@ function fixSdkGradleFiles(config) {
 
 function fixSdkGradleFileHelper(appFolderName, lib) {
     console.log('Tweaking build.gradle for library ' + lib);
-    var originalDependency = "compile project(':libs";
-    var newDependency = "compile project(':forcedroid:libs:" + dependencyLib + "')";
-    shelljs.sed('-i', "compile project(':libs", "compile project(':forcedroid:libs'", path.join(appFolderName, "forcedroid", "libs", lib, "build.gradle"));    
+    shelljs.sed('-i', "compile project(':libs:", "compile project(':forcedroid:libs:", path.join(appFolderName, "forcedroid", "libs", lib, "build.gradle"));    
 }
 
 //
