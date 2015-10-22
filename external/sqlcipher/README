@@ -1,7 +1,0 @@
-Changes included in the v3.3.0 release of SQLCipher for Android:
-
- * Use OpenSSL 1.0.2a tag
- * Update sqlcipher to 3.3.0
- * Merge pull request #147 from fairchild88/master
- * Update README.org
- * Fix rawQuery with read restriction
