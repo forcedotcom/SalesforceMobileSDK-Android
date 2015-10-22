@@ -336,6 +336,14 @@ function createNativeOrReactNativeApp(config) {
     shelljs.mv(path.join(config.targetdir, "forcedroid", "build.gradle"), path.join(config.targetdir, "build.gradle"));
     shelljs.sed('-i', 'group = \'com.salesforce.androidsdk\'', '', path.join(config.targetdir, "build.gradle"));
 
+    // Running npm install for react native apps
+    if (config.apptype === 'react_native') {
+        console.log("Installing npm packages required by react native.")
+        shelljs.pushd(config.projectDir);
+        shelljs.exec('npm install');
+        shelljs.popd();
+    }
+
     // Inform the user of next steps if requested.
     var nextStepsOutput =
         ['',
@@ -348,7 +356,7 @@ function createNativeOrReactNativeApp(config) {
          '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
          '',
          outputColors.cyan + 'To work with your new project from the command line, use the following instructions:' + outputColors.reset,
-         '   - cd ' + config.projectDir,
+         '   - cd ' + config.targetdir,
          '   - ./gradlew assembleDebug',
          ''].join('\n');
     console.log(nextStepsOutput);
