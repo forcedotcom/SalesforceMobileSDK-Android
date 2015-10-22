@@ -176,7 +176,6 @@ else
         build_project_if_requested    "AccountEditor"                 :hybrid:HybridSampleApps:AccountEditor
         build_project_if_requested    "NoteSync"                      :hybrid:HybridSampleApps:NoteSync
         build_project_if_requested    "SmartSyncExplorerHybrid"       :hybrid:HybridSampleApps:SmartSyncExplorerHybrid
-        build_project_if_requested    "SalesforceHybridTest"          :libs:test:SalesforceHybridTest
         build_project_if_requested    "ReactNativeTemplateApp"        :reactnative:ReactNativeTemplateApp
     fi
 
@@ -188,7 +187,7 @@ else
         run_test_project_if_requested "SalesforceSDKTest"    :libs:SalesforceSDK
         run_test_project_if_requested "SmartStoreTest"       :libs:SmartStore
         run_test_project_if_requested "SmartSyncTest"        :libs:SmartSync
-        run_test_project_if_requested "SalesforceHybridTest" :libs:test:SalesforceHybridTest
+        run_test_project_if_requested "SalesforceHybridTest" :libs:SalesforceHybrid
         run_test_project_if_requested "TemplateAppTest"      :native:TemplateApp
         run_test_project_if_requested "RestExplorerTest"     :native:NativeSampleApps:RestExplorer
     fi
