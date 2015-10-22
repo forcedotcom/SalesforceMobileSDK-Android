@@ -28,7 +28,7 @@ package com.salesforce.androidsdk.phonegap.plugin;
 
 import android.util.Log;
 
-import com.salesforce.androidsdk.smartstore.app.SmarStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
@@ -216,7 +216,7 @@ public class SmartSyncPlugin extends ForcePlugin {
      */
     private SyncManager getSyncManager(boolean isGlobal) {
         SyncManager syncManager = isGlobal
-                ? SyncManager.getInstance(null, null, SmarStoreSDKManager.getInstance().getGlobalSmartStore())
+                ? SyncManager.getInstance(null, null, SmartStoreSDKManager.getInstance().getGlobalSmartStore())
                 : SyncManager.getInstance();
 
         return syncManager;

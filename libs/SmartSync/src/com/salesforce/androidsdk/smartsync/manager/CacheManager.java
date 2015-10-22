@@ -39,7 +39,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.smartstore.app.SmarStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -107,7 +107,7 @@ public class CacheManager {
      */
     public static synchronized CacheManager getInstance(UserAccount account, String communityId) {
         if (account == null) {
-            account = SmarStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+            account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         }
         if (account == null) {
             return null;
@@ -154,7 +154,7 @@ public class CacheManager {
      */
     public static synchronized void softReset(UserAccount account, String communityId) {
         if (account == null) {
-            account = SmarStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+            account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         }
         if (account != null) {
             String uniqueId = account.getUserId();
@@ -192,7 +192,7 @@ public class CacheManager {
      */
     public static synchronized void hardReset(UserAccount account, String communityId) {
         if (account == null) {
-            account = SmarStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+            account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         }
         if (account != null) {
             String uniqueId = account.getUserId();

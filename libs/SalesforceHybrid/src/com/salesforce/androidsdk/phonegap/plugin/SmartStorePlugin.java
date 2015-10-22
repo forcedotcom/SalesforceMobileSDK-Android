@@ -30,9 +30,7 @@ import android.app.Activity;
 import android.util.Log;
 import android.util.SparseArray;
 
-import com.salesforce.androidsdk.phonegap.plugin.ForcePlugin;
-import com.salesforce.androidsdk.phonegap.plugin.JavaScriptPluginVersion;
-import com.salesforce.androidsdk.smartstore.app.SmarStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
@@ -576,8 +574,8 @@ public class SmartStorePlugin extends ForcePlugin {
     private SmartStore getSmartStore(JSONObject arg0) {
         boolean isGlobal = getIsGlobal(arg0);
         return (isGlobal
-                ? SmarStoreSDKManager.getInstance().getGlobalSmartStore()
-                : SmarStoreSDKManager.getInstance().getSmartStore());
+                ? SmartStoreSDKManager.getInstance().getGlobalSmartStore()
+                : SmartStoreSDKManager.getInstance().getSmartStore());
     }
 
 	/**

@@ -32,7 +32,7 @@ import android.content.Context;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.smartstore.app.SmarStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartsync.accounts.SmartSyncUserAccountManager;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
@@ -44,7 +44,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 /**
  * SDK Manager for all native applications that use SmartSync
  */
-public class SmartSyncSDKManager extends SmarStoreSDKManager {
+public class SmartSyncSDKManager extends SmartStoreSDKManager {
 
     /**
      * Protected constructor.

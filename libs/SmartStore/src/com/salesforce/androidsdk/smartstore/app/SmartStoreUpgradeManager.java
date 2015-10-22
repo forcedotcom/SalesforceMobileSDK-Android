@@ -73,12 +73,12 @@ public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
      */
     protected synchronized void upgradeSmartStore() {
         String installedVersion = getInstalledSmartStoreVersion();
-        if (installedVersion.equals(SmarStoreSDKManager.SDK_VERSION)) {
+        if (installedVersion.equals(SmartStoreSDKManager.SDK_VERSION)) {
             return;
         }
 
         // Update shared preference file to reflect the latest version.
-        writeCurVersion(SMART_STORE_KEY, SmarStoreSDKManager.SDK_VERSION);
+        writeCurVersion(SMART_STORE_KEY, SmartStoreSDKManager.SDK_VERSION);
 
         /*
          * We need to update this variable, since the app will not
@@ -108,8 +108,8 @@ public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
     	 * If not, nothing is done.
     	 */
     	final String oldDbName = String.format(DB_NAME_2DOT3_FORMAT, "");
-    	if (SmarStoreSDKManager.getInstance().getAppContext().getDatabasePath(oldDbName).exists()) {
-    		final UserAccount curAccount = SmarStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+    	if (SmartStoreSDKManager.getInstance().getAppContext().getDatabasePath(oldDbName).exists()) {
+    		final UserAccount curAccount = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
 
     		/*
     		 * If no account exists at this point, there is nothing
@@ -119,7 +119,7 @@ public class SmartStoreUpgradeManager extends SalesforceSDKUpgradeManager {
         		final String dbPath = curAccount.getCommunityLevelFilenameSuffix(null);
         		if (!TextUtils.isEmpty(dbPath)) {
         			final String newDbName = String.format(DB_NAME_2DOT3_FORMAT, dbPath);
-        			final String dbDir = SmarStoreSDKManager.getInstance().getAppContext().getApplicationInfo().dataDir
+        			final String dbDir = SmartStoreSDKManager.getInstance().getAppContext().getApplicationInfo().dataDir
         					+ "/databases";
         			final File from = new File(dbDir, oldDbName);
         			final File to = new File(dbDir, newDbName);

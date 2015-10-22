@@ -49,7 +49,7 @@ import java.util.Map;
 /**
  * SDK Manager for all native applications that use SmartStore
  */
-public class SmarStoreSDKManager extends SalesforceSDKManager {
+public class SmartStoreSDKManager extends SalesforceSDKManager {
 
     /**
      * Protected constructor.
@@ -59,8 +59,8 @@ public class SmarStoreSDKManager extends SalesforceSDKManager {
      * @param mainActivity  Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
      */
-    protected SmarStoreSDKManager(Context context, KeyInterface keyImpl,
-                                  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    protected SmartStoreSDKManager(Context context, KeyInterface keyImpl,
+                                   Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
         super(context, keyImpl, mainActivity, loginActivity);
     }
 
@@ -77,7 +77,7 @@ public class SmarStoreSDKManager extends SalesforceSDKManager {
     private static void init(Context context, KeyInterface keyImpl,
                              Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
         if (INSTANCE == null) {
-            INSTANCE = new SmarStoreSDKManager(context, keyImpl, mainActivity, loginActivity);
+            INSTANCE = new SmartStoreSDKManager(context, keyImpl, mainActivity, loginActivity);
         }
         initInternal(context);
 
@@ -97,7 +97,7 @@ public class SmarStoreSDKManager extends SalesforceSDKManager {
      */
     public static void initNative(Context context, KeyInterface keyImpl,
                                   Class<? extends Activity> mainActivity) {
-        SmarStoreSDKManager.init(context, keyImpl, mainActivity,
+        SmartStoreSDKManager.init(context, keyImpl, mainActivity,
                 LoginActivity.class);
     }
 
@@ -113,7 +113,7 @@ public class SmarStoreSDKManager extends SalesforceSDKManager {
      */
     public static void initNative(Context context, KeyInterface keyImpl,
                                   Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-        SmarStoreSDKManager.init(context, keyImpl, mainActivity, loginActivity);
+        SmartStoreSDKManager.init(context, keyImpl, mainActivity, loginActivity);
     }
 
     /**
@@ -121,9 +121,9 @@ public class SmarStoreSDKManager extends SalesforceSDKManager {
      *
      * @return Singleton instance of SalesforceSDKManagerWithSmartStore.
      */
-    public static SmarStoreSDKManager getInstance() {
+    public static SmartStoreSDKManager getInstance() {
         if (INSTANCE != null) {
-            return (SmarStoreSDKManager) INSTANCE;
+            return (SmartStoreSDKManager) INSTANCE;
         } else {
             throw new RuntimeException("Applications need to call SalesforceSDKManagerWithSmartStore.init() first.");
         }

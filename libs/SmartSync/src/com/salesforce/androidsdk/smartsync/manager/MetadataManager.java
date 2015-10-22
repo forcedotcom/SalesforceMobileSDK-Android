@@ -47,7 +47,7 @@ import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.smartstore.app.SmarStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartsync.R;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager.CachePolicy;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
@@ -109,7 +109,7 @@ public class MetadataManager {
      */
     public static synchronized MetadataManager getInstance(UserAccount account, String communityId) {
         if (account == null) {
-            account = SmarStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+            account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         }
         if (account == null) {
             return null;
@@ -153,7 +153,7 @@ public class MetadataManager {
      */
     public static synchronized void reset(UserAccount account, String communityId) {
         if (account == null) {
-            account = SmarStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+            account = SmartStoreSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         }
         if (account != null) {
             String uniqueId = account.getUserId();
