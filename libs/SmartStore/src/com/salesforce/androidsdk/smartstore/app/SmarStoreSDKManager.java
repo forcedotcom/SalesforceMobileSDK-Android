@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * SDK Manager for all native applications that use SmartSync
+ * SDK Manager for all native applications that use SmartStore
  */
 public class SmarStoreSDKManager extends SalesforceSDKManager {
 
