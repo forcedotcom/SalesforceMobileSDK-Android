@@ -291,7 +291,7 @@ function createNativeOrReactNativeApp(config) {
             'com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager',
             appClassPath);
         shelljs.sed('-i',
-            'com.salesforce.androidsdk.app.smartsync.SmartSyncSDKManager.KeyInterface',
+            'com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager.KeyInterface',
             'com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface',
             appClassPath);
     }
