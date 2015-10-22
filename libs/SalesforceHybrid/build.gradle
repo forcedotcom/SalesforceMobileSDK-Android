@@ -21,7 +21,16 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
-
+    androidTest.setRoot('../test/SalesforceHybridTest')
+    androidTest {
+      java.srcDirs = ['../test/SalesforceHybridTest/src']
+      resources.srcDirs = ['../test/SalesforceHybridTest/src']
+      res.srcDirs = ['../test/SalesforceHybridTest/res']
+    }
+  }
+  defaultConfig {
+    testApplicationId "com.salesforce.androidsdk.salesforcehybrid.tests"
+    testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

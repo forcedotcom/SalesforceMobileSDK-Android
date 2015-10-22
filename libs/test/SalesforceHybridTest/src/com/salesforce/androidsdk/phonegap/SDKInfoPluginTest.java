@@ -55,7 +55,7 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 		Context ctx = getInstrumentation().getTargetContext();
 		JSONObject sdkInfo = SDKInfoPlugin.getSDKInfo(ctx);
 		BootConfig bootconfig = BootConfig.getBootConfig(ctx);
-		assertEquals("Wrong app name", "ForcePluginsTest", sdkInfo.getString("appName"));
+		assertEquals("Wrong app name", "SalesforceHybridTest", sdkInfo.getString("appName"));
 		assertEquals("Wrong app version", "1.0", sdkInfo.getString("appVersion"));
 		List<String> sdkInfoPlugins = toList(sdkInfo.getJSONArray("forcePluginsAvailable"));
 		assertEquals("Wrong number of plugins", 3, sdkInfoPlugins.size());

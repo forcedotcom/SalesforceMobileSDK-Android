@@ -26,8 +26,7 @@ script:
    - ./gradlew :libs:SalesforceSDK:connectedAndroidTest
    - ./gradlew :libs:SmartStore:connectedAndroidTest
    - ./gradlew :libs:SmartSync:connectedAndroidTest
-   - ./gradlew :libs:SalesforceHybrid:assembleDebug
+   - ./gradlew :libs:SalesforceHybrid:connectedAndroidTest
    - ./gradlew :libs:SalesforceReact:assembleDebug
-   - ./gradlew :libs:test:SaleforceHybridTest:connectedAndroidTest
    - ./gradlew :native:SampleApps:RestExplorer:connectedAndroidTest
    - ./gradlew :native:TemplateApp:connectedAndroidTest
