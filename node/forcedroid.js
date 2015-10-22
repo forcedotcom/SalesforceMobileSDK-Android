@@ -319,6 +319,12 @@ function createNativeOrReactNativeApp(config) {
         // Copy SalesforceReact library project into the app folder as well.
         var salesforceReactRelativePath = path.join('libs', 'SalesforceReact');
         copyFromSDK(packageSdkRootDir, config.targetdir, salesforceReactRelativePath);
+
+        // Moving up js directory and package.json
+        console.log("Moving js directory up");
+        shelljs.mv(path.join(config.projectDir, "js"), config.targetdir);
+        console.log("Moving package.json up");
+        shelljs.mv(path.join(config.projectDir, "package.json"), path.join(config.targetdir, 'package.json'))
     }
 
     createAppRootGradleFile(config);
@@ -338,8 +344,8 @@ function createNativeOrReactNativeApp(config) {
 
     // Running npm install for react native apps
     if (config.apptype === 'react_native') {
-        console.log("Installing npm packages required by react native.")
-        shelljs.pushd(config.projectDir);
+        console.log("Running npm install to install npm packages required by react native.");
+        shelljs.pushd(config.targetdir);
         shelljs.exec('npm install');
         shelljs.popd();
     }
