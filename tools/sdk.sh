@@ -62,7 +62,6 @@ usage ()
     echo "        ForcePluginsTest"
     echo "    <test_target> can be "
     echo "        all"
-    echo "        ForcePluginsTest"
     echo "        RestExplorerTest"
     echo "        SalesforceSDKTest"
     echo "        SmartStoreTest"
