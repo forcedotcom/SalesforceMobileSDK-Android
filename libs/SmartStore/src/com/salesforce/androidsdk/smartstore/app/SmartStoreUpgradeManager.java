@@ -26,12 +26,12 @@
  */
 package com.salesforce.androidsdk.smartstore.app;
 
-import java.io.File;
-
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKUpgradeManager;
+
+import java.io.File;
 
 /**
  * This class handles upgrades from one version to another.

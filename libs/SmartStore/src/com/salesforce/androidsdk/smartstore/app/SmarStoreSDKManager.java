@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Super class for all force applications that use the smartstore.
+ * SDK Manager for all native applications that use SmartSync
  */
 public class SmarStoreSDKManager extends SalesforceSDKManager {
 
@@ -58,11 +58,10 @@ public class SmarStoreSDKManager extends SalesforceSDKManager {
      * @param keyImpl       Implementation of KeyInterface.
      * @param mainActivity  Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
-     * @param appType
      */
     protected SmarStoreSDKManager(Context context, KeyInterface keyImpl,
-                                  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
-        super(context, keyImpl, mainActivity, loginActivity, appType);
+                                  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+        super(context, keyImpl, mainActivity, loginActivity);
     }
 
     /**
@@ -74,12 +73,11 @@ public class SmarStoreSDKManager extends SalesforceSDKManager {
      * @param keyImpl       Implementation of KeyInterface.
      * @param mainActivity  Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
-     * @param appType
      */
     private static void init(Context context, KeyInterface keyImpl,
-                             Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
+                             Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
         if (INSTANCE == null) {
-            INSTANCE = new SmarStoreSDKManager(context, keyImpl, mainActivity, loginActivity, appType);
+            INSTANCE = new SmarStoreSDKManager(context, keyImpl, mainActivity, loginActivity);
         }
         initInternal(context);
 
@@ -100,7 +98,7 @@ public class SmarStoreSDKManager extends SalesforceSDKManager {
     public static void initNative(Context context, KeyInterface keyImpl,
                                   Class<? extends Activity> mainActivity) {
         SmarStoreSDKManager.init(context, keyImpl, mainActivity,
-                LoginActivity.class, AppType.Native);
+                LoginActivity.class);
     }
 
     /**
@@ -115,7 +113,7 @@ public class SmarStoreSDKManager extends SalesforceSDKManager {
      */
     public static void initNative(Context context, KeyInterface keyImpl,
                                   Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-        SmarStoreSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.Native);
+        SmarStoreSDKManager.init(context, keyImpl, mainActivity, loginActivity);
     }
 
     /**

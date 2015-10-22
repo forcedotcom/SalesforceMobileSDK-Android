@@ -24,12 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.util.test;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+package com.salesforce.androidsdk.phonegap.util.test;
 
 import android.app.Instrumentation;
 import android.content.Intent;
@@ -41,8 +36,14 @@ import com.salesforce.androidsdk.phonegap.plugin.TestRunnerPlugin;
 import com.salesforce.androidsdk.phonegap.plugin.TestRunnerPlugin.TestResult;
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
 import org.apache.cordova.CordovaWebView;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Extend this class to run tests written in JavaScript

@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.phonegap.app;
 import android.app.Application;
 
 import com.salesforce.androidsdk.phonegap.ui.ForcePluginsTestActivity;
-import com.salesforce.androidsdk.smartsync.app.SalesforceHybridSDKManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
 
 /**

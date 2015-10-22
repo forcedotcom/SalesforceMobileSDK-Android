@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.phonegap;
 import java.util.Arrays;
 import java.util.List;
 
-import com.salesforce.androidsdk.util.test.JSTestCase;
+import com.salesforce.androidsdk.phonegap.util.test.JSTestCase;
 
 
 /**

@@ -33,7 +33,7 @@ import android.content.Context;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SmarStoreSDKManager;
-import com.salesforce.androidsdk.smartsync.SmartSyncUserAccountManager;
+import com.salesforce.androidsdk.smartsync.accounts.SmartSyncUserAccountManager;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
 import com.salesforce.androidsdk.smartsync.manager.MetadataManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
@@ -42,37 +42,35 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 /**
- * Super class for all applications that use the SmartSync SDK.
+ * SDK Manager for all native applications that use SmartSync
  */
 public class SmartSyncSDKManager extends SmarStoreSDKManager {
 
     /**
      * Protected constructor.
-     *  @param context Application context.
+     * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
 	 * @param mainActivity Activity that should be launched after the login flow.
 	 * @param loginActivity Login activity.
-	 * @param appType
 	 */
     protected SmartSyncSDKManager(Context context, KeyInterface keyImpl,
-								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
-    	super(context, keyImpl, mainActivity, loginActivity, appType);
+								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    	super(context, keyImpl, mainActivity, loginActivity);
     }
 
 	/**
 	 * Initializes components required for this class
 	 * to properly function. This method should be called
 	 * by apps using the Salesforce Mobile SDK.
-	 *  @param context Application context.
+	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
 	 * @param mainActivity Activity that should be launched after the login flow.
 	 * @param loginActivity Login activity.
-	 * @param appType
 	 */
 	private static void init(Context context, KeyInterface keyImpl,
-							 Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
+							 Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
 		if (INSTANCE == null) {
-    		INSTANCE = new SmartSyncSDKManager(context, keyImpl, mainActivity, loginActivity, appType);
+    		INSTANCE = new SmartSyncSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
 		initInternal(context);
 
@@ -92,7 +90,7 @@ public class SmartSyncSDKManager extends SmarStoreSDKManager {
 	 */
     public static void initNative(Context context, KeyInterface keyImpl,
     		Class<? extends Activity> mainActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class, AppType.Native);
+    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class);
     }
 
 	/**
@@ -107,7 +105,7 @@ public class SmartSyncSDKManager extends SmarStoreSDKManager {
 	 */
     public static void initNative(Context context, KeyInterface keyImpl,
     		Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.Native);
+    	SmartSyncSDKManager.init(context, keyImpl, mainActivity, loginActivity);
     }
 
     /**

@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.util.test;
+package com.salesforce.androidsdk.phonegap.util.test;
 
 import android.util.Log;
 import android.webkit.WebView;
@@ -33,6 +33,7 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.Event;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue.BlockForEvent;
+import com.salesforce.androidsdk.util.test.ForceAppInstrumentationTestCase;
 
 /**
  * Super class for tests of hybrid application

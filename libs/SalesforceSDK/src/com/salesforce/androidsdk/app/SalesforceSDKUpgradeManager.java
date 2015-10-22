@@ -26,9 +26,6 @@
  */
 package com.salesforce.androidsdk.app;
 
-import java.io.File;
-import java.util.Map;
-
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.content.Context;
@@ -43,6 +40,9 @@ import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.security.PasscodeManager;
+
+import java.io.File;
+import java.util.Map;
 
 /**
  * This class handles upgrades from one version to another.

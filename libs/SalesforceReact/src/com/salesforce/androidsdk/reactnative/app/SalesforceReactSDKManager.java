@@ -48,37 +48,35 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * SDK Manager for all applications that use SalesforceSDK and ReactNative
+ * SDK Manager for all react native applications
  */
 public class SalesforceReactSDKManager extends SmartSyncSDKManager {
 
     /**
      * Protected constructor.
-     *  @param context Application context.
+     * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
 	 * @param mainActivity Activity that should be launched after the login flow.
 	 * @param loginActivity Login activity.
-	 * @param appType
 	 */
     protected SalesforceReactSDKManager(Context context, KeyInterface keyImpl,
-								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
-    	super(context, keyImpl, mainActivity, loginActivity, appType);
+								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+    	super(context, keyImpl, mainActivity, loginActivity);
     }
 
 	/**
 	 * Initializes components required for this class
 	 * to properly function. This method should be called
 	 * by apps using the Salesforce Mobile SDK.
-	 *  @param context Application context.
+	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
 	 * @param mainActivity Activity that should be launched after the login flow.
 	 * @param loginActivity Login activity.
-	 * @param appType
 	 */
 	private static void init(Context context, KeyInterface keyImpl,
-							 Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
+							 Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
 		if (INSTANCE == null) {
-    		INSTANCE = new SalesforceReactSDKManager(context, keyImpl, mainActivity, loginActivity, appType);
+    		INSTANCE = new SalesforceReactSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
 		initInternal(context);
 
@@ -98,7 +96,7 @@ public class SalesforceReactSDKManager extends SmartSyncSDKManager {
 	 */
 	public static void initReactNative(Context context, KeyInterface keyImpl,
 								  Class<? extends Activity> mainActivity) {
-		SalesforceReactSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class, AppType.ReactNative);
+		SalesforceReactSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class);
 	}
 
 	/**
@@ -113,7 +111,7 @@ public class SalesforceReactSDKManager extends SmartSyncSDKManager {
 	 */
 	public static void initReactNative(Context context, KeyInterface keyImpl,
 								  Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-		SalesforceReactSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.ReactNative);
+		SalesforceReactSDKManager.init(context, keyImpl, mainActivity, loginActivity);
 	}
 
     /**
@@ -128,6 +126,11 @@ public class SalesforceReactSDKManager extends SmartSyncSDKManager {
             throw new RuntimeException("Applications need to call SmartSyncSDKManager.init() first.");
     	}
     }
+
+	@Override
+	public String getAppType() {
+		return "ReactNative";
+	}
 
 	/**
 	 * Call this method when setting up ReactInstanceManager

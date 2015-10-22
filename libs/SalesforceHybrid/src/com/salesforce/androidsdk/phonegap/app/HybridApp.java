@@ -30,7 +30,7 @@ import android.app.Application;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
 import com.salesforce.androidsdk.security.Encryptor;
-import com.salesforce.androidsdk.smartsync.app.SalesforceHybridSDKManager;
+import com.salesforce.androidsdk.phonegap.app.SalesforceHybridSDKManager;
 
 /**
  * Application class used by hybrid applications

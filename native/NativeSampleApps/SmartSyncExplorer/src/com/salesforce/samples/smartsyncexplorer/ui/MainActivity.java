@@ -65,7 +65,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
-import com.salesforce.androidsdk.ui.sfnative.SalesforceListActivity;
+import com.salesforce.androidsdk.ui.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;

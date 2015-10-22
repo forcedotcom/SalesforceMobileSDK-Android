@@ -86,15 +86,6 @@ import java.util.List;
 public class SalesforceSDKManager {
 
     /**
-     * App type
-     */
-    public enum AppType {
-        Native,
-        Hybrid,
-        ReactNative
-    }
-
-    /**
      * Current version of this SDK.
      */
     public static final String SDK_VERSION = "4.0.0.unstable";
@@ -132,7 +123,6 @@ public class SalesforceSDKManager {
     private PushNotificationInterface pushNotificationInterface;
     private String uid; // device id
     private volatile boolean loggedOut = false;
-    private final AppType appType;
 
     /**
      * PasscodeManager object lock.
@@ -154,14 +144,13 @@ public class SalesforceSDKManager {
 
     /**
      * Protected constructor.
-     *  @param context Application context.
+     * @param context Application context.
      * @param keyImpl Implementation for KeyInterface.
      * @param mainActivity Activity that should be launched after the login flow.
      * @param loginActivity Login activity.
-     * @param appType
      */
     protected SalesforceSDKManager(Context context, KeyInterface keyImpl,
-                                   Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
+                                   Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
         this.uid = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
         this.context = context;
     	this.keyImpl = keyImpl;
@@ -169,7 +158,6 @@ public class SalesforceSDKManager {
     	if (loginActivity != null) {
             this.loginActivityClass = loginActivity;	
     	}
-        this.appType = appType;
     }
 
     /**
@@ -291,16 +279,15 @@ public class SalesforceSDKManager {
 
 	/**
 	 * For internal use only. Initializes required components.
-	 *  @param context Application context.
+	 * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
      * @param mainActivity Activity to be launched after the login flow.
      * @param loginActivity Login activity.
-     * @param appType Application type.
      */
     private static void init(Context context, KeyInterface keyImpl,
-                             Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity, AppType appType) {
+                             Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
     	if (INSTANCE == null) {
-    		INSTANCE = new SalesforceSDKManager(context, keyImpl, mainActivity, loginActivity, appType);
+    		INSTANCE = new SalesforceSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
     	initInternal(context);
     }
@@ -336,7 +323,7 @@ public class SalesforceSDKManager {
      * @param mainActivity Activity that should be launched after the login flow.
      */
     public static void initNative(Context context, KeyInterface keyImpl, Class<? extends Activity> mainActivity) {
-        SalesforceSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class, AppType.Native);
+        SalesforceSDKManager.init(context, keyImpl, mainActivity, LoginActivity.class);
     }
 
     /**
@@ -350,7 +337,7 @@ public class SalesforceSDKManager {
      */
     public static void initNative(Context context, KeyInterface keyImpl,
                                   Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
-        SalesforceSDKManager.init(context, keyImpl, mainActivity, loginActivity, AppType.Native);
+        SalesforceSDKManager.init(context, keyImpl, mainActivity, loginActivity);
     }
 
     /**
@@ -883,10 +870,17 @@ public class SalesforceSDKManager {
     	   	// A test harness such as Gradle does NOT have an application name.
             Log.w("SalesforceSDKManager:getUserAgent", nfe);
         }
-        String appTypeWithQualifier = appType.name() + qualifier;
+        String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s",
                 SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, appTypeWithQualifier, uid);
 	}
+
+    /**
+     * @return app type as String
+     */
+    public String getAppType() {
+        return "Native";
+    }
 
 	/**
 	 * Indicates whether the application is a hybrid application.
@@ -894,7 +888,7 @@ public class SalesforceSDKManager {
 	 * @return True if this is a hybrid application.
 	 */
 	public boolean isHybrid() {
-		return appType.equals(AppType.Hybrid);
+        return false;
 	}
 
     /**
