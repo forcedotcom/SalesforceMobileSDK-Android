@@ -55,7 +55,7 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 		Context ctx = getInstrumentation().getTargetContext();
 		JSONObject sdkInfo = SDKInfoPlugin.getSDKInfo(ctx);
 		BootConfig bootconfig = BootConfig.getBootConfig(ctx);
-		assertEquals("Wrong app name", "SalesforceSDKTest", sdkInfo.getString("appName"));
+		assertEquals("Wrong app name", "ForcePluginsTest", sdkInfo.getString("appName"));
 		assertEquals("Wrong app version", "1.0", sdkInfo.getString("appVersion"));
 		List<String> sdkInfoPlugins = toList(sdkInfo.getJSONArray("forcePluginsAvailable"));
 		assertEquals("Wrong number of plugins", 3, sdkInfoPlugins.size());
@@ -83,10 +83,13 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 	 */
 	public void testGetForcePluginsFromXML() {
 		List<String> plugins = SDKInfoPlugin.getForcePluginsFromXML(getInstrumentation().getTargetContext());
-		assertEquals("Wrong number of force plugins", 3, plugins.size());
+		assertEquals("Wrong number of force plugins", 6, plugins.size());
 		assertTrue("oauth plugin should have been returned", plugins.contains("com.salesforce.oauth"));
 		assertTrue("sdkinfo plugin should have been returned", plugins.contains("com.salesforce.sdkinfo"));
 		assertTrue("sfaccountmanager plugin should have been returned", plugins.contains("com.salesforce.sfaccountmanager"));
+		assertTrue("smartstore plugin should have been returned", plugins.contains("com.salesforce.smartstore"));
+		assertTrue("smartsync plugin should have been returned", plugins.contains("com.salesforce.smartsync"));
+		assertTrue("testrunner plugin should have been returned", plugins.contains("com.salesforce.testrunner"));
 	}
 	
 	/**
