@@ -308,9 +308,21 @@ public class ClientManager {
     }
 
     public Bundle createNewAccount(String accountName, String username, String refreshToken,
+                                   String authToken, String instanceUrl, String loginUrl, String idUrl,
+                                   String clientId, String orgId, String userId, String passcodeHash,
+                                   String clientSecret, String communityId, String communityUrl) {
+        return createNewAccount(accountName, username, refreshToken,
+                authToken, instanceUrl, loginUrl, idUrl,
+                clientId, orgId, userId, passcodeHash,
+                clientSecret, communityId, communityUrl,
+                null, null, null, null, null);
+    }
+
+    public Bundle createNewAccount(String accountName, String username, String refreshToken,
     		String authToken, String instanceUrl, String loginUrl, String idUrl,
     		String clientId, String orgId, String userId, String passcodeHash,
-            String clientSecret, String communityId, String communityUrl) {
+            String clientSecret, String communityId, String communityUrl,
+            String firstName, String lastName, String email, String photoUrl, String thumbnailUrl) {
         Bundle extras = new Bundle();
         extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
         extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
@@ -331,6 +343,11 @@ public class ClientManager {
             extras.putString(AuthenticatorService.KEY_COMMUNITY_URL, SalesforceSDKManager.encryptWithPasscode(communityUrl, passcodeHash));
         }
         extras.putString(AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, passcodeHash));
+        extras.putString(AuthenticatorService.KEY_FIRST_NAME, SalesforceSDKManager.encryptWithPasscode(firstName, passcodeHash));
+        extras.putString(AuthenticatorService.KEY_LAST_NAME, SalesforceSDKManager.encryptWithPasscode(lastName, passcodeHash));
+        extras.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encryptWithPasscode(email, passcodeHash));
+        extras.putString(AuthenticatorService.KEY_PHOTO_URL, SalesforceSDKManager.encryptWithPasscode(photoUrl, passcodeHash));
+        extras.putString(AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, passcodeHash));
         Account acc = new Account(accountName, getAccountType());
         accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encryptWithPasscode(refreshToken, passcodeHash), extras);
         accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);

@@ -70,6 +70,11 @@ public class AuthenticatorService extends Service {
     public static final String KEY_CLIENT_SECRET = "clientSecret";
     public static final String KEY_COMMUNITY_ID = "communityId";
     public static final String KEY_COMMUNITY_URL = "communityUrl";
+    public static final String KEY_EMAIL = "email";
+    public static final String KEY_FIRST_NAME = "first_name";
+    public static final String KEY_LAST_NAME = "last_name";
+    public static final String KEY_PHOTO_URL = "photoUrl";
+    public static final String KEY_THUMBNAIL_URL = "thumbnailUrl";
 
     private Authenticator getAuthenticator() {
         if (authenticator == null)
