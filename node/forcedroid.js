@@ -87,7 +87,7 @@ function usage() {
     console.log(outputColors.magenta + 'forcedroid create');
     console.log('    --apptype=<Application Type> (native, react_native, hybrid_remote, hybrid_local)');
     console.log('    --appname=<Application Name>');
-    console.log('    --targetdir=<Target App Folder> (must be an existing folder)');
+    console.log('    --targetdir=<Target App Folder> (must be an existing empty folder)');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
     console.log('    [--usesmartstore=<Whether or not to use SmartStore/SmartSync> (\'yes\' or \'no\'. no by default — Only required/used for \'native\')]');
@@ -222,13 +222,11 @@ function createNativeOrReactNativeApp(config) {
     config.templateAppClassName = config.templateAppName + 'App';
 
     // Checking if config.projectDir already exists
-    if (fs.existsSync(config.projectDir)) {
-        console.log('App folder path \'' + config.projectDir + '\' already exists.  Cannot continue.');
-        process.exit(3);
+    if (!fs.existsSync(config.projectDir)) {
+        shelljs.mkdir('-p', config.projectDir);
     }
 
     // Copy the template files to the destination directory.
-    shelljs.mkdir('-p', config.projectDir);
     shelljs.cp('-R', path.join(config.templateDir, '*'), config.projectDir);
     if (shelljs.error()) {
         console.log('There was an error copying the template files from \'' + config.templateDir + '\' to \'' + config.projectDir + '\': ' + shelljs.error());
@@ -485,7 +483,7 @@ function createArgsProcessorList() {
     addProcessorFor(argProcessorList, 'appname', 'Enter your application name:', 'Invalid value for application name: \'$val\'.', /^\S+$/);
 
     // Target dir
-    addProcessorFor(argProcessorList, 'targetdir', 'Enter the target directory of your app (must be an existing folder):', 'Invalid value for target dir: \'$val\'.',  /^\S+$/);
+    addProcessorFor(argProcessorList, 'targetdir', 'Enter the target directory of your app (must be an existing empty folder):', 'Invalid value for target dir: \'$val\'.',  /^\S+$/);
 
     // Package name
     addProcessorFor(argProcessorList, 'packagename', 'Enter the package name for your app (com.mycompany.my_app):', '\'$val\' is not a valid Java package name.', /^[a-z]+[a-z0-9_]*(\.[a-z]+[a-z0-9_]*)*$/);
