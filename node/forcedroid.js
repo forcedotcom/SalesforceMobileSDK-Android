@@ -87,7 +87,7 @@ function usage() {
     console.log(outputColors.magenta + 'forcedroid create');
     console.log('    --apptype=<Application Type> (native, react_native, hybrid_remote, hybrid_local)');
     console.log('    --appname=<Application Name>');
-    console.log('    --targetdir=<Target App Folder>');
+    console.log('    --targetdir=<Target App Folder> (must be an existing folder)');
     console.log('    --packagename=<App Package Identifier> (com.my_company.my_app)');
     console.log('    --startpage=<Path to the remote start page> (/apex/MyPage — Only required/used for \'hybrid_remote\')');
     console.log('    [--usesmartstore=<Whether or not to use SmartStore/SmartSync> (\'yes\' or \'no\'. no by default — Only required/used for \'native\')]');
@@ -199,10 +199,9 @@ function createHybridApp(config) {
          outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
          '',
          outputColors.cyan + 'To use your new application in Android Studio, do the following:' + outputColors.reset,
-         '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` ',
+         '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` from the Welcome screen',
          '   - Navigate to the ' + outputColors.magenta + config.targetdir + '/' + config.appname + '/platforms/android' + outputColors.reset + ' folder, select it and click `Ok`',
-         '   - If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`',
-         '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
+         '   - From the dropdown that displays the available targets, choose the sample app you want to run and click the play button',
          ''].join('\n');
     console.log(nextStepsOutput);
     console.log(outputColors.cyan + 'Before you ship, make sure to plug your OAuth Client ID,\nCallback URI, and OAuth Scopes into '
@@ -360,10 +359,9 @@ function createNativeOrReactNativeApp(config) {
          outputColors.green + 'Your application project is ready in ' + config.targetdir + '.',
          '',
          outputColors.cyan + 'To use your new application in Android Studio, do the following:' + outputColors.reset,
-         '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` ',
+         '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` from the Welcome screen ',
          '   - Navigate to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder, select it and click `Ok`',
-         '   - If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`',
-         '   - From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button',
+         '   - From the dropdown that displays the available targets, choose the sample app you want to run and click the play button',
          '',
          outputColors.cyan + 'To work with your new project from the command line, use the following instructions:' + outputColors.reset,
          '   - cd ' + config.targetdir,
@@ -487,7 +485,7 @@ function createArgsProcessorList() {
     addProcessorFor(argProcessorList, 'appname', 'Enter your application name:', 'Invalid value for application name: \'$val\'.', /^\S+$/);
 
     // Target dir
-    addProcessorFor(argProcessorList, 'targetdir', 'Enter the target directory of your app:', 'Invalid value for target dir: \'$val\'.',  /^\S+$/);
+    addProcessorFor(argProcessorList, 'targetdir', 'Enter the target directory of your app (must be an existing folder):', 'Invalid value for target dir: \'$val\'.',  /^\S+$/);
 
     // Package name
     addProcessorFor(argProcessorList, 'packagename', 'Enter the package name for your app (com.mycompany.my_app):', '\'$val\' is not a valid Java package name.', /^[a-z]+[a-z0-9_]*(\.[a-z]+[a-z0-9_]*)*$/);
