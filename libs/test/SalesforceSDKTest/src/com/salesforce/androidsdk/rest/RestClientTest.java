@@ -74,6 +74,12 @@ public class RestClientTest extends InstrumentationTestCase {
     private RestClient restClient;
     private String authToken;
     private String instanceUrl;
+    public static final String TEST_FIRST_NAME = "firstName";
+    public static final String TEST_LAST_NAME = "lastName";
+    public static final String TEST_EMAIL = "test@email.com";
+    public static final String TEST_PHOTO_URL = "http://some.photo.url";
+    public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
+
 
     @Override
     public void setUp() throws Exception {
@@ -88,7 +94,8 @@ public class RestClientTest extends InstrumentationTestCase {
         		new URI(TestCredentials.LOGIN_URL),
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
-        		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null);
+        		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
+                TEST_FIRST_NAME, TEST_LAST_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL);
         restClient = new RestClient(clientInfo, authToken, httpAccess, null);
     }
 
@@ -109,6 +116,12 @@ public class RestClientTest extends InstrumentationTestCase {
         assertEquals("Wrong username", TestCredentials.USERNAME, restClient.getClientInfo().username);
         assertEquals("Wrong userId", TestCredentials.USER_ID, restClient.getClientInfo().userId);
         assertEquals("Wrong orgId", TestCredentials.ORG_ID, restClient.getClientInfo().orgId);
+        assertEquals("Wrong firstName", TEST_FIRST_NAME, restClient.getClientInfo().firstName);
+        assertEquals("Wrong lastName", TEST_LAST_NAME, restClient.getClientInfo().lastName);
+        assertEquals("Wrong email", TEST_EMAIL, restClient.getClientInfo().email);
+        assertEquals("Wrong photoUrl", TEST_PHOTO_URL, restClient.getClientInfo().photoUrl);
+        assertEquals("Wrong thumbnailUrl", TEST_THUMBNAIL_URL, restClient.getClientInfo().thumbnailUrl);
+
     }
 
     public void testClientInfoResolveUrl() {
@@ -130,7 +143,7 @@ public class RestClientTest extends InstrumentationTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
-        		TestCredentials.COMMUNITY_URL);
+        		TestCredentials.COMMUNITY_URL, null, null, null, null, null);
     	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("a/b/").toString());
     	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("/a/b/").toString());
     }
@@ -142,7 +155,7 @@ public class RestClientTest extends InstrumentationTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
-        		TestCredentials.COMMUNITY_URL);
+        		TestCredentials.COMMUNITY_URL, null, null, null, null, null);
         assertEquals("Wrong url", TestCredentials.COMMUNITY_URL, info.getInstanceUrlAsString());
     }
 

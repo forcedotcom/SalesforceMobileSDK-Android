@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.accounts;
 import android.os.Bundle;
 import android.test.InstrumentationTestCase;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.security.Encryptor;
 import org.json.JSONException;
 import org.json.JSONObject;
 
