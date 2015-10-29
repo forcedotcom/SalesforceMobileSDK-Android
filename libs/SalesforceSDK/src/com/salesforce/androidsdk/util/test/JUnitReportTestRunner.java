@@ -27,16 +27,18 @@
 
 package com.salesforce.androidsdk.util.test;
 
-import java.util.concurrent.TimeUnit;
-
 import android.test.AndroidTestRunner;
+import android.test.InstrumentationTestRunner;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * This extends the report runner that generates a standard junit report file, with the timerun cap.
  */
-public class JUnitReportTestRunner extends com.zutubi.android.junitreport.JUnitReportTestRunner {
+public class JUnitReportTestRunner extends InstrumentationTestRunner {
 
-    protected AndroidTestRunner makeAndroidTestRunner() {
+    @Override
+    protected AndroidTestRunner getAndroidTestRunner() {
         return new TimeLimitedTestRunner(60 * 60, TimeUnit.SECONDS);
     }
 }
