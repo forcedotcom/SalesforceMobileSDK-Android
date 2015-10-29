@@ -84,9 +84,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		// Getting login options from intent's extras
 		LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 
-		// We'll show progress in the window title bar
-		getWindow().requestFeature(Window.FEATURE_PROGRESS);
-		getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+		requestFeatures();
 
 		// Setup content view
 		setContentView(salesforceR.layoutLogin());
@@ -112,7 +110,13 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		}
 	}
 
-    /**
+	protected void requestFeatures() {
+		// We'll show progress in the window title bar
+		getWindow().requestFeature(Window.FEATURE_PROGRESS);
+		getWindow().requestFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
+	}
+
+	/**
      * Returns whether certificate based authentication flow should be used.
      *
      * @return True - if it should be used, False - otherwise.
@@ -144,14 +148,27 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		if (keyCode == KeyEvent.KEYCODE_BACK) {
+		// This allows sub classes to override the behavior by returning false.
+		if (fixBackButtonBehavior(keyCode)) {
+			return true;
+		}
+		return super.onKeyDown(keyCode, event);
+	}
 
-			/*
-			 * If there are no accounts signed in, we need the login screen
-			 * to go away, and go back to the home screen. However, if the
-			 * login screen has been brought up from the switcher screen,
-			 * the back button should take the user back to the previous screen.
-			 */
+	/**
+	 * A fix for back button behavior
+	 *
+	 * @return true if the fix was applied
+	 *         false if the key code was not handled
+	 */
+	protected boolean fixBackButtonBehavior(int keyCode) {
+		if (keyCode == KeyEvent.KEYCODE_BACK) {
+		/*
+		 * If there are no accounts signed in, we need the login screen
+		 * to go away, and go back to the home screen. However, if the
+		 * login screen has been brought up from the switcher screen,
+		 * the back button should take the user back to the previous screen.
+		 */
 			final UserAccountManager accMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
 			if (accMgr.getAuthenticatedUsers() == null) {
 				wasBackgrounded = true;
@@ -163,7 +180,7 @@ public class LoginActivity extends AccountAuthenticatorActivity
 				return true;
 			}
 		}
-		return super.onKeyDown(keyCode, event);
+		return false;
 	}
 
     /**************************************************************************************************
