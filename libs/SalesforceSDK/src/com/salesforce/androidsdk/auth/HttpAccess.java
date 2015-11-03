@@ -411,12 +411,18 @@ public class HttpAccess extends BroadcastReceiver {
     			httpConn = (HttpsURLConnection) url.openConnection();
     			httpConn.setRequestMethod(requestMethod);
     			httpConn.setRequestProperty(USER_AGENT, userAgent);
-                try {
-                    httpConn.setSSLSocketFactory(new SalesforceTLSSocketFactory());
-                } catch (KeyManagementException e) {
-                    Log.e("HttpAccess: createHttpUrlConnection", "Exception thrown while setting SSL socket factory", e);
-                } catch (NoSuchAlgorithmException e) {
-                    Log.e("HttpAccess: createHttpUrlConnection", "Exception thrown while setting SSL socket factory", e);
+
+                /*
+                 * FIXME: Remove this piece of code once minApi >= Lollipop.
+                 */
+                if (VERSION.SDK_INT < VERSION_CODES.LOLLIPOP) {
+                    try {
+                        httpConn.setSSLSocketFactory(new SalesforceTLSSocketFactory());
+                    } catch (KeyManagementException e) {
+                        Log.e("HttpAccess: createHttpUrlConnection", "Exception thrown while setting SSL socket factory", e);
+                    } catch (NoSuchAlgorithmException e) {
+                        Log.e("HttpAccess: createHttpUrlConnection", "Exception thrown while setting SSL socket factory", e);
+                    }
                 }
             }
     	}
