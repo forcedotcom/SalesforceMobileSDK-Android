@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, salesforce.com, inc.
+ * Copyright (c) 2011-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,14 +26,15 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URI;
-import java.net.URL;
-import java.util.Map;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
+import android.util.Log;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -47,20 +48,20 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.BasicHttpEntity;
-import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
 
-import android.annotation.TargetApi;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.net.http.AndroidHttpClient;
-import android.os.Build.VERSION;
-import android.os.Build.VERSION_CODES;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URI;
+import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Map;
+
+import javax.net.ssl.HttpsURLConnection;
 
 /**
  * Generic HTTP Access layer - used internally by {@link com.salesforce.androidsdk.rest.RestClient}
@@ -205,7 +206,7 @@ public class HttpAccess extends BroadcastReceiver {
      * @throws IOException
      */
     public Execution doPost(Map<String, String> headers, URI uri, HttpEntity requestEntity) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpPost.METHOD_NAME);
+    	final HttpsURLConnection httpConn = createHttpUrlConnection(uri, HttpPost.METHOD_NAME);
     	addHeaders(httpConn, headers);
 
         // Allow input and output on this connection
@@ -235,7 +236,7 @@ public class HttpAccess extends BroadcastReceiver {
      * @throws IOException
      */
     public Execution doPatch(Map<String, String> headers, URI uri, HttpEntity requestEntity) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, PATCH);
+    	final HttpsURLConnection httpConn = createHttpUrlConnection(uri, PATCH);
     	addHeaders(httpConn, headers);
     	return execute(httpConn, requestEntity);
     }
@@ -250,7 +251,7 @@ public class HttpAccess extends BroadcastReceiver {
      * @throws IOException
      */
     public Execution doPut(Map<String, String> headers, URI uri, HttpEntity requestEntity) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpPut.METHOD_NAME);
+    	final HttpsURLConnection httpConn = createHttpUrlConnection(uri, HttpPut.METHOD_NAME);
     	addHeaders(httpConn, headers);
     	return execute(httpConn, requestEntity);
     }
@@ -264,7 +265,7 @@ public class HttpAccess extends BroadcastReceiver {
      * @throws IOException
      */
     public Execution doGet(Map<String, String> headers, URI uri) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpGet.METHOD_NAME);
+    	final HttpsURLConnection httpConn = createHttpUrlConnection(uri, HttpGet.METHOD_NAME);
     	addHeaders(httpConn, headers);
     	return execute(httpConn, null);
     }
@@ -278,7 +279,7 @@ public class HttpAccess extends BroadcastReceiver {
      * @throws IOException
      */
     public Execution doHead(Map<String, String> headers, URI uri) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpHead.METHOD_NAME);
+    	final HttpsURLConnection httpConn = createHttpUrlConnection(uri, HttpHead.METHOD_NAME);
     	addHeaders(httpConn, headers);
     	return execute(httpConn, null);
     }
@@ -292,7 +293,7 @@ public class HttpAccess extends BroadcastReceiver {
      * @throws IOException
      */
     public Execution doDelete(Map<String, String> headers, URI uri) throws IOException {
-    	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpDelete.METHOD_NAME);
+    	final HttpsURLConnection httpConn = createHttpUrlConnection(uri, HttpDelete.METHOD_NAME);
     	addHeaders(httpConn, headers);
     	return execute(httpConn, null);
     }
@@ -300,12 +301,12 @@ public class HttpAccess extends BroadcastReceiver {
     /**
      * Executes a fully formed request, and returns the results.
      *
-     * @param httpConn HTTP connection object.
+     * @param httpConn HTTPS connection object.
      * @param reqEntity Request entity.
      * @return The execution response.
      * @throws IOException
      */
-    protected Execution execute(HttpURLConnection httpConn, HttpEntity reqEntity) throws IOException {
+    protected Execution execute(HttpsURLConnection httpConn, HttpEntity reqEntity) throws IOException {
     	if (httpConn == null) {
     		return null;
     	}
@@ -363,10 +364,10 @@ public class HttpAccess extends BroadcastReceiver {
     /**
      * Adds headers to the HTTP request.
      *
-     * @param httpConn HTTP connection object.
+     * @param httpConn HTTPS connection object.
      * @param headers Headers.
      */
-    private void addHeaders(HttpURLConnection httpConn, Map<String, String> headers) {
+    private void addHeaders(HttpsURLConnection httpConn, Map<String, String> headers) {
         if (headers == null || httpConn == null) {
         	return;
         }
@@ -380,11 +381,11 @@ public class HttpAccess extends BroadcastReceiver {
      *
      * @param uri URI.
      * @param requestMethod HTTP method.
-     * @return HttpUrlConnection instance.
+     * @return HttpsUrlConnection instance.
      * @throws IOException
      */
-    private HttpURLConnection createHttpUrlConnection(URI uri, String requestMethod) throws IOException {
-    	HttpURLConnection httpConn = null;
+    private HttpsURLConnection createHttpUrlConnection(URI uri, String requestMethod) throws IOException {
+    	HttpsURLConnection httpConn = null;
     	if (uri != null) {
     		URL url = uri.toURL();
     		if (url != null) {
@@ -402,10 +403,23 @@ public class HttpAccess extends BroadcastReceiver {
     				url = new URL(urlString);
     				requestMethod = HttpPost.METHOD_NAME;
     			}
-    			httpConn = (HttpURLConnection) url.openConnection();
+    			httpConn = (HttpsURLConnection) url.openConnection();
     			httpConn.setRequestMethod(requestMethod);
     			httpConn.setRequestProperty(USER_AGENT, userAgent);
-    		}
+
+                /*
+                 * FIXME: Remove this piece of code once minApi >= Lollipop.
+                 */
+                if (VERSION.SDK_INT < VERSION_CODES.LOLLIPOP) {
+                    try {
+                        httpConn.setSSLSocketFactory(new SalesforceTLSSocketFactory());
+                    } catch (KeyManagementException e) {
+                        Log.e("HttpAccess: createHttpUrlConnection", "Exception thrown while setting SSL socket factory", e);
+                    } catch (NoSuchAlgorithmException e) {
+                        Log.e("HttpAccess: createHttpUrlConnection", "Exception thrown while setting SSL socket factory", e);
+                    }
+                }
+            }
     	}
     	return httpConn;
     }
