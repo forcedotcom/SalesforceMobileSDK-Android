@@ -204,7 +204,6 @@ public class HttpAccess extends BroadcastReceiver {
      * @return The execution response.
      * @throws IOException
      */
-    @TargetApi(19)
     public Execution doPost(Map<String, String> headers, URI uri, HttpEntity requestEntity) throws IOException {
     	final HttpURLConnection httpConn = createHttpUrlConnection(uri, HttpPost.METHOD_NAME);
     	addHeaders(httpConn, headers);
@@ -213,19 +212,16 @@ public class HttpAccess extends BroadcastReceiver {
         httpConn.setDoOutput(true);
         httpConn.setDoInput(true);
         httpConn.setUseCaches(false);
+        long contentLength = requestEntity.getContentLength();
+        if (contentLength >= 0) {
 
-        if (VERSION.SDK_INT >= VERSION_CODES.KITKAT && requestEntity != null) {
-            long contentLength = requestEntity.getContentLength();
+            // Let the connection know the size of the data being sent so that it can chunk it appropriately.
+            httpConn.setFixedLengthStreamingMode(contentLength);
+        } else {
 
-            if (contentLength >= 0) {
-                // Let the connection know the size of the data being sent so that it can chunk it appropriately.
-                httpConn.setFixedLengthStreamingMode(contentLength);
-            } else {
-                // The size isn't known - i.e. data is probably being streamed. Choose a concrete chunk size to prevent OOM errors.
-                httpConn.setFixedLengthStreamingMode(DEFAULT_POST_CHUNK_LENGTH_IN_BYTES);
-            }
+            // The size isn't known - i.e. data is probably being streamed. Choose a concrete chunk size to prevent OOM errors.
+            httpConn.setFixedLengthStreamingMode(DEFAULT_POST_CHUNK_LENGTH_IN_BYTES);
         }
-
     	return execute(httpConn, requestEntity);
     }
 
