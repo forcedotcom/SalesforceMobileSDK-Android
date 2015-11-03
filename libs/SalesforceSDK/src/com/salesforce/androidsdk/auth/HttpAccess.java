@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, salesforce.com, inc.
+ * Copyright (c) 2011-2015, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -35,6 +35,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build.VERSION;
 import android.os.Build.VERSION_CODES;
+import android.util.Log;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -57,6 +58,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -408,7 +411,14 @@ public class HttpAccess extends BroadcastReceiver {
     			httpConn = (HttpsURLConnection) url.openConnection();
     			httpConn.setRequestMethod(requestMethod);
     			httpConn.setRequestProperty(USER_AGENT, userAgent);
-    		}
+                try {
+                    httpConn.setSSLSocketFactory(new SalesforceTLSSocketFactory());
+                } catch (KeyManagementException e) {
+                    Log.e("HttpAccess: createHttpUrlConnection", "Exception thrown while setting SSL socket factory", e);
+                } catch (NoSuchAlgorithmException e) {
+                    Log.e("HttpAccess: createHttpUrlConnection", "Exception thrown while setting SSL socket factory", e);
+                }
+            }
     	}
     	return httpConn;
     }
