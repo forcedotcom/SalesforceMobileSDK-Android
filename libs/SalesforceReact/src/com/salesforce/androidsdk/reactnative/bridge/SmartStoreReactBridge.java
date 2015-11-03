@@ -32,6 +32,7 @@ import android.util.SparseArray;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
+import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -98,6 +99,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @param successCallback
      * @param errorCallback
 	 */
+	@ReactMethod
 	public void removeFromSoup(ReadableMap args,
                                final Callback successCallback, final Callback errorCallback){
 
@@ -118,6 +120,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void retrieveSoupEntries(ReadableMap args,
                                     final Callback successCallback, final Callback errorCallback){
 
@@ -143,6 +146,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void closeCursor(ReadableMap args,
                             final Callback successCallback, final Callback errorCallback){
 
@@ -162,6 +166,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void moveCursorToPageIndex(ReadableMap args,
                                       final Callback successCallback, final Callback errorCallback){
 
@@ -197,6 +202,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void showInspector(ReadableMap args,
                               final Callback successCallback, final Callback errorCallback){
 
@@ -215,6 +221,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void soupExists(ReadableMap args,
                            final Callback successCallback, final Callback errorCallback){
 
@@ -234,6 +241,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void upsertSoupEntries(ReadableMap args,
                                   final Callback successCallback, final Callback errorCallback){
 
@@ -275,6 +283,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void registerSoup(ReadableMap args,
                              final Callback successCallback, final Callback errorCallback){
 
@@ -302,6 +311,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void querySoup(ReadableMap args,
                           final Callback successCallback, final Callback errorCallback){
 
@@ -331,6 +341,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @param successCallback
      * @param errorCallback
 	 */
+	@ReactMethod
 	public void runSmartQuery(ReadableMap args,
                               final Callback successCallback, final Callback errorCallback){
 
@@ -379,6 +390,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void removeSoup(ReadableMap args,
                            final Callback successCallback, final Callback errorCallback){
 
@@ -398,6 +410,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void clearSoup(ReadableMap args,
                           final Callback successCallback, final Callback errorCallback){
 
@@ -417,6 +430,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void getDatabaseSize(ReadableMap args,
                                 final Callback successCallback, final Callback errorCallback) {
 
@@ -433,6 +447,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void alterSoup(ReadableMap args,
                           final Callback successCallback, final Callback errorCallback) {
 
@@ -461,6 +476,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void reIndexSoup(ReadableMap args,
                             final Callback successCallback, final Callback errorCallback){
 
@@ -481,6 +497,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 * @return
 	 */
+	@ReactMethod
 	public void getSoupIndexSpecs(ReadableMap args,
                                   final Callback successCallback, final Callback errorCallback){
 

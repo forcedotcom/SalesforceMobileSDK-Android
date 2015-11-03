@@ -97,6 +97,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
      * @param successCallback
      * @param errorCallback
      */
+    @ReactMethod
     public void syncDown(ReadableMap args,
                          final Callback successCallback, final Callback errorCallback) {
         // Parse args
@@ -125,6 +126,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
      * @param successCallback
      * @param errorCallback
      */
+    @ReactMethod
     public void getSyncStatus(ReadableMap args,
                               final Callback successCallback, final Callback errorCallback) {
         // Parse args
@@ -147,6 +149,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
      * @param successCallback
      * @param errorCallback
      */
+    @ReactMethod
     public void reSync(ReadableMap args,
                        final Callback successCallback, final Callback errorCallback) {
         // Parse args
