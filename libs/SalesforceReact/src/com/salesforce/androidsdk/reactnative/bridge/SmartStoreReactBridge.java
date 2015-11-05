@@ -265,7 +265,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 					results.put(smartStore.upsert(soupName, entry, externalIdPath, false));
 				}
 				smartStore.setTransactionSuccessful();
-				successCallback.invoke();
+				ReactBridgeHelper.invokeSuccess(successCallback, results);
 			}
 			catch (JSONException e) {
 				Log.e(LOG_TAG, "upsertSoupEntries", e);
