@@ -106,7 +106,11 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		// Parse args
 		String soupName = args.getString(SOUP_NAME);
         final SmartStore smartStore = getSmartStore(args);
-		Long[] soupEntryIds = ReactBridgeHelper.toJavaList(args.getArray(ENTRY_IDS)).toArray(new Long[0]);
+		List ids = ReactBridgeHelper.toJavaList(args.getArray(ENTRY_IDS));
+		Long[] soupEntryIds = new Long[ids.size()];
+		for (int i=0; i<ids.size(); i++) {
+			soupEntryIds[i] = ((Double) ids.get(i)).longValue();
+		}
 
 		// Run remove
 		smartStore.delete(soupName, soupEntryIds);
@@ -193,25 +197,6 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 			Log.e(LOG_TAG, "moveCursorToPageIndex", e);
 			errorCallback.invoke(e.toString());
 		}
-	}
-
-	/**
-	 * Native implementation of showInspector
-	 * @param args
-	 * @param successCallback
-     * @param errorCallback
-	 * @return
-	 */
-	@ReactMethod
-	public void showInspector(ReadableMap args,
-                              final Callback successCallback, final Callback errorCallback){
-
-		// Parse args
-		boolean isGlobal = getIsGlobal(args);
-
-		// fixme
-//		Activity activity = cordova.getActivity();
-//		activity.startActivity(SmartStoreInspectorActivity.getIntent(activity, isGlobal, null));
 	}
 
 	/**
