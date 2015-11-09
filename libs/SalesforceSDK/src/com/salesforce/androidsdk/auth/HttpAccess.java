@@ -412,7 +412,7 @@ public class HttpAccess extends BroadcastReceiver {
                  */
                 if (VERSION.SDK_INT < VERSION_CODES.LOLLIPOP) {
                     try {
-                        httpConn.setSSLSocketFactory(new SalesforceTLSSocketFactory());
+                        httpConn.setSSLSocketFactory(SalesforceTLSSocketFactory.getInstance());
                     } catch (KeyManagementException e) {
                         Log.e("HttpAccess: createHttpUrlConnection", "Exception thrown while setting SSL socket factory", e);
                     } catch (NoSuchAlgorithmException e) {
