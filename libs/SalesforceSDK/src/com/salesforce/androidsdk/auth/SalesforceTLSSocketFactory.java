@@ -48,7 +48,15 @@ import javax.net.ssl.SSLSocketFactory;
  */
 public class SalesforceTLSSocketFactory extends SSLSocketFactory {
 
+    private static SalesforceTLSSocketFactory INSTANCE;
     private SSLSocketFactory ssLSocketFactory;
+
+    public static SalesforceTLSSocketFactory getInstance() throws KeyManagementException, NoSuchAlgorithmException {
+        if (INSTANCE == null) {
+            INSTANCE = new SalesforceTLSSocketFactory();
+        }
+        return INSTANCE;
+    }
 
     public SalesforceTLSSocketFactory() throws KeyManagementException, NoSuchAlgorithmException {
         final SSLContext context = SSLContext.getInstance("TLS");
