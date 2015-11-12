@@ -564,7 +564,8 @@ public class RestClientTest extends InstrumentationTestCase {
     public void testResponseStreamIsReadable() throws Exception {
         final RestResponse response = getStreamTestResponse();
 
-        try (InputStream in = response.asInputStream()) {
+        try {
+            InputStream in = response.asInputStream();
             assertStreamTestResponseStreamIsValid(in);
         } catch (IOException e) {
             fail("The InputStream should be readable and an IOException should not have been thrown");
@@ -583,7 +584,8 @@ public class RestClientTest extends InstrumentationTestCase {
     public void testResponseStreamConsumedByReadingStream() throws Exception {
         final RestResponse response = getStreamTestResponse();
 
-        try (InputStream in = response.asInputStream()) {
+        try {
+            InputStream in = response.asInputStream()
             inputStreamToString(in);
         } catch (IOException e) {
             fail("The InputStream should be readable and an IOException should not have been thrown");
@@ -602,7 +604,8 @@ public class RestClientTest extends InstrumentationTestCase {
     public void testResponseStreamCannotBeReadTwice() throws Exception {
         final RestResponse response = getStreamTestResponse();
 
-        try (InputStream in = response.asInputStream()) {
+        try {
+            InputStream in = response.asInputStream();
             inputStreamToString(in);
         } catch (IOException e) {
             fail("The InputStream should be readable and an IOException should not have been thrown");
@@ -653,7 +656,8 @@ public class RestClientTest extends InstrumentationTestCase {
             }
         };
 
-        try (InputStream in = response.asInputStream()) {
+        try {
+            response.asInputStream();
             testAccessorsNotAccessible.run();
         } catch (IOException e) {
             fail("The InputStream should be readable and an IOException should not have been thrown");
@@ -674,7 +678,8 @@ public class RestClientTest extends InstrumentationTestCase {
         final RestResponse response = getStreamTestResponse();
         response.asBytes();
 
-        try (InputStream in = response.asInputStream()) {
+        try {
+            final InputStream in = response.asInputStream();
             assertNull("The InputStream should be null when trying to read it after calling an accessor method", in);
         } catch (IOException e) {
             fail("An IOException should not have been thrown");

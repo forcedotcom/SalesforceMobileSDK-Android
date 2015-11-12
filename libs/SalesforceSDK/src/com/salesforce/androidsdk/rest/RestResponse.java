@@ -236,9 +236,8 @@ public class RestResponse {
 	 * {@link #asJSONObject()} will throw exceptions.
 	 * </p>
 	 *
-	 * @return an {@link InputStream} from the response content or {@code null} if the content
-	 *         has already been consumed
-	 * @throws IOException if the response context could not be read
+	 * @return an {@link InputStream} from the response content
+	 * @throws IOException if the stream could not be created or has already been consumed
 	 */
 	public InputStream asInputStream() throws IOException {
 		try {
@@ -246,8 +245,7 @@ public class RestResponse {
 			responseAsBytes = new byte[0];
 			return response.getEntity().getContent();
 		} catch (IllegalStateException e) {
-			Log.e("RestResponse: asInputStream()", "Content has already been consumed", e);
-			return null;
+			throw new IOException("Content has been consumed");
 		}
 	}
 
