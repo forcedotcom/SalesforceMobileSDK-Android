@@ -213,7 +213,9 @@ public class HttpAccess extends BroadcastReceiver {
         httpConn.setDoOutput(true);
         httpConn.setDoInput(true);
         httpConn.setUseCaches(false);
-        long contentLength = requestEntity.getContentLength();
+
+        final long contentLength = requestEntity == null ? 0 : requestEntity.getContentLength();
+
         if (contentLength >= 0) {
 
             // Let the connection know the size of the data being sent so that it can chunk it appropriately.
