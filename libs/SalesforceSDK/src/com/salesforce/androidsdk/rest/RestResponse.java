@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.rest;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -134,9 +135,9 @@ public class RestResponse {
 	 */
 	public void consume() throws IOException {
 		if (responseAsBytes != null) {
-
-			// Already consumed.
-			return;			
+			// Try to discard content
+			discardContent();
+			return;
 		}
 		HttpEntity entity = null;
 		if (response != null) {
@@ -154,6 +155,18 @@ public class RestResponse {
 			}
 		} else {
 			responseAsBytes = new byte[0];
+		}
+	}
+
+	/**
+	 * Fully consume a response and swallow any exceptions thrown during the process.
+	 * @see RestResponse#consume()
+	 */
+	public void consumeQuietly() {
+		try {
+			consume();
+		} catch (IOException e) {
+			Log.e("RestResponse: consume()", "Content could not be written to byte array", e);
 		}
 	}
 
@@ -212,6 +225,32 @@ public class RestResponse {
 		return responseAsJSONArray;
 	}
 
+	/**
+	 * Streams the response content. This stream <strong>must</strong> be consumed either
+	 * by reading from it, calling a method like {@link com.google.common.io.Closeables#closeQuietly(InputStream)}
+	 * or calling {@link #consume()} to discard the contents.
+	 *
+	 * <p>>
+	 * If the response is consumed as a stream, {@link #asBytes()} will return an empty array,
+	 * {@link #asString()} will return an emtpy string and both {@link #asJSONArray()} and
+	 * {@link #asJSONObject()} will throw exceptions.
+	 * </p>
+	 *
+	 * @return an {@link InputStream} from the response content or {@code null} if the content
+	 *         has already been consumed
+	 * @throws IOException if the response context could not be read
+	 */
+	public InputStream asInputStream() throws IOException {
+		try {
+			// Write an empty array so that no data can be read by other accessor methods
+			responseAsBytes = new byte[0];
+			return response.getEntity().getContent();
+		} catch (IllegalStateException e) {
+			Log.e("RestResponse: asInputStream()", "Content has already been consumed", e);
+			return null;
+		}
+	}
+
 	@Override
 	public String toString() {
 		try {
@@ -219,6 +258,22 @@ public class RestResponse {
 		} catch (Exception e) {
 			Log.e("RestResponse: toString()", "Exception caught while calling asString()", e);
 			return ((response == null) ? "" : response.toString());
+		}
+	}
+
+	/**
+	 * Consume and discard the entity content.
+	 */
+	private void discardContent() {
+		if (response == null) {
+			// Nothing to consume
+			return;
+		}
+
+		try {
+			response.getEntity().consumeContent();
+		} catch (IOException e) {
+			// The stream has already been consumed
 		}
 	}
 }

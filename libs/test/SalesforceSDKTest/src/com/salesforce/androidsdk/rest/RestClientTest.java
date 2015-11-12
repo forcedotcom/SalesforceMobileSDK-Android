@@ -30,6 +30,7 @@ import android.os.Environment;
 import android.test.InstrumentationTestCase;
 
 import com.android.volley.Request;
+import com.google.common.io.CharStreams;
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -41,14 +42,18 @@ import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
 import org.apache.http.HttpStatus;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -56,7 +61,6 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 /**
  * Tests for RestClient
  *
@@ -552,9 +556,164 @@ public class RestClientTest extends InstrumentationTestCase {
         assertFalse("File should not exist", file.exists());
     }
 
+    /**
+     * Tests if a stream from {@link RestResponse#asInputStream()} is readable.
+     *
+     * @throws Exception
+     */
+    public void testResponseStreamIsReadable() throws Exception {
+        final RestResponse response = getStreamTestResponse();
+
+        try (InputStream in = response.asInputStream()) {
+            assertStreamTestResponseStreamIsValid(in);
+        } catch (IOException e) {
+            fail("The InputStream should be readable and an IOException should not have been thrown");
+        } catch (JSONException e) {
+            fail("Valid JSON data should have been returned");
+        } finally {
+            response.consumeQuietly();
+        }
+    }
+
+    /**
+     * Tests if a stream from {@link RestResponse#asInputStream()} is consumed (according to the REST client) by fully reading the stream.
+     *
+     * @throws Exception
+     */
+    public void testResponseStreamConsumedByReadingStream() throws Exception {
+        final RestResponse response = getStreamTestResponse();
+
+        try (InputStream in = response.asInputStream()) {
+            inputStreamToString(in);
+        } catch (IOException e) {
+            fail("The InputStream should be readable and an IOException should not have been thrown");
+        }
+
+        // We read the entire stream but forgot to call consume() or consumeQuietly() - can another REST call be made?
+        final RestResponse anotherResponse = getStreamTestResponse();
+        assertNotNull(anotherResponse);
+    }
+
+    /**
+     * Tests that a stream from {@link RestResponse#asInputStream()} cannot be read from twice.
+     *
+     * @throws Exception
+     */
+    public void testResponseStreamCannotBeReadTwice() throws Exception {
+        final RestResponse response = getStreamTestResponse();
+
+        try (InputStream in = response.asInputStream()) {
+            inputStreamToString(in);
+        } catch (IOException e) {
+            fail("The InputStream should be readable and an IOException should not have been thrown");
+        }
+
+        try (InputStream in = response.asInputStream()) {
+            assertNull("The InputStream should be null when trying to read it a second time", in);
+        } catch (IOException e) {
+            fail("An IOException should not have been thrown");
+        } finally {
+            response.consumeQuietly();
+        }
+    }
+
+    /**
+     * Tests that {@link RestResponse}'s accessor methods (like {@link RestResponse#asBytes()} do not return valid data if the response is streamed first.
+     *
+     * @throws Exception
+     */
+    public void testOtherAccessorsNotAvailableAfterResponseStreaming() throws Exception {
+        final RestResponse response = getStreamTestResponse();
+
+        final Runnable testAccessorsNotAccessible = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // The other accessors should not return valid data as soon as the stream is opened
+                    assertNotNull(response.asBytes());
+                    assertEquals("asBytes() array should be empty", 0, response.asBytes().length);
+                    assertEquals("asString() should return the empty string", "", response.asString());
+
+                    try {
+                        assertNull(response.asJSONObject());
+                        fail("asJSONObject() should fail");
+                    } catch (JSONException e) {
+                        // Expected
+                    }
+
+                    try {
+                        assertNull(response.asJSONArray());
+                        fail("asJSONArray() should fail");
+                    } catch (JSONException e) {
+                        // Expected
+                    }
+                }catch (IOException e) {
+                    fail("IOException not expected");
+                }
+            }
+        };
+
+        try (InputStream in = response.asInputStream()) {
+            testAccessorsNotAccessible.run();
+        } catch (IOException e) {
+            fail("The InputStream should be readable and an IOException should not have been thrown");
+        } finally {
+            response.consumeQuietly();
+        }
+
+        // Ensure that consuming the stream doesn't make the accessors accessible again
+        testAccessorsNotAccessible.run();
+    }
+
+    /**
+     * Tests that any call to {@link RestResponse}'s accessor methods prevent the response data from being streamed via {@link RestResponse#asInputStream()}.
+     *
+     * @throws Exception
+     */
+    public void testAccessorMethodsPreventResponseStreaming() throws Exception {
+        final RestResponse response = getStreamTestResponse();
+        response.asBytes();
+
+        try (InputStream in = response.asInputStream()) {
+            assertNull("The InputStream should be null when trying to read it after calling an accessor method", in);
+        } catch (IOException e) {
+            fail("An IOException should not have been thrown");
+        } finally {
+            response.consumeQuietly();
+        }
+    }
+
     //
     // Helper methods
     //
+
+    /**
+     * @return a {@link RestResponse} for testing streaming. It should contain some JSON data.
+     * @throws IOException if the response could not be made
+     */
+    private RestResponse getStreamTestResponse() throws IOException {
+        final RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
+        assertEquals("Response code should be HTTP OK", response.getStatusCode(), HttpStatus.SC_OK);
+        return response;
+    }
+
+    /**
+     * Assert that the {@link RestResponse} returned from {@link #getStreamTestResponse()} is valid.
+     * @param in the {@link InputStream} of response data
+     * @throws IOException if the stream could not be read
+     * @throws JSONException if the response could not be decoded to a valid JSON object
+     */
+    private void assertStreamTestResponseStreamIsValid(InputStream in) throws IOException, JSONException {
+        final String responseData = inputStreamToString(in);
+        assertNotNull("The response should contain data", responseData);
+
+        final JSONObject responseJson = new JSONObject(responseData);
+        checkKeys(responseJson, "sobjects", "search", "recent");
+    }
+
+    private String inputStreamToString(InputStream inputStream) throws IOException {
+        return CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+    }
 
     /**
      * Send request using sendAsync method
