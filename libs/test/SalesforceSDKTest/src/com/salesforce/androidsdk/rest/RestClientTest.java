@@ -585,7 +585,7 @@ public class RestClientTest extends InstrumentationTestCase {
         final RestResponse response = getStreamTestResponse();
 
         try {
-            InputStream in = response.asInputStream()
+            InputStream in = response.asInputStream();
             inputStreamToString(in);
         } catch (IOException e) {
             fail("The InputStream should be readable and an IOException should not have been thrown");
@@ -605,16 +605,17 @@ public class RestClientTest extends InstrumentationTestCase {
         final RestResponse response = getStreamTestResponse();
 
         try {
-            InputStream in = response.asInputStream();
+            final InputStream in = response.asInputStream();
             inputStreamToString(in);
         } catch (IOException e) {
             fail("The InputStream should be readable and an IOException should not have been thrown");
         }
 
-        try (InputStream in = response.asInputStream()) {
-            assertNull("The InputStream should be null when trying to read it a second time", in);
+        try {
+            response.asInputStream();
+            fail("An IOException should have been thrown while trying to read the InputStream a second time");
         } catch (IOException e) {
-            fail("An IOException should not have been thrown");
+            // Expected
         } finally {
             response.consumeQuietly();
         }
@@ -650,7 +651,7 @@ public class RestClientTest extends InstrumentationTestCase {
                     } catch (JSONException e) {
                         // Expected
                     }
-                }catch (IOException e) {
+                } catch (IOException e) {
                     fail("IOException not expected");
                 }
             }
@@ -679,10 +680,10 @@ public class RestClientTest extends InstrumentationTestCase {
         response.asBytes();
 
         try {
-            final InputStream in = response.asInputStream();
-            assertNull("The InputStream should be null when trying to read it after calling an accessor method", in);
+            response.asInputStream();
+            fail("The InputStream should not be readable after an accessor method is called");
         } catch (IOException e) {
-            fail("An IOException should not have been thrown");
+            // Expected
         } finally {
             response.consumeQuietly();
         }
