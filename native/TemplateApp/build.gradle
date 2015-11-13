@@ -43,5 +43,5 @@ android {
 afterEvaluate {
   // Find all connected Android tests and ensure they log all passed tests. This keeps the Travis
   // from timing out since executing tests are printed to the console.
-  tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.DEBUG)
+  tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.INFO)
 }
