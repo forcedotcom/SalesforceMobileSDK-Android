@@ -99,7 +99,7 @@ public abstract class ForcePlugin extends CordovaPlugin {
      * @param args          JSONArray of arguments for the plugin.
      * @param callbackContext Used when calling back into Javascript.
      * @return              Whether the action was valid.
-	 * @throws JSONExceptiopn
+	 * @throws JSONException
 	 */
 	abstract protected boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, JSONArray args, CallbackContext callbackContext) throws JSONException;
 }
