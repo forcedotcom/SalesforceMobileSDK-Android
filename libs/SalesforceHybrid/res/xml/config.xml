@@ -20,6 +20,6 @@
     <feature name="com.salesforce.oauth"><param name="android-package" value="com.salesforce.androidsdk.phonegap.plugin.SalesforceOAuthPlugin"/></feature>
     <feature name="com.salesforce.sfaccountmanager"><param name="android-package" value="com.salesforce.androidsdk.phonegap.plugin.SFAccountManagerPlugin"/></feature>
     <feature name="com.salesforce.sdkinfo"><param name="android-package" value="com.salesforce.androidsdk.phonegap.plugin.SDKInfoPlugin"/></feature>
-    <feature name="com.salesforce.smartstore"><param name="android-package" value="com.salesforce.androidsdk.smartstore.phonegap.plugin.SmartStorePlugin"/></feature>
-    <feature name="com.salesforce.smartsync"><param name="android-package" value="com.salesforce.androidsdk.smartsync.phonegap.plugin.SmartSyncPlugin"/></feature>
+    <feature name="com.salesforce.smartstore"><param name="android-package" value="com.salesforce.androidsdk.phonegap.plugin.SmartStorePlugin"/></feature>
+    <feature name="com.salesforce.smartsync"><param name="android-package" value="com.salesforce.androidsdk.phonegap.plugin.SmartSyncPlugin"/></feature>
 </widget>
