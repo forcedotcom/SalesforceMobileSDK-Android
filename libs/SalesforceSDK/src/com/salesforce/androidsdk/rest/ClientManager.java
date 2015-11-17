@@ -26,6 +26,18 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.AuthenticatorService;
+import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
+
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
@@ -37,18 +49,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
-
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.AuthenticatorService;
-import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
-
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * ClientManager is a factory class for RestClient which stores OAuth credentials in the AccountManager.
@@ -367,7 +367,15 @@ public class ClientManager {
         extras.putString(AuthenticatorService.KEY_PHOTO_URL, SalesforceSDKManager.encryptWithPasscode(photoUrl, passcodeHash));
         extras.putString(AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, passcodeHash));
         Account acc = new Account(accountName, getAccountType());
-        accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encryptWithPasscode(refreshToken, passcodeHash), extras);
+        accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encryptWithPasscode(refreshToken, passcodeHash), new Bundle());
+        // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
+        // saved when the user data is passed in through that method. The work-around is to call setUserData()
+        // for all the user data manually after passing in empty user data into addAccountExplicitly().
+        for (String key : extras.keySet()) {
+            // WARNING! This assumes all user data is a String!
+            accountManager.setUserData(acc, key, extras.getString(key));
+        }
+
         accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
         SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
         return extras;
