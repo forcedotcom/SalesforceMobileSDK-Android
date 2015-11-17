@@ -1,4 +1,3 @@
-"external\cordova\bin\node_modules\shelljs\bin\shjs" "external\cordova\bin\node_modules\.bin\shjs"
 "external\cordova\bin\templates\project\assets\www\cordova.js" "hybrid\HybridSampleApps\AccountEditor\assets\www\cordova.js"
 "external\cordova\bin\templates\project\assets\www\cordova.js" "hybrid\HybridSampleApps\NoteSync\assets\www\cordova.js"
 "external\cordova\bin\templates\project\assets\www\cordova.js" "hybrid\HybridSampleApps\SmartSyncExplorerHybrid\assets\www\cordova.js"
