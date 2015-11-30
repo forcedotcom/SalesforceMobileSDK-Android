@@ -401,7 +401,12 @@ public class HttpAccess extends BroadcastReceiver {
     			 * https://code.google.com/p/android/issues/detail?id=76611
     			 */
     			if (PATCH.equals(requestMethod)) {
-    				final String urlString = url.toString() + "?_HttpMethod=PATCH";
+                    final String urlString;
+                    if (uri.getQuery() == null) {
+                        urlString = url.toString() + "?_HttpMethod=PATCH";
+                    } else {
+                        urlString = url.toString() + "&_HttpMethod=PATCH";
+                    }
     				url = new URL(urlString);
     				requestMethod = HttpPost.METHOD_NAME;
     			}
