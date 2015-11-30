@@ -58,6 +58,8 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
+import javax.net.ssl.HttpsURLConnection;
+
 /**
  * Tests for ExplorerActivity
  *
@@ -579,7 +581,7 @@ public class ExplorerActivityTest extends
         }
 
         @Override
-        protected Execution execute(HttpURLConnection httpConn, HttpEntity reqEntity) throws IOException {
+        protected Execution execute(HttpsURLConnection httpConn, HttpEntity reqEntity) throws IOException {
             HttpResponse res = new BasicHttpResponse(new BasicStatusLine(new ProtocolVersion("http", 1, 1), HttpStatus.SC_OK, null), null, null);
             String body = "";
             if (reqEntity != null) {
