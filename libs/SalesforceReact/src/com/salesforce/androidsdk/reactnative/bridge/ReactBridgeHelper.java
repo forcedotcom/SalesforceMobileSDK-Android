@@ -27,12 +27,9 @@
 package com.salesforce.androidsdk.reactnative.bridge;
 
 import com.facebook.react.bridge.Callback;
-import com.facebook.react.bridge.NativeArray;
-import com.facebook.react.bridge.NativeMap;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
-import com.facebook.react.bridge.ReadableMapKeySeyIterator;
-import com.facebook.react.bridge.WritableNativeMap;
+import com.facebook.react.bridge.ReadableMapKeySetIterator;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -74,7 +71,7 @@ public class ReactBridgeHelper  {
 
     public static Map<String, Object> toJavaMap(ReadableMap map) {
         Map<String, Object> result = new HashMap<>();
-        ReadableMapKeySeyIterator iterator = map.keySetIterator();
+        ReadableMapKeySetIterator iterator = map.keySetIterator();
         while (iterator.hasNextKey()) {
             String key = iterator.nextKey();
             switch (map.getType(key)) {
@@ -103,7 +100,7 @@ public class ReactBridgeHelper  {
 
     public static Map<String, String> toJavaStringMap(ReadableMap map) {
         Map<String, String> result = new HashMap<>();
-        ReadableMapKeySeyIterator iterator = map.keySetIterator();
+        ReadableMapKeySetIterator iterator = map.keySetIterator();
         while (iterator.hasNextKey()) {
             String key = iterator.nextKey();
             switch (map.getType(key)) {

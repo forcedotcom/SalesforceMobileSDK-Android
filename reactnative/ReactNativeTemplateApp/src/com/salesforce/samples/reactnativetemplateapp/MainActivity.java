@@ -95,7 +95,7 @@ public class MainActivity extends SalesforceActivity implements DefaultHardwareB
 		super.onResume();
 
 		if (mReactInstanceManager != null) {
-			mReactInstanceManager.onResume(this);
+			mReactInstanceManager.onResume(this, this);
 		}
 	}
 }
