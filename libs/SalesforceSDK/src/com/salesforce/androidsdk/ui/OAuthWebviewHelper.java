@@ -624,6 +624,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             bundle.putString(USERNAME, username);
             bundle.putString(REFRESH_TOKEN, refreshToken);
             bundle.putString(AUTH_TOKEN, authToken);
+            bundle.putString(IDENTITY_URL, identityUrl);
             bundle.putString(INSTANCE_URL, instanceUrl);
             bundle.putString(ORG_ID, orgId);
             bundle.putString(USER_ID, userId);
