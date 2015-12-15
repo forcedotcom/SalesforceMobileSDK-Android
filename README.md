@@ -29,21 +29,21 @@ Introduction
 - Upgraded the `Cordova` library to `v5.0.2`.
 
 **Library Enhancements**
-- Mobile SDK libraries have been refactored to support better consumption. Native apps do not require Cordova to build anymore. Our library projects are listed below.
-	- SalesforceSDK.
-	- SmartStore.
-	- SmartSync.
-	- SalesforceHybrid.
-	- SalesforceReact.
-- The SalesforceReact library now provides the ability to use ReactNative. Refer to the ReactNative chapter in the Mobile SDK Development Guide for details on how to use this feature.
+- Mobile SDK libraries have been refactored to support better consumption. Native apps no longer require Cordova. Our library projects are listed below.
+	- SalesforceSDK
+	- SmartStore
+	- SmartSync
+	- SalesforceHybrid
+	- SalesforceReact
+- The new SalesforceReact library provides the ability to use React Native. Refer to the React Native chapter in the Mobile SDK Development Guide for details on how to use this feature.
 
 **Other Technical Improvements**
-- Added support for TLS 1.1/1.2. TLS 1.0 is now disabled and no longer supported as of Mobile SDK 4.0.
+- TLS 1.1 and 1.2 are now the default protocols used for networking on Mobile SDK. See [this](https://developer.salesforce.com/blogs/engineering/2015/11/disabling-tls-1-0-preparing-mobile-sdk-apps-big-change.html) blog post for important information.
 - `Android Studio` and `gradle` are fully supported. `Eclipse` and `ant` are no longer supported.
 - Improvements to sample apps.
 - Various bug fixes.
 
-Check http://developer.force.com/mobilesdk for additional articles and tutorials
+Check http://developer.force.com/mobilesdk for additional articles and tutorials.
 
 ### Native Applications
 The Salesforce Mobile SDK provides essential libraries for quickly building native mobile apps that seamlessly integrate with the Salesforce cloud architecture.  Out of the box, we provide an implementation of OAuth2, abstracting away the complexity of securely storing refresh tokens or fetching a new session ID when a session expires. The SDK also provides Java wrappers for the Salesforce REST API, making it easy to retrieve, store, and manipulate data.
