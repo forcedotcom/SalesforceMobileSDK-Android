@@ -21,15 +21,26 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 3.3
+### What's New in 4.0
 
-**SmartStore Library Enhancements**
-- SmartStore now provides the ability to perform full text search (FTS). Refer to the SmartStore chapter in the Mobile SDK Development Guide for details on how to use this feature.
-- An enhanced query syntax has been added to support this feature.
+**Library Upgrades**
+- Raised the target Android OS version to `v6.0` (API 23 - Marshmallow). Android Marshmallow is now fully supported.
+- Raised the minimum Android OS version required by Mobile SDK to `v4.4` (API 19 - KitKat).
+- Upgraded the `Cordova` library to `v5.0.2`.
+
+**Library Enhancements**
+- Mobile SDK libraries have been refactored to support better consumption. Native apps do not require Cordova to build anymore. Our library projects are listed below.
+	- SalesforceSDK.
+	- SmartStore.
+	- SmartSync.
+	- SalesforceHybrid.
+	- SalesforceReact.
+- The SalesforceReact library now provides the ability to use ReactNative. Refer to the ReactNative chapter in the Mobile SDK Development Guide for details on how to use this feature.
 
 **Other Technical Improvements**
-- Mobile SDK no longer depends on the `httpcore` library.
-- Upgraded SQLCipher to 3.3.
+- Added support for TLS 1.1/1.2. TLS 1.0 is now disabled and no longer supported as of Mobile SDK 4.0.
+- `Android Studio` and `gradle` are fully supported. `Eclipse` and `ant` are no longer supported.
+- Improvements to sample apps.
 - Various bug fixes.
 
 Check http://developer.force.com/mobilesdk for additional articles and tutorials
