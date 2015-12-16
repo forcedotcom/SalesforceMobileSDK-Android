@@ -31,6 +31,7 @@ import android.text.TextUtils;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Helper class to build a SOQL statement.
@@ -258,12 +259,12 @@ public class SOQLBuilder {
         final Integer limit = (Integer) properties.get("limit");
         if (limit != null && limit > 0) {
             query.append(" limit ");
-            query.append(String.format("%d", limit));
+            query.append(String.format(Locale.US, "%d", limit));
         }
         final Integer offset = (Integer) properties.get("offset");
         if (offset != null && offset > 0) {
             query.append(" offset ");
-            query.append(String.format("%d", offset));
+            query.append(String.format(Locale.US, "%d", offset));
         }
         return query.toString();
     }
