@@ -56,8 +56,14 @@ public class MetadataManagerTest extends ManagerTestCase {
     /**
      * Test for global 'loadMRUObjects' (from the server).
      */
-    public void testLoadGlobalMRUObjectsFromServer() {
+    public void testLoadGlobalMRUObjectsFromServer() throws Exception {
     	metadataManager.markObjectAsViewed(CASE_1_ID, Constants.CASE, null);
+
+		/*
+		 * MRU could take a few milliseconds to index on the server. This ensures
+		 * that we don't query too soon and cause the test to flap.
+		 */
+		Thread.sleep(2000);
     	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(null,
     			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
     	assertNotNull("MRU list should not be null", mruObjects);
@@ -69,8 +75,14 @@ public class MetadataManagerTest extends ManagerTestCase {
     /**
      * Test for account 'loadMRUObjects' (from the server).
      */
-    public void testLoadAccountMRUObjectsFromServer() {
+    public void testLoadAccountMRUObjectsFromServer() throws Exception {
     	metadataManager.markObjectAsViewed(ACCOUNT_1_ID, Constants.ACCOUNT, null);
+
+		/*
+		 * MRU could take a few milliseconds to index on the server. This ensures
+		 * that we don't query too soon and cause the test to flap.
+		 */
+		Thread.sleep(2000);
     	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.ACCOUNT,
     			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
     	assertNotNull("MRU list should not be null", mruObjects);
@@ -82,8 +94,14 @@ public class MetadataManagerTest extends ManagerTestCase {
     /**
      * Test for opportunity 'loadMRUObjects' (from the server).
      */
-    public void testLoadOpportunityMRUObjectsFromServer() {
+    public void testLoadOpportunityMRUObjectsFromServer() throws Exception {
     	metadataManager.markObjectAsViewed(OPPORTUNITY_1_ID, Constants.OPPORTUNITY, null);
+
+		/*
+		 * MRU could take a few milliseconds to index on the server. This ensures
+		 * that we don't query too soon and cause the test to flap.
+		 */
+		Thread.sleep(2000);
     	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
     			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
     	assertNotNull("MRU list should not be null", mruObjects);

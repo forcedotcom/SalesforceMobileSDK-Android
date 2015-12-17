@@ -1,6 +1,6 @@
 [submodule "external/shared"]
 	path = external/shared
-        url = https://github.com/forcedotcom/SalesforceMobileSDK-Shared.git
+    url = https://github.com/forcedotcom/SalesforceMobileSDK-Shared.git
 [submodule "external/cordova"]
 	path = external/cordova
 	url = https://github.com/apache/cordova-android.git

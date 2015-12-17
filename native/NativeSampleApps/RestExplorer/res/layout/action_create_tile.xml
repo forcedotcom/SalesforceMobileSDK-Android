@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="match_parent"
+	android:layout_height="match_parent">
+
+	<TextView android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textColor="#000000" android:gravity="top" android:text="@string/create_title" />
+
+	<Button android:id="@+id/create_button" android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:onClick="onCreateClick" android:text="@string/create_button" />
+
+	<EditText android:id="@+id/create_object_type_text"
+		android:layout_width="match_parent" android:layout_height="wrap_content"
+		android:textColor="#000000" android:hint="@string/object_type_hint"
+		android:maxLines="1" android:imeOptions="actionNext" />
+
+	<EditText android:id="@+id/create_fields_text"
+		android:layout_width="match_parent" android:layout_height="match_parent"
+		android:textColor="#000000" android:hint="@string/fields_hint"
+		android:gravity="top" android:imeOptions="actionDone" />
+
+</LinearLayout>
+
+

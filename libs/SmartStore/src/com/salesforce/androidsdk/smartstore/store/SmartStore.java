@@ -669,37 +669,41 @@ public class SmartStore  {
 		for (int i=0; i<columnCount; i++) {
 			String raw = cursor.getString(i);
 
-			// Is this column holding a serialized json object?
-			if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
-				row.put(new JSONObject(raw));
-				// Note: we could end up returning a string if you aliased the column
-			}
-			else {
-				// TODO Leverage cursor.getType once our min api is 11 or above
-				// For now, we do our best to guess
-				
-				// Is it holding a integer ?
-	    		try {
-	    			Long n = Long.parseLong(raw);
-	    			row.put(n);
-	    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
-	    		}
-	    		// Is it holding a floating ?
-	    		catch (NumberFormatException e) {
-	    			try { 
-		    			Double d = Double.parseDouble(raw);
-		    			// No exception, let's get the value straight from the cursor
-		    			// XXX Double.parseDouble(cursor.getString(i)) is sometimes different from cursor.getDouble(i) !!!
-		    			d = cursor.getDouble(i);
-		    			row.put(d);
-		    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
-	    			}
-		    		// It must be holding a string then
-	    			catch (NumberFormatException ne) {
-		    			row.put(raw);
-	    			}
-	    		}
-			}
+            if (raw == null) {
+                row.put(raw);
+            } else {
+    			// Is this column holding a serialized json object?
+    			if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
+    				row.put(new JSONObject(raw));
+    				// Note: we could end up returning a string if you aliased the column
+    			}
+    			else {
+    				// TODO Leverage cursor.getType once our min api is 11 or above
+    				// For now, we do our best to guess
+    				
+    				// Is it holding a integer ?
+    	    		try {
+    	    			Long n = Long.parseLong(raw);
+    	    			row.put(n);
+    	    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
+    	    		}
+    	    		// Is it holding a floating ?
+    	    		catch (NumberFormatException e) {
+    	    			try { 
+    		    			Double d = Double.parseDouble(raw);
+    		    			// No exception, let's get the value straight from the cursor
+    		    			// XXX Double.parseDouble(cursor.getString(i)) is sometimes different from cursor.getDouble(i) !!!
+    		    			d = cursor.getDouble(i);
+    		    			row.put(d);
+    		    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
+    	    			}
+    		    		// It must be holding a string then
+    	    			catch (NumberFormatException ne) {
+    		    			row.put(raw);
+    	    			}
+    	    		}
+    			}
+            }
 		}
 		return row;
 	}
@@ -783,6 +787,7 @@ public class SmartStore  {
 				if (success && hasFTS(soupName)) {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
+					contentValuesFts.put(DOCID_COL, soupEntryId);
 					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
 					// InsertHelper not working against virtual fts table
 					db.insert(soupTableNameFts, null, contentValuesFts);
@@ -832,7 +837,7 @@ public class SmartStore  {
 		}
 	}
 
-	/**
+    /**
      * @param soupElt
      * @param contentValues
      * @param indexSpec
@@ -841,12 +846,26 @@ public class SmartStore  {
         Object value = project(soupElt, indexSpec.path);
         switch (indexSpec.type) {
         case integer:
-            contentValues.put(indexSpec.columnName, value != null ? ((Number) value).longValue() : null); break;
+            Long longValToUse = null;
+            try {
+                longValToUse = ((Number) value).longValue();
+            }
+            catch (Exception e) {
+                // Ignore and use the null value
+            }
+            contentValues.put(indexSpec.columnName, longValToUse); break;
         case string:
-		case full_text:
-			contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
+        case full_text:
+            contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
         case floating:
-            contentValues.put(indexSpec.columnName, value != null ? ((Number) value).doubleValue() : null); break;
+            Double doubleValToUse = null;
+            try {
+                doubleValToUse = ((Number) value).doubleValue();
+            }
+            catch (Exception e) {
+                // Ignore and use the null value
+            }
+            contentValues.put(indexSpec.columnName, doubleValToUse); break;
         }
     }
 

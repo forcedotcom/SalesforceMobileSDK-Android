@@ -1,0 +1,51 @@
+
+apply plugin: 'android-library'
+
+dependencies {
+  compile project(':libs:SmartSync')
+  compile project(':external:cordova:framework')
+}
+
+android {
+  compileSdkVersion 23
+  buildToolsVersion '23.0.1'
+  useLibrary  'org.apache.http.legacy'
+
+  sourceSets {
+    main {
+      manifest.srcFile 'AndroidManifest.xml'
+      java.srcDirs = ['src']
+      resources.srcDirs = ['src']
+      aidl.srcDirs = ['src']
+      renderscript.srcDirs = ['src']
+      res.srcDirs = ['res']
+      assets.srcDirs = ['assets']
+    }
+    androidTest.setRoot('../test/SalesforceHybridTest')
+    androidTest {
+      java.srcDirs = ['../test/SalesforceHybridTest/src']
+      resources.srcDirs = ['../test/SalesforceHybridTest/src']
+      res.srcDirs = ['../test/SalesforceHybridTest/res']
+    }
+  }
+  defaultConfig {
+    testApplicationId "com.salesforce.androidsdk.salesforcehybrid.tests"
+    testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
+  }
+  packagingOptions {
+    exclude 'META-INF/LICENSE'
+    exclude 'META-INF/LICENSE.txt'
+    exclude 'META-INF/DEPENDENCIES'
+    exclude 'META-INF/NOTICE'
+  }
+  
+  lintOptions {
+    abortOnError false
+  }
+}
+
+afterEvaluate {
+  // Find all connected Android tests and ensure they log all passed tests. This keeps the Travis
+  // from timing out since executing tests are printed to the console.
+  tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.INFO)
+}

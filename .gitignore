@@ -15,4 +15,4 @@ build/
 .idea/
 *.iml
 bower_components/
-.tddium*
+node_modules/

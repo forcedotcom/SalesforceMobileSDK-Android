@@ -41,7 +41,7 @@ import android.content.Context;
 import android.database.Cursor;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
@@ -334,7 +334,7 @@ public class DBHelper {
 	 */
 	public synchronized void reset(Context ctx) {
 		clearMemoryCache();
-		final List<UserAccount> accounts = SalesforceSDKManagerWithSmartStore.getInstance().getUserAccountManager().getAuthenticatedUsers();
+		final List<UserAccount> accounts = SmartStoreSDKManager.getInstance().getUserAccountManager().getAuthenticatedUsers();
 		if (accounts != null) {
 			for (final UserAccount account : accounts) {
 				reset(ctx, account);

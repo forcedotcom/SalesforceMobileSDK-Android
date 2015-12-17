@@ -75,6 +75,11 @@ public class ClientManagerTest extends InstrumentationTestCase {
     public static final String TEST_ACCOUNT_TYPE = "com.salesforce.androidsdk.salesforcesdktest.login"; // must match authenticator.xml in SalesforceSDK project
     public static final String[] TEST_SCOPES = new String[] {"web"};
     public static final String TEST_CALLBACK_URL = "test://callback";
+    public static final String TEST_FIRST_NAME = "firstName";
+    public static final String TEST_LAST_NAME = "lastName";
+    public static final String TEST_EMAIL = "test@email.com";
+    public static final String TEST_PHOTO_URL = "http://some.photo.url";
+    public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
 
     private Context targetContext;
     private ClientManager clientManager;
@@ -167,6 +172,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
         assertEquals("Wrong user id", TEST_USER_ID, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USER_ID), TEST_PASSCODE_HASH));
         assertEquals("Wrong org id", TEST_ORG_ID, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_ORG_ID), TEST_PASSCODE_HASH));
         assertEquals("Wrong username", TEST_USERNAME, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_USERNAME), TEST_PASSCODE_HASH));
+        assertEquals("Wrong last name", TEST_LAST_NAME, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME), TEST_PASSCODE_HASH));
+        assertEquals("Wrong email", TEST_EMAIL, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL), TEST_PASSCODE_HASH));
     }
 
     /**
@@ -439,7 +446,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private Bundle createTestAccount() {
         return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
                 TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID,
-                TEST_ORG_ID, TEST_USER_ID, TEST_PASSCODE_HASH);
+                TEST_ORG_ID, TEST_USER_ID, TEST_PASSCODE_HASH, null, null, null, TEST_FIRST_NAME,
+                TEST_LAST_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL);
     }
 
     /**
@@ -449,6 +457,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private Bundle createOtherTestAccount() {
         return clientManager.createNewAccount(TEST_OTHER_ACCOUNT_NAME, TEST_OTHER_USERNAME,
                 TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL,
-                TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID_2, TEST_USER_ID_2, TEST_PASSCODE_HASH);
+                TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID_2, TEST_USER_ID_2, TEST_PASSCODE_HASH,
+                null, null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_EMAIL, TEST_PHOTO_URL,
+                TEST_THUMBNAIL_URL);
     }
 }

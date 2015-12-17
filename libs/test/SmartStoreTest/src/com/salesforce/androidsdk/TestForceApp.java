@@ -29,7 +29,7 @@ package com.salesforce.androidsdk;
 import android.app.Application;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 
 /**
  * Test implementation of Application class that uses SalesforceSDKManagerWithSmartStore.
@@ -40,7 +40,7 @@ public class TestForceApp extends Application {
 
     @Override
     public void onCreate() {
-    	SalesforceSDKManagerWithSmartStore.initNative(getApplicationContext(), new KeyImpl(), MainActivity.class);
+    	SmartStoreSDKManager.initNative(getApplicationContext(), new KeyImpl(), MainActivity.class);
     	super.onCreate();
     	SalesforceSDKManager.getInstance().setIsTestRun(true);
     }

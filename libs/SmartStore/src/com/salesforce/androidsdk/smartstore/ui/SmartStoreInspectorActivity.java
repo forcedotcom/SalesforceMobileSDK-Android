@@ -45,7 +45,7 @@ import android.widget.MultiAutoCompleteTextView;
 import android.widget.MultiAutoCompleteTextView.Tokenizer;
 
 import com.salesforce.androidsdk.smartstore.R;
-import com.salesforce.androidsdk.smartstore.app.SalesforceSDKManagerWithSmartStore;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
@@ -116,7 +116,7 @@ public class SmartStoreInspectorActivity extends Activity {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		final SalesforceSDKManagerWithSmartStore manager = SalesforceSDKManagerWithSmartStore.getInstance();
+		final SmartStoreSDKManager manager = SmartStoreSDKManager.getInstance();
 		smartStore = isGlobal
 				? manager.getGlobalSmartStore(dbName)
 				: manager.getSmartStore(dbName, manager.getUserAccountManager().getCurrentUser(), null);

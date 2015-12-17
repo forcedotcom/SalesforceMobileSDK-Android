@@ -102,6 +102,12 @@ public class OAuth2 {
     private static final String SCREEN_LOCK = "screen_lock";
     private static final String TOKEN = "token";
     private static final String USERNAME = "username";
+    private static final String EMAIL = "email";
+    private static final String FIRST_NAME = "first_name";
+    private static final String LAST_NAME = "last_name";
+    private static final String PHOTOS = "photos";
+    private static final String PICTURE = "picture";
+    private static final String THUMBNAIL = "thumbnail";
     private static final String CODE = "code";
     private static final String ACTIVATED_CLIENT_CODE = "activated_client_code";
     private static final String CUSTOM_ATTRIBUTES = "custom_attributes";
@@ -359,6 +365,11 @@ public class OAuth2 {
      */
     public static class IdServiceResponse extends AbstractResponse {
         public String username;
+        public String email;
+        public String firstName;
+        public String lastName;
+        public String pictureUrl;
+        public String thumbnailUrl;
         public int pinLength = -1;
         public int screenLockTimeout = -1;
         public JSONObject customAttributes;
@@ -369,6 +380,14 @@ public class OAuth2 {
             try {
                 JSONObject parsedResponse = parseResponse(httpResponse);
                 username = parsedResponse.getString(USERNAME);
+                email = parsedResponse.getString(EMAIL);
+                firstName = parsedResponse.getString(FIRST_NAME);
+                lastName = parsedResponse.getString(LAST_NAME);
+                JSONObject photos = parsedResponse.getJSONObject(PHOTOS);
+                if (photos != null) {
+                    pictureUrl = photos.getString(PICTURE);
+                    thumbnailUrl = photos.getString(THUMBNAIL);
+                }
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
 

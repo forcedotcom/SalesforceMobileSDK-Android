@@ -5,8 +5,9 @@ dependencies {
 }
 
 android {
-  compileSdkVersion 21
-  buildToolsVersion "21.1.1"
+  compileSdkVersion 23
+  buildToolsVersion '23.0.1'
+  useLibrary  'org.apache.http.legacy'
 
   sourceSets {
 
@@ -37,4 +38,10 @@ android {
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
   }
+}
+
+afterEvaluate {
+  // Find all connected Android tests and ensure they log all passed tests. This keeps the Travis
+  // from timing out since executing tests are printed to the console.
+  tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.INFO)
 }

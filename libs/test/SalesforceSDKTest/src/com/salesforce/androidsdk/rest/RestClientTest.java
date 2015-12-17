@@ -26,9 +26,11 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import android.os.Environment;
 import android.test.InstrumentationTestCase;
 
 import com.android.volley.Request;
+import com.google.common.io.CharStreams;
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -40,14 +42,18 @@ import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
 import org.apache.http.HttpStatus;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +61,6 @@ import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
-
 /**
  * Tests for RestClient
  *
@@ -73,6 +78,12 @@ public class RestClientTest extends InstrumentationTestCase {
     private RestClient restClient;
     private String authToken;
     private String instanceUrl;
+    public static final String TEST_FIRST_NAME = "firstName";
+    public static final String TEST_LAST_NAME = "lastName";
+    public static final String TEST_EMAIL = "test@email.com";
+    public static final String TEST_PHOTO_URL = "http://some.photo.url";
+    public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
+
 
     @Override
     public void setUp() throws Exception {
@@ -87,7 +98,8 @@ public class RestClientTest extends InstrumentationTestCase {
         		new URI(TestCredentials.LOGIN_URL),
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
-        		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null);
+        		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
+                TEST_FIRST_NAME, TEST_LAST_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL);
         restClient = new RestClient(clientInfo, authToken, httpAccess, null);
     }
 
@@ -108,6 +120,12 @@ public class RestClientTest extends InstrumentationTestCase {
         assertEquals("Wrong username", TestCredentials.USERNAME, restClient.getClientInfo().username);
         assertEquals("Wrong userId", TestCredentials.USER_ID, restClient.getClientInfo().userId);
         assertEquals("Wrong orgId", TestCredentials.ORG_ID, restClient.getClientInfo().orgId);
+        assertEquals("Wrong firstName", TEST_FIRST_NAME, restClient.getClientInfo().firstName);
+        assertEquals("Wrong lastName", TEST_LAST_NAME, restClient.getClientInfo().lastName);
+        assertEquals("Wrong email", TEST_EMAIL, restClient.getClientInfo().email);
+        assertEquals("Wrong photoUrl", TEST_PHOTO_URL, restClient.getClientInfo().photoUrl);
+        assertEquals("Wrong thumbnailUrl", TEST_THUMBNAIL_URL, restClient.getClientInfo().thumbnailUrl);
+
     }
 
     public void testClientInfoResolveUrl() {
@@ -129,7 +147,7 @@ public class RestClientTest extends InstrumentationTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
-        		TestCredentials.COMMUNITY_URL);
+        		TestCredentials.COMMUNITY_URL, null, null, null, null, null);
     	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("a/b/").toString());
     	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("/a/b/").toString());
     }
@@ -141,7 +159,7 @@ public class RestClientTest extends InstrumentationTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
-        		TestCredentials.COMMUNITY_URL);
+        		TestCredentials.COMMUNITY_URL, null, null, null, null, null);
         assertEquals("Wrong url", TestCredentials.COMMUNITY_URL, info.getInstanceUrlAsString());
     }
 
@@ -523,7 +541,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testFileUpload() throws Exception {
         final String filename  = "MyFile.txt";
-        final File file = new File("/sdcard/" + filename);
+        final File file = new File(Environment.getExternalStorageDirectory() + File.separator + filename);
         if (!file.exists()) {
             file.createNewFile();
             final OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
@@ -538,9 +556,170 @@ public class RestClientTest extends InstrumentationTestCase {
         assertFalse("File should not exist", file.exists());
     }
 
+    /**
+     * Tests if a stream from {@link RestResponse#asInputStream()} is readable.
+     *
+     * @throws Exception
+     */
+    public void testResponseStreamIsReadable() throws Exception {
+        final RestResponse response = getStreamTestResponse();
+
+        try {
+            InputStream in = response.asInputStream();
+            assertStreamTestResponseStreamIsValid(in);
+        } catch (IOException e) {
+            fail("The InputStream should be readable and an IOException should not have been thrown");
+        } catch (JSONException e) {
+            fail("Valid JSON data should have been returned");
+        } finally {
+            response.consumeQuietly();
+        }
+    }
+
+    /**
+     * Tests if a stream from {@link RestResponse#asInputStream()} is consumed (according to the REST client) by fully reading the stream.
+     *
+     * @throws Exception
+     */
+    public void testResponseStreamConsumedByReadingStream() throws Exception {
+        final RestResponse response = getStreamTestResponse();
+
+        try {
+            InputStream in = response.asInputStream();
+            inputStreamToString(in);
+        } catch (IOException e) {
+            fail("The InputStream should be readable and an IOException should not have been thrown");
+        }
+
+        // We read the entire stream but forgot to call consume() or consumeQuietly() - can another REST call be made?
+        final RestResponse anotherResponse = getStreamTestResponse();
+        assertNotNull(anotherResponse);
+    }
+
+    /**
+     * Tests that a stream from {@link RestResponse#asInputStream()} cannot be read from twice.
+     *
+     * @throws Exception
+     */
+    public void testResponseStreamCannotBeReadTwice() throws Exception {
+        final RestResponse response = getStreamTestResponse();
+
+        try {
+            final InputStream in = response.asInputStream();
+            inputStreamToString(in);
+        } catch (IOException e) {
+            fail("The InputStream should be readable and an IOException should not have been thrown");
+        }
+
+        try {
+            response.asInputStream();
+            fail("An IOException should have been thrown while trying to read the InputStream a second time");
+        } catch (IOException e) {
+            // Expected
+        } finally {
+            response.consumeQuietly();
+        }
+    }
+
+    /**
+     * Tests that {@link RestResponse}'s accessor methods (like {@link RestResponse#asBytes()} do not return valid data if the response is streamed first.
+     *
+     * @throws Exception
+     */
+    public void testOtherAccessorsNotAvailableAfterResponseStreaming() throws Exception {
+        final RestResponse response = getStreamTestResponse();
+
+        final Runnable testAccessorsNotAccessible = new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // The other accessors should not return valid data as soon as the stream is opened
+                    assertNotNull(response.asBytes());
+                    assertEquals("asBytes() array should be empty", 0, response.asBytes().length);
+                    assertEquals("asString() should return the empty string", "", response.asString());
+
+                    try {
+                        assertNull(response.asJSONObject());
+                        fail("asJSONObject() should fail");
+                    } catch (JSONException e) {
+                        // Expected
+                    }
+
+                    try {
+                        assertNull(response.asJSONArray());
+                        fail("asJSONArray() should fail");
+                    } catch (JSONException e) {
+                        // Expected
+                    }
+                } catch (IOException e) {
+                    fail("IOException not expected");
+                }
+            }
+        };
+
+        try {
+            response.asInputStream();
+            testAccessorsNotAccessible.run();
+        } catch (IOException e) {
+            fail("The InputStream should be readable and an IOException should not have been thrown");
+        } finally {
+            response.consumeQuietly();
+        }
+
+        // Ensure that consuming the stream doesn't make the accessors accessible again
+        testAccessorsNotAccessible.run();
+    }
+
+    /**
+     * Tests that any call to {@link RestResponse}'s accessor methods prevent the response data from being streamed via {@link RestResponse#asInputStream()}.
+     *
+     * @throws Exception
+     */
+    public void testAccessorMethodsPreventResponseStreaming() throws Exception {
+        final RestResponse response = getStreamTestResponse();
+        response.asBytes();
+
+        try {
+            response.asInputStream();
+            fail("The InputStream should not be readable after an accessor method is called");
+        } catch (IOException e) {
+            // Expected
+        } finally {
+            response.consumeQuietly();
+        }
+    }
+
     //
     // Helper methods
     //
+
+    /**
+     * @return a {@link RestResponse} for testing streaming. It should contain some JSON data.
+     * @throws IOException if the response could not be made
+     */
+    private RestResponse getStreamTestResponse() throws IOException {
+        final RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
+        assertEquals("Response code should be HTTP OK", response.getStatusCode(), HttpStatus.SC_OK);
+        return response;
+    }
+
+    /**
+     * Assert that the {@link RestResponse} returned from {@link #getStreamTestResponse()} is valid.
+     * @param in the {@link InputStream} of response data
+     * @throws IOException if the stream could not be read
+     * @throws JSONException if the response could not be decoded to a valid JSON object
+     */
+    private void assertStreamTestResponseStreamIsValid(InputStream in) throws IOException, JSONException {
+        final String responseData = inputStreamToString(in);
+        assertNotNull("The response should contain data", responseData);
+
+        final JSONObject responseJson = new JSONObject(responseData);
+        checkKeys(responseJson, "sobjects", "search", "recent");
+    }
+
+    private String inputStreamToString(InputStream inputStream) throws IOException {
+        return CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+    }
 
     /**
      * Send request using sendAsync method

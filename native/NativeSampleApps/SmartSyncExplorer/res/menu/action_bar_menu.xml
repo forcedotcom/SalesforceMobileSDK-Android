@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/action_search"
+        android:icon="@drawable/ic_action_search"
+        android:title="@string/action_search"
+        android:showAsAction="ifRoom|collapseActionView" />
+    <item android:id="@+id/action_add"
+        android:icon="@drawable/ic_action_add_person"
+        android:title="@string/action_add"
+        android:showAsAction="ifRoom" />
+    <item android:id="@+id/action_refresh"
+        android:icon="@drawable/ic_action_refresh"
+        android:title="@string/action_refresh"
+        android:showAsAction="ifRoom" />
+    <item android:id="@+id/action_logout"
+        android:title="@string/logout_button"
+        android:showAsAction="never" />
+    <item android:id="@+id/action_switch_user"
+        android:title="@string/switch_user_button"
+        android:showAsAction="never" />
+    <item android:id="@+id/action_inspect_db"
+        android:title="@string/inspect_db_button"
+        android:showAsAction="never" />
+</menu>

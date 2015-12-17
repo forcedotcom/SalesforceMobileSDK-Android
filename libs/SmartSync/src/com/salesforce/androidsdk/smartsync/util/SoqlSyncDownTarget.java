@@ -104,6 +104,10 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONObject responseJson = response.asJSONObject();
         JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
+
+        // Capture next records url
+        nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);
+
         return records;
     }
 

@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name"><b>RestExplorer</b></string>
+	<string name="app_package">com.salesforce.samples.restexplorer</string>
+
+	<!-- Account Preferences -->
+	<string name="general_settings">General Settings</string>
+	<string name="account_settings">Account Settings</string>
+	<string name="account_preference_summary">Login server etc.</string>
+
+	<!--  Logout dialog -->
+	<string name="logout_title">Log out?</string>
+	<string name="logout_yes">Yes</string>
+	<string name="logout_cancel">No</string>
+
+	<!-- Explorer -->
+	<string name="explorer_title">@string/app_name</string>
+	<string name="print_info_button">Print Info</string>
+	<string name="switch_acc_button">Switch Account</string>
+	<string name="clear_button">Clear</string>
+	<string name="logout_button">Logout</string>
+	<string name="versions_tab">Versions</string>
+	<string name="versions_title"><u><b>Versions</b></u>\nGet summary information about each Salesforce.com version currently available.</string>
+	<string name="versions_button">Go</string>
+	<string name="resources_tab">Resources</string>
+	<string name="resources_title"><u><b>Resources</b></u>\nList available resources for the specified API version, including resource name and URI.</string>
+	<string name="resources_button">Go</string>
+	<string name="describe_global_tab">Desc. Glob.</string>
+	<string name="describe_global_title"><u><b>Describe Global</b></u>\nList the available objects and their metadata for your organization\'s data.</string>
+	<string name="describe_global_button">Go</string>
+	<string name="metadata_tab">Metadata</string>
+	<string name="metadata_title"><u><b>Metadata</b></u>\nDescribe the individual metadata for the specified object.</string>
+	<string name="metadata_button">Go</string>
+	<string name="describe_tab">Describe</string>
+	<string name="describe_title"><u><b>Describe</b></u>\nCompletely describe the individual metadata at all levels for the specified object.</string>
+	<string name="describe_button">Go</string>
+	<string name="create_tab">Create</string>
+	<string name="create_title"><u><b>Create</b></u>\nCreate record.</string>
+	<string name="create_button">Go</string>
+	<string name="retrieve_tab">Retrieve</string>
+	<string name="retrieve_title"><u><b>Retrieve</b></u>\nRetrieve record.</string>
+	<string name="retrieve_button">Go</string>
+	<string name="update_tab">Update</string>
+	<string name="update_title"><u><b>Update</b></u>\nUpdate record.</string>
+	<string name="update_button">Go</string>
+	<string name="upsert_tab">Upsert</string>
+	<string name="upsert_title"><u><b>Upsert</b></u>\nUpsert (update or insert) record.</string>
+	<string name="upsert_button">Go</string>
+	<string name="delete_tab">Delete</string>
+	<string name="delete_title"><u><b>Delete</b></u>\nDelete record.</string>
+	<string name="delete_button">Go</string>
+	<string name="query_tab">Query</string>
+	<string name="query_title"><u><b>Query</b></u>\nExecute the specified SOQL query.</string>
+	<string name="query_button">Go</string>
+	<string name="search_tab">Search</string>
+	<string name="search_title"><u><b>Search</b></u>\nExecute the specified SOSL search.</string>
+	<string name="search_button">Go</string>
+	<string name="manual_request_tab">Manual</string>
+	<string name="manual_request_title"><u><b>Manual Query</b></u>\nSpecify request path, params and method manually.</string>
+	<string name="manual_request_button">Go</string>
+	<string name="object_type_hint">objectType</string>
+	<string name="object_id_hint">objectId</string>
+	<string name="external_id_field_hint">externalIdField</string>
+	<string name="external_id_hint">externalId</string>
+	<string name="field_list_hint">comma-seperated field names</string>
+	<string name="fields_hint">json map of field names to field values</string>
+	<string name="soql_hint">SOQL</string>
+	<string name="sosl_hint">SOSL</string>
+	<string name="path_hint">/services/data/%s/sobjects</string>
+	<string name="params_hint">json map of param names to param values</string>
+	<string name="get_method">GET</string>
+	<string name="post_method">POST</string>
+	<string name="put_method">PUT</string>
+	<string name="head_method">HEAD</string>
+	<string name="delete_method">DELETE</string>
+	<string name="patch_method">PATCH</string>
+	<string name="search_scope_and_order_tab">Search Scope and Order</string>
+	<string name="search_scope_and_order_title"><u><b>Search Scope and Order</b></u>\nReturns an ordered list of objects in the default global search scope of a logged-in user.</string>
+	<string name="search_scope_and_order_button">Go</string>
+	<string name="search_result_layout_tab">Search Result Layout</string>
+	<string name="search_result_layout_title"><u><b>Search Result Layout</b></u>\nReturns search result layout information for the objects.</string>
+	<string name="search_result_layout_button">Go</string>
+	<string name="object_list_hint">comma-seperated object types</string>
+	<string name="owned_files_list_tab">Owned Files List</string>
+	<string name="owned_files_list_title"><u><b>Owned Files List</b></u>\nGet files owned by user.</string>
+	<string name="owned_files_list_button">Go</string>
+	<string name="user_id_hint">userId</string>
+	<string name="page_hint">page</string>
+	<string name="files_in_users_groups_tab">Files in Users Groups</string>
+	<string name="files_in_users_groups_title"><u><b>Files in Users Groups</b></u>\nGet files of a user or group.</string>
+	<string name="files_in_users_groups_button">Go</string>
+	<string name="user_or_group_id_hint">userOrGroupId</string>
+	<string name="files_shared_with_user_tab">Files Shared with User</string>
+	<string name="files_shared_with_user_title"><u><b>Files Shared with User</b></u>\nGet files shared with a user.</string>
+	<string name="files_shared_with_user_button">Go</string>
+	<string name="file_details_tab">File Details</string>
+	<string name="file_details_title"><u><b>File Details</b></u>\nGet details for a version of a document.</string>
+	<string name="file_details_button">Go</string>
+	<string name="document_id_hint">contentDocumentId</string>
+	<string name="version_hint">version</string>
+	<string name="batch_file_details_tab">Batch file details</string>
+	<string name="batch_file_details_title"><u><b>Batch file details</b></u>\nGet details for multiple documents.</string>
+	<string name="batch_file_details_button">Go</string>
+	<string name="document_id_list_hint">comma-seperated content document ids</string>    
+	<string name="file_shares_tab">File Shares</string>
+	<string name="file_shares_title"><u><b>File Shares</b></u>\nReturn shares (ContentDocumentLink) of a document.</string>
+	<string name="file_shares_button">Go</string>
+	<string name="add_file_share_tab">Add File Share</string>
+	<string name="add_file_share_title"><u><b>Add File Share</b></u>\nAdd share (ContentDocumentLink) between document and entity.</string>
+	<string name="add_file_share_button">Go</string>
+	<string name="entity_id_hint">entityId</string>
+	<string name="share_type_hint">shareType</string>
+	<string name="delete_file_share_tab">Delete File Share</string>
+	<string name="delete_file_share_title"><u><b>Delete File Share</b></u>\nDelete share (ContentDocumentLink).</string>
+	<string name="delete_file_share_button">Go</string>
+	<string name="share_id_hint">share_id</string>
+
+	<!-- REST Options -->
+    <string name="encoding">UTF-8</string>
+    <string name="account_type">com.salesforce.samples.restexplorer.login</string>
+</resources>

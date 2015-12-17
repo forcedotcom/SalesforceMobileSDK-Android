@@ -18,23 +18,16 @@ For the rest of this document, we assume that you have setup three shell variabl
 
 Inside the HYBRID_DIR, you will find several projects:
 
-1. **test/ForcePluginsTest**: Test project for the phonegap plugins
-2. **SampleApps/ContactExplorer**: The ContactExplorer sample app uses PhoneGap (aka "cordova") to retrieve local device contacts.  It also uses the forcetk.mobilesdk.js toolkit to implement REST transactions with the Salesforce REST API.  The app uses the OAuth2 support in Salesforce SDK to obtain OAuth credentials, then propagates those credentials to forcetk by sending a javascript event
-3. **SampleApps/VFConnector**: The VFConnector sample app demonstrates how to wrap a VisualForce page in a native container.  This example assumes that your org has a VisualForce page called "BasicVFTest".  The app first obtains OAuth login credentials using the Salesforce SDK OAuth2 support, then uses those credentials to set appropriate webview cookies for accessing VisualForce pages
-4. **SampleApps/AccountEditor**: The AccountEditor sample app allows you to search / create / edit / delete accounts online and offline using the new SmartSync library (smartsync.js)
-5. **SampleApps/SmartStoreExplorer**: The SmartStoreExplorer sample app lets you explore SmartStore APIs
-6. **SampleApps/HybridFileExplorer**: The HybridFileExplorer sample app lets you access files in Salesforce using file APIs
-7. **SampleApps/SimpleSync**: The SimpleSync sample app demonstrates two way synching of Salesforce records
-8. **SampleApps/UserList**: The UserList sample app is a simple hybrid app that lists the users in an org
+1. **SampleApps/AccountEditor**: The AccountEditor sample app allows you to search / create / edit / delete accounts online and offline using the new SmartSync library (smartsync.js)
+2. **SampleApps/SmartSyncExplorerHybrid**: The SmartSyncExplorerHybrid sample app demonstrates two way synching of Salesforce records
+3. **SampleApps/NoteSync**: The NoteSync sample app demonstrates two way synching of Salesforce Note objects with custom sync down and sync up targets
 
-# Running sample apps from Eclipse
+# Running sample apps from Android Studio
 
-1. Launch Eclipse and select $SALESFORCE_SDK_DIR as your workspace 
-2. Go to Window -> Preferences, choose the Android section, and enter the the Android SDK location.
-3. Go to File -> Import and select General -> Existing Projects into Workspace.
-4. Select $SALESFORCE_SDK_DIR as your root directory and import the projects described above along with the libs/SalesforceSDK library project.
-5. Right click on any of the sample apps and choose Run As -> Android Application to run it.
-6. Right click on any of the test project and choose Run As -> Android JUnit Test to run the tests.
+1. Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)`.
+2. Navigate to $SALESFORCE_SDK_DIR, select it and click `Ok`.
+3. If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`.
+4. From the dropdown that displays the available targets, choose the sample app or test suite you want to run and click the play button.
 
 # Creating a new hybrid application using SalesforceSDK
 
@@ -42,9 +35,9 @@ To create a new hybrid application, follow the instructions here:
 
 * [Using forcedroid to create Mobile SDK apps](https://www.npmjs.org/package/forcedroid)
 
-# Running your new native application from Eclipse
-1. Launch Eclipse
-2. Go to File -> Import and select General -> Existing Projects into Workspace.
-3. Import the $SALESFORCE_SDK_DIR/libs/SalesforceSDK, the $SALESFORCE_SDK_DIR/libs/SmartStore, and the $SALESFORCE_SDK_DIR/libs/SmartSync library projects and your newly created project into the workspace
-4. Right click on the your project and choose Run As -> Android Application
+# Running your new hybrid application from Android Studio
 
+1. Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)`.
+2. Navigate to your application's directory, select it and click `Ok`.
+3. If a popup appears with the message `Unregistered VCS roots detected`, click `Add roots`.
+4. From the dropdown that displays the available targets, choose your application and click the play button.

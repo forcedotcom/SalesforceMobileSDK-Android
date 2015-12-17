@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="match_parent"
+	android:layout_height="match_parent">
+
+	<TextView android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textColor="#000000" android:gravity="top" android:text="@string/batch_file_details_title" />
+
+	<Button android:id="@+id/batch_file_details_button" android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:onClick="onBatchFileDetailsClick" android:text="@string/batch_file_details_button" />
+
+	<EditText android:id="@+id/batch_file_details_document_id_list_text"
+		android:layout_width="match_parent" android:layout_height="match_parent"
+		android:textColor="#000000" android:hint="@string/document_id_list_hint"
+		android:gravity="top" android:imeOptions="actionDone" />
+
+</LinearLayout>
+
+
