@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <widget xmlns     = "http://www.w3.org/ns/widgets"
     id        = "com.salesforce.androidsdk"
-    version   = "4.0.0">
+    version   = "4.1.0">
 
     <!-- To allow XHR requests with the new Whitelist plugin -->
     <allow-navigation href="https://localhost" />
