@@ -24,6 +24,7 @@
     <restriction android:key="RequireCertAuth"
         android:title="RequireCertAuth"
         android:restrictionType="bool"
+        android:defaultValue="false"
         android:description="@string/sf__require_cert_auth_description" />
 
     <restriction android:key="ManagedAppCertAlias"
