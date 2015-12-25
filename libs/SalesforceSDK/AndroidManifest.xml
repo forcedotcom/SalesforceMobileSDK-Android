@@ -12,7 +12,7 @@
 
         <!-- Metadata for supported app restrictions -->
         <meta-data android:name="android.content.APP_RESTRICTIONS"
-            android:resource="@xml/restrictions" />
+            android:resource="@xml/app_restrictions" />
 
         <!-- Service required for authentication -->
         <service android:exported="true"
