@@ -10,6 +10,10 @@
 
     <application>
 
+        <!-- Metadata for supported app restrictions -->
+        <meta-data android:name="android.content.APP_RESTRICTIONS"
+            android:resource="@xml/restrictions" />
+
         <!-- Service required for authentication -->
         <service android:exported="true"
             android:name="com.salesforce.androidsdk.auth.AuthenticatorService">
