@@ -39,6 +39,8 @@ import android.os.Bundle;
 public class RuntimeConfig {
 	
 	public enum ConfigKey {
+
+        // The keys here should match the key entries in 'app_restrictions.xml'.
 		AppServiceHosts,
 		AppServiceHostLabels,
 		ManagedAppOAuthID,
