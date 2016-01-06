@@ -51,9 +51,10 @@ import java.util.Map;
 public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
     public static final String METHOD_KEY = "method";
+    public static final String END_POINT_KEY = "endPoint";
     public static final String PATH_KEY = "path";
-    private static final String QUERY_PARAMS_KEY = "queryParams";
-    private static final String HEADER_PARAMS_KEY = "headerParams";
+    public static final String QUERY_PARAMS_KEY = "queryParams";
+    public static final String HEADER_PARAMS_KEY = "headerParams";
 
     private RestClient restClient;
 
@@ -73,14 +74,15 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
         // args parsing
         RestRequest.RestMethod method = RestRequest.RestMethod.valueOf(args.getString(METHOD_KEY));
-        String path = "/services/data" + args.getString(PATH_KEY);
+        String endPoint = args.getString(END_POINT_KEY);
+        String path = args.getString(PATH_KEY);
         ReadableMap queryParams = args.getMap(QUERY_PARAMS_KEY);
         ReadableMap headerParams = args.getMap(HEADER_PARAMS_KEY);
 
         // Preparing request
         HttpEntity requestEntity = buildEntity(queryParams);
         Map<String, String> additionalHeaders = ReactBridgeHelper.toJavaStringMap(headerParams);
-        RestRequest request = new RestRequest(method, path, requestEntity, additionalHeaders);
+        RestRequest request = new RestRequest(method, endPoint + path, requestEntity, additionalHeaders);
 
         // Sending request
         RestClient restClient = getRestClient();
