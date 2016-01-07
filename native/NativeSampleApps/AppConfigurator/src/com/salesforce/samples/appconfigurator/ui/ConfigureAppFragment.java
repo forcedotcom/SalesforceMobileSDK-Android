@@ -26,12 +26,22 @@
  */
 package com.salesforce.samples.appconfigurator.ui;
 
+import java.util.List;
+
+import com.salesforce.samples.appconfigurator.AppConfiguratorAdminReceiver;
+import com.salesforce.samples.appconfigurator.AppConfiguratorState;
+import com.salesforce.samples.appconfigurator.R;
+
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.admin.DevicePolicyManager;
+import android.content.Context;
+import android.content.RestrictionEntry;
+import android.content.RestrictionsManager;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,10 +49,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import com.salesforce.samples.appconfigurator.AppConfiguratorAdminReceiver;
-import com.salesforce.samples.appconfigurator.AppConfiguratorState;
-import com.salesforce.samples.appconfigurator.R;
 
 /**
  * This fragment provides UI and functionality to configure target application
@@ -52,7 +58,9 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
 
     // UI Components
     private TextView mTextStatus;
+    private TextView mTextXmlValues;
     private Button mButtonSave;
+    private Button mButtonShowXml;
     private EditText mLoginServers;
     private EditText mLoginServersLabels;
     private EditText mRemoteAccessConsumerKey;
@@ -80,6 +88,10 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
         		mLoginServers, mLoginServersLabels, mRemoteAccessConsumerKey,
         		mOauthRedirectURI, mCertAlias
         };
+        mTextXmlValues = (TextView) view.findViewById(R.id.text_view_xml);
+        mTextXmlValues.setMovementMethod(new ScrollingMovementMethod());
+        mButtonShowXml = (Button) view.findViewById(R.id.show_xml);
+        mButtonShowXml.setOnClickListener(this);
     }
 
     @Override
@@ -90,6 +102,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
 
     @Override
     public void onClick(View view) {
+        AppConfiguratorState state = AppConfiguratorState.getInstance(getActivity());
         switch (view.getId()) {
             case R.id.save:
                 AppConfiguratorState state = AppConfiguratorState.getInstance(getActivity());
@@ -106,6 +119,18 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
                         mCertAlias.getText().toString());
                 Toast.makeText(getActivity(), R.string.saved, Toast.LENGTH_SHORT).show();
                 break;
+
+        case R.id.show_xml:
+            RestrictionsManager manager =
+                    (RestrictionsManager) getActivity().getSystemService(Context.RESTRICTIONS_SERVICE);
+
+            List<RestrictionEntry> restrictions = manager.getManifestRestrictions(state.getTargetApp());
+            final StringBuilder stringBuilder = new StringBuilder();
+            for (final RestrictionEntry re : restrictions) {
+                stringBuilder.append(re + "\n");
+            }
+            mTextXmlValues.setText(stringBuilder.toString());
+            break;
         }
     }
 
@@ -138,6 +163,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
                 editText.setVisibility(View.VISIBLE);
             }
             mButtonSave.setVisibility(View.VISIBLE);
+            mButtonShowXml.setVisibility(View.VISIBLE);
         } else {
             mTextStatus.setText(status);
             mTextStatus.setVisibility(View.VISIBLE);
@@ -145,6 +171,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
                 editText.setVisibility(View.GONE);
             }
             mButtonSave.setVisibility(View.GONE);
+            mButtonShowXml.setVisibility(View.GONE);
         }
     }
 }
