@@ -413,6 +413,8 @@ public class HttpAccess extends BroadcastReceiver {
     			httpConn = (HttpsURLConnection) url.openConnection();
     			httpConn.setRequestMethod(requestMethod);
     			httpConn.setRequestProperty(USER_AGENT, userAgent);
+    			httpConn.setConnectTimeout(60000);
+    			httpConn.setReadTimeout(20000);
 
                 /*
                  * FIXME: Remove this piece of code once minApi >= Lollipop.
