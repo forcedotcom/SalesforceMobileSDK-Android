@@ -40,8 +40,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.util.Log;
-
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -58,8 +56,11 @@ import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
+import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
+
+import android.util.Log;
 
 /**
  * Sync Manager
@@ -257,9 +258,19 @@ public class SyncManager {
                     }
                     updateSync(sync, SyncState.Status.DONE, 100, callback);
                 } catch (Exception e) {
-                    Log.e("SmartSyncManager:runSync", "Error during sync: " + sync.getId(), e);
+                    Log.e("SmartSyncMgr:runSync", "Error during sync: " + sync.getId(), e);
                     // Update status to failed
-                    updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
+
+                    try {
+                        updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
+                    } catch (Exception e2) {
+                        Log.e("SmartSyncMgr:runSync", "Error setting sync state to failed: " + sync.getId(), e);
+
+                        // something is really bad -- we can't even update database to failed status, but we need to make sure
+                        // we call the callback and not crash.
+                        sync.setStatus(Status.FAILED); // explicit reset to FAILED
+                        callback.onUpdate(sync);
+                    }
                 }
             }
         });
