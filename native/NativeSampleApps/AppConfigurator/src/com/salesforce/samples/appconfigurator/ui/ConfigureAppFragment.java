@@ -105,7 +105,6 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
         AppConfiguratorState state = AppConfiguratorState.getInstance(getActivity());
         switch (view.getId()) {
             case R.id.save:
-                AppConfiguratorState state = AppConfiguratorState.getInstance(getActivity());
                 boolean isCertAuthEnabled = false;
                 if (mCertAlias.getText() != null && !mCertAlias.getText().toString().trim().isEmpty()) {
                 	isCertAuthEnabled = true;
