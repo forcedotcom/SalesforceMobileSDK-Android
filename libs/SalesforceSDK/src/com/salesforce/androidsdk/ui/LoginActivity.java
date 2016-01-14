@@ -102,13 +102,17 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 		// Let observers know
 		EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);
-		if (shouldUseCertBasedAuth()) {
-			final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.ManagedAppCertAlias);
-			KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, alias);
-		} else {
-			webviewHelper.loadLoginPage();
-		}
+        certAuthOrLogin();
 	}
+
+    protected void certAuthOrLogin() {
+        if (shouldUseCertBasedAuth()) {
+            final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.ManagedAppCertAlias);
+            KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, alias);
+        } else {
+            webviewHelper.loadLoginPage();
+        }
+    }
 
 	protected void requestFeatures() {
 		// We'll show progress in the window title bar

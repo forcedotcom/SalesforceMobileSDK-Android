@@ -40,8 +40,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.util.Log;
-
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -52,6 +50,7 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
@@ -60,6 +59,8 @@ import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
+
+import android.util.Log;
 
 /**
  * Sync Manager
@@ -257,7 +258,7 @@ public class SyncManager {
                     }
                     updateSync(sync, SyncState.Status.DONE, 100, callback);
                 } catch (Exception e) {
-                    Log.e("SmartSyncManager:runSync", "Error during sync: " + sync.getId(), e);
+                    Log.e("SmartSyncMgr:runSync", "Error during sync: " + sync.getId(), e);
                     // Update status to failed
                     updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
                 }
@@ -291,10 +292,8 @@ public class SyncManager {
     	try {
     		sync.setStatus(status);
     		if (progress != UNCHANGED) sync.setProgress(progress);
-    		sync.save(smartStore);
 
             switch (status) {
-
                 case NEW:
                     break;
                 case RUNNING:
@@ -305,12 +304,15 @@ public class SyncManager {
                     runningSyncIds.remove(sync.getId());
                     break;
             }
-
-	    	callback.onUpdate(sync);
+            callback.onUpdate(sync);
+            sync.save(smartStore);
     	}
     	catch (JSONException e) {
-    		Log.e("SmartSyncManager:updateSync", "Unexpected json error for sync: " + sync.getId(), e);
+    		Log.e("SmartSyncMgr:updateSync", "Unexpected json error for sync: " + sync.getId(), e);
     	}
+        catch (SmartStoreException e) {
+            Log.e("SmartSyncMgr:updateSync", "Unexpected smart store error for sync: " + sync.getId(), e);
+        }
     }
     
     private void syncUp(SyncState sync, SyncUpdateCallback callback) throws Exception {

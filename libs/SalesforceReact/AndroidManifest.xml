@@ -2,8 +2,8 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.salesforce.androidsdk.reactnative"
-    android:versionCode="46"
-    android:versionName="4.0.0">
+    android:versionCode="47"
+    android:versionName="4.0.2">
 
     <uses-sdk android:minSdkVersion="19"
         android:targetSdkVersion="23" />

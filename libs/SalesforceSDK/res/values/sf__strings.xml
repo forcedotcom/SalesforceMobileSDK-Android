@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
 	<!-- Errors -->
 	<string name="sf__generic_authentication_error_title">Error</string>
 	<string name="sf__generic_authentication_error">Authentication error. Please try again.</string>
@@ -58,4 +59,12 @@
 	<!-- Account switcher screen -->
 	<string name="sf__add_new_account">Add New Account</string>
 	<string name="sf__switch_account">Switch Account</string>
+
+    <!-- Managed app restrictions -->
+    <string name="sf__app_service_hosts_description">Used to specify login hosts for the application.</string>
+    <string name="sf__app_service_host_labels_description">Used to specify login host labels for the application.</string>
+    <string name="sf__managed_app_oauth_id_description">Used to specify OAuth consumer key for the application.</string>
+    <string name="sf__managed_app_callback_url_description">Used to specify OAuth callback URL for the application.</string>
+    <string name="sf__require_cert_auth_description">Used to specify if certificate based authentication is required for the application.</string>
+    <string name="sf__managed_app_cert_alias_description">Used to specify the certificate alias required for the application.</string>
 </resources>
