@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.phonegap.app;
 import android.app.Activity;
 import android.content.Context;
 
+import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.phonegap.ui.SalesforceDroidGapActivity;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -132,9 +133,15 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
 
 	@Override
 	public String getAppType() {
-		return "Hybrid";
+        final StringBuilder sb = new StringBuilder("Hybrid");
+        final BootConfig config = BootConfig.getBootConfig(context);
+        if (config.isLocal()) {
+            sb.append("Local");
+        } else {
+            sb.append("Remote");
+        }
+        return sb.toString();
 	}
-
 
 	@Override
 	public boolean isHybrid() {
