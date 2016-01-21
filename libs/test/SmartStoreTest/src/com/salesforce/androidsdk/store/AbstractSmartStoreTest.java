@@ -26,26 +26,22 @@
  */
 package com.salesforce.androidsdk.store;
 
+import android.database.Cursor;
+import android.os.SystemClock;
+
+import com.salesforce.androidsdk.smartstore.store.DBHelper;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+import com.salesforce.androidsdk.util.test.JSONTestHelper;
+
 import net.sqlcipher.database.SQLiteDatabase;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import android.database.Cursor;
-import android.os.SystemClock;
-
-import com.salesforce.androidsdk.smartstore.store.AlterSoupLongOperation;
-import com.salesforce.androidsdk.smartstore.store.AlterSoupLongOperation.AlterSoupStep;
-import com.salesforce.androidsdk.smartstore.store.DBHelper;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
-import com.salesforce.androidsdk.smartstore.store.LongOperation;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
-import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper.SmartSqlException;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
-import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
-import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import java.util.ArrayList;
 
@@ -127,6 +123,23 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		JSONTestHelper.assertSameJSON("Wrong value for key d.d4", new JSONObject("{'e':5}"), SmartStore.project(json, "d.d4"));
 		assertEquals("Wrong value for key d.d4.e", 5, SmartStore.project(json, "d.d4.e"));
 	}
+
+	/**
+	 * Testing method with path through arrays
+	 * @throws JSONException
+	 */
+	public void testProjectThroughArrays() throws JSONException {
+		JSONObject json = new JSONObject("{\"a\":\"a1\", \"b\":2, \"c\":[{\"cc\":\"cc1\"}, {\"cc\":2}, {\"cc\":[1,2,3]}, {}, {\"cc\":{\"cc5\":5}}], \"d\":[{\"dd\":[{\"ddd\":\"ddd11\"},{\"ddd\":\"ddd12\"}]}, {\"dd\":[{\"ddd\":\"ddd21\"}]}, {\"dd\":[{\"ddd\":\"ddd31\"},{\"ddd3\":\"ddd32\"}]}]}");
+
+		JSONTestHelper.assertSameJSON("Wrong value for key c", new JSONArray("[{\"cc\":\"cc1\"}, {\"cc\":2}, {\"cc\":[1,2,3]}, {}, {\"cc\":{\"cc5\":5}}]"), SmartStore.project(json, "c"));
+		JSONTestHelper.assertSameJSON("Wrong value for key c.cc", new JSONArray("[\"cc1\",2, [1,2,3], {\"cc5\":5}]"), SmartStore.project(json, "c.cc"));
+		JSONTestHelper.assertSameJSON("Wrong value for key c.cc.cc5", new JSONArray("[5]"), SmartStore.project(json, "c.cc.cc5"));
+		JSONTestHelper.assertSameJSON("Wrong value for key d", new JSONArray("[{\"dd\":[{\"ddd\":\"ddd11\"},{\"ddd\":\"ddd12\"}]}, {\"dd\":[{\"ddd\":\"ddd21\"}]}, {\"dd\":[{\"ddd\":\"ddd31\"},{\"ddd3\":\"ddd32\"}]}]"), SmartStore.project(json, "d"));
+		JSONTestHelper.assertSameJSON("Wrong value for key d.dd", new JSONArray("[[{\"ddd\":\"ddd11\"},{\"ddd\":\"ddd12\"}], [{\"ddd\":\"ddd21\"}], [{\"ddd\":\"ddd31\"},{\"ddd3\":\"ddd32\"}]]"), SmartStore.project(json, "d.dd"));
+		JSONTestHelper.assertSameJSON("Wrong value for key d.dd.ddd", new JSONArray("[[\"ddd11\",\"ddd12\"],[\"ddd21\"],[\"ddd31\"]]"), SmartStore.project(json, "d.dd.ddd"));
+		JSONTestHelper.assertSameJSON("Wrong value for key d.dd.ddd3", new JSONArray("[[\"ddd32\"]]"), SmartStore.project(json, "d.dd.ddd3"));
+	}
+
 
 	/**
 	 * Check that the meta data table (soup index map) has been created
