@@ -1162,10 +1162,10 @@ public class SmartStore  {
 	 *
 	 * json = {"a": {"b": [{"c":"xx"}, {"c":"xy"}, {"d": [{"e":1}, {"e":2}]}, {"d": [{"e":3}, {"e":4}]}] }}
 	 * projectIntoJson(jsonObj, "a") = {"b": [{"c":"xx"}, {"c":"xy"}, {"d": [{"e":1}, {"e":2}]}, {"d": [{"e":3}, {"e":4}]} ]}
-	 * projectIntoJson(json, "a/b") = [{c:"xx"}, {c:"xy"}, {"d": [{"e":1}, {"e":2}]}, {"d": [{"e":3}, {"e":4}]}]
-	 * projectIntoJson(json, "a/b/c") = ["xx", "xy"]                                     // new in 4.1
-	 * projectIntoJson(json, "a/b/d") = [[{"e":1}, {"e":2}], [{"e":3}, {"e":4}]]         // new in 4.1
-	 * projectIntoJson(json, "a/b/d/e") = [[1, 2], [3, 4]]                               // new in 4.1
+	 * projectIntoJson(json, "a.b") = [{c:"xx"}, {c:"xy"}, {"d": [{"e":1}, {"e":2}]}, {"d": [{"e":3}, {"e":4}]}]
+	 * projectIntoJson(json, "a.b.c") = ["xx", "xy"]                                     // new in 4.1
+	 * projectIntoJson(json, "a.b.d") = [[{"e":1}, {"e":2}], [{"e":3}, {"e":4}]]         // new in 4.1
+	 * projectIntoJson(json, "a.b.d.e") = [[1, 2], [3, 4]]                               // new in 4.1
 	 *
      */
     public static Object project(JSONObject soup, String path) {
@@ -1190,8 +1190,8 @@ public class SmartStore  {
 
 			if (jsonObj instanceof JSONObject) {
 				JSONObject jsonDict = (JSONObject) jsonObj;
-				Object dictElt = jsonDict.opt(pathElement);
-				result = project(dictElt, pathElements, index+1);
+				Object dictVal = jsonDict.opt(pathElement);
+				result = project(dictVal, pathElements, index+1);
 			}
 			else if (jsonObj instanceof JSONArray) {
 				JSONArray jsonArr = (JSONArray) jsonObj;
