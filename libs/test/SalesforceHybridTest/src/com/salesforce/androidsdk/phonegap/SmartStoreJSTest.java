@@ -89,7 +89,11 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testAlterSoupWithReIndexing",
                 "testAlterSoupWithBogusSoupName",
                 "testReIndexSoup",
-                "testClearSoup"
+                "testClearSoup",
+                "testFullTextSearchAgainstArrayNode",
+                "testLikeQueryAgainstArrayNode",
+                "testExactQueryAgainstArrayNode",
+                "testSmartQueryAgainstArrayNode"
         });
     }
     
