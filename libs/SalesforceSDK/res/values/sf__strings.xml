@@ -67,4 +67,11 @@
     <string name="sf__managed_app_callback_url_description">Used to specify OAuth callback URL for the application.</string>
     <string name="sf__require_cert_auth_description">Used to specify if certificate based authentication is required for the application.</string>
     <string name="sf__managed_app_cert_alias_description">Used to specify the certificate alias required for the application.</string>
+
+	<!-- Fingerprint Auth Resources-->
+	<string name="sf__fingerprint_description">Confirm fingerprint to continue</string>
+	<string name="sf__fingerprint_hint">Touch sensor</string>
+	<string name="sf__fingerprint_cancel">Use Passcode</string>
+	<string name="sf__fingerprint_success">Success</string>
+	<string name="sf__fingerprint_failed">Fingerprint Authentication Failed</string>
 </resources>
