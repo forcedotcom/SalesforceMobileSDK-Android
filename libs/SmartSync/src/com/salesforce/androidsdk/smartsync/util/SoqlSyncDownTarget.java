@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
+import android.text.TextUtils;
+
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
@@ -55,6 +57,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     public SoqlSyncDownTarget(JSONObject target) throws JSONException {
         super(target);
         this.query = target.getString(QUERY);
+        addIdFieldIfRequired();
     }
 
 	/**
@@ -65,8 +68,20 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         super();
         this.queryType = QueryType.soql;
         this.query = query;
+        addIdFieldIfRequired();
 	}
-	
+
+    private void addIdFieldIfRequired() {
+        if (!TextUtils.isEmpty(query)) {
+            final String idFieldName = getIdFieldName();
+
+            // Inserts the mandatory 'Id' field if it doesn't exist.
+            if (!query.contains(idFieldName)) {
+                query = query.replaceFirst("([sS][eE][lL][eE][cC][tT] )", "select " + idFieldName + ", ");
+            }
+        }
+    }
+
 	/**
 	 * @return json representation of target
 	 * @throws JSONException
@@ -90,7 +105,6 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 
         // Capture next records url
         nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);
-
         return records;
     }
 
@@ -107,7 +121,6 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 
         // Capture next records url
         nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);
-
         return records;
     }
 

@@ -49,7 +49,6 @@ public class ContactObject extends SalesforceObject {
 	public static final String DEPARTMENT = "Department";
 	public static final String HOME_PHONE = "HomePhone";
 	public static final String[] CONTACT_FIELDS_SYNC_DOWN = {
-		Constants.ID,
 		FIRST_NAME,
 		LAST_NAME,
 		TITLE,
