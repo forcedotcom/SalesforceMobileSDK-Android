@@ -38,8 +38,8 @@ public abstract class SyncTarget {
     public static final String ID_FIELD_NAME = "idFieldName";
     public static final String MODIFICATION_DATE_FIELD_NAME = "modificationDateFieldName";
 
-    protected String idFieldName;
-    protected String modificationDateFieldName;
+    private String idFieldName;
+    private String modificationDateFieldName;
 
     public SyncTarget() {
         idFieldName = Constants.ID;

@@ -149,7 +149,7 @@ public abstract class SyncDownTarget extends SyncTarget {
     public long getLatestModificationTimeStamp(JSONArray records) throws JSONException {
         long maxTimeStamp = -1;
         for (int i = 0; i < records.length(); i++) {
-            String timeStampStr = JSONObjectHelper.optString(records.getJSONObject(i), modificationDateFieldName);
+            String timeStampStr = JSONObjectHelper.optString(records.getJSONObject(i), getModificationDateFieldName());
             if (timeStampStr == null) {
                 maxTimeStamp = -1;
                 break; // field not present
@@ -158,7 +158,7 @@ public abstract class SyncDownTarget extends SyncTarget {
                 long timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr).getTime();
                 maxTimeStamp = Math.max(timeStamp, maxTimeStamp);
             } catch (Exception e) {
-                Log.w("SyncDownTarget.getLatestModificationTimeStamp", "Could not parse modification date field " + modificationDateFieldName, e);
+                Log.w("SyncDownTarget.getLatestModificationTimeStamp", "Could not parse modification date field " + getModificationDateFieldName(), e);
                 maxTimeStamp = -1;
                 break;
             }
