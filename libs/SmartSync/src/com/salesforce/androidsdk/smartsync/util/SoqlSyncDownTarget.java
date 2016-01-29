@@ -57,7 +57,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     public SoqlSyncDownTarget(JSONObject target) throws JSONException {
         super(target);
         this.query = target.getString(QUERY);
-        addIdFieldIfRequired();
+        addSpecialFieldsIfRequired();
     }
 
 	/**
@@ -68,14 +68,20 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         super();
         this.queryType = QueryType.soql;
         this.query = query;
-        addIdFieldIfRequired();
+        addSpecialFieldsIfRequired();
 	}
 
-    private void addIdFieldIfRequired() {
+    private void addSpecialFieldsIfRequired() {
         if (!TextUtils.isEmpty(query)) {
-            final String idFieldName = getIdFieldName();
+
+            // Inserts the mandatory 'LastModifiedDate' field if it doesn't exist.
+            final String lastModFieldName = getModificationDateFieldName();
+            if (!query.contains(lastModFieldName)) {
+                query = query.replaceFirst("([sS][eE][lL][eE][cC][tT] )", "select " + lastModFieldName + ", ");
+            }
 
             // Inserts the mandatory 'Id' field if it doesn't exist.
+            final String idFieldName = getIdFieldName();
             if (!query.contains(idFieldName)) {
                 query = query.replaceFirst("([sS][eE][lL][eE][cC][tT] )", "select " + idFieldName + ", ");
             }
@@ -133,7 +139,6 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         }
         return query;
     }
-
 
     /**
      * @return soql query for this target

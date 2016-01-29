@@ -55,8 +55,7 @@ public class ContactObject extends SalesforceObject {
 		PHONE,
 		EMAIL,
 		DEPARTMENT,
-		HOME_PHONE,
-        Constants.LAST_MODIFIED_DATE
+		HOME_PHONE
 	};
 	public static final String[] CONTACT_FIELDS_SYNC_UP = {
 		Constants.ID,
