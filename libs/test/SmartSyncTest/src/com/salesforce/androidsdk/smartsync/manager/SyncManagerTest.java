@@ -35,6 +35,7 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SoqlSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
@@ -60,7 +61,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
 
 /**
  * Test class for SyncState.
@@ -650,9 +650,8 @@ public class SyncManagerTest extends ManagerTestCase {
 
         // Check server
         checkServer(idToNamesUpdated);
-        checkServerDeleted(new String[] {remotelyDeletedId});
+        checkServerDeleted(new String[]{remotelyDeletedId});
     }
-
 
     /**
      * Test addFilterForReSync with various queries
@@ -711,6 +710,16 @@ public class SyncManagerTest extends ManagerTestCase {
         while (!queue.getNextSyncUpdate().isDone());
     }
 
+    public void testAddMissingFieldsToSOQLTarget() throws Exception {
+        final String soqlQueryWithSpecialFields = SOQLBuilder.getInstanceWithFields("Id, LastModifiedDate, FirstName, LastName")
+                .from(Constants.CONTACT).limit(10).build();
+        final String soqlQueryWithoutSpecialFields = SOQLBuilder.getInstanceWithFields("FirstName, LastName")
+                .from(Constants.CONTACT).limit(10).build();
+        final SoqlSyncDownTarget target = new SoqlSyncDownTarget(soqlQueryWithoutSpecialFields);
+        final String targetSoqlQuery = target.getQuery();
+        assertEquals("SOQL query should contain Id and LastModifiedDate fields", soqlQueryWithSpecialFields, targetSoqlQuery);
+    }
+
 	/**
 	 * Sync down helper
 	 * @throws JSONException
@@ -732,7 +741,6 @@ public class SyncManagerTest extends ManagerTestCase {
 		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
 		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, idToNames.size());
 		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, idToNames.size());
-
         return syncId;
 	}
 
@@ -1083,7 +1091,7 @@ public class SyncManagerTest extends ManagerTestCase {
             JSONArray row = accountsFromDb.getJSONArray(i);
             JSONObject soupElt = row.getJSONObject(0);
             String id = soupElt.getString(Constants.ID);
-            idToNames .put(id, soupElt.getString(Constants.NAME));
+            idToNames.put(id, soupElt.getString(Constants.NAME));
         }
         return idToNames;
     }
