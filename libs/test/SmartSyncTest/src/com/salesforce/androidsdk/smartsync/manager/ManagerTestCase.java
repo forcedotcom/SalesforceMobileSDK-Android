@@ -127,7 +127,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
-                null, null, null, null, null);
+                null, null, null, null, null, null);
         return new RestClient(clientInfo, authToken, httpAccess, null);
     }
     

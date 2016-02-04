@@ -73,6 +73,7 @@ public class AuthenticatorService extends Service {
     public static final String KEY_EMAIL = "email";
     public static final String KEY_FIRST_NAME = "first_name";
     public static final String KEY_LAST_NAME = "last_name";
+    public static final String KEY_DISPLAY_NAME = "display_name";
     public static final String KEY_PHOTO_URL = "photoUrl";
     public static final String KEY_THUMBNAIL_URL = "thumbnailUrl";
 
@@ -191,6 +192,11 @@ public class AuthenticatorService extends Service {
             if (encFirstName != null) {
                  firstName = SalesforceSDKManager.decryptWithPasscode(encFirstName, passcodeHash);
             }
+            final String encDisplayName = mgr.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME);
+            String displayName = null;
+            if (encDisplayName != null) {
+                displayName = SalesforceSDKManager.decryptWithPasscode(encDisplayName, passcodeHash);
+            }
             final String encPhotoUrl = mgr.getUserData(account, AuthenticatorService.KEY_PHOTO_URL);
             String photoUrl = null;
             if (encPhotoUrl != null) {
@@ -245,6 +251,11 @@ public class AuthenticatorService extends Service {
                     encrFirstName = SalesforceSDKManager.encryptWithPasscode(firstName, passcodeHash);
                 }
                 resBundle.putString(AuthenticatorService.KEY_FIRST_NAME, encrFirstName);
+                String encrDisplayName = null;
+                if (displayName != null) {
+                    encrDisplayName = SalesforceSDKManager.encryptWithPasscode(displayName, passcodeHash);
+                }
+                resBundle.putString(AuthenticatorService.KEY_DISPLAY_NAME, encrDisplayName);
                 String encrPhotoUrl = null;
                 if (photoUrl != null) {
                     encrPhotoUrl = SalesforceSDKManager.encryptWithPasscode(photoUrl, passcodeHash);
