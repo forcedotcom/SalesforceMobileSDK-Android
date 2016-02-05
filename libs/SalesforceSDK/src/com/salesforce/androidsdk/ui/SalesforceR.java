@@ -31,9 +31,9 @@ import com.salesforce.androidsdk.R;
 /**
  * Before 1.3, SalesforceSDK was packaged as a jar which can't have resources.
  * All the methods were returning -1 and a project using the SDK had to provide a subclass returning actual resource ids.
- * 
+ *
  * Since 1.3, SalesforceSDK is packaged as a library project and therefore contains its resources.
- * We are only keeping this class for backward compatibility reason, for projects that use the SDK as a jar or that have 
+ * We are only keeping this class for backward compatibility reason, for projects that use the SDK as a jar or that have
  * provided custom screens (login, passcode etc) and used SalesforceR to point to their own screens.
  */
 
@@ -43,7 +43,7 @@ public class SalesforceR {
 	public int layoutLogin() {return R.layout.sf__login; }
 	public int idLoginWebView() {return R.id.sf__oauth_webview; }
 	public int stringGenericError() {return R.string.sf__generic_error; }
-	public int stringGenericAuthenticationErrorTitle() {return R.string.sf__generic_authentication_error_title; } 
+	public int stringGenericAuthenticationErrorTitle() {return R.string.sf__generic_authentication_error_title; }
 	public int stringGenericAuthenticationErrorBody() {return R.string.sf__generic_authentication_error; }
     public int stringManagedAppError() { return R.string.sf__managed_app_error; }
 	public int menuLogin() { return R.menu.sf__login; }
@@ -72,6 +72,11 @@ public class SalesforceR {
 	public int stringPasscodeLogoutConfirmation() {return R.string.sf__passcode_logout_confirmation; }
 	public int stringPasscodeLogoutYes() {return R.string.sf__passcode_logout_yes; }
 	public int stringPasscodeLogoutNo() {return R.string.sf__passcode_logout_no; }
+	public int idFingerprintDialog() {return R.layout.sf__fingerprint_dialog; }
+	public int idFingerprintCancelButton() {return R.id.sf__use_password_button; }
+	public int idFingerprintStatusText() {return R.id.sf__fingerprint_status; }
+	public int idFingerprintSuccessString() {return R.string.sf__fingerprint_success; }
+	public int idFingerprintFailureString() {return R.string.sf__fingerprint_failed; }
 	/* Server picker */
 	public int idPickerCustomLabel() {return R.id.sf__picker_custom_label;}
 	public int idPickerCustomUrl() {return R.id.sf__picker_custom_url;}

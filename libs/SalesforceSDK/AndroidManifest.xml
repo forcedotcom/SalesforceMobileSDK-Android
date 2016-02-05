@@ -82,4 +82,6 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.GET_TASKS" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+    <!--TODO: Remove the -sdk-23 tag when the minsdk version is 23-->
+    <uses-permission-sdk-23 android:name="android.permission.USE_FINGERPRINT" />
 </manifest>
