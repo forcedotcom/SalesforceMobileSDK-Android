@@ -60,7 +60,8 @@ public class UserAccount {
 	public static final String INTERNAL_COMMUNITY_PATH = "internal";
     public static final String EMAIL = "email";
     public static final String FIRST_NAME = "first_name";
-    public static final String LAST_NAME = "last_name";
+	public static final String DISPLAY_NAME = "display_name";
+	public static final String LAST_NAME = "last_name";
     public static final String PHOTO_URL = "photoUrl";
     public static final String THUMBNAIL_URL = "thumbnailUrl";
 
@@ -82,7 +83,8 @@ public class UserAccount {
 	private String communityUrl;
     private String firstName;
     private String lastName;
-    private String email;
+	private String displayName;
+	private String email;
     private String photoUrl;
     private String thumbnailUrl;
 
@@ -110,7 +112,7 @@ public class UserAccount {
                 loginServer, idUrl, instanceServer,
                 orgId, userId, username, accountName,
                 clientId, communityId, communityUrl,
-                null, null, null, null, null);
+                null, null, null, null, null, null);
     }
 
     /**
@@ -130,7 +132,8 @@ public class UserAccount {
      * @param communityUrl Community URL.
      * @param firstName First Name.
      * @param lastName Last Name.
-     * @param email Email.
+	 * @param displayName Display Name.
+	 * @param email Email.
      * @param photoUrl Photo URL.
      * @param thumbnailUrl Thumbnail URL.
      */
@@ -138,7 +141,7 @@ public class UserAccount {
 			String loginServer, String idUrl, String instanceServer,
 			String orgId, String userId, String username, String accountName,
 			String clientId, String communityId, String communityUrl,
-            String firstName, String lastName, String email, String photoUrl,
+            String firstName, String lastName, String displayName, String email, String photoUrl,
             String thumbnailUrl ) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
@@ -154,6 +157,7 @@ public class UserAccount {
 		this.communityUrl = communityUrl;
         this.firstName = firstName;
         this.lastName = lastName;
+		this.displayName = displayName;
         this.email = email;
         this.photoUrl = photoUrl;
         this.thumbnailUrl = thumbnailUrl;
@@ -183,9 +187,10 @@ public class UserAccount {
 			communityUrl = object.optString(COMMUNITY_URL, null);
             firstName = object.optString(FIRST_NAME, null);
             lastName = object.optString(LAST_NAME, null);
-            email = object.optString(EMAIL, null);
+			displayName = object.optString(DISPLAY_NAME, null);
+			email = object.optString(EMAIL, null);
             photoUrl = object.optString(PHOTO_URL, null);
-            thumbnailUrl = object.optString(THUMBNAIL_URL, null);
+			thumbnailUrl = object.optString(THUMBNAIL_URL, null);
 		}
 	}
 
@@ -210,7 +215,8 @@ public class UserAccount {
 			communityUrl = bundle.getString(COMMUNITY_URL);
             firstName = bundle.getString(FIRST_NAME);
             lastName = bundle.getString(LAST_NAME);
-            email = bundle.getString(EMAIL);
+			displayName = bundle.getString(DISPLAY_NAME);
+			email = bundle.getString(EMAIL);
             photoUrl = bundle.getString(PHOTO_URL);
             thumbnailUrl = bundle.getString(THUMBNAIL_URL);
 		}
@@ -333,7 +339,16 @@ public class UserAccount {
         return firstName;
     }
 
-    /**
+	/**
+	 * Returns the Display name for this user account.
+	 *
+	 * @return Display Name.
+	 */
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	/**
      * Returns the last name for this user account.
      *
      * @return Last Name.
@@ -567,7 +582,8 @@ public class UserAccount {
         	object.put(COMMUNITY_URL, communityUrl);
             object.put(FIRST_NAME, firstName);
             object.put(LAST_NAME, lastName);
-            object.put(EMAIL, email);
+			object.put(DISPLAY_NAME, displayName);
+			object.put(EMAIL, email);
             object.put(PHOTO_URL, photoUrl);
             object.put(THUMBNAIL_URL, thumbnailUrl);
     	} catch (JSONException e) {
@@ -597,7 +613,8 @@ public class UserAccount {
         object.putString(COMMUNITY_URL, communityUrl);
         object.putString(FIRST_NAME, firstName);
         object.putString(LAST_NAME, lastName);
-        object.putString(EMAIL, email);
+		object.putString(DISPLAY_NAME, displayName);
+		object.putString(EMAIL, email);
         object.putString(PHOTO_URL, photoUrl);
         object.putString(THUMBNAIL_URL, thumbnailUrl);
     	return object;

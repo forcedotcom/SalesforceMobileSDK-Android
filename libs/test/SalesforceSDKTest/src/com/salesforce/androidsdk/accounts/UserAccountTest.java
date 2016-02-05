@@ -55,6 +55,7 @@ public class UserAccountTest extends InstrumentationTestCase {
     public static final String TEST_COMMUNITY_ID = "test_community_id";
     public static final String TEST_FIRST_NAME = "firstName";
     public static final String TEST_LAST_NAME = "lastName";
+    public static final String TEST_DISPLAY_NAME = "displayName";
     public static final String TEST_EMAIL = "test@email.com";
     public static final String TEST_PHOTO_URL = "http://some.photo.url";
     public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
@@ -68,7 +69,7 @@ public class UserAccountTest extends InstrumentationTestCase {
                 TEST_REFRESH_TOKEN, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_INSTANCE_URL,
                 TEST_ORG_ID, TEST_USER_ID, TEST_USERNAME, TEST_ACCOUNT_NAME,
                 TEST_CLIENT_ID, TEST_COMMUNITY_ID, TEST_COMMUNITY_URL, TEST_FIRST_NAME,
-                TEST_LAST_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL);
+                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL);
 
         Bundle bundle = account.toBundle();
 
@@ -99,6 +100,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         assertEquals("Community URL should match", TEST_COMMUNITY_URL, account.getCommunityUrl());
         assertEquals("First name should match", TEST_FIRST_NAME, account.getFirstName());
         assertEquals("Last name should match", TEST_LAST_NAME, account.getLastName());
+        assertEquals("Display name should match", TEST_DISPLAY_NAME, account.getDisplayName());
         assertEquals("Email should match", TEST_EMAIL, account.getEmail());
         assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
         assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
@@ -125,6 +127,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         assertEquals("Community URL should match", TEST_COMMUNITY_URL, account.getCommunityUrl());
         assertEquals("First name should match", TEST_FIRST_NAME, account.getFirstName());
         assertEquals("Last name should match", TEST_LAST_NAME, account.getLastName());
+        assertEquals("Display name should match", TEST_DISPLAY_NAME, account.getDisplayName());
         assertEquals("Email should match", TEST_EMAIL, account.getEmail());
         assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
         assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
@@ -158,6 +161,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         object.put(UserAccount.COMMUNITY_URL, TEST_COMMUNITY_URL);
         object.put(UserAccount.FIRST_NAME, TEST_FIRST_NAME);
         object.put(UserAccount.LAST_NAME, TEST_LAST_NAME);
+        object.put(UserAccount.DISPLAY_NAME, TEST_DISPLAY_NAME);
         object.put(UserAccount.EMAIL, TEST_EMAIL);
         object.put(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.put(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
@@ -186,6 +190,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         object.putString(UserAccount.COMMUNITY_URL, TEST_COMMUNITY_URL);
         object.putString(UserAccount.FIRST_NAME, TEST_FIRST_NAME);
         object.putString(UserAccount.LAST_NAME, TEST_LAST_NAME);
+        object.putString(UserAccount.DISPLAY_NAME, TEST_DISPLAY_NAME);
         object.putString(UserAccount.EMAIL, TEST_EMAIL);
         object.putString(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.putString(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
