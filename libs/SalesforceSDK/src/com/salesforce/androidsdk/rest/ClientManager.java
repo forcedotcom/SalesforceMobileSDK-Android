@@ -628,7 +628,10 @@ public class ClientManager {
                     Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
                 } else {
                     newAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
-                    newInstanceUrl = bundle.getString(AuthenticatorService.KEY_INSTANCE_URL);
+                    final String encryptedInstanceUrl = bundle.getString(AuthenticatorService.KEY_INSTANCE_URL);
+                    if (encryptedInstanceUrl != null) {
+                        newInstanceUrl = SalesforceSDKManager.decryptWithPasscode(encryptedInstanceUrl, SalesforceSDKManager.getInstance().getPasscodeHash());
+                    }
                     Intent broadcastIntent;
                     if (newAuthToken == null) {
                         if (clientManager.revokedTokenShouldLogout) {

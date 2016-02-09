@@ -115,7 +115,6 @@ public class AuthenticatorService extends Service {
                         String[] requiredFeatures,
                         Bundle options)
                 throws NetworkErrorException {
-            // Log.i("Authenticator:addAccount", "Options: " + options);
         	if (isAddFromSettings(options)) {
         		options.putAll(SalesforceSDKManager.getInstance().getLoginOptions().asBundle());
         	}
@@ -167,8 +166,6 @@ public class AuthenticatorService extends Service {
 
 		/**
          * Uses the refresh token to get a new access token.
-         * Remember that the authenticator runs under its own separate process, so if you want to debug you
-         * need to attach to the :auth process, and not the main chatter process.
          */
         @Override
         public Bundle getAuthToken(
@@ -281,7 +278,6 @@ public class AuthenticatorService extends Service {
                 	encrCommunityUrl = SalesforceSDKManager.encryptWithPasscode(communityUrl, passcodeHash);
                 }
                 resBundle.putString(AuthenticatorService.KEY_COMMUNITY_URL, encrCommunityUrl);
-                // Log.i("Authenticator:getAuthToken", "Returning auth bundle for " + account.name);
             } catch (ClientProtocolException e) {
                 Log.w("Authenticator:getAuthToken", "", e);
                 throw new NetworkErrorException(e);
@@ -300,7 +296,6 @@ public class AuthenticatorService extends Service {
                 resBundle.putString(AccountManager.KEY_ERROR_CODE, e.response.error);
                 resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, e.response.errorDescription);
             }
-            // Log.i("Authenticator:getAuthToken", "Result: " + resBundle);
             return resBundle;
         }
 

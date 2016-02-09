@@ -900,18 +900,6 @@ public class SalesforceSDKManager {
         return context.getString(getSalesforceR().stringAccountType());
     }
 
-    /**
-     * Indicates whether the app is running on a tablet.
-     *
-     * @return True if the application is running on a tablet.
-     */
-    public static boolean isTablet() {
-        if ((INSTANCE.context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
-            return true;
-        }
-        return false;
-    }
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder();

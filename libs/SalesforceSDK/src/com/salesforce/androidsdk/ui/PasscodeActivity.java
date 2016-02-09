@@ -26,13 +26,6 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import java.util.List;
-
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.security.PasscodeManager;
-
 import android.Manifest;
 import android.Manifest.permission;
 import android.annotation.TargetApi;
@@ -54,6 +47,13 @@ import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
+
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.security.PasscodeManager;
+
+import java.util.List;
 
 /**
  * Passcode activity: takes care of creating/verifying a user passcode.
