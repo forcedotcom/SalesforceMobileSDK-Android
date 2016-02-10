@@ -650,8 +650,12 @@ public class RestClient {
 				if (newAuthToken != null) {
 					setAuthToken(newAuthToken);
 				}
+
                 // Check if the instanceUrl changed
                 String instanceUrl = authTokenProvider.getInstanceUrl();
+				if (instanceUrl == null) {
+					throw new IOException("Instance URL is null");
+				}
                 if (!clientInfo.instanceUrl.toString().equalsIgnoreCase(instanceUrl)) {
                     try {
                             // Create a new ClientInfo
