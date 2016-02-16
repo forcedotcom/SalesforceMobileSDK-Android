@@ -856,7 +856,7 @@ public class SalesforceSDKManager {
     	return getUserAgent("");
     }
     
-    public final String getUserAgent(String qualifier) {
+    public String getUserAgent(String qualifier) {
         String appName = "";
         String appVersion = "";
         try {
@@ -873,7 +873,7 @@ public class SalesforceSDKManager {
         String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s",
                 SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, appTypeWithQualifier, uid);
-	}
+    }
 
     /**
      * @return app type as String

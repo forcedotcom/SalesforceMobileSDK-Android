@@ -84,7 +84,7 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
 	 */
     public static void initHybrid(Context context, KeyInterface keyImpl) {
 		SalesforceHybridSDKManager.init(context, keyImpl, SalesforceDroidGapActivity.class,
-				LoginActivity.class);
+                LoginActivity.class);
     }
 
 	/**
@@ -132,16 +132,22 @@ public class SalesforceHybridSDKManager extends SmartSyncSDKManager {
     }
 
 	@Override
-	public String getAppType() {
-        final StringBuilder sb = new StringBuilder("Hybrid");
-        final BootConfig config = BootConfig.getBootConfig(context);
-        if (config.isLocal()) {
-            sb.append("Local");
-        } else {
-            sb.append("Remote");
-        }
-        return sb.toString();
+	public final String getUserAgent(String qualifier) {
+		if (qualifier == null) {
+			qualifier = "";
+		}
+		final BootConfig config = BootConfig.getBootConfig(context);
+		if (config.isLocal()) {
+			qualifier = qualifier + "Local";
+		} else {
+			qualifier = qualifier + "Remote";
+		}
+		return super.getUserAgent(qualifier);
 	}
+
+    public String getAppType() {
+        return "Hybrid";
+    }
 
 	@Override
 	public boolean isHybrid() {
