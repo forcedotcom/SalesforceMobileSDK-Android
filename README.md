@@ -21,25 +21,9 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 4.0
-
-**Library Upgrades**
-- Raised the target Android OS version to `v6.0` (API 23 - Marshmallow). Android Marshmallow is now fully supported.
-- Raised the minimum Android OS version required by Mobile SDK to `v4.4` (API 19 - KitKat).
-- Upgraded the `Cordova` library to `v5.0.2`.
-
-**Library Enhancements**
-- Mobile SDK libraries have been refactored to support better consumption. Native apps no longer require Cordova. Our library projects are listed below.
-	- SalesforceSDK
-	- SmartStore
-	- SmartSync
-	- SalesforceHybrid
-	- SalesforceReact
-- The new SalesforceReact library provides the ability to use React Native. Refer to the React Native chapter in the Mobile SDK Development Guide for details on how to use this feature.
+### What's New in 4.1
 
 **Other Technical Improvements**
-- TLS 1.1 and 1.2 are now the default protocols used for networking on Mobile SDK. See [this](https://developer.salesforce.com/blogs/engineering/2015/11/disabling-tls-1-0-preparing-mobile-sdk-apps-big-change.html) blog post for important information.
-- `Android Studio` and `gradle` are fully supported. `Eclipse` and `ant` are no longer supported.
 - Improvements to sample apps.
 - Various bug fixes.
 
