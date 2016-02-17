@@ -285,6 +285,7 @@ public class RestClient {
 		public final String communityUrl;
 		public final String firstName;
 		public final String lastName;
+		public final String displayName;
 		public final String email;
 		public final String photoUrl;
 		public final String thumbnailUrl;
@@ -304,6 +305,7 @@ public class RestClient {
 		 * @param communityUrl Community URL.
          * @param firstName First Name.
          * @param lastName LastName.
+		 * @param displayName DisplayName.
          * @param email Email.
          * @param photoUrl Photo URL.
          * @param thumbnailUrl Thumbnail URL.
@@ -311,7 +313,7 @@ public class RestClient {
 		public ClientInfo(String clientId, URI instanceUrl, URI loginUrl,
 				URI identityUrl, String accountName, String username,
 				String userId, String orgId, String communityId, String communityUrl,
-				String firstName, String lastName, String email,
+				String firstName, String lastName, String displayName, String email,
 				String photoUrl, String thumbnailUrl ) {
 			this.clientId = clientId;
 			this.instanceUrl = instanceUrl;
@@ -325,6 +327,7 @@ public class RestClient {
 			this.communityUrl = communityUrl;
 			this.firstName = firstName;
 			this.lastName = lastName;
+			this.displayName = displayName;
 			this.email = email;
 			this.photoUrl = photoUrl;
 			this.thumbnailUrl = thumbnailUrl;
@@ -352,6 +355,7 @@ public class RestClient {
 			  .append("     communityUrl: ").append(communityUrl).append("\n")
               .append("     firstName: ").append(firstName).append("\n")
               .append("     lastName: ").append(lastName).append("\n")
+			  .append("     displayName: ").append(displayName).append("\n")
               .append("     email: ").append(email).append("\n")
               .append("     photoUrl: ").append(photoUrl).append("\n")
               .append("     thumbnailUrl: ").append(thumbnailUrl).append("\n")
@@ -442,7 +446,7 @@ public class RestClient {
         public static final String NOUSER = "nouser";
 
         public UnauthenticatedClientInfo() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -646,8 +650,12 @@ public class RestClient {
 				if (newAuthToken != null) {
 					setAuthToken(newAuthToken);
 				}
+
                 // Check if the instanceUrl changed
                 String instanceUrl = authTokenProvider.getInstanceUrl();
+				if (instanceUrl == null) {
+					throw new IOException("Instance URL is null");
+				}
                 if (!clientInfo.instanceUrl.toString().equalsIgnoreCase(instanceUrl)) {
                     try {
                             // Create a new ClientInfo
@@ -656,7 +664,7 @@ public class RestClient {
                                 clientInfo.accountName, clientInfo.username,
                                 clientInfo.userId, clientInfo.orgId, clientInfo.communityId,
                                 clientInfo.communityUrl, clientInfo.firstName, clientInfo.lastName,
-                                clientInfo.email, clientInfo.photoUrl, clientInfo.thumbnailUrl);
+                                clientInfo.displayName, clientInfo.email, clientInfo.photoUrl, clientInfo.thumbnailUrl);
                     } catch (URISyntaxException ex) {
                         Log.w("RestClient", "Invalid server URL", ex);
                     }

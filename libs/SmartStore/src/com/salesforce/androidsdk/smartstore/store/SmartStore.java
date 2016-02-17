@@ -1157,6 +1157,16 @@ public class SmartStore  {
      * @param soup
      * @param path
      * @return object at path in soup
+	 *
+	 * Examples (in pseudo code):
+	 *
+	 * json = {"a": {"b": [{"c":"xx"}, {"c":"xy"}, {"d": [{"e":1}, {"e":2}]}, {"d": [{"e":3}, {"e":4}]}] }}
+	 * projectIntoJson(jsonObj, "a") = {"b": [{"c":"xx"}, {"c":"xy"}, {"d": [{"e":1}, {"e":2}]}, {"d": [{"e":3}, {"e":4}]} ]}
+	 * projectIntoJson(json, "a.b") = [{c:"xx"}, {c:"xy"}, {"d": [{"e":1}, {"e":2}]}, {"d": [{"e":3}, {"e":4}]}]
+	 * projectIntoJson(json, "a.b.c") = ["xx", "xy"]                                     // new in 4.1
+	 * projectIntoJson(json, "a.b.d") = [[{"e":1}, {"e":2}], [{"e":3}, {"e":4}]]         // new in 4.1
+	 * projectIntoJson(json, "a.b.d.e") = [[1, 2], [3, 4]]                               // new in 4.1
+	 *
      */
     public static Object project(JSONObject soup, String path) {
         if (soup == null) {
@@ -1166,14 +1176,41 @@ public class SmartStore  {
             return soup;
         }
         String[] pathElements = path.split("[.]");
-        Object o = soup;
-        for (String pathElement : pathElements) {
-        	if (o != null) {
-                o = ((JSONObject) o).opt(pathElement);
-        	}
-        }
-        return o;
+		return project(soup, pathElements, 0);
     }
+
+	private static Object project(Object jsonObj, String[] pathElements, int index) {
+		Object result = null;
+		if (index == pathElements.length) {
+			return jsonObj;
+		}
+
+		if (null != jsonObj) {
+			String pathElement = pathElements[index];
+
+			if (jsonObj instanceof JSONObject) {
+				JSONObject jsonDict = (JSONObject) jsonObj;
+				Object dictVal = jsonDict.opt(pathElement);
+				result = project(dictVal, pathElements, index+1);
+			}
+			else if (jsonObj instanceof JSONArray) {
+				JSONArray jsonArr = (JSONArray) jsonObj;
+				result = new JSONArray();
+				for (int i=0; i<jsonArr.length(); i++) {
+					Object arrayElt = jsonArr.opt(i);
+					Object resultPart = project(arrayElt, pathElements, index);
+					if (resultPart != null) {
+						((JSONArray) result).put(resultPart);
+					}
+				}
+				if (((JSONArray) result).length() == 0) {
+					result = null;
+				}
+			}
+		}
+
+		return result;
+	}
 
     /**
      * Enum for column type

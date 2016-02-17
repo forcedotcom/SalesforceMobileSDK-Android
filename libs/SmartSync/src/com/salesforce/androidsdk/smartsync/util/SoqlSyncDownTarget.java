@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
+import android.text.TextUtils;
+
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
@@ -55,6 +57,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     public SoqlSyncDownTarget(JSONObject target) throws JSONException {
         super(target);
         this.query = target.getString(QUERY);
+        addSpecialFieldsIfRequired();
     }
 
 	/**
@@ -65,8 +68,26 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         super();
         this.queryType = QueryType.soql;
         this.query = query;
+        addSpecialFieldsIfRequired();
 	}
-	
+
+    private void addSpecialFieldsIfRequired() {
+        if (!TextUtils.isEmpty(query)) {
+
+            // Inserts the mandatory 'LastModifiedDate' field if it doesn't exist.
+            final String lastModFieldName = getModificationDateFieldName();
+            if (!query.contains(lastModFieldName)) {
+                query = query.replaceFirst("([sS][eE][lL][eE][cC][tT] )", "select " + lastModFieldName + ", ");
+            }
+
+            // Inserts the mandatory 'Id' field if it doesn't exist.
+            final String idFieldName = getIdFieldName();
+            if (!query.contains(idFieldName)) {
+                query = query.replaceFirst("([sS][eE][lL][eE][cC][tT] )", "select " + idFieldName + ", ");
+            }
+        }
+    }
+
 	/**
 	 * @return json representation of target
 	 * @throws JSONException
@@ -90,7 +111,6 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 
         // Capture next records url
         nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);
-
         return records;
     }
 
@@ -107,7 +127,6 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 
         // Capture next records url
         nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);
-
         return records;
     }
 
@@ -120,7 +139,6 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         }
         return query;
     }
-
 
     /**
      * @return soql query for this target

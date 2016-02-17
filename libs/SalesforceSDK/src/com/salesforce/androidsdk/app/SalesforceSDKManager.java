@@ -88,7 +88,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "4.0.2";
+    public static final String SDK_VERSION = "4.1.0";
 
     /**
      * Default app name.
@@ -856,7 +856,7 @@ public class SalesforceSDKManager {
     	return getUserAgent("");
     }
     
-    public final String getUserAgent(String qualifier) {
+    public String getUserAgent(String qualifier) {
         String appName = "";
         String appVersion = "";
         try {
@@ -873,7 +873,7 @@ public class SalesforceSDKManager {
         String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s",
                 SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, appTypeWithQualifier, uid);
-	}
+    }
 
     /**
      * @return app type as String
@@ -898,18 +898,6 @@ public class SalesforceSDKManager {
      */
     public String getAccountType() {
         return context.getString(getSalesforceR().stringAccountType());
-    }
-
-    /**
-     * Indicates whether the app is running on a tablet.
-     *
-     * @return True if the application is running on a tablet.
-     */
-    public static boolean isTablet() {
-        if ((INSTANCE.context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
-            return true;
-        }
-        return false;
     }
 
     @Override

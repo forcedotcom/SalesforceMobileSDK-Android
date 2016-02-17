@@ -516,9 +516,17 @@ public class PasscodeManager  {
     }
 
     public void unlock(String passcode) {
+        passcodeHash = hashForEncryption(passcode);
+        unlock();
+    }
+
+    /**
+     * This is used when unlocking via the fingerprint authentication.
+     * The passcode hash isn't updated as the authentication is verified by the OS.
+     */
+    public void unlock() {
         locked = false;
         failedPasscodeAttempts = 0;
-        passcodeHash = hashForEncryption(passcode);
         updateLast();
         EventsObservable.get().notifyEvent(EventType.AppUnlocked);
     }

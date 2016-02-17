@@ -26,12 +26,18 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import java.util.List;
-
+import android.Manifest;
+import android.Manifest.permission;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.hardware.fingerprint.FingerprintManager;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
@@ -47,6 +53,8 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
 
+import java.util.List;
+
 /**
  * Passcode activity: takes care of creating/verifying a user passcode.
  */
@@ -55,6 +63,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private static final String EXTRA_KEY = "input_text";
     private static final String LOGOUT_EXTRA = "logout_key";
     protected static final int MAX_PASSCODE_ATTEMPTS = 10;
+
+    final private int REQUEST_CODE_ASK_PERMISSIONS = 11;
 
     private PasscodeMode currentMode;
     private TextView title, instr, error;
@@ -65,6 +75,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private boolean logoutEnabled;
     private AlertDialog logoutAlertDialog;
     private boolean isLogoutAlertShowing;
+    private FingerprintManager fingerprintManager;
+    private FingerprintAuthDialogFragment fingerprintAuthDialog;
 
     public enum PasscodeMode {
         Create,
@@ -85,6 +97,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             forgotPasscodeView.setText(Html.fromHtml(getForgotPasscodeString()));
         }
         forgotPasscodeView.setOnClickListener(this);
+
         logoutAlertDialog = buildLogoutDialog();
         title = getTitleView();
         error = getErrorView();
@@ -95,13 +108,14 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         final Intent i = getIntent();
         boolean shouldChangePasscode = false;
         if (i != null) {
-        	shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CHANGE_PASSCODE_KEY,
-        			false);
+            shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CHANGE_PASSCODE_KEY,
+                                                     false);
         }
         if (shouldChangePasscode) {
-        	setMode(PasscodeMode.Change);
+            setMode(PasscodeMode.Change);
         } else {
             setMode(passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create);
+            showFingerprintDialog();
         }
         Log.i("PasscodeActivity:onCreate", "Mode: " + getMode());
         logoutEnabled = true;
@@ -112,7 +126,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             }
             isLogoutAlertShowing = savedInstanceState.getBoolean(LOGOUT_EXTRA);
             if (isLogoutAlertShowing) {
-            	logoutAlertDialog.show();
+                logoutAlertDialog.show();
             }
         }
     }
@@ -411,5 +425,41 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             }
         })
         .create();
+    }
+
+    private void showFingerprintDialog() {
+        if (passcodeManager != null && passcodeManager.getPasscodeHash() != null && isFingerprintEnabled()) {
+            fingerprintAuthDialog = new FingerprintAuthDialogFragment();
+            fingerprintAuthDialog.setContext(this);
+            fingerprintAuthDialog.show(getFragmentManager(), "fingerprintDialog");
+        }
+    }
+
+    @TargetApi(VERSION_CODES.M)
+    private boolean isFingerprintEnabled() {
+        if (VERSION.SDK_INT >= VERSION_CODES.M) {
+            fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
+            // Here, thisActivity is the current activity
+            if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{ permission.USE_FINGERPRINT}, REQUEST_CODE_ASK_PERMISSIONS);
+            } else {
+                return fingerprintManager != null && fingerprintManager.isHardwareDetected() && fingerprintManager.hasEnrolledFingerprints();
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == REQUEST_CODE_ASK_PERMISSIONS && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            showFingerprintDialog();
+            return;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    public void unlockViaFingerprintScan() {
+        passcodeManager.unlock();
+        done();
     }
 }

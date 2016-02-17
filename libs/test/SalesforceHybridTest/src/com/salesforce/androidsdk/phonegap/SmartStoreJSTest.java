@@ -89,7 +89,11 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testAlterSoupWithReIndexing",
                 "testAlterSoupWithBogusSoupName",
                 "testReIndexSoup",
-                "testClearSoup"
+                "testClearSoup",
+                "testFullTextSearchAgainstArrayNode",
+                "testLikeQueryAgainstArrayNode",
+                "testExactQueryAgainstArrayNode",
+                "testSmartQueryAgainstArrayNode"
         });
     }
     
@@ -261,5 +265,22 @@ public class SmartStoreJSTest extends JSTestCase {
 
     public void testClearSoup() {
         runTest("testClearSoup");
+    }
+
+
+    public void testFullTextSearchAgainstArrayNode() {
+        runTest("testFullTextSearchAgainstArrayNode");
+    }
+
+    public void testLikeQueryAgainstArrayNode() {
+        runTest("testLikeQueryAgainstArrayNode");
+    }
+
+    public void testExactQueryAgainstArrayNode() {
+        runTest("testExactQueryAgainstArrayNode");
+    }
+
+    public void testSmartQueryAgainstArrayNode() {
+        runTest("testSmartQueryAgainstArrayNode");
     }
 }

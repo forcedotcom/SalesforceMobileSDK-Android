@@ -105,6 +105,7 @@ public class OAuth2 {
     private static final String EMAIL = "email";
     private static final String FIRST_NAME = "first_name";
     private static final String LAST_NAME = "last_name";
+    private static final String DISPLAY_NAME = "display_name";
     private static final String PHOTOS = "photos";
     private static final String PICTURE = "picture";
     private static final String THUMBNAIL = "thumbnail";
@@ -368,6 +369,7 @@ public class OAuth2 {
         public String email;
         public String firstName;
         public String lastName;
+        public String displayName;
         public String pictureUrl;
         public String thumbnailUrl;
         public int pinLength = -1;
@@ -383,6 +385,7 @@ public class OAuth2 {
                 email = parsedResponse.getString(EMAIL);
                 firstName = parsedResponse.getString(FIRST_NAME);
                 lastName = parsedResponse.getString(LAST_NAME);
+                displayName = parsedResponse.getString(DISPLAY_NAME);
                 JSONObject photos = parsedResponse.getJSONObject(PHOTOS);
                 if (photos != null) {
                     pictureUrl = photos.getString(PICTURE);
