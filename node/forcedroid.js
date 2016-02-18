@@ -42,7 +42,7 @@ var fs = require('fs');
 var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
-var version = '4.1.0';
+var version = '4.2.0';
 var targetApi = {'versionNumber': 23, 'versionName': 'Marshmallow'};
 var minimumCordovaCliVersion = '5.4.0';
 var cordovaPlatformVersion = '5.0.0';
