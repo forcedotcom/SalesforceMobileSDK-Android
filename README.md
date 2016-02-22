@@ -23,6 +23,13 @@ Introduction
 
 ### What's New in 4.1
 
+**SmartStore Enhancements**
+- SmartStore now allows internal (non-leaf) nodes in index paths. This feature is useful in LIKE and MATCH queries.
+- SmartStore now allows arrays in compound index paths.
+
+**Library Upgrades**
+- We've updated React Native to version 0.20.
+
 **Other Technical Improvements**
 - Improvements to sample apps.
 - Various bug fixes.
