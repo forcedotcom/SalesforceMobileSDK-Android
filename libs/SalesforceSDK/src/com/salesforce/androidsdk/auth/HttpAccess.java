@@ -48,6 +48,7 @@ import org.apache.http.client.methods.HttpHead;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.BasicHttpEntity;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicHttpResponse;
 import org.apache.http.message.BasicStatusLine;
 
@@ -59,7 +60,9 @@ import java.net.URI;
 import java.net.URL;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -213,9 +216,7 @@ public class HttpAccess extends BroadcastReceiver {
         httpConn.setDoOutput(true);
         httpConn.setDoInput(true);
         httpConn.setUseCaches(false);
-
         final long contentLength = requestEntity == null ? 0 : requestEntity.getContentLength();
-
         if (contentLength >= 0) {
 
             // Let the connection know the size of the data being sent so that it can chunk it appropriately.
@@ -343,6 +344,26 @@ public class HttpAccess extends BroadcastReceiver {
         final StatusLine statusLine = new BasicStatusLine(protocolVersion,
         		statusCode, reasonPhrase);
         final HttpResponse response = new BasicHttpResponse(statusLine);
+
+        /*
+         * Reads the response headers and adds them to the Execution returned.
+         */
+        final Map<String, List<String>> responseHeaders = httpConn.getHeaderFields();
+        if (responseHeaders != null) {
+            final Set<String> headerKeys = responseHeaders.keySet();
+            if (headerKeys != null) {
+                for (final String key : headerKeys) {
+                    if (key != null) {
+                        final List<String> valuesList = responseHeaders.get(key);
+                        if (valuesList != null && valuesList.size() > 0) {
+                            final String value = valuesList.get(0);
+                            final Header header = new BasicHeader(key, value);
+                            response.addHeader(header);
+                        }
+                    }
+                }
+            }
+        }
     	InputStream responseInputStream = null;
 
     	/*
