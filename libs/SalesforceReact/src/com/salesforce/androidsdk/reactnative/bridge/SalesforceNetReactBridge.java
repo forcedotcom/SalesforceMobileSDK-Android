@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.reactnative.bridge;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.facebook.react.bridge.Callback;
@@ -46,6 +47,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.Iterator;
 import java.util.Map;
 
 public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
@@ -72,7 +75,44 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
     public void sendRequest(ReadableMap args,
                             final Callback successCallback, final Callback errorCallback) {
 
-        // args parsing
+        try {
+            // Prepare request
+            RestRequest request = prepareRestRequest(args);
+
+            // Sending request
+            RestClient restClient = getRestClient();
+            restClient.sendAsync(request, new RestClient.AsyncRequestCallback() {
+                @Override
+                public void onSuccess(RestRequest request, RestResponse response) {
+                    try {
+                        String responseAsString = response.asString();
+                        // XXX Sending the string over and letting javascript do a JSON.parse(result)
+                        //     It would be better to using NativeMap/NativeArray
+                        //     Although the absence of a common super class would force us to
+                        //     introduce two sendRequest methods:
+                        //     - one that expects map back from the server
+                        //     - one that expects array back from the server
+                        successCallback.invoke(responseAsString);
+                    } catch (IOException e) {
+                        Log.e("NetReactBridge", "sendRequest", e);
+                        onError(e);
+                    }
+                }
+
+                @Override
+                public void onError(Exception exception) {
+                    errorCallback.invoke(exception.getMessage());
+                }
+            });
+        }
+        catch (Exception exception) {
+            errorCallback.invoke(exception.getMessage());
+        }
+    }
+
+    @NonNull
+    private RestRequest prepareRestRequest(ReadableMap args) throws UnsupportedEncodingException {
+        // Parse args
         RestRequest.RestMethod method = RestRequest.RestMethod.valueOf(args.getString(METHOD_KEY));
         String endPoint = args.getString(END_POINT_KEY);
         String path = args.getString(PATH_KEY);
@@ -80,36 +120,17 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         ReadableMap headerParams = args.getMap(HEADER_PARAMS_KEY);
 
         // Preparing request
-        HttpEntity requestEntity = buildEntity(queryParams);
         Map<String, String> additionalHeaders = ReactBridgeHelper.toJavaStringMap(headerParams);
-        RestRequest request = new RestRequest(method, endPoint + path, requestEntity, additionalHeaders);
+        Map<String, String> queryParamsMap = ReactBridgeHelper.toJavaStringMap(queryParams);
 
-        // Sending request
-        RestClient restClient = getRestClient();
-        restClient.sendAsync(request, new RestClient.AsyncRequestCallback() {
-            @Override
-            public void onSuccess(RestRequest request, RestResponse response) {
-                try {
-                    String responseAsString = response.asString();
-                    // XXX Sending the string over and letting javascript do a JSON.parse(result)
-                    //     It would be better to using NativeMap/NativeArray
-                    //     Although the absence of a common super class would force us to
-                    //     introduce two sendRequest methods:
-                    //     - one that expects map back from the server
-                    //     - one that expects array back from the server
-                    successCallback.invoke(responseAsString);
-                } catch (IOException e) {
-                    Log.e("NetReactBridge", "sendRequest", e);
-                    onError(e);
-                }
-            }
-
-            @Override
-            public void onError(Exception exception) {
-                errorCallback.invoke(exception.getMessage());
-            }
-        });
-
+        String urlParams = "";
+        HttpEntity requestEntity = null;
+        if (method == RestRequest.RestMethod.DELETE || method == RestRequest.RestMethod.GET || method == RestRequest.RestMethod.HEAD) {
+            urlParams = buildQueryString(queryParamsMap);
+        } else {
+            requestEntity = buildEntity(queryParamsMap);
+        }
+        return new RestRequest(method, endPoint + path + urlParams, requestEntity, additionalHeaders);
     }
 
     private RestClient getRestClient() {
@@ -124,11 +145,22 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         return restClient;
     }
 
-    private static HttpEntity buildEntity(ReadableMap params) {
+    private static String buildQueryString(Map<String, String> params) throws UnsupportedEncodingException {
+        StringBuilder sb = new StringBuilder();
+        Iterator it = params.entrySet().iterator();
+        sb.append("?");
+        while (it.hasNext()) {
+            Map.Entry<String, String> pair = (Map.Entry) it.next();
+            sb.append(pair.getKey()).append("=").append(URLEncoder.encode(pair.getValue(), HTTP.UTF_8)).append("&");
+        }
+        return sb.toString();
+    }
+
+    private static HttpEntity buildEntity(Map<String, String> params) {
         HttpEntity entity = null;
         if (params != null) {
             try {
-                JSONObject json = new JSONObject(ReactBridgeHelper.toJavaMap(params));
+                JSONObject json = new JSONObject(params);
                 entity = new StringEntity(json.toString(), HTTP.UTF_8);
             } catch (UnsupportedEncodingException e) {
                 Log.e("NetReactBridge", "buildEntity failed", e);
