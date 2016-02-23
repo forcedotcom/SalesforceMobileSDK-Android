@@ -145,7 +145,7 @@ public class ContentSoqlSyncDownTarget extends SoqlSyncDownTarget {
         StringEntity entity = new StringEntity(String.format(REQUEST_TEMPLATE, sessionId, body), HTTP.UTF_8);
         entity.setContentType("text/xml");
 
-        return new RestRequest(RestRequest.RestMethod.POST, "/services/Soap/u/34.0", entity, customHeaders);
+        return new RestRequest(RestRequest.RestMethod.POST, "/services/Soap/u/36.0", entity, customHeaders);
     }
 
 
