@@ -59,6 +59,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -489,8 +491,8 @@ public class SyncManager {
         sync.setMaxTimeStamp(maxTimeStamp);
 	}
 
-    private Set<String> toSet(JSONArray jsonArray) throws JSONException {
-        Set<String> set = new HashSet<String>();
+    private SortedSet<String> toSortedSet(JSONArray jsonArray) throws JSONException {
+        SortedSet<String> set = new TreeSet<String>();
         for (int i=0; i<jsonArray.length(); i++) {
             set.add(jsonArray.getJSONArray(i).getString(0));
         }
@@ -534,17 +536,17 @@ public class SyncManager {
         }
 	}
 
-    public Set<String> getDirtyRecordIds(String soupName, String idField) throws JSONException {
-        Set<String> idsToSkip = new HashSet<String>();
-        String dirtyRecordsSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true'", soupName, idField, soupName, soupName, LOCAL);
+    public SortedSet<String> getDirtyRecordIds(String soupName, String idField) throws JSONException {
+        SortedSet<String> ids = new TreeSet<String>();
+        String dirtyRecordsSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true' ORDER BY {%s:%s} ASC", soupName, idField, soupName, soupName, LOCAL, soupName, idField);
         final QuerySpec smartQuerySpec = QuerySpec.buildSmartQuerySpec(dirtyRecordsSql, PAGE_SIZE);
         boolean hasMore = true;
         for (int pageIndex = 0; hasMore; pageIndex++) {
             JSONArray results = smartStore.query(smartQuerySpec, pageIndex);
             hasMore = (results.length() == PAGE_SIZE);
-            idsToSkip.addAll(toSet(results));
+            ids.addAll(toSortedSet(results));
         }
-        return idsToSkip;
+        return ids;
     }
 
     /**
