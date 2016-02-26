@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2105, salesforce.com, inc.
+ * Copyright (c) 2014-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,19 +26,7 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import org.apache.http.HttpStatus;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -60,7 +48,19 @@ import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
-import android.util.Log;
+import org.apache.http.HttpStatus;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Sync Manager
@@ -95,7 +95,7 @@ public class SyncManager {
      * @param smartStore
      */
     private SyncManager(SmartStore smartStore, RestClient restClient) {
-        apiVersion = ApiVersionStrings.VERSION_NUMBER;
+        apiVersion = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
         this.smartStore = smartStore;
         this.restClient = restClient;
         SyncState.setupSyncsSoupIfNeeded(smartStore);

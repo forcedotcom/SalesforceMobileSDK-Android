@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, salesforce.com, inc.
+ * Copyright (c) 2011-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,25 +26,6 @@
  */
 package com.salesforce.samples.restexplorer;
 
-import java.io.UnsupportedEncodingException;
-import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.message.BasicNameValuePair;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -63,6 +44,7 @@ import android.widget.TextView;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -75,6 +57,24 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.message.BasicNameValuePair;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Main activity for REST explorer.
@@ -103,7 +103,7 @@ public class ExplorerActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-		apiVersion = getString(R.string.api_version);
+		apiVersion = ApiVersionStrings.getVersionNumber(this);
 		setContentView(R.layout.explorer);
 		tabHost = (TabHost) findViewById(android.R.id.tabhost);
 		tabHost.setup();
@@ -438,7 +438,7 @@ public class ExplorerActivity extends Activity {
 		try {
 			final EditText editText = (EditText) findViewById(R.id.manual_request_path_text);
 			final String hintText = String.format(getResources().getString(R.string.path_hint),
-					getResources().getString(R.string.api_version));
+					ApiVersionStrings.getVersionNumber(this));
 			editText.setHint(hintText);
 			final String path = editText.getText().toString();
 			final HttpEntity paramsEntity = getParamsEntity(R.id.manual_request_params_text);
@@ -460,7 +460,7 @@ public class ExplorerActivity extends Activity {
     public void onSearchScopeAndOrderClick(View v) {
         RestRequest request = null;
         try {
-            request = RestRequest.getRequestForSearchScopeAndOrder(getResources().getString(R.string.api_version));
+            request = RestRequest.getRequestForSearchScopeAndOrder(ApiVersionStrings.getVersionNumber(this));
         } catch (UnsupportedEncodingException e) {
             printHeader("Could not build search scope and order request");
             printException(e);
@@ -478,7 +478,7 @@ public class ExplorerActivity extends Activity {
         RestRequest request = null;
         final List<String> objectList = parseCommaSeparatedList(R.id.search_result_layout_object_list_text);
         try {
-            request = RestRequest.getRequestForSearchResultLayout(getResources().getString(R.string.api_version), objectList);
+            request = RestRequest.getRequestForSearchResultLayout(ApiVersionStrings.getVersionNumber(this), objectList);
         } catch (UnsupportedEncodingException e) {
             printHeader("Could not build search result layout request");
             printException(e);

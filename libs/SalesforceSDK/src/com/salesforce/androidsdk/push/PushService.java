@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -366,7 +366,7 @@ public class PushService extends IntentService {
     	fields.put(SERVICE_TYPE, ANDROID_GCM);
     	try {
     		final RestClient client = getRestClient(account);
-        	final RestRequest req = RestRequest.getRequestForCreate(ApiVersionStrings.VERSION_NUMBER,
+        	final RestRequest req = RestRequest.getRequestForCreate(ApiVersionStrings.getVersionNumber(context),
         			MOBILE_PUSH_SERVICE_DEVICE, fields);
         	if (client != null) {
             	final RestResponse res = client.sendSync(req);
@@ -405,7 +405,7 @@ public class PushService extends IntentService {
      */
     private boolean unregisterSFDCPushNotification(String registeredId,
     		UserAccount account) {
-    	final RestRequest req = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER,
+    	final RestRequest req = RestRequest.getRequestForDelete(ApiVersionStrings.getVersionNumber(context),
     			MOBILE_PUSH_SERVICE_DEVICE, registeredId);
     	try {
     		final RestClient client = getRestClient(account);

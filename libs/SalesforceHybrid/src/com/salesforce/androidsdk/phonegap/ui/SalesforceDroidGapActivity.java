@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, salesforce.com, inc.
+ * Copyright (c) 2011-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -86,10 +86,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     private static final String ACCESS_TOKEN = "accessToken";
     private static final String COMMUNITY_ID = "communityId";
     private static final String COMMUNITY_URL = "communityUrl";
-	
-    // Used in refresh REST call
-    private static final String API_VERSION = ApiVersionStrings.VERSION_NUMBER;
-	
+
 	// Rest client
     private RestClient client;
 	private ClientManager clientManager;
@@ -316,7 +313,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
                      * but a stale session ID will cause the WebView to redirect
                      * to the web login.
                      */
-	                SalesforceDroidGapActivity.this.client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
+	                SalesforceDroidGapActivity.this.client.sendAsync(RestRequest.getRequestForResources(ApiVersionStrings.getVersionNumber(SalesforceDroidGapActivity.this)), new AsyncRequestCallback() {
 
                         @Override
                         public void onSuccess(RestRequest request, RestResponse response) {
@@ -352,7 +349,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
      */
     public void refresh(final String url) {
         Log.i("SalesforceDroidGapActivity.refresh", "refresh called");
-        client.sendAsync(RestRequest.getRequestForResources(API_VERSION), new AsyncRequestCallback() {
+        client.sendAsync(RestRequest.getRequestForResources(ApiVersionStrings.getVersionNumber(this)), new AsyncRequestCallback() {
 
 			@Override
 			public void onSuccess(RestRequest request, RestResponse response) {

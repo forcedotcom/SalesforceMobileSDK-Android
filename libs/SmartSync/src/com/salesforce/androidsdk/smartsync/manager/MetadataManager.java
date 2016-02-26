@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,18 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -56,6 +44,18 @@ import com.salesforce.androidsdk.smartsync.model.SalesforceObjectType;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObjectTypeLayout;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * This class contains APIs to fetch Salesforce object metadata, recently used
@@ -176,7 +176,7 @@ public class MetadataManager {
      * @param communityId Community ID.
      */
     private MetadataManager(UserAccount account, String communityId) {
-        apiVersion = ApiVersionStrings.VERSION_NUMBER;
+        apiVersion = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
         this.communityId = communityId;
         cacheManager = CacheManager.getInstance(account, communityId);
         restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
