@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2011-2014, salesforce.com, inc.
- * All rights reserved.
+ * Copyright (c) 2011-2016, salesforce.com, inc.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
  * are met:
@@ -26,18 +25,6 @@
  */
 package com.salesforce.samples.restexplorer;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.ProtocolVersion;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.message.BasicHttpResponse;
-import org.apache.http.message.BasicStatusLine;
-import org.apache.http.util.EntityUtils;
-
 import android.app.AlertDialog;
 import android.content.Context;
 import android.test.ActivityInstrumentationTestCase2;
@@ -57,6 +44,17 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
+
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.ProtocolVersion;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.message.BasicHttpResponse;
+import org.apache.http.message.BasicStatusLine;
+import org.apache.http.util.EntityUtils;
+
+import java.io.IOException;
 
 import javax.net.ssl.HttpsURLConnection;
 
@@ -238,14 +236,14 @@ public class ExplorerActivityTest extends
      * Test going to resources tab - check UI and click "Go".
      */
     public void testGetResources() {
-        gotoTabAndRunAction(RESOURCES_TAB, R.id.resources_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/]");
+        gotoTabAndRunAction(RESOURCES_TAB, R.id.resources_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/]");
     }
 
     /**
      * Test going to describe global tab - check UI and click "Go".
      */
     public void testDescribeGlobal() {
-        gotoTabAndRunAction(DESCRIBE_GLOBAL_TAB, R.id.describe_global_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/]");
+        gotoTabAndRunAction(DESCRIBE_GLOBAL_TAB, R.id.describe_global_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/]");
     }
 
     /**
@@ -258,7 +256,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.metadata_object_type_text, "objTypeMetadata");
             }
         };
-        gotoTabAndRunAction(METADATA_TAB, R.id.metadata_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeMetadata/]");
+        gotoTabAndRunAction(METADATA_TAB, R.id.metadata_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeMetadata/]");
     }
 
     /**
@@ -271,7 +269,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.describe_object_type_text, "objTypeDescribe");
             }
         };
-        gotoTabAndRunAction(DESCRIBE_TAB, R.id.describe_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeDescribe/describe/]");
+        gotoTabAndRunAction(DESCRIBE_TAB, R.id.describe_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeDescribe/describe/]");
     }
 
     /**
@@ -285,7 +283,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.create_fields_text, "{\"field1\":\"create1\",\"field2\":\"create2\"}");
             }
         };
-        gotoTabAndRunAction(CREATE_TAB, R.id.create_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeCreate {\"field1\":\"create1\",\"field2\":\"create2\"}]");
+        gotoTabAndRunAction(CREATE_TAB, R.id.create_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeCreate {\"field1\":\"create1\",\"field2\":\"create2\"}]");
     }
 
     /**
@@ -300,7 +298,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.retrieve_field_list_text, "field1,field2");
             }
         };
-        gotoTabAndRunAction(RETRIEVE_TAB, R.id.retrieve_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeRetrieve/objIdRetrieve?fields=field1%2Cfield2]");
+        gotoTabAndRunAction(RETRIEVE_TAB, R.id.retrieve_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeRetrieve/objIdRetrieve?fields=field1%2Cfield2]");
     }
 
 
@@ -316,7 +314,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.update_fields_text, "{\"field1\":\"update1\",\"field2\":\"update2\"}");
             }
         };
-        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpdate/objIdUpdate?_HttpMethod=PATCH {\"field1\":\"update1\",\"field2\":\"update2\"}]");
+        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeUpdate/objIdUpdate?_HttpMethod=PATCH {\"field1\":\"update1\",\"field2\":\"update2\"}]");
     }
 
     /**
@@ -332,7 +330,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.upsert_fields_text, "{\"field1\":\"upsert1\",\"field2\":\"upsert2\"}");
             }
         };
-        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeUpsert/extIdField/extId?_HttpMethod=PATCH {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
+        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeUpsert/extIdField/extId?_HttpMethod=PATCH {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
     }
 
     /**
@@ -346,7 +344,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.delete_object_id_text, "objIdDelete");
             }
         };
-        gotoTabAndRunAction(DELETE_TAB, R.id.delete_button, "Go", extraSetup, "[DELETE " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/objTypeDelete/objIdDelete]");
+        gotoTabAndRunAction(DELETE_TAB, R.id.delete_button, "Go", extraSetup, "[DELETE " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeDelete/objIdDelete]");
     }
 
 
@@ -360,7 +358,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.query_soql_text, "fake query");
             }
         };
-        gotoTabAndRunAction(QUERY_TAB, R.id.query_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/query?q=fake+query]");
+        gotoTabAndRunAction(QUERY_TAB, R.id.query_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/query?q=fake+query]");
     }
 
 
@@ -374,7 +372,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.search_sosl_text, "fake search");
             }
         };
-        gotoTabAndRunAction(SEARCH_TAB, R.id.search_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/search?q=fake+search]");
+        gotoTabAndRunAction(SEARCH_TAB, R.id.search_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/search?q=fake+search]");
     }
 
 
@@ -397,7 +395,7 @@ public class ExplorerActivityTest extends
      * Test going to search scope and order tab - check UI and click "Go".
      */
     public void testSearchScopeAndOrderTab() {
-        gotoTabAndRunAction(SEARCH_SCOPE_AND_ORDER_TAB, R.id.search_scope_and_order_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/search/scopeOrder]");
+        gotoTabAndRunAction(SEARCH_SCOPE_AND_ORDER_TAB, R.id.search_scope_and_order_button, "Go", null, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/search/scopeOrder]");
     }
 
     /**
@@ -410,7 +408,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.search_result_layout_object_list_text, "Account,Contact");
             }
         };
-        gotoTabAndRunAction(SEARCH_RESULT_LAYOUT_TAB, R.id.search_result_layout_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/search/layout?q=Account%2CContact]");
+        gotoTabAndRunAction(SEARCH_RESULT_LAYOUT_TAB, R.id.search_result_layout_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/search/layout?q=Account%2CContact]");
     }
 
     /**
@@ -424,7 +422,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.owned_files_list_page_text, "0");
             }
         };
-        gotoTabAndRunAction(OWNED_FILES_LIST_TAB, R.id.owned_files_list_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/users/filesOwnedByUserId/files?page=0]");
+        gotoTabAndRunAction(OWNED_FILES_LIST_TAB, R.id.owned_files_list_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/users/filesOwnedByUserId/files?page=0]");
     }
 
     /**
@@ -438,7 +436,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.files_in_users_groups_page_text, "0");
             }
         };
-        gotoTabAndRunAction(FILES_IN_USERS_GROUPS_TAB, R.id.files_in_users_groups_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/users/filesInUsersGroupsId/files/filter/groups?page=0]");
+        gotoTabAndRunAction(FILES_IN_USERS_GROUPS_TAB, R.id.files_in_users_groups_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/users/filesInUsersGroupsId/files/filter/groups?page=0]");
     }
 
     /**
@@ -452,7 +450,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.files_shared_with_user_page_text, "0");
             }
         };
-        gotoTabAndRunAction(FILES_SHARED_WITH_USER_TAB, R.id.files_shared_with_user_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/users/fileSharedWithUserId/files/filter/sharedwithme?page=0]");
+        gotoTabAndRunAction(FILES_SHARED_WITH_USER_TAB, R.id.files_shared_with_user_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/users/fileSharedWithUserId/files/filter/sharedwithme?page=0]");
     }
 
     /**
@@ -466,7 +464,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.file_details_version_text, "1");
             }
         };
-        gotoTabAndRunAction(FILE_DETAILS_TAB, R.id.file_details_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/files/detailsForFileId?versionNumber=1]");
+        gotoTabAndRunAction(FILE_DETAILS_TAB, R.id.file_details_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/files/detailsForFileId?versionNumber=1]");
     }
 
     /**
@@ -479,7 +477,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.batch_file_details_document_id_list_text, "fileId1,fileId2");
             }
         };
-        gotoTabAndRunAction(BATCH_FILE_DETAILS_TAB, R.id.batch_file_details_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/files/batch/fileId1,fileId2]");
+        gotoTabAndRunAction(BATCH_FILE_DETAILS_TAB, R.id.batch_file_details_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/files/batch/fileId1,fileId2]");
     }
 
     /**
@@ -493,7 +491,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.file_shares_page_text, "0");
             }
         };
-        gotoTabAndRunAction(FILE_SHARES_TAB, R.id.file_shares_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/files/sharesForFileId/file-shares?page=0]");
+        gotoTabAndRunAction(FILE_SHARES_TAB, R.id.file_shares_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/files/sharesForFileId/file-shares?page=0]");
     }
 
     /**
@@ -508,7 +506,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.add_file_share_share_type_text, "shareType");
             }
         };
-        gotoTabAndRunAction(ADD_FILE_SHARE_TAB, R.id.add_file_share_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/ContentDocumentLink {\"ContentDocumentId\":\"objectIdForAdd\",\"LinkedEntityId\":\"entityIdForAdd\",\"ShareType\":\"shareType\"}]");
+        gotoTabAndRunAction(ADD_FILE_SHARE_TAB, R.id.add_file_share_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/ContentDocumentLink {\"ContentDocumentId\":\"objectIdForAdd\",\"LinkedEntityId\":\"entityIdForAdd\",\"ShareType\":\"shareType\"}]");
     }
 
     /**
@@ -521,7 +519,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.delete_file_share_share_id_text, "shareIdToDelete");
            }
         };
-        gotoTabAndRunAction(DELETE_FILE_SHARE_TAB, R.id.delete_file_share_button, "Go", extraSetup, "[DELETE " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/sobjects/ContentDocumentLink/shareIdToDelete]");
+        gotoTabAndRunAction(DELETE_FILE_SHARE_TAB, R.id.delete_file_share_button, "Go", extraSetup, "[DELETE " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/ContentDocumentLink/shareIdToDelete]");
     }
 
     /**

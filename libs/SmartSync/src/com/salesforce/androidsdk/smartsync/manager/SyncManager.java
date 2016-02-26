@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2105, salesforce.com, inc.
+ * Copyright (c) 2014-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -97,7 +97,7 @@ public class SyncManager {
      * @param smartStore
      */
     private SyncManager(SmartStore smartStore, RestClient restClient) {
-        apiVersion = ApiVersionStrings.VERSION_NUMBER;
+        apiVersion = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
         this.smartStore = smartStore;
         this.restClient = restClient;
         SyncState.setupSyncsSoupIfNeeded(smartStore);

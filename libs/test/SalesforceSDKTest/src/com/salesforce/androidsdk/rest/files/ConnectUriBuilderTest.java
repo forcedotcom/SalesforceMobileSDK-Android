@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2013-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,14 +26,16 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
+import android.net.Uri;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 
 import junit.framework.TestCase;
-import android.net.Uri;
 
 public class ConnectUriBuilderTest extends TestCase {
 
-    private final String connectPath = "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/";
+    private final String connectPath = "/services/data/" + ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()) + "/chatter/";
 	
     public void testBasePath() {
         assertEquals(connectPath, new ConnectUriBuilder().toString());

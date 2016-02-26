@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, salesforce.com, inc.
+ * Copyright (c) 2014-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -832,7 +832,7 @@ public class SyncManagerTest extends ManagerTestCase {
 			String name = createAccountName();
 			Map<String, Object> fields = new HashMap<String, Object>();
 			fields.put(Constants.NAME, name);
-			RestRequest request = RestRequest.getRequestForCreate(ApiVersionStrings.VERSION_NUMBER, Constants.ACCOUNT, fields);
+			RestRequest request = RestRequest.getRequestForCreate(ApiVersionStrings.getVersionNumber(targetContext), Constants.ACCOUNT, fields);
 			// Response
 			RestResponse response = restClient.sendSync(request);
 			String id = response.asJSONObject().getString(LID);
@@ -848,7 +848,7 @@ public class SyncManagerTest extends ManagerTestCase {
 	 */
 	private void deleteAccountsOnServer(String[] ids) throws Exception {
 		for (String id : ids) {
-			RestRequest request = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER, Constants.ACCOUNT, id);
+            RestRequest request = RestRequest.getRequestForDelete(ApiVersionStrings.getVersionNumber(targetContext), Constants.ACCOUNT, id);
 			restClient.sendSync(request);
 		}
 	}
@@ -957,7 +957,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
             Map<String, Object> fields = new HashMap<String, Object>();
             fields.put(Constants.NAME, updatedName);
-            RestRequest request = RestRequest.getRequestForUpdate(ApiVersionStrings.VERSION_NUMBER, Constants.ACCOUNT, id, fields);
+            RestRequest request = RestRequest.getRequestForUpdate(ApiVersionStrings.getVersionNumber(targetContext), Constants.ACCOUNT, id, fields);
             // Response
             RestResponse response = restClient.sendSync(request);
             assertTrue("Updated failed", response.isSuccess());
@@ -1038,7 +1038,7 @@ public class SyncManagerTest extends ManagerTestCase {
      */
     private void checkServer(Map<String, String> idToNames) throws IOException, JSONException {
         String soql = "SELECT Id, Name FROM Account WHERE Id IN " + makeInClause(idToNames.keySet());
-        RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.VERSION_NUMBER, soql);
+        RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(targetContext), soql);
         JSONObject idToNamesFromServer = new JSONObject();
         RestResponse response = restClient.sendSync(request);
         JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
@@ -1056,7 +1056,7 @@ public class SyncManagerTest extends ManagerTestCase {
      */
     private void checkServerDeleted(String[] ids) throws IOException, JSONException {
         String soql = "SELECT Id, Name FROM Account WHERE Id IN " + makeInClause(ids);
-        RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.VERSION_NUMBER, soql);
+        RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(targetContext), soql);
         RestResponse response = restClient.sendSync(request);
         JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
         assertEquals("No accounts should have been returned from server", 0, records.length());
