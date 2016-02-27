@@ -1,6 +1,6 @@
 buildscript {
   repositories {
-    mavenCentral()
+    jcenter()
   }
 
   dependencies {
@@ -12,6 +12,6 @@ allprojects {
   group = 'com.salesforce.androidsdk'
   
   repositories {
-    mavenCentral()
+    jcenter()
   }
 }
