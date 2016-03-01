@@ -1,5 +1,5 @@
 
-apply plugin: 'android-library'
+apply plugin: 'com.android.library'
 
 dependencies {
   compile project(':libs:SmartStore')
@@ -38,7 +38,7 @@ android {
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
   }
-  
+
   lintOptions {
     abortOnError false
   }
