@@ -30,15 +30,6 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.salesforce.androidsdk.auth.HttpAccess.Execution;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.protocol.HTTP;
-import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 

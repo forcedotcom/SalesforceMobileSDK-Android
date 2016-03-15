@@ -26,13 +26,6 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.List;
-
-import org.apache.http.client.ClientProtocolException;
-
 import android.accounts.AbstractAccountAuthenticator;
 import android.accounts.Account;
 import android.accounts.AccountAuthenticatorResponse;
@@ -50,6 +43,11 @@ import android.util.Log;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
 
 /**
  * The service used for taking care of authentication for a Salesforce-based application.

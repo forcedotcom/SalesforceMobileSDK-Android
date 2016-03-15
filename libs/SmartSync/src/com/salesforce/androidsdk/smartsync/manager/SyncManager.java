@@ -560,7 +560,7 @@ public class SyncManager {
 		if (headers == null)
 			headers = new HashMap<String, String>();
 		headers.put(HttpAccess.USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC));
-		return restClient.sendSync(restRequest.getMethod(), restRequest.getPath(), restRequest.getRequestEntity(), headers);
+		return restClient.sendSync(restRequest.getMethod(), restRequest.getPath(), restRequest.getRequestBody(), headers);
 	}
 
 	/**
