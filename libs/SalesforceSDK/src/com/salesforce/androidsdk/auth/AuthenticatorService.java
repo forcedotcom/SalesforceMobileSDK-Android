@@ -171,6 +171,8 @@ public class AuthenticatorService extends Service {
                             Account account,
                             String authTokenType,
                             Bundle options) throws NetworkErrorException {
+            final String TAG = "Auth..Ser..:getAuthT..";
+
             final AccountManager mgr = AccountManager.get(context);
             final String passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
             final String refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), passcodeHash);
@@ -276,18 +278,15 @@ public class AuthenticatorService extends Service {
                 	encrCommunityUrl = SalesforceSDKManager.encryptWithPasscode(communityUrl, passcodeHash);
                 }
                 resBundle.putString(AuthenticatorService.KEY_COMMUNITY_URL, encrCommunityUrl);
-            } catch (ClientProtocolException e) {
-                Log.w("Authenticator:getAuthToken", "", e);
-                throw new NetworkErrorException(e);
             } catch (IOException e) {
-                Log.w("Authenticator:getAuthToken", "", e);
+                Log.w(TAG, "", e);
                 throw new NetworkErrorException(e);
             } catch (URISyntaxException e) {
-                Log.w("Authenticator:getAuthToken", "", e);
+                Log.w(TAG, "", e);
                 throw new NetworkErrorException(e);
             } catch (OAuthFailedException e) {
                 if (e.isRefreshTokenInvalid()) {
-                	Log.i("Authenticator:getAuthToken", "Invalid Refresh Token: (Error: " + e.response.error + ", Status Code: " + e.httpStatusCode + ")");
+                	Log.i(TAG, "Invalid Refresh Token: (Error: " + e.response.error + ", Status Code: " + e.httpStatusCode + ")");
                     // the exception explicitly indicates that the refresh token is no longer valid.
                     return makeAuthIntentBundle(response, options);
                 }

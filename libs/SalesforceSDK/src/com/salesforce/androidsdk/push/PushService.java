@@ -49,10 +49,10 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 
-import org.apache.http.HttpStatus;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -379,12 +379,12 @@ public class PushService extends IntentService {
             	 * are not enabled for this connected app, which means we
             	 * should not attempt to re-register a few minutes later.
             	 */
-            	if (res.getStatusCode() == HttpStatus.SC_CREATED) {
+            	if (res.getStatusCode() == HttpURLConnection.HTTP_CREATED) {
             		final JSONObject obj = res.asJSONObject();
             		if (obj != null) {
             			id = obj.getString(FIELD_ID);
             		}
-            	} else if (res.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+            	} else if (res.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
             		id = NOT_ENABLED;
             	}
             	res.consume();
@@ -411,7 +411,7 @@ public class PushService extends IntentService {
     		final RestClient client = getRestClient(account);
     		if (client != null) {
             	final RestResponse res = client.sendSync(req);
-            	if (res.getStatusCode() == HttpStatus.SC_NO_CONTENT) {
+            	if (res.getStatusCode() == HttpURLConnection.HTTP_NO_CONTENT) {
             		return true;
             	}
             	res.consume();

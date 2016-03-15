@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -29,23 +29,23 @@ package com.salesforce.androidsdk.rest;
 import android.util.Log;
 
 import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.auth.OAuth2;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.ConnectionSpec;
+import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import okhttp3.TlsVersion;
 
 /**
  * RestClient allows you to send authenticated HTTP requests to a force.com server.
@@ -54,7 +54,8 @@ public class RestClient {
 
     private static Map<String, OkHttpClient> OK_CLIENTS;
 	private ClientInfo clientInfo;
-    private SalesforceHttpInterceptor httpInterceptor;
+    private HttpAccess httpAccessor;
+    private OAuthRefreshInterceptor httpInterceptor;
 	private OkHttpClient okHttpClient;
 
 	/** 
@@ -90,11 +91,12 @@ public class RestClient {
      * @param authTokenProvider
 	 */
 	public RestClient(ClientInfo clientInfo, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
-		this(clientInfo, new SalesforceHttpInterceptor(clientInfo, authToken, httpAccessor, authTokenProvider));
+		this(clientInfo, httpAccessor, new OAuthRefreshInterceptor(clientInfo, authToken, authTokenProvider));
 	}
 
-	public RestClient(ClientInfo clientInfo, SalesforceHttpInterceptor httpInterceptor) {
+	public RestClient(ClientInfo clientInfo, HttpAccess httpAccessor, OAuthRefreshInterceptor httpInterceptor) {
 		this.clientInfo = clientInfo;
+        this.httpAccessor = httpAccessor;
         this.httpInterceptor = httpInterceptor;
 		setOkHttpClient();
 	}
@@ -106,21 +108,16 @@ public class RestClient {
 	 */
 	private synchronized void setOkHttpClient() {
 		if (OK_CLIENTS == null) {
-			OK_CLIENTS = new HashMap<String, OkHttpClient>();
+			OK_CLIENTS = new HashMap<>();
 		}
 		final String uniqueId = clientInfo.buildUniqueId();
 		OkHttpClient okHttpClient = null;
 		if (uniqueId != null) {
 			okHttpClient = OK_CLIENTS.get(uniqueId);
 			if (okHttpClient == null) {
-				ConnectionSpec connectionSpec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-						.tlsVersions(TlsVersion.TLS_1_1, TlsVersion.TLS_1_2)
-						.build();
-
-				okHttpClient = new OkHttpClient.Builder()
-						.connectionSpecs(Collections.singletonList(connectionSpec))
+				okHttpClient = httpAccessor.getOkHttpClientBuilder()
                         .addNetworkInterceptor(httpInterceptor)
-						.build();
+                        .build();
 
                 OK_CLIENTS.put(uniqueId, okHttpClient);
 			}
@@ -180,13 +177,15 @@ public class RestClient {
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
 
         // Adding addition headers
-        for (Map.Entry<String, String> entry : restRequest.getAdditionalHttpHeaders().entrySet()) {
-            builder.addHeader(entry.getKey(), entry.getValue());
+        final Map<String, String> additionalHttpHeaders = restRequest.getAdditionalHttpHeaders();
+        if (additionalHttpHeaders != null) {
+            for (Map.Entry<String, String> entry : additionalHttpHeaders.entrySet()) {
+                builder.addHeader(entry.getKey(), entry.getValue());
+            }
         }
 
         return builder.build();
     }
-
 
 	/**
 	 * Send the given restRequest and process the result asynchronously with the given callback.
@@ -425,150 +424,143 @@ public class RestClient {
                 uri = new URI(path);
             }
             catch (URISyntaxException e) {
-                Log.e("UnauthenticatedClientInfo: resolveUrl",
-                        "URISyntaxException thrown on URL: " + path);
+                Log.e("UnauthenticatedC...Info",
+                        "resolveUrl URISyntaxException thrown on URL: " + path);
             }
 
             return uri;
         }
     }
 
-	public static class SalesforceHttpInterceptor implements Interceptor {
+    /**
+     * Network interceptor that does oauth refresh and request retry when access token has expired
+     */
+    public static class OAuthRefreshInterceptor implements Interceptor {
 
-		private final AuthTokenProvider authTokenProvider;
-		private HttpAccess httpAccessor;
-		private String authToken;
-		private ClientInfo clientInfo;
+        private final AuthTokenProvider authTokenProvider;
+        private String authToken;
+        private ClientInfo clientInfo;
 
-		/**
-		 * Constructs a SalesforceHttpInterceptor with the given clientInfo, authToken, httpAccessor and authTokenProvider.
-		 * When it gets a 401 (not authorized) response from the server:
-		 * <ul>
-		 * <li> If authTokenProvider is not null, it will ask the authTokenProvider for a new access token and retry the request a second time.</li>
-		 * <li> Otherwise it will return the 401 response.</li>
-		 * </ul>
-		 * @param clientInfo
-		 * @param authToken
-		 * @param httpAccessor
-		 * @param authTokenProvider
-		 */
-		public SalesforceHttpInterceptor(ClientInfo clientInfo, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
-			this.clientInfo = clientInfo;
-			this.authToken = authToken;
-			this.httpAccessor = httpAccessor;
-			this.authTokenProvider = authTokenProvider;
-		}
+        /**
+         * Constructs a SalesforceHttpInterceptor with the given clientInfo, authToken, httpAccessor and authTokenProvider.
+         * When it gets a 401 (not authorized) response from the server:
+         * <ul>
+         * <li> If authTokenProvider is not null, it will ask the authTokenProvider for a new access token and retry the request a second time.</li>
+         * <li> Otherwise it will return the 401 response.</li>
+         * </ul>
+         *
+         * @param clientInfo
+         * @param authToken
+         * @param authTokenProvider
+         */
+        public OAuthRefreshInterceptor(ClientInfo clientInfo, String authToken, AuthTokenProvider authTokenProvider) {
+            this.clientInfo = clientInfo;
+            this.authToken = authToken;
+            this.authTokenProvider = authTokenProvider;
+        }
 
 
-		@Override
-		public Response intercept(Chain chain) throws IOException {
-			Request request = chain.request();
+        @Override
+        public Response intercept(Chain chain) throws IOException {
+            Request request = chain.request();
 
-			// Build new request
-			Request.Builder builder = request.newBuilder();
+            // Build new request
+            Request.Builder builder = request.newBuilder();
 
             // Set auth and user agent headers
             setAuthHeader(builder);
-            setUserAgentHeader(builder);
 
-			request = builder.build(); // overwrite old request
-			Response response = chain.proceed(request); // perform request, here original request will be executed
+            request = builder.build(); // overwrite old request
+            Response response = chain.proceed(request); // perform request, here original request will be executed
 
-			if (response.code() == 401) { // if unauthorized
-				refreshAccessToken(response);
+            if (response.code() == HttpURLConnection.HTTP_UNAUTHORIZED) { // if unauthorized
+                refreshAccessToken(response);
                 if (getAuthToken() != null) {
                     setAuthHeader(builder);
                     request = builder.build();
                     response = chain.proceed(request); // repeat request with new token
                 }
-			}
+            }
 
-			return response;
-		}
+            return response;
+        }
 
-		/**
-		 * @return The authToken for this RestClient.
-		 */
-		public synchronized String getAuthToken() {
-			return authToken;
-		}
+        /**
+         * @return The authToken for this RestClient.
+         */
+        public synchronized String getAuthToken() {
+            return authToken;
+        }
 
         /**
          * Set auth header
+         *
          * @param builder
          */
         private void setAuthHeader(Request.Builder builder) {
             if (authToken != null) //Add Auth token to each request if authorized
-                builder.header("Authorization", String.format("Bearer %s", authToken));
+                OAuth2.addAuthorizationHeader(builder, authToken);
         }
 
         /**
-         * Set user agent header
-         * @param builder
+         * Change authToken for this RestClient
+         *
+         * @param newAuthToken
          */
-        private void setUserAgentHeader(Request.Builder builder) {
-            builder.addHeader(HttpAccess.USER_AGENT, httpAccessor.getUserAgent());
+        private synchronized void setAuthToken(String newAuthToken) {
+            authToken = newAuthToken;
         }
 
-		/**
-		 * Change authToken for this RestClient
-		 * @param newAuthToken
-		 */
-		private synchronized void setAuthToken(String newAuthToken) {
-			authToken = newAuthToken;
-		}
+        /**
+         * @return The refresh token, if available.
+         */
+        public String getRefreshToken() {
+            return (authTokenProvider != null ? authTokenProvider.getRefreshToken() : null);
+        }
 
-		/**
-		 * @return The refresh token, if available.
-		 */
-		public String getRefreshToken() {
-			return (authTokenProvider != null ? authTokenProvider.getRefreshToken() : null);
-		}
+        /**
+         * @return Elapsed time (ms) since the last refresh.
+         */
+        public long getElapsedTimeSinceLastRefresh() {
+            long lastRefreshTime = (authTokenProvider != null ? authTokenProvider.getLastRefreshTime() : -1);
+            if (lastRefreshTime < 0) {
+                return -1;
+            } else {
+                return System.currentTimeMillis() - lastRefreshTime;
+            }
+        }
 
-		/**
-		 * @return Elapsed time (ms) since the last refresh.
-		 */
-		public long getElapsedTimeSinceLastRefresh() {
-			long lastRefreshTime = (authTokenProvider != null ? authTokenProvider.getLastRefreshTime() : -1);
-			if (lastRefreshTime < 0) {
-				return -1;
-			}
-			else {
-				return System.currentTimeMillis() - lastRefreshTime;
-			}
-		}
+        /**
+         * Swaps the existing access token for a new one.
+         */
+        private void refreshAccessToken(Response response) throws IOException {
+            // If we haven't retried already and we have an accessTokenProvider
+            // Then let's try to get a new authToken
+            if (authTokenProvider != null) {
+                final String newAuthToken = authTokenProvider.getNewAuthToken();
+                if (newAuthToken != null) {
+                    setAuthToken(newAuthToken);
+                }
 
-		/**
-		 * Swaps the existing access token for a new one.
-		 */
-		private void refreshAccessToken(Response response) throws IOException {
-			// If we haven't retried already and we have an accessTokenProvider
-			// Then let's try to get a new authToken
-			if (authTokenProvider != null) {
-				final String newAuthToken = authTokenProvider.getNewAuthToken();
-				if (newAuthToken != null) {
-					setAuthToken(newAuthToken);
-				}
-
-				// Check if the instanceUrl changed
-				String instanceUrl = authTokenProvider.getInstanceUrl();
-				if (instanceUrl == null) {
-					throw new IOException("Instance URL is null");
-				}
-				if (!clientInfo.instanceUrl.toString().equalsIgnoreCase(instanceUrl)) {
-					try {
-						// Create a new ClientInfo
-						clientInfo = new ClientInfo(clientInfo.clientId, new URI(instanceUrl),
-								clientInfo.loginUrl, clientInfo.identityUrl,
-								clientInfo.accountName, clientInfo.username,
-								clientInfo.userId, clientInfo.orgId, clientInfo.communityId,
-								clientInfo.communityUrl, clientInfo.firstName, clientInfo.lastName,
-								clientInfo.displayName, clientInfo.email, clientInfo.photoUrl, clientInfo.thumbnailUrl);
-					} catch (URISyntaxException ex) {
-						Log.w("RestClient", "Invalid server URL", ex);
-					}
-				}
-			}
-		}
-	}
+                // Check if the instanceUrl changed
+                String instanceUrl = authTokenProvider.getInstanceUrl();
+                if (instanceUrl == null) {
+                    throw new IOException("Instance URL is null");
+                }
+                if (!clientInfo.instanceUrl.toString().equalsIgnoreCase(instanceUrl)) {
+                    try {
+                        // Create a new ClientInfo
+                        clientInfo = new ClientInfo(clientInfo.clientId, new URI(instanceUrl),
+                                clientInfo.loginUrl, clientInfo.identityUrl,
+                                clientInfo.accountName, clientInfo.username,
+                                clientInfo.userId, clientInfo.orgId, clientInfo.communityId,
+                                clientInfo.communityUrl, clientInfo.firstName, clientInfo.lastName,
+                                clientInfo.displayName, clientInfo.email, clientInfo.photoUrl, clientInfo.thumbnailUrl);
+                    } catch (URISyntaxException ex) {
+                        Log.w("RestClient", "Invalid server URL", ex);
+                    }
+                }
+            }
+        }
+    }
 }

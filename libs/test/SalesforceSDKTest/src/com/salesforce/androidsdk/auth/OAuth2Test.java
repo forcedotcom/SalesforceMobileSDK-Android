@@ -26,6 +26,13 @@
  */
 package com.salesforce.androidsdk.auth;
 
+import android.test.InstrumentationTestCase;
+
+import com.salesforce.androidsdk.TestCredentials;
+import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
+import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
+import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -33,18 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-
-import org.apache.http.HttpStatus;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
-
-import android.test.InstrumentationTestCase;
-
-import com.salesforce.androidsdk.TestCredentials;
-import com.salesforce.androidsdk.auth.HttpAccess.Execution;
-import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
-import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
-import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 
 /**
  * Tests for OAuth2

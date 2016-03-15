@@ -33,6 +33,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -71,7 +72,7 @@ public class RestRequest {
 	/**
 	 * utf_8 charset
 	 */
-	public static final String UTF_8 = Charsets.UTF_8.toString();
+	public static final String UTF_8 = StandardCharsets.UTF_8.name();
 
 	/**
 	 * Enumeration for all HTTP methods.

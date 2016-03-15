@@ -95,6 +95,13 @@ public class RestResponse {
 	}
 
 	/**
+	 * @return true for response with 2xx status codes
+	 */
+	public static boolean isSuccess(int statusCode) {
+		return statusCode / 100 == 2;
+	}
+
+	/**
 	 * Fully consume response entity content and closes content stream
 	 * Must be called before returning control to the UI thread
 	 * @throws IOException 
@@ -136,7 +143,7 @@ public class RestResponse {
 	 * @throws IOException
 	 */
 	public byte[] asBytes() throws IOException {
-		response.body().bytes();
+		responseAsBytes = response.body().bytes();
 		if (responseAsBytes == null) {
 			consume();
 		}

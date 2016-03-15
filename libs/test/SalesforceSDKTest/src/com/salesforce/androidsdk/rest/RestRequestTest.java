@@ -26,6 +26,14 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
+import com.salesforce.androidsdk.util.test.JSONTestHelper;
+
+import junit.framework.TestCase;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
@@ -34,15 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
-import org.apache.http.ParseException;
-import org.apache.http.util.EntityUtils;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
-import com.salesforce.androidsdk.util.test.JSONTestHelper;
+import okio.Buffer;
 
 public class RestRequestTest extends TestCase {
 	
@@ -130,13 +130,12 @@ public class RestRequestTest extends TestCase {
 	 * @throws IOException 
 	 * @throws UnsupportedEncodingException 
 	 * @throws JSONException 
-	 * @throws ParseException 
 	 */
-	public void testGetRequestForCreate() throws UnsupportedEncodingException, IOException, ParseException, JSONException {
+	public void testGetRequestForCreate() throws UnsupportedEncodingException, IOException, JSONException {
 		RestRequest request = RestRequest.getRequestForCreate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_FIELDS);
 		assertEquals("Wrong method", RestMethod.POST, request.getMethod());
 		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE, request.getPath());
-		JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject(TEST_FIELDS_STRING), new JSONObject(EntityUtils.toString(request.getRequestBody())));
+		JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject(TEST_FIELDS_STRING), new JSONObject(bodyToString(request)));
 		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 	
@@ -157,13 +156,12 @@ public class RestRequestTest extends TestCase {
 	 * @throws IOException 
 	 * @throws UnsupportedEncodingException 
 	 * @throws JSONException 
-	 * @throws ParseException 
 	 */
-	public void testGetRequestForUpdate() throws UnsupportedEncodingException, IOException, ParseException, JSONException {
+	public void testGetRequestForUpdate() throws UnsupportedEncodingException, IOException, JSONException {
 		RestRequest request = RestRequest.getRequestForUpdate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID, TEST_FIELDS);
 		assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
 		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_OBJECT_ID, request.getPath());
-		JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject(TEST_FIELDS_STRING), new JSONObject(EntityUtils.toString(request.getRequestBody())));
+		JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject(TEST_FIELDS_STRING), new JSONObject(bodyToString(request)));
 		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 	
@@ -172,13 +170,12 @@ public class RestRequestTest extends TestCase {
 	 * @throws IOException 
 	 * @throws UnsupportedEncodingException 
 	 * @throws JSONException 
-	 * @throws ParseException 
 	 */
-	public void testGetRequestForUpsert() throws UnsupportedEncodingException, IOException, ParseException, JSONException {
+	public void testGetRequestForUpsert() throws UnsupportedEncodingException, IOException, JSONException {
 		RestRequest request = RestRequest.getRequestForUpsert(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_EXTERNAL_ID_FIELD, TEST_EXTERNAL_ID, TEST_FIELDS);
 		assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
 		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_EXTERNAL_ID_FIELD + "/" + TEST_EXTERNAL_ID, request.getPath());
-		JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject(TEST_FIELDS_STRING), new JSONObject(EntityUtils.toString(request.getRequestBody())));
+		JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject(TEST_FIELDS_STRING), new JSONObject(bodyToString(request)));
 		assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
 	}
 
@@ -250,4 +247,10 @@ public class RestRequestTest extends TestCase {
 		assertNull("Wrong entity", req.getRequestBody());
 		assertEquals("Wrong headers", headers, req.getAdditionalHttpHeaders());
 	}
+
+	private static String bodyToString(final RestRequest request) throws IOException {
+		final Buffer buffer = new Buffer();
+		request.getRequestBody().writeTo(buffer);
+		return buffer.readUtf8();
+	}	
 }

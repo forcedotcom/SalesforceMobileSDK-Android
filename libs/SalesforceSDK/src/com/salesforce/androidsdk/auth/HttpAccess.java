@@ -34,6 +34,14 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 
 import java.io.IOException;
+import java.util.Collections;
+
+import okhttp3.ConnectionSpec;
+import okhttp3.Interceptor;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.TlsVersion;
 
 /**
  * Generic HTTP Access layer - used internally by {@link com.salesforce.androidsdk.rest.RestClient}
@@ -46,17 +54,13 @@ public class HttpAccess extends BroadcastReceiver {
     // Fields to keep track of network.
     private boolean hasNetwork = true;
     private String userAgent;
+    private OkHttpClient okHttpClient;
 
     // Connection manager.
     private final ConnectivityManager conMgr;
 
     // Singleton instance.
     public static HttpAccess DEFAULT;
-
-    /**
-     * A reasonable default chunk length when sending POST data.
-     */
-    private static final long DEFAULT_POST_CHUNK_LENGTH_IN_BYTES = 1048576L;
 
     /**
      * Initializes HttpAccess. Should be called from the application.
@@ -86,6 +90,35 @@ public class HttpAccess extends BroadcastReceiver {
             // Gets the connectivity manager and current network type.
             conMgr = (ConnectivityManager) app.getSystemService(Context.CONNECTIVITY_SERVICE);
         }
+
+    }
+
+    /**
+     *
+     * @return okHttpClient.Builder with appropriate connection spec and user agent interceptor
+     */
+    public OkHttpClient.Builder getOkHttpClientBuilder() {
+        ConnectionSpec connectionSpec = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                .tlsVersions(TlsVersion.TLS_1_1, TlsVersion.TLS_1_2)
+                .build();
+
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                .connectionSpecs(Collections.singletonList(connectionSpec))
+                .addNetworkInterceptor(new UserAgentInterceptor(userAgent));
+
+        return builder;
+    }
+
+
+    /**
+     *
+     * @return okHttpClient tied to this HttpAccess - builds one if needed
+     */
+    public synchronized OkHttpClient getOkHttpClient() {
+        if (okHttpClient == null) {
+            okHttpClient = getOkHttpClientBuilder().build();
+        }
+        return okHttpClient;
     }
 
     /**
@@ -159,6 +192,27 @@ public class HttpAccess extends BroadcastReceiver {
 
         public NoNetworkException(String msg) {
             super(msg);
+        }
+    }
+
+    /**
+     * Interceptor that adds user agent header
+     */
+    public static class UserAgentInterceptor implements Interceptor {
+
+        private final String userAgent;
+
+        public UserAgentInterceptor(String userAgent) {
+            this.userAgent = userAgent;
+        }
+
+        @Override
+        public Response intercept(Chain chain) throws IOException {
+            Request originalRequest = chain.request();
+            Request requestWithUserAgent = originalRequest.newBuilder()
+                    .header(HttpAccess.USER_AGENT, userAgent)
+                    .build();
+            return chain.proceed(requestWithUserAgent);
         }
     }
 }
