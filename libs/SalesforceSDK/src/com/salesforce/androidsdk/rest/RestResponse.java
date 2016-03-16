@@ -121,7 +121,7 @@ public class RestResponse {
 
 			if (body != null) {
 				responseAsBytes = body.bytes();
-				responseCharSet = body.contentType().charset(Charsets.UTF_8);
+				responseCharSet = body.contentType() != null ? body.contentType().charset(Charsets.UTF_8) : Charsets.UTF_8;
 			}
 		}
 	}
@@ -143,7 +143,6 @@ public class RestResponse {
 	 * @throws IOException
 	 */
 	public byte[] asBytes() throws IOException {
-		responseAsBytes = response.body().bytes();
 		if (responseAsBytes == null) {
 			consume();
 		}
