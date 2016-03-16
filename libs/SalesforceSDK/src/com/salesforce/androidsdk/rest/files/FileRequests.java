@@ -226,7 +226,9 @@ public class FileRequests extends ApiRequests {
      * @param theFile
      *            The path of the local file to upload to the server.
      * @param name
-     *            The name/title of this file.
+     *            The name of this file.
+     * @param title
+     *            The title of this file.
      * @param description
      *            A description of the file.
      * @param mimeType
@@ -235,10 +237,10 @@ public class FileRequests extends ApiRequests {
      *
      * @throws UnsupportedEncodingException
      */
-    public static RestRequest uploadFile(File theFile, String name, String description, String mimeType) throws UnsupportedEncodingException {
+    public static RestRequest uploadFile(File theFile, String name, String title, String description, String mimeType) throws UnsupportedEncodingException {
         MediaType mediaType = MediaType.parse(mimeType);
         MultipartBody.Builder builder = new MultipartBody.Builder();
-        if (name != null) builder.addFormDataPart("title", name);
+        if (title != null) builder.addFormDataPart("title", title);
         if (description != null) builder.addFormDataPart("desc", description);
         builder.addFormDataPart("fileData", name, RequestBody.create(mediaType, theFile));
 

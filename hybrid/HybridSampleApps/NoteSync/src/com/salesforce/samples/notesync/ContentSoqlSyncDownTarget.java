@@ -26,19 +26,6 @@
  */
 package com.salesforce.samples.notesync;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.http.entity.StringEntity;
-import org.apache.http.protocol.HTTP;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.xmlpull.v1.XmlPullParser;
-
 import android.util.Log;
 import android.util.Xml;
 
@@ -48,10 +35,27 @@ import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SoqlSyncDownTarget;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.xmlpull.v1.XmlPullParser;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
+
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+
 /**
  * Target for sync defined by a SOQL query
  */
 public class ContentSoqlSyncDownTarget extends SoqlSyncDownTarget {
+
+    private static final MediaType MEDIA_TYPE_XML = MediaType.parse("text/xml; charset=utf-8");
+
 
     private static final String REQUEST_TEMPLATE = "<?xml version=\"1.0\"?>" +
             "<se:Envelope xmlns:se=\"http://schemas.xmlsoap.org/soap/envelope/\">" +
@@ -141,11 +145,9 @@ public class ContentSoqlSyncDownTarget extends SoqlSyncDownTarget {
     private RestRequest buildSoapRequest(String sessionId, String body) throws UnsupportedEncodingException {
         Map<String, String> customHeaders = new HashMap<String, String>();
         customHeaders.put("SOAPAction", "\"\"");
+        RequestBody requestBody = RequestBody.create(MEDIA_TYPE_XML, String.format(REQUEST_TEMPLATE, sessionId, body));
 
-        StringEntity entity = new StringEntity(String.format(REQUEST_TEMPLATE, sessionId, body), HTTP.UTF_8);
-        entity.setContentType("text/xml");
-
-        return new RestRequest(RestRequest.RestMethod.POST, "/services/Soap/u/36.0", entity, customHeaders);
+        return new RestRequest(RestRequest.RestMethod.POST, "/services/Soap/u/36.0", requestBody, customHeaders);
     }
 
 
@@ -225,7 +227,7 @@ public class ContentSoqlSyncDownTarget extends SoqlSyncDownTarget {
 
             totalSize = records.length();
         } catch (Exception e) {
-            Log.e("ContentSoqlSyncDownTarget:parseSoapResponse", "Parsing failed", e);
+            Log.e("ContentSoqlSyncDownT..t", "parseSoapResponse - Parsing failed", e);
         }
 
         return records;

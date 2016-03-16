@@ -35,6 +35,7 @@ import android.net.NetworkInfo;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.ConnectionSpec;
 import okhttp3.Interceptor;
@@ -49,7 +50,12 @@ import okhttp3.TlsVersion;
  */
 public class HttpAccess extends BroadcastReceiver {
 
-	public static final String USER_AGENT = "User-Agent";
+    // Timeouts
+    public static final int CONNECT_TIMEOUT = 60;
+    public static final int READ_TIMEOUT = 20;
+
+    // User agent header name
+	private static final String USER_AGENT = "User-Agent";
 
     // Fields to keep track of network.
     private boolean hasNetwork = true;
@@ -104,6 +110,8 @@ public class HttpAccess extends BroadcastReceiver {
 
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .connectionSpecs(Collections.singletonList(connectionSpec))
+                .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+                .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
                 .addNetworkInterceptor(new UserAgentInterceptor(userAgent));
 
         return builder;

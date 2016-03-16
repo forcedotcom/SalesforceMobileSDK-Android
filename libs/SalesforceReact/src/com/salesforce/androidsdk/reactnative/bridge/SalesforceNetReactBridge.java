@@ -40,9 +40,6 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.protocol.HTTP;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -50,6 +47,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Iterator;
 import java.util.Map;
+
+import okhttp3.RequestBody;
 
 public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
@@ -124,13 +123,13 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         Map<String, String> queryParamsMap = ReactBridgeHelper.toJavaStringMap(queryParams);
 
         String urlParams = "";
-        HttpEntity requestEntity = null;
+        RequestBody requestBody = null;
         if (method == RestRequest.RestMethod.DELETE || method == RestRequest.RestMethod.GET || method == RestRequest.RestMethod.HEAD) {
             urlParams = buildQueryString(queryParamsMap);
         } else {
-            requestEntity = buildEntity(queryParamsMap);
+            requestBody = buildRequestBody(queryParamsMap);
         }
-        return new RestRequest(method, endPoint + path + urlParams, requestEntity, additionalHeaders);
+        return new RestRequest(method, endPoint + path + urlParams, requestBody, additionalHeaders);
     }
 
     private RestClient getRestClient() {
@@ -147,25 +146,13 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
     private static String buildQueryString(Map<String, String> params) throws UnsupportedEncodingException {
         StringBuilder sb = new StringBuilder();
-        Iterator it = params.entrySet().iterator();
-        sb.append("?");
-        while (it.hasNext()) {
-            Map.Entry<String, String> pair = (Map.Entry) it.next();
-            sb.append(pair.getKey()).append("=").append(URLEncoder.encode(pair.getValue(), HTTP.UTF_8)).append("&");
+        for(Map.Entry<String, String> entry : params.entrySet()) {
+            sb.append(entry.getKey()).append("=").append(URLEncoder.encode(entry.getValue(), RestRequest.UTF_8)).append("&");
         }
         return sb.toString();
     }
 
-    private static HttpEntity buildEntity(Map<String, String> params) {
-        HttpEntity entity = null;
-        if (params != null) {
-            try {
-                JSONObject json = new JSONObject(params);
-                entity = new StringEntity(json.toString(), HTTP.UTF_8);
-            } catch (UnsupportedEncodingException e) {
-                Log.e("NetReactBridge", "buildEntity failed", e);
-            }
-        }
-        return entity;
+    private static RequestBody buildRequestBody(Map<String, String> params) {
+        return RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject(params).toString());
     }
 }

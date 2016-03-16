@@ -26,8 +26,14 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
+import android.os.Environment;
+
 import com.google.common.collect.Lists;
 import com.salesforce.androidsdk.rest.RestRequest;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 
 /**
  * 
@@ -172,6 +178,34 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
         }
         doAdditionalVerifications(FileRequests.fileShares(sfdcId, 4));
     }
+
+    /**
+     * Tests if the file upload API is working per design.
+     *
+     * @throws Exception
+     */
+    public void testFileUpload() throws Exception {
+        final String filename  = "MyFile.txt";
+        final File file = new File(Environment.getExternalStorageDirectory() + File.separator + filename);
+        if (!file.exists()) {
+            file.createNewFile();
+            final OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
+            out.write("This is a test!");
+            out.close();
+        }
+        assertTrue("File should exist", file.exists());
+
+
+        RestRequest request = FileRequests.uploadFile(file, filename, "Test Title", "Test Description", "text/plain");
+
+        assertEquals(connectPath + "users/me/files", request.getPath());
+        doAdditionalVerifications(RestRequest.RestMethod.POST, request);
+
+        file.delete();
+        assertFalse("File should not exist", file.exists());
+    }
+
+
 
     private final String userId = "005T0000000ABCD";
     private final String sfdcId = "06930000001LkwtAAC";
