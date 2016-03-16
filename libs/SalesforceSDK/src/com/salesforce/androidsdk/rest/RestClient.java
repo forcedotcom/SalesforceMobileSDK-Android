@@ -40,7 +40,6 @@ import java.util.Map;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
@@ -171,7 +170,7 @@ public class RestClient {
      * @param restRequest
      * @return
      */
-    private Request buildRequest(RestRequest restRequest) {
+    public Request buildRequest(RestRequest restRequest) {
         Request.Builder builder =  new Request.Builder()
                 .url(HttpUrl.get(clientInfo.resolveUrl(restRequest.getPath())))
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());

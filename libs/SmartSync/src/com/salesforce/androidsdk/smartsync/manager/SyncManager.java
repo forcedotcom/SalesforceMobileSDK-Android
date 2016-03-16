@@ -64,6 +64,10 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
 /**
  * Sync Manager
  */
@@ -557,14 +561,16 @@ public class SyncManager {
 	 */
 	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
 
-        // FIXME
-        return restClient.sendSync(restRequest);
-//		Map<String, String> headers = restRequest.getAdditionalHttpHeaders();
-//		if (headers == null)
-//			headers = new HashMap<String, String>();
-//		headers.put(HttpAccess.USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC));
-//		return restClient.sendSync(restRequest.getMethod(), restRequest.getPath(), restRequest.getRequestBody(), headers);
-	}
+        Request request = restClient.buildRequest(restRequest);
+
+        // builder that shares the same connection pool, dispatcher, and configuration with the original client
+        OkHttpClient.Builder clientBuilder = restClient.getOkHttpClient().newBuilder()
+                .addNetworkInterceptor(new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
+
+        Response response = clientBuilder.build().newCall(request).execute();
+
+        return new RestResponse(response);
+    }
 
 	/**
      * Enum for action
