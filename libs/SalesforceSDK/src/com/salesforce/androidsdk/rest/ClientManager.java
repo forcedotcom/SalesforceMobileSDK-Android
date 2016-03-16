@@ -381,8 +381,7 @@ public class ClientManager {
             // WARNING! This assumes all user data is a String!
             accountManager.setUserData(acc, key, extras.getString(key));
         }
-
-        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
+        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, passcodeHash));
         SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
         return extras;
     }
@@ -492,7 +491,7 @@ public class ClientManager {
                     if (communityUrl != null) {
                         acctManager.setUserData(account, AuthenticatorService.KEY_COMMUNITY_URL, SalesforceSDKManager.encryptWithPasscode(communityUrl, newPass));
                     }
-                    acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, authToken);
+                    acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, newPass));
                 }
             }
         }
@@ -627,7 +626,10 @@ public class ClientManager {
                 if (bundle == null) {
                     Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
                 } else {
-                    newAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                    final String encryptedAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                    if (encryptedAuthToken != null) {
+                        newAuthToken = SalesforceSDKManager.decryptWithPasscode(encryptedAuthToken, SalesforceSDKManager.getInstance().getPasscodeHash());
+                    }
                     final String encryptedInstanceUrl = bundle.getString(AuthenticatorService.KEY_INSTANCE_URL);
                     if (encryptedInstanceUrl != null) {
                         newInstanceUrl = SalesforceSDKManager.decryptWithPasscode(encryptedInstanceUrl, SalesforceSDKManager.getInstance().getPasscodeHash());

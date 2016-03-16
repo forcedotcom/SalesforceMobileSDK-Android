@@ -234,7 +234,7 @@ public class AuthenticatorService extends Service {
                 mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(tr.authToken, passcodeHash));
                 resBundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
                 resBundle.putString(AccountManager.KEY_ACCOUNT_TYPE, account.type);
-                resBundle.putString(AccountManager.KEY_AUTHTOKEN, tr.authToken);
+                resBundle.putString(AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(tr.authToken, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encryptWithPasscode(loginServer, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encryptWithPasscode(tr.instanceUrl, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encryptWithPasscode(clientId, passcodeHash));
