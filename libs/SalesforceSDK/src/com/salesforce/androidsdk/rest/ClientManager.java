@@ -664,12 +664,8 @@ public class ClientManager {
             } finally {
                 synchronized (lock) {
                     gettingAuthToken = false;
-                    if (newAuthToken != null) {
-                        lastNewAuthToken = newAuthToken;
-                    }
-                    if (newInstanceUrl != null) {
-                        lastNewInstanceUrl = newInstanceUrl;
-                    }
+                    lastNewAuthToken = newAuthToken;
+                    lastNewInstanceUrl = newInstanceUrl;
                     lastRefreshTime  = System.currentTimeMillis();
                     lock.notifyAll();
                 }
