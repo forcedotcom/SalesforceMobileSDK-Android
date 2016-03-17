@@ -457,7 +457,6 @@ public class ClientManager {
                     	communityUrl = SalesforceSDKManager.decryptWithPasscode(encCommunityUrl, oldPass);
                     }
 
-
                     // Encrypt data with new hash and put it back in AccountManager.
                     acctManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, newPass));
                     acctManager.setPassword(account, SalesforceSDKManager.encryptWithPasscode(refreshToken, newPass));
@@ -648,14 +647,14 @@ public class ClientManager {
                         // Broadcasts an intent that the access token has been revoked.
                         broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
                     } else if (newInstanceUrl != null && !newInstanceUrl.equalsIgnoreCase(lastNewInstanceUrl)) {
-                        // Broadcasts an intent that the instance server has changed (implicitly token refreshed too)
+
+                        // Broadcasts an intent that the instance server has changed (implicitly token refreshed too).
                         broadcastIntent = new Intent(INSTANCE_URL_UPDATE_INTENT);
                     } else {
 
                         // Broadcasts an intent that the access token has been refreshed.
                         broadcastIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
                     }
-
                     broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
                     SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
                 }
@@ -665,8 +664,12 @@ public class ClientManager {
             } finally {
                 synchronized (lock) {
                     gettingAuthToken = false;
-                    lastNewAuthToken = newAuthToken;
-                    lastNewInstanceUrl = newInstanceUrl;
+                    if (newAuthToken != null) {
+                        lastNewAuthToken = newAuthToken;
+                    }
+                    if (newInstanceUrl != null) {
+                        lastNewInstanceUrl = newInstanceUrl;
+                    }
                     lastRefreshTime  = System.currentTimeMillis();
                     lock.notifyAll();
                 }
