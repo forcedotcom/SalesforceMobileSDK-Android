@@ -381,7 +381,6 @@ public class ClientManager {
             // WARNING! This assumes all user data is a String!
             accountManager.setUserData(acc, key, extras.getString(key));
         }
-        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, passcodeHash));
         SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
         return extras;
     }
@@ -490,7 +489,6 @@ public class ClientManager {
                     if (communityUrl != null) {
                         acctManager.setUserData(account, AuthenticatorService.KEY_COMMUNITY_URL, SalesforceSDKManager.encryptWithPasscode(communityUrl, newPass));
                     }
-                    acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, newPass));
                 }
             }
         }
@@ -615,11 +613,11 @@ public class ClientManager {
                 gettingAuthToken = true;
             }
 
-            // Invalidate current auth token
-            clientManager.invalidateToken(lastNewAuthToken);
+            // Invalidate current auth token.
+            final String cachedAuthToken = clientManager.accountManager.peekAuthToken(acc, AccountManager.KEY_AUTHTOKEN);
+            clientManager.invalidateToken(cachedAuthToken);
             String newAuthToken = null;
             String newInstanceUrl = null;
-
             try {
                 final Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, null, false, null, null).getResult();
                 if (bundle == null) {
