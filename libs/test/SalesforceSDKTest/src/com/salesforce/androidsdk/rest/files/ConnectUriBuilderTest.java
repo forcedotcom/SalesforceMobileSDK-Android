@@ -35,8 +35,14 @@ import junit.framework.TestCase;
 
 public class ConnectUriBuilderTest extends TestCase {
 
-    private final String connectPath = "/services/data/" + ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()) + "/chatter/";
-	
+    private String connectPath;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        connectPath = "/services/data/" + ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()) + "/chatter/";
+    }
+
     public void testBasePath() {
         assertEquals(connectPath, new ConnectUriBuilder().toString());
     }

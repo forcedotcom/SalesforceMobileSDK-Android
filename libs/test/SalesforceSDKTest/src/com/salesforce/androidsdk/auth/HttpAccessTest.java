@@ -30,7 +30,10 @@ import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
+
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -41,6 +44,7 @@ import okhttp3.Headers;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 
 /**
@@ -51,7 +55,7 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	private HttpAccess httpAccess;
 	private OkHttpClient okHttpClient;
 	private Headers headers;
-	private HttpUrl resourcesUri;
+	private HttpUrl resourcesUrl;
 
 	@Override
 	public void setUp() throws Exception {
@@ -59,12 +63,12 @@ public class HttpAccessTest extends InstrumentationTestCase {
 		TestCredentials.init(getInstrumentation().getContext());
 		httpAccess = new HttpAccess(null, "dummy-agent");
 		okHttpClient = httpAccess.getOkHttpClient();
+		resourcesUrl = HttpUrl.parse(TestCredentials.INSTANCE_URL + "/services/data/" + TestCredentials.API_VERSION + "/");
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
-		Headers headers = new Headers.Builder()
+		headers = new Headers.Builder()
 				.add("Content-Type", "application/json")
 				.add("Authorization", "OAuth " + refreshResponse.authToken)
 				.build();
-		HttpUrl resourcesUrl = HttpUrl.parse(TestCredentials.INSTANCE_URL + "/services/data/" + TestCredentials.API_VERSION + "/");
 	}
 
 	/**
@@ -73,7 +77,7 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 * @throws URISyntaxException 
 	 */
 	public void testDoGet() throws IOException, URISyntaxException {
-		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUri).headers(headers).get().build()).execute();
+		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).get().build()).execute();
 		checkResponse(response, HttpURLConnection.HTTP_OK, "sobjects", "identity", "recent", "search");
 	}
 
@@ -83,7 +87,7 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 * @throws URISyntaxException 
 	 */
 	public void testDoHead() throws IOException, URISyntaxException {
-		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUri).headers(headers).head().build()).execute();
+		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).head().build()).execute();
 		assertEquals("200 response expected", HttpURLConnection.HTTP_OK, response.code());
 	}
 	
@@ -92,7 +96,8 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 * @throws IOException 
 	 */
 	public void testSendPost() throws IOException {
-		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUri).headers(headers).post(null).build()).execute();
+		RequestBody body = RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject().toString());
+		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).post(body).build()).execute();
 		checkResponse(response, HttpURLConnection.HTTP_BAD_METHOD, "'POST' not allowed");
 	}
 
@@ -101,7 +106,8 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 * @throws IOException 
 	 */
 	public void testSendPut() throws IOException {
-		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUri).headers(headers).put(null).build()).execute();
+		RequestBody body = RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject().toString());
+		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).put(body).build()).execute();
 		checkResponse(response,  HttpURLConnection.HTTP_BAD_METHOD, "'PUT' not allowed");
 	}
 	
@@ -110,7 +116,7 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 * @throws IOException 
 	 */
 	public void testSendDelete() throws IOException {
-		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUri).headers(headers).delete().build()).execute();
+		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).delete().build()).execute();
 		checkResponse(response,  HttpURLConnection.HTTP_BAD_METHOD, "'DELETE' not allowed");
 	}
 
@@ -119,7 +125,8 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 * @throws IOException 
 	 */
 	public void testSendPatch() throws IOException {
-		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUri).headers(headers).patch(null).build()).execute();
+		RequestBody body = RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject().toString());
+		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).patch(body).build()).execute();
 		checkResponse(response,  HttpURLConnection.HTTP_BAD_METHOD, "'PATCH' not allowed");
 	}
 	
