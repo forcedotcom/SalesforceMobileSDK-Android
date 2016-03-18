@@ -54,7 +54,7 @@ public class RestClient {
     private static Map<String, OkHttpClient> OK_CLIENTS;
 	private ClientInfo clientInfo;
     private HttpAccess httpAccessor;
-    private OAuthRefreshInterceptor httpInterceptor;
+    private OAuthRefreshInterceptor oAuthRefreshInterceptor;
 	private OkHttpClient okHttpClient;
 
 	/** 
@@ -96,7 +96,7 @@ public class RestClient {
 	public RestClient(ClientInfo clientInfo, HttpAccess httpAccessor, OAuthRefreshInterceptor httpInterceptor) {
 		this.clientInfo = clientInfo;
         this.httpAccessor = httpAccessor;
-        this.httpInterceptor = httpInterceptor;
+        this.oAuthRefreshInterceptor = httpInterceptor;
 		setOkHttpClient();
 	}
 
@@ -115,7 +115,7 @@ public class RestClient {
 			okHttpClient = OK_CLIENTS.get(uniqueId);
 			if (okHttpClient == null) {
 				okHttpClient = httpAccessor.getOkHttpClientBuilder()
-                        .addNetworkInterceptor(httpInterceptor)
+                        .addInterceptor(oAuthRefreshInterceptor)
                         .build();
 
                 OK_CLIENTS.put(uniqueId, okHttpClient);
@@ -140,7 +140,7 @@ public class RestClient {
 		  // Un-comment if you must: tokens should not be printed to the log
 		  // .append("   authToken: ").append(getAuthToken()).append("\n")
 		  // .append("   refreshToken: ").append(getRefreshToken()).append("\n")
-		  .append("   timeSinceLastRefresh: ").append(httpInterceptor.getElapsedTimeSinceLastRefresh()).append("\n")
+		  .append("   timeSinceLastRefresh: ").append(oAuthRefreshInterceptor.getElapsedTimeSinceLastRefresh()).append("\n")
 		  .append("}\n");
 		return sb.toString();
 	}
@@ -149,14 +149,14 @@ public class RestClient {
 	 * @return The authToken for this RestClient.
 	 */
 	public synchronized String getAuthToken() {
-		return httpInterceptor.getAuthToken();
+		return oAuthRefreshInterceptor.getAuthToken();
 	}
 	
 	/**
 	 * @return The refresh token, if available.
 	 */
 	public String getRefreshToken() {
-		return httpInterceptor.getRefreshToken();
+		return oAuthRefreshInterceptor.getRefreshToken();
 	}
 	
 	/**
