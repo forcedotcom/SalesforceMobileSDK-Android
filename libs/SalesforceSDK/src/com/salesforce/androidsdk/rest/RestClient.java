@@ -124,6 +124,14 @@ public class RestClient {
 		this.okHttpClient = okHttpClient;
 	}
 
+	/**
+	 * Used by tests
+	 * @param okHttpClient
+	 */
+	public void setOkHttpClient(OkHttpClient okHttpClient) {
+		this.okHttpClient = okHttpClient;
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
