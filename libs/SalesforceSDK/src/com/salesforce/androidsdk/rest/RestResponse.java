@@ -157,7 +157,8 @@ public class RestResponse {
 	 */
 	public String asString() throws IOException {
 		if (responseAsString == null) {
-			responseAsString = new String(asBytes(), responseCharSet);
+			byte[] bytes = asBytes(); // will also set compute responseCharSet
+			responseAsString = new String(bytes, responseCharSet);
 		}
 		return responseAsString;
 	}
