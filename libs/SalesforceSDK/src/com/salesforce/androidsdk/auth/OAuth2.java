@@ -289,7 +289,7 @@ public class OAuth2 {
      * @param authToken
      */
     public static final Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken) {
-        return builder.addHeader(AUTHORIZATION, BEARER + authToken);
+        return builder.header(AUTHORIZATION, BEARER + authToken);
     }
 
     /**

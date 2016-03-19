@@ -49,7 +49,7 @@ class ApiRequests {
     }
 
     protected static ConnectUriBuilder connectBase(String firstPathSegment) {
-        return new ConnectUriBuilder(Uri.parse(ApiVersionStrings.BASE_CONNECT_PATH).buildUpon())
+        return new ConnectUriBuilder(Uri.parse(ApiVersionStrings.getBaseConnectPath()).buildUpon())
                 .appendPath(firstPathSegment);
     }
 

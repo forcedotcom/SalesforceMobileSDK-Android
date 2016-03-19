@@ -53,6 +53,7 @@ public class RestResponse {
 	private final Response response;
 
 	// Populated when "consume" is called
+	private boolean consumed;
 	private byte[] responseAsBytes;
 	private Charset responseCharSet;
 
@@ -107,22 +108,19 @@ public class RestResponse {
 	 * @throws IOException 
 	 */
 	public void consume() throws IOException {
-		if (responseAsBytes != null) {
-			// Try to discard content
-			discardContent();
-			return;
-		}
-
-		responseAsBytes = new byte[0];
-		responseCharSet = Charsets.UTF_8;
-
-		if (response != null) {
+		if (!consumed && response != null) {
 			ResponseBody body = response.body();
-
 			if (body != null) {
 				responseAsBytes = body.bytes();
-				responseCharSet = body.contentType() != null ? body.contentType().charset(Charsets.UTF_8) : Charsets.UTF_8;
+				responseCharSet = body.contentType() != null ? body.contentType().charset() : Charsets.UTF_8;
+				body.close();
 			}
+			else {
+				responseAsBytes = new byte[0];
+				responseCharSet = Charsets.UTF_8;
+			}
+
+			consumed = true;
 		}
 	}
 
@@ -157,7 +155,7 @@ public class RestResponse {
 	 */
 	public String asString() throws IOException {
 		if (responseAsString == null) {
-			byte[] bytes = asBytes(); // will also set compute responseCharSet
+			byte[] bytes = asBytes(); // will also compute responseCharSet
 			responseAsString = new String(bytes, responseCharSet);
 		}
 		return responseAsString;
@@ -206,12 +204,15 @@ public class RestResponse {
 	 * @throws IOException if the stream could not be created or has already been consumed
 	 */
 	public InputStream asInputStream() throws IOException {
-		try {
-			// Write an empty array so that no data can be read by other accessor methods
-			responseAsBytes = new byte[0];
-			return response.body().byteStream();
-		} catch (IllegalStateException e) {
+		if (consumed) {
 			throw new IOException("Content has been consumed");
+		}
+		else {
+			responseAsBytes = new byte[0];
+			responseCharSet = Charsets.UTF_8;
+			InputStream stream = response.body().byteStream();
+			consumed = true;
+			return stream;
 		}
 	}
 
@@ -223,17 +224,5 @@ public class RestResponse {
 			Log.e("RestResponse:toString()", "Exception caught while calling asString()", e);
 			return ((response == null) ? "" : response.toString());
 		}
-	}
-
-	/**
-	 * Consume and discard the entity content.
-	 */
-	private void discardContent() {
-		if (response == null) {
-			// Nothing to consume
-			return;
-		}
-
-		response.body().close();
 	}
 }

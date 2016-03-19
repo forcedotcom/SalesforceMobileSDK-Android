@@ -51,8 +51,9 @@ import okhttp3.RequestBody;
  */
 public class FileRequests extends ApiRequests {
 
-    // files i follow
-    static final String CONTENT_DOCUMENT_LINK = ApiVersionStrings.BASE_SOBJECT_PATH + "ContentDocumentLink";
+    public static String getContentDocumentLinkPath() {
+        return ApiVersionStrings.getBaseSObjectPath() + "ContentDocumentLink";
+    }
 
     /**
      * Build a Request that can fetch a page from the files owned by the
@@ -203,7 +204,7 @@ public class FileRequests extends ApiRequests {
      */
     public static RestRequest addFileShare(String fileId, String entityId, String shareType) {
         validateSfdcIds(fileId, entityId);
-        return new RestRequest(RestMethod.POST, CONTENT_DOCUMENT_LINK, makeFileShare(fileId, entityId, shareType));
+        return new RestRequest(RestMethod.POST, getContentDocumentLinkPath(), makeFileShare(fileId, entityId, shareType));
     }
 
     /**
@@ -216,7 +217,7 @@ public class FileRequests extends ApiRequests {
      */
     public static RestRequest deleteFileShare(String shareId) {
         validateSfdcId(shareId);
-        return new RestRequest(RestMethod.DELETE, CONTENT_DOCUMENT_LINK + "/" + shareId, null);
+        return new RestRequest(RestMethod.DELETE, getContentDocumentLinkPath() + "/" + shareId, null);
     }
 
     /**

@@ -38,7 +38,6 @@ import android.widget.TextView;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -46,12 +45,12 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
 import java.io.IOException;
-
-import javax.net.ssl.HttpsURLConnection;
+import java.net.HttpURLConnection;
 
 import okhttp3.Interceptor;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
@@ -141,24 +140,28 @@ public class ExplorerActivityTest extends
 
     private OkHttpClient buildMockOkHttpClient() {
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
-                .addNetworkInterceptor(new Interceptor() {
+                .addInterceptor(new Interceptor() {
                     @Override
                     public Response intercept(Chain chain) throws IOException {
                         Request request = chain.request();
-                        final Buffer buffer = new Buffer();
-                        request.body().writeTo(buffer);
-                        final String requestBody = buffer.readUtf8();
+                        final String requestBody;
+                        if (request.body() != null) {
+                            final Buffer buffer = new Buffer();
+                            request.body().writeTo(buffer);
+                            requestBody = " " + buffer.readUtf8();
+                        }
+                        else {
+                            requestBody = "";
+                        }
 
-                        RESPONSE =  "[" + request.method() + " " + request.url() + " " + requestBody + "]";
-                        return new Response.Builder()
+                        RESPONSE = "[" + request.method() + " " + request.url() + requestBody + "]";
+                        Response response = new Response.Builder()
+                                .request(request)
+                                .code(HttpURLConnection.HTTP_OK)
+                                .protocol(Protocol.HTTP_2)
                                 .body(ResponseBody.create(MEDIA_TYPE_PLAIN, RESPONSE))
                                 .build();
-                    }
-
-                    String bodyToString(final Request request) throws IOException {
-                        final Buffer buffer = new Buffer();
-                        request.body().writeTo(buffer);
-                        return buffer.readUtf8();
+                        return response;
                     }
                 });
         return builder.build();
@@ -339,7 +342,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.update_fields_text, "{\"field1\":\"update1\",\"field2\":\"update2\"}");
             }
         };
-        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeUpdate/objIdUpdate?_HttpMethod=PATCH {\"field1\":\"update1\",\"field2\":\"update2\"}]");
+        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Go", extraSetup, "[PATCH " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeUpdate/objIdUpdate {\"field1\":\"update1\",\"field2\":\"update2\"}]");
     }
 
     /**
@@ -355,7 +358,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.upsert_fields_text, "{\"field1\":\"upsert1\",\"field2\":\"upsert2\"}");
             }
         };
-        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeUpsert/extIdField/extId?_HttpMethod=PATCH {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
+        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Go", extraSetup, "[PATCH " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeUpsert/extIdField/extId {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
     }
 
     /**
@@ -531,7 +534,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.add_file_share_share_type_text, "shareType");
             }
         };
-        gotoTabAndRunAction(ADD_FILE_SHARE_TAB, R.id.add_file_share_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/ContentDocumentLink {\"ContentDocumentId\":\"objectIdForAdd\",\"LinkedEntityId\":\"entityIdForAdd\",\"ShareType\":\"shareType\"}]");
+        gotoTabAndRunAction(ADD_FILE_SHARE_TAB, R.id.add_file_share_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/ContentDocumentLink {\"ContentDocumentId\":\"objectIdForAdd\",\"ShareType\":\"shareType\",\"LinkedEntityId\":\"entityIdForAdd\"}]");
     }
 
     /**

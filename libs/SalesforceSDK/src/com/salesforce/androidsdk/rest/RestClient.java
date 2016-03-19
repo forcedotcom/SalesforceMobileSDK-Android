@@ -100,6 +100,13 @@ public class RestClient {
 		setOkHttpClient();
 	}
 
+    /**
+     * Clear cache of org-id/user-id to OkHttpClient
+     */
+    public static void clearOkClientsCache() {
+        OK_CLIENTS = null;
+    }
+
 	/**
 	 * Sets the OkHttpclient associated with this user account. The OkHttpclient
 	 * are cached in a map and reused as and when a user account
@@ -470,26 +477,30 @@ public class RestClient {
         @Override
         public Response intercept(Chain chain) throws IOException {
             Request request = chain.request();
+            request = buildAuthenticatedRequest(request);
+            Response response = chain.proceed(request);
 
-            // Build new request
-            Request.Builder builder = request.newBuilder();
-
-            // Set auth and user agent headers
-            setAuthHeader(builder);
-
-            request = builder.build(); // overwrite old request
-            Response response = chain.proceed(request); // perform request, here original request will be executed
 
             if (response.code() == HttpURLConnection.HTTP_UNAUTHORIZED) { // if unauthorized
-                refreshAccessToken(response);
+                refreshAccessToken();
                 if (getAuthToken() != null) {
-                    setAuthHeader(builder);
-                    request = builder.build();
-                    response = chain.proceed(request); // repeat request with new token
+                    request = buildAuthenticatedRequest(request);
+                    response = chain.proceed(request);
                 }
             }
 
             return response;
+        }
+
+        /**
+         * Build new request which has authentication header
+         * @param request
+         * @return
+         */
+        private Request buildAuthenticatedRequest(Request request) {
+            Request.Builder builder = request.newBuilder();
+            setAuthHeader(builder);
+            return builder.build();
         }
 
         /**
@@ -505,8 +516,9 @@ public class RestClient {
          * @param builder
          */
         private void setAuthHeader(Request.Builder builder) {
-            if (authToken != null) //Add Auth token to each request if authorized
+            if (authToken != null) { //Add Auth token to each request if authorized
                 OAuth2.addAuthorizationHeader(builder, authToken);
+            }
         }
 
         /**
@@ -540,7 +552,7 @@ public class RestClient {
         /**
          * Swaps the existing access token for a new one.
          */
-        private void refreshAccessToken(Response response) throws IOException {
+        private void refreshAccessToken() throws IOException {
             // If we haven't retried already and we have an accessTokenProvider
             // Then let's try to get a new authToken
             if (authTokenProvider != null) {

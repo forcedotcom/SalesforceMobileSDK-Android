@@ -39,10 +39,22 @@ public class ApiVersionStrings {
 
     public static final String VERSION_NUMBER = "v36.0";
     public static final String API_PREFIX = "/services/data/";
-    public static final String BASE_PATH = API_PREFIX + getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
-    public static final String BASE_CHATTER_PATH = BASE_PATH + "/chatter/";
-    public static final String BASE_CONNECT_PATH = BASE_PATH + "/connect/";
-    public static final String BASE_SOBJECT_PATH = BASE_PATH + "/sobjects/";
+
+    public static String getBasePath() {
+        return API_PREFIX + getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
+    }
+
+    public static String getBaseChatterPath() {
+        return getBasePath() + "/chatter/";
+    }
+
+    public static String getBaseConnectPath() {
+        return getBasePath() + "/connect/";
+    }
+
+    public static String getBaseSObjectPath() {
+        return getBasePath() + "/sobjects/";
+    }
 
     /**
      * Returns the API version number to be used.
