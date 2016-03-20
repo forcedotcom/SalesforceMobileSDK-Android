@@ -29,6 +29,7 @@ package com.salesforce.androidsdk;
 import android.content.Context;
 
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.tests.R;
 
 /**
  * Authentication credentials used to make live server calls in tests
