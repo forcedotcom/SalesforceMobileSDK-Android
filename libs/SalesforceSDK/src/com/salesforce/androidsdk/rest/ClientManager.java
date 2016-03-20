@@ -381,8 +381,6 @@ public class ClientManager {
             // WARNING! This assumes all user data is a String!
             accountManager.setUserData(acc, key, extras.getString(key));
         }
-
-        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
         SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
         return extras;
     }
@@ -458,7 +456,6 @@ public class ClientManager {
                     	communityUrl = SalesforceSDKManager.decryptWithPasscode(encCommunityUrl, oldPass);
                     }
 
-
                     // Encrypt data with new hash and put it back in AccountManager.
                     acctManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, newPass));
                     acctManager.setPassword(account, SalesforceSDKManager.encryptWithPasscode(refreshToken, newPass));
@@ -492,7 +489,6 @@ public class ClientManager {
                     if (communityUrl != null) {
                         acctManager.setUserData(account, AuthenticatorService.KEY_COMMUNITY_URL, SalesforceSDKManager.encryptWithPasscode(communityUrl, newPass));
                     }
-                    acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, authToken);
                 }
             }
         }
@@ -617,17 +613,20 @@ public class ClientManager {
                 gettingAuthToken = true;
             }
 
-            // Invalidate current auth token
-            clientManager.invalidateToken(lastNewAuthToken);
+            // Invalidate current auth token.
+            final String cachedAuthToken = clientManager.accountManager.peekAuthToken(acc, AccountManager.KEY_AUTHTOKEN);
+            clientManager.invalidateToken(cachedAuthToken);
             String newAuthToken = null;
             String newInstanceUrl = null;
-
             try {
                 final Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, null, false, null, null).getResult();
                 if (bundle == null) {
                     Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
                 } else {
-                    newAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                    final String encryptedAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                    if (encryptedAuthToken != null) {
+                        newAuthToken = SalesforceSDKManager.decryptWithPasscode(encryptedAuthToken, SalesforceSDKManager.getInstance().getPasscodeHash());
+                    }
                     final String encryptedInstanceUrl = bundle.getString(AuthenticatorService.KEY_INSTANCE_URL);
                     if (encryptedInstanceUrl != null) {
                         newInstanceUrl = SalesforceSDKManager.decryptWithPasscode(encryptedInstanceUrl, SalesforceSDKManager.getInstance().getPasscodeHash());
@@ -646,14 +645,14 @@ public class ClientManager {
                         // Broadcasts an intent that the access token has been revoked.
                         broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
                     } else if (newInstanceUrl != null && !newInstanceUrl.equalsIgnoreCase(lastNewInstanceUrl)) {
-                        // Broadcasts an intent that the instance server has changed (implicitly token refreshed too)
+
+                        // Broadcasts an intent that the instance server has changed (implicitly token refreshed too).
                         broadcastIntent = new Intent(INSTANCE_URL_UPDATE_INTENT);
                     } else {
 
                         // Broadcasts an intent that the access token has been refreshed.
                         broadcastIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
                     }
-
                     broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
                     SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
                 }
