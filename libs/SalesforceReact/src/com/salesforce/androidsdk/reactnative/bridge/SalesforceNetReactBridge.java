@@ -129,7 +129,8 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
         } else {
             requestBody = buildRequestBody(queryParamsMap);
         }
-        return new RestRequest(method, endPoint + path + urlParams, requestBody, additionalHeaders);
+        String separator = path.contains("?") ? (path.endsWith("&") ? "" : "&") : "?";
+        return new RestRequest(method, endPoint + path + separator + urlParams, requestBody, additionalHeaders);
     }
 
     private RestClient getRestClient() {
