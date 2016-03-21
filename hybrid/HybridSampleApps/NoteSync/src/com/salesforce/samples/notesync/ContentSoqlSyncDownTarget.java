@@ -29,6 +29,8 @@ package com.salesforce.samples.notesync;
 import android.util.Log;
 import android.util.Xml;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
@@ -146,8 +148,8 @@ public class ContentSoqlSyncDownTarget extends SoqlSyncDownTarget {
         Map<String, String> customHeaders = new HashMap<String, String>();
         customHeaders.put("SOAPAction", "\"\"");
         RequestBody requestBody = RequestBody.create(MEDIA_TYPE_XML, String.format(REQUEST_TEMPLATE, sessionId, body));
-
-        return new RestRequest(RestRequest.RestMethod.POST, "/services/Soap/u/36.0", requestBody, customHeaders);
+        String version = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()).substring(1); /* no v */;
+        return new RestRequest(RestRequest.RestMethod.POST, "/services/Soap/u/" + version, requestBody, customHeaders);
     }
 
 
