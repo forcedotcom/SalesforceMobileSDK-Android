@@ -58,10 +58,13 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 		assertEquals("Wrong app name", "SalesforceHybridTest", sdkInfo.getString("appName"));
 		assertEquals("Wrong app version", "1.0", sdkInfo.getString("appVersion"));
 		List<String> sdkInfoPlugins = toList(sdkInfo.getJSONArray("forcePluginsAvailable"));
-		assertEquals("Wrong number of plugins", 3, sdkInfoPlugins.size());
+		assertEquals("Wrong number of plugins", 6, sdkInfoPlugins.size());
 		assertTrue("oauth plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.oauth"));
 		assertTrue("sdkinfo plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.sdkinfo"));
 		assertTrue("sfaccountmanager plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.sfaccountmanager"));
+		assertTrue("smartstore plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.smartstore"));
+		assertTrue("smartsync plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.smartsync"));
+		assertTrue("testrunner plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.testrunner"));
 		assertEquals("Wrong version", SalesforceSDKManager.SDK_VERSION, sdkInfo.getString("sdkVersion"));
 	
 		JSONObject sdkInfoBootConfig = sdkInfo.getJSONObject("bootConfig");
@@ -74,8 +77,8 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 		assertEquals("Wrong bootconfig oauthRedirectURI", bootconfig.getOauthRedirectURI(), sdkInfoBootConfig.getString("oauthRedirectURI"));
 		assertEquals("Wrong bootconfig remoteAccessConsumerKey", bootconfig.getRemoteAccessConsumerKey(), sdkInfoBootConfig.getString("remoteAccessConsumerKey"));
 		assertEquals("Wrong bootconfig androidPushNotificationClientId", bootconfig.getPushNotificationClientId(), sdkInfoBootConfig.getString("androidPushNotificationClientId"));
-		assertEquals("Wrong bootconfig startPage", "", sdkInfoBootConfig.optString("startPage")); // this is a native app
-		assertEquals("Wrong bootconfig errorPage", "", sdkInfoBootConfig.optString("errorPage")); // this is a native app
+		assertEquals("Wrong bootconfig startPage", "index.html", sdkInfoBootConfig.optString("startPage"));
+		assertEquals("Wrong bootconfig errorPage", "error.html", sdkInfoBootConfig.optString("errorPage"));
 	}
 
 	/**

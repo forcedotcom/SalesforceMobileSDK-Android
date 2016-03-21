@@ -35,6 +35,14 @@ import junit.framework.TestCase;
 
 public class ApiRequestsBaseTest extends TestCase {
 
+    protected String connectPath;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        connectPath = "/services/data/" + ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()) + "/chatter/";
+    }
+
     protected void doAdditionalVerifications(RestRequest req) {
         doAdditionalVerifications(RestMethod.GET, req);
     }
@@ -43,6 +51,4 @@ public class ApiRequestsBaseTest extends TestCase {
         assertEquals(method, req.getMethod());
         assertEquals("false", req.getAdditionalHttpHeaders().get("X-Chatter-Entity-Encoding"));
     }
-
-    protected final String connectPath = "/services/data/" + ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()) + "/chatter/";
 }

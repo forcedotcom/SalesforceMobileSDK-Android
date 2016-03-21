@@ -48,12 +48,12 @@ import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
-import org.apache.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -63,6 +63,10 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * Sync Manager
@@ -429,7 +433,7 @@ public class SyncManager {
                 break;
             case delete:
                 statusCode = target.deleteOnServer(this, objectType, objectId);
-                if (RestResponse.isSuccess(statusCode) || statusCode == HttpStatus.SC_NOT_FOUND) {
+                if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                     smartStore.delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
                 }
                 break;
@@ -439,7 +443,7 @@ public class SyncManager {
                     cleanAndSaveRecord(soupName, record);
                 }
                 // Handling remotely deleted records
-                else if (statusCode == HttpStatus.SC_NOT_FOUND) {
+                else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                     if (mergeMode == MergeMode.OVERWRITE) {
                         recordServerId = target.createOnServer(this, objectType, fields);
                         if (recordServerId != null) {
@@ -556,12 +560,17 @@ public class SyncManager {
 	 * @throws IOException
 	 */
 	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
-		Map<String, String> headers = restRequest.getAdditionalHttpHeaders();
-		if (headers == null)
-			headers = new HashMap<String, String>();
-		headers.put(HttpAccess.USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC));
-		return restClient.sendSync(restRequest.getMethod(), restRequest.getPath(), restRequest.getRequestEntity(), headers);
-	}
+
+        Request request = restClient.buildRequest(restRequest);
+
+        // builder that shares the same connection pool, dispatcher, and configuration with the original client
+        OkHttpClient.Builder clientBuilder = restClient.getOkHttpClient().newBuilder()
+                .addNetworkInterceptor(new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
+
+        Response response = clientBuilder.build().newCall(request).execute();
+
+        return new RestResponse(response);
+    }
 
 	/**
      * Enum for action

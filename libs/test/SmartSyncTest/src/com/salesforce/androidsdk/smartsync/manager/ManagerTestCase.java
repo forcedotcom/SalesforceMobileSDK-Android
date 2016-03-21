@@ -33,6 +33,7 @@ import android.app.Instrumentation;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
@@ -116,7 +117,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
      * @return RestClient instance.
      */
     private RestClient initRestClient() throws Exception {
-        httpAccess = new HttpAccess(null, null);
+        httpAccess = new HttpAccess(null, "dummy-agent");
         final TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess,
         		new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID,
         		TestCredentials.REFRESH_TOKEN);

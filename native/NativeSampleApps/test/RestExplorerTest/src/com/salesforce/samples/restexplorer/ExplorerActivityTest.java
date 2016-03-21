@@ -38,25 +38,23 @@ import android.widget.TextView;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.ProtocolVersion;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.message.BasicHttpResponse;
-import org.apache.http.message.BasicStatusLine;
-import org.apache.http.util.EntityUtils;
-
 import java.io.IOException;
+import java.net.HttpURLConnection;
 
-import javax.net.ssl.HttpsURLConnection;
+import okhttp3.Interceptor;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Protocol;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okio.Buffer;
 
 /**
  * Tests for ExplorerActivity
@@ -103,10 +101,12 @@ public class ExplorerActivityTest extends
     private static final int ADD_FILE_SHARE_TAB = 21;
     private static final int DELETE_FILE_SHARE_TAB = 22;
 
+    public static final MediaType MEDIA_TYPE_PLAIN = okhttp3.MediaType.parse("text/plain; charset=utf-8");
+
+
     private EventsListenerQueue eq;
     private Context targetContext;
     private ClientManager clientManager;
-    private MockHttpAccess mockHttpAccessor;
     public static volatile String RESPONSE = null;
 
     public ExplorerActivityTest() {
@@ -120,32 +120,60 @@ public class ExplorerActivityTest extends
         eq = new EventsListenerQueue();
 
         // Waits for app initialization to complete.
-        if (SalesforceSDKManager.getInstance() == null) {
+        if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         targetContext = getInstrumentation().getTargetContext();
         clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
         clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
                 TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, null);
-        mockHttpAccessor = new MockHttpAccess(SalesforceSDKManager.getInstance().getAppContext());
         SalesforceSDKManager.getInstance().getPasscodeManager().setTimeoutMs(0 /* disabled */);
 
-        // Plug our mock HTTP accessor.
+        // Plug a modified okHttpClient that doesn't actually go to the server.
         final ExplorerActivity activity = getActivity();
         assertNotNull("Activity should not be null", activity);
         final RestClient client = activity.getClient();
         assertNotNull("Rest client should not be null", client);
-        client.setHttpAccessor(mockHttpAccessor);
+        final OkHttpClient mockOkHttpClient = buildMockOkHttpClient();
+        client.setOkHttpClient(mockOkHttpClient);
     }
 
-	@Override
+    private OkHttpClient buildMockOkHttpClient() {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
+                .addInterceptor(new Interceptor() {
+                    @Override
+                    public Response intercept(Chain chain) throws IOException {
+                        Request request = chain.request();
+                        final String requestBody;
+                        if (request.body() != null) {
+                            final Buffer buffer = new Buffer();
+                            request.body().writeTo(buffer);
+                            requestBody = " " + buffer.readUtf8();
+                        }
+                        else {
+                            requestBody = "";
+                        }
+
+                        RESPONSE = "[" + request.method() + " " + request.url() + requestBody + "]";
+                        Response response = new Response.Builder()
+                                .request(request)
+                                .code(HttpURLConnection.HTTP_OK)
+                                .protocol(Protocol.HTTP_2)
+                                .body(ResponseBody.create(MEDIA_TYPE_PLAIN, RESPONSE))
+                                .build();
+                        return response;
+                    }
+                });
+        return builder.build();
+    }
+
+    @Override
 	public void tearDown() throws Exception {
 		if (eq != null) {
             eq.tearDown();
             eq = null;
         }
 		RESPONSE = null;
-		mockHttpAccessor = null;
 		super.tearDown();
 	}
 
@@ -314,7 +342,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.update_fields_text, "{\"field1\":\"update1\",\"field2\":\"update2\"}");
             }
         };
-        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeUpdate/objIdUpdate?_HttpMethod=PATCH {\"field1\":\"update1\",\"field2\":\"update2\"}]");
+        gotoTabAndRunAction(UPDATE_TAB, R.id.update_button, "Go", extraSetup, "[PATCH " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeUpdate/objIdUpdate {\"field1\":\"update1\",\"field2\":\"update2\"}]");
     }
 
     /**
@@ -330,7 +358,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.upsert_fields_text, "{\"field1\":\"upsert1\",\"field2\":\"upsert2\"}");
             }
         };
-        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeUpsert/extIdField/extId?_HttpMethod=PATCH {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
+        gotoTabAndRunAction(UPSERT_TAB, R.id.upsert_button, "Go", extraSetup, "[PATCH " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/objTypeUpsert/extIdField/extId {\"field1\":\"upsert1\",\"field2\":\"upsert2\"}]");
     }
 
     /**
@@ -506,7 +534,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.add_file_share_share_type_text, "shareType");
             }
         };
-        gotoTabAndRunAction(ADD_FILE_SHARE_TAB, R.id.add_file_share_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/ContentDocumentLink {\"ContentDocumentId\":\"objectIdForAdd\",\"LinkedEntityId\":\"entityIdForAdd\",\"ShareType\":\"shareType\"}]");
+        gotoTabAndRunAction(ADD_FILE_SHARE_TAB, R.id.add_file_share_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/ContentDocumentLink {\"ContentDocumentId\":\"objectIdForAdd\",\"ShareType\":\"shareType\",\"LinkedEntityId\":\"entityIdForAdd\"}]");
     }
 
     /**
@@ -567,29 +595,6 @@ public class ExplorerActivityTest extends
         waitForRender();
         TextView resultText = (TextView) activity.findViewById(R.id.result_text);
         assertTrue("Response not found in text area", resultText.getText().toString().indexOf(expectedResponse) > 0);
-    }
-
-    /**
-     * Mock http access
-     */
-    private static class MockHttpAccess extends HttpAccess {
-
-        protected MockHttpAccess(Context app) {
-            super(app, null);
-        }
-
-        @Override
-        protected Execution execute(HttpsURLConnection httpConn, HttpEntity reqEntity) throws IOException {
-            HttpResponse res = new BasicHttpResponse(new BasicStatusLine(new ProtocolVersion("http", 1, 1), HttpStatus.SC_OK, null), null, null);
-            String body = "";
-            if (reqEntity != null) {
-                body = " " + EntityUtils.toString(reqEntity);
-            }
-            String mockResponse = "[" + httpConn.getRequestMethod() + " " + httpConn.getURL() + body + "]";
-            res.setEntity(new StringEntity(mockResponse));
-            RESPONSE = mockResponse;
-            return new Execution(res);
-        }
     }
 
     private void setText(final int textViewId, final String text) {
