@@ -65,7 +65,7 @@ public class UserAccountManagerTest extends InstrumentationTestCase {
         		targetContext);
         getInstrumentation().callApplicationOnCreate(app);
         eq = new EventsListenerQueue();
-        if (SalesforceSDKManager.getInstance() == null) {
+        if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();

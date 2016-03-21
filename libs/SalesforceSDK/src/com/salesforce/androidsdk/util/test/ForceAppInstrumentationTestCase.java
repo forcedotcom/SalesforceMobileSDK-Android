@@ -105,7 +105,7 @@ public class ForceAppInstrumentationTestCase extends InstrumentationTestCase {
     
 	protected void waitForStartup() {
 		// Wait for app initialization to complete
-	    if (SalesforceSDKManager.getInstance() == null) {
+	    if (!SalesforceSDKManager.hasInstance()) {
 	    	waitForEvent(EventType.AppCreateComplete);
 	    }
 	}

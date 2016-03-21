@@ -72,9 +72,9 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 
 	        // Wait for app initialization to complete
 			EventsListenerQueue eq = new EventsListenerQueue();
-	        if (SalesforceSDKManager.getInstance() == null) {
+	        if (!SalesforceSDKManager.hasInstance()) {
 	            eq.waitForEvent(EventType.AppCreateComplete, 5000);
-	        }			
+	        }
 
 			// Start main activity
     		Instrumentation instrumentation = getInstrumentation();

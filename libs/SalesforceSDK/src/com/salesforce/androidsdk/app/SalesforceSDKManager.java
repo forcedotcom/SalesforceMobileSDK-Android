@@ -142,6 +142,14 @@ public class SalesforceSDKManager {
     }
 
     /**
+     *
+     * @return true if SalesforceSDKManager has been initialized already
+     */
+    public static boolean hasInstance() {
+        return INSTANCE != null;
+    }
+
+    /**
      * Protected constructor.
      * @param context Application context.
      * @param keyImpl Implementation for KeyInterface.

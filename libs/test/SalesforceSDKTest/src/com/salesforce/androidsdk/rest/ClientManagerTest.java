@@ -101,7 +101,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         		loginOptions, true);
         accountManager = clientManager.getAccountManager();
         eq = new EventsListenerQueue();
-        if (SalesforceSDKManager.getInstance() == null) {
+        if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);

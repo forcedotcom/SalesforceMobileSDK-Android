@@ -120,8 +120,8 @@ public class ExplorerActivityTest extends
         eq = new EventsListenerQueue();
 
         // Waits for app initialization to complete.
-        if (SalesforceSDKManager.getInstance() == null) {
-            eq.waitForEvent(EventType.AppCreateComplete, 10000);
+        if (!SalesforceSDKManager.hasInstance()) {
+            eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         targetContext = getInstrumentation().getTargetContext();
         clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
