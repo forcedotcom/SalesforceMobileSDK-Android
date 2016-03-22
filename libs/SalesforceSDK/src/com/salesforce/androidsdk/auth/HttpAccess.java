@@ -32,10 +32,16 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
+import android.util.Log;
 
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
+
+import javax.net.ssl.SSLContext;
 
 import okhttp3.ConnectionSpec;
 import okhttp3.Interceptor;
@@ -113,6 +119,19 @@ public class HttpAccess extends BroadcastReceiver {
                 .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
                 .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
                 .addNetworkInterceptor(new UserAgentInterceptor(userAgent));
+
+        /*
+         * FIXME: Remove this piece of code once minApi >= Lollipop.
+         */
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                builder.sslSocketFactory(SalesforceTLSSocketFactory.getInstance());
+            } catch (KeyManagementException e) {
+                Log.e("HttpAccess", "getOkHttpClientBuilder - Exception thrown while setting SSL socket factory", e);
+            } catch (NoSuchAlgorithmException e) {
+                Log.e("HttpAccess", "getOkHttpClientBuilder - Exception thrown while setting SSL socket factory", e);
+            }
+        }
 
         return builder;
     }
