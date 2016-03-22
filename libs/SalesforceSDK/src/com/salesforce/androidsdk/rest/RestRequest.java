@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import com.google.common.base.Charsets;
-
 import org.json.JSONObject;
 
 import java.io.IOException;
