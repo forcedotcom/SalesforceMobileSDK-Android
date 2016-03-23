@@ -174,7 +174,7 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
             return RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject(params).toString());
         }
         else {
-            MultipartBody.Builder builder = new MultipartBody.Builder();
+            MultipartBody.Builder builder = new MultipartBody.Builder().setType(MultipartBody.FORM);
             for (Map.Entry<String, String> entry : params.entrySet()) {
                 builder.addFormDataPart(entry.getKey(), entry.getValue());
             }
