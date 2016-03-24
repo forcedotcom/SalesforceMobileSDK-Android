@@ -92,7 +92,7 @@ public class SoslSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
-    public Set<String> getListOfRemoteIds(Set<String> localIds) {
+    public Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds) {
         // TODO: Do a SOQL query for each object type with 'IN' clause from localIds.
         return null;
     }

@@ -111,7 +111,7 @@ public class MruSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
-    public Set<String> getListOfRemoteIds(Set<String> localIds) {
+    public Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds) {
         // TODO: Do a SOQL query with 'IN' clause from 'RecentlyViewed' from localIds.
         return null;
     }

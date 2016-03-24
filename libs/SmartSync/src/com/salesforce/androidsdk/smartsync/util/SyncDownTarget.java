@@ -129,10 +129,11 @@ public abstract class SyncDownTarget extends SyncTarget {
     /**
      * Fetches list of IDs still present on the server from the list of local IDs.
      *
+     * @param syncManager SyncManager instance.
      * @param localIds Local IDs from SmartStore.
      * @return List of IDs still present on the server.
      */
-    public abstract Set<String> getListOfRemoteIds(Set<String> localIds);
+    public abstract Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds);
 
     /**
      * @return number of records expected to be fetched - is set when startFetch() is called

@@ -328,7 +328,7 @@ public class SyncManager {
         /*
          * Fetches list of IDs still present on the server from the list of local IDs.
          */
-        final Set<String> remoteIds = ((SyncDownTarget) sync.getTarget()).getListOfRemoteIds(localIds);
+        final Set<String> remoteIds = ((SyncDownTarget) sync.getTarget()).getListOfRemoteIds(this, localIds);
         if (remoteIds != null) {
             localIds.removeAll(remoteIds);
         }
