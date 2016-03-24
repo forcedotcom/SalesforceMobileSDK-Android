@@ -35,6 +35,7 @@ import org.apache.cordova.CordovaWebView;
 import org.apache.cordova.CordovaWebViewEngine;
 import org.apache.cordova.NativeToJsMessageQueue;
 import org.apache.cordova.PluginManager;
+import org.apache.cordova.engine.SystemWebView;
 import org.apache.cordova.engine.SystemWebViewEngine;
 
 /**
@@ -52,6 +53,14 @@ public class SalesforceWebViewEngine extends SystemWebViewEngine {
      */
     public SalesforceWebViewEngine(Context context, CordovaPreferences preferences) {
         super(new SalesforceWebView(context));
+    }
+
+    public SalesforceWebViewEngine(SystemWebView webView) {
+        super(webView, null);
+    }
+
+    public SalesforceWebViewEngine(SystemWebView webView, CordovaPreferences preferences) {
+        super(webView, preferences);
     }
 
     @Override
