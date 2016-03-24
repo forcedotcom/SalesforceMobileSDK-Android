@@ -37,6 +37,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.util.Set;
 
 /**
  * Target for sync down:
@@ -126,6 +127,14 @@ public abstract class SyncDownTarget extends SyncTarget {
     public abstract JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException;
 
     /**
+     * Fetches list of IDs still present on the server from the list of local IDs.
+     *
+     * @param localIds Local IDs from SmartStore.
+     * @return List of IDs still present on the server.
+     */
+    public abstract Set<String> getListOfRemoteIds(Set<String> localIds);
+
+    /**
      * @return number of records expected to be fetched - is set when startFetch() is called
      */
     public int getTotalSize() {
@@ -138,7 +147,6 @@ public abstract class SyncDownTarget extends SyncTarget {
     public QueryType getQueryType() {
         return queryType;
     }
-
 
     /**
      * Gets the latest modification timestamp from the array of records.

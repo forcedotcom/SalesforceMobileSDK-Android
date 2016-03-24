@@ -39,6 +39,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.Set;
 
 /**
  * Target for sync defined by a SOQL query
@@ -119,7 +120,6 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         if (nextRecordsUrl == null) {
             return null;
         }
-
         RestRequest request = new RestRequest(RestRequest.RestMethod.GET, nextRecordsUrl, null);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONObject responseJson = response.asJSONObject();
@@ -128,6 +128,12 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         // Capture next records url
         nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);
         return records;
+    }
+
+    @Override
+    public Set<String> getListOfRemoteIds(Set<String> localIds) {
+        // TODO: Do a SOQL query with 'IN' clause from localIds.
+        return null;
     }
 
     public static String addFilterForReSync(String query, long maxTimeStamp) {

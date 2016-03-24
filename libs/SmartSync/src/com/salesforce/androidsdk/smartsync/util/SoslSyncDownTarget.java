@@ -35,6 +35,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.Set;
 
 /**
  * Target for sync defined by a SOSL query
@@ -82,12 +83,17 @@ public class SoslSyncDownTarget extends SyncDownTarget {
 
         // Recording total size
         totalSize = records.length();
-
         return records;
     }
 
     @Override
     public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
+        return null;
+    }
+
+    @Override
+    public Set<String> getListOfRemoteIds(Set<String> localIds) {
+        // TODO: Do a SOQL query for each object type with 'IN' clause from localIds.
         return null;
     }
 
@@ -97,5 +103,4 @@ public class SoslSyncDownTarget extends SyncDownTarget {
 	public String getQuery() {
 		return query;
 	}
-	
 }

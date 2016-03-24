@@ -39,6 +39,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Target for sync that downloads most recently used records
@@ -101,12 +102,17 @@ public class MruSyncDownTarget extends SyncDownTarget {
 
         // Recording total size
         totalSize = records.length();
-
         return records;
     }
 
     @Override
     public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
+        return null;
+    }
+
+    @Override
+    public Set<String> getListOfRemoteIds(Set<String> localIds) {
+        // TODO: Do a SOQL query with 'IN' clause from 'RecentlyViewed' from localIds.
         return null;
     }
 
