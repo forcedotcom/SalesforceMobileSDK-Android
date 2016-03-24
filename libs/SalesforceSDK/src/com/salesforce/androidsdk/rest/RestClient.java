@@ -73,7 +73,32 @@ public class RestClient {
 	 * Interface through which the result of an asynchronous request is handled.
 	 */
 	public interface AsyncRequestCallback {
+		/**
+		 * NB: onSuccess runs on a network thread
+		 *     If you are making your call from an activity and need to make UI changes
+		 *     make sure to first consume the response and then call runOnUiThread
+		 *
+		 *     result.consumeQuietly(); // consume before going back to main thread
+		 *     runOnUiThread(new Runnable() {
+		 *         @Override
+		 *         public void run() { ... }
+		 *     });
+		 * @param request
+		 * @param response
+		 */
 		void onSuccess(RestRequest request, RestResponse response);
+
+		/**
+		 * NB: onError runs on a network thread
+		 *     If you are making your call from an activity and need to make UI changes
+		 *     make sure to call runOnUiThread
+		 *
+		 *     runOnUiThread(new Runnable() {
+		 *         @Override
+		 *         public void run() { ... }
+		 *     });
+		 * @param exception
+		 */
 		void onError(Exception exception);
 	}
 	
