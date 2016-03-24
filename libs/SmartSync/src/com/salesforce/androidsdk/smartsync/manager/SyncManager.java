@@ -290,11 +290,9 @@ public class SyncManager {
      * Deletes local copies of records that have been deleted on the server.
      *
      * @param syncId Sync ID.
-     * @param callback Callback that has sync status updates.
-     * @return Sync state.
      * @throws JSONException
      */
-    public SyncState syncRemoteDeletes(long syncId, SyncUpdateCallback callback) throws JSONException {
+    public void syncRemoteDeletes(long syncId) throws JSONException {
         if (runningSyncIds.contains(syncId)) {
             throw new SmartSyncException("Cannot run syncRemoteDeletes:" + syncId + ": still running");
         }
@@ -326,19 +324,18 @@ public class SyncManager {
         }
 
         /*
-         * Fetches list of IDs still present on the server from the list of local IDs.
+         * Fetches list of IDs still present on the server from the list of local IDs
+         * and removes the list of IDs that are still present on the server.
          */
         final Set<String> remoteIds = ((SyncDownTarget) sync.getTarget()).getListOfRemoteIds(this, localIds);
         if (remoteIds != null) {
             localIds.removeAll(remoteIds);
         }
-        // TODO: Diff remote IDs and local IDs and delete what's not present from SmartStore.
 
-
-
-
-
-        return sync;
+        // Deletes extra IDs from SmartStore.
+        if (localIds.size() > 0) {
+            // TODO: Remove entries from SmartStore.
+        }
     }
 
 	/**
