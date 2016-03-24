@@ -125,23 +125,34 @@ public class MainActivity extends SalesforceActivity {
 
 		client.sendAsync(restRequest, new AsyncRequestCallback() {
 			@Override
-			public void onSuccess(RestRequest request, RestResponse result) {
-				try {
-					listAdapter.clear();
-					JSONArray records = result.asJSONObject().getJSONArray("records");
-					for (int i = 0; i < records.length(); i++) {
-						listAdapter.add(records.getJSONObject(i).getString("Name"));
-					}					
-				} catch (Exception e) {
-					onError(e);
-				}
+			public void onSuccess(RestRequest request, final RestResponse result) {
+				result.consumeQuietly(); // consume before going back to main thread
+				runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							listAdapter.clear();
+							JSONArray records = result.asJSONObject().getJSONArray("records");
+							for (int i = 0; i < records.length(); i++) {
+								listAdapter.add(records.getJSONObject(i).getString("Name"));
+							}
+						} catch (Exception e) {
+							onError(e);
+						}
+					}
+				});
 			}
 			
 			@Override
-			public void onError(Exception exception) {
-                Toast.makeText(MainActivity.this,
-                               MainActivity.this.getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericError(), exception.toString()),
-                               Toast.LENGTH_LONG).show();
+			public void onError(final Exception exception) {
+				runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						Toast.makeText(MainActivity.this,
+								MainActivity.this.getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericError(), exception.toString()),
+								Toast.LENGTH_LONG).show();
+					}
+				});
 			}
 		});
 	}
