@@ -316,17 +316,21 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
                         @Override
                         public void onSuccess(RestRequest request, RestResponse response) {
-
-                        	/*
-                        	 * The client instance being used here needs to be
-                        	 * refreshed, to ensure we use the new access token. 
-                        	 */
-                        	SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-                        	setSidCookies();
-                            loadVFPingPage();
-                            if (callbackContext != null) {
-                                callbackContext.success(getJSONCredentials());
-                            }
+							runOnUiThread(new Runnable() {
+								@Override
+								public void run() {
+									/*
+									 * The client instance being used here needs to be
+									 * refreshed, to ensure we use the new access token.
+									 */
+									SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+									setSidCookies();
+									loadVFPingPage();
+									if (callbackContext != null) {
+										callbackContext.success(getJSONCredentials());
+									}
+								}
+							});
                         }
 
                         @Override
