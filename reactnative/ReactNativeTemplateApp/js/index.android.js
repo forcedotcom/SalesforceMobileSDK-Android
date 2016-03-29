@@ -37,21 +37,39 @@ var {
     Navigator
 } = React;
 var forceClient = require('./react.force.net.js');
+var oauth = require('./react.force.oauth.js');
 
 var App = React.createClass({
+    getInitialState: function() {
+        return {
+            authenticated: false
+        };
+    },
+
+    componentDidMount: function() {
+        var that = this;
+        oauth.authenticate(
+            function() {
+                that.setState({authenticated:true});
+            },
+            function(error) {
+                console.log('Failed to authenticate:' + error);
+            }
+        );
+    },
+
     render: function() {
+        if (!this.state.authenticated)
+            return (<View/>); // Show splash screen if you have one
+
         return (<Navigator
                   style={styles.container}
                   initialRoute={{name: 'Mobile SDK Sample App', index: 0}}
                   renderScene={(route, navigator) => (<UserList/>)}
-                  navigationBar={
-                          <Navigator.NavigationBar
-                            routeMapper={NavigationBarRouteMapper}
-                          />
-                  }
-                />);
+                  navigationBar={<Navigator.NavigationBar routeMapper={NavigationBarRouteMapper} />} />);
     }
 });
+
 
 var NavigationBarRouteMapper = {
 
