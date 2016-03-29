@@ -309,15 +309,20 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
 						@Override
 						public void onSuccess(RestRequest request, RestResponse response) {
-                        	/*
-                        	 * The client instance being used here needs to be
-                        	 * refreshed, to ensure we use the new access token. 
-                        	 */
-							SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-							setSidCookies();
-							loadVFPingPage();
-                            getAuthCredentials(callbackContext);
-						}
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    /*
+                                     * The client instance being used here needs to be
+                                     * refreshed, to ensure we use the new access token.
+                                     */
+                                    SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+                                    setSidCookies();
+                                    loadVFPingPage();
+                                    getAuthCredentials(callbackContext);
+                                }
+                            });
+                        }
 
 						@Override
 						public void onError(Exception exception) {
@@ -362,15 +367,20 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
             public void onSuccess(RestRequest request, RestResponse response) {
                 Log.i(TAG, "refresh - Refresh succeeded");
 
-            	/*
-            	 * The client instance being used here needs to be
-            	 * refreshed, to ensure we use the new access token. 
-            	 */
-                SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-                setSidCookies();
-                loadVFPingPage();
-                final String frontDoorUrl = getFrontDoorUrl(url, true);
-                loadUrl(frontDoorUrl);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        /*
+                         * The client instance being used here needs to be
+                         * refreshed, to ensure we use the new access token.
+                         */
+                        SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+                        setSidCookies();
+                        loadVFPingPage();
+                        final String frontDoorUrl = getFrontDoorUrl(url, true);
+                        loadUrl(frontDoorUrl);
+                    }
+                });
             }
 
             @Override

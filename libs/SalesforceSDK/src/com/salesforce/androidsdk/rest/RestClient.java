@@ -90,7 +90,32 @@ public class RestClient {
 	 * Interface through which the result of an asynchronous request is handled.
 	 */
 	public interface AsyncRequestCallback {
+		/**
+		 * NB: onSuccess runs on a network thread
+		 *     If you are making your call from an activity and need to make UI changes
+		 *     make sure to first consume the response and then call runOnUiThread
+		 *
+		 *     result.consumeQuietly(); // consume before going back to main thread
+		 *     runOnUiThread(new Runnable() {
+		 *         @Override
+		 *         public void run() { ... }
+		 *     });
+		 * @param request
+		 * @param response
+		 */
 		void onSuccess(RestRequest request, RestResponse response);
+
+		/**
+		 * NB: onError runs on a network thread
+		 *     If you are making your call from an activity and need to make UI changes
+		 *     make sure to call runOnUiThread
+		 *
+		 *     runOnUiThread(new Runnable() {
+		 *         @Override
+		 *         public void run() { ... }
+		 *     });
+		 * @param exception
+		 */
 		void onError(Exception exception);
 	}
 	
@@ -523,6 +548,16 @@ public class RestClient {
                 refreshAccessToken();
                 if (getAuthToken() != null) {
                     request = buildAuthenticatedRequest(request);
+
+					HttpUrl currentInstanceUrl = HttpUrl.get(clientInfo.getInstanceUrl());
+					if (currentInstanceUrl != null && currentInstanceUrl.host() != null) {
+
+						// This happens during instance migration. hosts could change
+						// In that case, the new host should replace the old host in the request object
+						if (!currentInstanceUrl.host().equals(request.url().host())) {
+							request = adjustHostInRequest(request, currentInstanceUrl.host());
+						}
+					}
                     response = chain.proceed(request);
                 }
             }
@@ -530,7 +565,25 @@ public class RestClient {
             return response;
         }
 
-        /**
+		/**
+		 * Build new request which has the new host. This is essential in case of instance migration
+		 *
+		 * @param request
+		 * @param host the host segment of the url to be placed
+		 * @return
+		 */
+		private Request adjustHostInRequest(Request request, final String host) {
+			HttpUrl.Builder urlBuilder = request.url().newBuilder();
+
+			// Only replace the host
+			urlBuilder.host(host);
+
+			Request.Builder builder = request.newBuilder();
+			builder.url(urlBuilder.build());
+			return builder.build();
+		}
+
+		/**
          * Build new request which has authentication header
          * @param request
          * @return
