@@ -2,4 +2,5 @@
 <resources>
     <string name="app_name">SalesforceReact</string>
     <string name="app_package">com.salesforce.androidsdk.reactnative</string>
+    <string name="sf__should_authenticate_but_is_offline">Should authenticate but is offline - cannot proceed</string>
 </resources>

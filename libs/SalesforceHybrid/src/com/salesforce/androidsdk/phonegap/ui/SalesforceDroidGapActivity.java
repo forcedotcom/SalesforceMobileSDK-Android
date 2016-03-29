@@ -61,8 +61,6 @@ import org.apache.cordova.CordovaWebViewImpl;
 import org.json.JSONObject;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
 
 import okhttp3.HttpUrl;
 
@@ -71,20 +69,7 @@ import okhttp3.HttpUrl;
  */
 public class SalesforceDroidGapActivity extends CordovaActivity {
 
-	private static final String TAG = "S..DroidGapActivity";
-
-    // Keys in credentials map
-    private static final String USER_AGENT = "userAgent";
-    private static final String INSTANCE_URL = "instanceUrl";
-    private static final String LOGIN_URL = "loginUrl";
-    private static final String IDENTITY_URL = "identityUrl";
-    private static final String CLIENT_ID = "clientId";
-    private static final String ORG_ID = "orgId";
-    private static final String USER_ID = "userId";
-    private static final String REFRESH_TOKEN = "refreshToken";
-    private static final String ACCESS_TOKEN = "accessToken";
-    private static final String COMMUNITY_ID = "communityId";
-    private static final String COMMUNITY_URL = "communityUrl";
+	private static final String TAG = "SfDroidGapActivity";
 
 	// Rest client
     private RestClient client;
@@ -167,7 +152,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
         		// Web app already loaded
         		else {
-                	Log.i(TAG, "onResume - Already logged in / web app already loaded");
+					Log.i(TAG, "onResume - Already logged in / web app already loaded");
         		}
         	}
         }
@@ -284,7 +269,15 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 	public BootConfig getBootConfig() {
 		return bootconfig;
 	}
-    
+
+    public void logout(CallbackContext callbackContext) {
+        Log.i(TAG, "logout called");
+        SalesforceSDKManager.getInstance().logout(this);
+        if (callbackContext != null) {
+            callbackContext.success();
+        }
+    }
+
     /**
      * Get a RestClient and refresh the auth token
      * @param callbackContext when not null credentials/errors are sent through to callbackContext.success()/error()
@@ -296,11 +289,11 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 			@Override
 			public void authenticatedRestClient(RestClient client) {
 				if (client == null) {
-			    	Log.i(TAG, "authenticate - authenticatedRestClient called with null client");
-					SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
-	            } else {
-			    	Log.i(TAG, "authenticate - authenticatedRestClient called with actual client");
-	                SalesforceDroidGapActivity.this.client = client;
+					Log.i(TAG, "authenticate - authenticatedRestClient called with null client");
+                    logout(null);
+				} else {
+					Log.i(TAG, "authenticate - authenticatedRestClient called with actual client");
+					SalesforceDroidGapActivity.this.client = client;
 
 	                /*
                      * Do a cheap REST call to refresh the access token if needed.
@@ -312,35 +305,50 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
                      * but a stale session ID will cause the WebView to redirect
                      * to the web login.
                      */
-	                SalesforceDroidGapActivity.this.client.sendAsync(RestRequest.getRequestForResources(ApiVersionStrings.getVersionNumber(SalesforceDroidGapActivity.this)), new AsyncRequestCallback() {
+					SalesforceDroidGapActivity.this.client.sendAsync(RestRequest.getRequestForResources(ApiVersionStrings.getVersionNumber(SalesforceDroidGapActivity.this)), new AsyncRequestCallback() {
 
-                        @Override
-                        public void onSuccess(RestRequest request, RestResponse response) {
-
+						@Override
+						public void onSuccess(RestRequest request, RestResponse response) {
                         	/*
                         	 * The client instance being used here needs to be
                         	 * refreshed, to ensure we use the new access token. 
                         	 */
-                        	SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
-                        	setSidCookies();
-                            loadVFPingPage();
-                            if (callbackContext != null) {
-                                callbackContext.success(getJSONCredentials());
-                            }
-                        }
+							SalesforceDroidGapActivity.this.client = SalesforceDroidGapActivity.this.clientManager.peekRestClient();
+							setSidCookies();
+							loadVFPingPage();
+                            getAuthCredentials(callbackContext);
+						}
 
-                        @Override
-                        public void onError(Exception exception) {
-                        	if (callbackContext != null) {
-                            	callbackContext.error(exception.getMessage());
-                        	}
-                        }
-                    });
-	            }
+						@Override
+						public void onError(Exception exception) {
+							if (callbackContext != null) {
+								callbackContext.error(exception.getMessage());
+							}
+						}
+					});
+				}
 			}
-    	});
+		});
     }
-    
+
+	/**
+	 * Get json for credentials
+	 * @param callbackContext
+	 */
+	public void getAuthCredentials(CallbackContext callbackContext) {
+		Log.i(TAG, "getAuthCredentials called");
+		if (client != null) {
+			JSONObject credentials = client.getJSONCredentials();
+			if (callbackContext != null) {
+				callbackContext.success(credentials);
+			}
+		} else {
+			if (callbackContext != null) {
+				callbackContext.error("Never authenticated");
+			}
+		}
+	}
+
     /**
      * If an action causes a redirect to the login page, this method will be called.
      * It causes the session to be refreshed and reloads url through the front door.
@@ -522,30 +530,6 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
    private void addSidCookieForDomain(CookieManager cookieMgr, String domain, String sid) {
 	   String cookieStr = "sid=" + sid;
        cookieMgr.setCookie(domain, cookieStr);
-   }
-
-   /**
-    * @return credentials as JSONObject
-    */
-   public JSONObject getJSONCredentials() {
-	   if (client != null) {
-	       ClientInfo clientInfo = client.getClientInfo();
-	       Map<String, String> data = new HashMap<>();
-	       data.put(ACCESS_TOKEN, client.getAuthToken());
-	       data.put(REFRESH_TOKEN, client.getRefreshToken());
-	       data.put(USER_ID, clientInfo.userId);
-	       data.put(ORG_ID, clientInfo.orgId);
-	       data.put(CLIENT_ID, clientInfo.clientId);
-	       data.put(LOGIN_URL, clientInfo.loginUrl.toString());
-	       data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
-	       data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
-	       data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent());
-	       data.put(COMMUNITY_ID, clientInfo.communityId);
-	       data.put(COMMUNITY_URL, clientInfo.communityUrl);
-	       return new JSONObject(data);
-	   } else {
-		   return null;
-	   }
    }
 
     /**

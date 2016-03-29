@@ -28,8 +28,11 @@ package com.salesforce.androidsdk.rest;
 
 import android.util.Log;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
+
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -50,6 +53,20 @@ import okhttp3.Response;
  * RestClient allows you to send authenticated HTTP requests to a force.com server.
  */
 public class RestClient {
+
+	// Keys in credentials map
+	private static final String USER_AGENT = "userAgent";
+	private static final String INSTANCE_URL = "instanceUrl";
+	private static final String LOGIN_URL = "loginUrl";
+	private static final String IDENTITY_URL = "identityUrl";
+	private static final String CLIENT_ID = "clientId";
+	private static final String ORG_ID = "orgId";
+	private static final String USER_ID = "userId";
+	private static final String REFRESH_TOKEN = "refreshToken";
+	private static final String ACCESS_TOKEN = "accessToken";
+	private static final String COMMUNITY_ID = "communityId";
+	private static final String COMMUNITY_URL = "communityUrl";
+
 
     private static Map<String, OkHttpClient> OK_CLIENTS;
 	private ClientInfo clientInfo;
@@ -137,6 +154,27 @@ public class RestClient {
 	 */
 	public void setOkHttpClient(OkHttpClient okHttpClient) {
 		this.okHttpClient = okHttpClient;
+	}
+
+
+	/**
+	 * @return credentials as JSONObject
+	 */
+	public JSONObject getJSONCredentials() {
+		RestClient.ClientInfo clientInfo = getClientInfo();
+		Map<String, String> data = new HashMap<>();
+		data.put(ACCESS_TOKEN, getAuthToken());
+		data.put(REFRESH_TOKEN, getRefreshToken());
+		data.put(USER_ID, clientInfo.userId);
+		data.put(ORG_ID, clientInfo.orgId);
+		data.put(CLIENT_ID, clientInfo.clientId);
+		data.put(LOGIN_URL, clientInfo.loginUrl.toString());
+		data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
+		data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
+		data.put(USER_AGENT, SalesforceSDKManager.getInstance().getUserAgent());
+		data.put(COMMUNITY_ID, clientInfo.communityId);
+		data.put(COMMUNITY_URL, clientInfo.communityUrl);
+		return new JSONObject(data);
 	}
 
 	@Override
