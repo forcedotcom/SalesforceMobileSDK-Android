@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.auth;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -145,12 +146,20 @@ public class HttpAccessTest extends InstrumentationTestCase {
 			for (String stringToMatch : stringsToMatch) {
 				assertTrue("Response should contain " + stringToMatch, responseAsString.indexOf(stringToMatch) > 0);
 			}
-		} 
-		catch (Exception e) {
+		} catch (Exception e) {
 			fail("Failed to read response body");
 			e.printStackTrace();
 		}
 	}
 
-	
+	/**
+	 * Checks the user agent used by http access.
+	 */
+	public void testUserAgentOfHttpAccess() {
+		final HttpAccess http = new HttpAccess(SalesforceSDKManager.getInstance().getAppContext(),
+				SalesforceSDKManager.getInstance().getUserAgent());
+		final String userAgent = http.getUserAgent();
+		assertTrue("User agent should start with SalesforceMobileSDK/<version>",
+				userAgent.startsWith("SalesforceMobileSDK/" + SalesforceSDKManager.SDK_VERSION));
+	}
 }
