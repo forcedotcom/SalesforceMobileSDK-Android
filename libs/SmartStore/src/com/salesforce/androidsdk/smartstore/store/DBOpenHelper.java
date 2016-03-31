@@ -26,19 +26,27 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.salesforce.androidsdk.accounts.UserAccount;
 
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteDatabaseHook;
 import net.sqlcipher.database.SQLiteOpenHelper;
+
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
-
-import com.salesforce.androidsdk.accounts.UserAccount;
 
 /**
  * Helper class to manage SmartStore's database creation and version management.
@@ -343,4 +351,80 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			return false;
 		}
     }
+
+	/**
+	 * Returns the path to external blobs folder for the given soup in this db.
+	 *
+	 * @param soupName Name of the soup for which to get external blobs folder
+	 *
+	 * @return Path to external blobs folder for the given soup
+	 */
+	public String getExternalSoupBlobsPath(String soupName) {
+		StringBuilder path = new StringBuilder(context.getApplicationInfo().dataDir);
+		path.append("/databases/").append(dbName).append("_external_soup_blobs/").append(soupName).append('/');
+		return path.toString();
+	}
+
+	/**
+	 * Creates the folder for external blobs for the given soup name.
+	 *
+	 * @param soupName Soup for which to create the external blobs folder
+	 */
+	public void createExternalBlobsDirectory(String soupName) {
+		File blobsDirectory = new File(getExternalSoupBlobsPath(soupName));
+		blobsDirectory.mkdirs();
+	}
+
+	/**
+	 * Places the soup blob on file storage. The name and folder are determined by the soup and soup entry id.
+	 *
+	 * @param soupName Name of the soup that the blob belongs to.
+	 * @param soupEntryId Entry id for the soup blob.
+	 * @param soupElt Blob to store on file storage in JSON format.
+	 *
+	 * @return True if operation was successful, false otherwise.
+	 */
+	public boolean packSoup(String soupName, long soupEntryId, JSONObject soupElt) {
+		FileOutputStream outputStream;
+		File file = new File(getExternalSoupBlobsPath(soupName), "soupelt_" + soupEntryId);
+
+		try {
+			outputStream = new FileOutputStream(file, false);
+			outputStream.write(soupElt.toString().getBytes());
+			outputStream.close();
+			return true;
+		} catch (IOException ex) {
+			Log.e("DBOpenHelper:packSoup", "Exception occurred while attempting to write external soup blob.", ex);
+		}
+		return false;
+	}
+
+	/**
+	 * Retrieves the soup blob for the given soup entry id from file storage.
+	 *
+	 * @param soupName Soup name to which the blob belongs.
+	 * @param soupEntryId Entry id for the requested soup blob.
+	 *
+	 * @return The blob from file storage represented as JSON. Returns null if there was an error.
+	 */
+	public JSONObject unpackSoup(String soupName, long soupEntryId) {
+		File file = new File(getExternalSoupBlobsPath(soupName), "soupelt_" + soupEntryId);
+		StringBuilder json = new StringBuilder();
+		JSONObject result = null;
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(file));
+			String line;
+
+			while ((line = br.readLine()) != null) {
+				json.append(line).append('\n');
+			}
+
+			br.close();
+			result = new JSONObject(json.toString());
+
+		} catch (JSONException | IOException ex) {
+			Log.e("DBOpenHelper:unpackSoup", "Exception occurred while attempting to read external soup blob.", ex);
+		}
+		return result;
+	}
 }
