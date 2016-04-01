@@ -36,9 +36,13 @@ import java.util.List;
 
 public class MainActivity extends SalesforceReactActivity {
 
+    /**
+     *
+     * @return true if you want login to happen when application launches
+     *         false otherwise
+     */
 	@Override
 	public boolean shouldAuthenticate() {
-		// return false instead if you don't want login to happen when application launches
 		return true;
 	}
 
