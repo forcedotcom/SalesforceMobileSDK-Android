@@ -1382,4 +1382,20 @@ public class SmartStore  {
         private static final long serialVersionUID = -6369452803270075464L;
 
     }
+
+	/**
+	 * Update soup_names table to soup_attrs
+	 *
+	 * @param db Database for which to update the name of the table
+	 */
+	public static void updateSoupNamesTableToAttrs(SQLiteDatabase db) {
+		synchronized(SmartStore.class) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("ALTER TABLE ")
+					.append(SOUP_NAMES_TABLE)
+					.append(" RENAME TO ")
+					.append(SOUP_ATTRS_TABLE);
+			db.execSQL(sb.toString());
+		}
+	}
 }

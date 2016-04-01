@@ -55,7 +55,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	// 1 --> up until 2.3
 	// 2 --> starting at 2.3 (new meta data table long_operations_status)
-	public static final int DB_VERSION = 2;
+	// 3 --> starting at 3.1.1 (soup_names table changes to soup_attr)
+	public static final int DB_VERSION = 3;
 	public static final String DEFAULT_DB_NAME = "smartstore";
 	private static final String DB_NAME_SUFFIX = ".db";
 	private static final String ORG_KEY_PREFIX = "00D";
@@ -173,6 +174,11 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		db.setLockingEnabled(false);
 		if (oldVersion == 1) {
 			SmartStore.createLongOperationsStatusTable(db);
+		}
+
+		if (oldVersion < 3) {
+			// DB versions before 3 used soup_names, which has changed to soup_attrs
+			SmartStore.updateSoupNamesTableToAttrs(db);
 		}
 	}
 	
