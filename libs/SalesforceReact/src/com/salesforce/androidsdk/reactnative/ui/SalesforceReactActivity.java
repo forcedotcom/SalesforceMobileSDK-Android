@@ -81,6 +81,9 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         // Gets an instance of the passcode manager.
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
 
+        // TODO
+        // Have a user switcher once we have an account manager bridge for react native
+
         // Let observers know
         EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
     }
