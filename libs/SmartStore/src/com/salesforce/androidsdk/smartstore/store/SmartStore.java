@@ -59,8 +59,15 @@ public class SmartStore  {
     // Default
     public static final int DEFAULT_PAGE_SIZE = 10;
 
-	// Table to keep track of soup names
+	/**
+	 * Table to keep track of soup names.
+	 *
+	 * @deprecated This has been deprecated as table has been renamed to {@link #SOUP_ATTRS_TABLE}
+	 */
     protected static final String SOUP_NAMES_TABLE = "soup_names";
+
+	// Table to keep track of soup names and attributes.
+	protected static final String SOUP_ATTRS_TABLE = "soup_attrs";
 
 	// Fts table suffix
 	public static final String FTS_SUFFIX = "_fts";
@@ -147,14 +154,14 @@ public class SmartStore  {
 	        // Create soup_names table
 	        // The table name for the soup will simply be table_<soupId>
 	        sb = new StringBuilder();
-	        sb.append("CREATE TABLE ").append(SOUP_NAMES_TABLE).append(" (")
+	        sb.append("CREATE TABLE ").append(SOUP_ATTRS_TABLE).append(" (")
 	                    .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
 	                    .append(",").append(SOUP_NAME_COL).append(" TEXT")
 	                      .append(")");
 	        db.execSQL(sb.toString());
 	        // Add index on soup_name column
-	        db.execSQL(String.format("CREATE INDEX %s on %s ( %s )", SOUP_NAMES_TABLE + "_0", SOUP_NAMES_TABLE, SOUP_NAME_COL));
-	        
+	        db.execSQL(String.format("CREATE INDEX %s on %s ( %s )", SOUP_ATTRS_TABLE + "_0", SOUP_ATTRS_TABLE, SOUP_NAME_COL));
+
 	        // Create alter_soup_status table
 	        createLongOperationsStatusTable(db);
     	}
@@ -277,7 +284,7 @@ public class SmartStore  {
 	        soupMapValues.put(SOUP_NAME_COL, soupName);
 	        try {
 	            db.beginTransaction();
-	            long soupId = DBHelper.getInstance(db).insert(db, SOUP_NAMES_TABLE, soupMapValues);
+	            long soupId = DBHelper.getInstance(db).insert(db, SOUP_ATTRS_TABLE, soupMapValues);
 	            soupTableName = getSoupTableName(soupId);
 
 				// Do the rest - create table / indexes
@@ -605,7 +612,7 @@ public class SmartStore  {
 
 	            try {
 	                db.beginTransaction();
-	                DBHelper.getInstance(db).delete(db, SOUP_NAMES_TABLE, SOUP_NAME_PREDICATE, soupName);
+	                DBHelper.getInstance(db).delete(db, SOUP_ATTRS_TABLE, SOUP_NAME_PREDICATE, soupName);
 	                DBHelper.getInstance(db).delete(db, SOUP_INDEX_MAP_TABLE, SOUP_NAME_PREDICATE, soupName);
 	                db.setTransactionSuccessful();
 	
@@ -640,7 +647,7 @@ public class SmartStore  {
 	    	List<String> soupNames = new ArrayList<String>();
 	        Cursor cursor = null;
 			try {
-				cursor = DBHelper.getInstance(db).query(db, SOUP_NAMES_TABLE, new String[]{SOUP_NAME_COL}, SOUP_NAME_COL, null, null);
+				cursor = DBHelper.getInstance(db).query(db, SOUP_ATTRS_TABLE, new String[]{SOUP_NAME_COL}, SOUP_NAME_COL, null, null);
 	            if (cursor.moveToFirst()) {
 	                do {
 	                    soupNames.add(cursor.getString(0));

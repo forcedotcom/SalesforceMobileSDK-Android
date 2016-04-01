@@ -529,7 +529,7 @@ public class DBHelper {
    protected String getSoupTableNameFromDb(SQLiteDatabase db, String soupName) {
        Cursor cursor = null;
        try {
-           cursor = query(db, SmartStore.SOUP_NAMES_TABLE, new String[] {SmartStore.ID_COL}, null, null, SmartStore.SOUP_NAME_PREDICATE, soupName);
+           cursor = query(db, SmartStore.SOUP_ATTRS_TABLE, new String[] {SmartStore.ID_COL}, null, null, SmartStore.SOUP_NAME_PREDICATE, soupName);
            if (!cursor.moveToFirst()) {
                return null;
            }
