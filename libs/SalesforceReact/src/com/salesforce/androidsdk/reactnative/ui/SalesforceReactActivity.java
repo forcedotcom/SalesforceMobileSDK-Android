@@ -28,17 +28,16 @@ package com.salesforce.androidsdk.reactnative.ui;
 
 import android.os.Bundle;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.facebook.react.ReactActivity;
 import com.facebook.react.bridge.Callback;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.reactnative.R;
 import com.salesforce.androidsdk.reactnative.bridge.ReactBridgeHelper;
-import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
@@ -53,6 +52,23 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     private RestClient client;
     private ClientManager clientManager;
     private PasscodeManager passcodeManager;
+
+    /**
+     * @return true if you want login to happen as soon as activity is loaded
+     *         false if you want do login at a later point
+     */
+    public boolean shouldAuthenticate() {
+        return true;
+    }
+
+    /**
+     * Called if shouldAuthenticate() returned true but device is offline
+     */
+    public void onErrorAuthenticateOffline() {
+        Toast t = Toast.makeText(this, R.string.sf__should_authenticate_but_is_offline, Toast.LENGTH_LONG);
+        t.show();
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -82,8 +98,45 @@ public abstract class SalesforceReactActivity extends ReactActivity {
             } catch (ClientManager.AccountInfoNotFoundException e) {
                 client = null;
             }
+
+            // Not logged in
+            if (client == null) {
+                onResumeNotLoggedIn();
+            }
+            // Logged in
+            else {
+                Log.i(TAG, "onResume - Already logged in");
+            }
         }
     }
+
+    /**
+     * Called when resuming activity and user is not authenticated
+     */
+    private void onResumeNotLoggedIn() {
+
+        // Need to be authenticated
+        if (shouldAuthenticate()) {
+
+            // Online
+            if (SalesforceSDKManager.getInstance().hasNetwork()) {
+                Log.i(TAG, "onResumeNotLoggedIn - Should authenticate / online - authenticating");
+                login();
+            }
+
+            // Offline
+            else {
+                Log.w(TAG, "onResumeNotLoggedIn - Should authenticate / offline - cannot proceed");
+                onErrorAuthenticateOffline();
+            }
+        }
+
+        // Does not need to be authenticated
+        else {
+            Log.i(TAG, "onResumeNotLoggedIn - Should not authenticate");
+        }
+    }
+
 
     @Override
     public void onUserInteraction() {
@@ -96,6 +149,26 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         passcodeManager.onPause(this);
     }
 
+    protected void login() {
+        Log.i(TAG, "login called");
+        clientManager.getRestClient(this, new RestClientCallback() {
+            @Override
+            public void authenticatedRestClient(RestClient client) {
+                if (client == null) {
+                    Log.i(TAG, "login - authenticatedRestClient called with null client");
+                    logout(null);
+                } else {
+                    Log.i(TAG, "login - authenticatedRestClient called with actual client");
+                    SalesforceReactActivity.this.recreate(); // starting fresh
+                }
+            }
+        });
+    }
+
+    /**
+     * Method called from bridge to logout
+     * @param successCallback
+     */
     public void logout(Callback successCallback) {
         Log.i(TAG, "logout called");
         SalesforceSDKManager.getInstance().logout(this);
@@ -104,51 +177,28 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         }
     }
 
+
+    /**
+     * Method called from bridge to authenticate
+     * @param successCallback
+     * @param errorCallback
+     */
     public void authenticate(final Callback successCallback, final Callback errorCallback) {
         Log.i(TAG, "authenticate called");
-         clientManager.getRestClient(this, new RestClientCallback() {
-
-             @Override
-             public void authenticatedRestClient(RestClient client) {
-                 if (client == null) {
-                     Log.i(TAG, "authenticate - authenticatedRestClient called with null client");
-                     logout(null);
-                 } else {
-                     Log.i(TAG, "authenticate - authenticatedRestClient called with actual client");
-                     SalesforceReactActivity.this.client = client;
-
-
-	                /*
-                     * Do a cheap REST call to refresh the access token if needed.
-                     * If the login took place a while back (e.g. the already logged
-                     * in application was restarted), then the returned session ID
-                     * (access token) might be stale.
-                     */
-                     client.sendAsync(RestRequest.getRequestForResources(ApiVersionStrings.getVersionNumber(SalesforceReactActivity.this)), new RestClient.AsyncRequestCallback() {
-
-                         @Override
-                         public void onSuccess(RestRequest request, RestResponse response) {
-                        	/*
-                        	 * The client instance being used here needs to be
-                        	 * refreshed, to ensure we use the new access token.
-                        	 */
-                             SalesforceReactActivity.this.client = SalesforceReactActivity.this.clientManager.peekRestClient();
-                             getAuthCredentials(successCallback, errorCallback);
-                         }
-
-                         @Override
-                         public void onError(Exception exception) {
-                             if (errorCallback != null) {
-                                 errorCallback.invoke(exception.getMessage());
-                             }
-                         }
-                     });
-                 }
-             }
-         });
-
+        clientManager.getRestClient(this, new RestClientCallback() {
+            @Override
+            public void authenticatedRestClient(RestClient client) {
+                SalesforceReactActivity.this.client = client;
+                getAuthCredentials(successCallback, errorCallback);
+            }
+        });
     }
 
+    /**
+     * Method called from bridge to get auth credentials
+     * @param successCallback
+     * @param errorCallback
+     */
     public void getAuthCredentials(Callback successCallback, Callback errorCallback) {
         Log.i(TAG, "getAuthCredentials called");
         if (client != null) {
