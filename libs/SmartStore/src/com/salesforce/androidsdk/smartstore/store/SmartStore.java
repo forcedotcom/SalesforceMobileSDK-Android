@@ -78,8 +78,13 @@ public class SmartStore  {
     // Table to keep track of status of long operations in flight
     protected static final String LONG_OPERATIONS_STATUS_TABLE = "long_operations_status";
 
+	/**
+	 * Columns of the soup attrs table. When new attributes are added, add an upgrade step in {@link DBOpenHelper#onUpgrade}
+ 	 */
+	protected static final String SOUP_NAME_COL = "soupName";
+	protected static final String SOUP_ATTR_EXTERNAL_STORAGE = "externalStorage";
+
     // Columns of the soup index map table
-    protected static final String SOUP_NAME_COL = "soupName";
     protected static final String PATH_COL = "path";
     protected static final String COLUMN_NAME_COL = "columnName";
     protected static final String COLUMN_TYPE_COL = "columnType";
@@ -157,7 +162,8 @@ public class SmartStore  {
 	        sb.append("CREATE TABLE ").append(SOUP_ATTRS_TABLE).append(" (")
 	                    .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
 	                    .append(",").append(SOUP_NAME_COL).append(" TEXT")
-	                      .append(")");
+						.append(",").append(SOUP_ATTR_EXTERNAL_STORAGE).append(" INTEGER DEFAULT 0")
+			  			.append(")");
 	        db.execSQL(sb.toString());
 	        // Add index on soup_name column
 	        db.execSQL(String.format("CREATE INDEX %s on %s ( %s )", SOUP_ATTRS_TABLE + "_0", SOUP_ATTRS_TABLE, SOUP_NAME_COL));
@@ -1384,17 +1390,15 @@ public class SmartStore  {
     }
 
 	/**
-	 * Update soup_names table to soup_attrs
+	 * Update soup_names table to soup_attrs and adds attribute column for external storage.
 	 *
 	 * @param db Database for which to update the name of the table
 	 */
 	public static void updateSoupNamesTableToAttrs(SQLiteDatabase db) {
 		synchronized(SmartStore.class) {
 			StringBuilder sb = new StringBuilder();
-			sb.append("ALTER TABLE ")
-					.append(SOUP_NAMES_TABLE)
-					.append(" RENAME TO ")
-					.append(SOUP_ATTRS_TABLE);
+			sb.append("ALTER TABLE ").append(SOUP_NAMES_TABLE).append(" RENAME TO ").append(SOUP_ATTRS_TABLE).append(';');
+			sb.append("ALTER TABLE ").append(SOUP_ATTRS_TABLE).append(" ADD COLUMN ").append(SOUP_ATTR_EXTERNAL_STORAGE).append(" TEXT");
 			db.execSQL(sb.toString());
 		}
 	}
