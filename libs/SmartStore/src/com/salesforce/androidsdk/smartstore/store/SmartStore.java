@@ -852,6 +852,7 @@ public class SmartStore  {
             }
             catch (Exception e) {
                 // Ignore and use the null value
+                Log.e("SmartStore.projIdxPaths", "Unexpected error", e);
             }
             contentValues.put(indexSpec.columnName, longValToUse); break;
         case string:
@@ -864,6 +865,7 @@ public class SmartStore  {
             }
             catch (Exception e) {
                 // Ignore and use the null value
+                Log.e("SmartStore.projIdxPaths", "Unexpected error", e);
             }
             contentValues.put(indexSpec.columnName, doubleValToUse); break;
         }
