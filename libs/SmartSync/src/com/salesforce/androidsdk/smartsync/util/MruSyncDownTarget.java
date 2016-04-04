@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartsync.util;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -38,6 +39,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -47,7 +49,8 @@ import java.util.Set;
 public class MruSyncDownTarget extends SyncDownTarget {
 	
 	public static final String FIELDLIST = "fieldlist";
-	public static final String SOBJECT_TYPE = "sobjectType";	
+	public static final String SOBJECT_TYPE = "sobjectType";
+    private static final String TAG = "MruSyncDownTarget";
 	private List<String> fieldlist;
 	private String objectType;
 
@@ -91,9 +94,9 @@ public class MruSyncDownTarget extends SyncDownTarget {
         final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         final List<String> recentItems = pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
 
-        // Building SOQL query to get requested at
-        final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where("Id IN ('"
-                + TextUtils.join("', '", recentItems) + "')").build();
+        // Building SOQL query to get requested at.
+        final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(getIdFieldName()
+                + " IN ('" + TextUtils.join("', '", recentItems) + "')").build();
         return startFetch(syncManager, maxTimeStamp, soql);
     }
 
@@ -116,8 +119,26 @@ public class MruSyncDownTarget extends SyncDownTarget {
 
     @Override
     public Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds) {
-        // TODO: Do a SOQL query with 'IN' clause from 'RecentlyViewed' from localIds.
-        return null;
+        if (localIds == null) {
+            return null;
+        }
+        final String idFieldName = getIdFieldName();
+        final Set<String> remoteIds = new HashSet<String>();
+
+        // Alters the SOQL query to get only IDs.
+        final String soql = SOQLBuilder.getInstanceWithFields(idFieldName).from(objectType).where(idFieldName
+                + " IN ('" + TextUtils.join("', '", localIds) + "')").build();
+
+        // Makes network request and parses the response.
+        try {
+            final JSONArray records = startFetch(syncManager, 0, soql);
+            remoteIds.addAll(parseIdsFromResponse(records));
+        } catch (IOException e) {
+            Log.e(TAG, "IOException thrown while fetching records", e);
+        } catch (JSONException e) {
+            Log.e(TAG, "JSONException thrown while fetching records", e);
+        }
+        return remoteIds;
     }
 
     /**
