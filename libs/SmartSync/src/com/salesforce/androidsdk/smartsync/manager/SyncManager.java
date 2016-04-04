@@ -294,14 +294,14 @@ public class SyncManager {
      */
     public void cleanReSyncGhosts(long syncId) throws JSONException {
         if (runningSyncIds.contains(syncId)) {
-            throw new SmartSyncException("Cannot run syncRemoteDeletes:" + syncId + ": still running");
+            throw new SmartSyncException("Cannot run cleanReSyncGhosts:" + syncId + ": still running");
         }
         final SyncState sync = SyncState.byId(smartStore, syncId);
         if (sync == null) {
-            throw new SmartSyncException("Cannot run syncRemoteDeletes:" + syncId + ": no sync found");
+            throw new SmartSyncException("Cannot run cleanReSyncGhosts:" + syncId + ": no sync found");
         }
         if (sync.getType() != SyncState.Type.syncDown) {
-            throw new SmartSyncException("Cannot run syncRemoteDeletes:" + syncId + ": wrong type:" + sync.getType());
+            throw new SmartSyncException("Cannot run cleanReSyncGhosts:" + syncId + ": wrong type:" + sync.getType());
         }
         final String soupName = sync.getSoupName();
         final String idFieldName = sync.getTarget().getIdFieldName();
@@ -335,7 +335,13 @@ public class SyncManager {
 
         // Deletes extra IDs from SmartStore.
         if (localIds.size() > 0) {
-            // TODO: Remove entries from SmartStore.
+            final Long[] soupEntryIds = new Long[localIds.size()];
+            int index = 0;
+            for (final String localId : localIds) {
+                soupEntryIds[index] = smartStore.lookupSoupEntryId(soupName, idFieldName, localId);
+                index++;
+            }
+            smartStore.delete(soupName, soupEntryIds, true);
         }
     }
 
@@ -349,8 +355,9 @@ public class SyncManager {
     private void updateSync(SyncState sync, SyncState.Status status, int progress, SyncUpdateCallback callback) {
     	try {
     		sync.setStatus(status);
-    		if (progress != UNCHANGED) sync.setProgress(progress);
-
+    		if (progress != UNCHANGED) {
+                sync.setProgress(progress);
+            }
             switch (status) {
                 case NEW:
                     break;
@@ -364,11 +371,9 @@ public class SyncManager {
             }
             callback.onUpdate(sync);
             sync.save(smartStore);
-    	}
-    	catch (JSONException e) {
+    	} catch (JSONException e) {
     		Log.e("SmartSyncMgr:updateSync", "Unexpected json error for sync: " + sync.getId(), e);
-    	}
-        catch (SmartStoreException e) {
+    	} catch (SmartStoreException e) {
             Log.e("SmartSyncMgr:updateSync", "Unexpected smart store error for sync: " + sync.getId(), e);
         }
     }
