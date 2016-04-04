@@ -292,7 +292,7 @@ public class SyncManager {
      *
      * @param syncId Sync ID.
      */
-    public void reSyncCleanGhosts(long syncId) throws JSONException {
+    public void cleanReSyncGhosts(long syncId) throws JSONException {
         if (runningSyncIds.contains(syncId)) {
             throw new SmartSyncException("Cannot run syncRemoteDeletes:" + syncId + ": still running");
         }
