@@ -287,12 +287,12 @@ public class SyncManager {
     }
 
     /**
-     * Deletes local copies of records that have been deleted on the server.
+     * Removes local copies of records that have been deleted on the server
+     * or do not match the query results on the server anymore.
      *
      * @param syncId Sync ID.
-     * @throws JSONException
      */
-    public void syncRemoteDeletes(long syncId) throws JSONException {
+    public void reSyncRemoteUpdates(long syncId) throws JSONException {
         if (runningSyncIds.contains(syncId)) {
             throw new SmartSyncException("Cannot run syncRemoteDeletes:" + syncId + ": still running");
         }
@@ -312,7 +312,8 @@ public class SyncManager {
         final Set<String> localIds = new HashSet<String>();
         QuerySpec querySpec = QuerySpec.buildAllQuerySpec(soupName, idFieldName, QuerySpec.Order.ascending, 10);
         int count = smartStore.countQuery(querySpec);
-        querySpec = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":" + idFieldName + "} FROM {" + soupName + "} WHERE {" + soupName + ":" + LOCAL + "}='false'", count);
+        querySpec = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":" + idFieldName
+                + "} FROM {" + soupName + "} WHERE {" + soupName + ":" + LOCAL + "}='false'", count);
         final JSONArray localIdArray = smartStore.query(querySpec, 0);
         if (localIdArray != null && localIdArray.length() > 0) {
             for (int i = 0; i < localIdArray.length(); i++) {

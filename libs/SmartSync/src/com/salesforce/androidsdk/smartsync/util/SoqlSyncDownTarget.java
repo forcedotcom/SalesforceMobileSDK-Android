@@ -29,8 +29,6 @@ package com.salesforce.androidsdk.smartsync.util;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
@@ -41,11 +39,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -109,16 +104,21 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(query, maxTimeStamp) : query;
+        return startFetch(syncManager, maxTimeStamp, query);
+    }
+
+    @Override
+    public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
+        String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(queryRun, maxTimeStamp) : queryRun;
         RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, queryToRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONObject responseJson = response.asJSONObject();
         JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
 
-        // Record total size
+        // Records total size.
         totalSize = responseJson.getInt(Constants.TOTAL_SIZE);
 
-        // Capture next records url
+        // Captures next records URL.
         nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);
         return records;
     }
@@ -133,7 +133,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         JSONObject responseJson = response.asJSONObject();
         JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
 
-        // Capture next records url
+        // Captures next records URL.
         nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);
         return records;
     }
@@ -146,68 +146,27 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         final String idFieldName = getIdFieldName();
         final Set<String> remoteIds = new HashSet<String>();
 
-        /*
-         * Compute how many SOQL queries are required to get the IDs.
-         * SOQL has a limit of 2000 records per query, so we need to break it up.
-         */
-        final List<Set<String>> uberQueryList = new ArrayList<Set<String>>();
-        Set<String> smallSet = null;
-        for (final String value : localIds) {
-            if (smallSet == null || smallSet.size() == 2000) {
-                uberQueryList.add(smallSet = new HashSet<String>());
+        // Alters the SOQL query to get only IDs.
+        final StringBuilder soql = new StringBuilder("SELECT ");
+        soql.append(idFieldName);
+        soql.append(" FROM");
+        final String[] fromClause = query.toLowerCase().split("from");
+        soql.append(fromClause[1]);
+
+        // Makes network request and parses the response.
+        try {
+            JSONArray records = startFetch(syncManager, 0, soql.toString());
+            remoteIds.addAll(parseIdsFromResponse(records));
+            while (records != null) {
+
+                // Fetch next records, if any.
+                records = continueFetch(syncManager);
+                remoteIds.addAll(parseIdsFromResponse(records));
             }
-            smallSet.add(value);
-        }
-
-        // Iterates through the uber list of sets and creates multiple SOQL queries.
-        for (final Set<String> queryList : uberQueryList) {
-
-            // Constructs a SOQL query to get IDs.
-            final StringBuilder soql = new StringBuilder("SELECT ");
-            soql.append(idFieldName);
-            soql.append(" FROM ");
-
-            // Reads SObject name from the SOQL query itself.
-            final String[] result = query.toLowerCase().split("from");
-            result[1] = result[1].trim();
-            final String[] sObject = result[1].split(" ");
-            soql.append(sObject[0]);
-            soql.append(" WHERE ");
-            soql.append(idFieldName);
-            soql.append(" IN (");
-            for (final String localId : queryList) {
-                soql.append("'");
-                soql.append(localId);
-                soql.append("',");
-            }
-            soql.deleteCharAt(soql.length() - 1);
-            soql.append(")");
-
-            // Makes network request and parses the response.
-            try {
-                final RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()), soql.toString());
-                final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-                if (response != null && response.isSuccess()) {
-                    final JSONObject responseJson = response.asJSONObject();
-                    if (responseJson != null) {
-                        final JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
-                        if (records != null) {
-                            for (int i = 0; i < records.length(); i++) {
-                                final JSONObject idJson = records.optJSONObject(i);
-                                if (idJson != null) {
-                                    remoteIds.add(idJson.optString(idFieldName));
-                                }
-                            }
-                        }
-                    }
-                }
-            } catch (UnsupportedEncodingException e) {
-                Log.e(TAG, "UnsupportedEncodingException thrown while making REST request", e);
-            } catch (IOException e) {
-                Log.e(TAG, "IOException thrown while making REST request", e);
-            } catch (JSONException e) {
-                Log.e(TAG, "JSONException thrown while making REST request", e);
-            }
+        } catch (IOException e) {
+            Log.e(TAG, "IOException thrown while fetching records", e);
+        } catch (JSONException e) {
+            Log.e(TAG, "JSONException thrown while fetching records", e);
         }
         return remoteIds;
     }
@@ -226,6 +185,6 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
      * @return soql query for this target
      */
 	public String getQuery() {
-		return query;
+        return query;
 	}
 }

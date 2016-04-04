@@ -87,18 +87,22 @@ public class MruSyncDownTarget extends SyncDownTarget {
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        RestRequest request = RestRequest.getRequestForMetadata(syncManager.apiVersion, objectType);
-        RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-        List<String> recentItems = pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
+        final RestRequest request = RestRequest.getRequestForMetadata(syncManager.apiVersion, objectType);
+        final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final List<String> recentItems = pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
 
         // Building SOQL query to get requested at
-        String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where("Id IN ('" + TextUtils.join("', '", recentItems) + "')").build();
+        final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where("Id IN ('"
+                + TextUtils.join("', '", recentItems) + "')").build();
+        return startFetch(syncManager, maxTimeStamp, soql);
+    }
 
-        // Get recent items attributes from server
-        request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
-        response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-        JSONObject responseJson = response.asJSONObject();
-        JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
+    @Override
+    public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
+        final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, queryRun);
+        final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final JSONObject responseJson = response.asJSONObject();
+        final JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
 
         // Recording total size
         totalSize = records.length();
