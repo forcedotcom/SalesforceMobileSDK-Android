@@ -44,6 +44,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
@@ -91,6 +92,11 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
         // Object which allows reference to resources living outside the SDK.
         salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
+
+        // Protect against screenshots
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE);
+
         setContentView(getLayoutId());
         final TextView forgotPasscodeView = getForgotPasscodeView();
         if (forgotPasscodeView != null) {

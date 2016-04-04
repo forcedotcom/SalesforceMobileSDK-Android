@@ -37,6 +37,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
@@ -85,6 +86,10 @@ public class LoginActivity extends AccountAuthenticatorActivity
 		LoginOptions loginOptions = LoginOptions.fromBundle(getIntent().getExtras());
 
 		requestFeatures();
+
+		// Protect against screenshots
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
+				WindowManager.LayoutParams.FLAG_SECURE);
 
 		// Setup content view
 		setContentView(salesforceR.layoutLogin());
