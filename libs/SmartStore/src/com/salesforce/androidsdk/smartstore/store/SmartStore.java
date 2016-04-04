@@ -78,13 +78,8 @@ public class SmartStore  {
     // Table to keep track of status of long operations in flight
     protected static final String LONG_OPERATIONS_STATUS_TABLE = "long_operations_status";
 
-	/**
-	 * Columns of the soup attrs table. When new attributes are added, add an upgrade step in {@link DBOpenHelper#onUpgrade}
- 	 */
-	protected static final String SOUP_NAME_COL = "soupName";
-	protected static final String SOUP_ATTR_EXTERNAL_STORAGE = "externalStorage";
-
     // Columns of the soup index map table
+	protected static final String SOUP_NAME_COL = "soupName";
     protected static final String PATH_COL = "path";
     protected static final String COLUMN_NAME_COL = "columnName";
     protected static final String COLUMN_TYPE_COL = "columnType";
@@ -161,9 +156,14 @@ public class SmartStore  {
 	        sb = new StringBuilder();
 	        sb.append("CREATE TABLE ").append(SOUP_ATTRS_TABLE).append(" (")
 	                    .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
-	                    .append(",").append(SOUP_NAME_COL).append(" TEXT")
-						.append(",").append(SOUP_ATTR_EXTERNAL_STORAGE).append(" INTEGER DEFAULT 0")
-			  			.append(")");
+	                    .append(",").append(SOUP_NAME_COL).append(" TEXT");
+
+			// Create columns for all possible soup features
+			for (String feature : SoupSpec.ALL_FEATURES) {
+				sb.append(",").append(feature).append(" INTEGER DEFAULT 0");
+			}
+
+			sb.append(")");
 	        db.execSQL(sb.toString());
 	        // Add index on soup_name column
 	        db.execSQL(String.format("CREATE INDEX %s on %s ( %s )", SOUP_ATTRS_TABLE + "_0", SOUP_ATTRS_TABLE, SOUP_NAME_COL));
@@ -269,7 +269,7 @@ public class SmartStore  {
     }
 
     /**
-     * Register a soup
+     * Register a soup without any features. Use {@link #registerSoupWithSpec(SoupSpec, IndexSpec[])} to enable features such as external storage, etc.
      *
      * Create table for soupName with a column for the soup itself and columns for paths specified in indexSpecs
      * Create indexes on the new table to make lookup faster
@@ -278,32 +278,54 @@ public class SmartStore  {
      * @param indexSpecs
      */
     public void registerSoup(String soupName, IndexSpec[] indexSpecs) {
-    	final SQLiteDatabase db = getDatabase();
-    	synchronized(db) {
-	        if (soupName == null) throw new SmartStoreException("Bogus soup name:" + soupName);
-	        if (indexSpecs.length == 0) throw new SmartStoreException("No indexSpecs specified for soup: " + soupName);
-	        if (hasSoup(soupName)) return; // soup already exist - do nothing
-	
-	        // First get a table name
-	        String soupTableName = null;
-	        ContentValues soupMapValues = new ContentValues();
-	        soupMapValues.put(SOUP_NAME_COL, soupName);
-	        try {
-	            db.beginTransaction();
-	            long soupId = DBHelper.getInstance(db).insert(db, SOUP_ATTRS_TABLE, soupMapValues);
-	            soupTableName = getSoupTableName(soupId);
+		registerSoupWithSpec(new SoupSpec(soupName), indexSpecs);
 
 				// Do the rest - create table / indexes
 				registerSoupUsingTableName(soupName, indexSpecs, soupTableName);
 
-	            db.setTransactionSuccessful();
-	        } finally {
-	            db.endTransaction();
-	        }
-    	}
     }
-        
-    
+
+	/**
+	 * Register a soup using the given soup specifications. This allows the soup to use extra features such as external storage.
+	 *
+	 * Create table for soupName with a column for the soup itself and columns for paths specified in indexSpecs
+	 * Create indexes on the new table to make lookup faster
+	 * Create rows in soup index map table for indexSpecs
+	 * @param soupSpec
+	 * @param indexSpecs
+	 */
+	public void registerSoupWithSpec(SoupSpec soupSpec, IndexSpec[] indexSpecs) {
+		final SQLiteDatabase db = getDatabase();
+		synchronized(db) {
+			String soupName = soupSpec.getSoupName();
+			if (soupName == null) throw new SmartStoreException("Bogus soup name:" + soupName);
+			if (indexSpecs.length == 0) throw new SmartStoreException("No indexSpecs specified for soup: " + soupName);
+			if (hasSoup(soupName)) return; // soup already exist - do nothing
+
+			// First get a table name
+			String soupTableName = null;
+			ContentValues soupMapValues = new ContentValues();
+			soupMapValues.put(SOUP_NAME_COL, soupName);
+
+			// Register features from soup spec
+			for (String feature : soupSpec.getFeatures()) {
+				soupMapValues.put(feature, 1);
+			}
+
+			try {
+				db.beginTransaction();
+				long soupId = DBHelper.getInstance(db).insert(db, SOUP_ATTRS_TABLE, soupMapValues);
+				soupTableName = getSoupTableName(soupId);
+				db.setTransactionSuccessful();
+			} finally {
+				db.endTransaction();
+			}
+
+			// Do the rest - create table / indexes
+			registerSoupUsingTableName(soupSpec, indexSpecs, soupTableName);
+		}
+	}
+
     /**
      * Helper method for registerSoup
 	 * NB: caller is expected to wrap call in a transaction
@@ -311,9 +333,22 @@ public class SmartStore  {
 	 * @param soupName
 	 * @param indexSpecs
 	 * @param soupTableName
+	 *
+	 * @deprecated Use {@link #registerSoupUsingTableName(SoupSpec, IndexSpec[], String)} instead.
 	 */
+	@Deprecated
     protected void registerSoupUsingTableName(String soupName, IndexSpec[] indexSpecs, String soupTableName) {
+		registerSoupUsingTableName(new SoupSpec(soupName), indexSpecs, soupTableName);
+	}
 
+	/**
+	 * Helper method for registerSoup using soup spec
+	 *
+	 * @param soupSpec
+	 * @param indexSpecs
+	 * @param soupTableName
+	 */
+	protected void registerSoupUsingTableName(SoupSpec soupSpec, IndexSpec[] indexSpecs, String soupTableName) {
         // Prepare SQL for creating soup table and its indices
         StringBuilder createTableStmt = new StringBuilder();          // to create new soup table
 		StringBuilder createFtsStmt = new StringBuilder();            // to create fts table
@@ -322,10 +357,19 @@ public class SmartStore  {
 		IndexSpec[] indexSpecsToCache = new IndexSpec[indexSpecs.length];
 		List<String> columnsForFts = new ArrayList<String>();
 
+		// Features as determined by soup specifications
+		String soupName = soupSpec.getSoupName();
+		boolean useExternalStorage = soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE);
+
         createTableStmt.append("CREATE TABLE ").append(soupTableName).append(" (")
-                        .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
-                        .append(", ").append(SOUP_COL).append(" TEXT")
-                        .append(", ").append(CREATED_COL).append(" INTEGER")
+                        .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT");
+
+		if (!useExternalStorage) {
+			// If external storage is used, do not add column for soup in the db since it will be empty.
+			createTableStmt.append(", ").append(SOUP_COL).append(" TEXT");
+		}
+
+		createTableStmt.append(", ").append(CREATED_COL).append(" INTEGER")
                         .append(", ").append(LAST_MODIFIED_COL).append(" INTEGER");
 
 		final String createIndexFormat = "CREATE INDEX %s_%s_idx on %s ( %s )";
@@ -393,6 +437,11 @@ public class SmartStore  {
             for (ContentValues values : soupIndexMapInserts) {
                 DBHelper.getInstance(db).insert(db, SOUP_INDEX_MAP_TABLE, values);
             }
+
+			if (useExternalStorage && dbOpenHelper instanceof DBOpenHelper) {
+				((DBOpenHelper) dbOpenHelper).createExternalBlobsDirectory(soupName);
+			}
+
             db.setTransactionSuccessful();
 
             // Add to soupNameToTableNamesMap
@@ -1398,7 +1447,7 @@ public class SmartStore  {
 		synchronized(SmartStore.class) {
 			StringBuilder sb = new StringBuilder();
 			sb.append("ALTER TABLE ").append(SOUP_NAMES_TABLE).append(" RENAME TO ").append(SOUP_ATTRS_TABLE).append(';');
-			sb.append("ALTER TABLE ").append(SOUP_ATTRS_TABLE).append(" ADD COLUMN ").append(SOUP_ATTR_EXTERNAL_STORAGE).append(" TEXT");
+			sb.append("ALTER TABLE ").append(SOUP_ATTRS_TABLE).append(" ADD COLUMN ").append(SoupSpec.FEATURE_EXTERNAL_STORAGE).append(" TEXT");
 			db.execSQL(sb.toString());
 		}
 	}
