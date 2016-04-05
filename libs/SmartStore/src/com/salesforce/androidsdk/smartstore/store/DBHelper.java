@@ -99,6 +99,9 @@ public class DBHelper {
 	// Cache of soup name to boolean indicating if soup uses FTS
 	private Map<String, Boolean> soupNameToHasFTS = new HashMap<String, Boolean>();
 
+	// Cache of soup name to soup features
+	private Map<String, List<String>> soupNameToFeaturesMap = new HashMap<>();
+
 	// Cache of table name to get-next-id compiled statements
 	private Map<String, SQLiteStatement> tableNameToNextIdStatementsMap = new HashMap<String, SQLiteStatement>();
 
@@ -148,6 +151,24 @@ public class DBHelper {
 	}
 
 	/**
+	 * Caches a set of features given the soup name.
+	 *
+	 * @param soupName
+	 * @param features
+	 */
+	public void cacheFeatures(String soupName, List<String> features) {
+		soupNameToFeaturesMap.put(soupName, features);
+	}
+
+	/**
+	 * @param soupName
+	 * @return The set of features belonging to the given soup name.
+	 */
+	public List<String> getCachedFeatures(String soupName) {
+		return soupNameToFeaturesMap.get(soupName);
+	}
+
+	/**
 	 * @param soupName
 	 * @return
 	 */
@@ -174,6 +195,7 @@ public class DBHelper {
 		soupNameToTableNamesMap.remove(soupName);
 		soupNameToIndexSpecsMap.remove(soupName);
 		soupNameToHasFTS.remove(soupName);
+		soupNameToFeaturesMap.remove(soupName);
 	}
 
 	private void cleanupRawCountSqlToStatementMaps(String tableName) {
@@ -421,6 +443,7 @@ public class DBHelper {
 		// Clears all maps.
 		soupNameToTableNamesMap.clear();
 		soupNameToIndexSpecsMap.clear();
+		soupNameToFeaturesMap.clear();
 		tableNameToInsertHelpersMap.clear();
 		tableNameToNextIdStatementsMap.clear();
 		rawCountSqlToStatementsMap.clear();
@@ -491,6 +514,46 @@ public class DBHelper {
 	}
 
 	/**
+	 * Retrieves the set of features belonging to the given soup.
+	 *
+	 * @param db
+	 * @param soupName
+	 * @return A list of features that belong to the given soup.
+	 */
+	public List<String> getFeatures(SQLiteDatabase db, String soupName) {
+		List<String> features = getCachedFeatures(soupName);
+		if (features == null) {
+			features = getFeaturesFromDb(db, soupName);
+			cacheFeatures(soupName, features);
+		}
+		return features;
+	}
+
+	/**
+	 * Queries the database for features that belong to the given soup name.
+	 *
+	 * @param db
+	 * @param soupName
+	 * @return A list of features that belong to the given soup.
+	 */
+	protected List<String> getFeaturesFromDb(SQLiteDatabase db, String soupName) {
+		Cursor cursor = null;
+		List<String> features = new ArrayList<>();
+		try {
+			cursor = query(db, SmartStore.SOUP_ATTRS_TABLE, SoupSpec.ALL_FEATURES, null, null, SmartStore.SOUP_NAME_PREDICATE, soupName);
+			for (String feature : SoupSpec.ALL_FEATURES) {
+				int enabled = cursor.getInt(cursor.getColumnIndex(feature));
+				if (enabled > 0) {
+					features.add(feature);
+				}
+			}
+		} finally {
+			safeClose(cursor);
+		}
+		return features;
+	}
+
+    /**
      * Return table name for a given soup or null if the soup doesn't exist
      * @param db
      * @param soupName

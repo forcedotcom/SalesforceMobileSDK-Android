@@ -53,10 +53,17 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	private static final String TEST_COMMUNITY_ID = "cid123";
 
 	private Context targetContext;
+	private static final String TEST_SOUP = "test_soup";
+	private static final String TEST_DB = "test_db";
 
 	@Override
 	protected void setUp() throws Exception {
 		this.targetContext = getInstrumentation().getTargetContext();
+
+		// Delete external blobs folder for test db and test soup
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
+		helper.removeExternalBlobsDirectory(TEST_SOUP);
+
 		super.setUp();
 	}
 
@@ -274,22 +281,25 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	 * Ensures we get the expected soup blobs path
 	 */
 	public void testGetExternalSoupBlobsPath() {
-		String soupName = "test_soup";
-		String dbName = "testdb";
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, dbName, null, null);
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
+
+		// Test result when soup name is given
 		assertEquals("Wrong external soup blobs path returned.",
-					 "/data/data/com.salesforce.androidsdk.smartstore.tests/databases/" + dbName + ".db_external_soup_blobs/" + soupName + "/",
-					 helper.getExternalSoupBlobsPath(soupName));
+					 "/data/data/com.salesforce.androidsdk.smartstore.tests/databases/" + TEST_DB + ".db_external_soup_blobs/" + TEST_SOUP + "/",
+					 helper.getExternalSoupBlobsPath(TEST_SOUP));
+
+		// Test result when soup name is null
+		assertEquals("Wrong external soup blobs path returned.",
+					 "/data/data/com.salesforce.androidsdk.smartstore.tests/databases/" + TEST_DB + ".db_external_soup_blobs/",
+					 helper.getExternalSoupBlobsPath(null));
 	}
 
 	/**
 	 * Ensures expected folder was created
 	 */
 	public void testCreateExternalBlobsDirectory() {
-		String soupName = "test_soup";
-		String dbName = "testdb";
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, dbName, null, null);
-		File folder = new File(targetContext.getApplicationInfo().dataDir + "/databases/" + dbName + ".db_external_soup_blobs/" + soupName + "/");
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
+		File folder = new File(targetContext.getApplicationInfo().dataDir + "/databases/" + TEST_DB + ".db_external_soup_blobs/" + TEST_SOUP + "/");
 
 		// Clean up if folder already exists
 		if (folder.exists()) {
@@ -297,31 +307,50 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 		}
 
 		// Act
-		helper.createExternalBlobsDirectory(soupName);
+		boolean result = helper.createExternalBlobsDirectory(TEST_SOUP);
 
 		// Test
+		assertTrue("Create operation was not successful", result);
 		assertTrue("Folder for external blobs was not created.", folder.exists());
 
 		// Clean up
 		folder.delete();
 	}
 
+
+	/**
+	 * Ensures expected folder was created
+	 */
+	public void testRemoveExternalBlobsDirectory() {
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
+		File folder = new File(targetContext.getApplicationInfo().dataDir + "/databases/" + TEST_DB + ".db_external_soup_blobs/" + TEST_SOUP + "/");
+
+		// Create external blobs dir
+		helper.createExternalBlobsDirectory(TEST_SOUP);
+		assertTrue("Folder for external blobs was not created.", folder.exists());
+
+		// Act - delete external blobs dir
+		boolean result = helper.removeExternalBlobsDirectory(TEST_SOUP);
+
+		// Test
+		assertTrue("Remove operation was not successful", result);
+		assertFalse("Folder for external blobs was not removed.", folder.exists());
+	}
+
 	/**
 	 * Ensures soup was created and stored on the file system.
 	 */
-	public void testPackSoup() throws JSONException {
-		String soupName = "test_soup";
-		String dbName = "testdb";
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, dbName, null, null);
-		helper.createExternalBlobsDirectory(soupName);
+	public void testSaveSoupBlob() throws JSONException {
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
+		helper.createExternalBlobsDirectory(TEST_SOUP);
 		long soupEntryId = System.currentTimeMillis();
 		JSONObject soupElt = new JSONObject("{test:true}");
 
 		// Act
-		helper.packSoup(soupName, soupEntryId, soupElt);
+		helper.saveSoupBlob(TEST_SOUP, soupEntryId, soupElt);
 
 		// Verify file was created
-		File blobFile = new File(helper.getExternalSoupBlobsPath(soupName), "soupelt_" + soupEntryId);
+		File blobFile = new File(helper.getExternalSoupBlobsPath(TEST_SOUP), "soupelt_" + soupEntryId);
 		assertTrue("File for blob not found on storage", blobFile.exists());
 
 		// Clean up
@@ -331,28 +360,62 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	/**
 	 * Ensures soup was successfully retrieved from file system
 	 */
-	public void testUnpackSoup() throws JSONException {
-		String soupName = "test_soup";
-		String dbName = "testdb";
-		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, dbName, null, null);
-		helper.createExternalBlobsDirectory(soupName);
+	public void testLoadSoupBlob() throws JSONException {
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
+		helper.createExternalBlobsDirectory(TEST_SOUP);
 		long soupEntryId = System.currentTimeMillis();
 		JSONObject soupElt = new JSONObject("{testKey:" + soupEntryId + "}");
 
 		// First place blob on file system
-		helper.packSoup(soupName, soupEntryId, soupElt);
+		helper.saveSoupBlob(TEST_SOUP, soupEntryId, soupElt);
 
 		// Act
-		JSONObject result = helper.unpackSoup(soupName, soupEntryId);
+		JSONObject result = helper.loadSoupBlob(TEST_SOUP, soupEntryId);
 
 		// Verify
-		assertTrue("Unpacked soup does not have expected keys.", result.has("testKey"));
-		assertEquals("Unpacked soup does not have expected values.", soupEntryId, result.getLong("testKey"));
+		assertTrue("Retrieved soup does not have expected keys.", result.has("testKey"));
+		assertEquals("Retrieved soup does not have expected values.", soupEntryId, result.getLong("testKey"));
 
 		// Clean up
-		File blobFile = new File(helper.getExternalSoupBlobsPath(soupName), "soupelt_" + soupEntryId);
+		File blobFile = new File(helper.getExternalSoupBlobsPath(TEST_SOUP), "soupelt_" + soupEntryId);
 		blobFile.delete();
 	}
+	/**
+	 * Ensures soup was successfully removed from file system
+	 */
+	public void testRemoveSoupBlob() throws JSONException {
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
+		helper.createExternalBlobsDirectory(TEST_SOUP);
+		long soupEntryId = System.currentTimeMillis();
+		JSONObject soupElt = new JSONObject("{testKey:" + soupEntryId + "}");
+
+		// First place blob on file system
+		helper.saveSoupBlob(TEST_SOUP, soupEntryId, soupElt);
+
+		// Act
+		helper.removeSoupBlob(TEST_SOUP, new Long[] { soupEntryId });
+
+		// Verify
+		File blobFile = new File(helper.getExternalSoupBlobsPath(TEST_SOUP), "soupelt_" + soupEntryId);
+		assertFalse("File containing blob was not removed from file storage.", blobFile.exists());
+	}
+
+	/**
+	 * Ensures expected folder was created
+	 */
+	public void testGetSoupBlobFile() {
+		long soupEntryId = System.currentTimeMillis();
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
+
+		// Act
+		File soupBlobFile = helper.getSoupBlobFile(TEST_SOUP, soupEntryId);
+
+		// Verify
+		assertEquals("Soup blob file does not have expected path.",
+					 "/data/data/com.salesforce.androidsdk.smartstore.tests/databases/" + TEST_DB + ".db_external_soup_blobs/" + TEST_SOUP + "/soupelt_" + soupEntryId,
+					 soupBlobFile.getAbsolutePath());
+	}
+
 	/**
 	 * Determines if the given database file exists or not in the database directory.
 	 *
