@@ -731,9 +731,9 @@ public class SyncManagerTest extends ManagerTestCase {
         // Creates 3 accounts on the server.
         final Map<String, String> accounts = createAccountsOnServer(3);
         assertEquals("3 accounts should have been created", accounts.size(), 3);
-        final String[] accountIds = null;
-        accounts.keySet().toArray(accountIds);
-        assertEquals("3 accounts should have been created", accountIds.length, 3);
+        final Set<String> keySet = accounts.keySet();
+        final String[] accountIds = new String[3];
+        keySet.toArray(accountIds);
         final String soupName = "Accounts";
         createAccountsSoup(soupName);
 

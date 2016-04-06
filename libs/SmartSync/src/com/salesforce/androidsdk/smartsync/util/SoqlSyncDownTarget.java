@@ -150,7 +150,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         final StringBuilder soql = new StringBuilder("SELECT ");
         soql.append(idFieldName);
         soql.append(" FROM");
-        final String[] fromClause = query.toLowerCase().split("from");
+        final String[] fromClause = query.split("([fF][rR][oO][mM])");
         soql.append(fromClause[1]);
 
         // Makes network request and parses the response.
