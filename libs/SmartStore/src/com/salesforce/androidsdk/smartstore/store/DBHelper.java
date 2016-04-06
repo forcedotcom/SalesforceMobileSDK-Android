@@ -541,6 +541,9 @@ public class DBHelper {
 		List<String> features = new ArrayList<>();
 		try {
 			cursor = query(db, SmartStore.SOUP_ATTRS_TABLE, SoupSpec.ALL_FEATURES, null, null, SmartStore.SOUP_NAME_PREDICATE, soupName);
+			if (!cursor.moveToFirst()) {
+				return null;
+			}
 			for (String feature : SoupSpec.ALL_FEATURES) {
 				int enabled = cursor.getInt(cursor.getColumnIndex(feature));
 				if (enabled > 0) {
