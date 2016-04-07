@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartsync.util;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -39,13 +40,16 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Target for sync defined by a SOQL query
  */
 public class SoqlSyncDownTarget extends SyncDownTarget {
-	
+
 	public static final String QUERY = "query";
+    private static final String TAG = "SoqlSyncDownTarget";
 	private String query;
     private String nextRecordsUrl;
 
@@ -100,16 +104,21 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(query, maxTimeStamp) : query;
+        return startFetch(syncManager, maxTimeStamp, query);
+    }
+
+    @Override
+    public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
+        String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(queryRun, maxTimeStamp) : queryRun;
         RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, queryToRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONObject responseJson = response.asJSONObject();
         JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
 
-        // Record total size
+        // Records total size.
         totalSize = responseJson.getInt(Constants.TOTAL_SIZE);
 
-        // Capture next records url
+        // Captures next records URL.
         nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);
         return records;
     }
@@ -119,15 +128,47 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         if (nextRecordsUrl == null) {
             return null;
         }
-
         RestRequest request = new RestRequest(RestRequest.RestMethod.GET, nextRecordsUrl, null);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONObject responseJson = response.asJSONObject();
         JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
 
-        // Capture next records url
+        // Captures next records URL.
         nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);
         return records;
+    }
+
+    @Override
+    public Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds) {
+        if (localIds == null) {
+            return null;
+        }
+        final String idFieldName = getIdFieldName();
+        final Set<String> remoteIds = new HashSet<String>();
+
+        // Alters the SOQL query to get only IDs.
+        final StringBuilder soql = new StringBuilder("SELECT ");
+        soql.append(idFieldName);
+        soql.append(" FROM");
+        final String[] fromClause = query.split("([fF][rR][oO][mM])");
+        soql.append(fromClause[1]);
+
+        // Makes network request and parses the response.
+        try {
+            JSONArray records = startFetch(syncManager, 0, soql.toString());
+            remoteIds.addAll(parseIdsFromResponse(records));
+            while (records != null) {
+
+                // Fetch next records, if any.
+                records = continueFetch(syncManager);
+                remoteIds.addAll(parseIdsFromResponse(records));
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "IOException thrown while fetching records", e);
+        } catch (JSONException e) {
+            Log.e(TAG, "JSONException thrown while fetching records", e);
+        }
+        return remoteIds;
     }
 
     public static String addFilterForReSync(String query, long maxTimeStamp) {
@@ -144,6 +185,6 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
      * @return soql query for this target
      */
 	public String getQuery() {
-		return query;
+        return query;
 	}
 }
