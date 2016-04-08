@@ -1472,15 +1472,22 @@ public class SmartStore  {
     }
 
 	/**
-	 * Update soup_names table to soup_attrs and adds attribute column for external storage.
+	 * Updates the given table with a new name and adds columns if any.
 	 *
-	 * @param db Database for which to update the name of the table
+	 * @param db Database to update
+	 * @param oldName Old name of the table to be renamed, null if table should not be renamed.
+	 * @param newName New name of the table to be renamed, null if table should not be renamed.
+	 * @param columns Columns to add. Null if no new columns should be added.
 	 */
-	public static void updateSoupNamesTableToAttrs(SQLiteDatabase db) {
+	public static void updateTableNameAndAddColumns(SQLiteDatabase db, String oldName, String newName, String[] columns) {
 		synchronized(SmartStore.class) {
 			StringBuilder sb = new StringBuilder();
-			sb.append("ALTER TABLE ").append(SOUP_NAMES_TABLE).append(" RENAME TO ").append(SOUP_ATTRS_TABLE).append(';');
-			sb.append("ALTER TABLE ").append(SOUP_ATTRS_TABLE).append(" ADD COLUMN ").append(SoupSpec.FEATURE_EXTERNAL_STORAGE).append(" TEXT");
+			if (oldName != null && newName != null) {
+				sb.append("ALTER TABLE ").append(oldName).append(" RENAME TO ").append(newName).append(';');
+			}
+			for (String column : columns) {
+				sb.append("ALTER TABLE ").append(newName).append(" ADD COLUMN ").append(column).append(" INTEGER DEFAULT 0;");
+			}
 			db.execSQL(sb.toString());
 		}
 	}

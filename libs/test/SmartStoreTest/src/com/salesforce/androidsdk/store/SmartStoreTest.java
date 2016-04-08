@@ -1301,4 +1301,34 @@ public class SmartStoreTest extends SmartStoreTestCase {
                 QuerySpec.buildExactQuerySpec(soupName, orderPath, value, null, null, 5),
                 0, false, "SEARCH", expectedResult);
     }
+
+	/**
+	 * Test updateSoupNamesToAttrs
+	 */
+	public void testUpdateTableNameAndAddColumns() {
+		// Setup db and test values
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		final String TEST_TABLE = "test_table";
+		final String NEW_TEST_TABLE = "new_test_table";
+		final String NEW_COLUMN = "new_column";
+		db.execSQL("CREATE TABLE " + TEST_TABLE + " (id INTEGER PRIMARY KEY)");
+
+		// Ensure old table doesn't already exist
+		Cursor cursor = db.query("sqlite_master", new String[] { "sql" }, "name = ?", new String[] { NEW_TEST_TABLE }, null, null, null);
+		assertEquals("New table should not already be in db.", 0, cursor.getCount());
+		cursor.close();
+
+		// Test table renamed and column added
+		SmartStore.updateTableNameAndAddColumns(db, TEST_TABLE, NEW_TEST_TABLE, new String[] { NEW_COLUMN });
+
+		// Ensure new table has replaced old table
+		cursor = db.query("sqlite_master", new String[] { "sql" }, "name = ?", new String[] { NEW_TEST_TABLE }, null, null, null);
+		cursor.moveToFirst();
+		String schema = cursor.getString(0);
+		cursor.close();
+		assertTrue("New table not found", schema.contains(NEW_TEST_TABLE));
+
+		// Clean up
+		db.execSQL("DROP TABLE " + NEW_TEST_TABLE);
+	}
 }
