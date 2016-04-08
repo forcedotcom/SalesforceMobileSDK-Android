@@ -279,10 +279,6 @@ public class SmartStore  {
      */
     public void registerSoup(String soupName, IndexSpec[] indexSpecs) {
 		registerSoupWithSpec(new SoupSpec(soupName), indexSpecs);
-
-				// Do the rest - create table / indexes
-				registerSoupUsingTableName(soupName, indexSpecs, soupTableName);
-
     }
 
 	/**
@@ -751,7 +747,13 @@ public class SmartStore  {
 	                	}
 	            		// Exact/like/range queries
 	                	else {
-	                		results.put(new JSONObject(cursor.getString(0)));
+							if (cursor.getColumnName(0).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
+								// Presence of external storage column implies we must fetch from storage. Value is of the form soupName_soupEltId
+								String[] externalPath = cursor.getString(0).split("_");
+								results.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(externalPath[0], Long.parseLong(externalPath[1])));
+							} else {
+								results.put(new JSONObject(cursor.getString(0)));
+							}
 	                	}
 	                } while (cursor.moveToNext());
 	            }
@@ -779,7 +781,11 @@ public class SmartStore  {
             }
             else if (valueType == Cursor.FIELD_TYPE_STRING) {
                 String raw = cursor.getString(i);
-                if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
+				if (cursor.getColumnName(i).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
+					// Presence of external storage column implies we must fetch from storage. Value is of the form soupName_soupEltId
+					String[] externalPath = cursor.getString(i).split("_");
+					row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(externalPath[0], Long.parseLong(externalPath[1])));
+				} else if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
                     row.put(new JSONObject(raw));
                     // Note: we could end up returning a string if you aliased the column
                 }
