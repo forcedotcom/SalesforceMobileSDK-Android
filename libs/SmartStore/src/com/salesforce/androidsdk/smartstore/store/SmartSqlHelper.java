@@ -32,9 +32,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.sqlcipher.database.SQLiteDatabase;
-
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+
+import net.sqlcipher.database.SQLiteDatabase;
 
 /**
  * SmartSqlHelper "smart" sql Helper
@@ -110,7 +110,7 @@ public class SmartSqlHelper  {
 				if (path.equals(SOUP)) {
 					if (useExternalStorage) {
 						// Since soup column doesn't exist, create a new column called externalStorage with the value soupName_soupEltId
-						String newColumn = String.format("'%s_' || %s%s as '%s'", soupName, tableQualifier, SmartStore.ID_COL, SoupSpec.FEATURE_EXTERNAL_STORAGE);
+						String newColumn = String.format("'%s:' || %s%s as '%s'", soupName, tableQualifier, SmartStore.ID_COL, SoupSpec.FEATURE_EXTERNAL_STORAGE);
 						matcher.appendReplacement(sql, newColumn);
 					} else {
 						matcher.appendReplacement(sql, tableQualifier + SmartStore.SOUP_COL);

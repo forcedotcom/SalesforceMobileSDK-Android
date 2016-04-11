@@ -749,7 +749,7 @@ public class SmartStore  {
 	                	else {
 							if (cursor.getColumnName(0).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
 								// Presence of external storage column implies we must fetch from storage. Value is of the form soupName_soupEltId
-								String[] externalPath = cursor.getString(0).split("_");
+								String[] externalPath = cursor.getString(0).split(":");
 								results.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(externalPath[0], Long.parseLong(externalPath[1])));
 							} else {
 								results.put(new JSONObject(cursor.getString(0)));
