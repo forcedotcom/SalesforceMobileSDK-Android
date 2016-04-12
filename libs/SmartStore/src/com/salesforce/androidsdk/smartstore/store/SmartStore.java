@@ -750,7 +750,7 @@ public class SmartStore  {
 							if (cursor.getColumnName(0).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
 								// Presence of external storage column implies we must fetch from storage. Value is of the form soupName_soupEltId
 								String[] externalPath = cursor.getString(0).split(":");
-								results.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(externalPath[0], Long.parseLong(externalPath[1])));
+								results.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(externalPath[0], Long.parseLong(externalPath[1]), passcode));
 							} else {
 								results.put(new JSONObject(cursor.getString(0)));
 							}
@@ -783,7 +783,7 @@ public class SmartStore  {
                 String raw = cursor.getString(i);
 				if (cursor.getColumnName(i).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
 					// Presence of external storage column implies we must fetch from storage. Value is of the form soupName_soupEltId
-					String[] externalPath = cursor.getString(i).split("_");
+					String[] externalPath = cursor.getString(i).split(":");
 					row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(externalPath[0], Long.parseLong(externalPath[1])));
 				} else if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
                     row.put(new JSONObject(raw));
@@ -892,7 +892,7 @@ public class SmartStore  {
 
 				// Add to external storage if applicable
 				if (useExternalStorage && dbOpenHelper instanceof DBOpenHelper) {
-					success &= ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupName, soupEntryId, soupElt);
+					success &= ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupName, soupEntryId, soupElt, passcode);
 				}
 
 				// Commit if successful
@@ -991,7 +991,7 @@ public class SmartStore  {
 			JSONArray result = new JSONArray();
 			if (useExternalStorage && dbOpenHelper instanceof DBOpenHelper) {
 				for (long soupEntryId : soupEntryIds) {
-					result.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupName, soupEntryId));
+					result.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupName, soupEntryId, passcode));
 				}
 			} else {
 				Cursor cursor = null;
@@ -1080,8 +1080,8 @@ public class SmartStore  {
 				}
 
 				// Add to external storage if applicable
-				if (success && useExternalStorage && dbOpenHelper instanceof DBOpenHelper) {
-					success = ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupName, soupEntryId, soupElt);
+				if (useExternalStorage && dbOpenHelper instanceof DBOpenHelper) {
+					success = ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupName, soupEntryId, soupElt, passcode);
 				}
 
 				if (success) {

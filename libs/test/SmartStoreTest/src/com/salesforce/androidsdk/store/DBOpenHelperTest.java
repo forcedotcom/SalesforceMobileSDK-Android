@@ -34,6 +34,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
@@ -55,6 +56,7 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	private Context targetContext;
 	private static final String TEST_SOUP = "test_soup";
 	private static final String TEST_DB = "test_db";
+	private static final String PASSCODE = Encryptor.hash("test_key", "hashing-key");
 
 	@Override
 	protected void setUp() throws Exception {
@@ -347,7 +349,7 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 		JSONObject soupElt = new JSONObject("{test:true}");
 
 		// Act
-		helper.saveSoupBlob(TEST_SOUP, soupEntryId, soupElt);
+		helper.saveSoupBlob(TEST_SOUP, soupEntryId, soupElt, PASSCODE);
 
 		// Verify file was created
 		File blobFile = new File(helper.getExternalSoupBlobsPath(TEST_SOUP), "soupelt_" + soupEntryId);
@@ -367,10 +369,10 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 		JSONObject soupElt = new JSONObject("{testKey:" + soupEntryId + "}");
 
 		// First place blob on file system
-		helper.saveSoupBlob(TEST_SOUP, soupEntryId, soupElt);
+		helper.saveSoupBlob(TEST_SOUP, soupEntryId, soupElt, PASSCODE);
 
 		// Act
-		JSONObject result = helper.loadSoupBlob(TEST_SOUP, soupEntryId);
+		JSONObject result = helper.loadSoupBlob(TEST_SOUP, soupEntryId, PASSCODE);
 
 		// Verify
 		assertTrue("Retrieved soup does not have expected keys.", result.has("testKey"));
@@ -390,7 +392,7 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 		JSONObject soupElt = new JSONObject("{testKey:" + soupEntryId + "}");
 
 		// First place blob on file system
-		helper.saveSoupBlob(TEST_SOUP, soupEntryId, soupElt);
+		helper.saveSoupBlob(TEST_SOUP, soupEntryId, soupElt, PASSCODE);
 
 		// Act
 		helper.removeSoupBlob(TEST_SOUP, new Long[] { soupEntryId });
