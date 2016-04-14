@@ -65,7 +65,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 		
-		store.registerSoup(EMPLOYEES_SOUP, new IndexSpec[] {   // should be TABLE_1
+		registerSoup(store, EMPLOYEES_SOUP, new IndexSpec[] {   // should be TABLE_1
 				new IndexSpec(FIRST_NAME, Type.string),        // should be TABLE_1_0
 				new IndexSpec(LAST_NAME, Type.string),         // should be TABLE_1_1
 				new IndexSpec(DEPT_CODE, Type.string),         // should be TABLE_1_2
@@ -75,7 +75,7 @@ public class SmartSqlTest extends SmartStoreTestCase {
 				new IndexSpec(EDUCATION, Type.json1)});
 
 		
-		store.registerSoup(DEPARTMENTS_SOUP, new IndexSpec[] { // should be TABLE_2
+		registerSoup(store, DEPARTMENTS_SOUP, new IndexSpec[] { // should be TABLE_2
 				new IndexSpec(DEPT_CODE, Type.string),         // should be TABLE_2_0
 				new IndexSpec(NAME, Type.string),              // should be TABLE_2_1
 				new IndexSpec(BUDGET, Type.integer),           // should be TABLE_2_2

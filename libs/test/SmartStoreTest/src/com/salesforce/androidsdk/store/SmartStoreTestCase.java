@@ -219,5 +219,12 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	 */
 	public static long idOf(JSONObject soupElt) throws JSONException {
 		return soupElt.getLong(SmartStore.SOUP_ENTRY_ID);
-	}	
+	}
+
+	/**
+	 * Registers a soup with the given name and index specs. Can be overridden if extra features are desired.
+	 */
+	protected void registerSoup(SmartStore store, String soupName, IndexSpec[] indexSpecs) {
+		store.registerSoup(soupName, indexSpecs);
+	}
 }
