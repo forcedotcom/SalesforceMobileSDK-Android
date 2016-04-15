@@ -53,7 +53,7 @@ public class SmartSqlExternalStorageTest extends SmartSqlTest {
 	 */
 	@Override
 	public void testConvertSmartSqlWithSpecialColumns() {
-		assertEquals("select TABLE_1.id, TABLE_1.lastModified, 'employees' as 'externalStorage', TABLE_1.id as '_soupEntryId' from TABLE_1",
+		assertEquals("select TABLE_1.id, TABLE_1.lastModified, 'TABLE_1' as 'externalStorage', TABLE_1.id as '_soupEntryId' from TABLE_1",
 					 store.convertSmartSql("select {employees:_soupEntryId}, {employees:_soupLastModifiedDate}, {employees:_soup} from {employees}"));
 	}
 }

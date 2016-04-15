@@ -433,7 +433,7 @@ public class SmartStore  {
             }
 
 			if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
-				((DBOpenHelper) dbOpenHelper).createExternalBlobsDirectory(soupName);
+				((DBOpenHelper) dbOpenHelper).createExternalBlobsDirectory(soupTableName);
 			}
 
             db.setTransactionSuccessful();
@@ -568,7 +568,7 @@ public class SmartStore  {
 			        	try {
 							JSONObject soupElt;
 							if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
-								soupElt = ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupName, Long.parseLong(soupEntryId), passcode);
+								soupElt = ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, Long.parseLong(soupEntryId), passcode);
 							} else {
 								String soupRaw = cursor.getString(1);
 								soupElt = new JSONObject(soupRaw);
@@ -634,7 +634,7 @@ public class SmartStore  {
 					DBHelper.getInstance(db).delete(db, soupTableName + FTS_SUFFIX, null);
 				}
 				if (dbOpenHelper instanceof DBOpenHelper) {
-					((DBOpenHelper) dbOpenHelper).removeExternalBlobsDirectory(soupName);
+					((DBOpenHelper) dbOpenHelper).removeExternalBlobsDirectory(soupTableName);
 				}
 			} finally {
 				db.setTransactionSuccessful();
@@ -678,7 +678,7 @@ public class SmartStore  {
 	                DBHelper.getInstance(db).delete(db, SOUP_ATTRS_TABLE, SOUP_NAME_PREDICATE, soupName);
 	                DBHelper.getInstance(db).delete(db, SOUP_INDEX_MAP_TABLE, SOUP_NAME_PREDICATE, soupName);
 					if (dbOpenHelper instanceof DBOpenHelper) {
-						((DBOpenHelper) dbOpenHelper).removeExternalBlobsDirectory(soupName);
+						((DBOpenHelper) dbOpenHelper).removeExternalBlobsDirectory(soupTableName);
 					}
 					db.setTransactionSuccessful();
 
@@ -758,9 +758,9 @@ public class SmartStore  {
 	                	else {
 							if (cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE) >= 0) {
 								// Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
-								String soupName = cursor.getString(cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE));
+								String soupTableName = cursor.getString(cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE));
 								Long soupEntryId = cursor.getLong(cursor.getColumnIndex(SmartStore.SOUP_ENTRY_ID));
-								results.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupName, soupEntryId, passcode));
+								results.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, passcode));
 							} else {
 								results.put(new JSONObject(cursor.getString(0)));
 							}
@@ -793,9 +793,9 @@ public class SmartStore  {
                 String raw = cursor.getString(i);
 				if (cursor.getColumnName(i).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
                     // Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
-					String soupName = cursor.getString(cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE));
+					String soupTableName = cursor.getString(cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE));
 					Long soupEntryId = cursor.getLong(cursor.getColumnIndex(SmartStore.SOUP_ENTRY_ID));
-					row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupName, soupEntryId, passcode));
+					row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, passcode));
 					i++; // skip next column (_soupEntryId)
 				} else if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
                     row.put(new JSONObject(raw));
@@ -903,7 +903,7 @@ public class SmartStore  {
 
 				// Add to external storage if applicable
 				if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
-					success &= ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupName, soupEntryId, soupElt, passcode);
+					success &= ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupTableName, soupEntryId, soupElt, passcode);
 				}
 
 				// Commit if successful
@@ -1001,7 +1001,7 @@ public class SmartStore  {
 			JSONArray result = new JSONArray();
 			if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
 				for (long soupEntryId : soupEntryIds) {
-					JSONObject raw = ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupName, soupEntryId, passcode);
+					JSONObject raw = ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, passcode);
 					if (raw != null) {
 						result.put(raw);
 					}
@@ -1092,7 +1092,7 @@ public class SmartStore  {
 
 				// Add to external storage if applicable
 				if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
-					success = ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupName, soupEntryId, soupElt, passcode);
+					success = ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupTableName, soupEntryId, soupElt, passcode);
 				}
 
 				if (success) {
@@ -1242,7 +1242,7 @@ public class SmartStore  {
 				}
 
 				if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
-					((DBOpenHelper) dbOpenHelper).removeSoupBlob(soupName, soupEntryIds);
+					((DBOpenHelper) dbOpenHelper).removeSoupBlob(soupTableName, soupEntryIds);
 				}
 
 	            if (handleTx) {

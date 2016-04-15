@@ -55,7 +55,7 @@ public class ExternalStorageSmartStoreTest extends AbstractSmartStoreTest {
 	}
 
 	@Override
-	protected void assertSameSoupAsDB(JSONObject soup, Cursor c, String soupName, Long id) throws JSONException {
-		JSONTestHelper.assertSameJSON("Wrong value in external storage", soup, ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupName, id, getPasscode()));
+	protected void assertSameSoupAsDB(JSONObject soup, Cursor c, String soupTableName, Long id) throws JSONException {
+		JSONTestHelper.assertSameJSON("Wrong value in external storage", soup, ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, id, getPasscode()));
 	}
 }

@@ -261,7 +261,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 			assertEquals("Wrong id", idOf(soupEltCreated), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupEltCreated.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
 			assertEquals("Wrong value in index column", "ka", c.getString(c.getColumnIndex(soupTableName + "_0")));
-			assertSameSoupAsDB(soupEltCreated, c, TEST_SOUP, idOf(soupEltCreated));
+			assertSameSoupAsDB(soupEltCreated, c, soupTableName, idOf(soupEltCreated));
 			assertEquals("Created date and last modified date should be equal", c.getLong(c.getColumnIndex("created")),  c.getLong(c.getColumnIndex("lastModified")));
 		}
 		finally {
@@ -301,21 +301,21 @@ public class SmartStoreTest extends SmartStoreTestCase {
 			assertEquals("Wrong created date", soupElt1Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
 			assertEquals("Wrong value in index column", "Doe", c.getString(c.getColumnIndex(soupTableName + "_0")));
 			assertEquals("Wrong value in index column", "San Francisco", c.getString(c.getColumnIndex(soupTableName + "_1")));
-			assertSameSoupAsDB(soupElt1Created, c, OTHER_TEST_SOUP, idOf(soupElt1Created));
+			assertSameSoupAsDB(soupElt1Created, c, soupTableName, idOf(soupElt1Created));
 
 			c.moveToNext();
 			assertEquals("Wrong id", idOf(soupElt2Created), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupElt2Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
 			assertEquals("Wrong value in index column", "Jackson", c.getString(c.getColumnIndex(soupTableName + "_0")));
 			assertEquals("Wrong value in index column", "Los Angeles", c.getString(c.getColumnIndex(soupTableName + "_1")));
-			assertSameSoupAsDB(soupElt2Created, c, OTHER_TEST_SOUP, idOf(soupElt2Created));
+			assertSameSoupAsDB(soupElt2Created, c, soupTableName, idOf(soupElt2Created));
 
 			c.moveToNext();
 			assertEquals("Wrong id", idOf(soupElt3Created), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupElt3Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
 			assertEquals("Wrong value in index column", "Watson", c.getString(c.getColumnIndex(soupTableName + "_0")));
 			assertEquals("Wrong value in index column", "London", c.getString(c.getColumnIndex(soupTableName + "_1")));
-			assertSameSoupAsDB(soupElt3Created, c, OTHER_TEST_SOUP, idOf(soupElt3Created));
+			assertSameSoupAsDB(soupElt3Created, c, soupTableName, idOf(soupElt3Created));
 
 		}
 		finally {
