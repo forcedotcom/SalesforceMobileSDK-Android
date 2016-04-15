@@ -109,8 +109,8 @@ public class SmartSqlHelper  {
 				// {soupName:_soup}
 				if (path.equals(SOUP)) {
 					if (useExternalStorage) {
-						// Since soup column doesn't exist, create a new column called externalStorage with the value soupName_soupEltId
-						String newColumn = String.format("'%s:' || %s%s as '%s'", soupName, tableQualifier, SmartStore.ID_COL, SoupSpec.FEATURE_EXTERNAL_STORAGE);
+						// Since soup column doesn't exist, create new columns for the soup name and soup entry id so they can be retrieved from storage
+						String newColumn = String.format("'%s' as '%s', %s%s as '%s'", soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE, tableQualifier, SmartStore.ID_COL, SmartStore.SOUP_ENTRY_ID);
 						matcher.appendReplacement(sql, newColumn);
 					} else {
 						matcher.appendReplacement(sql, tableQualifier + SmartStore.SOUP_COL);

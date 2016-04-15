@@ -756,10 +756,11 @@ public class SmartStore  {
 	                	}
 	            		// Exact/like/range queries
 	                	else {
-							if (cursor.getColumnName(0).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
-								// Presence of external storage column implies we must fetch from storage. Value is of the form soupName:soupEltId
-								String[] externalPath = cursor.getString(0).split(":");
-								results.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(externalPath[0], Long.parseLong(externalPath[1]), passcode));
+							if (cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE) >= 0) {
+								// Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
+								String soupName = cursor.getString(cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE));
+								Long soupEntryId = cursor.getLong(cursor.getColumnIndex(SmartStore.SOUP_ENTRY_ID));
+								results.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupName, soupEntryId, passcode));
 							} else {
 								results.put(new JSONObject(cursor.getString(0)));
 							}
@@ -791,9 +792,11 @@ public class SmartStore  {
             else if (valueType == Cursor.FIELD_TYPE_STRING) {
                 String raw = cursor.getString(i);
 				if (cursor.getColumnName(i).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
-					// Presence of external storage column implies we must fetch from storage. Value is of the form soupName_soupEltId
-					String[] externalPath = cursor.getString(i).split(":");
-					row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(externalPath[0], Long.parseLong(externalPath[1])));
+                    // Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
+					String soupName = cursor.getString(cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE));
+					Long soupEntryId = cursor.getLong(cursor.getColumnIndex(SmartStore.SOUP_ENTRY_ID));
+					row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupName, soupEntryId, passcode));
+					i++; // skip next column (_soupEntryId)
 				} else if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
                     row.put(new JSONObject(raw));
                     // Note: we could end up returning a string if you aliased the column
