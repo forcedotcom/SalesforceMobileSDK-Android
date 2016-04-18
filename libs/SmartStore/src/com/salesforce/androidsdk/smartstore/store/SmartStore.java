@@ -793,8 +793,8 @@ public class SmartStore  {
                 String raw = cursor.getString(i);
 				if (cursor.getColumnName(i).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
                     // Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
-					String soupTableName = cursor.getString(cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE));
-					Long soupEntryId = cursor.getLong(cursor.getColumnIndex(SmartStore.SOUP_ENTRY_ID));
+					String soupTableName = cursor.getString(i);
+					Long soupEntryId = cursor.getLong(i + 1);
 					row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, passcode));
 					i++; // skip next column (_soupEntryId)
 				} else if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
