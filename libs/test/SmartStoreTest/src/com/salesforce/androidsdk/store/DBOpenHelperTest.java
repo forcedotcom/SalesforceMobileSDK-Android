@@ -55,6 +55,7 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 
 	private Context targetContext;
 	private static final String TEST_SOUP = "test_soup";
+	private static final String TEST_SOUP_2 = "test_soup_2";
 	private static final String TEST_DB = "test_db";
 	private static final String PASSCODE = Encryptor.hash("test_key", "hashing-key");
 
@@ -319,6 +320,64 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 		folder.delete();
 	}
 
+	/**
+	 * Test correct size of entire blobs directory is given
+	 */
+	public void testGetSizeOfDir() throws JSONException {
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
+		String contents = "{size:9}";
+		String encryptedContents = Encryptor.hash(contents, PASSCODE);
+
+		// Create first subdirectory
+		helper.createExternalBlobsDirectory(TEST_SOUP);
+		long soupEntryId = 0;
+		for (int i = 0; i < 100; i++) {
+			helper.saveSoupBlob(TEST_SOUP, soupEntryId++, new JSONObject(contents), PASSCODE);
+		}
+
+		// Create second subdirectory
+		helper.createExternalBlobsDirectory(TEST_SOUP_2);
+		soupEntryId = 0;
+		for (int i = 0; i < 100; i++) {
+			helper.saveSoupBlob(TEST_SOUP_2, soupEntryId++, new JSONObject(contents), PASSCODE);
+		}
+
+		// Total size of all files should be 2 (since two subdirs) * 100 (since 100 files each) * filesize of each file after encryption
+		assertEquals("Total file sizes of both subdirectories is not correct.", 2 * 100 * (encryptedContents.length() + 1), helper.getSizeOfDir(null));
+	}
+
+	/**
+	 * Test size of entire blobs directory if it doesnt exist
+	 */
+	public void testGetSizeOfDirDoesntExist() throws JSONException {
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
+		helper.deleteDatabase();
+
+		// Total size of directory that doesnt exist should be 0.
+		assertEquals("Total file size should be zero if directory doesnt exist", 0, helper.getSizeOfDir(null));
+	}
+
+	/**
+	 * Ensures files and all subdirs are removed
+	 */
+	public void testRemoveAllFiles() throws JSONException {
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
+		String contents = "{size:9}";
+
+		// Create subdirectory and tons of files
+		helper.createExternalBlobsDirectory(TEST_SOUP);
+		long soupEntryId = 0;
+		for (int i = 0; i < 100; i++) {
+			helper.saveSoupBlob(TEST_SOUP, soupEntryId++, new JSONObject(contents), PASSCODE);
+		}
+
+		// Act
+		DBOpenHelper.removeAllFiles(new File(helper.getExternalSoupBlobsPath(null)));
+
+		// Test that external blobs folder was removed (it cannot be removed unless all subdirectories/files have been removed
+		File folder = new File(targetContext.getApplicationInfo().dataDir + "/databases/" + TEST_DB + ".db_external_soup_blobs/");
+		assertFalse("Directory must be removed after calling removeAllFiles.", folder.exists());
+	}
 
 	/**
 	 * Ensures expected folder was created

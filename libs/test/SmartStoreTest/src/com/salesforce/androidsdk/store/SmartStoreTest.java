@@ -52,7 +52,7 @@ import java.util.Arrays;
  */
 public class SmartStoreTest extends SmartStoreTestCase {
 
-	private static final String TEST_SOUP = "test_soup";
+	protected static final String TEST_SOUP = "test_soup";
 	private static final String OTHER_TEST_SOUP = "other_test_soup";
 	private static final String THIRD_TEST_SOUP = "third_test_soup";
 	private static final String FOURTH_TEST_SOUP = "fourth_test_soup";

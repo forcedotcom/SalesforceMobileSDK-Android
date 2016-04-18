@@ -243,7 +243,11 @@ public class SmartStore  {
      * Get database size
      */
     public int getDatabaseSize() {
-    	return (int) (new File(getDatabase().getPath()).length()); // XXX That cast will be trouble if the file is more than 2GB 
+		int size =  (int) (new File(getDatabase().getPath()).length()); // XXX That cast will be trouble if the file is more than 2GB
+		if (dbOpenHelper instanceof DBOpenHelper) {
+			size += ((DBOpenHelper) dbOpenHelper).getSizeOfDir(null);
+		}
+    	return size;
     }
     
     /**

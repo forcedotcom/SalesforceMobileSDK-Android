@@ -257,7 +257,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			// Delete external blobs directory
 			StringBuilder blobsDbPath = new StringBuilder(ctx.getApplicationInfo().dataDir);
 			blobsDbPath.append("/databases/").append(fullDBName).append("_external_soup_blobs/");
-			(new File(blobsDbPath.toString())).delete();
+			removeAllFiles(new File(blobsDbPath.toString()));
 		} catch (Exception e) {
 			Log.e("DBOpenHelper:deleteDatabase", "Exception occurred while attempting to delete database.", e);
 		}
@@ -382,6 +382,60 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	/**
+	 * Recursively determines size of all files in the given subdirectory of the soup storage.
+	 *
+	 * @param subDir Subdirectory to determine size of. Use null for top-level directory.
+	 *
+	 * @return Size of all files in all subdirectories.
+     */
+	public int getSizeOfDir(File subDir) {
+		int size = 0;
+		if (subDir == null) {
+			// Top level directory
+			subDir = new File(getExternalSoupBlobsPath(null));
+		}
+		if (subDir.exists()) {
+			File[] files = subDir.listFiles();
+			if (files != null) {
+				for (File file : files) {
+					if (file.isFile()) {
+						size += file.length();
+					} else {
+						size += getSizeOfDir(file);
+					}
+				}
+			}
+		}
+		return size;
+	}
+
+	/**
+	 * Removes all files and folders in the given directory recursively as well as removes itself.
+	 *
+	 * @param dir Directory to remove all files and folders recursively.
+	 * @return True if all delete operations were successful. False otherwise.
+     */
+	public static boolean removeAllFiles(File dir) {
+		if (dir != null && dir.exists()) {
+			boolean success = true;
+			File[] files = dir.listFiles();
+			if (files != null) {
+				for (File file : files) {
+					if (file.isFile()) {
+						success &= file.delete();
+					} else {
+						success &= removeAllFiles(file);
+					}
+				}
+			}
+			success &= dir.delete();
+			return success;
+		} else {
+			return false;
+		}
+	}
+
+	/**
 	 * Creates the folder for external blobs for the given soup name.
 	 *
 	 * @param soupTableName Soup for which to create the external blobs folder
@@ -401,13 +455,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @return True if directory was removed, false otherwise.
 	 */
 	public boolean removeExternalBlobsDirectory(String soupTableName) {
-		File blobsDirectory = new File(getExternalSoupBlobsPath(soupTableName));
-		if (blobsDirectory.exists()) {
-			for (File child : blobsDirectory.listFiles()) {
-				child.delete();
-			}
-		}
-		return blobsDirectory.delete();
+		return removeAllFiles(new File(getExternalSoupBlobsPath(soupTableName)));
 	}
 
 	/**

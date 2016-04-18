@@ -27,6 +27,8 @@
 package com.salesforce.androidsdk.store;
 
 
+import java.io.File;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -57,5 +59,33 @@ public class ExternalStorageSmartStoreTest extends AbstractSmartStoreTest {
 	@Override
 	protected void assertSameSoupAsDB(JSONObject soup, Cursor c, String soupTableName, Long id) throws JSONException {
 		JSONTestHelper.assertSameJSON("Wrong value in external storage", soup, ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, id, getPasscode()));
+	}
+
+	/**
+	 * Test for getDatabaseSize
+	 *
+	 * @throws JSONException
+	 */
+	@Override
+	public void testGetDatabaseSize() throws JSONException {
+		// Get initial values
+		int totalSizeBefore = store.getDatabaseSize();
+		int dBFileSizeBefore = (int) (new File(dbOpenHelper.getWritableDatabase(getPasscode()).getPath()).length());
+		int dbBlobsDirSizeBefore = totalSizeBefore - dBFileSizeBefore;
+
+		// Populate db with several entries
+		for (int i=0; i<100; i++) {
+			JSONObject soupElt = new JSONObject("{'key':'abcd" + i + "', 'value':'va" + i + "', 'otherValue':'ova" + i + "'}");
+			store.create(TEST_SOUP, soupElt);
+		}
+
+		// Check new values
+		int totalSizeAfter = store.getDatabaseSize();
+		int dbFileSizeAfter = (int) (new File(dbOpenHelper.getWritableDatabase(getPasscode()).getPath()).length());
+		int dbBlobsDirSizeAfter = totalSizeAfter - dbFileSizeAfter;
+
+		assertTrue("Database file should be larger", dbFileSizeAfter > dBFileSizeBefore);
+		assertTrue("Soup blobs directory should be larger", dbBlobsDirSizeAfter > dbBlobsDirSizeBefore);
+		assertTrue("Total database size should be larger than just db file", totalSizeAfter > totalSizeBefore);
 	}
 }
