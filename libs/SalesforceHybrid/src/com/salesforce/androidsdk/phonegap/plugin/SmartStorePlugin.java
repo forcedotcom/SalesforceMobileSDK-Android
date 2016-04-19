@@ -380,13 +380,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		final SmartStore smartStore = getSmartStore(arg0);
 
 		// Get soup spec
-		JSONArray soupSpecsJson;
-		try {
-			soupSpecsJson = arg0.getJSONArray(SOUP_SPECS);
-		}catch (JSONException ex) {
-			soupSpecsJson = null;
-		}
-
+		JSONArray soupSpecsJson = arg0.optJSONArray(SOUP_SPECS);
 		if (soupSpecsJson != null) {
 			String[] specs = new String[soupSpecsJson.length()];
 			for (int i = 0; i < soupSpecsJson.length(); i++) {
