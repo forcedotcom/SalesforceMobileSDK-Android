@@ -69,7 +69,8 @@ public class SmartStorePlugin extends ForcePlugin {
 	public static final String ORDER = "order";
 	public static final String PAGE_SIZE = "pageSize";
 	public static final String QUERY_TYPE = "queryType";
-    private static final String SOUP_SPEC = "soupSpec";
+	private static final String SOUP_SPEC = "soupSpec";
+    private static final String SOUP_SPECS = "soupSpecs";
 	static final String TOTAL_ENTRIES = "totalEntries";
 	static final String TOTAL_PAGES = "totalPages";
 	static final String RE_INDEX_DATA = "reIndexData";
@@ -111,7 +112,6 @@ public class SmartStorePlugin extends ForcePlugin {
 		pgMoveCursorToPageIndex,
 		pgQuerySoup,
 		pgRegisterSoup,
-        pgRegisterSoupWithSpec,
 		pgReIndexSoup,
 		pgRemoveFromSoup,
 		pgRemoveSoup,
@@ -154,7 +154,6 @@ public class SmartStorePlugin extends ForcePlugin {
 		                  case pgMoveCursorToPageIndex: moveCursorToPageIndex(args, callbackContext); break;
 		                  case pgQuerySoup:             querySoup(args, callbackContext); break;
 		                  case pgRegisterSoup:          registerSoup(args, callbackContext); break;
-                          case pgRegisterSoupWithSpec:  registerSoupWithSpec(args, callbackContext); break;
 		                  case pgReIndexSoup:			reIndexSoup(args, callbackContext); break;
 		                  case pgRemoveFromSoup:        removeFromSoup(args, callbackContext); break;
 		                  case pgRemoveSoup:            removeSoup(args, callbackContext); break;
@@ -378,46 +377,29 @@ public class SmartStorePlugin extends ForcePlugin {
 		JSONArray indexesJson = arg0.getJSONArray(INDEXES);
 		IndexSpec[] indexSpecs = IndexSpec.fromJSON(indexesJson);
 
-		// Run register
 		final SmartStore smartStore = getSmartStore(arg0);
-		smartStore.registerSoup(soupName, indexSpecs);
+
+		// Get soup spec
+		JSONArray soupSpecsJson;
+		try {
+			soupSpecsJson = arg0.getJSONArray(SOUP_SPECS);
+		}catch (JSONException ex) {
+			soupSpecsJson = null;
+		}
+
+		if (soupSpecsJson != null) {
+			String[] specs = new String[soupSpecsJson.length()];
+			for (int i = 0; i < soupSpecsJson.length(); i++) {
+				specs[i] = soupSpecsJson.getJSONObject(i).getString(SOUP_SPEC);
+			}
+			// Run register soup with spec
+			smartStore.registerSoupWithSpec(new SoupSpec(soupName, specs), indexSpecs);
+		} else {
+			// Run register soup
+			smartStore.registerSoup(soupName, indexSpecs);
+		}
 		callbackContext.success(soupName);
 	}
-
-    /**
-     * Native implementation of pgRegisterSoupWithSpec
-     *
-     * @param args
-     * @param callbackContext
-     *
-     * @return
-     *
-     * @throws JSONException
-     */
-    private void registerSoupWithSpec(JSONArray args, CallbackContext callbackContext) throws JSONException {
-        // Parse args
-        JSONObject arg0 = args.getJSONObject(0);
-        String soupName = arg0.isNull(SOUP_NAME) ? null : arg0.getString(SOUP_NAME);
-        List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
-        JSONArray indexesJson = arg0.getJSONArray(INDEXES);
-        for (int i = 0; i < indexesJson.length(); i++) {
-            JSONObject indexJson = indexesJson.getJSONObject(i);
-            indexSpecs.add(new IndexSpec(indexJson.getString(PATH), SmartStore.Type.valueOf(indexJson.getString(TYPE))));
-        }
-
-        // Get soup spec
-        JSONArray soupSpecsJson = arg0.getJSONArray(SOUP_SPEC);
-        SmartStore smartStore = getSmartStore();
-        String[] specs = new String[soupSpecsJson.length()];
-        for (int i = 0; i < soupSpecsJson.length(); i++) {
-            specs[i] = soupSpecsJson.getJSONObject(i).getString(SOUP_SPEC);
-        }
-
-        // Run register
-        smartStore.registerSoupWithSpec(new SoupSpec(soupName, specs), indexSpecs.toArray(new IndexSpec[0]));
-        callbackContext.success(soupName);
-    }
-
 	/**
 	 * Native implementation of pgQuerySoup
 	 * @param args
