@@ -70,7 +70,8 @@ public class SmartStorePlugin extends ForcePlugin {
 	public static final String PAGE_SIZE = "pageSize";
 	public static final String QUERY_TYPE = "queryType";
 	private static final String SOUP_SPEC = "soupSpec";
-	private static final String SOUP_SPECS = "soupSpecs";
+	private static final String SOUP_SPEC_NAME = "name";
+	private static final String SOUP_SPEC_FEATURES = "features";
 	static final String TOTAL_ENTRIES = "totalEntries";
 	static final String TOTAL_PAGES = "totalPages";
 	static final String RE_INDEX_DATA = "reIndexData";
@@ -380,18 +381,30 @@ public class SmartStorePlugin extends ForcePlugin {
 		final SmartStore smartStore = getSmartStore(arg0);
 
 		// Get soup spec
-		JSONArray soupSpecsJson = arg0.optJSONArray(SOUP_SPECS);
-		if (soupSpecsJson != null) {
-			String[] specs = new String[soupSpecsJson.length()];
-			for (int i = 0; i < soupSpecsJson.length(); i++) {
-				specs[i] = soupSpecsJson.getJSONObject(i).getString(SOUP_SPEC);
+		JSONObject soupSpecObj = arg0.optJSONObject(SOUP_SPEC);
+		if (soupSpecObj != null) {
+
+			// Get soup name
+			soupName = soupSpecObj.getString(SOUP_SPEC_NAME);
+
+			// Get features
+			JSONArray featuresJson = soupSpecObj.getJSONArray(SOUP_SPEC_FEATURES);
+			String[] features = new String[featuresJson.length()];
+			for (int i = 0; i < featuresJson.length(); i++) {
+				features[i] = featuresJson.getString(i);
 			}
+
 			// Run register soup with spec
-			smartStore.registerSoupWithSpec(new SoupSpec(soupName, specs), indexSpecs);
+			smartStore.registerSoupWithSpec(new SoupSpec(soupName, features), indexSpecs);
 		} else {
+
+			// Get soup name
+			soupName = arg0.isNull(SOUP_NAME) ? null : arg0.getString(SOUP_NAME);
+
 			// Run register soup
 			smartStore.registerSoup(soupName, indexSpecs);
 		}
+
 		callbackContext.success(soupName);
 	}
 	/**
