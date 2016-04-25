@@ -64,7 +64,8 @@ public class SmartSyncPlugin extends ForcePlugin {
         syncUp,
         syncDown,
         getSyncStatus,
-        reSync
+        reSync,
+        cleanReSyncGhosts
     }
     
     @Override
