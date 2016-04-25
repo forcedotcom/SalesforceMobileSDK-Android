@@ -192,7 +192,7 @@ public class SmartSyncPlugin extends ForcePlugin {
     }
 
     /**
-     * Native implementatino of reSync.
+     * Native implementation of reSync.
      *
      * @param args
      * @param callbackContext
@@ -216,7 +216,7 @@ public class SmartSyncPlugin extends ForcePlugin {
     }
 
     /**
-     * Native implementatino of cleanReSyncGhosts.
+     * Native implementation of cleanReSyncGhosts.
      *
      * @param args
      * @param callbackContext
