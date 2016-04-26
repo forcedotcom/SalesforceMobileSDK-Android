@@ -1334,6 +1334,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		String schema = cursor.getString(0);
 		cursor.close();
 		assertTrue("New table not found", schema.contains(NEW_TEST_TABLE));
+		assertTrue("New column not found", schema.contains(NEW_COLUMN));
 
 		// Clean up
 		db.execSQL("DROP TABLE " + NEW_TEST_TABLE);

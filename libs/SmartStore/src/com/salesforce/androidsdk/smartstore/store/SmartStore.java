@@ -1502,13 +1502,17 @@ public class SmartStore  {
 	public static void updateTableNameAndAddColumns(SQLiteDatabase db, String oldName, String newName, String[] columns) {
 		synchronized(SmartStore.class) {
 			StringBuilder sb = new StringBuilder();
+			if (columns != null && columns.length > 0) {
+				for (String column : columns) {
+					sb.append("ALTER TABLE ").append(oldName).append(" ADD COLUMN ").append(column).append(" INTEGER DEFAULT 0;");
+				}
+				db.execSQL(sb.toString());
+			}
 			if (oldName != null && newName != null) {
+				sb = new StringBuilder();
 				sb.append("ALTER TABLE ").append(oldName).append(" RENAME TO ").append(newName).append(';');
+				db.execSQL(sb.toString());
 			}
-			for (String column : columns) {
-				sb.append("ALTER TABLE ").append(newName).append(" ADD COLUMN ").append(column).append(" INTEGER DEFAULT 0;");
-			}
-			db.execSQL(sb.toString());
 		}
 	}
 
