@@ -181,7 +181,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         SyncManager syncManager = getSyncManager(isGlobal);
         try {
             syncManager.cleanReSyncGhosts(syncId);
-            ReactBridgeHelper.invokeSuccess(successCallback);
+            successCallback.invoke();
         } catch (JSONException e) {
             Log.e(LOG_TAG, "reSync", e);
             errorCallback.invoke(e.toString());
