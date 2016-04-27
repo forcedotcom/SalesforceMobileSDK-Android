@@ -4,3 +4,6 @@
 [submodule "external/cordova"]
 	path = external/cordova
 	url = https://github.com/apache/cordova-android.git
+[submodule "external/cordova-plugin-whitelist"]
+	path = external/cordova-plugin-whitelist
+	url = https://github.com/apache/cordova-plugin-whitelist
