@@ -1,3 +1,5 @@
+"external\cordova-plugin-whitelist\src\android\WhitelistPlugin.java" "hybrid\HybridSampleApps\SmartSyncExplorerHybrid\src\WhitelistPlugin.java"
+"external\cordova-plugin-whitelist\src\android\WhitelistPlugin.java" "libs\test\SalesforceHybridTest\src\org\apache\cordova\whitelist\WhitelistPlugin.java"
 "external\cordova\bin\templates\project\assets\www\cordova.js" "hybrid\HybridSampleApps\AccountEditor\assets\www\cordova.js"
 "external\cordova\bin\templates\project\assets\www\cordova.js" "hybrid\HybridSampleApps\NoteSync\assets\www\cordova.js"
 "external\cordova\bin\templates\project\assets\www\cordova.js" "hybrid\HybridSampleApps\SmartSyncExplorerHybrid\assets\www\cordova.js"
