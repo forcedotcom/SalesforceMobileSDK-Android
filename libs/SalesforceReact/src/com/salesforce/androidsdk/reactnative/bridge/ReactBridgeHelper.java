@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -68,6 +68,9 @@ public class ReactBridgeHelper  {
         successCallback.invoke("" + value);
     }
 
+    public static void invokeSuccess(Callback successCallback) {
+        successCallback.invoke();
+    }
 
     public static Map<String, Object> toJavaMap(ReadableMap map) {
         Map<String, Object> result = new HashMap<>();
@@ -132,7 +135,6 @@ public class ReactBridgeHelper  {
         return result;
     }
 
-
     public static List<String> toJavaStringList(ReadableArray array) {
         List<String> result = new ArrayList<>();
         for (int i = 0; i<array.size(); i++) {
@@ -174,6 +176,4 @@ public class ReactBridgeHelper  {
         }
         return result;
     }
-
-
 }
