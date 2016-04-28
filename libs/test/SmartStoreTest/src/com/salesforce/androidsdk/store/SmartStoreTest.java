@@ -29,6 +29,9 @@ package com.salesforce.androidsdk.store;
 import android.database.Cursor;
 import android.os.SystemClock;
 
+import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.smartstore.store.AlterSoupLongOperation;
+import com.salesforce.androidsdk.smartstore.store.AlterSoupLongOperation.AlterSoupStep;
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
@@ -1338,5 +1341,26 @@ public class SmartStoreTest extends SmartStoreTestCase {
 
 		// Clean up
 		db.execSQL("DROP TABLE " + NEW_TEST_TABLE);
+	}
+
+	/**
+	 * Ensure data is still accessible after changing key
+	 */
+	public void testChangeKey() throws JSONException {
+		JSONObject soupElt = new JSONObject("{'key':'ka2', 'value':'testValue'}");
+		String newPasscode = Encryptor.hash("123test", "hashing-key");
+
+		// Use normal key to place files on external storage
+		store.create(TEST_SOUP, soupElt);
+
+		// Act
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		SmartStore.changeKey(db, getPasscode(), newPasscode);
+		store = new SmartStore(dbOpenHelper, newPasscode);
+
+		// Verify that data is still accessible
+		JSONArray result = store.query(QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "ka2", null, null, 10), 0);
+		assertEquals("One result expected", 1, result.length());
+		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt, result.getJSONObject(0));
 	}
 }

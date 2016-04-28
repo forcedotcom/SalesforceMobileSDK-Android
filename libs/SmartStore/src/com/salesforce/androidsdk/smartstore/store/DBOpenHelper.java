@@ -458,6 +458,53 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		return removeAllFiles(new File(getExternalSoupBlobsPath(soupTableName)));
 	}
 
+
+	/**
+	 * Re-encrypts the files on external storage with the new key. If external storage is not enabled for any table in the db, this operation is ignored.
+	 *
+	 * @param db DB containing external storage (if applicable).
+	 * @param oldKey Old key with which to decrypt the existing data.
+	 * @param newKey New key with which to encrypt the existing data.
+     */
+	public static void reEncryptAllFiles(SQLiteDatabase db, String oldKey, String newKey) {
+		StringBuilder path = new StringBuilder(db.getPath()).append("_external_soup_blobs/");
+		File dir = new File(path.toString());
+		if (dir.exists()) {
+			File[] tables = dir.listFiles();
+			if (tables != null) {
+				for (File table : tables) {
+					File[] blobs = table.listFiles();
+					if (blobs != null) {
+						for (File blob : blobs) {
+							StringBuilder json = new StringBuilder();
+							String result = null;
+							try {
+								BufferedReader br = new BufferedReader(new FileReader(blob));
+								String line;
+
+								while ((line = br.readLine()) != null) {
+									json.append(line).append('\n');
+								}
+
+								br.close();
+								result = Encryptor.decrypt(json.toString(), oldKey);
+
+								blob.delete();
+
+								FileOutputStream outputStream = new FileOutputStream(blob, false);
+								outputStream.write(Encryptor.encrypt(result, newKey).getBytes());
+								outputStream.close();
+
+							} catch (IOException ex) {
+								Log.e("DBOpenHelper:reEncryptAllFiles", "Exception occurred while rekeying external files.", ex);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
 	/**
 	 * Places the soup blob on file storage. The name and folder are determined by the soup and soup entry id.
 	 *

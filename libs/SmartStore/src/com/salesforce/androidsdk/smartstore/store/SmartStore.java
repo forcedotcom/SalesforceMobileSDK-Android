@@ -120,12 +120,14 @@ public class SmartStore  {
      * Changes the encryption key on the smartstore.
      *
      * @param db Database object.
+	 * @param oldKey Old encryption key.
      * @param newKey New encryption key.
      */
-    public static synchronized void changeKey(SQLiteDatabase db, String newKey) {
+    public static synchronized void changeKey(SQLiteDatabase db, String oldKey, String newKey) {
     	synchronized(db) {
 	        if (newKey != null && !newKey.trim().equals("")) {
 	            db.execSQL("PRAGMA rekey = '" + newKey + "'");
+				DBOpenHelper.reEncryptAllFiles(db, oldKey, newKey);
 	        }
     	}
     }
