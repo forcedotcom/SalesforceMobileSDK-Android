@@ -127,7 +127,7 @@ public class SmartStore  {
     	synchronized(db) {
 	        if (newKey != null && !newKey.trim().equals("")) {
 	            db.execSQL("PRAGMA rekey = '" + newKey + "'");
-				DBOpenHelper.reEncryptAllFiles(db, oldKey, newKey);
+                DBOpenHelper.reEncryptAllFiles(db, oldKey, newKey);
 	        }
     	}
     }

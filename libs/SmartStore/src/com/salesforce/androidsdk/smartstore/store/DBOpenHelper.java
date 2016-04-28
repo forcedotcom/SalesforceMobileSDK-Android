@@ -62,6 +62,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static final String SOUP_ELEMENT_PREFIX = "soupelt_";
 	private static final String DB_NAME_SUFFIX = ".db";
 	private static final String ORG_KEY_PREFIX = "00D";
+	private static final String EXTERNAL_BLOBS_SUFFIX = "_external_soup_blobs/";
+	private static String dataDir;
+	private String dbName;
 
 	/*
 	 * Cache for the helper instances
@@ -256,7 +259,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 			// Delete external blobs directory
 			StringBuilder blobsDbPath = new StringBuilder(ctx.getApplicationInfo().dataDir);
-			blobsDbPath.append("/databases/").append(fullDBName).append("_external_soup_blobs/");
+			blobsDbPath.append("/databases/").append(fullDBName).append(EXTERNAL_BLOBS_SUFFIX);
 			removeAllFiles(new File(blobsDbPath.toString()));
 		} catch (Exception e) {
 			Log.e("DBOpenHelper:deleteDatabase", "Exception occurred while attempting to delete database.", e);
@@ -374,7 +377,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 */
 	public String getExternalSoupBlobsPath(String soupTableName) {
 		StringBuilder path = new StringBuilder(context.getApplicationInfo().dataDir);
-		path.append("/databases/").append(dbName).append("_external_soup_blobs/");
+		path.append("/databases/").append(dbName).append(EXTERNAL_BLOBS_SUFFIX);
 		if (soupTableName != null) {
 			path.append(soupTableName).append('/');
 		}
@@ -467,7 +470,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param newKey New key with which to encrypt the existing data.
      */
 	public static void reEncryptAllFiles(SQLiteDatabase db, String oldKey, String newKey) {
-		StringBuilder path = new StringBuilder(db.getPath()).append("_external_soup_blobs/");
+		StringBuilder path = new StringBuilder(db.getPath()).append(EXTERNAL_BLOBS_SUFFIX);
 		File dir = new File(path.toString());
 		if (dir.exists()) {
 			File[] tables = dir.listFiles();
