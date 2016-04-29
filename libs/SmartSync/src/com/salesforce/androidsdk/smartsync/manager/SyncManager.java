@@ -369,12 +369,14 @@ public class SyncManager {
                     runningSyncIds.remove(sync.getId());
                     break;
             }
-            callback.onUpdate(sync);
             sync.save(smartStore);
     	} catch (JSONException e) {
     		Log.e("SmartSyncMgr:updateSync", "Unexpected json error for sync: " + sync.getId(), e);
     	} catch (SmartStoreException e) {
             Log.e("SmartSyncMgr:updateSync", "Unexpected smart store error for sync: " + sync.getId(), e);
+        }
+        finally {
+            callback.onUpdate(sync);
         }
     }
     
