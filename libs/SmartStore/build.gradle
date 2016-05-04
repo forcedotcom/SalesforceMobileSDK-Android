@@ -3,7 +3,6 @@ apply plugin: 'com.android.library'
 
 dependencies {
   compile project(':libs:SalesforceSDK')
-  compile 'com.facebook.react:react-native:0.20.+'
   compile 'net.zetetic:android-database-sqlcipher:3.4.0+'
 }
 
