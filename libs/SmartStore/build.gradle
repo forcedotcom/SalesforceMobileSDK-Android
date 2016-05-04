@@ -3,7 +3,8 @@ apply plugin: 'com.android.library'
 
 dependencies {
   compile project(':libs:SalesforceSDK')
-  compile files('libs/sqlcipher.jar')
+  compile 'com.facebook.react:react-native:0.20.+'
+  compile 'net.zetetic:android-database-sqlcipher:3.4.0+'
 }
 
 android {

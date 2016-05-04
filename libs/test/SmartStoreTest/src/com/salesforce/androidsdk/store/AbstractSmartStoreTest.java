@@ -86,6 +86,8 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 
 		assertTrue("ENABLE_FTS4 flag not found in compile options", compileOptions.contains("ENABLE_FTS4"));
 		assertTrue("ENABLE_FTS3_PARENTHESIS flag not found in compile options", compileOptions.contains("ENABLE_FTS3_PARENTHESIS"));
+		assertTrue("ENABLE_FTS5 flag not found in compile options", compileOptions.contains("ENABLE_FTS5"));
+		assertTrue("ENABLE_JSON1 flag not found in compile options", compileOptions.contains("ENABLE_JSON1"));
 	}
 
 	/**
