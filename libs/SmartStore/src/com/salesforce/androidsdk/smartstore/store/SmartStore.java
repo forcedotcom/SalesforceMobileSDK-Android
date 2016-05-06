@@ -294,10 +294,17 @@ public class SmartStore  {
 
         int i = 0;
         for (IndexSpec indexSpec : indexSpecs) {
-            // for create table
+            // Column name or expression the db index is on
             String columnName = soupTableName + "_" + i;
-            String columnType = indexSpec.type.getColumnType();
-            createTableStmt.append(", ").append(columnName).append(" ").append(columnType);
+            if (TypeGroup.value_indexed_with_json_extract.isMember(indexSpec.type)) {
+                columnName = "json_extract(" + SOUP_COL + ", '$." + indexSpec.path + "')";
+            }
+
+            // for create table
+            if (TypeGroup.value_extracted_to_column.isMember(indexSpec.type)) {
+                String columnType = indexSpec.type.getColumnType();
+                createTableStmt.append(", ").append(columnName).append(" ").append(columnType);
+            }
 
 			// for fts
 			if (indexSpec.type == Type.full_text) {
@@ -469,14 +476,14 @@ public class SmartStore  {
 			        	try {
 			            	JSONObject soupElt = new JSONObject(soupRaw);
 							ContentValues contentValues = new ContentValues();
-							projectIndexedPaths(soupElt, contentValues, indexSpecs, null);
+							projectIndexedPaths(soupElt, contentValues, indexSpecs, TypeGroup.value_extracted_to_column);
 			                DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "");
 
 							// Fts
 							if (hasFts) {
 								String soupTableNameFts = soupTableName + FTS_SUFFIX;
 								ContentValues contentValuesFts = new ContentValues();
-								projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
+								projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, TypeGroup.value_extracted_to_fts_column);
 								DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, DOCID_PREDICATE, soupEntryId + "");
 							}
 			        	}
@@ -778,7 +785,7 @@ public class SmartStore  {
 	            contentValues.put(CREATED_COL, now);
 	            contentValues.put(LAST_MODIFIED_COL, now);
 	            contentValues.put(SOUP_COL, soupElt.toString());
-				projectIndexedPaths(soupElt, contentValues, indexSpecs, null);
+				projectIndexedPaths(soupElt, contentValues, indexSpecs, TypeGroup.value_extracted_to_column);
 
 	            // Inserting into database
 	            boolean success = DBHelper.getInstance(db).insert(db, soupTableName, contentValues) == soupEntryId;
@@ -788,7 +795,7 @@ public class SmartStore  {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
 					contentValuesFts.put(DOCID_COL, soupEntryId);
-					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
+					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, TypeGroup.value_extracted_to_fts_column);
 					// InsertHelper not working against virtual fts table
 					db.insert(soupTableNameFts, null, contentValuesFts);
 				}
@@ -823,15 +830,15 @@ public class SmartStore  {
 	}
 
 	/**
-	 * Populate content values by projecting index specs that match typeFilter (or all if typeFilter is null)
+	 * Populate content values by projecting index specs that have a type in typeGroup
 	 * @param soupElt
 	 * @param contentValues
 	 * @param indexSpecs
-	 * @param typeFilter pass null for all
+	 * @param typeGroup
 	 */
-	private void projectIndexedPaths(JSONObject soupElt, ContentValues contentValues, IndexSpec[] indexSpecs, Type typeFilter) {
+	private void projectIndexedPaths(JSONObject soupElt, ContentValues contentValues, IndexSpec[] indexSpecs, TypeGroup typeGroup) {
 		for (IndexSpec indexSpec : indexSpecs) {
-			if (typeFilter == null || typeFilter == indexSpec.type) {
+			if (typeGroup.isMember(indexSpec.type)) {
 				projectIndexedPath(soupElt, contentValues, indexSpec);
 			}
 		}
@@ -854,7 +861,8 @@ public class SmartStore  {
                 // Ignore and use the null value
                 Log.e("SmartStore.projIdxPaths", "Unexpected error", e);
             }
-            contentValues.put(indexSpec.columnName, longValToUse); break;
+            contentValues.put(indexSpec.columnName, longValToUse);
+            break;
         case string:
         case full_text:
             contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
@@ -953,7 +961,7 @@ public class SmartStore  {
 				ContentValues contentValues = new ContentValues();
 				contentValues.put(SOUP_COL, soupElt.toString());
 				contentValues.put(LAST_MODIFIED_COL, now);
-				projectIndexedPaths(soupElt, contentValues, indexSpecs, null);
+				projectIndexedPaths(soupElt, contentValues, indexSpecs, TypeGroup.value_extracted_to_column);
 
 				// Updating database
 				boolean success = DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "") == 1;
@@ -962,7 +970,7 @@ public class SmartStore  {
 				if (success && hasFTS(soupName)) {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
-					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
+					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, TypeGroup.value_extracted_to_fts_column);
 					success = DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, DOCID_PREDICATE, soupEntryId + "") == 1;
 				}
 
@@ -1218,7 +1226,11 @@ public class SmartStore  {
      * Enum for column type
      */
     public enum Type {
-        string("TEXT"), integer("INTEGER"), floating("REAL"), full_text("TEXT");
+		string("TEXT"),
+        integer("INTEGER"),
+        floating("REAL"),
+        full_text("TEXT"),
+        json1(null);
 
         private String columnType;
 
@@ -1230,7 +1242,33 @@ public class SmartStore  {
             return columnType;
         }
     }
-    
+
+    /**
+      * Enum for type groups
+      */
+    public enum TypeGroup {
+        value_extracted_to_column {
+            @Override
+            public boolean isMember(Type type) {
+                return type == Type.string || type == Type.integer || type == Type.floating || type == Type.full_text;
+            }
+        },
+        value_extracted_to_fts_column {
+            @Override
+            public boolean isMember(Type type) {
+                return type == Type.full_text;
+            }
+        },
+        value_indexed_with_json_extract {
+            @Override
+            public boolean isMember(Type type) {
+                return type == Type.json1;
+            }
+        };
+
+        public abstract boolean isMember(Type type);
+    }
+
     /**
      * Exception thrown by smart store
      *
