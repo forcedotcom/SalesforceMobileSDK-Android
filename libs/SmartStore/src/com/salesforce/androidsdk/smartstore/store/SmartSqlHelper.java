@@ -120,7 +120,7 @@ public class SmartSqlHelper  {
 				// {soupName:path}
 				else {
 					String columnName = getColumnNameForPathForSmartSql(db, soupName, path, position);
-					matcher.appendReplacement(sql, columnName);
+					matcher.appendReplacement(sql, columnName.replace("$", "\\$") /* treat any $ as litteral */);
 				}
 			} else if (parts.length > 2) {
 				reportSmartSqlError("Invalid soup/path reference " + fullMatch, position);

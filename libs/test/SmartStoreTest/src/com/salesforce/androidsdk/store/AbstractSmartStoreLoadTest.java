@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -50,10 +50,10 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 /**
  * Set of tests for the smart store loading numerous and/or large entries and querying them back
  */
-public class SmartStoreLoadTest extends InstrumentationTestCase {
+public abstract class AbstractSmartStoreLoadTest extends InstrumentationTestCase {
 
-	
-	private static final int MAX_NUMBER_ENTRIES = 2048;
+
+    private static final int MAX_NUMBER_ENTRIES = 8192;
 	private static final int MAX_NUMBER_FIELDS = 2048;
 	private static final int MAX_FIELD_LENGTH = 65536;
 	private static final int NUMBER_FIELDS_PER_ENTRY = 128;
@@ -63,8 +63,8 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 	private static final int NUMBER_BATCHES_ALTER_TEST = 64;
 	
 	private static final String TEST_SOUP = "test_soup";
-	
-	protected Context targetContext;
+
+    protected Context targetContext;
 	private SmartStore store;
 
 	@Override
@@ -76,13 +76,19 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 		store = new SmartStore(dbOpenHelper, getPasscode());
 		store.dropAllSoups();
 		assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
-		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
+		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", getIndexType())});
 		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
 	}
 
 	protected String getPasscode() {
 		return "";
 	}
+
+    abstract protected Type getIndexType();
+    
+    protected String getTag() {
+        return getClass().getSimpleName();
+    }
 
 	@Override
 	protected void tearDown() throws Exception {
@@ -96,7 +102,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      * @throws JSONException 
      */
     public void testUpsertManyEntries() throws JSONException {
-        Log.i("SmartStoreLoadTest", "In testUpsertManyEntries");
+        Log.i(getTag(), "In testUpsertManyEntries");
         for (int k=1; k<MAX_NUMBER_ENTRIES; k*=2) {        
         	upsertManyEntries(k);
         }
@@ -125,7 +131,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         avg /= times.size();
 			
         // Log avg time taken
-        Log.i("SmartStoreLoadTest", "upserting " + k + " entries avg time taken: " + avg + " ms");
+        Log.i(getTag(), "upserting " + k + " entries avg time taken: " + avg + " ms");
     }
 
 
@@ -134,7 +140,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      * @throws JSONException 
      */
     public void testNumerousFields() throws JSONException {
-        Log.i("SmartStoreLoadTest", "In testNumerousFields");
+        Log.i(getTag(), "In testNumerousFields");
         for (int k=1; k<MAX_NUMBER_FIELDS; k*=2) {
         	upsertEntryWithNumerousFields(k);
         }
@@ -160,7 +166,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         long end = System.currentTimeMillis();
         
         // Log time taken
-        Log.i("SmartStoreLoadTest", msg + " time taken: " + (end-start) + " ms");
+        Log.i(getTag(), msg + " time taken: " + (end-start) + " ms");
 	}
 
 
@@ -169,14 +175,14 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      * @throws JSONException 
      */
     public void testIncreasingFieldLength() throws JSONException {
-    	Log.i("SmartStoreLoadTest", "In testIncreasingFieldLength");
+    	Log.i(getTag(), "In testIncreasingFieldLength");
         for (int k=1; k<MAX_FIELD_LENGTH; k*=2) {
         	upsertEntryWithLargeField(k);
         }
     }
 
     private void upsertEntryWithLargeField(int k) throws JSONException {
-    	Log.i("SmartStoreLoadTest", "upsertNextLargerFieldEntry " + k);
+    	Log.i(getTag(), "upsertNextLargerFieldEntry " + k);
 
         StringBuilder sb = new StringBuilder();
         for (int i=0; i< k; i++) {
@@ -196,7 +202,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      * @throws JSONException 
      */
 	public void testAddAndRetrieveManyEntries() throws JSONException {
-    	Log.i("SmartStoreLoadTest", "In testAddAndRetrieveManyEntries");
+    	Log.i(getTag(), "In testAddAndRetrieveManyEntries");
 
     	List<Long> soupEntryIds = new ArrayList<Long>();
         List<Long> times = new ArrayList<Long>();
@@ -229,7 +235,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         avg /= times.size();
 			
         // Log avg time taken
-        Log.i("SmartStoreLoadTest", "upserting " + MAX_NUMBER_ENTRIES + " entries avg time taken: " + avg + " ms");
+        Log.i(getTag(), "upserting " + MAX_NUMBER_ENTRIES + " entries avg time taken: " + avg + " ms");
 
         // Retrieve
         long start = System.currentTimeMillis();
@@ -237,7 +243,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         long end = System.currentTimeMillis();
 
         // Log retrieve time taken
-        Log.i("SmartStoreLoadTest", "retrieve " + MAX_NUMBER_ENTRIES + " entries time taken: " + (end-start) + " ms");
+        Log.i(getTag(), "retrieve " + MAX_NUMBER_ENTRIES + " entries time taken: " + (end-start) + " ms");
     }
 
     /**
@@ -245,7 +251,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      * @throws JSONException 
      */
     public void testUpsertAndQueryEntries() throws JSONException {
-        Log.i("SmartStoreLoadTest", "In testUpsertAndQueryEntries");
+        Log.i(getTag(), "In testUpsertAndQueryEntries");
         for (int i=0; i<NUMBER_BATCHES; i++) {
         	upsertManyEntriesWithManyFields(i);
         	queryEntries(i);
@@ -281,7 +287,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         avg /= times.size();
 			
         // Log avg time taken
-        Log.i("SmartStoreLoadTest", "upserting " + NUMBER_ENTRIES_PER_BATCH + " entries avg time taken: " + avg + " ms");
+        Log.i(getTag(), "upserting " + NUMBER_ENTRIES_PER_BATCH + " entries avg time taken: " + avg + " ms");
     }
 
 	private void queryEntries(int batch) throws JSONException {
@@ -292,7 +298,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         long end = System.currentTimeMillis();
         
         // Log query time
-        Log.i("SmartStoreLoadTest", "querying out of soup with " + (batch+1)*NUMBER_ENTRIES_PER_BATCH + " entries time taken: " + (end-start) + " ms");
+        Log.i(getTag(), "querying out of soup with " + (batch+1)*NUMBER_ENTRIES_PER_BATCH + " entries time taken: " + (end-start) + " ms");
 	}
 
     /**
@@ -300,7 +306,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
      * @throws JSONException
      */
     public void testAlterSoup() throws JSONException {
-    	Log.i("SmartStoreLoadTest", "In testAlterSoup");
+    	Log.i(getTag(), "In testAlterSoup");
     	Log.i("SmartStoreLoadTest.testAlterSoup", "Initial database size: " + store.getDatabaseSize() + " bytes");
         for (int i=0; i<NUMBER_BATCHES_ALTER_TEST; i++) {
         	upsertManyEntriesWithManyFields(i);

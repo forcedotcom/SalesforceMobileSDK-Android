@@ -293,7 +293,8 @@ public class QuerySpec {
     private String computeOrderClause() {
     	if (orderPath == null || order == null) return "";
 
-    	return ORDER_BY + computeSoupReference() + "." + computeFieldReference(orderPath) + " " + order.sql + " ";
+    	return ORDER_BY + /*computeSoupReference() + "." + */ computeFieldReference(orderPath) + " " + order.sql + " ";
+        // FIXME we need the soup reference unless it's a json1 index
     }
     
 	/**
