@@ -17,6 +17,7 @@ external/cordova/
 libs/SalesforceHybrid/bin/
 libs/SalesforceReact/bin/
 libs/SalesforceSDK/bin/
+libs/SalesforceAnalytics/bin/
 libs/SmartStore/bin/
 libs/SmartSync/bin/
 native/TemplateApp/bin/
@@ -27,6 +28,7 @@ external/cordova/test/gen/
 libs/SalesforceHybrid/gen/
 libs/SalesforceReact/gen/
 libs/SalesforceSDK/gen/
+libs/SalesforceAnalytics/gen/
 libs/SmartStore/gen/
 libs/SmartSync/gen/
 native/TemplateApp/gen/
@@ -46,6 +48,7 @@ libs/SmartStore/proguard-project.txt
 libs/SalesforceHybrid/proguard-project.txt
 libs/SalesforceReact/proguard-project.txt
 libs/SalesforceSDK/proguard-project.txt
+libs/SalesforceAnalytics/proguard-project.txt
 native/TemplateApp/proguard-project.txt
 reactnative/ReactNativeTemplateApp/proguard-project.txt
 
@@ -54,6 +57,7 @@ libs/SmartStore/local.properties
 libs/SalesforceHybrid/local.properties
 libs/SalesforceReact/local.properties
 libs/SalesforceSDK/local.properties
+libs/SalesforceAnalytics/local.properties
 native/TemplateApp/local.properties
 reactnative/ReactNativeTemplateApp/local.properties
 
@@ -62,6 +66,7 @@ libs/SmartStore/SmartStore.iml
 libs/SalesforceHybrid/SalesforceHybrid.iml
 libs/SalesforceReact/SalesforceReact.iml
 libs/SalesforceSDK/SalesforceSDK.iml
+libs/SalesforceAnalytics/SalesforceSDK.iml
 gradle/gradle.iml
 SalesforceMobileSDK-Android.iml
 

@@ -2,9 +2,6 @@
 apply plugin: 'com.android.library'
 
 dependencies {
-  compile project(':libs:SalesforceAnalytics')
-  compile 'com.squareup.okhttp3:okhttp:3.2.0'
-  compile 'com.google.guava:guava:18.0'
 }
 
 android {
@@ -21,15 +18,15 @@ android {
       res.srcDirs = ['res']
       assets.srcDirs = ['assets']
     }
-    androidTest.setRoot('../test/SalesforceSDKTest')
+    androidTest.setRoot('../test/SalesforceAnalyticsTest')
     androidTest {
-      java.srcDirs = ['../test/SalesforceSDKTest/src']
-      resources.srcDirs = ['../test/SalesforceSDKTest/src']
-      res.srcDirs = ['../test/SalesforceSDKTest/res']
+      java.srcDirs = ['../test/SalesforceAnalyticsTest/src']
+      resources.srcDirs = ['../test/SalesforceAnalyticsTest/src']
+      res.srcDirs = ['../test/SalesforceAnalyticsTest/res']
     }
   }
   defaultConfig {
-    testApplicationId "com.salesforce.androidsdk.tests"
+    testApplicationId "com.salesforce.androidsdk.analytics.tests"
     testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
   }
   packagingOptions {

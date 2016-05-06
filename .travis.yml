@@ -26,6 +26,7 @@ before_script:
    - adb shell input keyevent 82
 #Build all projects and run the tests
 script:
+   - ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest
    - ./gradlew :libs:SalesforceSDK:connectedAndroidTest
    - ./gradlew :libs:SmartStore:connectedAndroidTest
    - ./gradlew :libs:SmartSync:connectedAndroidTest
