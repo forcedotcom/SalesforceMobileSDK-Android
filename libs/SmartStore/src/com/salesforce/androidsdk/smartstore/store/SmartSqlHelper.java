@@ -43,6 +43,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException
  */
 public class SmartSqlHelper  {
 
+	public static final Pattern SOUP_PATH_PATTERN = Pattern.compile("\\{([^}]+)\\}");
 	private static Map<SQLiteDatabase, SmartSqlHelper> INSTANCES;
 
 	/**
@@ -86,9 +87,8 @@ public class SmartSqlHelper  {
 		}
 
 		// Replacing {soupName} and {soupName:path}
-		Pattern pattern  = Pattern.compile("\\{([^}]+)\\}");
 		StringBuffer sql = new StringBuffer();
-		Matcher matcher = pattern.matcher(smartSql);
+		Matcher matcher = SOUP_PATH_PATTERN.matcher(smartSql);
 		while (matcher.find()) {
 			String fullMatch = matcher.group();
 			String match = matcher.group(1);
@@ -128,8 +128,16 @@ public class SmartSqlHelper  {
 		}
 		matcher.appendTail(sql);
 
+        // SQL query as string
+		String sqlStr = sql.toString();
+
+		// With json1 support, the column name could be an expression of the form json_extract(soup, '$.x.y.z')
+		// We can't have TABLE_x.json_extract(soup, ...) in the sql query
+        // Instead we should have json_extract(TABLE_x.soup, ...)
+		sqlStr = sqlStr.replaceAll("(TABLE_[0-9]+)\\.json_extract\\(soup", "json_extract($1.soup");
+
 		// Done
-		return sql.toString();
+		return sqlStr;
 	}
 	
 	private String getColumnNameForPathForSmartSql(SQLiteDatabase db, String soupName, String path, int position) {
