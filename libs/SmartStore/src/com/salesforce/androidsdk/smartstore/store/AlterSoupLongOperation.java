@@ -469,7 +469,8 @@ public class AlterSoupLongOperation extends LongOperation {
 			for (String keptPath : keptPaths) {
 				IndexSpec oldIndexSpec = mapOldSpecs.get(keptPath);
 				IndexSpec newIndexSpec = mapNewSpecs.get(keptPath);
-				if (oldIndexSpec.type.getColumnType().equals(newIndexSpec.type.getColumnType())
+				if ((oldIndexSpec.type.getColumnType() == null // we were using json1 - so columnName will be an expression
+						|| oldIndexSpec.type.getColumnType().equals(newIndexSpec.type.getColumnType()))
 					&& newIndexSpec.type == SmartStore.Type.full_text) {
 					oldColumnsFts.add(oldIndexSpec.columnName);
 					newColumnsFts.add(newIndexSpec.columnName);

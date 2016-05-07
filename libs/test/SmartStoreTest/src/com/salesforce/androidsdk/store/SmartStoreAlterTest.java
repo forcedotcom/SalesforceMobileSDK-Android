@@ -148,7 +148,56 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
      * throws JSONException
      */
     public void testAlterSoupTypeChangeStringToFullText() throws JSONException {
-        IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec(CITY, SmartStore.Type.string), new IndexSpec(COUNTRY, SmartStore.Type.string)};
+        tryAlterSoupTypeChange(SmartStore.Type.string, SmartStore.Type.full_text);
+    }
+
+    /**
+     * Test for alterSoup with column type change from full_text to string
+     *
+     * throws JSONException
+     */
+    public void testAlterSoupTypeChangeFullTextToString() throws JSONException {
+        tryAlterSoupTypeChange(SmartStore.Type.full_text, SmartStore.Type.string);
+    }
+
+    /**
+     * Test for alterSoup with column type change from string to json1
+     *
+     * throws JSONException
+     */
+    public void testAlterSoupTypeChangeStringToJSON1() throws JSONException {
+        tryAlterSoupTypeChange(SmartStore.Type.string, SmartStore.Type.json1);
+    }
+
+    /**
+     * Test for alterSoup with column type change from json1 to string
+     *
+     * throws JSONException
+     */
+    public void testAlterSoupTypeChangeJSON1toString() throws JSONException {
+        tryAlterSoupTypeChange(SmartStore.Type.json1, SmartStore.Type.string);
+    }
+
+    /**
+     * Test for alterSoup with column type change from full_text to json1
+     *
+     * throws JSONException
+     */
+    public void testAlterSoupTypeChangeFullTextToJSON1() throws JSONException {
+        tryAlterSoupTypeChange(SmartStore.Type.full_text, SmartStore.Type.json1);
+    }
+
+    /**
+     * Test for alterSoup with column type change from json1 to full_text
+     *
+     * throws JSONException
+     */
+    public void testAlterSoupTypeChangeJSON1toFullText() throws JSONException {
+        tryAlterSoupTypeChange(SmartStore.Type.json1, SmartStore.Type.full_text);
+    }
+
+    public void tryAlterSoupTypeChange(SmartStore.Type fromType, SmartStore.Type toType) throws JSONException {
+        IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec(CITY, fromType), new IndexSpec(COUNTRY, fromType)};
 
         assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
         store.registerSoup(TEST_SOUP, indexSpecs);
@@ -168,59 +217,20 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         checkDb(new long[]{elt1Id, elt2Id}, indexSpecs[0].type, indexSpecs[1].type);
 
         // Alter soup - country now full_text
-        IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec(CITY, SmartStore.Type.string), new IndexSpec(COUNTRY, SmartStore.Type.full_text)};
+        IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec(CITY, fromType), new IndexSpec(COUNTRY, toType)};
         store.alterSoup(TEST_SOUP, indexSpecsNew, true);
 
         // Checking db
         checkDb(new long[]{elt1Id, elt2Id}, indexSpecsNew[0].type, indexSpecsNew[1].type);
 
         // Alter soup - city now full_text
-        indexSpecsNew = new IndexSpec[] {new IndexSpec(CITY, SmartStore.Type.full_text), new IndexSpec(COUNTRY, SmartStore.Type.full_text)};
+        indexSpecsNew = new IndexSpec[] {new IndexSpec(CITY, toType), new IndexSpec(COUNTRY, toType)};
         store.alterSoup(TEST_SOUP, indexSpecsNew, true);
 
         // Checking db
         checkDb(new long[]{elt1Id, elt2Id}, indexSpecsNew[0].type, indexSpecsNew[1].type);
     }
 
-    /**
-     * Test for alterSoup with column type change from full_text to string
-     *
-     * throws JSONException
-     */
-    public void testAlterSoupTypeChangeFullTextToString() throws JSONException {
-        IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec(CITY, SmartStore.Type.full_text), new IndexSpec(COUNTRY, SmartStore.Type.full_text)};
-
-        assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
-        store.registerSoup(TEST_SOUP, indexSpecs);
-        assertTrue("Register soup call failed", store.hasSoup(TEST_SOUP));
-
-        JSONObject soupElt1 = new JSONObject();
-        soupElt1.put(CITY, SAN_FRANCISCO);
-        soupElt1.put(COUNTRY, USA);
-        JSONObject soupElt2 = new JSONObject();
-        soupElt2.put(CITY, PARIS);
-        soupElt2.put(COUNTRY, FRANCE);
-
-        long elt1Id = idOf(store.create(TEST_SOUP, soupElt1));
-        long elt2Id = idOf(store.create(TEST_SOUP, soupElt2));
-
-        // Checking db
-        checkDb(new long[]{elt1Id, elt2Id}, indexSpecs[0].type, indexSpecs[1].type);
-
-        // Alter soup - country now string
-        IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec(CITY, SmartStore.Type.full_text), new IndexSpec(COUNTRY, SmartStore.Type.string)};
-        store.alterSoup(TEST_SOUP, indexSpecsNew, true);
-
-        // Checking db
-        checkDb(new long[]{elt1Id, elt2Id}, indexSpecsNew[0].type, indexSpecsNew[1].type);
-
-        // Alter soup - city now string
-        indexSpecsNew = new IndexSpec[] {new IndexSpec(CITY, SmartStore.Type.string), new IndexSpec(COUNTRY, SmartStore.Type.string)};
-        store.alterSoup(TEST_SOUP, indexSpecsNew, true);
-
-        // Checking db
-        checkDb(new long[]{elt1Id, elt2Id}, indexSpecsNew[0].type, indexSpecsNew[1].type);
-    }
 
     private void checkDb(long[] expectedIds, SmartStore.Type cityColType, SmartStore.Type countryColType) {
         String[] cities = new String[] {SAN_FRANCISCO, PARIS};
@@ -232,15 +242,36 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
 
             // Check columns of soup table
             c = DBHelper.getInstance(db).query(db, TEST_SOUP_TABLE_NAME, null, "id ASC", null, null);
+            String[] columnNames = c.getColumnNames();
             assertTrue("Expected a row", c.moveToFirst());
             assertEquals("Expected two rows", expectedIds.length, c.getCount());
-            assertTrue("Wrong columns: " + TextUtils.join(",", c.getColumnNames()), Arrays.deepEquals(new String[]{"id", "soup", "created", "lastModified", CITY_COL, COUNTRY_COL}, c.getColumnNames()));
+            assertEquals("Wrong column", "id", columnNames[0]);
+            assertEquals("Wrong column", "soup", columnNames[1]);
+            assertEquals("Wrong column", "created", columnNames[2]);
+            assertEquals("Wrong column", "lastModified", columnNames[3]);
+
+            if (cityColType != SmartStore.Type.json1 && countryColType != SmartStore.Type.json1) {
+                assertEquals("Wrong column count", 6, columnNames.length);
+                assertEquals("Wrong column", CITY_COL, columnNames[4]);
+                assertEquals("Wrong column", COUNTRY_COL, columnNames[5]);
+            }
+            else if (cityColType == SmartStore.Type.json1 && countryColType != SmartStore.Type.json1) {
+                assertEquals("Wrong column count", 5, columnNames.length);
+                assertEquals("Wrong column", COUNTRY_COL, columnNames[4]);
+            }
+            else if (cityColType != SmartStore.Type.json1 && countryColType == SmartStore.Type.json1) {
+                assertEquals("Wrong column count", 5, columnNames.length);
+                assertEquals("Wrong column", CITY_COL, columnNames[4]);
+            }
+            else {
+                assertEquals("Wrong column count", 4, columnNames.length);
+            }
 
             // Check rows of soup table
             for (int i = 0; i < expectedIds.length; i++) {
                 assertEquals("Wrong id", expectedIds[i], c.getLong(c.getColumnIndex("id")));
-                assertEquals("Wrong value in index column", cities[i], c.getString(c.getColumnIndex(CITY_COL)));
-                assertEquals("Wrong value in index column", countries[i], c.getString(c.getColumnIndex(COUNTRY_COL)));
+                if (cityColType != SmartStore.Type.json1) assertEquals("Wrong value in index column", cities[i], c.getString(c.getColumnIndex(CITY_COL)));
+                if (countryColType != SmartStore.Type.json1) assertEquals("Wrong value in index column", countries[i], c.getString(c.getColumnIndex(COUNTRY_COL)));
                 c.moveToNext();
             }
             safeClose(c);
