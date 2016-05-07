@@ -443,12 +443,15 @@ public class SmartStore  {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 
-	        // Getting index specs from indexPaths
+	        // Getting index specs from indexPaths skipping json1 index specs
 			Map<String, IndexSpec> mapAllSpecs = IndexSpec.mapForIndexSpecs(getSoupIndexSpecs(soupName));
 			List<IndexSpec> indexSpecsList = new ArrayList<IndexSpec>();
 			for (String indexPath : indexPaths) {
 				if (mapAllSpecs.containsKey(indexPath)) {
-					indexSpecsList.add(mapAllSpecs.get(indexPath));
+					IndexSpec indexSpec = mapAllSpecs.get(indexPath);
+					if (TypeGroup.value_extracted_to_column.isMember(indexSpec.type)) {
+						indexSpecsList.add(indexSpec);
+					}
 				}
 				else {
 					Log.w("SmartStore.reIndexSoup", "Cannot re-index " + indexPath + " - it does not have an index");
