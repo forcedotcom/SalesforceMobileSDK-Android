@@ -24,29 +24,61 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.analytics;
+package com.salesforce.androidsdk.analytics.store;
 
-import com.salesforce.androidsdk.analytics.store.EventStoreManager;
+import android.content.Context;
+import android.test.InstrumentationTestCase;
 
 /**
- * This class serves as an interface to the various
- * functions of the SalesforceAnalytics library.
+ * Tests for EventStoreManager.
  *
  * @author bhariharan
  */
-public class SalesforceAnalyticsManager {
+public class EventStoreManagerTest extends InstrumentationTestCase {
 
-    private String uniqueId;
-    private boolean showEventsInConsole;
+    private static final String TAG = "EventStoreManagerTest";
+    private static final String TEST_FILENAME_SUFFIX = "_test_filename_suffix";
+
     private EventStoreManager storeManager;
 
-    /**
-     * Parameterized constructor.
-     *
-     * @param uniqueId Unique ID that is used to determine where the events are stored.
-     */
-    public SalesforceAnalyticsManager(String uniqueId) {
-        this.uniqueId = uniqueId;
-        storeManager = new EventStoreManager(uniqueId);
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        final Context targetContext = getInstrumentation().getTargetContext();
+        storeManager = new EventStoreManager(TEST_FILENAME_SUFFIX, targetContext);
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        storeManager.deleteAllEvents();
+        super.tearDown();
+    }
+
+    public void testStoreOneEvent() throws Exception {
+        // TODO:
+    }
+
+    public void testStoreMultipleEvents() throws Exception {
+        // TODO:
+    }
+
+    public void testFetchOneEvent() throws Exception {
+        // TODO:
+    }
+
+    public void testFetchAllEvents() throws Exception {
+        // TODO:
+    }
+
+    public void testDeleteOneEvent() throws Exception {
+        // TODO:
+    }
+
+    public void testDeleteMultipleEvents() throws Exception {
+        // TODO:
+    }
+
+    public void testDeleteAllEvents() throws Exception {
+        // TODO:
     }
 }

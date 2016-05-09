@@ -24,29 +24,22 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.analytics;
-
-import com.salesforce.androidsdk.analytics.store.EventStoreManager;
+package com.salesforce.androidsdk.analytics.model;
 
 /**
- * This class serves as an interface to the various
- * functions of the SalesforceAnalytics library.
- *
- * @author bhariharan
+ * Represents a typical instrumentation event. Transforms can be used to
+ * convert this event into a specific library's event format.
  */
-public class SalesforceAnalyticsManager {
+public class InstrumentationEvent {
 
-    private String uniqueId;
-    private boolean showEventsInConsole;
-    private EventStoreManager storeManager;
+    private String eventId;
 
     /**
-     * Parameterized constructor.
+     * Returns a unique identifier for this event.
      *
-     * @param uniqueId Unique ID that is used to determine where the events are stored.
+     * @return Event ID.
      */
-    public SalesforceAnalyticsManager(String uniqueId) {
-        this.uniqueId = uniqueId;
-        storeManager = new EventStoreManager(uniqueId);
+    public String getEventId() {
+        return eventId;
     }
 }
