@@ -31,4 +31,11 @@
         android:title="ManagedAppCertAlias"
         android:restrictionType="string"
         android:description="@string/sf__managed_app_cert_alias_description" />
+
+    <!-- TODO: Change key once made official with ACE. -->
+    <restriction android:key="OnlyAllowAuthorizedHosts"
+        android:title="OnlyAllowAuthorizedHosts"
+        android:restrictionType="bool"
+        android:defaultValue="false"
+        android:description="@string/sf__only_allow_authorized_hosts_description" />
 </restrictions>
