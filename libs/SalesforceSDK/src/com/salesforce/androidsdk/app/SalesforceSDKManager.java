@@ -61,7 +61,6 @@ import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
-import com.salesforce.androidsdk.security.PRNGFixes;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -306,9 +305,6 @@ public class SalesforceSDKManager {
 	 * @param context Application context.
 	 */
     public static void initInternal(Context context) {
-
-    	// Applies PRNG fixes for certain older versions of Android.
-        PRNGFixes.apply();
 
         // Initializes the encryption module.
         Encryptor.init(context);
