@@ -69,7 +69,6 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         return "";
     }
 
-
     /**
      * Test for getSoupIndexSpecs
      *
