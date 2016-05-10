@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.store;
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -39,6 +40,10 @@ import android.test.InstrumentationTestCase;
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.util.test.JSONTestHelper;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Abstract super class for smart store tests
@@ -85,6 +90,31 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 		finally {
 			safeClose(c);
 		}
+	}
+
+	/**
+	 * Helper method to check columns of table (excluding pk)
+	 * @param tableName
+	 * @param expectedColumnNames
+     */
+	protected void checkColumns(String tableName, List<String> expectedColumnNames) {
+		Cursor c = null;
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		try {
+			List<String> actualColumnNames = new ArrayList<>();
+			c = db.rawQuery(String.format("PRAGMA table_info(%s)", tableName), null);
+			for (c.moveToFirst(); c.moveToNext(); ) {
+				actualColumnNames.add(c.getString(1));
+			}
+			JSONTestHelper.assertSameJSONArray("Wrong columns", new JSONArray(expectedColumnNames), new JSONArray(actualColumnNames));
+		}
+		catch (Exception e) {
+			fail("Failed with error:" + e.getMessage());
+		}
+		finally {
+			safeClose(c);
+		}
+
 	}
 	
 	/**

@@ -236,76 +236,63 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         String[] cities = new String[] {SAN_FRANCISCO, PARIS};
         String[] countries = new String[] {USA, FRANCE};
 
+        // Check columns of soup table
+        List<String> expectedColumnNames = new ArrayList<>(Arrays.asList("soup", "created", "lastModified"));
+        if (cityColType != SmartStore.Type.json1) expectedColumnNames.add(CITY_COL);
+        if (countryColType != SmartStore.Type.json1) expectedColumnNames.add(COUNTRY_COL);
+        checkColumns(TEST_SOUP_TABLE_NAME, expectedColumnNames);
+
+        // Check rows of soup table
         Cursor c = null;
         try {
             final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
-
-            // Check columns of soup table
-            c = DBHelper.getInstance(db).query(db, TEST_SOUP_TABLE_NAME, null, "id ASC", null, null);
-            String[] columnNames = c.getColumnNames();
+            expectedColumnNames.add(0, "id");
+            c = DBHelper.getInstance(db).query(db, TEST_SOUP_TABLE_NAME, expectedColumnNames.toArray(new String[0]), "id ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
-            assertEquals("Expected two rows", expectedIds.length, c.getCount());
-            assertEquals("Wrong column", "id", columnNames[0]);
-            assertEquals("Wrong column", "soup", columnNames[1]);
-            assertEquals("Wrong column", "created", columnNames[2]);
-            assertEquals("Wrong column", "lastModified", columnNames[3]);
+            assertEquals("Wrong number of rows", expectedIds.length, c.getCount());
 
-            if (cityColType != SmartStore.Type.json1 && countryColType != SmartStore.Type.json1) {
-                assertEquals("Wrong column count", 6, columnNames.length);
-                assertEquals("Wrong column", CITY_COL, columnNames[4]);
-                assertEquals("Wrong column", COUNTRY_COL, columnNames[5]);
-            }
-            else if (cityColType == SmartStore.Type.json1 && countryColType != SmartStore.Type.json1) {
-                assertEquals("Wrong column count", 5, columnNames.length);
-                assertEquals("Wrong column", COUNTRY_COL, columnNames[4]);
-            }
-            else if (cityColType != SmartStore.Type.json1 && countryColType == SmartStore.Type.json1) {
-                assertEquals("Wrong column count", 5, columnNames.length);
-                assertEquals("Wrong column", CITY_COL, columnNames[4]);
-            }
-            else {
-                assertEquals("Wrong column count", 4, columnNames.length);
-            }
-
-            // Check rows of soup table
             for (int i = 0; i < expectedIds.length; i++) {
                 assertEquals("Wrong id", expectedIds[i], c.getLong(c.getColumnIndex("id")));
-                if (cityColType != SmartStore.Type.json1) assertEquals("Wrong value in index column", cities[i], c.getString(c.getColumnIndex(CITY_COL)));
-                if (countryColType != SmartStore.Type.json1) assertEquals("Wrong value in index column", countries[i], c.getString(c.getColumnIndex(COUNTRY_COL)));
+                if (cityColType != SmartStore.Type.json1)
+                    assertEquals("Wrong value in index column", cities[i], c.getString(c.getColumnIndex(CITY_COL)));
+                if (countryColType != SmartStore.Type.json1)
+                    assertEquals("Wrong value in index column", countries[i], c.getString(c.getColumnIndex(COUNTRY_COL)));
                 c.moveToNext();
             }
+        }
+        finally{
             safeClose(c);
+        }
 
-            // Check fts table
-            boolean hasFts = cityColType == SmartStore.Type.full_text || countryColType == SmartStore.Type.full_text;
-            assertEquals(hasFts, hasTable(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX));
+        // Check fts table exists
+        boolean hasFts = cityColType == SmartStore.Type.full_text || countryColType == SmartStore.Type.full_text;
+        assertEquals(hasFts, hasTable(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX));
 
-            if (hasFts) {
-                // Check columns of fts table
-                c = DBHelper.getInstance(db).query(db, TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, null, null, null, null);
-                assertTrue("Expected a row", c.moveToFirst());
-                assertEquals("Wrong number of rows", expectedIds.length, c.getCount());
-                List<String> columns = new ArrayList<String>();
-                if (cityColType == SmartStore.Type.full_text) columns.add(CITY_COL);
-                if (countryColType == SmartStore.Type.full_text) columns.add(COUNTRY_COL);
-                // assertTrue("Wrong columns: " + TextUtils.join(",", c.getColumnNames()), Arrays.deepEquals(columns.toArray(new String[0]), c.getColumnNames()));
-                // XXX wrong column names returned after alter soup even though the db looks okay
-                safeClose(c);
+        if (!hasFts) {
+            return;
+        }
 
-                // Check rows of fts table
-                columns.add(0, "docid");
-                c = DBHelper.getInstance(db).query(db, TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, columns.toArray(new String[0]), "docid ASC", null, null);
-                assertTrue("Expected a row", c.moveToFirst());
-                assertEquals("Wrong number of rows", expectedIds.length, c.getCount());
+        // Check columns of fts table
+        List<String> expectedFtsColumnNames = new ArrayList<>();
+        if (cityColType == SmartStore.Type.full_text) expectedFtsColumnNames.add(CITY_COL);
+        if (countryColType == SmartStore.Type.full_text) expectedFtsColumnNames.add(COUNTRY_COL);
+        // checkColumns(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, expectedFtsColumnNames);
 
-                for (int i = 0; i < expectedIds.length; i++) {
-                    assertEquals("Wrong docid", expectedIds[i], c.getLong(c.getColumnIndex("docid")));
-                    if (cityColType == SmartStore.Type.full_text)
-                        assertEquals("Wrong value in index column", cities[i], c.getString(c.getColumnIndex(CITY_COL)));
-                    if (countryColType == SmartStore.Type.full_text)
-                        assertEquals("Wrong value in index column", countries[i], c.getString(c.getColumnIndex(COUNTRY_COL)));
-                    c.moveToNext();
-                }
+        // Check rows of fts table
+        try {
+            final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+            expectedFtsColumnNames.add(0, "docid");
+            c = DBHelper.getInstance(db).query(db, TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, expectedFtsColumnNames.toArray(new String[0]), "docid ASC", null, null);
+            assertTrue("Expected a row", c.moveToFirst());
+            assertEquals("Wrong number of rows", expectedIds.length, c.getCount());
+
+            for (int i = 0; i < expectedIds.length; i++) {
+                assertEquals("Wrong docid", expectedIds[i], c.getLong(c.getColumnIndex("docid")));
+                if (cityColType == SmartStore.Type.full_text)
+                    assertEquals("Wrong value in index column", cities[i], c.getString(c.getColumnIndex(CITY_COL)));
+                if (countryColType == SmartStore.Type.full_text)
+                    assertEquals("Wrong value in index column", countries[i], c.getString(c.getColumnIndex(COUNTRY_COL)));
+                c.moveToNext();
             }
         }
         finally{
