@@ -114,8 +114,32 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 		finally {
 			safeClose(c);
 		}
+	}
 
+    /**
+     * Helper method to check db indexes on a table
+     * @param tableName
+     * @param expectedSqlStatements that created the indexes
+     */
+    protected void checkDatabaseIndexes(String tableName, List<String> expectedSqlStatements) {
+        Cursor c = null;
+        final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+        try {
+            List<String> actualSqlStatements = new ArrayList<>();
+            c = db.rawQuery(String.format("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='%s' ORDER BY name", tableName), null);
+            while(c.moveToNext()) {
+                actualSqlStatements.add(c.getString(0));
+            }
+            JSONTestHelper.assertSameJSONArray("Wrong indexes", new JSONArray(expectedSqlStatements), new JSONArray(actualSqlStatements));
         }
+        catch (Exception e) {
+            fail("Failed with error:" + e.getMessage());
+        }
+        finally {
+            safeClose(c);
+        }
+    }
+
 
 	/**
 	 * Close cursor if not null

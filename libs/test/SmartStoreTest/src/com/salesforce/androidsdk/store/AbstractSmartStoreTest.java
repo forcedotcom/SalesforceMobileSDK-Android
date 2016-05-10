@@ -44,6 +44,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * Abstract super class for plain and encrypted smart store tests
@@ -76,7 +77,7 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		try {
 			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
 			c = db.rawQuery("PRAGMA compile_options", null);
-			for (c.moveToFirst(); c.moveToNext(); ) {
+            while(c.moveToNext()) {
 				compileOptions.add(c.getString(0));
 			}
 		}
@@ -924,5 +925,37 @@ public abstract class AbstractSmartStoreTest extends SmartStoreTestCase {
 		}
 		assertTrue("Database should be larger now", store.getDatabaseSize() > initialSize);
 	}
-	
+
+	/**
+	 * Test registerSoup with json1 indexes
+     * Register soup with multiple json1 indexes and a string index, check the underlying table and indexes in the database
+	 */
+    public void testRegisterSoupWithJSON1() throws JSONException {
+        assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
+        store.registerSoup(OTHER_TEST_SOUP, new IndexSpec[] {new IndexSpec("lastName", Type.json1), new IndexSpec("address.city", Type.json1), new IndexSpec("address.zipcode", Type.string)});
+        assertTrue("Register soup call failed", store.hasSoup(OTHER_TEST_SOUP));
+
+        // Check columns of soup table
+        String soupTableName = getSoupTableName(OTHER_TEST_SOUP);
+        checkColumns(soupTableName, Arrays.asList(new String[] {"id", "soup", "created", "lastModified", soupTableName + "_2"}));
+
+        // Check soup indexes
+        final IndexSpec[] indexSpecs = store.getSoupIndexSpecs(OTHER_TEST_SOUP);
+        assertEquals("Wrong path", "lastName", indexSpecs[0].path);
+        assertEquals("Wrong type", Type.json1, indexSpecs[0].type);
+        assertEquals("Wrong column name", "json_extract(soup, '$.lastName')", indexSpecs[0].columnName);
+        assertEquals("Wrong path", "address.city", indexSpecs[1].path);
+        assertEquals("Wrong type", Type.json1, indexSpecs[1].type);
+        assertEquals("Wrong column name", "json_extract(soup, '$.address.city')", indexSpecs[1].columnName);
+        assertEquals("Wrong path", "address.zipcode", indexSpecs[2].path);
+        assertEquals("Wrong type", Type.string, indexSpecs[2].type);
+        assertEquals("Wrong column name", soupTableName + "_2", indexSpecs[2].columnName);
+
+        // Check db indexes
+        checkDatabaseIndexes(soupTableName, Arrays.asList(new String[] {
+            "CREATE INDEX " + soupTableName + "_0_idx on " + soupTableName + " ( json_extract(soup, '$.lastName') )",
+            "CREATE INDEX " + soupTableName + "_1_idx on " + soupTableName + " ( json_extract(soup, '$.address.city') )",
+            "CREATE INDEX " + soupTableName + "_2_idx on " + soupTableName + " ( " + soupTableName + "_2 )"
+        }));
+    }
 }
