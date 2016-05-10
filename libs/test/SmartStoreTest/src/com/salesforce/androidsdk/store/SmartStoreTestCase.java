@@ -93,7 +93,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	}
 
 	/**
-	 * Helper method to check columns of table (excluding pk)
+	 * Helper method to check columns of table
 	 * @param tableName
 	 * @param expectedColumnNames
      */
@@ -103,7 +103,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 		try {
 			List<String> actualColumnNames = new ArrayList<>();
 			c = db.rawQuery(String.format("PRAGMA table_info(%s)", tableName), null);
-			for (c.moveToFirst(); c.moveToNext(); ) {
+			while(c.moveToNext()) {
 				actualColumnNames.add(c.getString(1));
 			}
 			JSONTestHelper.assertSameJSONArray("Wrong columns", new JSONArray(expectedColumnNames), new JSONArray(actualColumnNames));
@@ -115,8 +115,8 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 			safeClose(c);
 		}
 
-	}
-	
+        }
+
 	/**
 	 * Close cursor if not null
 	 * @param c

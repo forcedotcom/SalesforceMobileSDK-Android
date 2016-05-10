@@ -237,7 +237,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         String[] countries = new String[] {USA, FRANCE};
 
         // Check columns of soup table
-        List<String> expectedColumnNames = new ArrayList<>(Arrays.asList("soup", "created", "lastModified"));
+        List<String> expectedColumnNames = new ArrayList<>(Arrays.asList("id", "soup", "created", "lastModified"));
         if (cityColType != SmartStore.Type.json1) expectedColumnNames.add(CITY_COL);
         if (countryColType != SmartStore.Type.json1) expectedColumnNames.add(COUNTRY_COL);
         checkColumns(TEST_SOUP_TABLE_NAME, expectedColumnNames);
@@ -246,7 +246,6 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         Cursor c = null;
         try {
             final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
-            expectedColumnNames.add(0, "id");
             c = DBHelper.getInstance(db).query(db, TEST_SOUP_TABLE_NAME, expectedColumnNames.toArray(new String[0]), "id ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
             assertEquals("Wrong number of rows", expectedIds.length, c.getCount());
@@ -273,10 +272,10 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         }
 
         // Check columns of fts table
-        List<String> expectedFtsColumnNames = new ArrayList<>();
+        List<String> expectedFtsColumnNames = new ArrayList<>(); // NB: docid not returned by pragma table_info for fts virtual table
         if (cityColType == SmartStore.Type.full_text) expectedFtsColumnNames.add(CITY_COL);
         if (countryColType == SmartStore.Type.full_text) expectedFtsColumnNames.add(COUNTRY_COL);
-        // checkColumns(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, expectedFtsColumnNames);
+        checkColumns(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, expectedFtsColumnNames);
 
         // Check rows of fts table
         try {
