@@ -167,20 +167,20 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     }
 
     /**
-     * Native implementation of cleanReSyncGhosts
+     * Native implementation of cleanResyncGhosts
      * @param args
      * @param successCallback
      * @param errorCallback
      */
     @ReactMethod
-    public void cleanReSyncGhosts(ReadableMap args,
+    public void cleanResyncGhosts(ReadableMap args,
                        final Callback successCallback, final Callback errorCallback) {
         // Parse args
         long syncId = args.getInt(SYNC_ID);
         final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
         SyncManager syncManager = getSyncManager(isGlobal);
         try {
-            syncManager.cleanReSyncGhosts(syncId);
+            syncManager.cleanResyncGhosts(syncId);
             successCallback.invoke();
         } catch (JSONException e) {
             Log.e(LOG_TAG, "reSync", e);
