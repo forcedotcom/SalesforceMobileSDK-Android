@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.phonegap;
 import android.content.Context;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.test.InstrumentationTestCase;
+import android.text.TextUtils;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -76,7 +77,9 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 		assertTrue("Wrong bootconfig oauthScopes", sdkInfoOAuthScopes.contains("api"));
 		assertEquals("Wrong bootconfig oauthRedirectURI", bootconfig.getOauthRedirectURI(), sdkInfoBootConfig.getString("oauthRedirectURI"));
 		assertEquals("Wrong bootconfig remoteAccessConsumerKey", bootconfig.getRemoteAccessConsumerKey(), sdkInfoBootConfig.getString("remoteAccessConsumerKey"));
-		assertEquals("Wrong bootconfig androidPushNotificationClientId", bootconfig.getPushNotificationClientId(), sdkInfoBootConfig.getString("androidPushNotificationClientId"));
+		if (!TextUtils.isEmpty(bootconfig.getPushNotificationClientId())) {
+			assertEquals("Wrong bootconfig androidPushNotificationClientId", bootconfig.getPushNotificationClientId(), sdkInfoBootConfig.getString("androidPushNotificationClientId"));
+		}
 		assertEquals("Wrong bootconfig startPage", "index.html", sdkInfoBootConfig.optString("startPage"));
 		assertEquals("Wrong bootconfig errorPage", "error.html", sdkInfoBootConfig.optString("errorPage"));
 	}
