@@ -39,11 +39,13 @@ import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Abstract super class for smart store tests
@@ -138,6 +140,22 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
         finally {
             safeClose(c);
         }
+    }
+
+    /**
+     * Get explain query plan of last query run and make sure the given index was used
+     * @param soupName
+     * @param index the index of the index spec in the array of index specs passed to register soup
+     * @param dbOperation e.g. SCAN or SEARCH
+     */
+    public void checkExplainQueryPlan(String soupName, int index, String dbOperation) throws JSONException {
+        JSONObject explainQueryPlan = store.getLastExplainQueryPlan();
+        String soupTableName = getSoupTableName(soupName);
+        String indexName = soupTableName + "_" + index + "_idx";
+        String expectedDetailPrefix = String.format("%s TABLE %s USING INDEX %s", dbOperation, soupTableName, indexName);
+        String detail = explainQueryPlan.getJSONArray(DBHelper.EXPLAIN_ROWS).getJSONObject(0).getString("detail");
+
+        assertTrue("Wrong query plan:" + detail, detail.startsWith(expectedDetailPrefix));
     }
 
 
