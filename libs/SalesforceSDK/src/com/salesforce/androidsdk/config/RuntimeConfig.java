@@ -47,7 +47,7 @@ public class RuntimeConfig {
 		ManagedAppCallbackURL,
 		RequireCertAuth,
 		ManagedAppCertAlias,
-        OnlyAllowAuthorizedHosts // TODO: Change key once made official with ACE.
+		OnlyShowAuthorizedHosts
 	}
 
     private boolean isManaged = false;

@@ -121,7 +121,7 @@ public class ServerPickerActivity extends Activity implements
          */
         final Button addConnectionButton = (Button) findViewById(R.id.sf__show_custom_url_edit);
         if (addConnectionButton != null) {
-            if (RuntimeConfig.getRuntimeConfig(this).getBoolean(RuntimeConfig.ConfigKey.OnlyAllowAuthorizedHosts)) {
+            if (RuntimeConfig.getRuntimeConfig(this).getBoolean(RuntimeConfig.ConfigKey.OnlyShowAuthorizedHosts)) {
                 addConnectionButton.setVisibility(View.GONE);
             }
         }

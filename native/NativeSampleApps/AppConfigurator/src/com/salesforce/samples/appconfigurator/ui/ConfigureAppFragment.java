@@ -68,7 +68,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
     private EditText mOauthRedirectURI;
     private EditText mCertAlias;
     private EditText[] mEditTexts;
-    private CheckBox mOnlyAllowedServers;
+    private CheckBox mOnlyShowAuthorizedHosts;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -94,7 +94,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
         mTextXmlValues.setMovementMethod(new ScrollingMovementMethod());
         mButtonShowXml = (Button) view.findViewById(R.id.show_xml);
         mButtonShowXml.setOnClickListener(this);
-        mOnlyAllowedServers = (CheckBox) view.findViewById(R.id.only_allowed_servers);
+        mOnlyShowAuthorizedHosts = (CheckBox) view.findViewById(R.id.only_allowed_servers);
     }
 
     @Override
@@ -112,7 +112,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
                 if (mCertAlias.getText() != null && !mCertAlias.getText().toString().trim().isEmpty()) {
                 	isCertAuthEnabled = true;
                 }
-                boolean showOnlyAllowedServers = mOnlyAllowedServers.isChecked();
+                boolean showOnlyAllowedServers = mOnlyShowAuthorizedHosts.isChecked();
                 state.saveConfigurations(getActivity(),
                         mLoginServers.getText().toString(),
                         mLoginServersLabels.getText().toString(),
@@ -168,7 +168,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
             }
             mButtonSave.setVisibility(View.VISIBLE);
             mButtonShowXml.setVisibility(View.VISIBLE);
-            mOnlyAllowedServers.setChecked(state.shouldOnlyAllowAuthorizedHosts());
+            mOnlyShowAuthorizedHosts.setChecked(state.shouldOnlyShowAuthorizedHosts());
         } else {
             mTextStatus.setText(status);
             mTextStatus.setVisibility(View.VISIBLE);
@@ -177,7 +177,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
             }
             mButtonSave.setVisibility(View.GONE);
             mButtonShowXml.setVisibility(View.GONE);
-            mOnlyAllowedServers.setChecked(false);
+            mOnlyShowAuthorizedHosts.setChecked(false);
         }
     }
 }
