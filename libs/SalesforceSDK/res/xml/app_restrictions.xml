@@ -31,4 +31,10 @@
         android:title="ManagedAppCertAlias"
         android:restrictionType="string"
         android:description="@string/sf__managed_app_cert_alias_description" />
+
+    <restriction android:key="OnlyShowAuthorizedHosts"
+        android:title="OnlyShowAuthorizedHosts"
+        android:restrictionType="bool"
+        android:defaultValue="false"
+        android:description="@string/sf__only_show_authorized_hosts_description" />
 </restrictions>
