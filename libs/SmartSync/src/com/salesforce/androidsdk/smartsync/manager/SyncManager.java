@@ -292,16 +292,16 @@ public class SyncManager {
      *
      * @param syncId Sync ID.
      */
-    public void cleanReSyncGhosts(long syncId) throws JSONException {
+    public void cleanResyncGhosts(long syncId) throws JSONException {
         if (runningSyncIds.contains(syncId)) {
-            throw new SmartSyncException("Cannot run cleanReSyncGhosts:" + syncId + ": still running");
+            throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": still running");
         }
         final SyncState sync = SyncState.byId(smartStore, syncId);
         if (sync == null) {
-            throw new SmartSyncException("Cannot run cleanReSyncGhosts:" + syncId + ": no sync found");
+            throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": no sync found");
         }
         if (sync.getType() != SyncState.Type.syncDown) {
-            throw new SmartSyncException("Cannot run cleanReSyncGhosts:" + syncId + ": wrong type:" + sync.getType());
+            throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": wrong type:" + sync.getType());
         }
         final String soupName = sync.getSoupName();
         final String idFieldName = sync.getTarget().getIdFieldName();

@@ -65,7 +65,7 @@ public class SmartSyncPlugin extends ForcePlugin {
         syncDown,
         getSyncStatus,
         reSync,
-        cleanReSyncGhosts
+        cleanResyncGhosts
     }
     
     @Override
@@ -104,8 +104,8 @@ public class SmartSyncPlugin extends ForcePlugin {
                           case reSync:
                               reSync(args, callbackContext);
                               break;
-                          case cleanReSyncGhosts:
-                              cleanReSyncGhosts(args, callbackContext);
+                          case cleanResyncGhosts:
+                              cleanResyncGhosts(args, callbackContext);
                               break;
                           default:
                               throw new RuntimeException("No handler for action " + action);
@@ -217,20 +217,20 @@ public class SmartSyncPlugin extends ForcePlugin {
     }
 
     /**
-     * Native implementation of cleanReSyncGhosts.
+     * Native implementation of cleanResyncGhosts.
      *
      * @param args
      * @param callbackContext
      * @throws JSONException
      */
-    private void cleanReSyncGhosts(JSONArray args, CallbackContext callbackContext) throws JSONException {
+    private void cleanResyncGhosts(JSONArray args, CallbackContext callbackContext) throws JSONException {
 
         // Parse args.
         final JSONObject arg0 = args.getJSONObject(0);
         long syncId = arg0.getLong(SYNC_ID);
         boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
         final SyncManager syncManager = getSyncManager(isGlobal);
-        syncManager.cleanReSyncGhosts(syncId);
+        syncManager.cleanResyncGhosts(syncId);
         callbackContext.success();
     }
 

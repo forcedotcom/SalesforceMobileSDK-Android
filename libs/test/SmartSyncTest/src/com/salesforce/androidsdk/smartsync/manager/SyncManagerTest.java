@@ -731,7 +731,7 @@ public class SyncManagerTest extends ManagerTestCase {
     /**
      * Tests if ghost records are cleaned locally for a SOQL target.
      */
-    public void testCleanReSyncGhostsForSOQLTarget() throws Exception {
+    public void testCleanResyncGhostsForSOQLTarget() throws Exception {
 
         // Creates 3 accounts on the server.
         final Map<String, String> accounts = createAccountsOnServer(3);
@@ -750,7 +750,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         deleteAccountsOnServer(new String[]{accountIds[0]});
-        syncManager.cleanReSyncGhosts(syncId);
+        syncManager.cleanResyncGhosts(syncId);
         numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
         assertEquals("2 accounts should be stored in the soup", numRecords, 2);
 
@@ -763,7 +763,7 @@ public class SyncManagerTest extends ManagerTestCase {
     /**
      * Tests if ghost records are cleaned locally for a MRU target.
      */
-    public void testCleanReSyncGhostsForMRUTarget() throws Exception {
+    public void testCleanResyncGhostsForMRUTarget() throws Exception {
 
         // Creates 3 accounts on the server.
         final Map<String, String> accounts = createAccountsOnServer(3);
@@ -784,7 +784,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         deleteAccountsOnServer(new String[]{accountIds[0]});
-        syncManager.cleanReSyncGhosts(syncId);
+        syncManager.cleanResyncGhosts(syncId);
         int postNumRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
         assertEquals("1 less account should be stored in the soup", postNumRecords, preNumRecords - 1);
 
@@ -797,7 +797,7 @@ public class SyncManagerTest extends ManagerTestCase {
     /**
      * Tests if ghost records are cleaned locally for a SOSL target.
      */
-    public void testCleanReSyncGhostsForSOSLTarget() throws Exception {
+    public void testCleanResyncGhostsForSOSLTarget() throws Exception {
 
         // Creates 1 account on the server.
         final Map<String, String> accounts = createAccountsOnServer(1);
@@ -819,7 +819,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         deleteAccountsOnServer(new String[]{accountIds[0]});
-        syncManager.cleanReSyncGhosts(syncId);
+        syncManager.cleanResyncGhosts(syncId);
         numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
         assertEquals("No accounts should be stored in the soup", numRecords, 0);
 
