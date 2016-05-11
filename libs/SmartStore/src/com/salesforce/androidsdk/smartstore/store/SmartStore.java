@@ -205,7 +205,24 @@ public class SmartStore  {
         }
     }
 
-    /**
+	/**
+	 * If turned on, explain query plan is run before executing a query and stored in lastExplainQueryPlan
+	 * and also get logged
+	 * @param captureExplainQueryPlan true to turn capture on and false to turn off
+	 */
+	public void setCaptureExplainQueryPlan(boolean captureExplainQueryPlan) {
+		DBHelper.getInstance(getDatabase()).setCaptureExplainQueryPlan(captureExplainQueryPlan);
+	}
+
+	/**
+	 * @return explain query plan for last query run (if captureExplainQueryPlan is true)
+	 */
+	public JSONObject getLastExplainQueryPlan() {
+		return DBHelper.getInstance(getDatabase()).getLastExplainQueryPlan();
+	}
+
+
+	/**
      * Get database size
      */
     public int getDatabaseSize() {
