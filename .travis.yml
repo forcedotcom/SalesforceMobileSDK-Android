@@ -31,5 +31,5 @@ script:
    - travis_wait 30 ./gradlew :libs:SmartSync:connectedAndroidTest
    - travis_wait 30 ./gradlew :libs:SalesforceHybrid:connectedAndroidTest
    - ./gradlew :libs:SalesforceReact:assembleDebug
-   - travis_wait 30 ./gradlew :native:SampleApps:RestExplorer:connectedAndroidTest
+   - travis_wait 30 ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest
    - travis_wait 30 ./gradlew :native:TemplateApp:connectedAndroidTest
