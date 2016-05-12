@@ -35,6 +35,8 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.phonegap.plugin.SDKInfoPlugin;
 
+import junit.framework.Assert;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -77,11 +79,17 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 		assertTrue("Wrong bootconfig oauthScopes", sdkInfoOAuthScopes.contains("api"));
 		assertEquals("Wrong bootconfig oauthRedirectURI", bootconfig.getOauthRedirectURI(), sdkInfoBootConfig.getString("oauthRedirectURI"));
 		assertEquals("Wrong bootconfig remoteAccessConsumerKey", bootconfig.getRemoteAccessConsumerKey(), sdkInfoBootConfig.getString("remoteAccessConsumerKey"));
-		if (!TextUtils.isEmpty(bootconfig.getPushNotificationClientId())) {
-			assertEquals("Wrong bootconfig androidPushNotificationClientId", bootconfig.getPushNotificationClientId(), sdkInfoBootConfig.getString("androidPushNotificationClientId"));
-		}
+        try {
+            sdkInfoBootConfig.getString("androidPushNotificationClientId");
+            Assert.fail("Wrong bootconfig having androidPushNotificationClientId field");
+        }
+        catch (Exception ex)
+        {
+            //don't do anything since the exception is expected
+        }
 		assertEquals("Wrong bootconfig startPage", "index.html", sdkInfoBootConfig.optString("startPage"));
 		assertEquals("Wrong bootconfig errorPage", "error.html", sdkInfoBootConfig.optString("errorPage"));
+
 	}
 
 	/**
