@@ -127,9 +127,9 @@ public class BootConfig {
         config.put(IS_LOCAL, isLocal);
         config.put(START_PAGE, startPage);
         config.put(ERROR_PAGE, errorPage);
-		if (!TextUtils.isEmpty(pushNotificationClientId)) {
-			config.put(PUSH_NOTIFICATION_CLIENT_ID, pushNotificationClientId);
-		}
+        if (!TextUtils.isEmpty(pushNotificationClientId)) {
+            config.put(PUSH_NOTIFICATION_CLIENT_ID, pushNotificationClientId);
+        }
         config.put(SHOULD_AUTHENTICATE, shouldAuthenticate);
         config.put(ATTEMPT_OFFLINE_LOAD, attemptOfflineLoad);
 
