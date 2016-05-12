@@ -26,10 +26,10 @@ before_script:
    - adb shell input keyevent 82
 #Build all projects and run the tests
 script:
-   - travis_wait 20 ./gradlew :libs:SalesforceSDK:connectedAndroidTest
-   - travis_wait 20 ./gradlew :libs:SmartStore:connectedAndroidTest
-   - travis_wait 20 ./gradlew :libs:SmartSync:connectedAndroidTest
-   - travis_wait 20 ./gradlew :libs:SalesforceHybrid:connectedAndroidTest
+   - travis_wait 30 ./gradlew :libs:SalesforceSDK:connectedAndroidTest
+   - travis_wait 30 ./gradlew :libs:SmartStore:connectedAndroidTest
+   - travis_wait 30 ./gradlew :libs:SmartSync:connectedAndroidTest
+   - travis_wait 30 ./gradlew :libs:SalesforceHybrid:connectedAndroidTest
    - ./gradlew :libs:SalesforceReact:assembleDebug
-   - travis_wait 20 ./gradlew :native:SampleApps:RestExplorer:connectedAndroidTest
-   - ./gradlew :native:TemplateApp:connectedAndroidTest
+   - travis_wait 30 ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest
+   - travis_wait 30 ./gradlew :native:TemplateApp:connectedAndroidTest
