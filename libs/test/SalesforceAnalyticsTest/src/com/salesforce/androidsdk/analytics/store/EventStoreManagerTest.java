@@ -38,6 +38,7 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
 
     private static final String TAG = "EventStoreManagerTest";
     private static final String TEST_FILENAME_SUFFIX = "_test_filename_suffix";
+    private static final String TEST_ENCRYPTION_KEY = "test_encryption_key";
 
     private EventStoreManager storeManager;
 
@@ -45,7 +46,7 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
     public void setUp() throws Exception {
         super.setUp();
         final Context targetContext = getInstrumentation().getTargetContext();
-        storeManager = new EventStoreManager(TEST_FILENAME_SUFFIX, targetContext);
+        storeManager = new EventStoreManager(TEST_FILENAME_SUFFIX, targetContext, TEST_ENCRYPTION_KEY);
     }
 
     @Override

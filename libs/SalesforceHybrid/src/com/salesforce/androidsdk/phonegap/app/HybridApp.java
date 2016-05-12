@@ -29,8 +29,7 @@ package com.salesforce.androidsdk.phonegap.app;
 import android.app.Application;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
-import com.salesforce.androidsdk.security.Encryptor;
-import com.salesforce.androidsdk.phonegap.app.SalesforceHybridSDKManager;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 /**
  * Application class used by hybrid applications

@@ -47,9 +47,10 @@ public class SalesforceAnalyticsManager {
      *
      * @param uniqueId Unique ID that is used to determine where the events are stored.
      * @param context Context.
+     * @param encryptionKey Encryption key.
      */
-    public SalesforceAnalyticsManager(String uniqueId, Context context) {
+    public SalesforceAnalyticsManager(String uniqueId, Context context, String encryptionKey) {
         this.uniqueId = uniqueId;
-        storeManager = new EventStoreManager(uniqueId, context);
+        storeManager = new EventStoreManager(uniqueId, context, encryptionKey);
     }
 }

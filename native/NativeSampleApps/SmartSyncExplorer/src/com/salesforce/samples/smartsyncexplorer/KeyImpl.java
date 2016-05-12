@@ -27,7 +27,7 @@
 package com.salesforce.samples.smartsyncexplorer;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
-import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 /**
  * This class provides an implementation of KeyInterface.

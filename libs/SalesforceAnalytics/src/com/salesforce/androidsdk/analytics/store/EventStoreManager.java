@@ -52,6 +52,7 @@ public class EventStoreManager {
     private File rootDir;
     private EventFileFilter fileFilter;
     private Context context;
+    private String encryptionKey;
 
     /**
      * Parameterized constructor.
@@ -59,10 +60,12 @@ public class EventStoreManager {
      * @param filenameSuffix Filename suffix to uniquely identify this batch of events.
      *                       Typically this would be used to batch events for a user or an org.
      * @param context Context.
+     * @param encryptionKey Encryption key.
      */
-    public EventStoreManager(String filenameSuffix, Context context) {
+    public EventStoreManager(String filenameSuffix, Context context, String encryptionKey) {
         this.filenameSuffix = filenameSuffix;
         this.context = context;
+        this.encryptionKey = encryptionKey;
         fileFilter = new EventFileFilter(filenameSuffix);
         rootDir = context.getFilesDir();
     }
@@ -189,6 +192,17 @@ public class EventStoreManager {
             }
         }
         return files;
+    }
+
+    /**
+     * Encrypts a string and returns the encrypted version.
+     *
+     * @param data Unencrypted string.
+     * @return Encrypted string.
+     */
+    private String encrypt(String data) {
+        // TOOD:
+        return null;
     }
 
     /**
