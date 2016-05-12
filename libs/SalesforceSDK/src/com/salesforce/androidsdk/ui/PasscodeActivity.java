@@ -203,7 +203,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
         Log.i("onEditorAction", "view=" + v + " actionId=" + actionId + " event=" + event);
         // Processing the editor action only on key up to avoid sending events like pass code manager unlock twice.
-        if (event != null && event.getAction() == KeyEvent.ACTION_UP) {
+        if ((event != null && event.getAction() == KeyEvent.ACTION_UP) || event == null) {
             String pc = entry.getText().toString();
             if (pc.length() > 0 && pc.length() < getMinPasscodeLength()) {
                 error.setText(getMinLengthInstructions(getMinPasscodeLength()));
