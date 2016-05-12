@@ -58,8 +58,9 @@ public class AlterSoupLongOperation extends LongOperation {
 	private static final String OLD_INDEX_SPECS = "oldIndexSpecs";
 	private static final String NEW_INDEX_SPECS = "newIndexSpecs";
 	private static final String RE_INDEX_DATA = "reIndexData";
-	
-    /**
+	public static final String TAG = "AlterSoup:Status";
+
+	/**
      * Enum for alter steps
      */
     public enum AlterSoupStep {
@@ -367,7 +368,7 @@ public class AlterSoupLongOperation extends LongOperation {
     	contentValues.put(SmartStore.DETAILS_COL, details.toString());
     	contentValues.put(SmartStore.CREATED_COL, now);
     	contentValues.put(SmartStore.LAST_MODIFIED_COL, now);
-    	Log.i("SmartStore.trackAlterStatus", soupName + " " + status);
+    	Log.i(TAG, soupName + " " + status);
 		return DBHelper.getInstance(db).insert(db, SmartStore.LONG_OPERATIONS_STATUS_TABLE, contentValues);
 	}
 
@@ -403,7 +404,7 @@ public class AlterSoupLongOperation extends LongOperation {
 	    	contentValues.put(SmartStore.LAST_MODIFIED_COL, now);
 	    	DBHelper.getInstance(db).update(db, SmartStore.LONG_OPERATIONS_STATUS_TABLE, contentValues, SmartStore.ID_PREDICATE, rowId + "");
 		}
-    	Log.i("SmartStore.trackAlterStatus", soupName + " " + newStatus);
+    	Log.i(TAG, soupName + " " + newStatus);
 	}
 	
 	/**
@@ -433,7 +434,13 @@ public class AlterSoupLongOperation extends LongOperation {
 		for (String keptPath : keptPaths) {
 			IndexSpec oldIndexSpec = mapOldSpecs.get(keptPath);
 			IndexSpec newIndexSpec = mapNewSpecs.get(keptPath);
-			if (oldIndexSpec.type.getColumnType().equals(newIndexSpec.type.getColumnType())) {
+			if (newIndexSpec.type.getColumnType() == null) {
+				// we are now using json1, there is no column to populate
+				continue;
+			}
+
+			if (oldIndexSpec.type.getColumnType() == null // we were using json1 - so columnName will be an expression
+					|| oldIndexSpec.type.getColumnType().equals(newIndexSpec.type.getColumnType())) {
 				oldColumns.add(oldIndexSpec.columnName);
 				newColumns.add(newIndexSpec.columnName);
 			}
@@ -462,7 +469,8 @@ public class AlterSoupLongOperation extends LongOperation {
 			for (String keptPath : keptPaths) {
 				IndexSpec oldIndexSpec = mapOldSpecs.get(keptPath);
 				IndexSpec newIndexSpec = mapNewSpecs.get(keptPath);
-				if (oldIndexSpec.type.getColumnType().equals(newIndexSpec.type.getColumnType())
+				if ((oldIndexSpec.type.getColumnType() == null // we were using json1 - so columnName will be an expression
+						|| oldIndexSpec.type.getColumnType().equals(newIndexSpec.type.getColumnType()))
 					&& newIndexSpec.type == SmartStore.Type.full_text) {
 					oldColumnsFts.add(oldIndexSpec.columnName);
 					newColumnsFts.add(newIndexSpec.columnName);
