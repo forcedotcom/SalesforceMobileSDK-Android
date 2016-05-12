@@ -31,9 +31,12 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
@@ -85,7 +88,7 @@ public class EventStoreManager {
         FileOutputStream outputStream;
         try {
             outputStream = context.openFileOutput(filename, Context.MODE_PRIVATE);
-            outputStream.write(event.toJson().getBytes());
+            outputStream.write(encrypt(event.toJson()).getBytes());
             outputStream.close();
         } catch (Exception e) {
             Log.e(TAG, "Exception occurred while saving event to filesystem", e);
@@ -119,10 +122,8 @@ public class EventStoreManager {
             return null;
         }
         final String filename = eventId + filenameSuffix;
-        /*
-         * TODO: Check if file exists, read and return results if it does.
-         */
-        return null;
+        final File file = new File(rootDir, filename);
+        return fetchEvent(file);
     }
 
     /**
@@ -132,12 +133,14 @@ public class EventStoreManager {
      */
     public List<InstrumentationEvent> fetchAllEvents() {
         final List<File> files = getAllFiles();
+        final List<InstrumentationEvent> events = new ArrayList<InstrumentationEvent>();
         for (final File file : files) {
-            /*
-             * TODO: Read file here and form event.
-             */
+            final InstrumentationEvent event = fetchEvent(file);
+            if (event != null) {
+                events.add(event);
+            }
         }
-        return null;
+        return events;
     }
 
     /**
@@ -179,11 +182,31 @@ public class EventStoreManager {
         }
     }
 
-    /**
-     * Returns all available files associated with this unique identifier.
-     *
-     * @return List of all files.
-     */
+    private InstrumentationEvent fetchEvent(File file) {
+        if (file == null || !file.exists()) {
+            Log.e(TAG, "File does not exist");
+            return null;
+        }
+        InstrumentationEvent event = null;
+        String eventString = null;
+        final StringBuilder json = new StringBuilder();
+        try {
+            final BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+            while ((line = br.readLine()) != null) {
+                json.append(line).append('\n');
+            }
+            br.close();
+            eventString = decrypt(json.toString());
+        } catch (Exception ex) {
+            Log.e(TAG, "Exception occurred while attempting to read file contents", ex);
+        }
+        if (!TextUtils.isEmpty(eventString)) {
+            event = new InstrumentationEvent(eventString);
+        }
+        return event;
+    }
+
     private List<File> getAllFiles() {
         final List<File> files = new ArrayList<File>();
         for (final File file : rootDir.listFiles()) {
@@ -194,15 +217,12 @@ public class EventStoreManager {
         return files;
     }
 
-    /**
-     * Encrypts a string and returns the encrypted version.
-     *
-     * @param data Unencrypted string.
-     * @return Encrypted string.
-     */
     private String encrypt(String data) {
-        // TOOD:
-        return null;
+        return Encryptor.encrypt(data, encryptionKey);
+    }
+
+    private String decrypt(String data) {
+        return Encryptor.decrypt(data, encryptionKey);
     }
 
     /**
