@@ -82,9 +82,7 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
         try {
             sdkInfoBootConfig.getString("androidPushNotificationClientId");
             Assert.fail("Wrong bootconfig having androidPushNotificationClientId field");
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             //don't do anything since the exception is expected
         }
 		assertEquals("Wrong bootconfig startPage", "index.html", sdkInfoBootConfig.optString("startPage"));
