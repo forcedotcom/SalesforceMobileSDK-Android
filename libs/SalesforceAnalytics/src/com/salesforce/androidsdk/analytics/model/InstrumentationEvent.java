@@ -35,11 +35,34 @@ public class InstrumentationEvent {
     private String eventId;
 
     /**
+     * Parameterized constructor.
+     *
+     * @param json JSON representation of this event.
+     */
+    public InstrumentationEvent(String json) {
+        /*
+         * TOOD: Build event from JSON.
+         */
+    }
+
+    /**
      * Returns a unique identifier for this event.
      *
      * @return Event ID.
      */
     public String getEventId() {
         return eventId;
+    }
+
+    /**
+     * Returns a JSON representation of this event.
+     *
+     * @return JSON string.
+     */
+    public String toJson() {
+        /*
+         * TODO: Construct a JSON representation of this event.
+         */
+        return null;
     }
 }

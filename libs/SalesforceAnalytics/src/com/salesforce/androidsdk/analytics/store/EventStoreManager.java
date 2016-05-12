@@ -33,6 +33,7 @@ import android.util.Log;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +51,7 @@ public class EventStoreManager {
     private String filenameSuffix;
     private File rootDir;
     private EventFileFilter fileFilter;
+    private Context context;
 
     /**
      * Parameterized constructor.
@@ -60,6 +62,7 @@ public class EventStoreManager {
      */
     public EventStoreManager(String filenameSuffix, Context context) {
         this.filenameSuffix = filenameSuffix;
+        this.context = context;
         fileFilter = new EventFileFilter(filenameSuffix);
         rootDir = context.getFilesDir();
     }
@@ -71,14 +74,19 @@ public class EventStoreManager {
      * @param event Event to be persisted.
      */
     public void storeEvent(InstrumentationEvent event) {
-        if (event == null) {
+        if (event == null || TextUtils.isEmpty(event.toJson())) {
             Log.d(TAG, "Invalid event");
             return;
         }
         final String filename = event.getEventId() + filenameSuffix;
-        /*
-         * TODO: Create a new file and store event on filesystem.
-         */
+        FileOutputStream outputStream;
+        try {
+            outputStream = context.openFileOutput(filename, Context.MODE_PRIVATE);
+            outputStream.write(event.toJson().getBytes());
+            outputStream.close();
+        } catch (Exception e) {
+            Log.e(TAG, "Exception occurred while saving event to filesystem", e);
+        }
     }
 
     /**

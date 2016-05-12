@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.analytics;
 
+import android.content.Context;
+
 import com.salesforce.androidsdk.analytics.store.EventStoreManager;
 
 /**
@@ -44,9 +46,10 @@ public class SalesforceAnalyticsManager {
      * Parameterized constructor.
      *
      * @param uniqueId Unique ID that is used to determine where the events are stored.
+     * @param context Context.
      */
-    public SalesforceAnalyticsManager(String uniqueId) {
+    public SalesforceAnalyticsManager(String uniqueId, Context context) {
         this.uniqueId = uniqueId;
-        storeManager = new EventStoreManager(uniqueId);
+        storeManager = new EventStoreManager(uniqueId, context);
     }
 }
