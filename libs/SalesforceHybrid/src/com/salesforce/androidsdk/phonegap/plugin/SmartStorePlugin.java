@@ -110,6 +110,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		pgCloseCursor,
 		pgGetDatabaseSize,
 		pgGetSoupIndexSpecs,
+		pgGetSoupSpec,
 		pgMoveCursorToPageIndex,
 		pgQuerySoup,
 		pgRegisterSoup,
@@ -152,6 +153,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		                  case pgCloseCursor:           closeCursor(args, callbackContext); break;
 		                  case pgGetDatabaseSize:       getDatabaseSize(args, callbackContext); break;
 		                  case pgGetSoupIndexSpecs:     getSoupIndexSpecs(args, callbackContext); break;
+		                  case pgGetSoupSpec:           getSoupSpec(args, callbackContext); break;
 		                  case pgMoveCursorToPageIndex: moveCursorToPageIndex(args, callbackContext); break;
 		                  case pgQuerySoup:             querySoup(args, callbackContext); break;
 		                  case pgRegisterSoup:          registerSoup(args, callbackContext); break;
@@ -601,6 +603,23 @@ public class SmartStorePlugin extends ForcePlugin {
 			indexSpecsJson.put(indexSpecJson);
 		}
 		callbackContext.success(indexSpecsJson);
+	}
+
+	/**
+	 * Native implementation of pgGetSoupSpec
+	 * @param args
+	 * @param callbackContext
+	 * @throws JSONException
+     */
+	private void getSoupSpec(JSONArray args, CallbackContext callbackContext) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		String soupName = arg0.getString(SOUP_NAME);
+
+		// Get soup specs
+		SmartStore smartStore = getSmartStore(arg0);
+		SoupSpec soupSpec = smartStore.getSoupSpec(soupName);
+		callbackContext.success(soupSpec.toJSON());
 	}
 
     /**

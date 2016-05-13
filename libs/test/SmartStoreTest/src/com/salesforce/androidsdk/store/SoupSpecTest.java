@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.store;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 
 import android.test.InstrumentationTestCase;
@@ -55,5 +58,15 @@ public class SoupSpecTest extends InstrumentationTestCase {
 
         soupSpec = new SoupSpec(TEST_SOUP_NAME, null);
         assertTrue("SoupSpec must not have any features", soupSpec.getFeatures().isEmpty());
+    }
+
+    public void testToJSON() throws JSONException {
+        SoupSpec soupSpec = new SoupSpec(TEST_SOUP_NAME, TEST_FEATURE_1, TEST_FEATURE_2);
+
+        JSONObject result = soupSpec.toJSON();
+
+        assertEquals("Soup name in json representation is incorrect.", TEST_SOUP_NAME, result.getString("name"));
+        assertEquals("Feature 1 in json representation is incorrect.", TEST_FEATURE_1, result.getJSONArray("features").get(0));
+        assertEquals("Feature 1 in json representation is incorrect.", TEST_FEATURE_2, result.getJSONArray("features").get(1));
     }
 }

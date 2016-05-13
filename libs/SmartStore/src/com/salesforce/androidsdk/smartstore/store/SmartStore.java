@@ -734,6 +734,17 @@ public class SmartStore  {
     	}
     }
 
+	/**
+	 * Returns the entire SoupSpec of the given soup.
+	 * @param soupName
+	 * @return SoupSpec for given soup name.
+     */
+	public SoupSpec getSoupSpec(String soupName) {
+		final SQLiteDatabase db = getDatabase();
+		List<String> features = DBHelper.getInstance(db).getFeatures(db, soupName);
+		return new SoupSpec(soupName, features.toArray(new String[features.size()]));
+	}
+
     /**
 	 * Run a query given by its query Spec, only returned results from selected page
 	 * @param querySpec

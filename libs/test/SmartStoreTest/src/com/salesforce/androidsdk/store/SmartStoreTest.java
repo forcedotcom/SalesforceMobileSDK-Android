@@ -38,6 +38,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
@@ -1362,5 +1363,26 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		JSONArray result = store.query(QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "ka2", null, null, 10), 0);
 		assertEquals("One result expected", 1, result.length());
 		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt, result.getJSONObject(0));
+	}
+
+	/**
+	 * Ensure correct soup spec is returned from getSoupSpec
+	 */
+	public void testGetSoupSpec() throws JSONException {
+		final String SOUP_SPEC_TEST = "soup_spec_test";
+		IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("index", Type.string)};
+		SoupSpec TEST_SPEC = new SoupSpec(SOUP_SPEC_TEST, SoupSpec.FEATURE_EXTERNAL_STORAGE);
+		store.registerSoupWithSpec(TEST_SPEC, indexSpecs);
+
+		// Act
+		SoupSpec result = store.getSoupSpec(TEST_SPEC.getSoupName());
+
+		// Verify the result
+		assertEquals("Soup name in soup spec is incorrect", SOUP_SPEC_TEST, result.getSoupName());
+		assertEquals("Feature set in soup spec is incorrect", SoupSpec.FEATURE_EXTERNAL_STORAGE, result.getFeatures().get(0));
+
+		// Verify JSON form
+		assertEquals("Soup name in json of soup spec is incorrect", SOUP_SPEC_TEST, result.toJSON().getString("name"));
+		assertEquals("Feature set in json of soup spec is incorrect", SoupSpec.FEATURE_EXTERNAL_STORAGE, result.toJSON().getJSONArray("features").get(0));
 	}
 }

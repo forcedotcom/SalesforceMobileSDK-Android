@@ -30,6 +30,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 /**
  * Object representation for soup specifications, such as soup name and features.
  */
@@ -84,5 +88,16 @@ public class SoupSpec {
      */
     public List<String> getFeatures() {
         return features;
+    }
+
+    /**
+     * @return The JSON representation of this soup spec.
+     * @throws JSONException
+     */
+    public JSONObject toJSON() throws JSONException {
+        JSONObject result = new JSONObject();
+        result.put("name", soupName);
+        result.put("features", new JSONArray(features));
+        return result;
     }
 }
