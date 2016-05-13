@@ -33,6 +33,7 @@ package com.salesforce.androidsdk.analytics.model;
 public class InstrumentationEvent {
 
     private String eventId;
+    private String jsonRepresentation;
 
     /**
      * Parameterized constructor.
@@ -41,8 +42,9 @@ public class InstrumentationEvent {
      */
     public InstrumentationEvent(String json) {
         /*
-         * TOOD: Build event from JSON.
+         * TODO: Build event from JSON.
          */
+        jsonRepresentation = json;
     }
 
     /**
@@ -63,6 +65,6 @@ public class InstrumentationEvent {
         /*
          * TODO: Construct a JSON representation of this event.
          */
-        return null;
+        return jsonRepresentation;
     }
 }

@@ -29,6 +29,10 @@ package com.salesforce.androidsdk.analytics.store;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 
+import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
+
+import org.json.JSONObject;
+
 /**
  * Tests for EventStoreManager.
  *
@@ -41,17 +45,20 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
     private static final String TEST_ENCRYPTION_KEY = "test_encryption_key";
 
     private EventStoreManager storeManager;
+    private InstrumentationEvent testEvent;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
         final Context targetContext = getInstrumentation().getTargetContext();
+        createTestEvent();
         storeManager = new EventStoreManager(TEST_FILENAME_SUFFIX, targetContext, TEST_ENCRYPTION_KEY);
     }
 
     @Override
     public void tearDown() throws Exception {
         storeManager.deleteAllEvents();
+        testEvent = null;
         super.tearDown();
     }
 
@@ -81,5 +88,13 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
 
     public void testDeleteAllEvents() throws Exception {
         // TODO:
+    }
+
+    private void createTestEvent() throws Exception {
+        final JSONObject object = new JSONObject();
+        object.put("Key1", "Value1");
+        object.put("Key2", 2);
+        object.put("Key3", true);
+        testEvent = new InstrumentationEvent(object.toString());
     }
 }
