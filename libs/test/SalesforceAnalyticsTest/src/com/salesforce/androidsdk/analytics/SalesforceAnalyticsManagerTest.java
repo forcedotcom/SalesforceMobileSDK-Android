@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, salesforce.com, inc.
+ * Copyright (c) 2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,16 +24,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
-
+package com.salesforce.androidsdk.analytics;
 
 /**
- * Tests for encrypted smart store
+ * Test class for the SalesforceAnalyticsManager class.
+ *
+ * @author bhariharan
  */
-public class EncryptedSmartStoreTest extends AbstractSmartStoreTest {
-
-	@Override
-	protected String getPasscode() {
-		return "test123";
-	}
+public class SalesforceAnalyticsManagerTest {
 }

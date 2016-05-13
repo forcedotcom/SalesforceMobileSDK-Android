@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -44,7 +44,8 @@ public class AppConfiguratorState {
 		ManagedAppOAuthID,
 		ManagedAppCallbackURL,
 		RequireCertAuth,
-		ManagedAppCertAlias;
+		ManagedAppCertAlias,
+        OnlyShowAuthorizedHosts
     }
 
     // Default values
@@ -61,6 +62,7 @@ public class AppConfiguratorState {
     private String oauthRedirectURI;
     private boolean requireCertAuth;
     private String certAlias;
+    private boolean onlyShowAuthorizedHosts;
 
     // Singleton instance
     private static AppConfiguratorState INSTANCE;
@@ -80,6 +82,7 @@ public class AppConfiguratorState {
         oauthRedirectURI = prefs.getString(ConfigKey.ManagedAppCallbackURL.name(), DEFAULT_OAUTH_REDIRECT_URI);
         requireCertAuth = prefs.getBoolean(ConfigKey.RequireCertAuth.name(), false);
         certAlias = prefs.getString(ConfigKey.ManagedAppCertAlias.name(), null);
+        onlyShowAuthorizedHosts = prefs.getBoolean(ConfigKey.OnlyShowAuthorizedHosts.name(), false);
     }
 
     public String getTargetApp() {
@@ -110,6 +113,10 @@ public class AppConfiguratorState {
         return certAlias;
     }
 
+    public boolean shouldOnlyShowAuthorizedHosts() {
+        return onlyShowAuthorizedHosts;
+    }
+
     /**
      * Save configurations to preferences and as app restrictions on target app
      * @param loginServers
@@ -118,10 +125,12 @@ public class AppConfiguratorState {
      * @param oauthRedirectURI
      * @param requireCertAuth
      * @param certAlias
+     * @param onlyShowAuthorizedHosts
      */
     public void saveConfigurations(Context ctx, String loginServers,
     		String loginServersLabels, String remoteAccessConsumerKey,
-    		String oauthRedirectURI, boolean requireCertAuth, String certAlias) {
+    		String oauthRedirectURI, boolean requireCertAuth, String certAlias,
+            boolean onlyShowAuthorizedHosts) {
 
         // Save to fields
         this.loginServers = loginServers;
@@ -130,6 +139,7 @@ public class AppConfiguratorState {
         this.oauthRedirectURI = oauthRedirectURI;
         this.requireCertAuth = requireCertAuth;
         this.certAlias = certAlias;
+        this.onlyShowAuthorizedHosts = onlyShowAuthorizedHosts;
 
         // Save to preferences
         ctx.getSharedPreferences(PREFS_KEY, Context.MODE_PRIVATE)
@@ -140,6 +150,7 @@ public class AppConfiguratorState {
                 .putString(ConfigKey.ManagedAppCallbackURL.name(), oauthRedirectURI)
                 .putBoolean(ConfigKey.RequireCertAuth.name(), requireCertAuth)
                 .putString(ConfigKey.ManagedAppCertAlias.name(), certAlias)
+                .putBoolean(ConfigKey.OnlyShowAuthorizedHosts.name(), onlyShowAuthorizedHosts)
                 .apply();
 
         // Save to app restrictions on target app
@@ -152,6 +163,7 @@ public class AppConfiguratorState {
         if (!oauthRedirectURI.isEmpty()) restrictions.putString(ConfigKey.ManagedAppCallbackURL.name(), oauthRedirectURI);
         restrictions.putBoolean(ConfigKey.RequireCertAuth.name(), requireCertAuth);
         if (!certAlias.isEmpty()) restrictions.putString(ConfigKey.ManagedAppCertAlias.name(), certAlias);
+        restrictions.putBoolean(ConfigKey.OnlyShowAuthorizedHosts.name(), onlyShowAuthorizedHosts);
         devicePolicyManager.setApplicationRestrictions(
                 AppConfiguratorAdminReceiver.getComponentName(ctx),
                 getTargetApp(), restrictions);

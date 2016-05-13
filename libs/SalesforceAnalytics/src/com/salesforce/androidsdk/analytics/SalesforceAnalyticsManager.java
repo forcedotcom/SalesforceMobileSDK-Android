@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, salesforce.com, inc.
+ * Copyright (c) 2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,16 +24,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.store;
+package com.salesforce.androidsdk.analytics;
 
+import android.content.Context;
+
+import com.salesforce.androidsdk.analytics.store.EventStoreManager;
 
 /**
- * Tests for plain smart store
+ * This class serves as an interface to the various
+ * functions of the SalesforceAnalytics library.
+ *
+ * @author bhariharan
  */
-public class PlainSmartStoreTest extends AbstractSmartStoreTest {
+public class SalesforceAnalyticsManager {
 
-	@Override
-	protected String getPasscode() {
-		return "";
-	}
+    private String uniqueId;
+    private boolean showEventsInConsole;
+    private EventStoreManager storeManager;
+
+    /**
+     * Parameterized constructor.
+     *
+     * @param uniqueId Unique ID that is used to determine where the events are stored.
+     * @param context Context.
+     * @param encryptionKey Encryption key.
+     */
+    public SalesforceAnalyticsManager(String uniqueId, Context context, String encryptionKey) {
+        this.uniqueId = uniqueId;
+        storeManager = new EventStoreManager(uniqueId, context, encryptionKey);
+    }
 }

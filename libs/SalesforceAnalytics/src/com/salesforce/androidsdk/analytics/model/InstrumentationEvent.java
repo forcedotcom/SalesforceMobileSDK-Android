@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,20 +24,47 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.configuredapp;
-
-import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
+package com.salesforce.androidsdk.analytics.model;
 
 /**
- * This class provides an implementation of KeyInterface.
- *
- * @author bhariharan
+ * Represents a typical instrumentation event. Transforms can be used to
+ * convert this event into a specific library's event format.
  */
-public class KeyImpl implements KeyInterface {
+public class InstrumentationEvent {
 
-	@Override
-	public String getKey(String name) {
-		return Encryptor.hash(name + "12s9adpahk;n12-97sdainkasd=012", name + "12kl0dsakj4-cxh1qewkjasdol8");
-	}
+    private String eventId;
+    private String jsonRepresentation;
+
+    /**
+     * Parameterized constructor.
+     *
+     * @param json JSON representation of this event.
+     */
+    public InstrumentationEvent(String json) {
+        /*
+         * TODO: Build event from JSON.
+         */
+        jsonRepresentation = json;
+    }
+
+    /**
+     * Returns a unique identifier for this event.
+     *
+     * @return Event ID.
+     */
+    public String getEventId() {
+        return eventId;
+    }
+
+    /**
+     * Returns a JSON representation of this event.
+     *
+     * @return JSON string.
+     */
+    public String toJson() {
+        /*
+         * TODO: Construct a JSON representation of this event.
+         */
+        return jsonRepresentation;
+    }
 }
