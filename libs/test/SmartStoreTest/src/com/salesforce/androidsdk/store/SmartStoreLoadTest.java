@@ -60,28 +60,28 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
     private static final int NS_IN_MS = 1000000;
 
     protected Context targetContext;
-	private SmartStore store;
+    private SmartStore store;
 
     //
     // Setup and tear down
     //
 
-	@Override
-	public void setUp() throws Exception {
-		super.setUp();
-		targetContext = getInstrumentation().getTargetContext();
-		final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
-		DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getPasscode())).reset(targetContext, null);
-		store = new SmartStore(dbOpenHelper, getPasscode());
-		store.dropAllSoups();
-	}
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        targetContext = getInstrumentation().getTargetContext();
+        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
+        DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getPasscode())).reset(targetContext, null);
+        store = new SmartStore(dbOpenHelper, getPasscode());
+        store.dropAllSoups();
+    }
 
-	@Override
-	protected void tearDown() throws Exception {
-		final SQLiteDatabase db = DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase(getPasscode());
-		db.close();
-		super.tearDown();
-	}
+    @Override
+    protected void tearDown() throws Exception {
+        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase(getPasscode());
+        db.close();
+        super.tearDown();
+    }
 
 
     //
@@ -140,12 +140,10 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         return getClass().getSimpleName();
     }
 
-    private void tryUpsertQuery(Type indexType, int numberEntries, int numberFieldPerEntries, int numberCharactersPerField, int numberIndexes) throws JSONException {
+    private void tryUpsertQuery(Type indexType, int numberEntries, int numberFieldPerEntry, int numberCharactersPerField, int numberIndexes) throws JSONException {
         setupSoup(TEST_SOUP, numberIndexes, indexType);
-        upsertEntries(numberEntries / NUMBER_ENTRIES_PER_BATCH, NUMBER_ENTRIES_PER_BATCH, numberFieldPerEntries, numberCharactersPerField);
+        upsertEntries(numberEntries / NUMBER_ENTRIES_PER_BATCH, NUMBER_ENTRIES_PER_BATCH, numberFieldPerEntry, numberCharactersPerField);
         queryEntries();
-
-
     }
 
     private void setupSoup(String soupName, int numberIndexes, Type indexType) {
@@ -157,14 +155,14 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         Log.i(getTag(), String.format("Creating table with %d %s indexes", numberIndexes, indexType));
     }
 
-    private void upsertEntries(int numberBatches, int numberEntriesPerBatch, int numberFieldPerEntries, int numberCharactersPerField) throws JSONException {
+    private void upsertEntries(int numberBatches, int numberEntriesPerBatch, int numberFieldPerEntry, int numberCharactersPerField) throws JSONException {
         List<Long> times = new ArrayList<Long>();
         for (int batchNumber=0; batchNumber<numberBatches; batchNumber++) {
             long start = System.nanoTime();
             store.beginTransaction();
             for (int entryNumber=0; entryNumber<numberEntriesPerBatch; entryNumber++) {
                 JSONObject entry = new JSONObject();
-                for (int fieldNumber=0; fieldNumber<numberFieldPerEntries; fieldNumber++) {
+                for (int fieldNumber=0; fieldNumber<numberFieldPerEntry; fieldNumber++) {
                     String value = pad( "v_" + batchNumber + "_" + entryNumber + "_" + fieldNumber + "_", numberCharactersPerField);
                     entry.put("k_" + fieldNumber, value);
                 }
@@ -177,7 +175,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         }
         double avgMilliseconds = average(times) / NS_IN_MS;
         Log.i(getTag(), String.format("Upserting %d entries with %d per batch with %d fields with %d characters: average time per batch --> %.3f ms",
-                numberBatches * numberEntriesPerBatch, numberEntriesPerBatch, numberFieldPerEntries, numberCharactersPerField, avgMilliseconds));
+                numberBatches * numberEntriesPerBatch, numberEntriesPerBatch, numberFieldPerEntry, numberCharactersPerField, avgMilliseconds));
     }
 
     private void queryEntries() throws JSONException {
@@ -236,21 +234,21 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
     }
 
     private void tryAlterSoup(Type indexType) throws JSONException {
-    	Log.i(getTag(), "In testAlterSoup");
-    	Log.i(getTag(), String.format("Initial database size: %d bytes", store.getDatabaseSize()));
+        Log.i(getTag(), "In testAlterSoup");
+        Log.i(getTag(), String.format("Initial database size: %d bytes", store.getDatabaseSize()));
         setupSoup(TEST_SOUP, 1, indexType);
         upsertEntries(NUMBER_ENTRIES / NUMBER_ENTRIES_PER_BATCH, NUMBER_ENTRIES_PER_BATCH, 10, 20);
-    	Log.i(getTag(), String.format("Database size after: %d bytes", store.getDatabaseSize()));
+        Log.i(getTag(), String.format("Database size after: %d bytes", store.getDatabaseSize()));
 
-    	// Without indexing for new index specs
-    	alterSoup("Adding one index / no re-indexing", false, new IndexSpec[]{new IndexSpec("k_0", indexType), new IndexSpec("k_1", indexType)});
-    	alterSoup("Adding one index / dropping one index / no re-indexing", false, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_2", indexType)});
-    	alterSoup("Dropping two indexes / no re-indexing", false, new IndexSpec[] {new IndexSpec("k_3", indexType)});
+        // Without indexing for new index specs
+        alterSoup("Adding one index / no re-indexing", false, new IndexSpec[]{new IndexSpec("k_0", indexType), new IndexSpec("k_1", indexType)});
+        alterSoup("Adding one index / dropping one index / no re-indexing", false, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_2", indexType)});
+        alterSoup("Dropping two indexes / no re-indexing", false, new IndexSpec[] {new IndexSpec("k_3", indexType)});
 
-    	// With indexing for new index specs
-    	alterSoup("Adding one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_1", indexType)});
-    	alterSoup("Adding one index / dropping one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_2", indexType)});
-    	alterSoup("Dropping two indexes / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_3", indexType)});
+        // With indexing for new index specs
+        alterSoup("Adding one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_1", indexType)});
+        alterSoup("Adding one index / dropping one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_2", indexType)});
+        alterSoup("Dropping two indexes / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_3", indexType)});
     }
     
     private void alterSoup(String msg, boolean reIndexData, IndexSpec[] indexSpecs) throws JSONException {
