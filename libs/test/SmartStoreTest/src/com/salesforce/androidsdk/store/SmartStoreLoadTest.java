@@ -140,9 +140,9 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         return getClass().getSimpleName();
     }
 
-    private void tryUpsertQuery(Type indexType, int numberEntries, int numberFieldPerEntry, int numberCharactersPerField, int numberIndexes) throws JSONException {
+    private void tryUpsertQuery(Type indexType, int numberEntries, int numberFieldsPerEntry, int numberCharactersPerField, int numberIndexes) throws JSONException {
         setupSoup(TEST_SOUP, numberIndexes, indexType);
-        upsertEntries(numberEntries / NUMBER_ENTRIES_PER_BATCH, NUMBER_ENTRIES_PER_BATCH, numberFieldPerEntry, numberCharactersPerField);
+        upsertEntries(numberEntries / NUMBER_ENTRIES_PER_BATCH, NUMBER_ENTRIES_PER_BATCH, numberFieldsPerEntry, numberCharactersPerField);
         queryEntries();
     }
 
@@ -155,14 +155,14 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         Log.i(getTag(), String.format("Creating table with %d %s indexes", numberIndexes, indexType));
     }
 
-    private void upsertEntries(int numberBatches, int numberEntriesPerBatch, int numberFieldPerEntry, int numberCharactersPerField) throws JSONException {
+    private void upsertEntries(int numberBatches, int numberEntriesPerBatch, int numberFieldsPerEntry, int numberCharactersPerField) throws JSONException {
         List<Long> times = new ArrayList<Long>();
         for (int batchNumber=0; batchNumber<numberBatches; batchNumber++) {
             long start = System.nanoTime();
             store.beginTransaction();
             for (int entryNumber=0; entryNumber<numberEntriesPerBatch; entryNumber++) {
                 JSONObject entry = new JSONObject();
-                for (int fieldNumber=0; fieldNumber<numberFieldPerEntry; fieldNumber++) {
+                for (int fieldNumber=0; fieldNumber<numberFieldsPerEntry; fieldNumber++) {
                     String value = pad( "v_" + batchNumber + "_" + entryNumber + "_" + fieldNumber + "_", numberCharactersPerField);
                     entry.put("k_" + fieldNumber, value);
                 }
@@ -175,7 +175,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         }
         double avgMilliseconds = average(times) / NS_IN_MS;
         Log.i(getTag(), String.format("Upserting %d entries with %d per batch with %d fields with %d characters: average time per batch --> %.3f ms",
-                numberBatches * numberEntriesPerBatch, numberEntriesPerBatch, numberFieldPerEntry, numberCharactersPerField, avgMilliseconds));
+                numberBatches * numberEntriesPerBatch, numberEntriesPerBatch, numberFieldsPerEntry, numberCharactersPerField, avgMilliseconds));
     }
 
     private void queryEntries() throws JSONException {
