@@ -390,7 +390,12 @@ public class SmartStorePlugin extends ForcePlugin {
 			soupName = soupSpecObj.getString(SOUP_SPEC_NAME);
 
 			// Get features
-			JSONArray featuresJson = soupSpecObj.getJSONArray(SOUP_SPEC_FEATURES);
+			JSONArray featuresJson = soupSpecObj.optJSONArray(SOUP_SPEC_FEATURES);
+
+			if (featuresJson == null) {
+				featuresJson = new JSONArray();
+			}
+
 			String[] features = new String[featuresJson.length()];
 			for (int i = 0; i < featuresJson.length(); i++) {
 				features[i] = featuresJson.getString(i);
