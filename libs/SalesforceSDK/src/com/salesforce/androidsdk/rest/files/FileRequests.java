@@ -68,7 +68,7 @@ public class FileRequests extends ApiRequests {
      * @return A new RestRequest that can be used to fetch this data
      */
     public static RestRequest ownedFilesList(String userId, Integer pageNum) {
-        return make(base("users").appendUserId(userId).appendPath("files").appendPageNum(pageNum));
+        return make(base("connect/files/users").appendUserId(userId).appendPageNum(pageNum));
     }
 
     /**
@@ -84,7 +84,7 @@ public class FileRequests extends ApiRequests {
      * @return A new RestRequest that can be used to fetch this data
      */
     public static RestRequest filesInUsersGroups(String userId, Integer pageNum) {
-        return make(base("users").appendUserId(userId).appendPath("files/filter/groups").appendPageNum(pageNum));
+        return make(base("connect/files/users").appendUserId(userId).appendPath("filter/groups").appendPageNum(pageNum));
     }
 
     /**
@@ -100,7 +100,7 @@ public class FileRequests extends ApiRequests {
      * @return A new RestRequest that can be used to fetch this data
      */
     public static RestRequest filesSharedWithUser(String userId, Integer pageNum) {
-        return make(base("users").appendUserId(userId).appendPath("files/filter/sharedwithme").appendPageNum(pageNum));
+        return make(base("connect/files/users").appendUserId(userId).appendPath("filter/sharedwithme").appendPageNum(pageNum));
     }
 
     /**
@@ -116,7 +116,7 @@ public class FileRequests extends ApiRequests {
      */
     public static RestRequest fileDetails(String sfdcId, String version) {
         validateSfdcId(sfdcId);
-        return make(base("files").appendPath(sfdcId).appendVersionNum(version));
+        return make(base("connect/files").appendPath(sfdcId).appendVersionNum(version));
     }
 
     /**
@@ -130,7 +130,7 @@ public class FileRequests extends ApiRequests {
     public static RestRequest batchFileDetails(List<String> sfdcIds) {
         validateSfdcIds(sfdcIds);
         String ids = TextUtils.join(",", sfdcIds);
-        return make(base("files").appendPath("batch").appendPath(ids));
+        return make(base("connect/files").appendPath("batch").appendPath(ids));
     }
 
     /**
@@ -153,7 +153,7 @@ public class FileRequests extends ApiRequests {
         if (renditionType == null) {
             throw new NullPointerException("rendition type can't be null");
         }
-        return make(base("files").appendPath(sfdcId).appendPath("rendition")
+        return make(base("connect/files").appendPath(sfdcId).appendPath("rendition")
                 .appendQueryParam("type", renditionType.toString()).appendVersionNum(version).appendPageNum(pageNum));
     }
 
@@ -169,7 +169,7 @@ public class FileRequests extends ApiRequests {
      */
     public static RestRequest fileContents(String sfdcId, String version) {
         validateSfdcId(sfdcId);
-        return make(base("files").appendPath(sfdcId).appendPath("content").appendVersionNum(version));
+        return make(base("connect/files").appendPath(sfdcId).appendPath("content").appendVersionNum(version));
     }
 
     /**
@@ -185,7 +185,7 @@ public class FileRequests extends ApiRequests {
      */
     public static RestRequest fileShares(String sfdcId, Integer pageNum) {
         validateSfdcId(sfdcId);
-        return make(base("files").appendPath(sfdcId).appendPath("file-shares").appendPageNum(pageNum));
+        return make(base("connect/files").appendPath(sfdcId).appendPath("file-shares").appendPageNum(pageNum));
     }
 
     /**
@@ -245,7 +245,7 @@ public class FileRequests extends ApiRequests {
         if (description != null) builder.addFormDataPart("desc", description);
         builder.addFormDataPart("fileData", name, RequestBody.create(mediaType, theFile));
 
-        return new RestRequest(RestMethod.POST, base("users").appendPath("me/files").toString(), builder.build(), HTTP_HEADERS);
+        return new RestRequest(RestMethod.POST, base("connect/files/users").appendPath("me").toString(), builder.build(), HTTP_HEADERS);
     }
 
     private static RequestBody makeFileShare(String fileId, String entityId, String shareType) {
