@@ -243,12 +243,12 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         // Without indexing for new index specs
         alterSoup("Adding one index / no re-indexing", false, new IndexSpec[]{new IndexSpec("k_0", indexType), new IndexSpec("k_1", indexType)});
         alterSoup("Adding one index / dropping one index / no re-indexing", false, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_2", indexType)});
-        alterSoup("Dropping two indexes / no re-indexing", false, new IndexSpec[] {new IndexSpec("k_3", indexType)});
+        alterSoup("Dropping one index / no re-indexing", false, new IndexSpec[] {new IndexSpec("k_0", indexType)});
 
         // With indexing for new index specs
         alterSoup("Adding one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_1", indexType)});
         alterSoup("Adding one index / dropping one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_2", indexType)});
-        alterSoup("Dropping two indexes / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_3", indexType)});
+        alterSoup("Dropping one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType)});
     }
     
     private void alterSoup(String msg, boolean reIndexData, IndexSpec[] indexSpecs) throws JSONException {
