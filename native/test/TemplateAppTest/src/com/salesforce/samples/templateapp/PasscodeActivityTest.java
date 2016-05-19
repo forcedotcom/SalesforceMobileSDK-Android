@@ -30,6 +30,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.test.ActivityInstrumentationTestCase2;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
@@ -434,6 +435,9 @@ public class PasscodeActivityTest extends
                     v.onEditorAction(actionCode);
                 }
             });
+            waitSome();
+            this.sendKeys(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER);
+            this.sendKeys(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER);
         } catch (Throwable t) {
             fail("Failed do editor action " + actionCode);
         }
