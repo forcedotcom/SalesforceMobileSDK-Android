@@ -143,6 +143,14 @@ public class PasscodeActivityTest extends
 		passcodeActivity = getActivity();
 		assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
 
+		// Entering nothing and submitting -> expect passcode too short error
+		setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "");
+		doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+		assertTrue("Application should still be locked", passcodeManager.isLocked());
+		assertEquals("Activity expected in create mode still", PasscodeMode.Create, passcodeActivity.getMode());
+		assertEquals("Error expected", "The passcode must be at least 4 characters long",
+				((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText());
+
 		// Entering in 123 and submitting -> expect passcode too short error
 		setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123");
 		doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
