@@ -205,12 +205,11 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         // Processing the editor action only on key up to avoid sending events like pass code manager unlock twice.
         if (event != null && event.getAction() == KeyEvent.ACTION_UP) {
             String pc = entry.getText().toString();
-            if (pc.length() > 0 && pc.length() < getMinPasscodeLength()) {
+            if (pc.length() >= 0 && pc.length() < getMinPasscodeLength()) {
                 error.setText(getMinLengthInstructions(getMinPasscodeLength()));
                 return false;
             }
             return pc.length() > 0 ? onSubmit(pc) : false;
-
         } else {
             return true;
         }
