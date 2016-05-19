@@ -80,14 +80,22 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
                 new IndexSpec("address.city", SmartStore.Type.string),
                 new IndexSpec("salary", SmartStore.Type.integer),
                 new IndexSpec("interest", SmartStore.Type.floating),
-                new IndexSpec("note", SmartStore.Type.full_text)
+                new IndexSpec("note", SmartStore.Type.full_text),
+                new IndexSpec("other", SmartStore.Type.json1)
         };
 
         assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
         store.registerSoup(TEST_SOUP, indexSpecs);
         assertTrue("Register soup call failed", store.hasSoup(TEST_SOUP));
 
-        checkIndexSpecs(indexSpecs);
+        checkIndexSpecs(TEST_SOUP, new IndexSpec[] {
+                new IndexSpec("lastName", SmartStore.Type.string, TEST_SOUP_TABLE_NAME + "_0"),
+                new IndexSpec("address.city", SmartStore.Type.string, TEST_SOUP_TABLE_NAME + "_1"),
+                new IndexSpec("salary", SmartStore.Type.integer, TEST_SOUP_TABLE_NAME + "_2"),
+                new IndexSpec("interest", SmartStore.Type.floating, TEST_SOUP_TABLE_NAME + "_3"),
+                new IndexSpec("note", SmartStore.Type.full_text, TEST_SOUP_TABLE_NAME + "_4"),
+                new IndexSpec("other", SmartStore.Type.json1, "json_extract(soup, '$.other')")
+        });
     }
 
     /**
@@ -195,6 +203,75 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         tryAlterSoupTypeChange(SmartStore.Type.json1, SmartStore.Type.full_text);
     }
 
+    /**
+     * Test for alterSoup passing in same index specs (string)
+     * Make sure db table / indexes are recreated
+     * That way soup created before 4.2 can get the new indexes (create/lastModified) by calling alterSoup
+     */
+    public void testAlterSoupWithStringIndexesToGetIndexesOnCreatedAndLastModified() throws JSONException{
+        tryAlterSoupToGetIndexesOnCreatedAndLastModified(SmartStore.Type.string);
+    }
+
+    /**
+     * Test for alterSoup passing in same index specs (json1)
+     * Make sure db table / indexes are recreated
+     * That way soup created before 4.2 can get the new indexes (create/lastModified) by calling alterSoup
+     */
+    public void testAlterSoupWithJSON1IndexesToGetIndexesOnCreatedAndLastModified() throws JSONException {
+        tryAlterSoupToGetIndexesOnCreatedAndLastModified(SmartStore.Type.json1);
+    }
+
+    /**
+     * Test for alterSoup passing in same index specs (full_text)
+     * Make sure db table / indexes are recreated
+     * That way soup created before 4.2 can get the new indexes (create/lastModified) by calling alterSoup
+     */
+    public void testAlterSoupWithFullTextIndexesToGetIndexesOnCreatedAndLastModified() throws JSONException {
+        tryAlterSoupToGetIndexesOnCreatedAndLastModified(SmartStore.Type.full_text);
+    }
+
+    private void tryAlterSoupToGetIndexesOnCreatedAndLastModified(SmartStore.Type indexType) throws JSONException {
+        IndexSpec[] indexSpecs = new IndexSpec[]{new IndexSpec(CITY, indexType), new IndexSpec(COUNTRY, indexType)};
+
+        assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
+        store.registerSoup(TEST_SOUP, indexSpecs);
+        assertTrue("Register soup call failed", store.hasSoup(TEST_SOUP));
+
+        JSONObject soupElt1 = new JSONObject();
+        soupElt1.put(CITY, SAN_FRANCISCO);
+        soupElt1.put(COUNTRY, USA);
+        JSONObject soupElt2 = new JSONObject();
+        soupElt2.put(CITY, PARIS);
+        soupElt2.put(COUNTRY, FRANCE);
+
+        long elt1Id = idOf(store.create(TEST_SOUP, soupElt1));
+        long elt2Id = idOf(store.create(TEST_SOUP, soupElt2));
+
+        // Checking db
+        checkDb(new long[]{elt1Id, elt2Id}, indexSpecs[0].type, indexSpecs[1].type);
+
+        // Drop db indexes on created and lastModified to simulate soup having been created before SDK 4.2
+        String dropIndexSqlFormat = "DROP INDEX %s_%s_idx";
+        final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+        db.execSQL(String.format(dropIndexSqlFormat, TEST_SOUP_TABLE_NAME, "created"));
+        db.execSQL(String.format(dropIndexSqlFormat, TEST_SOUP_TABLE_NAME, "lastModified"));
+
+        // Check db indexes after the drop - created and lastModified should be gone
+        String expectedCityCol = indexType == SmartStore.Type.json1 ? String.format("json_extract(soup, '$.%s')", CITY) : CITY_COL;
+        String expectedCountryCol = indexType == SmartStore.Type.json1 ? String.format("json_extract(soup, '$.%s')", COUNTRY) : COUNTRY_COL;
+
+        checkDatabaseIndexes(TEST_SOUP_TABLE_NAME, Arrays.asList(new String[]{
+                "CREATE INDEX " + TEST_SOUP_TABLE_NAME + "_0_idx on " + TEST_SOUP_TABLE_NAME + " ( " + expectedCityCol + " )",
+                "CREATE INDEX " + TEST_SOUP_TABLE_NAME + "_1_idx on " + TEST_SOUP_TABLE_NAME + " ( " + expectedCountryCol + " )",
+        }));
+
+        // Alter soup - passing same indexSpecs as before
+        store.alterSoup(TEST_SOUP, indexSpecs, true);
+
+        // Check db - created and lastModified indexes should be there
+        checkDb(new long[]{elt1Id, elt2Id}, indexSpecs[0].type, indexSpecs[1].type);
+    }
+
     public void tryAlterSoupTypeChange(SmartStore.Type fromType, SmartStore.Type toType) throws JSONException {
         IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec(CITY, fromType), new IndexSpec(COUNTRY, fromType)};
 
@@ -231,7 +308,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
     }
 
 
-    private void checkDb(long[] expectedIds, SmartStore.Type cityColType, SmartStore.Type countryColType) {
+    private void checkDb(long[] expectedIds, SmartStore.Type cityColType, SmartStore.Type countryColType) throws JSONException {
         String[] cities = new String[] {SAN_FRANCISCO, PARIS};
         String[] countries = new String[] {USA, FRANCE};
 
@@ -240,6 +317,20 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         if (cityColType != SmartStore.Type.json1) expectedColumnNames.add(CITY_COL);
         if (countryColType != SmartStore.Type.json1) expectedColumnNames.add(COUNTRY_COL);
         checkColumns(TEST_SOUP_TABLE_NAME, expectedColumnNames);
+
+        // Check soup indexes
+        String expectedCityCol = cityColType == SmartStore.Type.json1 ? String.format("json_extract(soup, '$.%s')", CITY) : CITY_COL;
+        String expectedCountryCol = countryColType == SmartStore.Type.json1 ? String.format("json_extract(soup, '$.%s')", COUNTRY) : COUNTRY_COL;
+        checkIndexSpecs(TEST_SOUP, new IndexSpec[]{ new IndexSpec(CITY, cityColType, expectedCityCol), new IndexSpec(COUNTRY, countryColType, expectedCountryCol)});
+
+        // Check db indexes
+        checkDatabaseIndexes(TEST_SOUP_TABLE_NAME, Arrays.asList(new String[]{
+                "CREATE INDEX " + TEST_SOUP_TABLE_NAME + "_0_idx on " + TEST_SOUP_TABLE_NAME + " ( " + expectedCityCol + " )",
+                "CREATE INDEX " + TEST_SOUP_TABLE_NAME + "_1_idx on " + TEST_SOUP_TABLE_NAME + " ( " + expectedCountryCol + " )",
+                "CREATE INDEX " + TEST_SOUP_TABLE_NAME + "_created_idx on " + TEST_SOUP_TABLE_NAME + " ( created )",
+                "CREATE INDEX " + TEST_SOUP_TABLE_NAME + "_lastModified_idx on " + TEST_SOUP_TABLE_NAME + " ( lastModified )",
+
+        }));
 
         // Check rows of soup table
         Cursor c = null;
@@ -320,7 +411,10 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         store.alterSoup(TEST_SOUP, indexSpecsNew, reIndexData);
 
         // Check index specs
-        checkIndexSpecs(indexSpecsNew);
+        checkIndexSpecs(TEST_SOUP, new IndexSpec[] {
+                new IndexSpec("lastName", SmartStore.Type.string, TEST_SOUP_TABLE_NAME + "_0"),
+                new IndexSpec("address.street", SmartStore.Type.string, TEST_SOUP_TABLE_NAME + "_1")
+        });
 
         // Check DB
         Cursor c = null;
@@ -368,22 +462,6 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
             safeClose(c);
         }
     }
-
-    /**
-     * Helper method
-     * @param indexSpecs
-     */
-    private void checkIndexSpecs(IndexSpec[] indexSpecs) {
-        // Check index specs
-        IndexSpec[] indexSpecsReturned = store.getSoupIndexSpecs(TEST_SOUP);
-        assertEquals("Should have the same number of index specs", indexSpecs.length, indexSpecsReturned.length);
-        for (int i = 0; i<indexSpecs.length; i++) {
-            assertEquals("Wrong index spec path", indexSpecs[i].path, indexSpecsReturned[i].path);
-            assertEquals("Wrong index spec type", indexSpecs[i].type, indexSpecsReturned[i].type);
-            assertEquals("Wrong index spec column", TEST_SOUP_TABLE_NAME + "_" + i, indexSpecsReturned[i].columnName);
-        }
-    }
-
 
     /**
      * Test reIndexSoup
@@ -540,7 +618,11 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
             store.resumeLongOperations();
 
             // Check index specs
-            checkIndexSpecs(indexSpecsNew);
+            checkIndexSpecs(TEST_SOUP, new IndexSpec[] {
+                    new IndexSpec("lastName", SmartStore.Type.string, TEST_SOUP_TABLE_NAME + "_0"),
+                    new IndexSpec("address.city", SmartStore.Type.string, TEST_SOUP_TABLE_NAME + "_1"),
+                    new IndexSpec("address.street", SmartStore.Type.string, TEST_SOUP_TABLE_NAME + "_2")
+            });
 
             // Check DB
             Cursor c = null;

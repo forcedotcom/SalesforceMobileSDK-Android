@@ -44,6 +44,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -117,6 +118,14 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 			safeClose(c);
 		}
 	}
+
+    /**
+     * Helper method to check index specs on a soup
+     */
+    protected void checkIndexSpecs(String soupName, IndexSpec[] expectedIndexSpecs) throws JSONException {
+        final IndexSpec[] actualIndexSpecs = store.getSoupIndexSpecs(soupName);
+        JSONTestHelper.assertSameJSONArray("Wrong index specs", IndexSpec.toJSON(expectedIndexSpecs), IndexSpec.toJSON(actualIndexSpecs));
+    }
 
     /**
      * Helper method to check db indexes on a table
