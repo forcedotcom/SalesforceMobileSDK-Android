@@ -113,6 +113,10 @@ public class SmartSqlHelper  {
 				else if (path.equals(SmartStore.SOUP_ENTRY_ID)) {
 					matcher.appendReplacement(sql, tableQualifier + SmartStore.ID_COL);
 				}
+				// {soupName:_soupCreatedDate}
+				else if (path.equals(SmartStore.SOUP_CREATED_DATE)) {
+					matcher.appendReplacement(sql, tableQualifier + SmartStore.CREATED_COL);
+				}
 				// {soupName:_soupLastModifiedDate}
 				else if (path.equals(SmartStore.SOUP_LAST_MODIFIED_DATE)) {
 					matcher.appendReplacement(sql, tableQualifier + SmartStore.LAST_MODIFIED_COL);

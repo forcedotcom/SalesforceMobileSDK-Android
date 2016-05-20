@@ -122,8 +122,8 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	 * Testing smart sql to sql conversion when path is: _soup, _soupEntryId or _soupLastModifiedDate
 	 */
 	public void testConvertSmartSqlWithSpecialColumns() {
-		assertEquals("select TABLE_1.id, TABLE_1.lastModified, TABLE_1.soup from TABLE_1", 
-				store.convertSmartSql("select {employees:_soupEntryId}, {employees:_soupLastModifiedDate}, {employees:_soup} from {employees}"));
+		assertEquals("select TABLE_1.id, TABLE_1.created, TABLE_1.lastModified, TABLE_1.soup from TABLE_1",
+				store.convertSmartSql("select {employees:_soupEntryId}, {employees:_soupCreatedDate}, {employees:_soupLastModifiedDate}, {employees:_soup} from {employees}"));
 	}
 	
 	/**
