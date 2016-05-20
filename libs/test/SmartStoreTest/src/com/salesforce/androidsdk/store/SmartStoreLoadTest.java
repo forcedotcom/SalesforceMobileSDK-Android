@@ -55,7 +55,7 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
 
     private static final String TEST_SOUP = "test_soup";
 
-    private static final int NUMBER_ENTRIES = 10000;
+    private static final int NUMBER_ENTRIES = 1000;//0;
     private static final int NUMBER_ENTRIES_PER_BATCH = 100;
     private static final int NS_IN_MS = 1000000;
 

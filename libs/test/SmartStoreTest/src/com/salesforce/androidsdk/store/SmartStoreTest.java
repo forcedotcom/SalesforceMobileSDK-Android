@@ -184,7 +184,9 @@ public class SmartStoreTest extends SmartStoreTestCase {
         // Check db indexes
         checkDatabaseIndexes(soupTableName, Arrays.asList(new String[] {
                 "CREATE INDEX " + soupTableName + "_0_idx on " + soupTableName + " ( " + soupTableName + "_0 )",
-                "CREATE INDEX " + soupTableName + "_1_idx on " + soupTableName + " ( " + soupTableName + "_1 )"
+                "CREATE INDEX " + soupTableName + "_1_idx on " + soupTableName + " ( " + soupTableName + "_1 )",
+                "CREATE INDEX " + soupTableName + "_created_idx on " + soupTableName + " ( created )",
+                "CREATE INDEX " + soupTableName + "_lastModified_idx on " + soupTableName + " ( lastModified )"
         }));
 
 		// Drop
@@ -1080,7 +1082,9 @@ public class SmartStoreTest extends SmartStoreTestCase {
         checkDatabaseIndexes(soupTableName, Arrays.asList(new String[] {
             "CREATE INDEX " + soupTableName + "_0_idx on " + soupTableName + " ( json_extract(soup, '$.lastName') )",
             "CREATE INDEX " + soupTableName + "_1_idx on " + soupTableName + " ( json_extract(soup, '$.address.city') )",
-            "CREATE INDEX " + soupTableName + "_2_idx on " + soupTableName + " ( " + soupTableName + "_2 )"
+            "CREATE INDEX " + soupTableName + "_2_idx on " + soupTableName + " ( " + soupTableName + "_2 )",
+            "CREATE INDEX " + soupTableName + "_created_idx on " + soupTableName + " ( created )",
+            "CREATE INDEX " + soupTableName + "_lastModified_idx on " + soupTableName + " ( lastModified )"
         }));
     }
 }

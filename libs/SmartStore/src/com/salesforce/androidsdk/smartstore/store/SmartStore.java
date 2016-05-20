@@ -94,6 +94,7 @@ public class SmartStore  {
     // JSON fields added to soup element on insert/update
     public static final String SOUP_ENTRY_ID = "_soupEntryId";
     public static final String SOUP_LAST_MODIFIED_DATE = "_soupLastModifiedDate";
+	public static final String SOUP_CREATED_DATE = "_soupCreatedDate";
 
     // Predicates
     protected static final String SOUP_NAME_PREDICATE = SOUP_NAME_COL + " = ?";
@@ -309,6 +310,12 @@ public class SmartStore  {
                         .append(", ").append(CREATED_COL).append(" INTEGER")
                         .append(", ").append(LAST_MODIFIED_COL).append(" INTEGER");
 
+		final String createIndexFormat = "CREATE INDEX %s_%s_idx on %s ( %s )";
+
+		for (String col : new String[]{CREATED_COL, LAST_MODIFIED_COL}) {
+			createIndexStmts.add(String.format(createIndexFormat, soupTableName, col, soupTableName, col));
+		}
+
         int i = 0;
         for (IndexSpec indexSpec : indexSpecs) {
             // Column name or expression the db index is on
@@ -337,8 +344,7 @@ public class SmartStore  {
             soupIndexMapInserts.add(values);
 
             // for create index
-            String indexName = soupTableName + "_" + i + "_idx";
-            createIndexStmts.add(String.format("CREATE INDEX %s on %s ( %s )", indexName, soupTableName, columnName));;
+			createIndexStmts.add(String.format(createIndexFormat, soupTableName, "" + i, soupTableName, columnName));;
 
             // for the cache
             indexSpecsToCache[i] = new IndexSpec(indexSpec.path, indexSpec.type, columnName);
