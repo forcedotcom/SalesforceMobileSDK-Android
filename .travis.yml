@@ -27,6 +27,7 @@ before_script:
 #Build all projects and run the tests
 script:
    - travis_wait 30 ./gradlew :libs:SalesforceSDK:connectedAndroidTest
+   - travis_wait 30 ./gradlew :libs:SmartStore:connectedAndroidTest
    - travis_wait 30 ./gradlew :libs:SmartSync:connectedAndroidTest
    - travis_wait 30 ./gradlew :libs:SalesforceHybrid:connectedAndroidTest
    - ./gradlew :libs:SalesforceReact:assembleDebug
