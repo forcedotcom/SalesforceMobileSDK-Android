@@ -247,10 +247,13 @@ public class AlterSoupLongOperation extends LongOperation {
 	 * Step 2: drop old indexes / remove entries in soup_index_map / cleaanup cache
 	 */
 	protected void dropOldIndexes() {
+		String dropIndexFormat = "DROP INDEX IF EXISTS %s_%s_idx";
 		// Removing db indexes on table (otherwise registerSoup will fail to create indexes with the same name)
+		for (String col : new String[] { SmartStore.CREATED_COL, SmartStore.LAST_MODIFIED_COL}) {
+			db.execSQL(String.format(dropIndexFormat, soupTableName, col));
+		}
 		for (int i=0; i<oldIndexSpecs.length; i++) {
-		    String indexName = soupTableName + "_" + i + "_idx";
-		    db.execSQL("DROP INDEX IF EXISTS "  + indexName);
+			db.execSQL(String.format(dropIndexFormat, soupTableName, "" + i));
 		}
 
 		// Cleaning up soup index map table and cache
