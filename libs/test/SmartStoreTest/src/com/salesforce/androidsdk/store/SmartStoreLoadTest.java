@@ -50,7 +50,6 @@ import java.util.List;
 /**
  * Set of tests for the smart store loading numerous and/or large entries and querying them back
  */
-//public class SmartStoreLoadTest extends InstrumentationTestCase {
 public class SmartStoreLoadTest extends SmartStoreTestCase {
 
     private static final String TEST_SOUP = "test_soup";
