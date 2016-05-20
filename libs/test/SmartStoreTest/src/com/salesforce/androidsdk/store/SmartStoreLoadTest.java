@@ -50,39 +50,14 @@ import java.util.List;
 /**
  * Set of tests for the smart store loading numerous and/or large entries and querying them back
  */
-public class SmartStoreLoadTest extends InstrumentationTestCase {
-
+//public class SmartStoreLoadTest extends InstrumentationTestCase {
+public class SmartStoreLoadTest extends SmartStoreTestCase {
 
     private static final String TEST_SOUP = "test_soup";
 
-    private static final int NUMBER_ENTRIES = 1000;//0;
+    private static final int NUMBER_ENTRIES = 1000;
     private static final int NUMBER_ENTRIES_PER_BATCH = 100;
     private static final int NS_IN_MS = 1000000;
-
-    protected Context targetContext;
-    private SmartStore store;
-
-    //
-    // Setup and tear down
-    //
-
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        targetContext = getInstrumentation().getTargetContext();
-        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
-        DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getPasscode())).reset(targetContext, null);
-        store = new SmartStore(dbOpenHelper, getPasscode());
-        store.dropAllSoups();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase(getPasscode());
-        db.close();
-        super.tearDown();
-    }
-
 
     //
     // Tests
