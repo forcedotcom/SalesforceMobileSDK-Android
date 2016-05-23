@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.analytics.model;
 
+import java.util.Map;
+
 /**
  * Represents a typical instrumentation event. Transforms can be used to
  * convert this event into a specific library's event format.
@@ -33,6 +35,15 @@ package com.salesforce.androidsdk.analytics.model;
 public class InstrumentationEvent {
 
     private String eventId;
+
+    private long startTime;
+    private long endTime;
+    private String name;
+    private Map<String, Object> attributes;
+    private int sessionId;
+    private int sequenceId;
+    private String senderId;
+    private Map<String, Object> senderContext;
     private String jsonRepresentation;
 
     /**
@@ -66,5 +77,44 @@ public class InstrumentationEvent {
          * TODO: Construct a JSON representation of this event.
          */
         return jsonRepresentation;
+    }
+
+    /**
+     * Represents the type of interaction being logged.
+     */
+    public enum Type {
+        user,
+        system,
+        error,
+        crud
+    }
+
+    /**
+     * Represents the subtype of interaction being logged.
+     */
+    public enum Subtype {
+        click,
+        mouseover,
+        create,
+        swipe
+    }
+
+    /**
+     * Represents the type of event being measured.
+     */
+    public enum EventType {
+        interaction,
+        pageView,
+        perf,
+        error
+    }
+
+    /**
+     * Represents the type of error being logged.
+     */
+    public enum ErrorType {
+        info,
+        warn,
+        error
     }
 }
