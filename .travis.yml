@@ -8,10 +8,9 @@ branches:
 
 android:
    components:
-      - build-tools-23.0.1
-      - android-23
-      - extra-google-m2repository
-      - extra-android-m2repository
+      matrix : 
+      - build-tools-23.0.1 API=android-23 extra-google-m2repository extra-android-m2repository
+      - build-tools-23.0.1 API=android-22 extra-google-m2repository extra-android-m2repository
 
 env:
    global:
@@ -20,7 +19,7 @@ env:
 
 # Create and start the emulator
 before_script:
-   - echo no | android create avd --force -n test -t android-21  --abi armeabi-v7a -c 128M
+   - echo no | android create avd --force -n test -t $API  --abi armeabi-v7a -c 128M
    - emulator -avd test -no-skin -no-audio -no-window &
    - android-wait-for-emulator
    - adb shell input keyevent 82

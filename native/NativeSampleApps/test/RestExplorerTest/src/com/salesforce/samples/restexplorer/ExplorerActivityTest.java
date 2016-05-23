@@ -458,7 +458,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.owned_files_list_page_text, "0");
             }
         };
-        gotoTabAndRunAction(OWNED_FILES_LIST_TAB, R.id.owned_files_list_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/users/filesOwnedByUserId/files?page=0]");
+        gotoTabAndRunAction(OWNED_FILES_LIST_TAB, R.id.owned_files_list_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/connect/files/users/filesOwnedByUserId?page=0]");
     }
 
     /**
@@ -472,7 +472,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.files_in_users_groups_page_text, "0");
             }
         };
-        gotoTabAndRunAction(FILES_IN_USERS_GROUPS_TAB, R.id.files_in_users_groups_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/users/filesInUsersGroupsId/files/filter/groups?page=0]");
+        gotoTabAndRunAction(FILES_IN_USERS_GROUPS_TAB, R.id.files_in_users_groups_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/connect/files/users/filesInUsersGroupsId/filter/groups?page=0]");
     }
 
     /**
@@ -486,7 +486,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.files_shared_with_user_page_text, "0");
             }
         };
-        gotoTabAndRunAction(FILES_SHARED_WITH_USER_TAB, R.id.files_shared_with_user_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/users/fileSharedWithUserId/files/filter/sharedwithme?page=0]");
+        gotoTabAndRunAction(FILES_SHARED_WITH_USER_TAB, R.id.files_shared_with_user_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/connect/files/users/fileSharedWithUserId/filter/sharedwithme?page=0]");
     }
 
     /**
@@ -500,7 +500,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.file_details_version_text, "1");
             }
         };
-        gotoTabAndRunAction(FILE_DETAILS_TAB, R.id.file_details_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/files/detailsForFileId?versionNumber=1]");
+        gotoTabAndRunAction(FILE_DETAILS_TAB, R.id.file_details_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/connect/files/detailsForFileId?versionNumber=1]");
     }
 
     /**
@@ -513,7 +513,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.batch_file_details_document_id_list_text, "fileId1,fileId2");
             }
         };
-        gotoTabAndRunAction(BATCH_FILE_DETAILS_TAB, R.id.batch_file_details_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/files/batch/fileId1,fileId2]");
+        gotoTabAndRunAction(BATCH_FILE_DETAILS_TAB, R.id.batch_file_details_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/connect/files/batch/fileId1,fileId2]");
     }
 
     /**
@@ -527,7 +527,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.file_shares_page_text, "0");
             }
         };
-        gotoTabAndRunAction(FILE_SHARES_TAB, R.id.file_shares_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/files/sharesForFileId/file-shares?page=0]");
+        gotoTabAndRunAction(FILE_SHARES_TAB, R.id.file_shares_button, "Go", extraSetup, "[GET " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/chatter/connect/files/sharesForFileId/file-shares?page=0]");
     }
 
     /**
