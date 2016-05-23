@@ -25,6 +25,7 @@
  */
 package com.salesforce.samples.restexplorer;
 
+import android.accounts.AccountManager;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.test.ActivityInstrumentationTestCase2;
@@ -127,9 +128,16 @@ public class ExplorerActivityTest extends
         clientManager = new ClientManager(targetContext, targetContext.getString(R.string.account_type), null, SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
         clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
                 TEST_ACCESS_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID, TEST_USER_ID, null);
-        SalesforceSDKManager.getInstance().getPasscodeManager().setTimeoutMs(0 /* disabled */);
+        SalesforceSDKManager.getInstance().getPasscodeManager().setTimeoutMs(0);
+        final AccountManager accountManager = AccountManager.get(targetContext);
 
-        // Plug a modified okHttpClient that doesn't actually go to the server.
+        /*
+         * Since we are using bogus credentials, we need to explicitly set the auth token value to
+         * prevent ClientManager from attempting a refresh with the bogus refresh token.
+         */
+        accountManager.setAuthToken(clientManager.getAccount(), AccountManager.KEY_AUTHTOKEN, TEST_ACCESS_TOKEN);
+
+        // Plug a modified OkHttpClient that doesn't actually go to the server.
         final ExplorerActivity activity = getActivity();
         assertNotNull("Activity should not be null", activity);
         final RestClient client = activity.getClient();
