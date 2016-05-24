@@ -21,18 +21,18 @@ env:
       # install timeout in minutes
       - ADB_INSTALL_TIMEOUT=8
    matrix:
-      - ANDROID_TARGET=android-19 ANDROID_ABI=armeabi-v7a
-      - ANDROID_TARGET=android-20 ANDROID_ABI=armeabi-v7a
-      - ANDROID_TARGET=android-21 ANDROID_ABI=armeabi-v7a
-      - ANDROID_TARGET=android-22 ANDROID_ABI=armeabi-v7a
-      - ANDROID_TARGET=android-23 ANDROID_ABI=armeabi-v7a
+      - ANDROID_TARGET=android-19
+      - ANDROID_TARGET=android-20
+      - ANDROID_TARGET=android-21
+      - ANDROID_TARGET=android-22
+      - ANDROID_TARGET=android-23
 
 licenses:
     - android-sdk-license-5be876d5
 
 # Create and start the emulator
 before_script:
-   - echo no | android create avd --force -n test -t $ANDROID_TARGET  --abi $ANDROID_ABI -c 128M
+   - echo no | android create avd --force -n test -t $ANDROID_TARGET  --abi armeabi-v7a -c 128M
    - emulator -avd test -no-skin -no-audio -no-window &
    - android-wait-for-emulator
    - adb shell input keyevent 82
