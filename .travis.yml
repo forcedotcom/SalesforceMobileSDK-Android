@@ -21,6 +21,9 @@ env:
       - ANDROID_TARGET=android-22 ANDROID_ABI=armeabi-v7a
       - ANDROID_TARGET=android-23 ANDROID_ABI=armeabi-v7a
 
+licenses:
+    - android-sdk-license-5be876d5
+
 # Create and start the emulator
 before_script:
    - echo no | android create avd --force -n test -t $ANDROID_TARGET  --abi $ANDROID_ABI -c 128M
