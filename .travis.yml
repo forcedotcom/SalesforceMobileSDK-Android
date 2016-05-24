@@ -14,7 +14,7 @@ android:
       - extra-android-m2repository
 
 env:
-   global:
+ ndroid-22i  global:
       # install timeout in minutes
       - ADB_INSTALL_TIMEOUT=8
    matrix:
@@ -29,7 +29,7 @@ licenses:
 
 # Create and start the emulator
 before_script:
-   - echo yes | android update sdk -a --no-ui --filter sys-img-armeabi-v7a-$ANDROID_TARGET
+   - echo yes | android update sdk -a --no-ui --filter sys-img-armeabi-v7a-$android-23
    - echo no | android create avd --force -n test -t $ANDROID_TARGET  --abi $ANDROID_ABI -c 128M
    - emulator -avd test -no-skin -no-audio -no-window &
    - android-wait-for-emulator
