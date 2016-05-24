@@ -26,15 +26,23 @@
  */
 package com.salesforce.androidsdk.store;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 
+import android.util.Log;
+
 /**
  * Set of tests for the smart store loading numerous and/or large entries and querying them back
  */
 public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
+
+    static final int ONE_MEGABYTE = 1024 * 1024;
 
     @Override
     protected String getPasscode() {
@@ -46,4 +54,31 @@ public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
         store.registerSoupWithSpec(new SoupSpec(soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE), indexSpecs);
     }
 
+    // Test very large payloads for smartstore
+    public void testUpsertLargePayload() throws JSONException {
+        JSONObject entry = new JSONObject();
+
+        for (int i = 0; i < 5; i++) {
+            StringBuilder sb = new StringBuilder();
+            for (int j = 0; j < ONE_MEGABYTE; j++) {
+                sb.append(i);
+            }
+            entry.put("value_" + i, sb.toString());
+        }
+
+        // Upsert
+        long start = System.currentTimeMillis();
+        store.upsert(TEST_SOUP, entry);
+        long end = System.currentTimeMillis();
+
+        // Log time taken
+        Log.i("SmartStoreLoadTest", "Upserting 5MB+ payload time taken: " + (end - start) + " ms");
+
+        // Verify
+        JSONArray result = store.retrieve(TEST_SOUP, 1L);
+
+        for (int i = 0; i < 5; i++) {
+            assertTrue("Value at index " + i + " is incorrect", result.getJSONObject(0).getString("value_" + i).startsWith("" + i));
+        }
+    }
 }
