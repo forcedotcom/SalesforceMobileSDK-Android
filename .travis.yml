@@ -14,7 +14,7 @@ android:
       - extra-android-m2repository
 
 env:
- ndroid-22i  global:
+   global:
       # install timeout in minutes
       - ADB_INSTALL_TIMEOUT=8
    matrix:
