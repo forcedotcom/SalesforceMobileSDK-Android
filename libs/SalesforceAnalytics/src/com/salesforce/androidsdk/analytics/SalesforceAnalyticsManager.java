@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.analytics;
 
 import android.content.Context;
 
+import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.analytics.store.EventStoreManager;
 
 /**
@@ -41,6 +42,7 @@ public class SalesforceAnalyticsManager {
     private String uniqueId;
     private boolean showEventsInConsole;
     private EventStoreManager storeManager;
+    private DeviceAppAttributes attributes;
 
     /**
      * Parameterized constructor.
@@ -48,9 +50,12 @@ public class SalesforceAnalyticsManager {
      * @param uniqueId Unique ID that is used to determine where the events are stored.
      * @param context Context.
      * @param encryptionKey Encryption key.
+     * @param attributes Device app attributes.
      */
-    public SalesforceAnalyticsManager(String uniqueId, Context context, String encryptionKey) {
+    public SalesforceAnalyticsManager(String uniqueId, Context context, String encryptionKey,
+                                      DeviceAppAttributes attributes) {
         this.uniqueId = uniqueId;
         storeManager = new EventStoreManager(uniqueId, context, encryptionKey);
+        this.attributes = attributes;
     }
 }

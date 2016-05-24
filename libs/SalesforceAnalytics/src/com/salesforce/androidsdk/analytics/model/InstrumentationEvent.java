@@ -31,6 +31,8 @@ import java.util.Map;
 /**
  * Represents a typical instrumentation event. Transforms can be used to
  * convert this event into a specific library's event format.
+ *
+ * @author bhariharan
  */
 public class InstrumentationEvent {
 

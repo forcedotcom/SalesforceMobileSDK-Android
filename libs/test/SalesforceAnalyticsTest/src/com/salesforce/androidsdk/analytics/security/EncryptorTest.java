@@ -31,6 +31,8 @@ import android.test.InstrumentationTestCase;
 
 /**
  * Tests for Encryptor.
+ *
+ * @author bhariharan
  */
 public class EncryptorTest extends InstrumentationTestCase {
 
