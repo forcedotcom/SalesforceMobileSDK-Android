@@ -443,7 +443,7 @@ function fixAppGradleFileHelper(appFolderName, appName, originalDependency, newD
     console.log('Tweaking build.gradle in ' + appFolderName + "/" + appName);
     var originalDependency = "compile project(':libs:" + originalDependency + "')";
     var newDependency = "compile project(':forcedroid:libs:" + newDependency + "')";
-    shelljs.sed('-i', originalDependency, newDependency, path.join(appFolderName, appName, "build.gradle"));
+    replaceInFile(path.join(appFolderName, appName, "build.gradle"), originalDependency, newDependency);
 }
 
 //
@@ -462,7 +462,17 @@ function fixSdkGradleFiles(config) {
 
 function fixSdkGradleFileHelper(appFolderName, lib) {
     console.log('Tweaking build.gradle for library ' + lib);
-    shelljs.sed('-i', "compile project(':libs:", "compile project(':forcedroid:libs:", path.join(appFolderName, "forcedroid", "libs", lib, "build.gradle"));    
+    replaceInFile(path.join(appFolderName, "forcedroid", "libs", lib, "build.gradle"), "compile project(':libs:", "compile project(':forcedroid:libs:"); 
+}
+
+function replaceInFile(fileName, textInFile, replacementText) {
+    var contents = fs.readFileSync(fileName, 'utf8');
+    var lines = contents.split(/\r*\n/);
+    var result = lines.map(function (line) {
+      return line.replace(textInFile, replacementText);
+    }).join('\n');
+
+    fs.writeFileSync(fileName, result, 'utf8'); 
 }
 
 //
