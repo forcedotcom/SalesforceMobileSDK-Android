@@ -186,15 +186,25 @@ public class SmartStorePlugin extends ForcePlugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
         final SmartStore smartStore = getSmartStore(arg0);
+		JSONArray jsonSoupEntryIds = arg0.optJSONArray(ENTRY_IDS);
+		JSONObject querySpecJson = arg0.optJSONObject(QUERY_SPEC);
 
-		JSONArray jsonSoupEntryIds = arg0.getJSONArray(ENTRY_IDS);
-		Long[] soupEntryIds = new Long[jsonSoupEntryIds.length()];
-		for (int i = 0; i < jsonSoupEntryIds.length(); i++) {
-			soupEntryIds[i] = jsonSoupEntryIds.getLong(i);
+		if (jsonSoupEntryIds != null) {
+			Long[] soupEntryIds = new Long[jsonSoupEntryIds.length()];
+			for (int i = 0; i < jsonSoupEntryIds.length(); i++) {
+				soupEntryIds[i] = jsonSoupEntryIds.getLong(i);
+			}
+
+			// Run remove
+			smartStore.delete(soupName, soupEntryIds);
 		}
-		
-		// Run remove
-		smartStore.delete(soupName, soupEntryIds);
+		else {
+			QuerySpec querySpec = QuerySpec.fromJSON(soupName, querySpecJson);
+
+			// Run remove
+			smartStore.deleteByQuery(soupName, querySpec);
+		}
+
 		callbackContext.success();
 	}
 

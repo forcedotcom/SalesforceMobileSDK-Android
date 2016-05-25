@@ -58,6 +58,7 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testUpsertToNonexistentSoup",
                 "testRetrieveSoupEntries",
                 "testRemoveFromSoup",
+                "testRemoveFromSoupByQuery",
                 "testQuerySoupWithExactQuery",
                 "testQuerySoupWithAllQueryDescending",
                 "testQuerySoupWithRangeQueryWithOrderPath",
@@ -136,6 +137,10 @@ public class SmartStoreJSTest extends JSTestCase {
 
     public void testRemoveFromSoup()  {
         runTest("testRemoveFromSoup");
+    }
+
+    public void testRemoveFromSoupByQuery()  {
+        runTest("testRemoveFromSoupByQuery");
     }
 
     public void testQuerySoupWithExactQuery()  {

@@ -397,7 +397,7 @@ public class SmartStore  {
 				try {
 					longOperation.run();
 				} catch (Exception e) {
-	        		Log.e("SmartStore.resumeLongOperations", "Unexpected error", e);
+	        		Log.e("SmartStore.resumeLongOp", "Unexpected error", e);
 				}
 			}
 		}
@@ -426,7 +426,7 @@ public class SmartStore  {
 				        	longOperations.add(operationType.getOperation(this, rowId, details, statusStr));
 			        	}
 			        	catch (Exception e) {
-			        		Log.e("SmartStore.getLongOperations", "Unexpected error", e);
+			        		Log.e("SmartStore.getLongOp", "Unexpected error", e);
 			        	}
 			        }
 			        while (cursor.moveToNext());
@@ -1097,7 +1097,7 @@ public class SmartStore  {
     }
 
     /**
-     * Delete (and commits)
+     * Delete soup elements given by their ids (and commits)
      * @param soupName
      * @param soupEntryIds
      */
@@ -1109,7 +1109,7 @@ public class SmartStore  {
     }
 
     /**
-     * Delete
+     * Delete soup elements given by their ids
      * @param soupName
      * @param soupEntryIds
      * @param handleTx
@@ -1140,11 +1140,57 @@ public class SmartStore  {
     	}
     }
 
+	/**
+	 * Delete soup elements selected by querySpec (and commits)
+	 * @param soupName
+	 * @param querySpec
+	 */
+	public void deleteByQuery(String soupName, QuerySpec querySpec) {
+		final SQLiteDatabase db = getDatabase();
+		synchronized(db) {
+			deleteByQuery(soupName, querySpec, true);
+		}
+	}
+
+	/**
+	 * Delete soup elements selected by querySpec
+	 * @param soupName
+	 * @param querySpec
+	 * @param handleTx
+	 */
+	public void deleteByQuery(String soupName, QuerySpec querySpec, boolean handleTx) {
+		final SQLiteDatabase db = getDatabase();
+		synchronized(db) {
+			String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
+			if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
+			if (handleTx) {
+				db.beginTransaction();
+			}
+			try {
+                String subQuerySql = String.format("SELECT %s FROM (%s) LIMIT %d", ID_COL, convertSmartSql(querySpec.idsSmartSql), querySpec.pageSize);
+                String[] args = querySpec.getArgs();
+                db.delete(soupTableName, buildInStatement(ID_COL, subQuerySql), args);
+
+				if (hasFTS(soupName)) {
+                    db.delete(soupTableName + FTS_SUFFIX, buildInStatement(DOCID_COL, subQuerySql), args);
+				}
+
+				if (handleTx) {
+					db.setTransactionSuccessful();
+				}
+			} finally {
+				if (handleTx) {
+					db.endTransaction();
+				}
+			}
+		}
+	}
+
     /**
      * @return predicate to match soup entries by id
      */
     private String getSoupEntryIdsPredicate(Long[] soupEntryIds) {
-        return ID_COL + " IN (" + TextUtils.join(",", soupEntryIds)+ ")";
+        return buildInStatement(ID_COL, TextUtils.join(",", soupEntryIds));
     }
 
 
@@ -1152,8 +1198,17 @@ public class SmartStore  {
 	 * @return predicate to match entries by docid
 	 */
 	private String getDocidsPredicate(Long[] docids) {
-		return DOCID_COL + " IN (" + TextUtils.join(",", docids)+ ")";
+        return buildInStatement(DOCID_COL, TextUtils.join(",", docids));
 	}
+
+    /**
+     * @param col
+     * @param inPredicate
+     * @return in statement
+     */
+    private String buildInStatement(String col, String inPredicate) {
+        return String.format("%s IN (%s)", col, inPredicate);
+    }
 
     /**
      * @param soupId
