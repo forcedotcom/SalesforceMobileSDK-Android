@@ -26,7 +26,8 @@ env:
       - ANDROID_TARGET=android-19
       - ANDROID_TARGET=android-21
       - ANDROID_TARGET=android-22
-      - ANDROID_TARGET=android-23
+      # block the run on this version for travis ci issue untill it is fixed
+      # - ANDROID_TARGET=android-23
 
 licenses:
     - android-sdk-license-5be876d5

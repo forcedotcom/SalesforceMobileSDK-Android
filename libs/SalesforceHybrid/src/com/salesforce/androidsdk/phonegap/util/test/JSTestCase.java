@@ -26,8 +26,10 @@
  */
 package com.salesforce.androidsdk.phonegap.util.test;
 
+import android.annotation.TargetApi;
 import android.app.Instrumentation;
 import android.content.Intent;
+import android.os.Build;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 
@@ -92,7 +94,7 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 		            "navigator.testrunner.startTest('" + testName + "');";
 				final CordovaWebView appView = activity.getAppView();
 				if (appView != null) {
-					appView.sendJavascript(jsCmd);
+					sendJavascript(appView, jsCmd);
 				}
 				Log.i(getClass().getSimpleName(), "running test:" + testName);
 		        
@@ -143,4 +145,19 @@ public abstract class JSTestCase extends InstrumentationTestCase {
         assertNotNull("No test result", result);
         assertTrue(result.testName + " " + result.message, result.success);
     }
+
+	@TargetApi(Build.VERSION_CODES.KITKAT)
+	private void sendJavascript(final CordovaWebView webView, final String javascript) {
+
+		webView.getView().post(new Runnable() {
+			@Override
+			public void run() {
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+					webView.loadUrl("javascript:" + javascript);
+				} else {
+					webView.sendJavascript(javascript);
+				}
+			}
+		});
+	}
 }
