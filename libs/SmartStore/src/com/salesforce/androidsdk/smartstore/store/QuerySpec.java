@@ -38,6 +38,8 @@ import org.json.JSONObject;
 public class QuerySpec {
     private static final String SELECT_COUNT = "SELECT count(*) ";
     private static final String SELECT_COUNT_FROM = SELECT_COUNT + " FROM (%s)";
+    private static final String SELECT_ID = "SELECT " + SmartStore.ID_COL;
+    private static final String SELECT_ID_FROM = SELECT_ID + " FROM (%s)";
 
 	// Constants
 	private static final String SELECT = "SELECT  ";
@@ -62,6 +64,7 @@ public class QuerySpec {
     public final int pageSize;
     public final String smartSql;
     public final String countSmartSql;
+    public final String idsSmartSql;
 
     // Exact/Range/Like/Match
 	public final String soupName;
@@ -90,13 +93,15 @@ public class QuerySpec {
         this.order = order;
         this.pageSize = pageSize;
         this.smartSql = computeSmartSql();
-        this.countSmartSql = computeCountSql();
+        this.countSmartSql = computeCountSmartSql();
+        this.idsSmartSql = computeIdsSmartSql();
     }
 
     // Private constructor for smart query spec
     private QuerySpec(String smartSql, int pageSize) {
     	this.smartSql = smartSql;
-        this.countSmartSql = computeCountSql(smartSql);
+        this.countSmartSql = computeCountSmartSql(smartSql);
+        this.idsSmartSql = computeIdsSmartSql(smartSql);
     	this.pageSize = pageSize;
         this.queryType = QueryType.smart;
     	
@@ -204,7 +209,7 @@ public class QuerySpec {
     /**
      * Compute countSmartSql for exact/like/range/match queries
      */
-    private String computeCountSql() {
+    private String computeCountSmartSql() {
     	String fromClause = computeFromClause();
     	String whereClause = computeWhereClause();
     	return SELECT_COUNT + fromClause + whereClause;
@@ -213,8 +218,25 @@ public class QuerySpec {
     /**
      * Compute countSmartSql for smart queries
      */
-    private String computeCountSql(String smartSql) {
+    private String computeCountSmartSql(String smartSql) {
     	return String.format(SELECT_COUNT_FROM, smartSql);
+    }
+
+    /**
+     * Compute idsSmartSql for exact/like/range/match queries
+     */
+    private String computeIdsSmartSql() {
+        String fromClause = computeFromClause();
+        String whereClause = computeWhereClause();
+        String orderClause = computeOrderClause();
+        return SELECT_ID + fromClause + whereClause + orderClause;
+    }
+
+    /**
+     * Compute idsSmartSql for smart queries
+     */
+    private String computeIdsSmartSql(String smartSql) {
+        return String.format(SELECT_ID_FROM, smartSql);
     }
 
     /**
