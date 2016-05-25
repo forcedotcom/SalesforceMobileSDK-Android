@@ -186,8 +186,8 @@ public class SmartStorePlugin extends ForcePlugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
         final SmartStore smartStore = getSmartStore(arg0);
-		JSONArray jsonSoupEntryIds = arg0.getJSONArray(ENTRY_IDS);
-		JSONObject querySpecJson = arg0.getJSONObject(QUERY_SPEC);
+		JSONArray jsonSoupEntryIds = arg0.optJSONArray(ENTRY_IDS);
+		JSONObject querySpecJson = arg0.optJSONObject(QUERY_SPEC);
 
 		if (jsonSoupEntryIds != null) {
 			Long[] soupEntryIds = new Long[jsonSoupEntryIds.length()];

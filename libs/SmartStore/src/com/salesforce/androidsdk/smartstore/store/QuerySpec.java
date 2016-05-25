@@ -36,16 +36,16 @@ import org.json.JSONObject;
  * Simple class to represent a query spec
  */
 public class QuerySpec {
-    private static final String SELECT_COUNT = "SELECT count(*) ";
-    private static final String SELECT_COUNT_FROM = SELECT_COUNT + " FROM (%s)";
-    private static final String SELECT_ID = "SELECT " + SmartStore.ID_COL;
-    private static final String SELECT_ID_FROM = SELECT_ID + " FROM (%s)";
-
 	// Constants
-	private static final String SELECT = "SELECT  ";
+	private static final String SELECT = "SELECT ";
 	private static final String FROM = "FROM ";
 	private static final String WHERE = "WHERE ";
 	private static final String ORDER_BY = "ORDER BY ";
+
+    private static final String SELECT_COUNT = SELECT + "count(*) ";
+    private static final String SELECT_COUNT_FROM = SELECT_COUNT + "FROM (%s)";
+    private static final String SELECT_ID = SELECT + SmartStore.ID_COL + " ";
+    private static final String SELECT_ID_FROM = SELECT_ID + "FROM (%s)";
 
     // Keys in json
     public static final String BEGIN_KEY = "beginKey";
@@ -251,7 +251,7 @@ public class QuerySpec {
      */
     private String computeFromClause() {
         if (queryType == QueryType.match) {
-            return FROM + computeSoupReference() + "," + computeSoupFtsReference() + " ";
+            return FROM + computeSoupReference() + ", " + computeSoupFtsReference() + " ";
         }
         else {
             return FROM + computeSoupReference() + " ";
@@ -295,7 +295,7 @@ public class QuerySpec {
                     break;
                 }
                 else {
-                    pred = field + " >= ?  AND " + field + " <= ? ";
+                    pred = field + " >= ? AND " + field + " <= ? ";
                     break;
                 }
             case match:

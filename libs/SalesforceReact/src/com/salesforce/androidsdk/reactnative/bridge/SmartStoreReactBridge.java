@@ -107,8 +107,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		// Parse args
 		String soupName = args.getString(SOUP_NAME);
         final SmartStore smartStore = getSmartStore(args);
-		ReadableArray arraySoupEntryIds = args.getArray(ENTRY_IDS);
-		ReadableMap mapQuerySpec = args.getMap(QUERY_SPEC);
+		ReadableArray arraySoupEntryIds = (args.isNull(ENTRY_IDS) ? null : args.getArray(ENTRY_IDS));
+		ReadableMap mapQuerySpec = (args.isNull(QUERY_SPEC) ? null : args.getMap(QUERY_SPEC));
 
         // Run remove
         try {

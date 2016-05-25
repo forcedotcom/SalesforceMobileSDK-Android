@@ -1167,9 +1167,8 @@ public class SmartStore  {
 				db.beginTransaction();
 			}
 			try {
-                String subQuerySql = String.format("SELECT %s FROM (%s) LIMIT %d)", ID_COL, convertSmartSql(querySpec.idsSmartSql), querySpec.pageSize);
+                String subQuerySql = String.format("SELECT %s FROM (%s) LIMIT %d", ID_COL, convertSmartSql(querySpec.idsSmartSql), querySpec.pageSize);
                 String[] args = querySpec.getArgs();
-
                 db.delete(soupTableName, buildInStatement(ID_COL, subQuerySql), args);
 
 				if (hasFTS(soupName)) {
