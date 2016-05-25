@@ -37,7 +37,6 @@ import java.util.Map;
 public class InstrumentationEvent {
 
     private String eventId;
-
     private long startTime;
     private long endTime;
     private String name;
@@ -46,6 +45,7 @@ public class InstrumentationEvent {
     private int sequenceId;
     private String senderId;
     private Map<String, Object> senderContext;
+    private EventType eventType;
     private String jsonRepresentation;
 
     /**
@@ -58,6 +58,15 @@ public class InstrumentationEvent {
          * TODO: Build event from JSON.
          */
         jsonRepresentation = json;
+    }
+
+    /**
+     * Parameterized constructor.
+     *
+     * @param eventType Event type.
+     */
+    InstrumentationEvent(EventType eventType) {
+        this.eventType = eventType;
     }
 
     /**
