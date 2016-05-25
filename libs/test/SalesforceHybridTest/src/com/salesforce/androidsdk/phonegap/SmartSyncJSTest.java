@@ -94,7 +94,7 @@ public class SmartSyncJSTest extends JSTestCase {
                 "testSyncDownToGlobalStore",
                 "testSyncDownWithNoOverwrite",
                 "testReSync",
-                "testCleanReSyncGhosts",
+                "testCleanResyncGhosts",
                 "testSyncUpLocallyUpdated",
                 "testSyncUpLocallyUpdatedWithGlobalStore",
                 "testSyncUpLocallyUpdatedWithNoOverwrite",
@@ -288,8 +288,8 @@ public class SmartSyncJSTest extends JSTestCase {
         runTest("testReSync");
     }
 
-    public void testCleanReSyncGhosts() {
-        runTest("testCleanReSyncGhosts");
+    public void testCleanResyncGhosts() {
+        runTest("testCleanResyncGhosts");
     }
 
     public void testSyncUpLocallyUpdated() {

@@ -279,8 +279,6 @@ function createNativeOrReactNativeApp(config) {
     // If SmartStore is configured, set it up.
     if (config.usesmartstore) {
         console.log('Adding SmartStore/SmartSync support.');
-        shelljs.mkdir('-p', path.join(config.projectDir, 'assets'));  // May not exist for native.
-        shelljs.cp(path.join(packageSdkRootDir, 'external', 'sqlcipher', 'assets', 'icudt46l.zip'), path.join(config.projectDir, 'assets', 'icudt46l.zip'));
         console.log('Extending SmartSyncSDKManager instead of SalesforceSDKManager.');
         shelljs.sed('-i', /SalesforceSDKManager/g, 'SmartSyncSDKManager', appClassPath);
         shelljs.sed('-i',
@@ -301,13 +299,11 @@ function createNativeOrReactNativeApp(config) {
     // Copy SmartStore and SmartSync library projects into the app folder as well, if it's not already there - if required.
     // copy <Android Package>/libs/SmartStore -> <App Folder>/forcedroid/libs/SmartStore
     // copy <Android Package>/libs/SmartSync -> <App Folder>/forcedroid/libs/SmartSync
-    // copy <Android Package>/external/sqlcipher -> <App Folder>/forcedroid/external/sqlcipher
     if (config.usesmartstore) {
         var smartStoreRelativePath = path.join('libs', 'SmartStore');
         copyFromSDK(packageSdkRootDir, config.targetdir, smartStoreRelativePath);
         var smartSyncRelativePath = path.join('libs', 'SmartSync');
         copyFromSDK(packageSdkRootDir, config.targetdir, smartSyncRelativePath);
-        copyFromSDK(packageSdkRootDir, config.targetdir, path.join('external', 'sqlcipher'));
     }
 
     // React native specific fixes

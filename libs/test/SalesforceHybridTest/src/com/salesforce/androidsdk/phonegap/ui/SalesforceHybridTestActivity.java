@@ -39,7 +39,7 @@ public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
 
 	static String username = "sdktest@cs1.com";
 	static String accountName = username + " (SalesforceHybridTest)";
-	static String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBS.SiQYYAy5JBvMTJpGUqYVUV75yA0OrsBLKqwPm83CUMok.Q";
+	static String refreshToken = "5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBXGO4iXKu9xm3q.u.jXd19dj8HOLGIq5L7I0l9j6YniHQiuAf";
 	static String authToken = "--will-be-set-through-refresh--";
 	static String identityUrl = "https://test.salesforce.com";
 	static String instanceUrl = "https://cs1.salesforce.com";

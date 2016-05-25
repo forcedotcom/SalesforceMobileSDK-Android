@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.store;
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -38,7 +39,14 @@ import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.util.test.JSONTestHelper;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Abstract super class for smart store tests
@@ -86,7 +94,80 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 			safeClose(c);
 		}
 	}
-	
+
+	/**
+	 * Helper method to check columns of table
+	 * @param tableName
+	 * @param expectedColumnNames
+     */
+	protected void checkColumns(String tableName, List<String> expectedColumnNames) {
+		Cursor c = null;
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		try {
+			List<String> actualColumnNames = new ArrayList<>();
+			c = db.rawQuery(String.format("PRAGMA table_info(%s)", tableName), null);
+			while(c.moveToNext()) {
+				actualColumnNames.add(c.getString(1));
+			}
+			JSONTestHelper.assertSameJSONArray("Wrong columns", new JSONArray(expectedColumnNames), new JSONArray(actualColumnNames));
+		}
+		catch (Exception e) {
+			fail("Failed with error:" + e.getMessage());
+		}
+		finally {
+			safeClose(c);
+		}
+	}
+
+    /**
+     * Helper method to check index specs on a soup
+     */
+    protected void checkIndexSpecs(String soupName, IndexSpec[] expectedIndexSpecs) throws JSONException {
+        final IndexSpec[] actualIndexSpecs = store.getSoupIndexSpecs(soupName);
+        JSONTestHelper.assertSameJSONArray("Wrong index specs", IndexSpec.toJSON(expectedIndexSpecs), IndexSpec.toJSON(actualIndexSpecs));
+    }
+
+    /**
+     * Helper method to check db indexes on a table
+     * @param tableName
+     * @param expectedSqlStatements that created the indexes
+     */
+    protected void checkDatabaseIndexes(String tableName, List<String> expectedSqlStatements) {
+        Cursor c = null;
+        final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+        try {
+            List<String> actualSqlStatements = new ArrayList<>();
+            c = db.rawQuery(String.format("SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name='%s' ORDER BY name", tableName), null);
+            while(c.moveToNext()) {
+                actualSqlStatements.add(c.getString(0));
+            }
+            JSONTestHelper.assertSameJSONArray("Wrong indexes", new JSONArray(expectedSqlStatements), new JSONArray(actualSqlStatements));
+        }
+        catch (Exception e) {
+            fail("Failed with error:" + e.getMessage());
+        }
+        finally {
+            safeClose(c);
+        }
+    }
+
+    /**
+     * Get explain query plan of last query run and make sure the given index was used
+     * @param soupName
+     * @param index the index of the index spec in the array of index specs passed to register soup
+     * @param dbOperation e.g. SCAN or SEARCH
+     */
+    public void checkExplainQueryPlan(String soupName, int index, String dbOperation) throws JSONException {
+        JSONObject explainQueryPlan = store.getLastExplainQueryPlan();
+        String soupTableName = getSoupTableName(soupName);
+        String indexName = soupTableName + "_" + index + "_idx";
+        String expectedDetailPrefix = String.format("%s TABLE %s USING INDEX %s", dbOperation, soupTableName, indexName);
+        String detail = explainQueryPlan.getJSONArray(DBHelper.EXPLAIN_ROWS).getJSONObject(0).getString("detail");
+
+        assertTrue("Wrong query plan:" + detail, detail.startsWith(expectedDetailPrefix));
+    }
+
+
 	/**
 	 * Close cursor if not null
 	 * @param c

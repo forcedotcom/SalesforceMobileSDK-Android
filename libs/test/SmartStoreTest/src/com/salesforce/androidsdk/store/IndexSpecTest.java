@@ -41,11 +41,13 @@ public class IndexSpecTest extends InstrumentationTestCase {
 	private static final IndexSpec keyIntegerSpec = new IndexSpec("key", Type.integer);
 	private static final IndexSpec keyFloatingSpec = new IndexSpec("key", Type.floating);
 	private static final IndexSpec keyFullTextSpec = new IndexSpec("key", Type.full_text);
+	private static final IndexSpec keyJSON1Spec = new IndexSpec("key", Type.json1);
 
 	private static final IndexSpec keyStringSpecWithCol = new IndexSpec("key", Type.string, "COL_1");
 	private static final IndexSpec keyIntegerSpecWithCol = new IndexSpec("key", Type.integer, "COL_1");
 	private static final IndexSpec keyFloatingSpecWithCol = new IndexSpec("key", Type.floating, "COL_1");
 	private static final IndexSpec keyFullTextSpecWithCol = new IndexSpec("key", Type.full_text, "COL_1");
+	private static final IndexSpec keyJSON1SpecWithCol = new IndexSpec("key", Type.json1, "COL_1");
 
 	/**
 	 * TEST for equals with same index specs
@@ -55,10 +57,12 @@ public class IndexSpecTest extends InstrumentationTestCase {
 		assertEquals(keyIntegerSpec, new IndexSpec("key", Type.integer));
 		assertEquals(keyFloatingSpec, new IndexSpec("key", Type.floating));
 		assertEquals(keyFullTextSpec, new IndexSpec("key", Type.full_text));
+		assertEquals(keyJSON1Spec, new IndexSpec("key", Type.json1));
 		assertEquals(keyStringSpecWithCol, new IndexSpec("key", Type.string, "COL_1"));
 		assertEquals(keyIntegerSpecWithCol, new IndexSpec("key", Type.integer, "COL_1"));
 		assertEquals(keyFloatingSpecWithCol, new IndexSpec("key", Type.floating, "COL_1"));
 		assertEquals(keyFullTextSpecWithCol, new IndexSpec("key", Type.full_text, "COL_1"));
+		assertEquals(keyJSON1SpecWithCol, new IndexSpec("key", Type.json1, "COL_1"));
 	}
 
 	/**
@@ -72,6 +76,7 @@ public class IndexSpecTest extends InstrumentationTestCase {
 		assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.integer)));
 		assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.floating)));
 		assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.full_text)));
+		assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.json1)));
 
 		// Different columnName
 		assertFalse(keyStringSpec.equals(new IndexSpec("key", Type.string, "COL_1")));
@@ -87,11 +92,13 @@ public class IndexSpecTest extends InstrumentationTestCase {
 		assertEquals(keyIntegerSpec.hashCode(), new IndexSpec("key", Type.integer).hashCode());
 		assertEquals(keyFloatingSpec.hashCode(), new IndexSpec("key", Type.floating).hashCode());
 		assertEquals(keyFullTextSpec.hashCode(), new IndexSpec("key", Type.full_text).hashCode());
+		assertEquals(keyJSON1Spec.hashCode(), new IndexSpec("key", Type.json1).hashCode());
 
 		assertEquals(keyStringSpecWithCol.hashCode(), new IndexSpec("key", Type.string, "COL_1").hashCode());
 		assertEquals(keyIntegerSpecWithCol.hashCode(), new IndexSpec("key", Type.integer, "COL_1").hashCode());
 		assertEquals(keyFloatingSpecWithCol.hashCode(), new IndexSpec("key", Type.floating, "COL_1").hashCode());
 		assertEquals(keyFullTextSpecWithCol.hashCode(), new IndexSpec("key", Type.full_text, "COL_1").hashCode());
+		assertEquals(keyJSON1SpecWithCol.hashCode(), new IndexSpec("key", Type.json1, "COL_1").hashCode());
 	}
 	
 	/**
@@ -105,6 +112,7 @@ public class IndexSpecTest extends InstrumentationTestCase {
 		assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.integer).hashCode());
 		assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.floating).hashCode());
 		assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.full_text).hashCode());
+        assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.json1).hashCode());
 
 		// Different columnName
 		assertFalse(keyStringSpec.hashCode() == new IndexSpec("key", Type.string, "COL_1").hashCode());
