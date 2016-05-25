@@ -50,39 +50,13 @@ import java.util.List;
 /**
  * Set of tests for the smart store loading numerous and/or large entries and querying them back
  */
-public class SmartStoreLoadTest extends InstrumentationTestCase {
-
+public class SmartStoreLoadTest extends SmartStoreTestCase {
 
     private static final String TEST_SOUP = "test_soup";
 
-    private static final int NUMBER_ENTRIES = 10000;
+    private static final int NUMBER_ENTRIES = 1000;
     private static final int NUMBER_ENTRIES_PER_BATCH = 100;
     private static final int NS_IN_MS = 1000000;
-
-    protected Context targetContext;
-    private SmartStore store;
-
-    //
-    // Setup and tear down
-    //
-
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        targetContext = getInstrumentation().getTargetContext();
-        final SQLiteOpenHelper dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
-        DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getPasscode())).reset(targetContext, null);
-        store = new SmartStore(dbOpenHelper, getPasscode());
-        store.dropAllSoups();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        final SQLiteDatabase db = DBOpenHelper.getOpenHelper(targetContext, null).getWritableDatabase(getPasscode());
-        db.close();
-        super.tearDown();
-    }
-
 
     //
     // Tests
@@ -243,12 +217,12 @@ public class SmartStoreLoadTest extends InstrumentationTestCase {
         // Without indexing for new index specs
         alterSoup("Adding one index / no re-indexing", false, new IndexSpec[]{new IndexSpec("k_0", indexType), new IndexSpec("k_1", indexType)});
         alterSoup("Adding one index / dropping one index / no re-indexing", false, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_2", indexType)});
-        alterSoup("Dropping two indexes / no re-indexing", false, new IndexSpec[] {new IndexSpec("k_3", indexType)});
+        alterSoup("Dropping one index / no re-indexing", false, new IndexSpec[] {new IndexSpec("k_0", indexType)});
 
         // With indexing for new index specs
         alterSoup("Adding one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_1", indexType)});
         alterSoup("Adding one index / dropping one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType), new IndexSpec("k_2", indexType)});
-        alterSoup("Dropping two indexes / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_3", indexType)});
+        alterSoup("Dropping one index / with re-indexing", true, new IndexSpec[] {new IndexSpec("k_0", indexType)});
     }
     
     private void alterSoup(String msg, boolean reIndexData, IndexSpec[] indexSpecs) throws JSONException {
