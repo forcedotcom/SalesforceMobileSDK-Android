@@ -26,10 +26,8 @@
  */
 package com.salesforce.androidsdk.phonegap.util.test;
 
-import android.annotation.TargetApi;
 import android.app.Instrumentation;
 import android.content.Intent;
-import android.os.Build;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 
