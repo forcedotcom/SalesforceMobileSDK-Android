@@ -26,6 +26,9 @@
  */
 package com.salesforce.androidsdk.analytics.model;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.text.TextUtils;
 
 import java.util.Map;
@@ -37,6 +40,7 @@ import java.util.Map;
  */
 public class InstrumentationEventBuilder {
 
+    private Context context;
     private long startTime;
     private long endTime;
     private String name;
@@ -54,8 +58,12 @@ public class InstrumentationEventBuilder {
      *
      * @return Instance of this class.
      */
-    public static final InstrumentationEventBuilder getInstance() {
-        return new InstrumentationEventBuilder();
+    public static final InstrumentationEventBuilder getInstance(Context context) {
+        return new InstrumentationEventBuilder(context);
+    }
+
+    private InstrumentationEventBuilder(Context context) {
+        this.context = context;
     }
 
     /**
@@ -221,11 +229,23 @@ public class InstrumentationEventBuilder {
     }
 
     private String getConnectionType() {
-
-        /*
-         * TODO: Get connection type (3G/Wifi/LTE).
-         */
-        return null;
+        final StringBuilder connectionType = new StringBuilder();
+        final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager != null) {
+            final NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+            if (networkInfo != null) {
+                final String type = networkInfo.getTypeName();
+                final String subtype = networkInfo.getSubtypeName();
+                if (!TextUtils.isEmpty(type)) {
+                    connectionType.append(type);
+                    connectionType.append(";");
+                }
+                if (!TextUtils.isEmpty(subtype)) {
+                    connectionType.append(subtype);
+                }
+            }
+        }
+        return connectionType.toString();
     }
 
     /**
