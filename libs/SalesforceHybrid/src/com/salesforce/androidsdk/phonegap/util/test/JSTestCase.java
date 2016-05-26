@@ -90,11 +90,16 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 
 			// Now run all the tests and collect the resuts in testResults
 			for (String testName : getTestNames()) {
-		        String jsCmd = "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
+		        final String jsCmd = "javascript:" + "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
 		            "navigator.testrunner.startTest('" + testName + "');";
 				final CordovaWebView appView = activity.getAppView();
 				if (appView != null) {
-					sendJavascript(appView, jsCmd);
+                    appView.getView().post(new Runnable() {
+                        @Override
+                        public void run() {
+                                appView.loadUrl(jsCmd);
+                        }
+                    });
 				}
 				Log.i(getClass().getSimpleName(), "running test:" + testName);
 		        
@@ -145,19 +150,4 @@ public abstract class JSTestCase extends InstrumentationTestCase {
         assertNotNull("No test result", result);
         assertTrue(result.testName + " " + result.message, result.success);
     }
-
-	@TargetApi(Build.VERSION_CODES.KITKAT)
-	private void sendJavascript(final CordovaWebView webView, final String javascript) {
-
-		webView.getView().post(new Runnable() {
-			@Override
-			public void run() {
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-					webView.loadUrl("javascript:" + javascript);
-				} else {
-					webView.sendJavascript(javascript);
-				}
-			}
-		});
-	}
 }
