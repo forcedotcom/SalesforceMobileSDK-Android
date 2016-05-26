@@ -239,21 +239,21 @@ function createNativeOrReactNativeApp(config) {
     console.log('Renaming application class to ' + appClassName + ' in source.');
     contentFilesWithReplacements.forEach(function(file) {
         var templateAppClassNameRegExp = new RegExp(config.templateAppClassName, 'g');
-        shelljs.sed('-i', templateAppClassNameRegExp, appClassName, file);
+        miscUtils.replaceTextInFile(file, templateAppClassNameRegExp, appClassName);
     });
 
     // Substitute app name
     console.log('Renaming application to ' + config.appname + ' in source.');
     contentFilesWithReplacements.forEach(function(file) {
         var templateAppNameRegExp = new RegExp(config.templateAppName, 'g');
-        shelljs.sed('-i', templateAppNameRegExp, config.appname, file);
+        miscUtils.replaceTextInFile(file, templateAppNameRegExp, config.appname, file);
     });
 
     // Substitute package name.
     console.log('Renaming package name to ' + config.packagename + ' in source.');
     contentFilesWithReplacements.forEach(function(file) {
         var templatePackageNameRegExp = new RegExp(config.templatePackageName.replace(/\./g, '\\.'), 'g');
-        shelljs.sed('-i', templatePackageNameRegExp, config.packagename, file);
+        miscUtils.replaceTextInFile(file, templatePackageNameRegExp, config.packagename);
     });
 
     // Rename source package folders.
@@ -280,15 +280,14 @@ function createNativeOrReactNativeApp(config) {
     if (config.usesmartstore) {
         console.log('Adding SmartStore/SmartSync support.');
         console.log('Extending SmartSyncSDKManager instead of SalesforceSDKManager.');
-        shelljs.sed('-i', /SalesforceSDKManager/g, 'SmartSyncSDKManager', appClassPath);
-        shelljs.sed('-i',
-            /com\.salesforce\.androidsdk\.app\.SmartSyncSDKManager/g,
+        miscUtils.replaceTextInFile(appClassPath, 'SalesforceSDKManager', 'SmartSyncSDKManager');
+        miscUtils.replaceTextInFile(appClassPath,
+            'com.salesforce.androidsdk.app.SmartSyncSDKManager',
             'com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager',
             appClassPath);
-        shelljs.sed('-i',
+        miscUtils.replaceTextInFile(appClassPath,
             'com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager.KeyInterface',
-            'com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface',
-            appClassPath);
+            'com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface');
     }
 
     // Copy SalesforceSDK library project into the app folder as well, if it's not already there.
@@ -309,9 +308,9 @@ function createNativeOrReactNativeApp(config) {
     // React native specific fixes
     if (config.apptype === 'react_native') {
         console.log('Changing name in package.json.');
-        shelljs.sed('-i', config.templateAppName, config.appname, path.join(config.projectDir, 'package.json'));
+        miscUtils.replaceTextInFile(path.join(config.projectDir, 'package.json'), config.templateAppName, config.appname);
         console.log('Changing app name in index.android.js.');
-        shelljs.sed('-i', config.templateAppName, config.appname, path.join(config.projectDir, 'js', 'index.android.js'));
+        miscUtils.replaceTextInFile(path.join(config.projectDir, 'js', 'index.android.js'), config.templateAppName, config.appname);
 
         // Copy SalesforceReact library project into the app folder as well.
         var salesforceReactRelativePath = path.join('libs', 'SalesforceReact');
@@ -337,7 +336,7 @@ function createNativeOrReactNativeApp(config) {
     shelljs.mv(path.join(config.targetdir, "forcedroid", "gradlew"), path.join(config.targetdir, "gradlew"));
     shelljs.mv(path.join(config.targetdir, "forcedroid", "gradle"), path.join(config.targetdir, "gradle"));
     shelljs.mv(path.join(config.targetdir, "forcedroid", "build.gradle"), path.join(config.targetdir, "build.gradle"));
-    shelljs.sed('-i', 'group = \'com.salesforce.androidsdk\'', '', path.join(config.targetdir, "build.gradle"));
+    miscUtils.replaceTextInFile(path.join(config.targetdir, "build.gradle"), 'group = \'com.salesforce.androidsdk\'', '');
 
     // Running npm install for react native apps
     if (config.apptype === 'react_native') {
@@ -443,7 +442,7 @@ function fixAppGradleFileHelper(appFolderName, appName, originalDependency, newD
     console.log('Tweaking build.gradle in ' + appFolderName + "/" + appName);
     var originalDependency = "compile project(':libs:" + originalDependency + "')";
     var newDependency = "compile project(':forcedroid:libs:" + newDependency + "')";
-    shelljs.sed('-i', originalDependency, newDependency, path.join(appFolderName, appName, "build.gradle"));
+    miscUtils.replaceTextInFile(path.join(appFolderName, appName, "build.gradle"), originalDependency, newDependency);
 }
 
 //
@@ -462,7 +461,7 @@ function fixSdkGradleFiles(config) {
 
 function fixSdkGradleFileHelper(appFolderName, lib) {
     console.log('Tweaking build.gradle for library ' + lib);
-    shelljs.sed('-i', "compile project(':libs:", "compile project(':forcedroid:libs:", path.join(appFolderName, "forcedroid", "libs", lib, "build.gradle"));    
+    miscUtils.replaceTextInFile(path.join(appFolderName, "forcedroid", "libs", lib, "build.gradle"), "compile project(':libs:", "compile project(':forcedroid:libs:"); 
 }
 
 //

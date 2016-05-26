@@ -10,7 +10,7 @@
     ],
     "bin" : { "forcedroid" : "node/forcedroid.js" },
     "dependencies": {
-        "shelljs": "~0.5.3"
+        "shelljs": "~0.7.0"
     },
     "scripts": {
         "prepublish": "external/shared/node/prepublish.js",

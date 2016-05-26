@@ -26,8 +26,10 @@
  */
 package com.salesforce.androidsdk.phonegap.util.test;
 
+import android.annotation.TargetApi;
 import android.app.Instrumentation;
 import android.content.Intent;
+import android.os.Build;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 
@@ -88,11 +90,16 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 
 			// Now run all the tests and collect the resuts in testResults
 			for (String testName : getTestNames()) {
-		        String jsCmd = "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
+		        final String jsCmd = "javascript:" + "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
 		            "navigator.testrunner.startTest('" + testName + "');";
 				final CordovaWebView appView = activity.getAppView();
 				if (appView != null) {
-					appView.sendJavascript(jsCmd);
+                    appView.getView().post(new Runnable() {
+                        @Override
+                        public void run() {
+                                appView.loadUrl(jsCmd);
+                        }
+                    });
 				}
 				Log.i(getClass().getSimpleName(), "running test:" + testName);
 		        

@@ -539,7 +539,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	}
 
 	/**
-	 * Testing delete: create a soup element, deletes and check database directly that it is in fact gone
+	 * Testing delete: create soup elements, delete element by id and check database directly that it is in fact gone
 	 * @throws JSONException 
 	 */
 	public void testDelete() throws JSONException {
@@ -568,7 +568,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 			String soupTableName = getSoupTableName(TEST_SOUP);
 			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
 			assertTrue("Expected a soup element", c.moveToFirst());
-			assertEquals("Expected three soup elements", 2, c.getCount());
+			assertEquals("Expected two soup elements", 2, c.getCount());
 			
 			assertEquals("Wrong id", idOf(soupElt1Created), c.getLong(c.getColumnIndex("id")));
 			
@@ -578,7 +578,46 @@ public class SmartStoreTest extends SmartStoreTestCase {
 			safeClose(c);
 		}
 	}
-	
+
+	/**
+	 * Testing delete: create soup elements, delete by query and check database directly that deleted entries are in fact gone
+	 * @throws JSONException
+	 */
+	public void testDeleteByQuery() throws JSONException {
+		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1'}");
+		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2'}");
+		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3'}");
+
+		JSONObject soupElt1Created = store.create(TEST_SOUP, soupElt1);
+		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
+		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
+
+        QuerySpec querySpec = QuerySpec.buildRangeQuerySpec(TEST_SOUP, "key", "ka1", "ka2", "key", Order.ascending, 2);
+
+		store.deleteByQuery(TEST_SOUP, querySpec);
+
+        JSONArray soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Created));
+		JSONArray soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created));
+		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created)).getJSONObject(0);
+
+        assertEquals("Should be empty", 0, soupElt1Retrieved.length());
+		assertEquals("Should be empty", 0, soupElt2Retrieved.length());
+		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt3Created, soupElt3Retrieved);
+
+		// Check DB
+		Cursor c = null;
+		try {
+			final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+			String soupTableName = getSoupTableName(TEST_SOUP);
+			c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
+			assertTrue("Expected a soup element", c.moveToFirst());
+			assertEquals("Expected one soup elements", 1, c.getCount());
+			assertEquals("Wrong id", idOf(soupElt3Created), c.getLong(c.getColumnIndex("id")));
+		} finally {
+			safeClose(c);
+		}
+	}
+
 	/**
 	 * Testing clear soup: create soup elements, clear soup and check database directly that there are in fact gone
 	 * @throws JSONException 
@@ -917,7 +956,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
         assertEquals("Three results expected", 3, result.length());
         JSONTestHelper.assertSameJSON("Wrong result for query", new JSONArray("[['va1', 2], ['va2', 1], ['va3', 2]]"), result);
         final int count = store.countQuery(querySpec);
-        assertEquals("Incorrect count query", "SELECT count(*)  FROM (" + smartSql + ")", querySpec.countSmartSql);
+        assertEquals("Incorrect count query", "SELECT count(*) FROM (" + smartSql + ")", querySpec.countSmartSql);
         assertEquals("Incorrect count", 3, count);
     }
 
