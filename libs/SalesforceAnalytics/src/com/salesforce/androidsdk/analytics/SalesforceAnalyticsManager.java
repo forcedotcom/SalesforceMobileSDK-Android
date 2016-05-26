@@ -42,7 +42,7 @@ public class SalesforceAnalyticsManager {
     private String uniqueId;
     private boolean showEventsInConsole;
     private EventStoreManager storeManager;
-    private DeviceAppAttributes attributes;
+    private DeviceAppAttributes deviceAppAttributes;
 
     /**
      * Parameterized constructor.
@@ -50,12 +50,12 @@ public class SalesforceAnalyticsManager {
      * @param uniqueId Unique ID that is used to determine where the events are stored.
      * @param context Context.
      * @param encryptionKey Encryption key.
-     * @param attributes Device app attributes.
+     * @param deviceAppAttributes Device app attributes.
      */
     public SalesforceAnalyticsManager(String uniqueId, Context context, String encryptionKey,
-                                      DeviceAppAttributes attributes) {
+                                      DeviceAppAttributes deviceAppAttributes) {
         this.uniqueId = uniqueId;
         storeManager = new EventStoreManager(uniqueId, context, encryptionKey);
-        this.attributes = attributes;
+        this.deviceAppAttributes = deviceAppAttributes;
     }
 }

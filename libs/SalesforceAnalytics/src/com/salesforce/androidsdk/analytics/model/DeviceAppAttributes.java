@@ -42,7 +42,6 @@ public class DeviceAppAttributes {
     private String mobileSdkVersion;
     private String deviceModel;
     private String deviceId;
-    private String connectionType;
 
     /**
      * Parameterized constructor.
@@ -55,11 +54,10 @@ public class DeviceAppAttributes {
      * @param mobileSdkVersion Mobile SDK version.
      * @param deviceModel Device model.
      * @param deviceId Device ID.
-     * @param connectionType Connection type.
      */
     public DeviceAppAttributes(String appVersion, String appName, String osVersion, String osName,
                                String nativeAppType, String mobileSdkVersion, String deviceModel,
-                               String deviceId, String connectionType) {
+                               String deviceId) {
         this.appVersion = appVersion;
         this.appName = appName;
         this.osVersion = osVersion;
@@ -68,7 +66,6 @@ public class DeviceAppAttributes {
         this.mobileSdkVersion = mobileSdkVersion;
         this.deviceModel = deviceModel;
         this.deviceId = deviceId;
-        this.connectionType = connectionType;
     }
 
     /**
@@ -141,14 +138,5 @@ public class DeviceAppAttributes {
      */
     public String getDeviceId() {
         return deviceId;
-    }
-
-    /**
-     * Returns connection type.
-     *
-     * @return Connection type.
-     */
-    public String getConnectionType() {
-        return connectionType;
     }
 }

@@ -26,6 +26,10 @@
  */
 package com.salesforce.androidsdk.analytics.model;
 
+import android.text.TextUtils;
+
+import java.util.Map;
+
 /**
  * Builder class that helps create a new InstrumentationEvent object.
  *
@@ -33,15 +37,206 @@ package com.salesforce.androidsdk.analytics.model;
  */
 public class InstrumentationEventBuilder {
 
-    private InstrumentationEvent event;
+    private long startTime;
+    private long endTime;
+    private String name;
+    private Map<String, Object> attributes;
+    private int sessionId;
+    private String senderId;
+    private Map<String, Object> senderContext;
+    private InstrumentationEvent.EventType eventType;
+    private InstrumentationEvent.Type type;
+    private InstrumentationEvent.Subtype subtype;
+    private InstrumentationEvent.ErrorType errorType;
 
-    public static final InstrumentationEventBuilder getWithEventType(InstrumentationEvent.EventType eventType) {
-        return new InstrumentationEventBuilder(eventType);
+    /**
+     * Returns an instance of this class.
+     *
+     * @return Instance of this class.
+     */
+    public static final InstrumentationEventBuilder getInstance() {
+        return new InstrumentationEventBuilder();
     }
 
-    private InstrumentationEventBuilder(InstrumentationEvent.EventType eventType) {
-        event = new InstrumentationEvent(eventType);
+    /**
+     * Sets start time.
+     *
+     * @param startTime Start time.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder startTime(long startTime) {
+        this.startTime = startTime;
+        return this;
     }
 
+    /**
+     * Sets end time.
+     *
+     * @param endTime End time.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder endTime(long endTime) {
+        this.endTime = endTime;
+        return this;
+    }
 
+    /**
+     * Sets name.
+     *
+     * @param name Name.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder name(String name) {
+        this.name = name;
+        return this;
+    }
+
+    /**
+     * Sets attributed.
+     *
+     * @param attributes Attributes.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder attributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+        return this;
+    }
+
+    /**
+     * Sets session ID.
+     *
+     * @param sessionId Session ID.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder sessionId(int sessionId) {
+        this.sessionId = sessionId;
+        return this;
+    }
+
+    /**
+     * Sets sender ID.
+     *
+     * @param senderId Sender ID.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder senderId(String senderId) {
+        this.senderId = senderId;
+        return this;
+    }
+
+    /**
+     * Sets sender context.
+     *
+     * @param senderContext Sender context.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder senderContext(Map<String, Object> senderContext) {
+        this.senderContext = senderContext;
+        return this;
+    }
+
+    /**
+     * Sets event type.
+     *
+     * @param eventType Event type.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder eventType(InstrumentationEvent.EventType eventType) {
+        this.eventType = eventType;
+        return this;
+    }
+
+    /**
+     * Sets type.
+     *
+     * @param type Type.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder type(InstrumentationEvent.Type type) {
+        this.type = type;
+        return this;
+    }
+
+    /**
+     * Sets subtype.
+     *
+     * @param subtype Subtype.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder subtype(InstrumentationEvent.Subtype subtype) {
+        this.subtype = subtype;
+        return this;
+    }
+
+    /**
+     * Sets error type.
+     *
+     * @param errorType Error type.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder errorType(InstrumentationEvent.ErrorType errorType) {
+        this.errorType = errorType;
+        return this;
+    }
+
+    /**
+     * Validates and builds an InstrumentationEvent object. Throws EventBuilderException
+     * if mandatory fields are not set.
+     *
+     * @return InstrumentationEvent object.
+     * @throws EventBuilderException
+     */
+    public InstrumentationEvent buildEvent() throws EventBuilderException {
+
+        /*
+         * TODO: Generate unique eventId every time using UUID.
+         */
+        final String eventId = null;
+        String errorMessage = null;
+        if (eventType == null) {
+            errorMessage = "Mandatory field 'event type' not set!";
+        }
+        if (TextUtils.isEmpty(name)) {
+            errorMessage = "Mandatory field 'name' not set!";
+        }
+
+        /*
+         * TODO: Fetch deviceAppAttributes and set them (should be set when library is initialized).
+         */
+        final DeviceAppAttributes deviceAppAttributes = null;
+        if (deviceAppAttributes == null) {
+            errorMessage = "Mandatory field 'device app attributes' not set!";
+        }
+        if (errorMessage != null) {
+            throw new EventBuilderException(errorMessage);
+        }
+
+        /*
+         * TODO: Increment global sequenceId every time (in memory counter for this library).
+         */
+        int sequenceId = 0;
+        return new InstrumentationEvent(eventId, startTime, endTime, name, attributes, sessionId,
+                sequenceId, senderId, senderContext, eventType, type, subtype, errorType,
+                deviceAppAttributes, getConnectionType());
+    }
+
+    private String getConnectionType() {
+
+        /*
+         * TODO: Get connection type (3G/Wifi/LTE).
+         */
+        return null;
+    }
+
+    /**
+     * Exception thrown if the event can not be built.
+     */
+    public static class EventBuilderException extends Exception {
+
+        private static final long serialVersionUID = 1L;
+
+        public EventBuilderException(String message) {
+            super(message);
+        }
+    }
 }

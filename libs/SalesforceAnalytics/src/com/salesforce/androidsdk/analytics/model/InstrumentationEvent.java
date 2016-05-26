@@ -46,36 +46,179 @@ public class InstrumentationEvent {
     private String senderId;
     private Map<String, Object> senderContext;
     private EventType eventType;
+    private Type type;
+    private Subtype subtype;
+    private ErrorType errorType;
+    private DeviceAppAttributes deviceAppAttributes;
+    private String connectionType;
     private String jsonRepresentation;
 
+    InstrumentationEvent(String eventId, long startTime, long endTime, String name,
+                                Map<String, Object> attributes, int sessionId, int sequenceId,
+                                String senderId, Map<String, Object> senderContext,
+                                EventType eventType, Type type, Subtype subtype, ErrorType errorType,
+                                DeviceAppAttributes deviceAppAttributes, String connectionType) {
+        this.eventId = eventId;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.name = name;
+        this.attributes = attributes;
+        this.sessionId = sessionId;
+        this.sequenceId = sequenceId;
+        this.senderId = senderId;
+        this.senderContext = senderContext;
+        this.eventType = eventType;
+        this.type = type;
+        this.subtype = subtype;
+        this.errorType = errorType;
+        this.deviceAppAttributes = deviceAppAttributes;
+        this.connectionType = connectionType;
+    }
+
     /**
-     * Parameterized constructor.
+     * Parameterized constructor, to construct an event from its JSON representation.
+     * This is meant for internal use. Apps should use InstrumentationEventBuilder
+     * to build InstrumentationEvent objects.
      *
-     * @param json JSON representation of this event.
+     * @param json JSON string.
      */
     public InstrumentationEvent(String json) {
-        /*
-         * TODO: Build event from JSON.
-         */
         jsonRepresentation = json;
     }
 
     /**
-     * Parameterized constructor.
-     *
-     * @param eventType Event type.
-     */
-    InstrumentationEvent(EventType eventType) {
-        this.eventType = eventType;
-    }
-
-    /**
-     * Returns a unique identifier for this event.
+     * Returns event ID.
      *
      * @return Event ID.
      */
     public String getEventId() {
         return eventId;
+    }
+
+    /**
+     * Returns start time.
+     *
+     * @return Start time.
+     */
+    public long getStartTime() {
+        return startTime;
+    }
+
+    /**
+     * Returns end time.
+     *
+     * @return End time.
+     */
+    public long getEndTime() {
+        return endTime;
+    }
+
+    /**
+     * Returns name.
+     *
+     * @return Name.
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Returns attributes.
+     *
+     * @return Attributes.
+     */
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    /**
+     * Returns session ID.
+     *
+     * @return Session ID.
+     */
+    public int getSessionId() {
+        return sessionId;
+    }
+
+    /**
+     * Returns sequence ID.
+     *
+     * @return Sequence ID.
+     */
+    public int getSequenceId() {
+        return sequenceId;
+    }
+
+    /**
+     * Returns sender ID.
+     *
+     * @return Sender ID.
+     */
+    public String getSenderId() {
+        return senderId;
+    }
+
+    /**
+     * Returns sender context.
+     *
+     * @return Sender context.
+     */
+    public Map<String, Object> getSenderContext() {
+        return senderContext;
+    }
+
+    /**
+     * Returns event type.
+     *
+     * @return Event type.
+     */
+    public EventType getEventType() {
+        return eventType;
+    }
+
+    /**
+     * Returns type.
+     *
+     * @return Type.
+     */
+    public Type getType() {
+        return type;
+    }
+
+    /**
+     * Returns subtype.
+     *
+     * @return Subtype.
+     */
+    public Subtype getSubtype() {
+        return subtype;
+    }
+
+    /**
+     * Returns error type.
+     *
+     * @return Error type.
+     */
+    public ErrorType getErrorType() {
+        return errorType;
+    }
+
+    /**
+     * Returns device app attributes.
+     *
+     * @return Device app attributes.
+     */
+    public DeviceAppAttributes getDeviceAppAttributes() {
+        return deviceAppAttributes;
+    }
+
+    /**
+     * Returns connection type.
+     *
+     * @return Connection type.
+     */
+    public String getConnectionType() {
+        return connectionType;
     }
 
     /**
