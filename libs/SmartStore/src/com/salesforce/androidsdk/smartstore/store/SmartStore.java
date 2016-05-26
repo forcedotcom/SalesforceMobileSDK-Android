@@ -919,8 +919,8 @@ public class SmartStore  {
 				}
 
 				// Add to external storage if applicable
-				if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
-					success &= ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupTableName, soupEntryId, soupElt, passcode);
+				if (success && usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
+					success = ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupTableName, soupEntryId, soupElt, passcode);
 				}
 
 				// Commit if successful
@@ -1108,7 +1108,7 @@ public class SmartStore  {
 				}
 
 				// Add to external storage if applicable
-				if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
+				if (success && usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
 					success = ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupTableName, soupEntryId, soupElt, passcode);
 				}
 
