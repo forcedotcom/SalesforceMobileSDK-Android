@@ -351,7 +351,7 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	 */
 	public void testGetSizeOfDirDoesntExist() throws JSONException {
 		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
-		helper.deleteDatabase();
+		DBOpenHelper.deleteDatabase(targetContext, null);
 
 		// Total size of directory that doesnt exist should be 0.
 		assertEquals("Total file size should be zero if directory doesnt exist", 0, helper.getSizeOfDir(null));
