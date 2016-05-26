@@ -249,7 +249,7 @@ public class FileRequests extends ApiRequests {
     }
 
     private static RequestBody makeFileShare(String fileId, String entityId, String shareType) {
-        Map<String, String> share = Maps.newHashMap();
+        Map<String, String> share = Maps.newLinkedHashMap();
         share.put("ContentDocumentId", fileId);
         share.put("LinkedEntityId", entityId);
         share.put("ShareType", shareType);
