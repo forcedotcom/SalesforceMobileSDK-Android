@@ -444,8 +444,8 @@ public class PasscodeActivityTest extends
                 }
             });
             waitSome();
+            //the key down action for enter key will send ACTION_DOWN and ACTION_UP both events out
             this.sendKeys(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER);
-            this.sendKeys(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER);
         } catch (Throwable t) {
             fail("Failed do editor action " + actionCode);
         }
