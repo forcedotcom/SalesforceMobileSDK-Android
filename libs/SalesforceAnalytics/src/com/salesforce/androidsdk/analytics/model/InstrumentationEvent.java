@@ -26,6 +26,14 @@
  */
 package com.salesforce.androidsdk.analytics.model;
 
+import android.text.TextUtils;
+import android.util.Log;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -35,6 +43,22 @@ import java.util.Map;
  * @author bhariharan
  */
 public class InstrumentationEvent {
+
+    private static final String TAG = "InstrumentationEvent";
+    private static final String EVENT_ID_KEY = "eventId";
+    private static final String START_TIME_KEY = "startTime";
+    private static final String END_TIME_KEY = "endTime";
+    private static final String NAME_KEY = "name";
+    private static final String ATTRIBUTES_KEY = "attributes";
+    private static final String SESSION_ID_KEY = "sessionId";
+    private static final String SEQUENCE_ID_KEY = "sequenceId";
+    private static final String SENDER_ID_KEY = "senderId";
+    private static final String SENDER_CONTEXT_KEY = "senderContext";
+    private static final String EVENT_TYPE_KEY = "eventType";
+    private static final String TYPE_KEY = "type";
+    private static final String SUBTYPE_KEY = "subtype";
+    private static final String ERROR_TYPE_KEY = "errorType";
+    private static final String CONNECTION_TYPE_KEY = "connectionType";
 
     private String eventId;
     private long startTime;
@@ -51,7 +75,6 @@ public class InstrumentationEvent {
     private ErrorType errorType;
     private DeviceAppAttributes deviceAppAttributes;
     private String connectionType;
-    private String jsonRepresentation;
 
     InstrumentationEvent(String eventId, long startTime, long endTime, String name,
                                 Map<String, Object> attributes, int sessionId, int sequenceId,
@@ -76,14 +99,45 @@ public class InstrumentationEvent {
     }
 
     /**
-     * Parameterized constructor, to construct an event from its JSON representation.
+     * Constructs an event from its JSON representation.
      * This is meant for internal use. Apps should use InstrumentationEventBuilder
      * to build InstrumentationEvent objects.
      *
-     * @param json JSON string.
+     * @param json JSON object.
      */
-    public InstrumentationEvent(String json) {
-        jsonRepresentation = json;
+    public InstrumentationEvent(JSONObject json) {
+        if (json != null) {
+            eventId = json.optString(EVENT_ID_KEY);
+            startTime = json.optLong(START_TIME_KEY);
+            endTime = json.optLong(END_TIME_KEY);
+            name = json.optString(NAME_KEY);
+            attributes = convertJsonToMap(json.optJSONObject(ATTRIBUTES_KEY));
+            sessionId = json.optInt(SESSION_ID_KEY);
+            sequenceId = json.optInt(SEQUENCE_ID_KEY);
+            senderId = json.optString(SENDER_ID_KEY);
+            senderContext = convertJsonToMap(json.optJSONObject(SENDER_CONTEXT_KEY));
+            final String eventTypeString = json.optString(EVENT_TYPE_KEY);
+            if (!TextUtils.isEmpty(eventTypeString)) {
+                eventType = EventType.valueOf(eventTypeString);
+            }
+            final String typeString = json.optString(TYPE_KEY);
+            if (!TextUtils.isEmpty(typeString)) {
+                type = Type.valueOf(typeString);
+            }
+            final String subtypeString = json.optString(SUBTYPE_KEY);
+            if (!TextUtils.isEmpty(subtypeString)) {
+                subtype = Subtype.valueOf(subtypeString);
+            }
+            final String errorTypeString = json.optString(ERROR_TYPE_KEY);
+            if (!TextUtils.isEmpty(errorTypeString)) {
+                errorType = ErrorType.valueOf(errorTypeString);
+            }
+            connectionType = json.optString(CONNECTION_TYPE_KEY);
+
+            /*
+             * TODO: Read device attributes JSON from.
+             */
+        }
     }
 
     /**
@@ -224,13 +278,61 @@ public class InstrumentationEvent {
     /**
      * Returns a JSON representation of this event.
      *
-     * @return JSON string.
+     * @return JSON object.
      */
-    public String toJson() {
-        /*
-         * TODO: Construct a JSON representation of this event.
-         */
-        return jsonRepresentation;
+    public JSONObject toJson() {
+        final JSONObject json = new JSONObject();
+        try {
+            json.put(EVENT_ID_KEY, eventId);
+            json.put(START_TIME_KEY, startTime);
+            json.put(END_TIME_KEY, endTime);
+            json.put(NAME_KEY, name);
+            if (attributes != null) {
+                final JSONObject attributesJson = new JSONObject(attributes);
+                json.put(ATTRIBUTES_KEY, attributesJson);
+            }
+            json.put(SESSION_ID_KEY, sessionId);
+            json.put(SEQUENCE_ID_KEY, sequenceId);
+            json.put(SENDER_ID_KEY, senderId);
+            if (senderContext != null) {
+                final JSONObject senderContextJson = new JSONObject(senderContext);
+                json.put(SENDER_CONTEXT_KEY, senderContextJson);
+            }
+            if (eventType != null) {
+                json.put(EVENT_TYPE_KEY, eventType.name());
+            }
+            if (type != null) {
+                json.put(TYPE_KEY, type.name());
+            }
+            if (subtype != null) {
+                json.put(SUBTYPE_KEY, subtype.name());
+            }
+            if (errorType != null) {
+                json.put(ERROR_TYPE_KEY, errorType.name());
+            }
+            json.put(CONNECTION_TYPE_KEY, connectionType);
+
+            /*
+             * TODO: Put device attributes JSON in.
+             */
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception thrown while attempting to convert to JSON", e);
+        }
+        return json;
+    }
+
+    private Map<String, Object> convertJsonToMap(JSONObject json) {
+        if (json == null) {
+            return null;
+        }
+        final Map<String, Object> map = new HashMap<String, Object>();
+        final Iterator<String> keys = json.keys();
+        while (keys.hasNext()) {
+            final String key = keys.next();
+            final Object value = json.opt(key);
+            map.put(key, value);
+        }
+        return map;
     }
 
     /**

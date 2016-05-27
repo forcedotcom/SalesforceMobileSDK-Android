@@ -33,6 +33,9 @@ import android.util.Log;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -80,7 +83,7 @@ public class EventStoreManager {
      * @param event Event to be persisted.
      */
     public void storeEvent(InstrumentationEvent event) {
-        if (event == null || TextUtils.isEmpty(event.toJson())) {
+        if (event == null || TextUtils.isEmpty(event.toJson().toString())) {
             Log.d(TAG, "Invalid event");
             return;
         }
@@ -88,7 +91,7 @@ public class EventStoreManager {
         FileOutputStream outputStream;
         try {
             outputStream = context.openFileOutput(filename, Context.MODE_PRIVATE);
-            outputStream.write(encrypt(event.toJson()).getBytes());
+            outputStream.write(encrypt(event.toJson().toString()).getBytes());
             outputStream.close();
         } catch (Exception e) {
             Log.e(TAG, "Exception occurred while saving event to filesystem", e);
@@ -202,7 +205,12 @@ public class EventStoreManager {
             Log.e(TAG, "Exception occurred while attempting to read file contents", ex);
         }
         if (!TextUtils.isEmpty(eventString)) {
-            event = new InstrumentationEvent(eventString);
+            try {
+                final JSONObject jsonObject = new JSONObject(eventString);
+                event = new InstrumentationEvent(jsonObject);
+            } catch (JSONException e) {
+                Log.e(TAG, "Exception occurred while attempting to convert to JSON", e);
+            }
         }
         return event;
     }
