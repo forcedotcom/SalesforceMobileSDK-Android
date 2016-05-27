@@ -542,7 +542,7 @@ public class ExplorerActivityTest extends
                 setText(R.id.add_file_share_share_type_text, "shareType");
             }
         };
-        gotoTabAndRunAction(ADD_FILE_SHARE_TAB, R.id.add_file_share_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/ContentDocumentLink {\"ContentDocumentId\":\"objectIdForAdd\",\"ShareType\":\"shareType\",\"LinkedEntityId\":\"entityIdForAdd\"}]");
+        gotoTabAndRunAction(ADD_FILE_SHARE_TAB, R.id.add_file_share_button, "Go", extraSetup, "[POST " + TEST_INSTANCE_URL + "/services/data/" + ApiVersionStrings.getVersionNumber(targetContext) + "/sobjects/ContentDocumentLink {\"ContentDocumentId\":\"objectIdForAdd\",\"LinkedEntityId\":\"entityIdForAdd\",\"ShareType\":\"shareType\"}]");
     }
 
     /**
