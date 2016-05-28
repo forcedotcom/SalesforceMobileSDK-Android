@@ -27,9 +27,13 @@
 package com.salesforce.androidsdk.analytics;
 
 import android.content.Context;
+import android.text.TextUtils;
 
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.analytics.store.EventStoreManager;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This class serves as an interface to the various
@@ -39,10 +43,56 @@ import com.salesforce.androidsdk.analytics.store.EventStoreManager;
  */
 public class SalesforceAnalyticsManager {
 
+    private static Map<String, SalesforceAnalyticsManager> INSTANCES;
+
     private String uniqueId;
     private boolean showEventsInConsole;
     private EventStoreManager storeManager;
     private DeviceAppAttributes deviceAppAttributes;
+    private int globalSequenceId;
+
+    /**
+     * Returns an instance of this class associated with the specified unique ID.
+     *
+     * @param uniqueId Unique ID that is used to determine where the events are stored.
+     * @param context Context.
+     * @param encryptionKey Encryption key.
+     * @param deviceAppAttributes Device app attributes.
+     */
+    public static synchronized SalesforceAnalyticsManager getInstance(String uniqueId, Context context,
+                                                         String encryptionKey,
+                                                         DeviceAppAttributes deviceAppAttributes) {
+        if (TextUtils.isEmpty(uniqueId)) {
+            return null;
+        }
+        SalesforceAnalyticsManager instance = null;
+        if (INSTANCES == null) {
+            INSTANCES = new HashMap<String, SalesforceAnalyticsManager>();
+            instance = new SalesforceAnalyticsManager(uniqueId, context, encryptionKey, deviceAppAttributes);
+            INSTANCES.put(uniqueId, instance);
+        } else {
+            instance = INSTANCES.get(uniqueId);
+        }
+        if (instance == null) {
+            instance = new SalesforceAnalyticsManager(uniqueId, context, encryptionKey, deviceAppAttributes);
+            INSTANCES.put(uniqueId, instance);
+        }
+        return instance;
+    }
+
+    /**
+     * Resets and removes the instance associated with the specified unique ID.
+     *
+     * @param uniqueId Unique ID.
+     */
+    public static synchronized void reset(String uniqueId) {
+        if (TextUtils.isEmpty(uniqueId)) {
+            return;
+        }
+        if (INSTANCES != null) {
+            INSTANCES.remove(uniqueId);
+        }
+    }
 
     /**
      * Parameterized constructor.
@@ -52,10 +102,38 @@ public class SalesforceAnalyticsManager {
      * @param encryptionKey Encryption key.
      * @param deviceAppAttributes Device app attributes.
      */
-    public SalesforceAnalyticsManager(String uniqueId, Context context, String encryptionKey,
+    private SalesforceAnalyticsManager(String uniqueId, Context context, String encryptionKey,
                                       DeviceAppAttributes deviceAppAttributes) {
         this.uniqueId = uniqueId;
         storeManager = new EventStoreManager(uniqueId, context, encryptionKey);
         this.deviceAppAttributes = deviceAppAttributes;
+        globalSequenceId = 0;
+    }
+
+    /**
+     * Sets the global sequence ID used by events.
+     *
+     * @param sequenceId Sequence ID.
+     */
+    public synchronized void setGlobalSequenceId(int sequenceId) {
+        globalSequenceId = sequenceId;
+    }
+
+    /**
+     * Returns the global sequence ID.
+     *
+     * @return Sequence ID.
+     */
+    public int getGlobalSequenceId() {
+        return globalSequenceId;
+    }
+
+    /**
+     * Returns device app attributes.
+     *
+     * @return Device app attributes.
+     */
+    public DeviceAppAttributes getDeviceAppAttributes() {
+        return deviceAppAttributes;
     }
 }

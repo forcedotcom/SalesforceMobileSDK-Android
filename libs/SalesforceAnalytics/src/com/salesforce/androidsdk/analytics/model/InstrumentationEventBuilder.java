@@ -31,7 +31,10 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.text.TextUtils;
 
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * Builder class that helps create a new InstrumentationEvent object.
@@ -40,6 +43,7 @@ import java.util.Map;
  */
 public class InstrumentationEventBuilder {
 
+    private SalesforceAnalyticsManager analyticsManager;
     private Context context;
     private long startTime;
     private long endTime;
@@ -56,13 +60,17 @@ public class InstrumentationEventBuilder {
     /**
      * Returns an instance of this class.
      *
+     * @param analyticsManager Instance of SalesforceAnalyticsManager.
+     * @param context Context.
      * @return Instance of this class.
      */
-    public static final InstrumentationEventBuilder getInstance(Context context) {
-        return new InstrumentationEventBuilder(context);
+    public static final InstrumentationEventBuilder getInstance(SalesforceAnalyticsManager analyticsManager,
+                                                                Context context) {
+        return new InstrumentationEventBuilder(analyticsManager, context);
     }
 
-    private InstrumentationEventBuilder(Context context) {
+    private InstrumentationEventBuilder(SalesforceAnalyticsManager analyticsManager, Context context) {
+        this.analyticsManager = analyticsManager;
         this.context = context;
     }
 
@@ -195,11 +203,7 @@ public class InstrumentationEventBuilder {
      * @throws EventBuilderException
      */
     public InstrumentationEvent buildEvent() throws EventBuilderException {
-
-        /*
-         * TODO: Generate unique eventId every time using UUID.
-         */
-        final String eventId = null;
+        final String eventId = UUID.randomUUID().toString();
         String errorMessage = null;
         if (eventType == null) {
             errorMessage = "Mandatory field 'event type' not set!";
@@ -207,22 +211,15 @@ public class InstrumentationEventBuilder {
         if (TextUtils.isEmpty(name)) {
             errorMessage = "Mandatory field 'name' not set!";
         }
-
-        /*
-         * TODO: Fetch deviceAppAttributes and set them (should be set when library is initialized).
-         */
-        final DeviceAppAttributes deviceAppAttributes = null;
+        final DeviceAppAttributes deviceAppAttributes = analyticsManager.getDeviceAppAttributes();
         if (deviceAppAttributes == null) {
             errorMessage = "Mandatory field 'device app attributes' not set!";
         }
         if (errorMessage != null) {
             throw new EventBuilderException(errorMessage);
         }
-
-        /*
-         * TODO: Increment global sequenceId every time (in memory counter for this library).
-         */
-        int sequenceId = 0;
+        int sequenceId = analyticsManager.getGlobalSequenceId() + 1;
+        analyticsManager.setGlobalSequenceId(sequenceId);
         return new InstrumentationEvent(eventId, startTime, endTime, name, attributes, sessionId,
                 sequenceId, senderId, senderContext, eventType, type, subtype, errorType,
                 deviceAppAttributes, getConnectionType());

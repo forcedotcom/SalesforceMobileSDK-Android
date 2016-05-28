@@ -29,9 +29,12 @@ package com.salesforce.androidsdk.analytics.store;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
 
-import org.json.JSONObject;
+import java.util.UUID;
 
 /**
  * Tests for EventStoreManager.
@@ -43,14 +46,23 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
     private static final String TAG = "EventStoreManagerTest";
     private static final String TEST_FILENAME_SUFFIX = "_test_filename_suffix";
     private static final String TEST_ENCRYPTION_KEY = "test_encryption_key";
+    private static final DeviceAppAttributes TEST_DEVICE_APP_ATTRIBUTES = new DeviceAppAttributes("TEST_APP_VERSION",
+            "TEST_APP_NAME", "TEST_OS_VERSION", "TEST_OS_NAME", "TEST_NATIVE_APP_TYPE",
+            "TEST_MOBILE_SDK_VERSION", "TEST_DEVICE_MODEL", "TEST_DEVICE_ID");
 
+    private String uniqueId;
+    private Context targetContext;
     private EventStoreManager storeManager;
     private InstrumentationEvent testEvent;
+    private SalesforceAnalyticsManager analyticsManager;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        final Context targetContext = getInstrumentation().getTargetContext();
+        targetContext = getInstrumentation().getTargetContext();
+        uniqueId = UUID.randomUUID().toString();
+        analyticsManager = SalesforceAnalyticsManager.getInstance(uniqueId,
+                targetContext, TEST_ENCRYPTION_KEY, TEST_DEVICE_APP_ATTRIBUTES);
         createTestEvent();
         storeManager = new EventStoreManager(TEST_FILENAME_SUFFIX, targetContext, TEST_ENCRYPTION_KEY);
     }
@@ -59,6 +71,7 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
     public void tearDown() throws Exception {
         storeManager.deleteAllEvents();
         testEvent = null;
+        SalesforceAnalyticsManager.reset(uniqueId);
         super.tearDown();
     }
 
@@ -91,10 +104,14 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
     }
 
     private void createTestEvent() throws Exception {
-        final JSONObject object = new JSONObject();
-        object.put("Key1", "Value1");
-        object.put("Key2", 2);
-        object.put("Key3", true);
-        testEvent = new InstrumentationEvent(object.toString());
+        final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
+        eventBuilder.startTime(System.currentTimeMillis());
+        eventBuilder.name("TEST_EVENT_NAME");
+        eventBuilder.sessionId(1);
+        eventBuilder.senderId("TEST_SENDER_ID");
+        eventBuilder.eventType(InstrumentationEvent.EventType.error);
+        eventBuilder.type(InstrumentationEvent.Type.system);
+        eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
+        testEvent = eventBuilder.buildEvent();
     }
 }
