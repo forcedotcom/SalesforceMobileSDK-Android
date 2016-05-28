@@ -59,6 +59,7 @@ public class InstrumentationEvent {
     private static final String SUBTYPE_KEY = "subtype";
     private static final String ERROR_TYPE_KEY = "errorType";
     private static final String CONNECTION_TYPE_KEY = "connectionType";
+    private static final String DEVICE_APP_ATTRIBUTES_KEY = "deviceAppAttributes";
 
     private String eventId;
     private long startTime;
@@ -132,11 +133,11 @@ public class InstrumentationEvent {
             if (!TextUtils.isEmpty(errorTypeString)) {
                 errorType = ErrorType.valueOf(errorTypeString);
             }
+            final JSONObject deviceAttributesJson = json.optJSONObject(DEVICE_APP_ATTRIBUTES_KEY);
+            if (deviceAttributesJson != null) {
+                deviceAppAttributes = new DeviceAppAttributes(deviceAttributesJson);
+            }
             connectionType = json.optString(CONNECTION_TYPE_KEY);
-
-            /*
-             * TODO: Read device attributes JSON from.
-             */
         }
     }
 
@@ -310,11 +311,8 @@ public class InstrumentationEvent {
             if (errorType != null) {
                 json.put(ERROR_TYPE_KEY, errorType.name());
             }
+            json.put(DEVICE_APP_ATTRIBUTES_KEY, deviceAppAttributes.toJson());
             json.put(CONNECTION_TYPE_KEY, connectionType);
-
-            /*
-             * TODO: Put device attributes JSON in.
-             */
         } catch (JSONException e) {
             Log.e(TAG, "Exception thrown while attempting to convert to JSON", e);
         }

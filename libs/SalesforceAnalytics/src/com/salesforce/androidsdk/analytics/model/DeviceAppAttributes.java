@@ -26,6 +26,11 @@
  */
 package com.salesforce.androidsdk.analytics.model;
 
+import android.util.Log;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 /**
  * Represents common attributes specific to this app and device. These
  * attributes will be appended to the events stored using this library.
@@ -33,6 +38,16 @@ package com.salesforce.androidsdk.analytics.model;
  * @author bhariharan
  */
 public class DeviceAppAttributes {
+
+    private static final String TAG = "DeviceAppAttributes";
+    private static final String APP_VERSION_KEY = "appVersion";
+    private static final String APP_NAME_KEY = "appName";
+    private static final String OS_VERSION_KEY = "osVersion";
+    private static final String OS_NAME_KEY = "osName";
+    private static final String NATIVE_APP_TYPE_KEY = "nativeAppType";
+    private static final String MOBILE_SDK_VERSION_KEY = "mobileSdkVersion";
+    private static final String DEVICE_MODEL_KEY = "deviceModel";
+    private static final String DEVICE_ID_KEY = "deviceId";
 
     private String appVersion;
     private String appName;
@@ -66,6 +81,26 @@ public class DeviceAppAttributes {
         this.mobileSdkVersion = mobileSdkVersion;
         this.deviceModel = deviceModel;
         this.deviceId = deviceId;
+    }
+
+    /**
+     * Constructs device app attributes from its JSON representation.
+     * This is meant for internal use. Apps should use the other constructor
+     * to build DeviceAppAttributes objects.
+     *
+     * @param json JSON object.
+     */
+    public DeviceAppAttributes(JSONObject json) {
+        if (json != null) {
+            appVersion = json.optString(APP_VERSION_KEY);
+            appName = json.optString(APP_NAME_KEY);
+            osVersion = json.optString(OS_VERSION_KEY);
+            osName = json.optString(OS_NAME_KEY);
+            nativeAppType = json.optString(NATIVE_APP_TYPE_KEY);
+            mobileSdkVersion = json.optString(MOBILE_SDK_VERSION_KEY);
+            deviceModel = json.optString(DEVICE_MODEL_KEY);
+            deviceId = json.optString(DEVICE_ID_KEY);
+        }
     }
 
     /**
@@ -138,5 +173,27 @@ public class DeviceAppAttributes {
      */
     public String getDeviceId() {
         return deviceId;
+    }
+
+    /**
+     * Returns a JSON representation of device app attributes.
+     *
+     * @return JSON object.
+     */
+    public JSONObject toJson() {
+        final JSONObject json = new JSONObject();
+        try {
+            json.put(APP_VERSION_KEY, appVersion);
+            json.put(APP_NAME_KEY, appName);
+            json.put(OS_VERSION_KEY, osVersion);
+            json.put(OS_NAME_KEY, osName);
+            json.put(NATIVE_APP_TYPE_KEY, nativeAppType);
+            json.put(MOBILE_SDK_VERSION_KEY, mobileSdkVersion);
+            json.put(DEVICE_MODEL_KEY, deviceModel);
+            json.put(DEVICE_ID_KEY, deviceId);
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception thrown while attempting to convert to JSON", e);
+        }
+        return json;
     }
 }
