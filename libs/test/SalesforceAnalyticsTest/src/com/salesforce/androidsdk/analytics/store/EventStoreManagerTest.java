@@ -34,6 +34,8 @@ import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -49,11 +51,12 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
     private static final DeviceAppAttributes TEST_DEVICE_APP_ATTRIBUTES = new DeviceAppAttributes("TEST_APP_VERSION",
             "TEST_APP_NAME", "TEST_OS_VERSION", "TEST_OS_NAME", "TEST_NATIVE_APP_TYPE",
             "TEST_MOBILE_SDK_VERSION", "TEST_DEVICE_MODEL", "TEST_DEVICE_ID");
+    private static final String TEST_EVENT_NAME = "TEST_EVENT_NAME_%s";
+    private static final String TEST_SENDER_ID = "TEST_SENDER_ID";
 
     private String uniqueId;
     private Context targetContext;
     private EventStoreManager storeManager;
-    private InstrumentationEvent testEvent;
     private SalesforceAnalyticsManager analyticsManager;
 
     @Override
@@ -63,55 +66,172 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
         uniqueId = UUID.randomUUID().toString();
         analyticsManager = SalesforceAnalyticsManager.getInstance(uniqueId,
                 targetContext, TEST_ENCRYPTION_KEY, TEST_DEVICE_APP_ATTRIBUTES);
-        createTestEvent();
         storeManager = new EventStoreManager(TEST_FILENAME_SUFFIX, targetContext, TEST_ENCRYPTION_KEY);
     }
 
     @Override
     public void tearDown() throws Exception {
         storeManager.deleteAllEvents();
-        testEvent = null;
         SalesforceAnalyticsManager.reset(uniqueId);
         super.tearDown();
     }
 
+    /**
+     * Test for storing one event and retrieving it.
+     *
+     * @throws Exception
+     */
     public void testStoreOneEvent() throws Exception {
-        // TODO:
+        final InstrumentationEvent event = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event);
+        storeManager.storeEvent(event);
+        final List<InstrumentationEvent> events = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", events);
+        assertEquals("Number of events stored should be 1", 1, events.size());
+        assertTrue("Stored event should be the same as generated event", event.equals(events.get(0)));
     }
 
+    /**
+     * Test for storing many events and retrieving them.
+     *
+     * @throws Exception
+     */
     public void testStoreMultipleEvents() throws Exception {
-        // TODO:
+        final InstrumentationEvent event1 = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event1);
+        final InstrumentationEvent event2 = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event2);
+        final List<InstrumentationEvent> genEvents = new ArrayList<InstrumentationEvent>();
+        genEvents.add(event1);
+        genEvents.add(event2);
+        storeManager.storeEvents(genEvents);
+        final List<InstrumentationEvent> events = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", events);
+        assertEquals("Number of events stored should be 2", 2, events.size());
+        assertTrue("Stored event should be the same as generated event", event1.equals(events.get(0)));
+        assertTrue("Stored event should be the same as generated event", event2.equals(events.get(1)));
     }
 
+    /**
+     * Test for fetching one event by specifying event ID.
+     *
+     * @throws Exception
+     */
     public void testFetchOneEvent() throws Exception {
-        // TODO:
+        final InstrumentationEvent event = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event);
+        final String eventId = event.getEventId();
+        storeManager.storeEvent(event);
+        final InstrumentationEvent storedEvent = storeManager.fetchEvent(eventId);
+        assertNotNull("Event stored should not be null", storedEvent);
+        assertTrue("Stored event should be the same as generated event", event.equals(storedEvent));
     }
 
+    /**
+     * Test for fetching all stored events.
+     *
+     * @throws Exception
+     */
     public void testFetchAllEvents() throws Exception {
-        // TODO:
+        final InstrumentationEvent event1 = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event1);
+        storeManager.storeEvent(event1);
+        final InstrumentationEvent event2 = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event2);
+        storeManager.storeEvent(event2);
+        final List<InstrumentationEvent> events = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", events);
+        assertEquals("Number of events stored should be 2", 2, events.size());
+        assertTrue("Stored event should be the same as generated event", event1.equals(events.get(0)));
+        assertTrue("Stored event should be the same as generated event", event2.equals(events.get(1)));
     }
 
+    /**
+     * Test for deleting one event by specifying event ID.
+     *
+     * @throws Exception
+     */
     public void testDeleteOneEvent() throws Exception {
-        // TODO:
+        final InstrumentationEvent event = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event);
+        final String eventId = event.getEventId();
+        storeManager.storeEvent(event);
+        final List<InstrumentationEvent> eventsBeforeDel = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", eventsBeforeDel);
+        assertEquals("Number of events stored should be 1", 1, eventsBeforeDel.size());
+        assertTrue("Stored event should be the same as generated event", event.equals(eventsBeforeDel.get(0)));
+        storeManager.deleteEvent(eventId);
+        final List<InstrumentationEvent> eventsAfterDel = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", eventsAfterDel);
+        assertEquals("Number of events stored should be 0", 0, eventsAfterDel.size());
     }
 
+    /**
+     * Test for deleting multiple events by specifying event IDs.
+     *
+     * @throws Exception
+     */
     public void testDeleteMultipleEvents() throws Exception {
-        // TODO:
+        final InstrumentationEvent event1 = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event1);
+        final String eventId1 = event1.getEventId();
+        final InstrumentationEvent event2 = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event2);
+        final String eventId2 = event2.getEventId();
+        final List<InstrumentationEvent> genEvents = new ArrayList<InstrumentationEvent>();
+        genEvents.add(event1);
+        genEvents.add(event2);
+        storeManager.storeEvents(genEvents);
+        final List<InstrumentationEvent> eventsBeforeDel = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", eventsBeforeDel);
+        assertEquals("Number of events stored should be 2", 2, eventsBeforeDel.size());
+        assertTrue("Stored event should be the same as generated event", event1.equals(eventsBeforeDel.get(0)));
+        assertTrue("Stored event should be the same as generated event", event2.equals(eventsBeforeDel.get(1)));
+        final List<String> eventIds = new ArrayList<String>();
+        eventIds.add(eventId1);
+        eventIds.add(eventId2);
+        storeManager.deleteEvents(eventIds);
+        final List<InstrumentationEvent> eventsAfterDel = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", eventsAfterDel);
+        assertEquals("Number of events stored should be 0", 0, eventsAfterDel.size());
     }
 
+    /**
+     * Test for deleting all events stored.
+     *
+     * @throws Exception
+     */
     public void testDeleteAllEvents() throws Exception {
-        // TODO:
+        final InstrumentationEvent event1 = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event1);
+        final InstrumentationEvent event2 = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event2);
+        final List<InstrumentationEvent> genEvents = new ArrayList<InstrumentationEvent>();
+        genEvents.add(event1);
+        genEvents.add(event2);
+        storeManager.storeEvents(genEvents);
+        final List<InstrumentationEvent> eventsBeforeDel = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", eventsBeforeDel);
+        assertEquals("Number of events stored should be 2", 2, eventsBeforeDel.size());
+        assertTrue("Stored event should be the same as generated event", event1.equals(eventsBeforeDel.get(0)));
+        assertTrue("Stored event should be the same as generated event", event2.equals(eventsBeforeDel.get(1)));
+        storeManager.deleteAllEvents();
+        final List<InstrumentationEvent> eventsAfterDel = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", eventsAfterDel);
+        assertEquals("Number of events stored should be 0", 0, eventsAfterDel.size());
     }
 
-    private void createTestEvent() throws Exception {
+    private InstrumentationEvent createTestEvent() throws Exception {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
-        eventBuilder.startTime(System.currentTimeMillis());
-        eventBuilder.name("TEST_EVENT_NAME");
+        long curTime = System.currentTimeMillis();
+        final String eventName = String.format(TEST_EVENT_NAME, curTime);
+        eventBuilder.startTime(curTime);
+        eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
-        eventBuilder.senderId("TEST_SENDER_ID");
+        eventBuilder.senderId(TEST_SENDER_ID);
         eventBuilder.eventType(InstrumentationEvent.EventType.error);
         eventBuilder.type(InstrumentationEvent.Type.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
-        testEvent = eventBuilder.buildEvent();
+        return eventBuilder.buildEvent();
     }
 }
