@@ -319,6 +319,22 @@ public class InstrumentationEvent {
         return json;
     }
 
+    @Override
+    public boolean equals(Object event) {
+        /*
+         * TODO:
+         */
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        /*
+         * TODO:
+         */
+        return 0;
+    }
+
     private Map<String, Object> convertJsonToMap(JSONObject json) {
         if (json == null) {
             return null;
