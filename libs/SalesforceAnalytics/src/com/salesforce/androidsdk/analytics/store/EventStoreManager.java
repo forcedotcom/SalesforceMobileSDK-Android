@@ -66,7 +66,7 @@ public class EventStoreManager {
      * @param filenameSuffix Filename suffix to uniquely identify this batch of events.
      *                       Typically this would be used to batch events for a user or an org.
      * @param context Context.
-     * @param encryptionKey Encryption key.
+     * @param encryptionKey Encryption key (must be Base 64 encoded).
      */
     public EventStoreManager(String filenameSuffix, Context context, String encryptionKey) {
         this.filenameSuffix = filenameSuffix;

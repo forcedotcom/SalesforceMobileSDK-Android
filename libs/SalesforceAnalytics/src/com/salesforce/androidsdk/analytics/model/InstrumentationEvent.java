@@ -320,19 +320,28 @@ public class InstrumentationEvent {
     }
 
     @Override
-    public boolean equals(Object event) {
+    public boolean equals(Object object) {
+        if (object == null || !(object instanceof InstrumentationEvent)) {
+            return false;
+        }
+        final InstrumentationEvent event = (InstrumentationEvent) object;
+        if (TextUtils.isEmpty(eventId)) {
+            return false;
+        }
+
         /*
-         * TODO:
+         * Since event ID is globally unique and is set during construction of the event,
+         * if the event IDs of both events are equal, the events themselves are the same.
          */
-        return true;
+        if (eventId.equals(event.getEventId())) {
+            return true;
+        }
+        return false;
     }
 
     @Override
     public int hashCode() {
-        /*
-         * TODO:
-         */
-        return 0;
+        return eventId.hashCode();
     }
 
     private Map<String, Object> convertJsonToMap(JSONObject json) {
