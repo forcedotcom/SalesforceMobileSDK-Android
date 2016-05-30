@@ -220,6 +220,9 @@ public class InstrumentationEventBuilder {
         }
         int sequenceId = analyticsManager.getGlobalSequenceId() + 1;
         analyticsManager.setGlobalSequenceId(sequenceId);
+
+        // Defaults to current time if not explicitly set.
+        startTime = (startTime == 0) ? System.currentTimeMillis() : startTime;
         return new InstrumentationEvent(eventId, startTime, endTime, name, attributes, sessionId,
                 sequenceId, senderId, senderContext, eventType, type, subtype, errorType,
                 deviceAppAttributes, getConnectionType());
