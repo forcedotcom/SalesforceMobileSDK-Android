@@ -353,7 +353,12 @@ public class InstrumentationEvent {
         while (keys.hasNext()) {
             final String key = keys.next();
             final Object value = json.opt(key);
-            map.put(key, value);
+            if (value != null && value instanceof JSONObject) {
+                final Map<String, Object> subMap = convertJsonToMap((JSONObject) value);
+                map.put(key, subMap);
+            } else {
+                map.put(key, value);
+            }
         }
         return map;
     }

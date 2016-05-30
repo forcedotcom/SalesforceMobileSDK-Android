@@ -46,7 +46,6 @@ import java.util.UUID;
  */
 public class EventStoreManagerTest extends InstrumentationTestCase {
 
-    private static final String TAG = "EventStoreManagerTest";
     private static final String TEST_FILENAME_SUFFIX = "_test_filename_suffix";
     private static final String TEST_ENCRYPTION_KEY = Encryptor.hash("test_encryption_key", "key");
     private static final DeviceAppAttributes TEST_DEVICE_APP_ATTRIBUTES = new DeviceAppAttributes("TEST_APP_VERSION",
