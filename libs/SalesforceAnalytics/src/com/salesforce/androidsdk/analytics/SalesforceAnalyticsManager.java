@@ -56,7 +56,7 @@ public class SalesforceAnalyticsManager {
      *
      * @param uniqueId Unique ID that is used to determine where the events are stored.
      * @param context Context.
-     * @param encryptionKey Encryption key.
+     * @param encryptionKey Encryption key (must be Base 64 encoded).
      * @param deviceAppAttributes Device app attributes.
      */
     public static synchronized SalesforceAnalyticsManager getInstance(String uniqueId, Context context,

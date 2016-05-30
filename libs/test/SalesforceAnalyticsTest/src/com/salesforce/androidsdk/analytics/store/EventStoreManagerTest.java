@@ -33,6 +33,7 @@ import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +48,7 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
 
     private static final String TAG = "EventStoreManagerTest";
     private static final String TEST_FILENAME_SUFFIX = "_test_filename_suffix";
-    private static final String TEST_ENCRYPTION_KEY = "test_encryption_key";
+    private static final String TEST_ENCRYPTION_KEY = Encryptor.hash("test_encryption_key", "key");
     private static final DeviceAppAttributes TEST_DEVICE_APP_ATTRIBUTES = new DeviceAppAttributes("TEST_APP_VERSION",
             "TEST_APP_NAME", "TEST_OS_VERSION", "TEST_OS_NAME", "TEST_NATIVE_APP_TYPE",
             "TEST_MOBILE_SDK_VERSION", "TEST_DEVICE_MODEL", "TEST_DEVICE_ID");
