@@ -29,7 +29,7 @@ android {
   }
   defaultConfig {
     testApplicationId "com.salesforce.samples.templateapp.tests"
-    testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
+    testInstrumentationRunner "com.salesforce.androidsdk.analytics.util.test.JUnitReportTestRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

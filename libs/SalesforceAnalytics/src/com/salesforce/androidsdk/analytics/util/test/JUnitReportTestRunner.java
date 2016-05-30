@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -25,46 +25,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package com.salesforce.androidsdk.util.test;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+package com.salesforce.androidsdk.analytics.util.test;
 
 import android.test.AndroidTestRunner;
-import android.util.Log;
+import android.test.InstrumentationTestRunner;
+
+import java.util.concurrent.TimeUnit;
 
 /**
- * A TestRunner that limits the lifetime of the test run.
+ * This extends the report runner that generates a standard junit report file, with the timerun cap.
  */
-public class TimeLimitedTestRunner extends AndroidTestRunner {
-    public TimeLimitedTestRunner(int maxRuntime, TimeUnit maxUnits) {
-        this.maxRuntime = maxRuntime;
-        this.maxRuntimeUnit = maxUnits;
-    }
-
-    private final long maxRuntime;
-    private final TimeUnit maxRuntimeUnit;
+public class JUnitReportTestRunner extends InstrumentationTestRunner {
 
     @Override
-    public void runTest() {
-        ExecutorService exec = Executors.newSingleThreadExecutor();
-        Future<Boolean> f = exec.submit(new Callable<Boolean>() {
-            @Override
-            public Boolean call() {
-                TimeLimitedTestRunner.super.runTest();
-                return true;
-            }
-        });
-        try {
-            f.get(maxRuntime, maxRuntimeUnit);
-        } catch (TimeoutException ex) {
-           Log.e("TimeLimitedTestRunner.runTest", String.format("TestRunner has timed out after: %d %s.", maxRuntime, maxRuntimeUnit.name()), ex);
-        } catch (Exception ex){
-            Log.e("TimeLimitedTestRunner.runTest", "TestRunner did not complete successfully, check the exception logged above.", ex);
-        }
+    protected AndroidTestRunner getAndroidTestRunner() {
+        return new TimeLimitedTestRunner(60 * 60, TimeUnit.SECONDS);
     }
 }
