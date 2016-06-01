@@ -45,21 +45,21 @@ import java.util.Map;
 public class InstrumentationEvent {
 
     private static final String TAG = "InstrumentationEvent";
-    private static final String EVENT_ID_KEY = "eventId";
-    private static final String START_TIME_KEY = "startTime";
-    private static final String END_TIME_KEY = "endTime";
-    private static final String NAME_KEY = "name";
-    private static final String ATTRIBUTES_KEY = "attributes";
-    private static final String SESSION_ID_KEY = "sessionId";
-    private static final String SEQUENCE_ID_KEY = "sequenceId";
-    private static final String SENDER_ID_KEY = "senderId";
-    private static final String SENDER_CONTEXT_KEY = "senderContext";
-    private static final String EVENT_TYPE_KEY = "eventType";
-    private static final String TYPE_KEY = "type";
-    private static final String SUBTYPE_KEY = "subtype";
-    private static final String ERROR_TYPE_KEY = "errorType";
-    private static final String CONNECTION_TYPE_KEY = "connectionType";
-    private static final String DEVICE_APP_ATTRIBUTES_KEY = "deviceAppAttributes";
+    public static final String EVENT_ID_KEY = "eventId";
+    public static final String START_TIME_KEY = "startTime";
+    public static final String END_TIME_KEY = "endTime";
+    public static final String NAME_KEY = "name";
+    public static final String ATTRIBUTES_KEY = "attributes";
+    public static final String SESSION_ID_KEY = "sessionId";
+    public static final String SEQUENCE_ID_KEY = "sequenceId";
+    public static final String SENDER_ID_KEY = "senderId";
+    public static final String SENDER_CONTEXT_KEY = "senderContext";
+    public static final String EVENT_TYPE_KEY = "eventType";
+    public static final String TYPE_KEY = "type";
+    public static final String SUBTYPE_KEY = "subtype";
+    public static final String ERROR_TYPE_KEY = "errorType";
+    public static final String CONNECTION_TYPE_KEY = "connectionType";
+    public static final String DEVICE_APP_ATTRIBUTES_KEY = "deviceAppAttributes";
 
     private String eventId;
     private long startTime;
