@@ -673,7 +673,7 @@ public class SmartStore  {
 	            if (cursor.moveToFirst()) {
 	                do {
 	                	// Smart queries
-	                	if (qt == QueryType.smart) {
+	                	if (qt == QueryType.smart || querySpec.selectPaths != null) {
 	                		results.put(getDataFromRow(cursor));	
 	                	}
 	            		// Exact/like/range queries
