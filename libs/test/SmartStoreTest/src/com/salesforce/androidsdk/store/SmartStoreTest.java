@@ -690,13 +690,16 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		JSONObject soupElt3Created = store.create(OTHER_TEST_SOUP, soupElt3);
 
 		// Query all - small page
-		runQueryCheckResultsAndExplainPlan(QuerySpec.buildAllQuerySpec(OTHER_TEST_SOUP, "key", Order.ascending, 2), 0, "SCAN", soupElt1Created, soupElt2Created);
+		runQueryCheckResultsAndExplainPlan(QuerySpec.buildAllQuerySpec(OTHER_TEST_SOUP, "key", Order.ascending, 2), 0, false, "SCAN", soupElt1Created, soupElt2Created);
 
 		// Query all - next small page
-		runQueryCheckResultsAndExplainPlan(QuerySpec.buildAllQuerySpec(OTHER_TEST_SOUP, "key", Order.ascending, 2), 1, "SCAN", soupElt3Created);
+		runQueryCheckResultsAndExplainPlan(QuerySpec.buildAllQuerySpec(OTHER_TEST_SOUP, "key", Order.ascending, 2), 1, false, "SCAN", soupElt3Created);
 
 		// Query all - large page
-        runQueryCheckResultsAndExplainPlan(QuerySpec.buildAllQuerySpec(OTHER_TEST_SOUP, "key", Order.ascending, 10), 0, "SCAN", soupElt1Created, soupElt2Created, soupElt3Created);
+        runQueryCheckResultsAndExplainPlan(QuerySpec.buildAllQuerySpec(OTHER_TEST_SOUP, "key", Order.ascending, 10), 0, false, "SCAN", soupElt1Created, soupElt2Created, soupElt3Created);
+
+		// Query all with select paths
+		runQueryCheckResultsAndExplainPlan(QuerySpec.buildAllQuerySpec(OTHER_TEST_SOUP, new String[]{"key"}, "key", Order.ascending, 10), 0, type != Type.json1, "SCAN", new JSONArray("['ka1']"),  new JSONArray("['ka2']"),  new JSONArray("['ka3']"));
 	}
 	
 	/**
@@ -732,7 +735,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
         store.create(OTHER_TEST_SOUP, soupElt3);
 
         // Exact match
-        runQueryCheckResultsAndExplainPlan(QuerySpec.buildExactQuerySpec(OTHER_TEST_SOUP, "key", "ka2", null, null, 10), 0, "SEARCH", soupElt2Created);
+        runQueryCheckResultsAndExplainPlan(QuerySpec.buildExactQuerySpec(OTHER_TEST_SOUP, "key", "ka2", null, null, 10), 0, false, "SEARCH", soupElt2Created);
     }
 
 
@@ -770,10 +773,15 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		JSONObject soupElt3Created = store.create(OTHER_TEST_SOUP, soupElt3);
 
 		// Range query
-        runQueryCheckResultsAndExplainPlan(QuerySpec.buildRangeQuerySpec(OTHER_TEST_SOUP, "key", "ka2", "ka3", "key", Order.ascending, 10), 0, "SEARCH", soupElt2Created, soupElt3Created);
+        runQueryCheckResultsAndExplainPlan(QuerySpec.buildRangeQuerySpec(OTHER_TEST_SOUP, "key", "ka2", "ka3", "key", Order.ascending, 10), 0, false, "SEARCH", soupElt2Created, soupElt3Created);
 
 		// Range query - descending order
-		runQueryCheckResultsAndExplainPlan(QuerySpec.buildRangeQuerySpec(OTHER_TEST_SOUP, "key", "ka2", "ka3", "key", Order.descending, 10), 0, "SEARCH", soupElt3Created, soupElt2Created);
+		runQueryCheckResultsAndExplainPlan(QuerySpec.buildRangeQuerySpec(OTHER_TEST_SOUP, "key", "ka2", "ka3", "key", Order.descending, 10), 0, false, "SEARCH", soupElt3Created, soupElt2Created);
+
+		// Range query with select paths
+		runQueryCheckResultsAndExplainPlan(QuerySpec.buildRangeQuerySpec(OTHER_TEST_SOUP, new String[]{"key"}, "key", "ka2", "ka3", "key", Order.descending, 10), 0, type != Type.json1, "SEARCH",
+				new JSONArray("['ka3']"), new JSONArray("['ka2']"));
+
 	}
 
 	/**
@@ -808,25 +816,30 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		/*JSONObject soupElt4Created = */ store.create(OTHER_TEST_SOUP, soupElt4);
 
         // Like query (starts with)
-        runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, "key", "abc%", "key", Order.ascending, 10), 0, "SCAN", soupElt3Created, soupElt1Created);
+        runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, "key", "abc%", "key", Order.ascending, 10), 0, false, "SCAN", soupElt3Created, soupElt1Created);
 
         // Like query (ends with)
-        runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, "key", "%bcd", "key", Order.ascending, 10), 0, "SCAN", soupElt1Created, soupElt2Created);
+        runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, "key", "%bcd", "key", Order.ascending, 10), 0, false, "SCAN", soupElt1Created, soupElt2Created);
 
         // Like query (starts with) - descending order
-        runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, "key", "abc%", "key", Order.descending, 10), 0, "SCAN", soupElt1Created, soupElt3Created);
+        runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, "key", "abc%", "key", Order.descending, 10), 0, false, "SCAN", soupElt1Created, soupElt3Created);
 
         // Like query (ends with) - descending order
-        runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, "key", "%bcd", "key", Order.descending, 10), 0, "SCAN", soupElt2Created, soupElt1Created);
+        runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, "key", "%bcd", "key", Order.descending, 10), 0, false, "SCAN", soupElt2Created, soupElt1Created);
 
         // Like query (contains)
-        runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, "key", "%bc%", "key", Order.ascending, 10), 0, "SCAN", soupElt3Created, soupElt1Created, soupElt2Created);
+        runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, "key", "%bc%", "key", Order.ascending, 10), 0, false, "SCAN", soupElt3Created, soupElt1Created, soupElt2Created);
 
         // Like query (contains) - descending order
-        runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, "key", "%bc%", "key", Order.descending, 10), 0, "SCAN", soupElt2Created, soupElt1Created, soupElt3Created);
-    }
+        runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, "key", "%bc%", "key", Order.descending, 10), 0, false, "SCAN", soupElt2Created, soupElt1Created, soupElt3Created);
 
-    private void runQueryCheckResultsAndExplainPlan(QuerySpec querySpec, int page, String expectedDbOperation, JSONObject... expectedResults) throws JSONException {
+		// Like query (contains) with select paths
+		runQueryCheckResultsAndExplainPlan(QuerySpec.buildLikeQuerySpec(OTHER_TEST_SOUP, new String[] {"key"}, "key", "%bc%", "key", Order.descending, 10), 0, type != Type.json1, "SCAN",
+				new JSONArray("['bbcd']"), new JSONArray("['abcd']"), new JSONArray("['abcc']"));
+
+	}
+
+    private void runQueryCheckResultsAndExplainPlan(QuerySpec querySpec, int page, boolean covering, String expectedDbOperation, JSONObject... expectedResults) throws JSONException {
         // Run query
         JSONArray result = store.query(querySpec, page);
 
@@ -836,9 +849,22 @@ public class SmartStoreTest extends SmartStoreTestCase {
             JSONTestHelper.assertSameJSON("Wrong result for query", expectedResults[i], result.getJSONObject(i));
         }
         // Check explain plan and make sure index was used
-        checkExplainQueryPlan(OTHER_TEST_SOUP, 0, expectedDbOperation);
+        checkExplainQueryPlan(OTHER_TEST_SOUP, 0, covering, expectedDbOperation);
     }
-	
+
+	private void runQueryCheckResultsAndExplainPlan(QuerySpec querySpec, int page, boolean covering, String expectedDbOperation, JSONArray... expectedRows) throws JSONException {
+		// Run query
+		JSONArray result = store.query(querySpec, page);
+
+		// Check results
+		assertEquals("Wrong number of rows", expectedRows.length, result.length());
+		for (int i=0; i<expectedRows.length; i++) {
+			JSONTestHelper.assertSameJSON("Wrong result for query", expectedRows[i], result.getJSONArray(i));
+		}
+		// Check explain plan and make sure index was used
+		checkExplainQueryPlan(OTHER_TEST_SOUP, 0, covering, expectedDbOperation);
+	}
+
 	/**
 	 * Test upsert soup element with null value in string indexed field
 	 * @throws JSONException 
