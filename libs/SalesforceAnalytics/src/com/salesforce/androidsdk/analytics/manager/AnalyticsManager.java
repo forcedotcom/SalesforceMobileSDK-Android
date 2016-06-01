@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.analytics;
+package com.salesforce.androidsdk.analytics.manager;
 
 import android.content.Context;
 import android.text.TextUtils;
@@ -41,9 +41,9 @@ import java.util.Map;
  *
  * @author bhariharan
  */
-public class SalesforceAnalyticsManager {
+public class AnalyticsManager {
 
-    private static Map<String, SalesforceAnalyticsManager> INSTANCES;
+    private static Map<String, AnalyticsManager> INSTANCES;
 
     private String uniqueId;
     private boolean showEventsInConsole;
@@ -59,22 +59,22 @@ public class SalesforceAnalyticsManager {
      * @param encryptionKey Encryption key (must be Base 64 encoded).
      * @param deviceAppAttributes Device app attributes.
      */
-    public static synchronized SalesforceAnalyticsManager getInstance(String uniqueId, Context context,
-                                                         String encryptionKey,
-                                                         DeviceAppAttributes deviceAppAttributes) {
+    public static synchronized AnalyticsManager getInstance(String uniqueId, Context context,
+                                                            String encryptionKey,
+                                                            DeviceAppAttributes deviceAppAttributes) {
         if (TextUtils.isEmpty(uniqueId)) {
             return null;
         }
-        SalesforceAnalyticsManager instance = null;
+        AnalyticsManager instance = null;
         if (INSTANCES == null) {
-            INSTANCES = new HashMap<String, SalesforceAnalyticsManager>();
-            instance = new SalesforceAnalyticsManager(uniqueId, context, encryptionKey, deviceAppAttributes);
+            INSTANCES = new HashMap<String, AnalyticsManager>();
+            instance = new AnalyticsManager(uniqueId, context, encryptionKey, deviceAppAttributes);
             INSTANCES.put(uniqueId, instance);
         } else {
             instance = INSTANCES.get(uniqueId);
         }
         if (instance == null) {
-            instance = new SalesforceAnalyticsManager(uniqueId, context, encryptionKey, deviceAppAttributes);
+            instance = new AnalyticsManager(uniqueId, context, encryptionKey, deviceAppAttributes);
             INSTANCES.put(uniqueId, instance);
         }
         return instance;
@@ -106,8 +106,8 @@ public class SalesforceAnalyticsManager {
      * @param encryptionKey Encryption key.
      * @param deviceAppAttributes Device app attributes.
      */
-    private SalesforceAnalyticsManager(String uniqueId, Context context, String encryptionKey,
-                                      DeviceAppAttributes deviceAppAttributes) {
+    private AnalyticsManager(String uniqueId, Context context, String encryptionKey,
+                             DeviceAppAttributes deviceAppAttributes) {
         this.uniqueId = uniqueId;
         storeManager = new EventStoreManager(uniqueId, context, encryptionKey);
         this.deviceAppAttributes = deviceAppAttributes;

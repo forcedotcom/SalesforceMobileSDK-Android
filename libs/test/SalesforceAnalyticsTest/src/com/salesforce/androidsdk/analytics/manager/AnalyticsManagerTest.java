@@ -24,12 +24,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.analytics;
+package com.salesforce.androidsdk.analytics.manager;
 
 /**
- * Test class for the SalesforceAnalyticsManager class.
+ * Test class for the AnalyticsManager class.
  *
  * @author bhariharan
  */
-public class SalesforceAnalyticsManagerTest {
+public class AnalyticsManagerTest {
 }

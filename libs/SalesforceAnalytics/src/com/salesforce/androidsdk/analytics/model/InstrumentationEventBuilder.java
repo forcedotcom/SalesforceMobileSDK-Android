@@ -31,7 +31,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 
 import java.util.Map;
 import java.util.UUID;
@@ -43,7 +43,7 @@ import java.util.UUID;
  */
 public class InstrumentationEventBuilder {
 
-    private SalesforceAnalyticsManager analyticsManager;
+    private AnalyticsManager analyticsManager;
     private Context context;
     private long startTime;
     private long endTime;
@@ -60,16 +60,16 @@ public class InstrumentationEventBuilder {
     /**
      * Returns an instance of this class.
      *
-     * @param analyticsManager Instance of SalesforceAnalyticsManager.
+     * @param analyticsManager Instance of AnalyticsManager.
      * @param context Context.
      * @return Instance of this class.
      */
-    public static final InstrumentationEventBuilder getInstance(SalesforceAnalyticsManager analyticsManager,
+    public static final InstrumentationEventBuilder getInstance(AnalyticsManager analyticsManager,
                                                                 Context context) {
         return new InstrumentationEventBuilder(analyticsManager, context);
     }
 
-    private InstrumentationEventBuilder(SalesforceAnalyticsManager analyticsManager, Context context) {
+    private InstrumentationEventBuilder(AnalyticsManager analyticsManager, Context context) {
         this.analyticsManager = analyticsManager;
         this.context = context;
     }

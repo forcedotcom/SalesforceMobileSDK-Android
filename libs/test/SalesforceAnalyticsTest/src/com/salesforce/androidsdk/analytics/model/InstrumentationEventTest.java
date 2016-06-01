@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.analytics.model;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 import org.json.JSONObject;
@@ -54,20 +54,20 @@ public class InstrumentationEventTest extends InstrumentationTestCase {
 
     private String uniqueId;
     private Context targetContext;
-    private SalesforceAnalyticsManager analyticsManager;
+    private AnalyticsManager analyticsManager;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
         targetContext = getInstrumentation().getTargetContext();
         uniqueId = UUID.randomUUID().toString();
-        analyticsManager = SalesforceAnalyticsManager.getInstance(uniqueId,
+        analyticsManager = AnalyticsManager.getInstance(uniqueId,
                 targetContext, TEST_ENCRYPTION_KEY, TEST_DEVICE_APP_ATTRIBUTES);
     }
 
     @Override
     public void tearDown() throws Exception {
-        SalesforceAnalyticsManager.reset(uniqueId);
+        AnalyticsManager.reset(uniqueId);
         super.tearDown();
     }
 

@@ -29,7 +29,7 @@ package com.salesforce.androidsdk.analytics.store;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
@@ -57,14 +57,14 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
     private String uniqueId;
     private Context targetContext;
     private EventStoreManager storeManager;
-    private SalesforceAnalyticsManager analyticsManager;
+    private AnalyticsManager analyticsManager;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
         targetContext = getInstrumentation().getTargetContext();
         uniqueId = UUID.randomUUID().toString();
-        analyticsManager = SalesforceAnalyticsManager.getInstance(uniqueId,
+        analyticsManager = AnalyticsManager.getInstance(uniqueId,
                 targetContext, TEST_ENCRYPTION_KEY, TEST_DEVICE_APP_ATTRIBUTES);
         storeManager = new EventStoreManager(TEST_FILENAME_SUFFIX, targetContext, TEST_ENCRYPTION_KEY);
     }
@@ -72,7 +72,7 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
     @Override
     public void tearDown() throws Exception {
         storeManager.deleteAllEvents();
-        SalesforceAnalyticsManager.reset(uniqueId);
+        AnalyticsManager.reset(uniqueId);
         super.tearDown();
     }
 

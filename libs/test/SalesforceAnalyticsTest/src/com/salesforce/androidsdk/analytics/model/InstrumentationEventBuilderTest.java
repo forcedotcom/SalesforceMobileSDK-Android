@@ -31,7 +31,7 @@ import android.test.InstrumentationTestCase;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 import junit.framework.Assert;
@@ -55,20 +55,20 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
 
     private String uniqueId;
     private Context targetContext;
-    private SalesforceAnalyticsManager analyticsManager;
+    private AnalyticsManager analyticsManager;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
         targetContext = getInstrumentation().getTargetContext();
         uniqueId = UUID.randomUUID().toString();
-        analyticsManager = SalesforceAnalyticsManager.getInstance(uniqueId,
+        analyticsManager = AnalyticsManager.getInstance(uniqueId,
                 targetContext, TEST_ENCRYPTION_KEY, TEST_DEVICE_APP_ATTRIBUTES);
     }
 
     @Override
     public void tearDown() throws Exception {
-        SalesforceAnalyticsManager.reset(uniqueId);
+        AnalyticsManager.reset(uniqueId);
         super.tearDown();
     }
 
@@ -123,8 +123,8 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
      * @throws Exception
      */
     public void testMissingDeviceAppAttributes() throws Exception {
-        SalesforceAnalyticsManager.reset(uniqueId);
-        analyticsManager = SalesforceAnalyticsManager.getInstance(uniqueId, targetContext, TEST_ENCRYPTION_KEY, null);
+        AnalyticsManager.reset(uniqueId);
+        analyticsManager = AnalyticsManager.getInstance(uniqueId, targetContext, TEST_ENCRYPTION_KEY, null);
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
@@ -141,7 +141,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         } catch (InstrumentationEventBuilder.EventBuilderException e) {
             Log.v(TAG, "Exception thrown as expected");
         } finally {
-            SalesforceAnalyticsManager.reset(uniqueId);
+            AnalyticsManager.reset(uniqueId);
         }
     }
 
