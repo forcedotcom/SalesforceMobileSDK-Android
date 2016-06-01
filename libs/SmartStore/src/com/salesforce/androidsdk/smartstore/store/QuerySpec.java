@@ -337,13 +337,7 @@ public class QuerySpec {
      * @return from clause for exact/like/range/match queries
      */
     private String computeFromClause() {
-        if (queryType == QueryType.match) {
-            return FROM + computeSoupReference() + ", " + computeSoupFtsReference() + " ";
-        }
-        else {
-            return FROM + computeSoupReference() + " ";
-        }
-        
+        return FROM + computeSoupReference() + " ";
     }
     
     /**
@@ -354,8 +348,8 @@ public class QuerySpec {
 
         String field;
 
-        if (queryType == QueryType.match) {
-            field = computeSoupFtsReference() + (path == null ? "" : "." + computeFieldReference(path));
+        if (queryType == QueryType.match && path == null) {
+            field = computeSoupFtsReference();
         }
         else {
             field = computeFieldReference(path);
@@ -386,9 +380,10 @@ public class QuerySpec {
                     break;
                 }
             case match:
-                String joinClause = computeSoupFtsReference() + "." + SmartStore.DOCID_COL + " = " + computeFieldReference(SmartStore.SOUP_ENTRY_ID);
-                String matchCause = field + " MATCH '" + matchKey + "' "; // statement arg binding doesn't seem to work so inlining matchKey
-                pred = joinClause + " AND " + matchCause;
+                pred = computeFieldReference(SmartStore.SOUP_ENTRY_ID) + " IN ("
+                        + SELECT + SmartStore.DOCID_COL + " " + FROM + computeSoupFtsReference() + " " + WHERE
+                        + field + " MATCH '" + matchKey + "'" // statement arg binding doesn't seem to work so inlining matchKey
+                        + ") ";
                 break;
             default:
                 throw new SmartStoreException("Fell through switch: " + queryType);
@@ -402,7 +397,7 @@ public class QuerySpec {
     private String computeOrderClause() {
     	if (orderPath == null || order == null) return "";
 
-    	return ORDER_BY + computeSoupReference() + "." + computeFieldReference(orderPath) + " " + order.sql + " ";
+    	return ORDER_BY + computeFieldReference(orderPath) + " " + order.sql + " ";
     }
     
 	/**

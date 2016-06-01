@@ -38,12 +38,12 @@ public class QuerySpecTest extends InstrumentationTestCase {
 
     public void testAllQuerySmartSql() {
         QuerySpec querySpec = QuerySpec.buildAllQuerySpec("employees", "lastName", QuerySpec.Order.descending, 1);
-        assertEquals("Wrong smart sql for all query spec", "SELECT {employees:_soup} FROM {employees} ORDER BY {employees}.{employees:lastName} DESC ", querySpec.smartSql);
+        assertEquals("Wrong smart sql for all query spec", "SELECT {employees:_soup} FROM {employees} ORDER BY {employees:lastName} DESC ", querySpec.smartSql);
     }
 
     public void testAllQuerySmartSqlWithSelectPaths() {
         QuerySpec querySpec = QuerySpec.buildAllQuerySpec("employees", new String[] {"firstName", "lastName"}, "lastName", QuerySpec.Order.descending, 1);
-        assertEquals("Wrong smart sql for all query spec", "SELECT {employees:firstName}, {employees:lastName} FROM {employees} ORDER BY {employees}.{employees:lastName} DESC ", querySpec.smartSql);
+        assertEquals("Wrong smart sql for all query spec", "SELECT {employees:firstName}, {employees:lastName} FROM {employees} ORDER BY {employees:lastName} DESC ", querySpec.smartSql);
     }
 
     public void testAllQueryCountSmartSql() {
@@ -53,17 +53,17 @@ public class QuerySpecTest extends InstrumentationTestCase {
 
     public void testAllQueryIdsSmartSql() {
         QuerySpec querySpec = QuerySpec.buildAllQuerySpec("employees", "lastName", QuerySpec.Order.descending, 1);
-        assertEquals("Wrong ids smart sql for all query spec", "SELECT id FROM {employees} ORDER BY {employees}.{employees:lastName} DESC ", querySpec.idsSmartSql);
+        assertEquals("Wrong ids smart sql for all query spec", "SELECT id FROM {employees} ORDER BY {employees:lastName} DESC ", querySpec.idsSmartSql);
     }
 
     public void testRangeQuerySmartSql() {
         QuerySpec querySpec = QuerySpec.buildRangeQuerySpec("employees", "lastName", "Bond", "Smith", "lastName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong smart sql for range query spec", "SELECT {employees:_soup} FROM {employees} WHERE {employees:lastName} >= ? AND {employees:lastName} <= ? ORDER BY {employees}.{employees:lastName} ASC ", querySpec.smartSql);
+        assertEquals("Wrong smart sql for range query spec", "SELECT {employees:_soup} FROM {employees} WHERE {employees:lastName} >= ? AND {employees:lastName} <= ? ORDER BY {employees:lastName} ASC ", querySpec.smartSql);
     }
 
     public void testRangeQuerySmartSqlWithSelectPaths() {
         QuerySpec querySpec = QuerySpec.buildRangeQuerySpec("employees", new String[] {"firstName"}, "lastName", "Bond", "Smith", "lastName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong smart sql for range query spec", "SELECT {employees:firstName} FROM {employees} WHERE {employees:lastName} >= ? AND {employees:lastName} <= ? ORDER BY {employees}.{employees:lastName} ASC ", querySpec.smartSql);
+        assertEquals("Wrong smart sql for range query spec", "SELECT {employees:firstName} FROM {employees} WHERE {employees:lastName} >= ? AND {employees:lastName} <= ? ORDER BY {employees:lastName} ASC ", querySpec.smartSql);
     }
 
     public void testRangeQueryCountSmartSql() {
@@ -73,17 +73,17 @@ public class QuerySpecTest extends InstrumentationTestCase {
 
     public void testRangeQueryIdsSmartSql() {
         QuerySpec querySpec = QuerySpec.buildRangeQuerySpec("employees", "lastName", "Bond", "Smith", "lastName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong ids smart sql for range query spec", "SELECT id FROM {employees} WHERE {employees:lastName} >= ? AND {employees:lastName} <= ? ORDER BY {employees}.{employees:lastName} ASC ", querySpec.idsSmartSql);
+        assertEquals("Wrong ids smart sql for range query spec", "SELECT id FROM {employees} WHERE {employees:lastName} >= ? AND {employees:lastName} <= ? ORDER BY {employees:lastName} ASC ", querySpec.idsSmartSql);
     }
 
     public void testExactQuerySmartSql() {
         QuerySpec querySpec = QuerySpec.buildExactQuerySpec("employees", "lastName", "Bond", "lastName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong smart sql for exact query spec", "SELECT {employees:_soup} FROM {employees} WHERE {employees:lastName} = ? ORDER BY {employees}.{employees:lastName} ASC ", querySpec.smartSql);
+        assertEquals("Wrong smart sql for exact query spec", "SELECT {employees:_soup} FROM {employees} WHERE {employees:lastName} = ? ORDER BY {employees:lastName} ASC ", querySpec.smartSql);
     }
 
     public void testExactQuerySmartSqlWithSelectPaths() {
         QuerySpec querySpec = QuerySpec.buildExactQuerySpec("employees", new String[]{"firstName", "lastName"}, "lastName", "Bond", "lastName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong smart sql for exact query spec", "SELECT {employees:firstName}, {employees:lastName} FROM {employees} WHERE {employees:lastName} = ? ORDER BY {employees}.{employees:lastName} ASC ", querySpec.smartSql);
+        assertEquals("Wrong smart sql for exact query spec", "SELECT {employees:firstName}, {employees:lastName} FROM {employees} WHERE {employees:lastName} = ? ORDER BY {employees:lastName} ASC ", querySpec.smartSql);
     }
 
     public void testExactQueryCountSmartSql() {
@@ -93,32 +93,32 @@ public class QuerySpecTest extends InstrumentationTestCase {
 
     public void testExactQueryIdsSmartSql() {
         QuerySpec querySpec = QuerySpec.buildExactQuerySpec("employees", "lastName", "Bond", "lastName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong ids smart sql for exact query spec", "SELECT id FROM {employees} WHERE {employees:lastName} = ? ORDER BY {employees}.{employees:lastName} ASC ", querySpec.idsSmartSql);
+        assertEquals("Wrong ids smart sql for exact query spec", "SELECT id FROM {employees} WHERE {employees:lastName} = ? ORDER BY {employees:lastName} ASC ", querySpec.idsSmartSql);
     }
 
     public void testMatchQuerySmartSql() {
         QuerySpec querySpec = QuerySpec.buildMatchQuerySpec("employees", "lastName", "Bond", "firstName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong smart sql for match query spec", "SELECT {employees:_soup} FROM {employees}, {employees}_fts WHERE {employees}_fts.docid = {employees:_soupEntryId} AND {employees}_fts.{employees:lastName} MATCH 'Bond' ORDER BY {employees}.{employees:firstName} ASC ", querySpec.smartSql);
+        assertEquals("Wrong smart sql for match query spec", "SELECT {employees:_soup} FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT docid FROM {employees}_fts WHERE {employees:lastName} MATCH 'Bond') ORDER BY {employees:firstName} ASC ", querySpec.smartSql);
     }
 
     public void testMatchQuerySmartSqlWithSelectPaths() {
         QuerySpec querySpec = QuerySpec.buildMatchQuerySpec("employees", new String[]{"firstName", "lastName", "title"}, "lastName", "Bond", "firstName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong smart sql for match query spec", "SELECT {employees:firstName}, {employees:lastName}, {employees:title} FROM {employees}, {employees}_fts WHERE {employees}_fts.docid = {employees:_soupEntryId} AND {employees}_fts.{employees:lastName} MATCH 'Bond' ORDER BY {employees}.{employees:firstName} ASC ", querySpec.smartSql);
+        assertEquals("Wrong smart sql for match query spec", "SELECT {employees:firstName}, {employees:lastName}, {employees:title} FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT docid FROM {employees}_fts WHERE {employees:lastName} MATCH 'Bond') ORDER BY {employees:firstName} ASC ", querySpec.smartSql);
     }
 
     public void testMatchQueryCountSmartSql() {
         QuerySpec querySpec = QuerySpec.buildMatchQuerySpec("employees", "lastName", "Bond", "firstName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong count smart sql for match query spec", "SELECT count(*) FROM {employees}, {employees}_fts WHERE {employees}_fts.docid = {employees:_soupEntryId} AND {employees}_fts.{employees:lastName} MATCH 'Bond' ", querySpec.countSmartSql);
+        assertEquals("Wrong count smart sql for match query spec", "SELECT count(*) FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT docid FROM {employees}_fts WHERE {employees:lastName} MATCH 'Bond') ", querySpec.countSmartSql);
     }
 
     public void testMatchQueryIdsSmartSql() {
         QuerySpec querySpec = QuerySpec.buildMatchQuerySpec("employees", "lastName", "Bond", "firstName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong ids smart sql for match query spec", "SELECT id FROM {employees}, {employees}_fts WHERE {employees}_fts.docid = {employees:_soupEntryId} AND {employees}_fts.{employees:lastName} MATCH 'Bond' ORDER BY {employees}.{employees:firstName} ASC ", querySpec.idsSmartSql);
+        assertEquals("Wrong ids smart sql for match query spec", "SELECT id FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT docid FROM {employees}_fts WHERE {employees:lastName} MATCH 'Bond') ORDER BY {employees:firstName} ASC ", querySpec.idsSmartSql);
     }
 
     public void testLikeQuerySmartSql() {
         QuerySpec querySpec = QuerySpec.buildLikeQuerySpec("employees", "lastName", "Bon%" , "lastName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong smart sql for like query spec", "SELECT {employees:_soup} FROM {employees} WHERE {employees:lastName} LIKE ? ORDER BY {employees}.{employees:lastName} ASC ", querySpec.smartSql);
+        assertEquals("Wrong smart sql for like query spec", "SELECT {employees:_soup} FROM {employees} WHERE {employees:lastName} LIKE ? ORDER BY {employees:lastName} ASC ", querySpec.smartSql);
     }
 
     public void testLikeQueryCountSmartSql() {
@@ -128,7 +128,7 @@ public class QuerySpecTest extends InstrumentationTestCase {
 
     public void testLikeQueryIdsSmartSql() {
         QuerySpec querySpec = QuerySpec.buildLikeQuerySpec("employees", "lastName", "Bon%" , "lastName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong ids smart sql for like query spec", "SELECT id FROM {employees} WHERE {employees:lastName} LIKE ? ORDER BY {employees}.{employees:lastName} ASC ", querySpec.idsSmartSql);
+        assertEquals("Wrong ids smart sql for like query spec", "SELECT id FROM {employees} WHERE {employees:lastName} LIKE ? ORDER BY {employees:lastName} ASC ", querySpec.idsSmartSql);
     }
 
     public void testSmartQueryCountSmartSql() {
