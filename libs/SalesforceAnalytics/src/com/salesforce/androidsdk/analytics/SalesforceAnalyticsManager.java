@@ -92,6 +92,10 @@ public class SalesforceAnalyticsManager {
         if (INSTANCES != null) {
             INSTANCES.remove(uniqueId);
         }
+
+        /*
+         * TODO: Call this method and cleanup for StoreManager from logout in SalesforceSDKManager.
+         */
     }
 
     /**
@@ -135,5 +139,17 @@ public class SalesforceAnalyticsManager {
      */
     public DeviceAppAttributes getDeviceAppAttributes() {
         return deviceAppAttributes;
+    }
+
+    /**
+     * Changes the encryption key to a new value.
+     *
+     * @param key New encryption key.
+     */
+    public synchronized void changeEncryptionKey(String key) {
+
+        /*
+         * TODO: Call this from 'changePasscode' in SalesforceSDKManager when the passcode changes.
+         */
     }
 }

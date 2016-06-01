@@ -51,7 +51,6 @@ public class InstrumentationEventTest extends InstrumentationTestCase {
             "TEST_MOBILE_SDK_VERSION", "TEST_DEVICE_MODEL", "TEST_DEVICE_ID");
     private static final String TEST_EVENT_NAME = "TEST_EVENT_NAME_%s";
     private static final String TEST_SENDER_ID = "TEST_SENDER_ID";
-    private static final String ATTRIBUTES_KEY = "attributes";
 
     private String uniqueId;
     private Context targetContext;
@@ -87,7 +86,7 @@ public class InstrumentationEventTest extends InstrumentationTestCase {
         assertNotNull("Event instance should not be null", event);
         final JSONObject eventJson = event.toJson();
         assertNotNull("JSON representation of event should not be null", eventJson);
-        final JSONObject attributesJson = eventJson.optJSONObject(ATTRIBUTES_KEY);
+        final JSONObject attributesJson = eventJson.optJSONObject(InstrumentationEvent.ATTRIBUTES_KEY);
         assertNotNull("JSON representation of attributes should not be null", attributesJson);
         assertEquals("JSON representation of attributes should have 2 keys", 2, attributesJson.length());
         final String value1 = attributesJson.optString("Key1");
@@ -114,7 +113,7 @@ public class InstrumentationEventTest extends InstrumentationTestCase {
         assertNotNull("Event instance should not be null", event);
         final JSONObject eventJson = event.toJson();
         assertNotNull("JSON representation of event should not be null", eventJson);
-        final JSONObject attributesJson = eventJson.optJSONObject(ATTRIBUTES_KEY);
+        final JSONObject attributesJson = eventJson.optJSONObject(InstrumentationEvent.ATTRIBUTES_KEY);
         assertNotNull("JSON representation of attributes should not be null", attributesJson);
         assertEquals("JSON representation of attributes should have 2 keys", 2, attributesJson.length());
         final String value1 = attributesJson.optString("Key1");
@@ -138,7 +137,7 @@ public class InstrumentationEventTest extends InstrumentationTestCase {
         final JSONObject attributesJson = new JSONObject();
         attributesJson.put("Key1", "Value1");
         attributesJson.put("Key2", "Value2");
-        eventJson.put(ATTRIBUTES_KEY, attributesJson);
+        eventJson.put(InstrumentationEvent.ATTRIBUTES_KEY, attributesJson);
         final InstrumentationEvent event = new InstrumentationEvent(eventJson);
         final Map<String, Object> attributes = event.getAttributes();
         assertNotNull("Map representation of attributes should not be null", attributes);
@@ -164,7 +163,7 @@ public class InstrumentationEventTest extends InstrumentationTestCase {
         subJson.put("Key3", "Value3");
         subJson.put("Key4", 666);
         attributesJson.put("Key2", subJson);
-        eventJson.put(ATTRIBUTES_KEY, attributesJson);
+        eventJson.put(InstrumentationEvent.ATTRIBUTES_KEY, attributesJson);
         final InstrumentationEvent event = new InstrumentationEvent(eventJson);
         final Map<String, Object> attributes = event.getAttributes();
         assertNotNull("Map representation of attributes should not be null", attributes);
