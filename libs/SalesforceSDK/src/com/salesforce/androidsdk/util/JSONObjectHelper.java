@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.util;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -34,6 +35,36 @@ import org.json.JSONObject;
  */
 public class JSONObjectHelper {
 
+	/**
+	 * Return the null if obj doesn't have key or if obj has null for key - and return value as a  String[] otherwise
+	 * JSONObject.optString(key, fallback) returns the string "null" if object has null for key and null is object doesn't have key
+	 *
+	 * @param obj
+	 * @param key
+	 * @return
+	 * @throws JSONException
+	 */ 
+	public static String[] optStringArray(JSONObject obj, String key) throws JSONException {
+        String[] result = null;
+		JSONArray jsonArray = obj.isNull(key) ? null : obj.getJSONArray(key);
+		if (jsonArray != null) {
+            result = new String[jsonArray.length()];
+            for (int i=0; i<result.length; i++) {
+                result[i] = jsonArray.getString(i);
+            }
+        }
+        return result;
+	}
+
+	/**
+	 * Return null if obj doesn't have key or if obj has null for key
+	 * JSONObject.optString(key, fallback) returns the string "null" if object has null for key and null is object doesn't have key
+	 *
+	 * @param obj
+	 * @param key
+	 * @return
+	 * @throws JSONException
+	 */
 	public static String optString(JSONObject obj, String key) throws JSONException {
 		return optString(obj, key, null);
 	}
