@@ -276,19 +276,21 @@ public class SmartStore  {
 	            db.beginTransaction();
 	            long soupId = DBHelper.getInstance(db).insert(db, SOUP_NAMES_TABLE, soupMapValues);
 	            soupTableName = getSoupTableName(soupId);
+
+				// Do the rest - create table / indexes
+				registerSoupUsingTableName(soupName, indexSpecs, soupTableName);
+
 	            db.setTransactionSuccessful();
 	        } finally {
 	            db.endTransaction();
 	        }
-	        
-	        // Do the rest - create table / indexes
-	        registerSoupUsingTableName(soupName, indexSpecs, soupTableName);
     	}
     }
         
     
     /**
      * Helper method for registerSoup
+	 * NB: caller is expected to wrap call in a transaction
      * 
 	 * @param soupName
 	 * @param indexSpecs
@@ -673,7 +675,7 @@ public class SmartStore  {
 	            if (cursor.moveToFirst()) {
 	                do {
 	                	// Smart queries
-	                	if (qt == QueryType.smart) {
+	                	if (qt == QueryType.smart || querySpec.selectPaths != null) {
 	                		results.put(getDataFromRow(cursor));	
 	                	}
 	            		// Exact/like/range queries

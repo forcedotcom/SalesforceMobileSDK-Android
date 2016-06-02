@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -31,6 +31,7 @@ import android.database.Cursor;
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 
@@ -515,10 +516,17 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     }
 
     private void trySearch(long[] expectedIds, String path, String matchKey, String orderPath) throws JSONException {
+        // Returning soup elements
         JSONArray results = store.query(QuerySpec.buildMatchQuerySpec(EMPLOYEES_SOUP, path, matchKey, orderPath, QuerySpec.Order.ascending, 25), 0);
         assertEquals("Wrong number of results", expectedIds.length, results.length());
         for (int i=0; i<results.length(); i++) {
             assertEquals("Wrong result", expectedIds[i], idOf(results.getJSONObject(i)));
+        }
+        // Returning just ids
+        results = store.query(QuerySpec.buildMatchQuerySpec(EMPLOYEES_SOUP, new String[]{SmartStore.SOUP_ENTRY_ID}, path, matchKey, orderPath, QuerySpec.Order.ascending, 25), 0);
+        assertEquals("Wrong number of results", expectedIds.length, results.length());
+        for (int i=0; i<results.length(); i++) {
+            assertEquals("Wrong result", expectedIds[i], results.getJSONArray(i).getLong(0));
         }
     }
 
