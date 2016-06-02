@@ -148,28 +148,28 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             safeClose(c);
 
             // Check fts table columns
-            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "docid ASC", null, null);
+            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "rowid ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
             assertTrue("Wrong columns", Arrays.deepEquals(new String[]{FIRST_NAME_COL, LAST_NAME_COL}, c.getColumnNames()));
 
             safeClose(c);
 
             // Check fts table data
-            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, new String[] {"docid", FIRST_NAME_COL, LAST_NAME_COL}, "docid ASC", null, null);
+            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, new String[] {"rowid", FIRST_NAME_COL, LAST_NAME_COL}, "rowid ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
             assertEquals("Expected two rows", 3, c.getCount());
 
-            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("docid")));
+            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("rowid")));
             assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
             assertEquals("Wrong value in index column", "Haas", c.getString(c.getColumnIndex(LAST_NAME_COL)));
 
             c.moveToNext();
-            assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("docid")));
+            assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("rowid")));
             assertEquals("Wrong value in index column", "Michael", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
             assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
 
             c.moveToNext();
-            assertEquals("Wrong id", thirdEmployeeId, c.getLong(c.getColumnIndex("docid")));
+            assertEquals("Wrong id", thirdEmployeeId, c.getLong(c.getColumnIndex("rowid")));
             assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(FIRST_NAME_COL)));
             assertEquals("Wrong value in index column", null, c.getString(c.getColumnIndex(LAST_NAME_COL)));
         }
@@ -200,7 +200,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             safeClose(c);
 
             // Check fts table data
-            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "docid ASC", null, null);
+            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "rowid ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
             assertEquals("Expected two rows", 2, c.getCount());
         }
@@ -225,10 +225,10 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             safeClose(c);
 
             // Check fts table data
-            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, new String[] {"docid", FIRST_NAME_COL, LAST_NAME_COL}, "docid ASC", null, null);
+            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, new String[] {"rowid", FIRST_NAME_COL, LAST_NAME_COL}, "rowid ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
             assertEquals("Expected one row", 1, c.getCount());
-            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("docid")));
+            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("rowid")));
         }
         finally {
             safeClose(c);
@@ -249,7 +249,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             safeClose(c);
 
             // Check fts table data
-            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "docid ASC", null, null);
+            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "rowid ASC", null, null);
             assertFalse("Expected no rows", c.moveToFirst());
         }
         finally {
@@ -279,7 +279,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             safeClose(c);
 
             // Check fts table data
-            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "docid ASC", null, null);
+            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "rowid ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
             assertEquals("Expected two rows", 2, c.getCount());
         }
@@ -302,7 +302,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             safeClose(c);
 
             // Check fts table data
-            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "docid ASC", null, null);
+            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, null, "rowid ASC", null, null);
             assertFalse("Expected no rows", c.moveToFirst());
         }
         finally {
@@ -354,16 +354,16 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             safeClose(c);
 
             // Check fts table data
-            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, new String[] {"docid", FIRST_NAME_COL, LAST_NAME_COL}, "docid ASC", null, null);
+            c = DBHelper.getInstance(db).query(db, soupTableName + SmartStore.FTS_SUFFIX, new String[] {"rowid", FIRST_NAME_COL, LAST_NAME_COL}, "rowid ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
             assertEquals("Expected two rows", 2, c.getCount());
 
-            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("docid")));
+            assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("rowid")));
             assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
             assertEquals("Wrong value in index column", "Haas", c.getString(c.getColumnIndex(LAST_NAME_COL)));
 
             c.moveToNext();
-            assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("docid")));
+            assertEquals("Wrong id", secondEmployeeId, c.getLong(c.getColumnIndex("rowid")));
             assertEquals("Wrong value in index column", "Michael-updated", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
             assertEquals("Wrong value in index column", "Thompson", c.getString(c.getColumnIndex(LAST_NAME_COL)));
         }

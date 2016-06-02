@@ -381,7 +381,7 @@ public class QuerySpec {
                 }
             case match:
                 pred = computeFieldReference(SmartStore.SOUP_ENTRY_ID) + " IN ("
-                        + SELECT + SmartStore.DOCID_COL + " " + FROM + computeSoupFtsReference() + " " + WHERE
+                        + SELECT + SmartStore.ROWID_COL + " " + FROM + computeSoupFtsReference() + " " + WHERE
                         + field + " MATCH '" + matchKey + "'" // statement arg binding doesn't seem to work so inlining matchKey
                         + ") ";
                 break;

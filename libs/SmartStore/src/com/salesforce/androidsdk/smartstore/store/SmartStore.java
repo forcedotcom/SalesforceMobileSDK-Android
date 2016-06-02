@@ -84,7 +84,7 @@ public class SmartStore  {
     protected static final String SOUP_COL = "soup";
 
 	// Column of a fts soup table
-	protected static final String DOCID_COL = "docid";
+	protected static final String ROWID_COL = "rowid";
 
     // Columns of long operations status table
 	protected static final String TYPE_COL = "type";
@@ -99,7 +99,7 @@ public class SmartStore  {
     // Predicates
     protected static final String SOUP_NAME_PREDICATE = SOUP_NAME_COL + " = ?";
 	protected static final String ID_PREDICATE = ID_COL + " = ?";
-	protected static final String DOCID_PREDICATE = DOCID_COL + " =?";
+	protected static final String ROWID_PREDICATE = ROWID_COL + " =?";
 
 	// Backing database
 	protected SQLiteDatabase dbLocal;
@@ -512,7 +512,7 @@ public class SmartStore  {
 								String soupTableNameFts = soupTableName + FTS_SUFFIX;
 								ContentValues contentValuesFts = new ContentValues();
 								projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, TypeGroup.value_extracted_to_fts_column);
-								DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, DOCID_PREDICATE, soupEntryId + "");
+								DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, ROWID_PREDICATE, soupEntryId + "");
 							}
 			        	}
 			        	catch (JSONException e) {
@@ -805,7 +805,7 @@ public class SmartStore  {
 				if (success && hasFTS(soupName)) {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
-					contentValuesFts.put(DOCID_COL, soupEntryId);
+					contentValuesFts.put(ROWID_COL, soupEntryId);
 					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, TypeGroup.value_extracted_to_fts_column);
 					// InsertHelper not working against virtual fts table
 					db.insert(soupTableNameFts, null, contentValuesFts);
@@ -982,7 +982,7 @@ public class SmartStore  {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
 					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, TypeGroup.value_extracted_to_fts_column);
-					success = DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, DOCID_PREDICATE, soupEntryId + "") == 1;
+					success = DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, ROWID_PREDICATE, soupEntryId + "") == 1;
 				}
 
 				if (success) {
@@ -1128,7 +1128,7 @@ public class SmartStore  {
 	            db.delete(soupTableName, getSoupEntryIdsPredicate(soupEntryIds), (String []) null);
 
 				if (hasFTS(soupName)) {
-					db.delete(soupTableName + FTS_SUFFIX, getDocidsPredicate(soupEntryIds), (String[]) null);
+					db.delete(soupTableName + FTS_SUFFIX, getRowIdsPredicate(soupEntryIds), (String[]) null);
 				}
 
 	            if (handleTx) {
@@ -1174,7 +1174,7 @@ public class SmartStore  {
                 db.delete(soupTableName, buildInStatement(ID_COL, subQuerySql), args);
 
 				if (hasFTS(soupName)) {
-                    db.delete(soupTableName + FTS_SUFFIX, buildInStatement(DOCID_COL, subQuerySql), args);
+                    db.delete(soupTableName + FTS_SUFFIX, buildInStatement(ROWID_COL, subQuerySql), args);
 				}
 
 				if (handleTx) {
@@ -1197,10 +1197,10 @@ public class SmartStore  {
 
 
 	/**
-	 * @return predicate to match entries by docid
+	 * @return predicate to match entries by rowid
 	 */
-	private String getDocidsPredicate(Long[] docids) {
-        return buildInStatement(DOCID_COL, TextUtils.join(",", docids));
+	private String getRowIdsPredicate(Long[] rowids) {
+        return buildInStatement(ROWID_COL, TextUtils.join(",", rowids));
 	}
 
     /**

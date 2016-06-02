@@ -362,7 +362,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         }
 
         // Check columns of fts table
-        List<String> expectedFtsColumnNames = new ArrayList<>(); // NB: docid not returned by pragma table_info for fts virtual table
+        List<String> expectedFtsColumnNames = new ArrayList<>(); // NB: rowid not returned by pragma table_info for fts virtual table
         if (cityColType == SmartStore.Type.full_text) expectedFtsColumnNames.add(CITY_COL);
         if (countryColType == SmartStore.Type.full_text) expectedFtsColumnNames.add(COUNTRY_COL);
         checkColumns(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, expectedFtsColumnNames);
@@ -370,13 +370,13 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         // Check rows of fts table
         try {
             final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
-            expectedFtsColumnNames.add(0, "docid");
-            c = DBHelper.getInstance(db).query(db, TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, expectedFtsColumnNames.toArray(new String[0]), "docid ASC", null, null);
+            expectedFtsColumnNames.add(0, "rowid");
+            c = DBHelper.getInstance(db).query(db, TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, expectedFtsColumnNames.toArray(new String[0]), "rowid ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
             assertEquals("Wrong number of rows", expectedIds.length, c.getCount());
 
             for (int i = 0; i < expectedIds.length; i++) {
-                assertEquals("Wrong docid", expectedIds[i], c.getLong(c.getColumnIndex("docid")));
+                assertEquals("Wrong rowid", expectedIds[i], c.getLong(c.getColumnIndex("rowid")));
                 if (cityColType == SmartStore.Type.full_text)
                     assertEquals("Wrong value in index column", cities[i], c.getString(c.getColumnIndex(CITY_COL)));
                 if (countryColType == SmartStore.Type.full_text)
