@@ -335,13 +335,11 @@ public class SyncManager {
 
         // Deletes extra IDs from SmartStore.
         if (localIds.size() > 0) {
-            final Long[] soupEntryIds = new Long[localIds.size()];
-            int index = 0;
             for (final String localId : localIds) {
-                soupEntryIds[index] = smartStore.lookupSoupEntryId(soupName, idFieldName, localId);
-                index++;
+                querySpec = QuerySpec.buildExactQuerySpec(soupName, idFieldName, localId,
+                        idFieldName, QuerySpec.Order.ascending, 1);
+                smartStore.deleteByQuery(soupName, querySpec);
             }
-            smartStore.delete(soupName, soupEntryIds, true);
         }
     }
 
