@@ -106,7 +106,10 @@ public class SmartStore  {
 	protected SQLiteOpenHelper dbOpenHelper;
 	private String passcode;
 
-    /**
+	// FTS extension to use
+	protected FtsExtension ftsExtension = FtsExtension.fts5;
+
+	/**
      * Changes the encryption key on the smartstore.
      *
      * @param db Database object.
@@ -357,7 +360,7 @@ public class SmartStore  {
 
 		// fts
 		if (columnsForFts.size() > 0) {
-			createFtsStmt.append(String.format("CREATE VIRTUAL TABLE %s%s USING fts4(%s)", soupTableName, FTS_SUFFIX, TextUtils.join(",", columnsForFts)));
+			createFtsStmt.append(String.format("CREATE VIRTUAL TABLE %s%s USING %s(%s)", soupTableName, FTS_SUFFIX, ftsExtension, TextUtils.join(",", columnsForFts)));
 		}
 
         // Run SQL for creating soup table and its indices
@@ -1212,6 +1215,22 @@ public class SmartStore  {
         return String.format("%s IN (%s)", col, inPredicate);
     }
 
+	/**
+	 * @return ftsX to be used when creating the virtual table to support full_text queries
+     */
+	public FtsExtension getFtsExtension() {
+		return ftsExtension;
+	}
+
+	/**
+	 * Sets the ftsX to be used when creating the virtual table to support full_text queries
+	 * NB: only used in tests
+	 * @param ftsExtension
+     */
+	public void setFtsExtension(FtsExtension ftsExtension) {
+		this.ftsExtension = ftsExtension;
+	}
+
     /**
      * @param soupId
      * @return
@@ -1334,6 +1353,14 @@ public class SmartStore  {
 
         public abstract boolean isMember(Type type);
     }
+
+	/**
+	 * Enum for fts extensions
+	 */
+	public enum FtsExtension {
+		fts4,
+		fts5
+	}
 
     /**
      * Exception thrown by smart store

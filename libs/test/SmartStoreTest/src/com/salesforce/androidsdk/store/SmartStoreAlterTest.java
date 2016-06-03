@@ -230,6 +230,53 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         tryAlterSoupToGetIndexesOnCreatedAndLastModified(SmartStore.Type.full_text);
     }
 
+    /**
+     * Create soup with fts4 virtual table
+     * Call alterSoup passing in same index specs
+     * Make sure virtual table is recreated with fts5
+     * That way soup created before 4.2 (using fts4 virutal table) can be migrated to fts5 by calling alterSoup
+     * @throws JSONException
+     */
+    public void testAlterSoupwithFullTextIndexesFromFts4ToFts5() throws JSONException {
+        IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec(CITY, SmartStore.Type.full_text), new IndexSpec(COUNTRY, SmartStore.Type.full_text)};
+
+        // Using fts4 to simulate pre 4.2 sdk
+        store.setFtsExtension(SmartStore.FtsExtension.fts4);
+
+        assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
+        store.registerSoup(TEST_SOUP, indexSpecs);
+        assertTrue("Register soup call failed", store.hasSoup(TEST_SOUP));
+
+        JSONObject soupElt1 = new JSONObject();
+        soupElt1.put(CITY, SAN_FRANCISCO);
+        soupElt1.put(COUNTRY, USA);
+        JSONObject soupElt2 = new JSONObject();
+        soupElt2.put(CITY, PARIS);
+        soupElt2.put(COUNTRY, FRANCE);
+
+        long elt1Id = idOf(store.create(TEST_SOUP, soupElt1));
+        long elt2Id = idOf(store.create(TEST_SOUP, soupElt2));
+
+        // Checking db
+        checkDb(new long[]{elt1Id, elt2Id}, indexSpecs[0].type, indexSpecs[1].type);
+
+        // Check type of fts table
+        checkCreateTableStatement(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, "CREATE VIRTUAL TABLE " + TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX + " USING fts4");
+
+        // Using fts5
+        store.setFtsExtension(SmartStore.FtsExtension.fts5);
+
+        // Alter soup - using same index specs
+        store.alterSoup(TEST_SOUP, indexSpecs, true);
+
+        // Checking db
+        checkDb(new long[]{elt1Id, elt2Id}, indexSpecs[0].type, indexSpecs[1].type);
+
+        // Check type of fts table
+        checkCreateTableStatement(TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX, "CREATE VIRTUAL TABLE " + TEST_SOUP_TABLE_NAME + SmartStore.FTS_SUFFIX + " USING fts5");
+
+    }
+
     private void tryAlterSoupToGetIndexesOnCreatedAndLastModified(SmartStore.Type indexType) throws JSONException {
         IndexSpec[] indexSpecs = new IndexSpec[]{new IndexSpec(CITY, indexType), new IndexSpec(COUNTRY, indexType)};
 

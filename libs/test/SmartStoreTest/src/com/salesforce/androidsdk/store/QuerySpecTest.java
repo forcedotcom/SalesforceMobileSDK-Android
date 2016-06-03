@@ -98,22 +98,22 @@ public class QuerySpecTest extends InstrumentationTestCase {
 
     public void testMatchQuerySmartSql() {
         QuerySpec querySpec = QuerySpec.buildMatchQuerySpec("employees", "lastName", "Bond", "firstName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong smart sql for match query spec", "SELECT {employees:_soup} FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT rowid FROM {employees}_fts WHERE {employees:lastName} MATCH 'Bond') ORDER BY {employees:firstName} ASC ", querySpec.smartSql);
+        assertEquals("Wrong smart sql for match query spec", "SELECT {employees:_soup} FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT rowid FROM {employees}_fts WHERE {employees}_fts MATCH '{employees:lastName}:Bond') ORDER BY {employees:firstName} ASC ", querySpec.smartSql);
     }
 
     public void testMatchQuerySmartSqlWithSelectPaths() {
         QuerySpec querySpec = QuerySpec.buildMatchQuerySpec("employees", new String[]{"firstName", "lastName", "title"}, "lastName", "Bond", "firstName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong smart sql for match query spec", "SELECT {employees:firstName}, {employees:lastName}, {employees:title} FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT rowid FROM {employees}_fts WHERE {employees:lastName} MATCH 'Bond') ORDER BY {employees:firstName} ASC ", querySpec.smartSql);
+        assertEquals("Wrong smart sql for match query spec", "SELECT {employees:firstName}, {employees:lastName}, {employees:title} FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT rowid FROM {employees}_fts WHERE {employees}_fts MATCH '{employees:lastName}:Bond') ORDER BY {employees:firstName} ASC ", querySpec.smartSql);
     }
 
     public void testMatchQueryCountSmartSql() {
         QuerySpec querySpec = QuerySpec.buildMatchQuerySpec("employees", "lastName", "Bond", "firstName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong count smart sql for match query spec", "SELECT count(*) FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT rowid FROM {employees}_fts WHERE {employees:lastName} MATCH 'Bond') ", querySpec.countSmartSql);
+        assertEquals("Wrong count smart sql for match query spec", "SELECT count(*) FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT rowid FROM {employees}_fts WHERE {employees}_fts MATCH '{employees:lastName}:Bond') ", querySpec.countSmartSql);
     }
 
     public void testMatchQueryIdsSmartSql() {
         QuerySpec querySpec = QuerySpec.buildMatchQuerySpec("employees", "lastName", "Bond", "firstName", QuerySpec.Order.ascending, 1);
-        assertEquals("Wrong ids smart sql for match query spec", "SELECT id FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT rowid FROM {employees}_fts WHERE {employees:lastName} MATCH 'Bond') ORDER BY {employees:firstName} ASC ", querySpec.idsSmartSql);
+        assertEquals("Wrong ids smart sql for match query spec", "SELECT id FROM {employees} WHERE {employees:_soupEntryId} IN (SELECT rowid FROM {employees}_fts WHERE {employees}_fts MATCH '{employees:lastName}:Bond') ORDER BY {employees:firstName} ASC ", querySpec.idsSmartSql);
     }
 
     public void testLikeQuerySmartSql() {
@@ -139,5 +139,21 @@ public class QuerySpecTest extends InstrumentationTestCase {
     public void testSmartQueryIdsSmartSql() {
         QuerySpec querySpec = QuerySpec.buildSmartQuerySpec("select {employees:salary} from {employees} where {employees:lastName} = 'Haas'", 1);
         assertEquals("Wrong ids smart sql", "SELECT id FROM (select {employees:salary} from {employees} where {employees:lastName} = 'Haas')", querySpec.idsSmartSql);
+    }
+
+    public void testQualifyMatchKey() {
+        assertEquals("Wrong qualified match query", "abc", QuerySpec.qualifyMatchKey(null, "abc"));
+        assertEquals("Wrong qualified match query", "{soup:path}:abc", QuerySpec.qualifyMatchKey("{soup:path}", "abc"));
+        assertEquals("Wrong qualified match query", "{soup:path2}:abc", QuerySpec.qualifyMatchKey("{soup:path1}", "{soup:path2}:abc"));
+
+
+        // FIXME - following are not working yet
+        assertEquals("Wrong qualified match query", "{soup:path}:abc AND {soup:path}:def", QuerySpec.qualifyMatchKey("{soup:path}", "abc AND def"));
+        assertEquals("Wrong qualified match query", "{soup:path}:abc OR {soup:path}:def", QuerySpec.qualifyMatchKey("{soup:path}", "abc OR def"));
+        assertEquals("Wrong qualified match query", "{soup:path1}:abc OR {soup:path2}:def", QuerySpec.qualifyMatchKey("{soup:path1}", "abc OR {soup:path2}.def"));
+        assertEquals("Wrong qualified match query", "({soup:path}:abc AND {soup:path}:def) OR {soup:path}:ghi", QuerySpec.qualifyMatchKey("{soup:path}", "(abc AND def) OR ghi"));
+
+        // TODO - add more
+
     }
 }
