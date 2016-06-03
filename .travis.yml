@@ -34,8 +34,6 @@ licenses:
 
 before_install:
  - npm install shelljs@0.7.0
- - brew update
- - brew install ant
 
 # Create and start the emulator
 before_script:
