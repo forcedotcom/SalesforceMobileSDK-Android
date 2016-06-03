@@ -127,6 +127,30 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
         JSONTestHelper.assertSameJSONArray("Wrong index specs", IndexSpec.toJSON(expectedIndexSpecs), IndexSpec.toJSON(actualIndexSpecs));
     }
 
+	/**
+	 * Helper method to check create table statement that was used to create a table
+	 * @param tableName
+	 * @param subStringExpected that created the indexes
+	 */
+	protected void checkCreateTableStatement(String tableName, String subStringExpected) {
+		Cursor c = null;
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		try {
+			List<String> actualSqlStatements = new ArrayList<>();
+			c = db.rawQuery(String.format("SELECT sql FROM sqlite_master WHERE type='table' AND tbl_name='%s' ORDER BY name", tableName), null);
+			assertEquals("Expected one statement", 1, c.getCount());
+			c.moveToFirst();
+			String actualStatement = c.getString(0);
+			assertTrue("Wrong statement: " + actualStatement, actualStatement.contains(subStringExpected));
+		}
+		catch (Exception e) {
+			fail("Failed with error:" + e.getMessage());
+		}
+		finally {
+			safeClose(c);
+		}
+	}
+
     /**
      * Helper method to check db indexes on a table
      * @param tableName
