@@ -32,6 +32,8 @@ env:
 licenses:
     - android-sdk-license-5be876d5
 
+install: ant deps 
+
 # Create and start the emulator
 before_script:
    - echo no | android create avd --force -n test -t $ANDROID_TARGET  --abi armeabi-v7a -c 128M
