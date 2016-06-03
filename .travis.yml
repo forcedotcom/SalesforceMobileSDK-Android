@@ -32,7 +32,10 @@ env:
 licenses:
     - android-sdk-license-5be876d5
 
-install: ant deps 
+before_install:
+ - npm install shelljs@0.7.0
+ - brew update
+ - brew install ant
 
 # Create and start the emulator
 before_script:
