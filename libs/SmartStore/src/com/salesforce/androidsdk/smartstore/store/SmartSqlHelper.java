@@ -54,7 +54,7 @@ public class SmartSqlHelper  {
 	 */
 	public static synchronized SmartSqlHelper getInstance(SQLiteDatabase db) {
 		if (INSTANCES == null) {
-			INSTANCES = new HashMap<SQLiteDatabase, SmartSqlHelper>();
+			INSTANCES = new HashMap<>();
 		}
 		SmartSqlHelper instance = INSTANCES.get(db);
 		if (instance == null) {

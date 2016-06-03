@@ -36,6 +36,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Simple class to represent a query spec
@@ -401,13 +403,27 @@ public class QuerySpec {
             return matchKey;
         }
 
-        // FIXME - need to handle any expression with parenthesises, and, or etc
-        if (!matchKey.startsWith("{")) {
-            return field + ":" + matchKey;
+        StringBuffer qualifiedMatchKey = new StringBuffer();
+        Pattern pattern = Pattern.compile("[^\\(\\) ]+");
+        Matcher matcher = pattern.matcher(matchKey);
+        while (matcher.find()) {
+            String fullMatch = matcher.group();
+            String fullMatchLowerCase = fullMatch.toLowerCase();
+
+            if (fullMatchLowerCase.equals("and") || fullMatchLowerCase.equals("or") || fullMatchLowerCase.equals("not") // operator
+                    || fullMatch.startsWith("{")) // already qualified
+            {
+                // Leaving unchanged
+                matcher.appendReplacement(qualifiedMatchKey, fullMatch);
+            }
+            else {
+                // Qualifying with {soup:path}: -- which turn into column: in sql
+                matcher.appendReplacement(qualifiedMatchKey, field + ":" + fullMatch);
+            }
         }
-        else {
-            return matchKey;
-        }
+        matcher.appendTail(qualifiedMatchKey);
+
+        return qualifiedMatchKey.toString();
     }
 
     /**

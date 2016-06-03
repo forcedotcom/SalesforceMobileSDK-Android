@@ -145,15 +145,10 @@ public class QuerySpecTest extends InstrumentationTestCase {
         assertEquals("Wrong qualified match query", "abc", QuerySpec.qualifyMatchKey(null, "abc"));
         assertEquals("Wrong qualified match query", "{soup:path}:abc", QuerySpec.qualifyMatchKey("{soup:path}", "abc"));
         assertEquals("Wrong qualified match query", "{soup:path2}:abc", QuerySpec.qualifyMatchKey("{soup:path1}", "{soup:path2}:abc"));
-
-
-        // FIXME - following are not working yet
         assertEquals("Wrong qualified match query", "{soup:path}:abc AND {soup:path}:def", QuerySpec.qualifyMatchKey("{soup:path}", "abc AND def"));
         assertEquals("Wrong qualified match query", "{soup:path}:abc OR {soup:path}:def", QuerySpec.qualifyMatchKey("{soup:path}", "abc OR def"));
-        assertEquals("Wrong qualified match query", "{soup:path1}:abc OR {soup:path2}:def", QuerySpec.qualifyMatchKey("{soup:path1}", "abc OR {soup:path2}.def"));
+        assertEquals("Wrong qualified match query", "{soup:path1}:abc OR {soup:path2}:def", QuerySpec.qualifyMatchKey("{soup:path1}", "abc OR {soup:path2}:def"));
         assertEquals("Wrong qualified match query", "({soup:path}:abc AND {soup:path}:def) OR {soup:path}:ghi", QuerySpec.qualifyMatchKey("{soup:path}", "(abc AND def) OR ghi"));
-
-        // TODO - add more
-
+        assertEquals("Wrong qualified match query", "({soup:path1}:abc AND {soup:path2}:def) OR {soup:path1}:ghi", QuerySpec.qualifyMatchKey("{soup:path1}", "(abc AND {soup:path2}:def) OR ghi"));
     }
 }
