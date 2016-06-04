@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -334,14 +335,13 @@ public class SyncManager {
         }
 
         // Deletes extra IDs from SmartStore.
-        if (localIds.size() > 0) {
-            final Long[] soupEntryIds = new Long[localIds.size()];
-            int index = 0;
-            for (final String localId : localIds) {
-                soupEntryIds[index] = smartStore.lookupSoupEntryId(soupName, idFieldName, localId);
-                index++;
-            }
-            smartStore.delete(soupName, soupEntryIds, true);
+        int localIdSize = localIds.size();
+        if (localIdSize > 0) {
+            String smartSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} IN (%s)",
+                    soupName, SmartStore.SOUP_ENTRY_ID, soupName, soupName, idFieldName,
+                    "'" + TextUtils.join("', '", localIds) + "'");
+            querySpec = QuerySpec.buildSmartQuerySpec(smartSql, localIdSize);
+            smartStore.deleteByQuery(soupName, querySpec);
         }
     }
 
