@@ -33,7 +33,8 @@ licenses:
     - android-sdk-license-5be876d5
 
 before_install:
-    - nvm install node 0.12.0  
+    - nvm install 0.12.0
+    - nvm use 0.12.0
     - npm install shelljs@0.7.0
 
 # Create and start the emulator
