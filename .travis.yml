@@ -32,6 +32,11 @@ env:
 licenses:
     - android-sdk-license-5be876d5
 
+before_install:
+    - nvm install 0.12.0
+    - nvm use 0.12.0
+    - npm install shelljs@0.7.0
+
 # Create and start the emulator
 before_script:
    - echo no | android create avd --force -n test -t $ANDROID_TARGET  --abi armeabi-v7a -c 128M
@@ -42,6 +47,9 @@ before_script:
 
 #Build all projects and run the tests
 script:
+   #run template app generation
+   - set -o pipefail && node external/shared/node/test_force.js --os=android --test=native
+
    - travis_wait 30 ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest
    - travis_wait 30 ./gradlew :libs:SalesforceSDK:connectedAndroidTest
    - travis_wait 30 ./gradlew :libs:SmartStore:connectedAndroidTest
@@ -50,5 +58,5 @@ script:
    # will add it back once fix the test issue
    - ./gradlew :libs:SalesforceHybrid:assembleDebug
    - ./gradlew :libs:SalesforceReact:assembleDebug
-   - travis_wait 30 ./gradlew :native:SampleApps:RestExplorer:connectedAndroidTest
+   - travis_wait 30 ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest
    - travis_wait 30 ./gradlew :native:TemplateApp:connectedAndroidTest
