@@ -34,6 +34,7 @@ import java.util.Formatter;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import android.app.Application;
 import android.app.Instrumentation;
@@ -150,22 +151,20 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
      * @return map of id to name for the created accounts
      * @throws Exception
      */
-    public Map<String, String> createRecordsOnServer(int count, String objectType) throws Exception {
+    protected Map<String, String> createRecordsOnServer(int count, String objectType) throws Exception {
         Map<String, String> idToValues = new HashMap<String, String>();
         for (int i = 0; i < count; i++) {
 
             // Request.
-            String fieldValue = "";
+            String fieldValue = createRecordName(objectType);
             Map<String, Object> fields = new HashMap<String, Object>();
             //add more object type if need to support to use this API
             //to create a new record on server
             switch (objectType) {
                 case Constants.ACCOUNT:
-                    fieldValue = createRecordName(objectType);
                     fields.put(Constants.NAME, fieldValue);
                     break;
                 case Constants.OPPORTUNITY:
-                    fieldValue = createRecordName(objectType);
                     fields.put(Constants.NAME, fieldValue);
                     fields.put("StageName", "Prospecting");
                     DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
@@ -173,13 +172,14 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
                     break;
                 default:
                     break;
-
             }
 
             RestRequest request = RestRequest.getRequestForCreate(ApiVersionStrings.getVersionNumber(targetContext), objectType, fields);
 
             // Response.
             RestResponse response = restClient.sendSync(request);
+            assertNotNull("Response should not be null", response);
+            assertTrue("Response status should be success", response.isSuccess());
             String id = response.asJSONObject().getString(LID);
             idToValues.put(id, fieldValue);
         }
@@ -191,7 +191,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
      * @param ids
      * @throws Exception
      */
-    public void deleteRecordsOnServer(String[] ids, String objectType) throws Exception {
+    protected void deleteRecordsOnServer(Set<String> ids, String objectType) throws Exception {
         for (String id : ids) {
             RestRequest request = RestRequest.getRequestForDelete(ApiVersionStrings.getVersionNumber(targetContext), objectType, id);
             restClient.sendSync(request);
@@ -202,11 +202,10 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
      * @return record name of the form SyncManagerTest<random number left-padded to be 8 digits long>
      */
     @SuppressWarnings("resource")
-    public String createRecordName(String objectType) {
+    protected String createRecordName(String objectType) {
         StringBuilder sb = new StringBuilder();
         Formatter formatter = new Formatter(sb, Locale.US);
-        formatter.format("SyncManagerTest_%s_%08d", objectType, (int) (Math.random()*10000000));
-        String name = sb.toString();
-        return name;
+        formatter.format("ManagerTest_%s_%08d", objectType, System.currentTimeMillis());
+        return sb.toString();
     }
 }
