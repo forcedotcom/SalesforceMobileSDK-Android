@@ -677,6 +677,10 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         }
         // Returning just ids
         results = store.query(QuerySpec.buildMatchQuerySpec(EMPLOYEES_SOUP, new String[]{SmartStore.SOUP_ENTRY_ID}, path, matchKey, orderPath, QuerySpec.Order.ascending, 25), 0);
+        //only check the field number for expecting to have matching results
+        if (expectedIds.length > 0) {
+            assertEquals("Wrong number of field returned", 1, results.getJSONArray(0).length());
+        }
         assertEquals("Wrong number of results", expectedIds.length, results.length());
         for (int i=0; i<results.length(); i++) {
             assertEquals("Wrong result", expectedIds[i], results.getJSONArray(i).getLong(0));

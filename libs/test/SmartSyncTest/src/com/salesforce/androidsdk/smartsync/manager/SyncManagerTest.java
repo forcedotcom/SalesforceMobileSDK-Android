@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.smartsync.manager;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -61,6 +62,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Formatter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -89,12 +91,12 @@ public class SyncManagerTest extends ManagerTestCase {
     public void setUp() throws Exception {
     	super.setUp();
     	createAccountsSoup();
-    	idToNames = createAccountsOnServer(COUNT_TEST_ACCOUNTS);
+    	idToNames = createRecordsOnServer(COUNT_TEST_ACCOUNTS, Constants.ACCOUNT);
     }
     
     @Override 
     public void tearDown() throws Exception {
-    	deleteAccountsOnServer(idToNames.keySet().toArray(new String[0]));
+        deleteRecordsOnServer(idToNames.keySet(), Constants.ACCOUNT);
     	dropAccountsSoup();
     	deleteSyncs();
     	super.tearDown();
@@ -243,7 +245,9 @@ public class SyncManagerTest extends ManagerTestCase {
 	 */
 	public void testSyncUpWithLocallyCreatedRecords() throws Exception {
 		// Create a few entries locally
-		String[] names = new String[] { createAccountName(), createAccountName(), createAccountName() };
+		String[] names = new String[] { createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT) };
 		createAccountsLocally(names);
 		
 		// Sync up
@@ -346,7 +350,9 @@ public class SyncManagerTest extends ManagerTestCase {
      */
     public void testCustomSyncUpWithLocallyCreatedRecords() throws Exception {
         // Create a few entries locally
-        String[] names = new String[]{createAccountName(), createAccountName(), createAccountName()};
+        String[] names = new String[]{createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT)};
         createAccountsLocally(names);
 
         // Sync up
@@ -451,7 +457,9 @@ public class SyncManagerTest extends ManagerTestCase {
      */
     public void testSoftFailingCustomSyncUpWithLocallyCreatedRecords() throws Exception {
         // Create a few entries locally
-        String[] names = new String[]{createAccountName(), createAccountName(), createAccountName()};
+        String[] names = new String[]{createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT)};
         createAccountsLocally(names);
 
         // Sync up
@@ -474,7 +482,9 @@ public class SyncManagerTest extends ManagerTestCase {
      */
     public void testHardFailingCustomSyncUpWithLocallyCreatedRecords() throws Exception {
         // Create a few entries locally
-        String[] names = new String[]{createAccountName(), createAccountName(), createAccountName()};
+        String[] names = new String[]{createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT)};
         createAccountsLocally(names);
 
         // Sync up
@@ -559,7 +569,7 @@ public class SyncManagerTest extends ManagerTestCase {
         deleteAccountsLocally(idsLocallyDeleted);
 
         // Delete same records on server
-        deleteAccountsOnServer(idsLocallyDeleted);
+        deleteRecordsOnServer(idToNames.keySet(), Constants.ACCOUNT);
 
         // Sync up
         trySyncUp(3, MergeMode.OVERWRITE);
@@ -583,7 +593,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
         // Delete record on server
         String remotelyDeletedId = idToNamesLocallyUpdated.keySet().toArray(new String[0])[0];
-        deleteAccountsOnServer(new String[]{remotelyDeletedId});
+        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(remotelyDeletedId)), Constants.ACCOUNT);
 
         // Name of locally recorded record that was deleted on server
         String locallyUpdatedRemotelyDeletedName = idToNamesLocallyUpdated.get(remotelyDeletedId);
@@ -632,7 +642,7 @@ public class SyncManagerTest extends ManagerTestCase {
 
         // Delete record on server
         String remotelyDeletedId = idToNamesLocallyUpdated.keySet().toArray(new String[0])[0];
-        deleteAccountsOnServer(new String[]{remotelyDeletedId});
+        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(remotelyDeletedId)), Constants.ACCOUNT);
 
         // Sync up
         trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
@@ -734,7 +744,7 @@ public class SyncManagerTest extends ManagerTestCase {
     public void testCleanResyncGhostsForSOQLTarget() throws Exception {
 
         // Creates 3 accounts on the server.
-        final Map<String, String> accounts = createAccountsOnServer(3);
+        final Map<String, String> accounts = createRecordsOnServer(3, Constants.ACCOUNT);
         assertEquals("3 accounts should have been created", accounts.size(), 3);
         final Set<String> keySet = accounts.keySet();
         final String[] accountIds = new String[3];
@@ -749,13 +759,13 @@ public class SyncManagerTest extends ManagerTestCase {
         assertEquals("3 accounts should be stored in the soup", numRecords, 3);
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
-        deleteAccountsOnServer(new String[]{accountIds[0]});
+        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
         syncManager.cleanResyncGhosts(syncId);
         numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
         assertEquals("2 accounts should be stored in the soup", numRecords, 2);
 
         // Deletes the remaining accounts on the server.
-        deleteAccountsOnServer(new String[]{accountIds[1], accountIds[2]});
+        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[1], accountIds[2])), Constants.ACCOUNT);
         dropAccountsSoup(soupName);
         deleteSyncs();
     }
@@ -766,7 +776,7 @@ public class SyncManagerTest extends ManagerTestCase {
     public void testCleanResyncGhostsForMRUTarget() throws Exception {
 
         // Creates 3 accounts on the server.
-        final Map<String, String> accounts = createAccountsOnServer(3);
+        final Map<String, String> accounts = createRecordsOnServer(3, Constants.ACCOUNT);
         assertEquals("3 accounts should have been created", accounts.size(), 3);
         final Set<String> keySet = accounts.keySet();
         final String[] accountIds = new String[3];
@@ -783,13 +793,13 @@ public class SyncManagerTest extends ManagerTestCase {
         assertTrue("At least 1 account should be stored in the soup", preNumRecords > 0);
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
-        deleteAccountsOnServer(new String[]{accountIds[0]});
+        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
         syncManager.cleanResyncGhosts(syncId);
         int postNumRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
         assertEquals("1 less account should be stored in the soup", postNumRecords, preNumRecords - 1);
 
         // Deletes the remaining accounts on the server.
-        deleteAccountsOnServer(new String[]{accountIds[1], accountIds[2]});
+        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[1], accountIds[2])), Constants.ACCOUNT);
         dropAccountsSoup(soupName);
         deleteSyncs();
     }
@@ -800,7 +810,7 @@ public class SyncManagerTest extends ManagerTestCase {
     public void testCleanResyncGhostsForSOSLTarget() throws Exception {
 
         // Creates 1 account on the server.
-        final Map<String, String> accounts = createAccountsOnServer(1);
+        final Map<String, String> accounts = createRecordsOnServer(1, Constants.ACCOUNT);
         assertEquals("1 account should have been created", accounts.size(), 1);
         final Set<String> keySet = accounts.keySet();
         final String[] accountIds = new String[1];
@@ -818,13 +828,13 @@ public class SyncManagerTest extends ManagerTestCase {
         assertEquals("1 account should be stored in the soup", numRecords, 1);
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
-        deleteAccountsOnServer(new String[]{accountIds[0]});
+        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
         syncManager.cleanResyncGhosts(syncId);
         numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
         assertEquals("No accounts should be stored in the soup", numRecords, 0);
 
         // Deletes the remaining accounts on the server.
-        deleteAccountsOnServer(new String[]{accountIds[0]});
+        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
         dropAccountsSoup(soupName);
         deleteSyncs();
     }
@@ -955,54 +965,6 @@ public class SyncManagerTest extends ManagerTestCase {
     private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress) throws JSONException {
         checkStatus(sync, expectedType, expectedId, expectedTarget, expectedOptions, expectedStatus, expectedProgress, -2);
     }
-
-	/**
-	 * Helper methods to create "count" test accounts
-	 * @param count
-	 * @return map of id to name for the created accounts
-	 * @throws Exception
-	 */
-	private Map<String, String> createAccountsOnServer(int count) throws Exception {
-		Map<String, String> idToNames = new HashMap<String, String>();
-		for (int i = 0; i < count; i++) {
-
-			// Request.
-			String name = createAccountName();
-			Map<String, Object> fields = new HashMap<String, Object>();
-			fields.put(Constants.NAME, name);
-			RestRequest request = RestRequest.getRequestForCreate(ApiVersionStrings.getVersionNumber(targetContext), Constants.ACCOUNT, fields);
-
-			// Response.
-			RestResponse response = restClient.sendSync(request);
-			String id = response.asJSONObject().getString(LID);
-			idToNames.put(id, name);
-		}
-		return idToNames;
-	}
-
-	/**
-	 * Delete accounts specified in idToNames
-	 * @param ids
-	 * @throws Exception
-	 */
-	private void deleteAccountsOnServer(String[] ids) throws Exception {
-		for (String id : ids) {
-            RestRequest request = RestRequest.getRequestForDelete(ApiVersionStrings.getVersionNumber(targetContext), Constants.ACCOUNT, id);
-			restClient.sendSync(request);
-		}
-	}
-
-	/**
-	 * @return account name of the form SyncManagerTest<random number left-padded to be 8 digits long>
-	 */
-	@SuppressWarnings("resource")
-	private String createAccountName() {
-		StringBuilder sb = new StringBuilder();
-		Formatter formatter = new Formatter(sb, Locale.US);
-		formatter.format("SyncManagerTest%08d", (int) (Math.random()*10000000));
-		String name = sb.toString();
-		return name;
-	}
 
 	/**
 	 * @return local id of the form local_<random number left-padded to be 8 digits long>

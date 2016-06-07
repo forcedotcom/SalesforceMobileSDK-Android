@@ -7,15 +7,15 @@
         <item>api</item>
     </string-array>
     <string name="androidPushNotificationClientId"></string>
-    <string name="account_name">sdktest@cs1.com (test)</string>
+    <string name="account_name">ut2@cs1.mobilesdk.org (test)</string>
     <string name="account_type">com.salesforce.androidsdk.smartsynctest.login</string>
     <string name="encoding">UTF-8</string>
     <string name="instance_url">https://cs1.salesforce.com</string>
     <string name="community_url">https://cs1.salesforce.com/androidcomm</string>
     <string name="identity_url">https://test.salesforce.com</string>
     <string name="login_url">https://test.salesforce.com</string>
-    <string name="oauth_refresh_token">5Aep861KIwKdekr90KlxVVUI47zdR6dX_VeBWZBXGO4iXKu9xm3q.u.jXd19dj8HOLGIq5L7I0l9j6YniHQiuAf</string>
-    <string name="org_id">00DS0000000HDptMAG</string>
-    <string name="user_id">005S0000003yaERIAY</string>
-    <string name="username">sdktest@cs1.com</string>
+    <string name="oauth_refresh_token">5Aep861KIwKdekr90IDidO4EhfJiYo3fzEvTvsEgM9sfDpGX0qFFeQzHG2mZeUH_.XNSBE0Iz38fnWsyYYkUgTz</string>
+    <string name="org_id">00DS0000003E98jMAC</string>
+    <string name="user_id">005S0000004s2iyIAA</string>
+    <string name="username">ut2@cs1.mobilesdk.org</string>
 </resources>
