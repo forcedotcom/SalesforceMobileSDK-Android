@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartsync.manager;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,10 +58,9 @@ public class MetadataManagerTest extends ManagerTestCase {
         final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(null,
                 MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
 
-        Map<String, String> idToSubjects = new HashMap<String, String>();
         int numberOfRecords = 1;
-        idToSubjects = createRecordsOnServer(numberOfRecords, Constants.CASE);
-        String[] ids = idToSubjects.keySet().toArray(new String[numberOfRecords]);
+        Map<String, String> idToSubjects = createRecordsOnServer(numberOfRecords, Constants.CASE);
+        Set<String> ids = idToSubjects.keySet();
 
         try {
 
@@ -86,11 +86,10 @@ public class MetadataManagerTest extends ManagerTestCase {
         final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(Constants.ACCOUNT,
                 MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
 
-        Map<String, String> idToNames = new HashMap<String, String>();
         int numberOfRecords = 1;
-        idToNames = createRecordsOnServer(numberOfRecords, Constants.ACCOUNT);
-        String[] names = idToNames.values().toArray(new String[numberOfRecords]);;
-        String[] ids = idToNames.keySet().toArray(new String[numberOfRecords]);
+        Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.ACCOUNT);
+        Collection<String> names = idToNames.values();;
+        Set<String> ids = idToNames.keySet();
 
         try {
 		/*
@@ -102,7 +101,7 @@ public class MetadataManagerTest extends ManagerTestCase {
                     MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
             assertNotNull("MRU list should not be null", mruObjects);
             assertEquals("MRU list size should not be changed", mruObjects_before.size()+numberOfRecords, mruObjects.size());
-            assertEquals("Recently viewed object name is incorrect", names[0],
+            assertEquals("Recently viewed object name is incorrect", names.toArray()[0],
                     mruObjects.get(0).getName());
         } finally {
             deleteRecordsOnServer(ids, Constants.ACCOUNT);
@@ -117,11 +116,10 @@ public class MetadataManagerTest extends ManagerTestCase {
         final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
                 MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
 
-        Map<String, String> idToNames = new HashMap<String, String>();
         int numberOfRecords = 1;
-        idToNames = createRecordsOnServer(numberOfRecords, Constants.OPPORTUNITY);
-        String[] names = idToNames.values().toArray(new String[numberOfRecords]);;
-        String[] ids = idToNames.keySet().toArray(new String[numberOfRecords]);
+        Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.OPPORTUNITY);
+        Collection<String> names = idToNames.values();;
+        Set<String> ids = idToNames.keySet();
 
         try {
 		/*
@@ -133,7 +131,7 @@ public class MetadataManagerTest extends ManagerTestCase {
                     MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
             assertNotNull("MRU list should not be null", mruObjects);
             assertEquals("MRU list size should not be changed", mruObjects_before.size()+numberOfRecords, mruObjects.size());
-            assertEquals("Recently viewed object name is incorrect", names[0],
+            assertEquals("Recently viewed object name is incorrect", names.toArray()[0],
                     mruObjects.get(0).getName());
         } finally {
             deleteRecordsOnServer(ids, Constants.OPPORTUNITY);
@@ -193,10 +191,8 @@ public class MetadataManagerTest extends ManagerTestCase {
         final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(null,
                 MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
 
-        Map<String, String> idToSubjects = new HashMap<String, String>();
-        idToSubjects = createRecordsOnServer(1, Constants.CASE);
-        String[] ids = idToSubjects.keySet().toArray(new String[1]);
-
+        Map<String, String> idToSubjects = createRecordsOnServer(1, Constants.CASE);
+        Set<String> ids = idToSubjects.keySet();
         try {
 
 		/*
@@ -221,10 +217,8 @@ public class MetadataManagerTest extends ManagerTestCase {
         final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(Constants.ACCOUNT,
                 MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
 
-        Map<String, String> idToNames = new HashMap<String, String>();
-        idToNames = createRecordsOnServer(1, Constants.ACCOUNT);
-        String[] names = idToNames.values().toArray(new String[1]);;
-        String[] ids = idToNames.keySet().toArray(new String[1]);
+        Map<String, String> idToNames = createRecordsOnServer(1, Constants.ACCOUNT);
+        Set<String> ids = idToNames.keySet();
 
         try {
 		/*
@@ -251,11 +245,9 @@ public class MetadataManagerTest extends ManagerTestCase {
         final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
                 MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
 
-        Map<String, String> idToNames = new HashMap<String, String>();
         int numberOfRecords = 1;
-        idToNames = createRecordsOnServer(1, Constants.OPPORTUNITY);
-        String[] names = idToNames.values().toArray(new String[1]);;
-        String[] ids = idToNames.keySet().toArray(new String[1]);
+        Map<String, String> idToNames = createRecordsOnServer(1, Constants.OPPORTUNITY);
+        Set<String> ids = idToNames.keySet();
 
         try {
 		/*
