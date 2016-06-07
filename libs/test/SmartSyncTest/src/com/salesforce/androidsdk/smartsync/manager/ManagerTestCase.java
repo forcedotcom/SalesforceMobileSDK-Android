@@ -203,9 +203,6 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
      */
     @SuppressWarnings("resource")
     protected String createRecordName(String objectType) {
-        StringBuilder sb = new StringBuilder();
-        Formatter formatter = new Formatter(sb, Locale.US);
-        formatter.format("ManagerTest_%s_%08d", objectType, System.currentTimeMillis());
-        return sb.toString();
+        return String.format(Locale.US, "ManagerTest_%s_%08d", objectType, System.currentTimeMillis());
     }
 }

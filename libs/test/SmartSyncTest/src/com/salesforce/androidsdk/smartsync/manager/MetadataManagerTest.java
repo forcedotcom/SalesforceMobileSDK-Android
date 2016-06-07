@@ -88,7 +88,7 @@ public class MetadataManagerTest extends ManagerTestCase {
 
         int numberOfRecords = 1;
         Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.ACCOUNT);
-        Collection<String> names = idToNames.values();;
+        Collection<String> names = idToNames.values();
         Set<String> ids = idToNames.keySet();
 
         try {
@@ -118,7 +118,7 @@ public class MetadataManagerTest extends ManagerTestCase {
 
         int numberOfRecords = 1;
         Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.OPPORTUNITY);
-        Collection<String> names = idToNames.values();;
+        Collection<String> names = idToNames.values();
         Set<String> ids = idToNames.keySet();
 
         try {
