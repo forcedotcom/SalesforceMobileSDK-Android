@@ -495,9 +495,9 @@ public class AlterSoupLongOperation extends LongOperation {
 			List<String> oldColumnsFts = new ArrayList<String>();
 			List<String> newColumnsFts = new ArrayList<String>();
 
-			// Adding docid column
+			// Adding rowid column
 			oldColumnsFts.add(SmartStore.ID_COL);
-			newColumnsFts.add(SmartStore.DOCID_COL);
+			newColumnsFts.add(SmartStore.ROWID_COL);
 
 			// Adding indexed path columns that we are keeping
 			for (String keptPath : keptPaths) {

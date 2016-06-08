@@ -36,6 +36,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Simple class to represent a query spec
@@ -346,12 +348,9 @@ public class QuerySpec {
     private String computeWhereClause() {
         if (path == null && queryType != QueryType.match /* null path allowed for fts match query */) return "";
 
-        String field;
+        String field = null;
 
-        if (queryType == QueryType.match && path == null) {
-            field = computeSoupFtsReference();
-        }
-        else {
+        if (path != null) {
             field = computeFieldReference(path);
         }
 
@@ -381,14 +380,50 @@ public class QuerySpec {
                 }
             case match:
                 pred = computeFieldReference(SmartStore.SOUP_ENTRY_ID) + " IN ("
-                        + SELECT + SmartStore.DOCID_COL + " " + FROM + computeSoupFtsReference() + " " + WHERE
-                        + field + " MATCH '" + matchKey + "'" // statement arg binding doesn't seem to work so inlining matchKey
+                        + SELECT + SmartStore.ROWID_COL + " " + FROM + computeSoupFtsReference() + " " + WHERE
+                        + computeSoupFtsReference() + " MATCH '" + qualifyMatchKey(field, matchKey) + "'"
+                        // statement arg binding doesn't seem to work so inlining matchKey
                         + ") ";
                 break;
             default:
                 throw new SmartStoreException("Fell through switch: " + queryType);
         }
         return (pred.equals("") ? "" : WHERE + pred);
+    }
+
+    /**
+     * fts5 doesn't allow WHERE column MATCH 'value' - only allows WHERE table MATCH 'column:value'
+     * This method changes the matchKey to add field: in the right places
+     * @param field
+     * @param matchKey
+     * @return
+     */
+    public static String qualifyMatchKey(String field, String matchKey) {
+        if (field == null) {
+            return matchKey;
+        }
+
+        StringBuffer qualifiedMatchKey = new StringBuffer();
+        Pattern pattern = Pattern.compile("[^\\(\\) ]+");
+        Matcher matcher = pattern.matcher(matchKey);
+        while (matcher.find()) {
+            String fullMatch = matcher.group();
+            String fullMatchLowerCase = fullMatch.toLowerCase();
+
+            if (fullMatchLowerCase.equals("and") || fullMatchLowerCase.equals("or") || fullMatchLowerCase.equals("not") // operator
+                    || fullMatch.startsWith("{")) // already qualified
+            {
+                // Leaving unchanged
+                matcher.appendReplacement(qualifiedMatchKey, fullMatch);
+            }
+            else {
+                // Qualifying with {soup:path}: -- which turn into column: in sql
+                matcher.appendReplacement(qualifiedMatchKey, field + ":" + fullMatch);
+            }
+        }
+        matcher.appendTail(qualifiedMatchKey);
+
+        return qualifiedMatchKey.toString();
     }
 
     /**
