@@ -239,15 +239,26 @@ public class SyncManagerTest extends ManagerTestCase {
 	}
 
     /**
-	 * Create accounts locally, sync up, check smartstore and server afterwards
+	 * Create accounts locally, sync up with merge mode OVERWRITE, check smartstore and server afterwards
 	 */
-	public void testSyncUpWithLocallyCreatedRecords() throws Exception {
+    public void testSyncUpWithLocallyCreatedRecords() throws Exception {
+        trySyncUpWithLocallyCreatedRecords(MergeMode.OVERWRITE);
+    }
+
+    /**
+     * Create accounts locally, sync up with mege mode LEAVE_IF_CHANGED, check smartstore and server afterwards
+     */
+	public void testSyncUpWithLocallyCreatedRecordsWithoutOverwrite() throws Exception {
+        trySyncUpWithLocallyCreatedRecords(MergeMode.LEAVE_IF_CHANGED);
+    }
+
+    private void trySyncUpWithLocallyCreatedRecords(MergeMode syncUpMergeMode) throws Exception {
 		// Create a few entries locally
 		String[] names = new String[] { createAccountName(), createAccountName(), createAccountName() };
 		createAccountsLocally(names);
 		
 		// Sync up
-		trySyncUp(3, MergeMode.OVERWRITE);
+		trySyncUp(3, syncUpMergeMode);
 		
 		// Check that db doesn't show entries as locally created anymore and that they use sfdc id
         Map<String, String> idToNamesCreated = getIdsForNames(names);
@@ -281,6 +292,31 @@ public class SyncManagerTest extends ManagerTestCase {
 		// Check server
         checkServerDeleted(idsLocallyDeleted);
 	}
+
+    /**
+     * Create accounts locally, delete them locally, sync up with merge mode LEAVE_IF_CHANGED, check smartstore
+     *
+     * Ideally an application that deletes locally created records should simply remove them from the smartstore
+     * But if records are kept in the smartstore and are flagged as created and deleted (or just deleted), then
+     * sync up should not throw any error and the records should end up being removed from the smartstore
+     *
+     */
+    public void testSyncUpWithLocallyCreatedAndDeletedRecords() throws Exception {
+        // Create a few entries locally
+        String[] names = new String[] { createAccountName(), createAccountName(), createAccountName() };
+        createAccountsLocally(names);
+        Map<String, String> idToNamesCreated = getIdsForNames(names);
+
+        String[] allIds = idToNamesCreated.keySet().toArray(new String[0]);
+        String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
+        deleteAccountsLocally(idsLocallyDeleted);
+
+        // Sync up
+        trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
+
+        // Check that db doesn't contain those entries anymore
+        checkDbDeleted(idsLocallyDeleted);
+    }
 
 	/**
 	 * Sync down the test accounts, delete a few, sync up with merge mode LEAVE_IF_CHANGED, check smartstore and server afterwards
