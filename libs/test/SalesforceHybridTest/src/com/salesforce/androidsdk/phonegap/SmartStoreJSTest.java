@@ -42,7 +42,7 @@ public class SmartStoreJSTest extends JSTestCase {
     
     @Override
     protected int getMaxRuntimeInSecondsForTest(String testName) {
-        return 10;
+        return 30;
     }
 
     @Override
