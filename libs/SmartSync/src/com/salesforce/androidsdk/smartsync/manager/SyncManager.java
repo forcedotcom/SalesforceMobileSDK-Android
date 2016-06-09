@@ -439,11 +439,11 @@ public class SyncManager {
         boolean locallyUpdated = record.getBoolean(LOCALLY_UPDATED);
 
         Action action = null;
-        if (record.getBoolean(LOCALLY_DELETED))
+        if (locallyDeleted)
             action = Action.delete;
-        else if (record.getBoolean(LOCALLY_CREATED))
+        else if (locallyCreated)
             action = Action.create;
-        else if (record.getBoolean(LOCALLY_UPDATED))
+        else if (locallyUpdated)
             action = Action.update;
 
         if (action == null) {
