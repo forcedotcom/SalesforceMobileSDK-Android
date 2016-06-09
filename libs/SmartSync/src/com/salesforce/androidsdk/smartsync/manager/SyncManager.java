@@ -425,7 +425,7 @@ public class SyncManager {
 
             return (serverLastModifiedDate <= lastModifiedDate);
         } catch (Exception e) {
-            Log.e("SmartSyncManager:isNewerThanServer", "Couldn't figure out last modified date", e);
+            Log.e("SmartSyncMgr:isNewerThanServer", "Couldn't figure out last modified date", e);
             throw new SmartSyncException(e);
         }
     }
@@ -434,6 +434,10 @@ public class SyncManager {
                                     JSONObject record, MergeMode mergeMode) throws JSONException, IOException {
 
         // Do we need to do a create, update or delete
+        boolean locallyDeleted = record.getBoolean(LOCALLY_DELETED);
+        boolean locallyCreated = record.getBoolean(LOCALLY_CREATED);
+        boolean locallyUpdated = record.getBoolean(LOCALLY_UPDATED);
+
         Action action = null;
         if (record.getBoolean(LOCALLY_DELETED))
             action = Action.delete;
@@ -460,7 +464,7 @@ public class SyncManager {
          * circumstances, we will do nothing and return here.
          */
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED &&
-        		(action == Action.update || action == Action.delete) &&
+        		!locallyCreated &&
         		!isNewerThanServer(target, objectType, objectId, lastModStr)) {
 
         	// Nothing to do for this record
@@ -491,7 +495,9 @@ public class SyncManager {
                 }
                 break;
             case delete:
-                statusCode = target.deleteOnServer(this, objectType, objectId);
+                statusCode = (locallyCreated
+                        ? HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
+                        : target.deleteOnServer(this, objectType, objectId));
                 if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                     smartStore.delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
                 }
