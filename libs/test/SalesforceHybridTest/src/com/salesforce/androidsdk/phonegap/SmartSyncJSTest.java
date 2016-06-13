@@ -82,13 +82,11 @@ public class SmartSyncJSTest extends JSTestCase {
                 "testSObjectFetch",
                 "testSObjectSave",
                 "testSObjectDestroy",
-                //comment out all apex rest object smartsync test for further investigation
-                //while allow to run other reliable hybrid test
-//                "testSyncApexRestObjectWithServerCreate",
-//                "testSyncApexRestObjectWithServerRead",
-//                "testSyncApexRestObjectWithServerUpdate",
-//                "testSyncApexRestObjectWithServerDelete",
-//                "testFetchApexRestObjectsFromServer",
+                "testSyncApexRestObjectWithServerCreate",
+                "testSyncApexRestObjectWithServerRead",
+                "testSyncApexRestObjectWithServerUpdate",
+                "testSyncApexRestObjectWithServerDelete",
+                "testFetchApexRestObjectsFromServer",
                 "testFetchSObjectsFromServer",
                 "testFetchSObjects",
                 "testSObjectCollectionFetch",
@@ -241,27 +239,26 @@ public class SmartSyncJSTest extends JSTestCase {
     public void testSObjectDestroy() {
         runTest("testSObjectDestroy");
     }
-    //comment out all apex rest object smartsync test for further investigation
-    //while allow to run other reliable hybrid test
-//    public void testSyncApexRestObjectWithServerCreate() {
-//        runTest("testSyncApexRestObjectWithServerCreate");
-//    }
-//
-//    public void testSyncApexRestObjectWithServerRead() {
-//        runTest("testSyncApexRestObjectWithServerRead");
-//    }
-//
-//    public void testSyncApexRestObjectWithServerUpdate() {
-//        runTest("testSyncApexRestObjectWithServerUpdate");
-//    }
-//
-//    public void testSyncApexRestObjectWithServerDelete() {
-//        runTest("testSyncApexRestObjectWithServerDelete");
-//    }
-//
-//    public void testFetchApexRestObjectsFromServer() {
-//        runTest("testFetchApexRestObjectsFromServer");
-//    }
+
+    public void testSyncApexRestObjectWithServerCreate() {
+        runTest("testSyncApexRestObjectWithServerCreate");
+    }
+
+    public void testSyncApexRestObjectWithServerRead() {
+        runTest("testSyncApexRestObjectWithServerRead");
+    }
+
+    public void testSyncApexRestObjectWithServerUpdate() {
+        runTest("testSyncApexRestObjectWithServerUpdate");
+    }
+
+    public void testSyncApexRestObjectWithServerDelete() {
+        runTest("testSyncApexRestObjectWithServerDelete");
+    }
+
+    public void testFetchApexRestObjectsFromServer() {
+        runTest("testFetchApexRestObjectsFromServer");
+    }
 
     public void testFetchSObjectsFromServer() {
         runTest("testFetchSObjectsFromServer");
