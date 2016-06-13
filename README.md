@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/forcedotcom/SalesforceMobileSDK-Android.svg?branch=unstable)](https://travis-ci.org/forcedotcom/SalesforceMobileSDK-Android)
-
 # Salesforce.com Mobile SDK for Android
 
 You have arrived at the source repository for the Salesforce Mobile SDK for Android. Welcome! Starting with our 2.0 release, there are now two ways you can choose to work with the Mobile SDK:
