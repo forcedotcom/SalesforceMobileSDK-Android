@@ -48,7 +48,7 @@ before_script:
 #Build all projects and run the tests
 script:
    #run template app generation
-   - set -o pipefail && node external/shared/node/test_force.js --os=android --test=native
+   - travis_wait 30 set -o pipefail && node external/shared/node/test_force.js --os=android --test=native
 
    - travis_wait 30 ./gradlew :libs:SalesforceSDK:connectedAndroidTest
    - travis_wait 30 ./gradlew :libs:SmartStore:connectedAndroidTest
