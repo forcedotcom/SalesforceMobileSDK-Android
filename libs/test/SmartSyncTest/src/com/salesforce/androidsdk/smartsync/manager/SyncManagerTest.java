@@ -307,7 +307,7 @@ public class SyncManagerTest extends ManagerTestCase {
      */
     public void testSyncUpWithLocallyCreatedAndDeletedRecords() throws Exception {
         // Create a few entries locally
-        String[] names = new String[] { createAccountName(), createAccountName(), createAccountName() };
+        String[] names = new String[] { createRecordName(Constants.ACCOUNT), createRecordName(Constants.ACCOUNT), createRecordName(Constants.ACCOUNT)};
         createAccountsLocally(names);
         Map<String, String> idToNamesCreated = getIdsForNames(names);
 

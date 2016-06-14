@@ -49,14 +49,8 @@ before_script:
 script:
    #run template app generation
    - travis_wait 30 set -o pipefail && node external/shared/node/test_force.js --os=android --test=native
-
-   - travis_wait 30 ./gradlew :libs:SalesforceAnalytics:connectedAndroidTest
-   - travis_wait 30 ./gradlew :libs:SalesforceSDK:connectedAndroidTest
-   - travis_wait 30 ./gradlew :libs:SmartStore:connectedAndroidTest
-   - travis_wait 30 ./gradlew :libs:SmartSync:connectedAndroidTest
-   # disable the unreliable test to reduce the impact for other tests, just build it
-   # will add it back once fix the test issue
-   - ./gradlew :libs:SalesforceHybrid:assembleDebug
+   - travis_wait 30 ./gradlew createDebugCoverageReport
+   - travis_wait 30 ./gradlew :libs:SalesforceHybrid:connectedAndroidTest
    - ./gradlew :libs:SalesforceReact:assembleDebug
    - travis_wait 30 ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest
    - travis_wait 30 ./gradlew :native:TemplateApp:connectedAndroidTest
