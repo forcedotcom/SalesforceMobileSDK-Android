@@ -1296,7 +1296,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
         //alert the soup
         store.alterSoup(soupName, newIndexSpecs, true);
 
-        // Query all - small page
+        // Exact Query
         runQueryCheckResultsAndExplainPlan(soupName,
                 QuerySpec.buildExactQuerySpec(soupName, orderPath, value, null, null, 5),
                 0, false, "SEARCH", expectedResult);
