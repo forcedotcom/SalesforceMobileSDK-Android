@@ -56,6 +56,7 @@ public class InstrumentationEventBuilder {
     private InstrumentationEvent.SchemaType schemaType;
     private InstrumentationEvent.EventType eventType;
     private InstrumentationEvent.ErrorType errorType;
+    private String senderParentId;
 
     /**
      * Returns an instance of this class.
@@ -185,6 +186,17 @@ public class InstrumentationEventBuilder {
     }
 
     /**
+     * Sets sender parent ID.
+     *
+     * @param senderParentId Sender parent ID.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder senderParentId(String senderParentId) {
+        this.senderParentId = senderParentId;
+        return this;
+    }
+
+    /**
      * Validates and builds an InstrumentationEvent object. Throws EventBuilderException
      * if mandatory fields are not set.
      *
@@ -214,7 +226,7 @@ public class InstrumentationEventBuilder {
         startTime = (startTime == 0) ? System.currentTimeMillis() : startTime;
         return new InstrumentationEvent(eventId, startTime, endTime, name, attributes, sessionId,
                 sequenceId, senderId, senderContext, schemaType, eventType, errorType,
-                deviceAppAttributes, getConnectionType());
+                deviceAppAttributes, getConnectionType(), senderParentId);
     }
 
     private String getConnectionType() {
