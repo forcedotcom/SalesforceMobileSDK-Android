@@ -54,9 +54,8 @@ public class InstrumentationEvent {
     public static final String SEQUENCE_ID_KEY = "sequenceId";
     public static final String SENDER_ID_KEY = "senderId";
     public static final String SENDER_CONTEXT_KEY = "senderContext";
+    public static final String SCHEMA_TYPE_KEY = "schemaType";
     public static final String EVENT_TYPE_KEY = "eventType";
-    public static final String TYPE_KEY = "type";
-    public static final String SUBTYPE_KEY = "subtype";
     public static final String ERROR_TYPE_KEY = "errorType";
     public static final String CONNECTION_TYPE_KEY = "connectionType";
     public static final String DEVICE_APP_ATTRIBUTES_KEY = "deviceAppAttributes";
@@ -70,18 +69,17 @@ public class InstrumentationEvent {
     private int sequenceId;
     private String senderId;
     private Map<String, Object> senderContext;
+    private SchemaType schemaType;
     private EventType eventType;
-    private Type type;
-    private Subtype subtype;
     private ErrorType errorType;
     private DeviceAppAttributes deviceAppAttributes;
     private String connectionType;
 
     InstrumentationEvent(String eventId, long startTime, long endTime, String name,
-                                Map<String, Object> attributes, int sessionId, int sequenceId,
-                                String senderId, Map<String, Object> senderContext,
-                                EventType eventType, Type type, Subtype subtype, ErrorType errorType,
-                                DeviceAppAttributes deviceAppAttributes, String connectionType) {
+                         Map<String, Object> attributes, int sessionId, int sequenceId,
+                         String senderId, Map<String, Object> senderContext,
+                         SchemaType schemaType, EventType eventType, ErrorType errorType,
+                         DeviceAppAttributes deviceAppAttributes, String connectionType) {
         this.eventId = eventId;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -91,9 +89,8 @@ public class InstrumentationEvent {
         this.sequenceId = sequenceId;
         this.senderId = senderId;
         this.senderContext = senderContext;
+        this.schemaType = schemaType;
         this.eventType = eventType;
-        this.type = type;
-        this.subtype = subtype;
         this.errorType = errorType;
         this.deviceAppAttributes = deviceAppAttributes;
         this.connectionType = connectionType;
@@ -117,17 +114,13 @@ public class InstrumentationEvent {
             sequenceId = json.optInt(SEQUENCE_ID_KEY);
             senderId = json.optString(SENDER_ID_KEY);
             senderContext = convertJsonToMap(json.optJSONObject(SENDER_CONTEXT_KEY));
+            final String schemaTypeString = json.optString(SCHEMA_TYPE_KEY);
+            if (!TextUtils.isEmpty(schemaTypeString)) {
+                schemaType = SchemaType.valueOf(schemaTypeString);
+            }
             final String eventTypeString = json.optString(EVENT_TYPE_KEY);
             if (!TextUtils.isEmpty(eventTypeString)) {
                 eventType = EventType.valueOf(eventTypeString);
-            }
-            final String typeString = json.optString(TYPE_KEY);
-            if (!TextUtils.isEmpty(typeString)) {
-                type = Type.valueOf(typeString);
-            }
-            final String subtypeString = json.optString(SUBTYPE_KEY);
-            if (!TextUtils.isEmpty(subtypeString)) {
-                subtype = Subtype.valueOf(subtypeString);
             }
             final String errorTypeString = json.optString(ERROR_TYPE_KEY);
             if (!TextUtils.isEmpty(errorTypeString)) {
@@ -223,30 +216,21 @@ public class InstrumentationEvent {
     }
 
     /**
+     * Returns schema type.
+     *
+     * @return Schema type.
+     */
+    public SchemaType getSchemaType() {
+        return schemaType;
+    }
+
+    /**
      * Returns event type.
      *
      * @return Event type.
      */
     public EventType getEventType() {
         return eventType;
-    }
-
-    /**
-     * Returns type.
-     *
-     * @return Type.
-     */
-    public Type getType() {
-        return type;
-    }
-
-    /**
-     * Returns subtype.
-     *
-     * @return Subtype.
-     */
-    public Subtype getSubtype() {
-        return subtype;
     }
 
     /**
@@ -299,14 +283,11 @@ public class InstrumentationEvent {
                 final JSONObject senderContextJson = new JSONObject(senderContext);
                 json.put(SENDER_CONTEXT_KEY, senderContextJson);
             }
+            if (schemaType != null) {
+                json.put(SCHEMA_TYPE_KEY, schemaType.name());
+            }
             if (eventType != null) {
                 json.put(EVENT_TYPE_KEY, eventType.name());
-            }
-            if (type != null) {
-                json.put(TYPE_KEY, type.name());
-            }
-            if (subtype != null) {
-                json.put(SUBTYPE_KEY, subtype.name());
             }
             if (errorType != null) {
                 json.put(ERROR_TYPE_KEY, errorType.name());
@@ -364,9 +345,9 @@ public class InstrumentationEvent {
     }
 
     /**
-     * Represents the type of interaction being logged.
+     * Represents the type of event being logged.
      */
-    public enum Type {
+    public enum EventType {
         user,
         system,
         error,
@@ -374,19 +355,9 @@ public class InstrumentationEvent {
     }
 
     /**
-     * Represents the subtype of interaction being logged.
+     * Represents the type of schema being logged.
      */
-    public enum Subtype {
-        click,
-        mouseover,
-        create,
-        swipe
-    }
-
-    /**
-     * Represents the type of event being measured.
-     */
-    public enum EventType {
+    public enum SchemaType {
         interaction,
         pageView,
         perf,

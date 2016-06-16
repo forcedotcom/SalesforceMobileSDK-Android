@@ -191,8 +191,8 @@ public class InstrumentationEventTest extends InstrumentationTestCase {
         eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.eventType(InstrumentationEvent.EventType.error);
-        eventBuilder.type(InstrumentationEvent.Type.system);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.error);
+        eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
         return eventBuilder;
     }

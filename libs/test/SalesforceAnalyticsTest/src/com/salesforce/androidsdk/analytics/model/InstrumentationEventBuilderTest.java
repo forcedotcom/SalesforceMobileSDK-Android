@@ -73,11 +73,11 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
     }
 
     /**
-     * Test for missing mandatory field 'event type'.
+     * Test for missing mandatory field 'schema type'.
      *
      * @throws Exception
      */
-    public void testMissingEventType() throws Exception {
+    public void testMissingSchemaType() throws Exception {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
@@ -85,11 +85,11 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.type(InstrumentationEvent.Type.system);
+        eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
         try {
             eventBuilder.buildEvent();
-            Assert.fail("Exception should have been thrown for missing mandatory field 'event type'");
+            Assert.fail("Exception should have been thrown for missing mandatory field 'schema type'");
         } catch (InstrumentationEventBuilder.EventBuilderException e) {
             Log.v(TAG, "Exception thrown as expected");
         }
@@ -106,8 +106,8 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.startTime(curTime);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.eventType(InstrumentationEvent.EventType.error);
-        eventBuilder.type(InstrumentationEvent.Type.system);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.error);
+        eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
         try {
             eventBuilder.buildEvent();
@@ -132,8 +132,8 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.eventType(InstrumentationEvent.EventType.error);
-        eventBuilder.type(InstrumentationEvent.Type.system);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.error);
+        eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
         try {
             eventBuilder.buildEvent();
@@ -157,8 +157,8 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.eventType(InstrumentationEvent.EventType.error);
-        eventBuilder.type(InstrumentationEvent.Type.system);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.error);
+        eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
         final InstrumentationEvent event = eventBuilder.buildEvent();
         long startTime = event.getStartTime();
@@ -177,8 +177,8 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.eventType(InstrumentationEvent.EventType.error);
-        eventBuilder.type(InstrumentationEvent.Type.system);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.error);
+        eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
         final InstrumentationEvent event = eventBuilder.buildEvent();
         final String eventId = event.getEventId();
@@ -197,8 +197,8 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.eventType(InstrumentationEvent.EventType.error);
-        eventBuilder.type(InstrumentationEvent.Type.system);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.error);
+        eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
         final InstrumentationEvent event = eventBuilder.buildEvent();
         int sequenceId = event.getSequenceId();
