@@ -33,7 +33,8 @@ import android.text.TextUtils;
 
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 
-import java.util.Map;
+import org.json.JSONObject;
+
 import java.util.UUID;
 
 /**
@@ -48,10 +49,10 @@ public class InstrumentationEventBuilder {
     private long startTime;
     private long endTime;
     private String name;
-    private Map<String, Object> attributes;
+    private JSONObject attributes;
     private int sessionId;
     private String senderId;
-    private Map<String, Object> senderContext;
+    private JSONObject senderContext;
     private InstrumentationEvent.SchemaType schemaType;
     private InstrumentationEvent.EventType eventType;
     private InstrumentationEvent.ErrorType errorType;
@@ -107,12 +108,12 @@ public class InstrumentationEventBuilder {
     }
 
     /**
-     * Sets attributed.
+     * Sets attributes.
      *
      * @param attributes Attributes.
      * @return Instance of this class.
      */
-    public InstrumentationEventBuilder attributes(Map<String, Object> attributes) {
+    public InstrumentationEventBuilder attributes(JSONObject attributes) {
         this.attributes = attributes;
         return this;
     }
@@ -145,7 +146,7 @@ public class InstrumentationEventBuilder {
      * @param senderContext Sender context.
      * @return Instance of this class.
      */
-    public InstrumentationEventBuilder senderContext(Map<String, Object> senderContext) {
+    public InstrumentationEventBuilder senderContext(JSONObject senderContext) {
         this.senderContext = senderContext;
         return this;
     }

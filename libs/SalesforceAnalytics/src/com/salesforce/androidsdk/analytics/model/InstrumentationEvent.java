@@ -32,10 +32,6 @@ import android.util.Log;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 /**
  * Represents a typical instrumentation event. Transforms can be used to
  * convert this event into a specific library's event format.
@@ -64,11 +60,11 @@ public class InstrumentationEvent {
     private long startTime;
     private long endTime;
     private String name;
-    private Map<String, Object> attributes;
+    private JSONObject attributes;
     private int sessionId;
     private int sequenceId;
     private String senderId;
-    private Map<String, Object> senderContext;
+    private JSONObject senderContext;
     private SchemaType schemaType;
     private EventType eventType;
     private ErrorType errorType;
@@ -76,8 +72,8 @@ public class InstrumentationEvent {
     private String connectionType;
 
     InstrumentationEvent(String eventId, long startTime, long endTime, String name,
-                         Map<String, Object> attributes, int sessionId, int sequenceId,
-                         String senderId, Map<String, Object> senderContext,
+                         JSONObject attributes, int sessionId, int sequenceId,
+                         String senderId, JSONObject senderContext,
                          SchemaType schemaType, EventType eventType, ErrorType errorType,
                          DeviceAppAttributes deviceAppAttributes, String connectionType) {
         this.eventId = eventId;
@@ -109,11 +105,11 @@ public class InstrumentationEvent {
             startTime = json.optLong(START_TIME_KEY);
             endTime = json.optLong(END_TIME_KEY);
             name = json.optString(NAME_KEY);
-            attributes = convertJsonToMap(json.optJSONObject(ATTRIBUTES_KEY));
+            attributes = json.optJSONObject(ATTRIBUTES_KEY);
             sessionId = json.optInt(SESSION_ID_KEY);
             sequenceId = json.optInt(SEQUENCE_ID_KEY);
             senderId = json.optString(SENDER_ID_KEY);
-            senderContext = convertJsonToMap(json.optJSONObject(SENDER_CONTEXT_KEY));
+            senderContext = json.optJSONObject(SENDER_CONTEXT_KEY);
             final String schemaTypeString = json.optString(SCHEMA_TYPE_KEY);
             if (!TextUtils.isEmpty(schemaTypeString)) {
                 schemaType = SchemaType.valueOf(schemaTypeString);
@@ -175,7 +171,7 @@ public class InstrumentationEvent {
      *
      * @return Attributes.
      */
-    public Map<String, Object> getAttributes() {
+    public JSONObject getAttributes() {
         return attributes;
     }
 
@@ -211,7 +207,7 @@ public class InstrumentationEvent {
      *
      * @return Sender context.
      */
-    public Map<String, Object> getSenderContext() {
+    public JSONObject getSenderContext() {
         return senderContext;
     }
 
@@ -273,15 +269,13 @@ public class InstrumentationEvent {
             json.put(END_TIME_KEY, endTime);
             json.put(NAME_KEY, name);
             if (attributes != null) {
-                final JSONObject attributesJson = new JSONObject(attributes);
-                json.put(ATTRIBUTES_KEY, attributesJson);
+                json.put(ATTRIBUTES_KEY, attributes);
             }
             json.put(SESSION_ID_KEY, sessionId);
             json.put(SEQUENCE_ID_KEY, sequenceId);
             json.put(SENDER_ID_KEY, senderId);
             if (senderContext != null) {
-                final JSONObject senderContextJson = new JSONObject(senderContext);
-                json.put(SENDER_CONTEXT_KEY, senderContextJson);
+                json.put(SENDER_CONTEXT_KEY, senderContext);
             }
             if (schemaType != null) {
                 json.put(SCHEMA_TYPE_KEY, schemaType.name());
@@ -323,25 +317,6 @@ public class InstrumentationEvent {
     @Override
     public int hashCode() {
         return eventId.hashCode();
-    }
-
-    private Map<String, Object> convertJsonToMap(JSONObject json) {
-        if (json == null) {
-            return null;
-        }
-        final Map<String, Object> map = new HashMap<String, Object>();
-        final Iterator<String> keys = json.keys();
-        while (keys.hasNext()) {
-            final String key = keys.next();
-            final Object value = json.opt(key);
-            if (value != null && value instanceof JSONObject) {
-                final Map<String, Object> subMap = convertJsonToMap((JSONObject) value);
-                map.put(key, subMap);
-            } else {
-                map.put(key, value);
-            }
-        }
-        return map;
     }
 
     /**
