@@ -32,10 +32,6 @@ import android.util.Log;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 /**
  * Represents a typical instrumentation event. Transforms can be used to
  * convert this event into a specific library's event format.
@@ -54,9 +50,8 @@ public class InstrumentationEvent {
     public static final String SEQUENCE_ID_KEY = "sequenceId";
     public static final String SENDER_ID_KEY = "senderId";
     public static final String SENDER_CONTEXT_KEY = "senderContext";
+    public static final String SCHEMA_TYPE_KEY = "schemaType";
     public static final String EVENT_TYPE_KEY = "eventType";
-    public static final String TYPE_KEY = "type";
-    public static final String SUBTYPE_KEY = "subtype";
     public static final String ERROR_TYPE_KEY = "errorType";
     public static final String CONNECTION_TYPE_KEY = "connectionType";
     public static final String DEVICE_APP_ATTRIBUTES_KEY = "deviceAppAttributes";
@@ -65,23 +60,22 @@ public class InstrumentationEvent {
     private long startTime;
     private long endTime;
     private String name;
-    private Map<String, Object> attributes;
+    private JSONObject attributes;
     private int sessionId;
     private int sequenceId;
     private String senderId;
-    private Map<String, Object> senderContext;
+    private JSONObject senderContext;
+    private SchemaType schemaType;
     private EventType eventType;
-    private Type type;
-    private Subtype subtype;
     private ErrorType errorType;
     private DeviceAppAttributes deviceAppAttributes;
     private String connectionType;
 
     InstrumentationEvent(String eventId, long startTime, long endTime, String name,
-                                Map<String, Object> attributes, int sessionId, int sequenceId,
-                                String senderId, Map<String, Object> senderContext,
-                                EventType eventType, Type type, Subtype subtype, ErrorType errorType,
-                                DeviceAppAttributes deviceAppAttributes, String connectionType) {
+                         JSONObject attributes, int sessionId, int sequenceId,
+                         String senderId, JSONObject senderContext,
+                         SchemaType schemaType, EventType eventType, ErrorType errorType,
+                         DeviceAppAttributes deviceAppAttributes, String connectionType) {
         this.eventId = eventId;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -91,9 +85,8 @@ public class InstrumentationEvent {
         this.sequenceId = sequenceId;
         this.senderId = senderId;
         this.senderContext = senderContext;
+        this.schemaType = schemaType;
         this.eventType = eventType;
-        this.type = type;
-        this.subtype = subtype;
         this.errorType = errorType;
         this.deviceAppAttributes = deviceAppAttributes;
         this.connectionType = connectionType;
@@ -112,22 +105,18 @@ public class InstrumentationEvent {
             startTime = json.optLong(START_TIME_KEY);
             endTime = json.optLong(END_TIME_KEY);
             name = json.optString(NAME_KEY);
-            attributes = convertJsonToMap(json.optJSONObject(ATTRIBUTES_KEY));
+            attributes = json.optJSONObject(ATTRIBUTES_KEY);
             sessionId = json.optInt(SESSION_ID_KEY);
             sequenceId = json.optInt(SEQUENCE_ID_KEY);
             senderId = json.optString(SENDER_ID_KEY);
-            senderContext = convertJsonToMap(json.optJSONObject(SENDER_CONTEXT_KEY));
+            senderContext = json.optJSONObject(SENDER_CONTEXT_KEY);
+            final String schemaTypeString = json.optString(SCHEMA_TYPE_KEY);
+            if (!TextUtils.isEmpty(schemaTypeString)) {
+                schemaType = SchemaType.valueOf(schemaTypeString);
+            }
             final String eventTypeString = json.optString(EVENT_TYPE_KEY);
             if (!TextUtils.isEmpty(eventTypeString)) {
                 eventType = EventType.valueOf(eventTypeString);
-            }
-            final String typeString = json.optString(TYPE_KEY);
-            if (!TextUtils.isEmpty(typeString)) {
-                type = Type.valueOf(typeString);
-            }
-            final String subtypeString = json.optString(SUBTYPE_KEY);
-            if (!TextUtils.isEmpty(subtypeString)) {
-                subtype = Subtype.valueOf(subtypeString);
             }
             final String errorTypeString = json.optString(ERROR_TYPE_KEY);
             if (!TextUtils.isEmpty(errorTypeString)) {
@@ -182,7 +171,7 @@ public class InstrumentationEvent {
      *
      * @return Attributes.
      */
-    public Map<String, Object> getAttributes() {
+    public JSONObject getAttributes() {
         return attributes;
     }
 
@@ -218,8 +207,17 @@ public class InstrumentationEvent {
      *
      * @return Sender context.
      */
-    public Map<String, Object> getSenderContext() {
+    public JSONObject getSenderContext() {
         return senderContext;
+    }
+
+    /**
+     * Returns schema type.
+     *
+     * @return Schema type.
+     */
+    public SchemaType getSchemaType() {
+        return schemaType;
     }
 
     /**
@@ -229,24 +227,6 @@ public class InstrumentationEvent {
      */
     public EventType getEventType() {
         return eventType;
-    }
-
-    /**
-     * Returns type.
-     *
-     * @return Type.
-     */
-    public Type getType() {
-        return type;
-    }
-
-    /**
-     * Returns subtype.
-     *
-     * @return Subtype.
-     */
-    public Subtype getSubtype() {
-        return subtype;
     }
 
     /**
@@ -289,24 +269,19 @@ public class InstrumentationEvent {
             json.put(END_TIME_KEY, endTime);
             json.put(NAME_KEY, name);
             if (attributes != null) {
-                final JSONObject attributesJson = new JSONObject(attributes);
-                json.put(ATTRIBUTES_KEY, attributesJson);
+                json.put(ATTRIBUTES_KEY, attributes);
             }
             json.put(SESSION_ID_KEY, sessionId);
             json.put(SEQUENCE_ID_KEY, sequenceId);
             json.put(SENDER_ID_KEY, senderId);
             if (senderContext != null) {
-                final JSONObject senderContextJson = new JSONObject(senderContext);
-                json.put(SENDER_CONTEXT_KEY, senderContextJson);
+                json.put(SENDER_CONTEXT_KEY, senderContext);
+            }
+            if (schemaType != null) {
+                json.put(SCHEMA_TYPE_KEY, schemaType.name());
             }
             if (eventType != null) {
                 json.put(EVENT_TYPE_KEY, eventType.name());
-            }
-            if (type != null) {
-                json.put(TYPE_KEY, type.name());
-            }
-            if (subtype != null) {
-                json.put(SUBTYPE_KEY, subtype.name());
             }
             if (errorType != null) {
                 json.put(ERROR_TYPE_KEY, errorType.name());
@@ -344,29 +319,10 @@ public class InstrumentationEvent {
         return eventId.hashCode();
     }
 
-    private Map<String, Object> convertJsonToMap(JSONObject json) {
-        if (json == null) {
-            return null;
-        }
-        final Map<String, Object> map = new HashMap<String, Object>();
-        final Iterator<String> keys = json.keys();
-        while (keys.hasNext()) {
-            final String key = keys.next();
-            final Object value = json.opt(key);
-            if (value != null && value instanceof JSONObject) {
-                final Map<String, Object> subMap = convertJsonToMap((JSONObject) value);
-                map.put(key, subMap);
-            } else {
-                map.put(key, value);
-            }
-        }
-        return map;
-    }
-
     /**
-     * Represents the type of interaction being logged.
+     * Represents the type of event being logged.
      */
-    public enum Type {
+    public enum EventType {
         user,
         system,
         error,
@@ -374,19 +330,9 @@ public class InstrumentationEvent {
     }
 
     /**
-     * Represents the subtype of interaction being logged.
+     * Represents the type of schema being logged.
      */
-    public enum Subtype {
-        click,
-        mouseover,
-        create,
-        swipe
-    }
-
-    /**
-     * Represents the type of event being measured.
-     */
-    public enum EventType {
+    public enum SchemaType {
         interaction,
         pageView,
         perf,

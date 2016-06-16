@@ -33,7 +33,8 @@ import android.text.TextUtils;
 
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 
-import java.util.Map;
+import org.json.JSONObject;
+
 import java.util.UUID;
 
 /**
@@ -48,13 +49,12 @@ public class InstrumentationEventBuilder {
     private long startTime;
     private long endTime;
     private String name;
-    private Map<String, Object> attributes;
+    private JSONObject attributes;
     private int sessionId;
     private String senderId;
-    private Map<String, Object> senderContext;
+    private JSONObject senderContext;
+    private InstrumentationEvent.SchemaType schemaType;
     private InstrumentationEvent.EventType eventType;
-    private InstrumentationEvent.Type type;
-    private InstrumentationEvent.Subtype subtype;
     private InstrumentationEvent.ErrorType errorType;
 
     /**
@@ -108,12 +108,12 @@ public class InstrumentationEventBuilder {
     }
 
     /**
-     * Sets attributed.
+     * Sets attributes.
      *
      * @param attributes Attributes.
      * @return Instance of this class.
      */
-    public InstrumentationEventBuilder attributes(Map<String, Object> attributes) {
+    public InstrumentationEventBuilder attributes(JSONObject attributes) {
         this.attributes = attributes;
         return this;
     }
@@ -146,8 +146,19 @@ public class InstrumentationEventBuilder {
      * @param senderContext Sender context.
      * @return Instance of this class.
      */
-    public InstrumentationEventBuilder senderContext(Map<String, Object> senderContext) {
+    public InstrumentationEventBuilder senderContext(JSONObject senderContext) {
         this.senderContext = senderContext;
+        return this;
+    }
+
+    /**
+     * Sets schema type.
+     *
+     * @param schemaType Schema type.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder schemaType(InstrumentationEvent.SchemaType schemaType) {
+        this.schemaType = schemaType;
         return this;
     }
 
@@ -159,28 +170,6 @@ public class InstrumentationEventBuilder {
      */
     public InstrumentationEventBuilder eventType(InstrumentationEvent.EventType eventType) {
         this.eventType = eventType;
-        return this;
-    }
-
-    /**
-     * Sets type.
-     *
-     * @param type Type.
-     * @return Instance of this class.
-     */
-    public InstrumentationEventBuilder type(InstrumentationEvent.Type type) {
-        this.type = type;
-        return this;
-    }
-
-    /**
-     * Sets subtype.
-     *
-     * @param subtype Subtype.
-     * @return Instance of this class.
-     */
-    public InstrumentationEventBuilder subtype(InstrumentationEvent.Subtype subtype) {
-        this.subtype = subtype;
         return this;
     }
 
@@ -205,8 +194,8 @@ public class InstrumentationEventBuilder {
     public InstrumentationEvent buildEvent() throws EventBuilderException {
         final String eventId = UUID.randomUUID().toString();
         String errorMessage = null;
-        if (eventType == null) {
-            errorMessage = "Mandatory field 'event type' not set!";
+        if (schemaType == null) {
+            errorMessage = "Mandatory field 'schema type' not set!";
         }
         if (TextUtils.isEmpty(name)) {
             errorMessage = "Mandatory field 'name' not set!";
@@ -224,7 +213,7 @@ public class InstrumentationEventBuilder {
         // Defaults to current time if not explicitly set.
         startTime = (startTime == 0) ? System.currentTimeMillis() : startTime;
         return new InstrumentationEvent(eventId, startTime, endTime, name, attributes, sessionId,
-                sequenceId, senderId, senderContext, eventType, type, subtype, errorType,
+                sequenceId, senderId, senderContext, schemaType, eventType, errorType,
                 deviceAppAttributes, getConnectionType());
     }
 
