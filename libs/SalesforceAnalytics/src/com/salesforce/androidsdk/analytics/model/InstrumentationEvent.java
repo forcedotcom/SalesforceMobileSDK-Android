@@ -56,6 +56,7 @@ public class InstrumentationEvent {
     public static final String CONNECTION_TYPE_KEY = "connectionType";
     public static final String DEVICE_APP_ATTRIBUTES_KEY = "deviceAppAttributes";
     public static final String SENDER_PARENT_ID_KEY = "senderParentId";
+    public static final String SESSION_START_TIME_KEY = "sessionStartTime";
 
     private String eventId;
     private long startTime;
@@ -72,13 +73,14 @@ public class InstrumentationEvent {
     private DeviceAppAttributes deviceAppAttributes;
     private String connectionType;
     private String senderParentId;
+    private long sessionStartTime;
 
     InstrumentationEvent(String eventId, long startTime, long endTime, String name,
                          JSONObject attributes, int sessionId, int sequenceId,
                          String senderId, JSONObject senderContext,
                          SchemaType schemaType, EventType eventType, ErrorType errorType,
                          DeviceAppAttributes deviceAppAttributes, String connectionType,
-                         String senderParentId) {
+                         String senderParentId, long sessionStartTime) {
         this.eventId = eventId;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -94,6 +96,7 @@ public class InstrumentationEvent {
         this.deviceAppAttributes = deviceAppAttributes;
         this.connectionType = connectionType;
         this.senderParentId = senderParentId;
+        this.sessionStartTime = sessionStartTime;
     }
 
     /**
@@ -132,6 +135,7 @@ public class InstrumentationEvent {
             }
             connectionType = json.optString(CONNECTION_TYPE_KEY);
             senderParentId = json.optString(SENDER_PARENT_ID_KEY);
+            sessionStartTime = json.optLong(SESSION_START_TIME_KEY);
         }
     }
 
@@ -271,6 +275,15 @@ public class InstrumentationEvent {
     }
 
     /**
+     * Returns session start time.
+     *
+     * @return Session start time.
+     */
+    public long getSessionStartTime() {
+        return sessionStartTime;
+    }
+
+    /**
      * Returns a JSON representation of this event.
      *
      * @return JSON object.
@@ -303,6 +316,7 @@ public class InstrumentationEvent {
             json.put(DEVICE_APP_ATTRIBUTES_KEY, deviceAppAttributes.toJson());
             json.put(CONNECTION_TYPE_KEY, connectionType);
             json.put(SENDER_PARENT_ID_KEY, senderParentId);
+            json.put(SESSION_START_TIME_KEY, sessionStartTime);
         } catch (JSONException e) {
             Log.e(TAG, "Exception thrown while attempting to convert to JSON", e);
         }

@@ -57,6 +57,7 @@ public class InstrumentationEventBuilder {
     private InstrumentationEvent.EventType eventType;
     private InstrumentationEvent.ErrorType errorType;
     private String senderParentId;
+    private long sessionStartTime;
 
     /**
      * Returns an instance of this class.
@@ -197,6 +198,17 @@ public class InstrumentationEventBuilder {
     }
 
     /**
+     * Sets session start time.
+     *
+     * @param sessionStartTime Session start time.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder sessionStartTime(long sessionStartTime) {
+        this.sessionStartTime = sessionStartTime;
+        return this;
+    }
+
+    /**
      * Validates and builds an InstrumentationEvent object. Throws EventBuilderException
      * if mandatory fields are not set.
      *
@@ -223,10 +235,12 @@ public class InstrumentationEventBuilder {
         analyticsManager.setGlobalSequenceId(sequenceId);
 
         // Defaults to current time if not explicitly set.
-        startTime = (startTime == 0) ? System.currentTimeMillis() : startTime;
+        long curTime = System.currentTimeMillis();
+        startTime = (startTime == 0) ? curTime : startTime;
+        sessionStartTime = (sessionStartTime == 0) ? curTime : sessionStartTime;
         return new InstrumentationEvent(eventId, startTime, endTime, name, attributes, sessionId,
                 sequenceId, senderId, senderContext, schemaType, eventType, errorType,
-                deviceAppAttributes, getConnectionType(), senderParentId);
+                deviceAppAttributes, getConnectionType(), senderParentId, sessionStartTime);
     }
 
     private String getConnectionType() {
