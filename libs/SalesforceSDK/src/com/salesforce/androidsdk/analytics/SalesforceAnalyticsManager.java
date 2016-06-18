@@ -42,6 +42,7 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class contains APIs that can be used to interact with
@@ -137,6 +138,31 @@ public class SalesforceAnalyticsManager {
                     manager.analyticsManager.reset();
                 }
                 INSTANCES.remove(uniqueId);
+            }
+        }
+    }
+
+    /**
+     * Changes the passcode to a new value and re-encrypts the
+     * stored event data with the new passcode.
+     *
+     * @param oldPass Old passcode.
+     * @param newPass New passcode.
+     */
+    public static synchronized void changePasscode(String oldPass, String newPass) {
+        final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
+        final String oldEncryptionKey = sdkManager.getEncryptionKeyForPasscode(oldPass);
+        final String newEncryptionKey = sdkManager.getEncryptionKeyForPasscode(newPass);
+        if (INSTANCES != null) {
+            final Set<String> keys = INSTANCES.keySet();
+            if (keys != null) {
+                for (final String key : keys) {
+                    final SalesforceAnalyticsManager sfAnalyticsManager = INSTANCES.get(key);
+                    if (sfAnalyticsManager != null) {
+                        sfAnalyticsManager.analyticsManager.changeEncryptionKey(oldEncryptionKey,
+                                newEncryptionKey);
+                    }
+                }
             }
         }
     }
