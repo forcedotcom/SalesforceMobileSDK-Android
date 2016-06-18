@@ -150,6 +150,15 @@ public class SalesforceAnalyticsManager {
         return eventStoreManager;
     }
 
+    /**
+     * Returns an instance of analytics manager.
+     *
+     * @return Analytics manager.
+     */
+    public AnalyticsManager getAnalyticsManager() {
+        return analyticsManager;
+    }
+
     private SalesforceAnalyticsManager(UserAccount account, String communityId) {
         final DeviceAppAttributes deviceAppAttributes = buildDeviceAppAttributes();
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
