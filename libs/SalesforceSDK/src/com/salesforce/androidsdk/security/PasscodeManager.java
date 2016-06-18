@@ -104,8 +104,6 @@ public class PasscodeManager  {
      * Parameterized constructor.
      *
      * @param ctx Context.
-     * @param verificationHashConfig Verification HashConfig.
-     * @param encryptionHashConfig Encryption HashConfig.
      */
    public PasscodeManager(Context ctx) {
 	   this(ctx,

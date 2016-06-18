@@ -163,7 +163,9 @@ public class SalesforceAnalyticsManager {
         final DeviceAppAttributes deviceAppAttributes = buildDeviceAppAttributes();
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         analyticsManager = new AnalyticsManager(account.getCommunityLevelFilenameSuffix(),
-                sdkManager.getAppContext(), sdkManager.getPasscodeHash(), deviceAppAttributes);
+                sdkManager.getAppContext(),
+                sdkManager.getEncryptionKeyForPasscode(sdkManager.getPasscodeHash()),
+                deviceAppAttributes);
         eventStoreManager = analyticsManager.getEventStoreManager();
     }
 
