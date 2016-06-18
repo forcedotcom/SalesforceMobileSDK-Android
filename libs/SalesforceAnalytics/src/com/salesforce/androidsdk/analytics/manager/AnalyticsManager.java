@@ -84,7 +84,7 @@ public class AnalyticsManager {
      *
      * @return Sequence ID.
      */
-    public int getGlobalSequenceId() {
+    public synchronized int getGlobalSequenceId() {
         return globalSequenceId;
     }
 
