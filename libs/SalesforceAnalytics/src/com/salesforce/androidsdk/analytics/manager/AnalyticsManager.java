@@ -43,60 +43,10 @@ import java.util.Map;
  */
 public class AnalyticsManager {
 
-    private static Map<String, AnalyticsManager> INSTANCES;
-
-    private String uniqueId;
     private boolean showEventsInConsole;
     private EventStoreManager storeManager;
     private DeviceAppAttributes deviceAppAttributes;
     private int globalSequenceId;
-
-    /**
-     * Returns an instance of this class associated with the specified unique ID.
-     *
-     * @param uniqueId Unique ID that is used to determine where the events are stored.
-     * @param context Context.
-     * @param encryptionKey Encryption key (must be Base 64 encoded).
-     * @param deviceAppAttributes Device app attributes.
-     */
-    public static synchronized AnalyticsManager getInstance(String uniqueId, Context context,
-                                                            String encryptionKey,
-                                                            DeviceAppAttributes deviceAppAttributes) {
-        if (TextUtils.isEmpty(uniqueId)) {
-            return null;
-        }
-        AnalyticsManager instance = null;
-        if (INSTANCES == null) {
-            INSTANCES = new HashMap<String, AnalyticsManager>();
-            instance = new AnalyticsManager(uniqueId, context, encryptionKey, deviceAppAttributes);
-            INSTANCES.put(uniqueId, instance);
-        } else {
-            instance = INSTANCES.get(uniqueId);
-        }
-        if (instance == null) {
-            instance = new AnalyticsManager(uniqueId, context, encryptionKey, deviceAppAttributes);
-            INSTANCES.put(uniqueId, instance);
-        }
-        return instance;
-    }
-
-    /**
-     * Resets and removes the instance associated with the specified unique ID.
-     *
-     * @param uniqueId Unique ID.
-     */
-    public static synchronized void reset(String uniqueId) {
-        if (TextUtils.isEmpty(uniqueId)) {
-            return;
-        }
-        if (INSTANCES != null) {
-            INSTANCES.remove(uniqueId);
-        }
-
-        /*
-         * TODO: Call this method and cleanup for StoreManager from logout in SalesforceSDKManager.
-         */
-    }
 
     /**
      * Parameterized constructor.
@@ -106,12 +56,18 @@ public class AnalyticsManager {
      * @param encryptionKey Encryption key.
      * @param deviceAppAttributes Device app attributes.
      */
-    private AnalyticsManager(String uniqueId, Context context, String encryptionKey,
+    public AnalyticsManager(String uniqueId, Context context, String encryptionKey,
                              DeviceAppAttributes deviceAppAttributes) {
-        this.uniqueId = uniqueId;
         storeManager = new EventStoreManager(uniqueId, context, encryptionKey);
         this.deviceAppAttributes = deviceAppAttributes;
         globalSequenceId = 0;
+    }
+
+    /**
+     * Resets this instance.
+     */
+    public void reset() {
+        storeManager.deleteAllEvents();
     }
 
     /**
@@ -142,6 +98,15 @@ public class AnalyticsManager {
     }
 
     /**
+     * Returns an instance of event store manager.
+     *
+     * @return Event store manager.
+     */
+    public EventStoreManager getEventStoreManager() {
+        return storeManager;
+    }
+
+    /**
      * Changes the encryption key to a new value.
      *
      * @param key New encryption key.
@@ -150,6 +115,7 @@ public class AnalyticsManager {
 
         /*
          * TODO: Call this from 'changePasscode' in SalesforceSDKManager when the passcode changes.
+         * Should be called for all instances of this class to change encryption key for all files.
          */
     }
 }

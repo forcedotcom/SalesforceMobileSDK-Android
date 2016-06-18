@@ -64,7 +64,7 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
         super.setUp();
         targetContext = getInstrumentation().getTargetContext();
         uniqueId = UUID.randomUUID().toString();
-        analyticsManager = AnalyticsManager.getInstance(uniqueId,
+        analyticsManager = new AnalyticsManager(uniqueId,
                 targetContext, TEST_ENCRYPTION_KEY, TEST_DEVICE_APP_ATTRIBUTES);
         storeManager = new EventStoreManager(TEST_FILENAME_SUFFIX, targetContext, TEST_ENCRYPTION_KEY);
     }
@@ -72,7 +72,7 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
     @Override
     public void tearDown() throws Exception {
         storeManager.deleteAllEvents();
-        AnalyticsManager.reset(uniqueId);
+        analyticsManager.reset();
         super.tearDown();
     }
 
