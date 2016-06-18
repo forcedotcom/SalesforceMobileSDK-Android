@@ -27,13 +27,9 @@
 package com.salesforce.androidsdk.analytics.manager;
 
 import android.content.Context;
-import android.text.TextUtils;
 
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.analytics.store.EventStoreManager;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * This class serves as an interface to the various
@@ -109,13 +105,10 @@ public class AnalyticsManager {
     /**
      * Changes the encryption key to a new value.
      *
-     * @param key New encryption key.
+     * @param oldKey Old encryption key.
+     * @param newKey New encryption key.
      */
-    public synchronized void changeEncryptionKey(String key) {
-
-        /*
-         * TODO: Call this from 'changePasscode' in SalesforceSDKManager when the passcode changes.
-         * Should be called for all instances of this class to change encryption key for all files.
-         */
+    public void changeEncryptionKey(String oldKey, String newKey) {
+        storeManager.changeEncryptionKey(oldKey, newKey);
     }
 }

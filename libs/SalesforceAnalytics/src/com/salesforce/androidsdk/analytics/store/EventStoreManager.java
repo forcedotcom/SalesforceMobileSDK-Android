@@ -185,6 +185,20 @@ public class EventStoreManager {
         }
     }
 
+    /**
+     * Changes the encryption key to a new value. Fetches all stored events
+     * and re-encrypts them with the new encryption key.
+     *
+     * @param oldKey Old encryption key.
+     * @param newKey New encryption key.
+     */
+    public void changeEncryptionKey(String oldKey, String newKey) {
+        final List<InstrumentationEvent> storedEvents = fetchAllEvents();
+        deleteAllEvents();
+        encryptionKey = newKey;
+        storeEvents(storedEvents);
+    }
+
     private InstrumentationEvent fetchEvent(File file) {
         if (file == null || !file.exists()) {
             Log.e(TAG, "File does not exist");

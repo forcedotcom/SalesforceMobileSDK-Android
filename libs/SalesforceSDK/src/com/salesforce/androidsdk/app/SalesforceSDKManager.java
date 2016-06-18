@@ -472,7 +472,6 @@ public class SalesforceSDKManager {
         return adminPermsManager;
     }
 
-
     /**
      * Changes the passcode to a new value.
      *
@@ -486,6 +485,7 @@ public class SalesforceSDKManager {
 
         // Resets the cached encryption key, since the passcode has changed.
         encryptionKey = null;
+        SalesforceAnalyticsManager.changePasscode(oldPass, newPass);
         ClientManager.changePasscode(oldPass, newPass);
     }
 
