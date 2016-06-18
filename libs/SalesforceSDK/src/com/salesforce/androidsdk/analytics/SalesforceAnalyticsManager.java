@@ -37,10 +37,13 @@ import android.util.Log;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.analytics.store.EventStoreManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -183,6 +186,49 @@ public class SalesforceAnalyticsManager {
      */
     public AnalyticsManager getAnalyticsManager() {
         return analyticsManager;
+    }
+
+    /**
+     * Publishes all stored events to all registered network endpoints after
+     * applying the required event format transforms.
+     */
+    public void publishAllEvents() {
+        final List<InstrumentationEvent> events = eventStoreManager.fetchAllEvents();
+        publishEvents(events);
+    }
+
+    /**
+     * Publishes a list of events to all registered network endpoints after
+     * applying the required event format transforms.
+     *
+     * @param events List of events.
+     */
+    public void publishEvents(List<InstrumentationEvent> events) {
+        if (events == null || events.size() == 0) {
+            return;
+        }
+
+        /*
+         * TODO:
+         *
+         * Apply transform on each event, send to network interface,
+         * delete stored events after network operation is complete.
+         */
+    }
+
+    /**
+     * Publishes an event to all registered network endpoints after
+     * applying the required event format transforms.
+     *
+     * @param event Event.
+     */
+    public void publishEvent(InstrumentationEvent event) {
+        if (event == null) {
+            return;
+        }
+        final List<InstrumentationEvent> events = new ArrayList<InstrumentationEvent>();
+        events.add(event);
+        publishEvents(events);
     }
 
     private SalesforceAnalyticsManager(UserAccount account, String communityId) {
