@@ -62,13 +62,13 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         super.setUp();
         targetContext = getInstrumentation().getTargetContext();
         uniqueId = UUID.randomUUID().toString();
-        analyticsManager = AnalyticsManager.getInstance(uniqueId,
+        analyticsManager = new AnalyticsManager(uniqueId,
                 targetContext, TEST_ENCRYPTION_KEY, TEST_DEVICE_APP_ATTRIBUTES);
     }
 
     @Override
     public void tearDown() throws Exception {
-        AnalyticsManager.reset(uniqueId);
+        analyticsManager.reset();
         super.tearDown();
     }
 
@@ -123,8 +123,8 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
      * @throws Exception
      */
     public void testMissingDeviceAppAttributes() throws Exception {
-        AnalyticsManager.reset(uniqueId);
-        analyticsManager = AnalyticsManager.getInstance(uniqueId, targetContext, TEST_ENCRYPTION_KEY, null);
+        analyticsManager.reset();
+        analyticsManager = new AnalyticsManager(uniqueId, targetContext, TEST_ENCRYPTION_KEY, null);
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
@@ -141,7 +141,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         } catch (InstrumentationEventBuilder.EventBuilderException e) {
             Log.v(TAG, "Exception thrown as expected");
         } finally {
-            AnalyticsManager.reset(uniqueId);
+            analyticsManager.reset();
         }
     }
 

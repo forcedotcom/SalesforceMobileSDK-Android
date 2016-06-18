@@ -49,6 +49,7 @@ import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -267,6 +268,15 @@ public class SalesforceSDKManager {
      */
     public Class<? extends Activity> getLoginActivityClass() {
     	return loginActivityClass;
+    }
+
+    /**
+     * Returns unique device ID.
+     *
+     * @return Device ID.
+     */
+    public String getDeviceId() {
+        return uid;
     }
 
 	/**
@@ -550,6 +560,8 @@ public class SalesforceSDKManager {
      * @param account Account.
      */
     protected void cleanUp(Activity frontActivity, Account account) {
+        final UserAccount userAccount = UserAccountManager.getInstance().buildUserAccount(account);
+        SalesforceAnalyticsManager.reset(userAccount);
         final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
 
         // Finishes front activity if specified, and if this is the last account.
