@@ -24,12 +24,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.analytics.manager;
+package com.salesforce.androidsdk.analytics;
+
+import org.json.JSONArray;
 
 /**
- * Test class for the AnalyticsManager class.
+ * Network publisher for the AILTN endpoint.
  *
  * @author bhariharan
  */
-public class AnalyticsManagerTest {
+public class AILTNPublisher implements AnalyticsPublisher {
+
+    @Override
+    public boolean publish(JSONArray events) {
+        if (events == null || events.length() == 0) {
+            return true;
+        }
+
+        /*
+         * TODO: Construct payload and publish events.
+         */
+        return false;
+    }
 }

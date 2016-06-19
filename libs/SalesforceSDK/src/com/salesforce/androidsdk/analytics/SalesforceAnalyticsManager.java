@@ -37,10 +37,18 @@ import android.util.Log;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.analytics.store.EventStoreManager;
+import com.salesforce.androidsdk.analytics.transform.AILTNTransform;
+import com.salesforce.androidsdk.analytics.transform.Transform;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -58,6 +66,7 @@ public class SalesforceAnalyticsManager {
 
     private AnalyticsManager analyticsManager;
     private EventStoreManager eventStoreManager;
+    private Map<Class<? extends Transform>, Class<? extends AnalyticsPublisher>> remotes;
 
     /**
      * Returns the instance of this class associated with this user account.
@@ -185,6 +194,106 @@ public class SalesforceAnalyticsManager {
         return analyticsManager;
     }
 
+    /**
+     * Publishes all stored events to all registered network endpoints after
+     * applying the required event format transforms. Stored events will be
+     * deleted if publishing was successful for all registered endpoints.
+     */
+    public void publishAllEvents() {
+        final List<InstrumentationEvent> events = eventStoreManager.fetchAllEvents();
+        publishEvents(events);
+    }
+
+    /**
+     * Publishes a list of events to all registered network endpoints after
+     * applying the required event format transforms. Stored events will be
+     * deleted if publishing was successful for all registered endpoints.
+     *
+     * @param events List of events.
+     */
+    public void publishEvents(List<InstrumentationEvent> events) {
+        if (events == null || events.size() == 0) {
+            return;
+        }
+        final List<String> eventsIds = new ArrayList<String>();
+        boolean success = true;
+        final Set<Class<? extends Transform>> remoteKeySet = remotes.keySet();
+        for (final Class<? extends Transform> transformClass : remoteKeySet) {
+            Transform transformer = null;
+            try {
+                transformer = transformClass.newInstance();
+            } catch (Exception e) {
+                Log.e(TAG, "Exception thrown while instantiating class", e);
+            }
+            if (transformer != null) {
+                final JSONArray eventsJSONArray = new JSONArray();
+                for (final InstrumentationEvent event : events) {
+                    eventsIds.add(event.getEventId());
+                    final JSONObject eventJSON = transformer.transform(event);
+                    if (eventJSON != null) {
+                        eventsJSONArray.put(eventJSON);
+                    }
+                }
+                AnalyticsPublisher networkPublisher = null;
+                try {
+                    networkPublisher = remotes.get(transformClass).newInstance();
+                } catch (Exception e) {
+                    Log.e(TAG, "Exception thrown while instantiating class", e);
+                }
+                if (networkPublisher != null) {
+                    boolean networkSuccess = networkPublisher.publish(eventsJSONArray);
+
+                    /*
+                     * Updates the success flag only if all previous requests have been
+                     * successful. This ensures that the operation is marked success only
+                     * if all publishers are successful.
+                     */
+                    if (success) {
+                        success = networkSuccess;
+                    }
+                }
+            }
+        }
+
+        /*
+         * Deletes events from the event store if the network publishing was successful.
+         */
+        if (success) {
+            eventStoreManager.deleteEvents(eventsIds);
+        }
+    }
+
+    /**
+     * Publishes an event to all registered network endpoints after
+     * applying the required event format transforms. Stored event will be
+     * deleted if publishing was successful for all registered endpoints.
+     *
+     * @param event Event.
+     */
+    public void publishEvent(InstrumentationEvent event) {
+        if (event == null) {
+            return;
+        }
+        final List<InstrumentationEvent> events = new ArrayList<InstrumentationEvent>();
+        events.add(event);
+        publishEvents(events);
+    }
+
+    /**
+     * Adds a remote publisher to publish events to.
+     *
+     * @param transformer Transformer class.
+     * @param publisher Publisher class.
+     */
+    public void addRemotePublisher(Class<? extends Transform> transformer,
+                                   Class<? extends AnalyticsPublisher> publisher) {
+        if (transformer == null || publisher == null) {
+            Log.w(TAG, "Invalid transformer and/or publisher");
+            return;
+        }
+        remotes.put(transformer, publisher);
+    }
+
     private SalesforceAnalyticsManager(UserAccount account, String communityId) {
         final DeviceAppAttributes deviceAppAttributes = buildDeviceAppAttributes();
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
@@ -193,6 +302,8 @@ public class SalesforceAnalyticsManager {
                 sdkManager.getEncryptionKeyForPasscode(sdkManager.getPasscodeHash()),
                 deviceAppAttributes);
         eventStoreManager = analyticsManager.getEventStoreManager();
+        remotes = new HashMap<Class<? extends Transform>, Class<? extends AnalyticsPublisher>>();
+        remotes.put(AILTNTransform.class, AILTNPublisher.class);
     }
 
     private DeviceAppAttributes buildDeviceAppAttributes() {
