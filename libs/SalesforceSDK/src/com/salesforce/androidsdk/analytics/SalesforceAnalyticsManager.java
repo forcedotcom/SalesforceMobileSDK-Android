@@ -289,6 +289,7 @@ public class SalesforceAnalyticsManager {
                                    Class<? extends AnalyticsPublisher> publisher) {
         if (transformer == null || publisher == null) {
             Log.w(TAG, "Invalid transformer and/or publisher");
+            return;
         }
         remotes.put(transformer, publisher);
     }
