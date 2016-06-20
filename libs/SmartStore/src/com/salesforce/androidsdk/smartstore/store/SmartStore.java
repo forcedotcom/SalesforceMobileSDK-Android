@@ -1148,7 +1148,7 @@ public class SmartStore  {
 	/**
 	 * Delete soup elements selected by querySpec (and commits)
 	 * @param soupName
-	 * @param querySpec
+	 * @param querySpec Query returning entries to delete (if querySpec uses smartSQL, it must select soup entry ids)
 	 */
 	public void deleteByQuery(String soupName, QuerySpec querySpec) {
 		final SQLiteDatabase db = getDatabase();
