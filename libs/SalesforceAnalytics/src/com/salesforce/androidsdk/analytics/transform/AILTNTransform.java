@@ -26,8 +26,13 @@
  */
 package com.salesforce.androidsdk.analytics.transform;
 
+import android.text.TextUtils;
+import android.util.Log;
+
+import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -37,16 +42,113 @@ import org.json.JSONObject;
  */
 public class AILTNTransform implements Transform {
 
+    private static final String TAG = "AILTNTransform";
+    private static final String CONNECTION_TYPE_KEY = "connectionType";
+    private static final String PAYLOAD_KEY = "payload";
+    private static final String VERSION_KEY = "version";
+    private static final String VERSION_VALUE = "0.2";
+    private static final String SCHEMA_TYPE_KEY = "schemaType";
+    private static final String ID_KEY = "id";
+    private static final String EVENT_SOURCE_KEY = "eventSource";
+    private static final String TS_KEY = "ts";
+    private static final String PAGE_START_TIME_KEY = "pageStartTime";
+    private static final String DURATION_KEY = "duration";
+    private static final String CLIENT_SESSION_ID_KEY = "clientSessionId";
+    private static final String SEQUENCE_KEY = "sequence";
+    private static final String ATTRIBUTES_KEY = "attributes";
+    private static final String LOCATOR_KEY = "locator";
+    private static final String EVENT_TYPE_KEY = "eventType";
+    private static final String ERROR_TYPE_KEY = "errorType";
+    private static final String TARGET_KEY = "target";
+    private static final String SCOPE_KEY = "scope";
+    private static final String CONTEXT_KEY = "context";
+
     @Override
     public JSONObject transform(InstrumentationEvent event) {
-        if (event == null || event.toJson() == null) {
+        if (event == null) {
             return null;
         }
-        final JSONObject json = event.toJson();
+        JSONObject logLine = new JSONObject();
+        try {
+            final DeviceAppAttributes deviceAppAttributes = event.getDeviceAppAttributes();
+            if (deviceAppAttributes != null) {
+                logLine = deviceAppAttributes.toJson();
+            }
+            logLine.put(CONNECTION_TYPE_KEY, event.getConnectionType());
+            final JSONObject payload = buildPayload(event);
+            if (payload != null) {
+                logLine.put(PAYLOAD_KEY, payload.toString());
+            }
+        } catch (JSONException e) {
+            logLine = null;
+            Log.e(TAG, "Exception thrown while transforming JSON", e);
+        }
+        return logLine;
+    }
 
-        /*
-         * TODO: Transform event into required payload.
-         */
-        return null;
+    private JSONObject buildPayload(InstrumentationEvent event) {
+        JSONObject payload = new JSONObject();
+        try {
+            payload.put(VERSION_KEY, VERSION_VALUE);
+            final InstrumentationEvent.SchemaType schemaType = event.getSchemaType();
+            payload.put(SCHEMA_TYPE_KEY, schemaType.name());
+            payload.put(ID_KEY, event.getEventId());
+            payload.put(EVENT_SOURCE_KEY, event.getName());
+            long startTime = event.getStartTime();
+            payload.put(TS_KEY, startTime);
+            payload.put(PAGE_START_TIME_KEY, event.getSessionStartTime());
+            long endTime = event.getEndTime();
+            if (endTime != 0) {
+                long duration = startTime - endTime;
+                payload.put(DURATION_KEY, duration);
+            }
+            int sessionId = event.getSessionId();
+            if (sessionId != 0) {
+                payload.put(CLIENT_SESSION_ID_KEY, sessionId);
+            }
+            payload.put(SEQUENCE_KEY, event.getSequenceId());
+            final JSONObject attributes = event.getAttributes();
+            if (attributes != null) {
+                payload.put(ATTRIBUTES_KEY, attributes);
+            }
+            final JSONObject locator = buildLocator(event);
+            if (locator != null) {
+                payload.put(LOCATOR_KEY, locator);
+            }
+            final InstrumentationEvent.EventType eventType = event.getEventType();
+            if (eventType != null && schemaType == InstrumentationEvent.SchemaType.interaction) {
+                payload.put(EVENT_TYPE_KEY, eventType.name());
+            }
+            final InstrumentationEvent.ErrorType errorType = event.getErrorType();
+            if (errorType != null && schemaType == InstrumentationEvent.SchemaType.error) {
+                payload.put(ERROR_TYPE_KEY, errorType.name());
+            }
+        } catch (JSONException e) {
+            payload = null;
+            Log.e(TAG, "Exception thrown while transforming JSON", e);
+        }
+        return payload;
+    }
+
+    private JSONObject buildLocator(InstrumentationEvent event) {
+        JSONObject locator = new JSONObject();
+        try {
+            final String senderId = event.getSenderId();
+            if (!TextUtils.isEmpty(senderId)) {
+                locator.put(TARGET_KEY, senderId);
+            }
+            final String senderParentId = event.getSenderParentId();
+            if (!TextUtils.isEmpty(senderParentId)) {
+                locator.put(SCOPE_KEY, senderParentId);
+            }
+            final JSONObject senderContext = event.getSenderContext();
+            if (senderContext != null) {
+                locator.put(CONTEXT_KEY, senderContext);
+            }
+        } catch (JSONException e) {
+            locator = null;
+            Log.e(TAG, "Exception thrown while transforming JSON", e);
+        }
+        return locator;
     }
 }
