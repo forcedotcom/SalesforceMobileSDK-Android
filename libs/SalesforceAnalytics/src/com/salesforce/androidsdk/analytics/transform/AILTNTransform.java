@@ -65,7 +65,7 @@ public class AILTNTransform implements Transform {
 
     @Override
     public JSONObject transform(InstrumentationEvent event) {
-        if (event == null || event.toJson() == null) {
+        if (event == null) {
             return null;
         }
         JSONObject logLine = new JSONObject();
