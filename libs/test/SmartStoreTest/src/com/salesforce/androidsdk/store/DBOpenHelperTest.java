@@ -287,14 +287,12 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
 
 		// Test result when soup name is given
-		assertEquals("Wrong external soup blobs path returned.",
-					 "/data/data/com.salesforce.androidsdk.smartstore.tests/databases/" + TEST_DB + ".db_external_soup_blobs/" + TEST_SOUP + "/",
-					 helper.getExternalSoupBlobsPath(TEST_SOUP));
+		assertTrue("Wrong external soup blobs path returned.",
+					 helper.getExternalSoupBlobsPath(TEST_SOUP).endsWith("com.salesforce.androidsdk.smartstore.tests/databases/" + TEST_DB + ".db_external_soup_blobs/" + TEST_SOUP + "/"));
 
 		// Test result when soup name is null
-		assertEquals("Wrong external soup blobs path returned.",
-					 "/data/data/com.salesforce.androidsdk.smartstore.tests/databases/" + TEST_DB + ".db_external_soup_blobs/",
-					 helper.getExternalSoupBlobsPath(null));
+		assertTrue("Wrong external soup blobs path returned.",
+					 helper.getExternalSoupBlobsPath(null).endsWith("com.salesforce.androidsdk.smartstore.tests/databases/" + TEST_DB + ".db_external_soup_blobs/"));
 	}
 
 	/**
@@ -472,9 +470,8 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 		File soupBlobFile = helper.getSoupBlobFile(TEST_SOUP, soupEntryId);
 
 		// Verify
-		assertEquals("Soup blob file does not have expected path.",
-					 "/data/data/com.salesforce.androidsdk.smartstore.tests/databases/" + TEST_DB + ".db_external_soup_blobs/" + TEST_SOUP + "/soupelt_" + soupEntryId,
-					 soupBlobFile.getAbsolutePath());
+		assertTrue("Soup blob file does not have expected path.",
+					 soupBlobFile.getAbsolutePath().endsWith("com.salesforce.androidsdk.smartstore.tests/databases/" + TEST_DB + ".db_external_soup_blobs/" + TEST_SOUP + "/soupelt_" + soupEntryId));
 	}
 
 	/**

@@ -26,8 +26,11 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.database.Cursor;
-import android.os.SystemClock;
+import java.util.Arrays;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.AlterSoupLongOperation;
@@ -603,7 +606,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
 		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
 
-        QuerySpec querySpec = QuerySpec.buildRangeQuerySpec(TEST_SOUP, "key", "ka1", "ka2", "key", Order.ascending, 2);
+        QuerySpec querySpec = QuerySpec.buildRangeQuerySpec(TEST_SOUP, "key", "ka1", "ka2", Order.ascending, 2);
 
 		store.deleteByQuery(TEST_SOUP, querySpec);
 

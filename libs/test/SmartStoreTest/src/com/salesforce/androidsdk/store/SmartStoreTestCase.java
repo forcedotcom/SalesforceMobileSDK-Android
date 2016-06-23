@@ -26,16 +26,12 @@
  */
 package com.salesforce.androidsdk.store;
 
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import android.content.Context;
-import android.database.Cursor;
-import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
@@ -43,10 +39,12 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteOpenHelper;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.test.InstrumentationTestCase;
 
 /**
  * Abstract super class for smart store tests
