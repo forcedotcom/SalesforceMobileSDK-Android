@@ -1301,17 +1301,18 @@ public class SmartStore  {
 			}
 			try {
                 String subQuerySql = String.format("SELECT %s FROM (%s) LIMIT %d", ID_COL, convertSmartSql(querySpec.idsSmartSql), querySpec.pageSize);
+				String[] args = querySpec.getArgs();
 
 				if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
 					// Query list of ids and remove them from external storage
 					Cursor c = null;
 					try {
-						c = db.rawQuery(subQuerySql, null);
+						c = db.query(soupTableName, new String[] { ID_COL }, buildInStatement(ID_COL, subQuerySql), args, null, null, null);
 						if (c.moveToFirst()) {
 							Long[] ids = new Long[c.getCount()];
 							int counter = 0;
 							do {
-								ids[counter++] = c.getLong(c.getColumnIndex(ID_COL));
+								ids[counter++] = c.getLong(0);
 							} while (c.moveToNext());
 							((DBOpenHelper) dbOpenHelper).removeSoupBlob(soupTableName, ids);
 						}
@@ -1322,7 +1323,6 @@ public class SmartStore  {
 					}
 				}
 
-				String[] args = querySpec.getArgs();
 				db.delete(soupTableName, buildInStatement(ID_COL, subQuerySql), args);
 
 				if (hasFTS(soupName)) {
