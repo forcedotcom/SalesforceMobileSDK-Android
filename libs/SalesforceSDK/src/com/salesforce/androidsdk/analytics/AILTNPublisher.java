@@ -88,7 +88,7 @@ public class AILTNPublisher implements AnalyticsPublisher {
         final String apiPath = String.format(API_PATH,
                 ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()));
         final RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient();
-        final RequestBody requestBody = RequestBody.create(RestRequest.MEDIA_TYPE_JSON, events.toString());
+        final RequestBody requestBody = RequestBody.create(RestRequest.MEDIA_TYPE_JSON, body.toString());
         final RestRequest restRequest = new RestRequest(RestRequest.RestMethod.POST, apiPath, requestBody);
         RestResponse restResponse = null;
         try {
