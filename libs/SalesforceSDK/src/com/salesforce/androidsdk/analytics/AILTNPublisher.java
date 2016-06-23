@@ -26,7 +26,21 @@
  */
 package com.salesforce.androidsdk.analytics;
 
+import android.util.Log;
+
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.rest.RestClient;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
+
 import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+
+import okhttp3.RequestBody;
 
 /**
  * Network publisher for the AILTN endpoint.
@@ -35,15 +49,56 @@ import org.json.JSONArray;
  */
 public class AILTNPublisher implements AnalyticsPublisher {
 
+    private static final String TAG = "AILTNPublisher";
+    private static final String CODE = "code";
+    private static final String AILTN = "ailtn";
+    private static final String JSON_DATA = "jsonData";
+    private static final String DATA = "data";
+    private static final String LOG_LINES = "logLines";
+    private static final String API_PATH = "/services/data/%s/connect/proxy/app-analytics-logging";
+
+    // TODO: Add GZIP compression to the header and data.
+
     @Override
     public boolean publish(JSONArray events) {
         if (events == null || events.length() == 0) {
             return true;
         }
 
-        /*
-         * TODO: Construct payload and publish events.
-         */
+        // Builds the POST body of the request.
+        final JSONObject body = new JSONObject();
+        try {
+            final JSONArray logLines = new JSONArray();
+            for (int i = 0; i < events.length(); i++) {
+                final JSONObject event = events.optJSONObject(i);
+                if (event != null) {
+                    final JSONObject trackingInfo = new JSONObject();
+                    trackingInfo.put(CODE, AILTN);
+                    final JSONObject eventData = new JSONObject();
+                    eventData.put(JSON_DATA, event.toString());
+                    trackingInfo.put(DATA, eventData);
+                    logLines.put(trackingInfo);
+                }
+            }
+            body.put(LOG_LINES, logLines);
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception thrown while constructing event payload", e);
+            return false;
+        }
+        final String apiPath = String.format(API_PATH,
+                ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()));
+        final RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient();
+        final RequestBody requestBody = RequestBody.create(RestRequest.MEDIA_TYPE_JSON, events.toString());
+        final RestRequest restRequest = new RestRequest(RestRequest.RestMethod.POST, apiPath, requestBody);
+        RestResponse restResponse = null;
+        try {
+            restResponse = restClient.sendSync(restRequest);
+        } catch (IOException e) {
+            Log.e(TAG, "Exception thrown while making network request", e);
+        }
+        if (restResponse != null && restResponse.isSuccess()) {
+            return true;
+        }
         return false;
     }
 }
