@@ -271,7 +271,14 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     }
     
     protected URI getAuthorizationUrl() throws URISyntaxException {
-        return OAuth2.getAuthorizationUrl(
+//        return OAuth2.getAuthorizationUrl(
+//                new URI(loginOptions.loginUrl),
+//                getOAuthClientId(),
+//                loginOptions.oauthCallbackUrl,
+//                loginOptions.oauthScopes,
+//                null,
+//                getAuthorizationDisplayType());
+        return OAuth2.getAuthorizationUrl( "00DT0000000Dpvc!AQYAQMCRjUGw2J5rD6bQdewSX_j8bPN8gd0MKcmFJwGpG_Aej9WoUJK2NxACQbVuDkXm2UBXwiTyXS8lROJmI8.ax1qHiTv2","https://gs0.salesforce.com",
                 new URI(loginOptions.loginUrl),
                 getOAuthClientId(),
                 loginOptions.oauthCallbackUrl,

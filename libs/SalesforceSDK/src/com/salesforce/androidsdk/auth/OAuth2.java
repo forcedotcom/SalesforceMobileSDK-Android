@@ -152,13 +152,30 @@ public class OAuth2 {
     
     public static URI getAuthorizationUrl(URI loginServer, String clientId,
             String callbackUrl, String[] scopes, String clientSecret, String displayType) {
+        return URI.create(getAuthorizationUrlStr(loginServer, clientId, callbackUrl, scopes, clientSecret, displayType));
+    }
+
+
+    public static URI getAuthorizationUrl(String accessToken, String instanceURL, URI loginServer, String clientId,
+                                          String callbackUrl, String[] scopes, String clientSecret, String displayType) {
+        final StringBuilder sb = new StringBuilder(instanceURL);
+        sb.append("/secur/frontdoor.jsp?");
+        sb.append("sid").append(EQUAL).append(accessToken);
+        sb.append(AND).append("retURL").append(EQUAL).append(Uri.encode(getAuthorizationUrlStr(loginServer,clientId,callbackUrl, scopes, clientSecret, displayType)));
+        return URI.create(sb.toString());
+    }
+
+
+    private static String getAuthorizationUrlStr(URI loginServer, String clientId,
+                                              String callbackUrl, String[] scopes, String clientSecret, String displayType) {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_AUTH_PATH).append(displayType == null ? TOUCH : displayType);
         sb.append(AND).append(RESPONSE_TYPE).append(EQUAL).append(clientSecret == null ? TOKEN : ACTIVATED_CLIENT_CODE);
         sb.append(AND).append(CLIENT_ID).append(EQUAL).append(Uri.encode(clientId));
-        if (scopes != null && scopes.length > 0) sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
+        if (scopes != null && scopes.length > 0)
+            sb.append(AND).append(SCOPE).append(EQUAL).append(Uri.encode(computeScopeParameter(scopes)));
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
-        return URI.create(sb.toString());
+        return sb.toString();
     }
 
     private static String computeScopeParameter(String[] scopes) {
