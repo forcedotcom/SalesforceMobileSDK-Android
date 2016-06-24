@@ -91,7 +91,7 @@ public class AILTNTransform implements Transform {
         try {
             payload.put(VERSION_KEY, VERSION_VALUE);
             final InstrumentationEvent.SchemaType schemaType = event.getSchemaType();
-            payload.put(SCHEMA_TYPE_KEY, schemaType.toString());
+            payload.put(SCHEMA_TYPE_KEY, schemaType.name());
             payload.put(ID_KEY, event.getEventId());
             payload.put(EVENT_SOURCE_KEY, event.getName());
             long startTime = event.getStartTime();
@@ -117,11 +117,11 @@ public class AILTNTransform implements Transform {
             }
             final InstrumentationEvent.EventType eventType = event.getEventType();
             if (eventType != null && schemaType == InstrumentationEvent.SchemaType.interaction) {
-                payload.put(EVENT_TYPE_KEY, eventType.toString());
+                payload.put(EVENT_TYPE_KEY, eventType.name());
             }
             final InstrumentationEvent.ErrorType errorType = event.getErrorType();
             if (errorType != null && schemaType == InstrumentationEvent.SchemaType.error) {
-                payload.put(ERROR_TYPE_KEY, errorType.toString());
+                payload.put(ERROR_TYPE_KEY, errorType.name());
             }
         } catch (JSONException e) {
             payload = null;

@@ -362,21 +362,10 @@ public class InstrumentationEvent {
      * Represents the type of schema being logged.
      */
     public enum SchemaType {
-        interaction("ui.instrumentation.schema.avro.LightningInteraction"),
-        pageView("ui.instrumentation.schema.avro.LightningPageView"),
-        perf("ui.instrumentation.schema.avro.LightningError"),
-        error("ui.instrumentation.schema.avro.LightningPerformance");
-
-        private final String stringRepresentation;
-
-        private SchemaType(String stringRepresentation) {
-            this.stringRepresentation = stringRepresentation;
-        }
-
-        @Override
-        public String toString() {
-            return stringRepresentation;
-        }
+        interaction,
+        pageView,
+        perf,
+        error
     }
 
     /**
