@@ -75,7 +75,7 @@ public class AILTNPublisher implements AnalyticsPublisher {
                     final JSONObject trackingInfo = new JSONObject();
                     trackingInfo.put(CODE, AILTN);
                     final JSONObject eventData = new JSONObject();
-                    eventData.put(JSON_DATA, event);
+                    eventData.put(JSON_DATA, event.toString());
                     trackingInfo.put(DATA, eventData);
                     logLines.put(trackingInfo);
                 }
