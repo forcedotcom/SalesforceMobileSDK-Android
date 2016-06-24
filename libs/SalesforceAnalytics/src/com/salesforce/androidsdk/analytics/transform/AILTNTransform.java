@@ -77,7 +77,7 @@ public class AILTNTransform implements Transform {
             logLine.put(CONNECTION_TYPE_KEY, event.getConnectionType());
             final JSONObject payload = buildPayload(event);
             if (payload != null) {
-                logLine.put(PAYLOAD_KEY, payload.toString());
+                logLine.put(PAYLOAD_KEY, payload);
             }
         } catch (JSONException e) {
             logLine = null;
@@ -91,7 +91,7 @@ public class AILTNTransform implements Transform {
         try {
             payload.put(VERSION_KEY, VERSION_VALUE);
             final InstrumentationEvent.SchemaType schemaType = event.getSchemaType();
-            payload.put(SCHEMA_TYPE_KEY, schemaType.name());
+            payload.put(SCHEMA_TYPE_KEY, schemaType.toString());
             payload.put(ID_KEY, event.getEventId());
             payload.put(EVENT_SOURCE_KEY, event.getName());
             long startTime = event.getStartTime();
@@ -117,11 +117,11 @@ public class AILTNTransform implements Transform {
             }
             final InstrumentationEvent.EventType eventType = event.getEventType();
             if (eventType != null && schemaType == InstrumentationEvent.SchemaType.interaction) {
-                payload.put(EVENT_TYPE_KEY, eventType.name());
+                payload.put(EVENT_TYPE_KEY, eventType.toString());
             }
             final InstrumentationEvent.ErrorType errorType = event.getErrorType();
             if (errorType != null && schemaType == InstrumentationEvent.SchemaType.error) {
-                payload.put(ERROR_TYPE_KEY, errorType.name());
+                payload.put(ERROR_TYPE_KEY, errorType.toString());
             }
         } catch (JSONException e) {
             payload = null;
