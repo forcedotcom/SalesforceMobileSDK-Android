@@ -77,7 +77,7 @@ public class AILTNTransform implements Transform {
             logLine.put(CONNECTION_TYPE_KEY, event.getConnectionType());
             final JSONObject payload = buildPayload(event);
             if (payload != null) {
-                logLine.put(PAYLOAD_KEY, payload.toString());
+                logLine.put(PAYLOAD_KEY, payload);
             }
         } catch (JSONException e) {
             logLine = null;

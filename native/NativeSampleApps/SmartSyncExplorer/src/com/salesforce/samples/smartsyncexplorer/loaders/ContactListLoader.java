@@ -192,6 +192,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
                 Log.w(TAG, "Exception thrown while attempting to build event");
             }
             sfAnalyticsManager.getEventStoreManager().storeEvent(event);
+			sfAnalyticsManager.publishAllEvents();
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
         } catch (SmartSyncException e) {
