@@ -257,6 +257,42 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
         assertTrue("Stored event should be the same as generated event", event.equals(events.get(0)));
     }
 
+    /**
+     * Test for event limit exceeded.
+     *
+     * @throws Exception
+     */
+    public void testEventLimitExceeded() throws Exception {
+        final InstrumentationEvent event = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event);
+        storeManager.setMaxEvents(0);
+        storeManager.storeEvent(event);
+        final List<InstrumentationEvent> events = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", events);
+        assertEquals("Number of events stored should be 0", 0, events.size());
+    }
+
+    /**
+     * Test for event limit not exceeded.
+     *
+     * @throws Exception
+     */
+    public void testEventLimitNotExceeded() throws Exception {
+        final InstrumentationEvent event = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event);
+        storeManager.setMaxEvents(0);
+        storeManager.storeEvent(event);
+        List<InstrumentationEvent> events = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", events);
+        assertEquals("Number of events stored should be 0", 0, events.size());
+        storeManager.setMaxEvents(1);
+        storeManager.storeEvent(event);
+        events = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", events);
+        assertEquals("Number of events stored should be 1", 1, events.size());
+        assertTrue("Stored event should be the same as generated event", event.equals(events.get(0)));
+    }
+
     private InstrumentationEvent createTestEvent() throws Exception {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();

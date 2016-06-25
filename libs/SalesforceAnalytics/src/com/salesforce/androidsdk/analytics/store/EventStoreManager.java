@@ -60,6 +60,7 @@ public class EventStoreManager {
     private Context context;
     private String encryptionKey;
     private boolean isLoggingEnabled = true;
+    private int maxEvents = 1000;
 
     /**
      * Parameterized constructor.
@@ -225,10 +226,22 @@ public class EventStoreManager {
         return isLoggingEnabled;
     }
 
-    private boolean shouldStoreEvent() {
-        return isLoggingEnabled;
+    /**
+     * Sets the maximum number of events that can be stored.
+     *
+     * @param maxEvents Maximum number of events.
+     */
+    public synchronized void setMaxEvents(int maxEvents) {
+        this.maxEvents = maxEvents;
+    }
 
-        // TODO: Add number of events limit here.
+    private boolean shouldStoreEvent() {
+        final List<File> files = getAllFiles();
+        int fileCount = 0;
+        if (files != null) {
+            fileCount = files.size();
+        }
+        return (isLoggingEnabled && (fileCount < maxEvents));
     }
 
     private InstrumentationEvent fetchEvent(File file) {
@@ -263,7 +276,8 @@ public class EventStoreManager {
 
     private List<File> getAllFiles() {
         final List<File> files = new ArrayList<File>();
-        for (final File file : rootDir.listFiles()) {
+        final File[] listOfFiles = rootDir.listFiles();
+        for (final File file : listOfFiles) {
             if (file != null && fileFilter.accept(rootDir, file.getName())) {
                 files.add(file);
             }
