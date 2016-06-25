@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.analytics;
 
 import android.util.Log;
 
+import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -52,9 +53,9 @@ public class AILTNPublisher implements AnalyticsPublisher {
     private static final String TAG = "AILTNPublisher";
     private static final String CODE = "code";
     private static final String AILTN = "ailtn";
-    private static final String JSON_DATA = "jsonData";
     private static final String DATA = "data";
     private static final String LOG_LINES = "logLines";
+    private static final String PAYLOAD = "payload";
     private static final String API_PATH = "/services/data/%s/connect/proxy/app-analytics-logging";
 
     // TODO: Add GZIP compression to the header and data.
@@ -74,9 +75,11 @@ public class AILTNPublisher implements AnalyticsPublisher {
                 if (event != null) {
                     final JSONObject trackingInfo = new JSONObject();
                     trackingInfo.put(CODE, AILTN);
-                    final JSONObject eventData = new JSONObject();
-                    eventData.put(JSON_DATA, event.toString());
-                    trackingInfo.put(DATA, eventData);
+                    final JSONObject data = new JSONObject();
+                    data.put(PAYLOAD, event.toString());
+                    final String schemaType = event.optString(InstrumentationEvent.SCHEMA_TYPE_KEY);
+                    data.put(InstrumentationEvent.SCHEMA_TYPE_KEY, schemaType);
+                    trackingInfo.put(DATA, data);
                     logLines.put(trackingInfo);
                 }
             }

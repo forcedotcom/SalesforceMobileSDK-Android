@@ -44,7 +44,6 @@ public class AILTNTransform implements Transform {
 
     private static final String TAG = "AILTNTransform";
     private static final String CONNECTION_TYPE_KEY = "connectionType";
-    private static final String PAYLOAD_KEY = "payload";
     private static final String VERSION_KEY = "version";
     private static final String VERSION_VALUE = "0.2";
     private static final String SCHEMA_TYPE_KEY = "schemaType";
@@ -62,28 +61,37 @@ public class AILTNTransform implements Transform {
     private static final String TARGET_KEY = "target";
     private static final String SCOPE_KEY = "scope";
     private static final String CONTEXT_KEY = "context";
+    private static final String DEVICE_ATTRIBUTES_KEY = "deviceAttributes";
 
     @Override
     public JSONObject transform(InstrumentationEvent event) {
         if (event == null) {
             return null;
         }
-        JSONObject logLine = new JSONObject();
+        JSONObject logLine = buildPayload(event);
         try {
-            final DeviceAppAttributes deviceAppAttributes = event.getDeviceAppAttributes();
-            if (deviceAppAttributes != null) {
-                logLine = deviceAppAttributes.toJson();
-            }
-            logLine.put(CONNECTION_TYPE_KEY, event.getConnectionType());
-            final JSONObject payload = buildPayload(event);
-            if (payload != null) {
-                logLine.put(PAYLOAD_KEY, payload);
+            if (logLine != null) {
+                logLine.put(DEVICE_ATTRIBUTES_KEY, buildDeviceAttributes(event));
             }
         } catch (JSONException e) {
             logLine = null;
             Log.e(TAG, "Exception thrown while transforming JSON", e);
         }
         return logLine;
+    }
+
+    private JSONObject buildDeviceAttributes(InstrumentationEvent event) {
+        JSONObject deviceAttributes = new JSONObject();
+        try {
+            final DeviceAppAttributes deviceAppAttributes = event.getDeviceAppAttributes();
+            if (deviceAppAttributes != null) {
+                deviceAttributes = deviceAppAttributes.toJson();
+            }
+            deviceAttributes.put(CONNECTION_TYPE_KEY, event.getConnectionType());
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception thrown while transforming JSON", e);
+        }
+        return deviceAttributes;
     }
 
     private JSONObject buildPayload(InstrumentationEvent event) {
