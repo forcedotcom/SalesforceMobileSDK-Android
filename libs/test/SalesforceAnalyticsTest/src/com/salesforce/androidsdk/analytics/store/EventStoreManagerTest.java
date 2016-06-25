@@ -221,6 +221,42 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
         assertEquals("Number of events stored should be 0", 0, eventsAfterDel.size());
     }
 
+    /**
+     * Test for disabling logging.
+     *
+     * @throws Exception
+     */
+    public void testDisablingLogging() throws Exception {
+        final InstrumentationEvent event = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event);
+        storeManager.disableOrEnableLogging(false);
+        storeManager.storeEvent(event);
+        final List<InstrumentationEvent> events = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", events);
+        assertEquals("Number of events stored should be 0", 0, events.size());
+    }
+
+    /**
+     * Test for enabling logging.
+     *
+     * @throws Exception
+     */
+    public void testEnablingLogging() throws Exception {
+        final InstrumentationEvent event = createTestEvent();
+        assertNotNull("Generated event stored should not be null", event);
+        storeManager.disableOrEnableLogging(false);
+        storeManager.storeEvent(event);
+        List<InstrumentationEvent> events = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", events);
+        assertEquals("Number of events stored should be 0", 0, events.size());
+        storeManager.disableOrEnableLogging(true);
+        storeManager.storeEvent(event);
+        events = storeManager.fetchAllEvents();
+        assertNotNull("List of events stored should not be null", events);
+        assertEquals("Number of events stored should be 1", 1, events.size());
+        assertTrue("Stored event should be the same as generated event", event.equals(events.get(0)));
+    }
+
     private InstrumentationEvent createTestEvent() throws Exception {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();

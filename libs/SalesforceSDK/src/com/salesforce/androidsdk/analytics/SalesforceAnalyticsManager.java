@@ -195,6 +195,25 @@ public class SalesforceAnalyticsManager {
     }
 
     /**
+     * Disables or enables logging of events. If logging is disabled, no events
+     * will be stored. However, publishing of events is still possible.
+     *
+     * @param enabled True - if logging should be enabled, False - otherwise.
+     */
+    public void disableOrEnableLogging(boolean enabled) {
+        eventStoreManager.disableOrEnableLogging(enabled);
+    }
+
+    /**
+     * Returns whether logging is enabled or disabled.
+     *
+     * @return True - if logging is enabled, False - otherwise.
+     */
+    public boolean isLoggingEnabled() {
+        return eventStoreManager.isLoggingEnabled();
+    }
+
+    /**
      * Publishes all stored events to all registered network endpoints after
      * applying the required event format transforms. Stored events will be
      * deleted if publishing was successful for all registered endpoints.
