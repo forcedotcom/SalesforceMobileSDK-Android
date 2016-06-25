@@ -123,6 +123,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static DBOpenHelper getOpenHelper(Context ctx, String dbNamePrefix,
 			UserAccount account, String communityId) {
 		final StringBuffer dbName = new StringBuffer(dbNamePrefix);
+		dataDir = ctx.getApplicationInfo().dataDir;
 
 		// If we have account information, we will use it to create a database suffix for the user.
 		if (account != null) {
@@ -144,6 +145,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	protected DBOpenHelper(Context context, String dbName) {
 		super(context, dbName, null, DB_VERSION, new DBHook());
 		this.loadLibs(context);
+		this.dbName = dbName;
 	}
 
 	 protected void loadLibs(Context context) {
@@ -376,7 +378,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @return Path to external blobs folder for the given soup. If no soup is provided, the parent directory is returned.
 	 */
 	public String getExternalSoupBlobsPath(String soupTableName) {
-		StringBuilder path = new StringBuilder(context.getApplicationInfo().dataDir);
+		StringBuilder path = new StringBuilder(dataDir);
 		path.append("/databases/").append(dbName).append(EXTERNAL_BLOBS_SUFFIX);
 		if (soupTableName != null) {
 			path.append(soupTableName).append('/');

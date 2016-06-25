@@ -33,6 +33,7 @@ import org.json.JSONObject;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 
 import android.util.Log;
@@ -56,6 +57,8 @@ public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
 
     // Test very large payloads for smartstore
     public void testUpsertLargePayload() throws JSONException {
+        setupSoup(TEST_SOUP, 1, Type.string);
+
         JSONObject entry = new JSONObject();
 
         for (int i = 0; i < 5; i++) {
@@ -80,5 +83,30 @@ public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
         for (int i = 0; i < 5; i++) {
             assertTrue("Value at index " + i + " is incorrect", result.getJSONObject(0).getString("value_" + i).startsWith("" + i));
         }
+    }
+
+    @Override
+    public void testAlterSoupJSON1Indexing() throws JSONException {
+        // json1 is not compatible with external storage.
+    }
+
+    @Override
+    public void testUpsertQuery1JSON1Index1field20characters() throws JSONException {
+        // json1 is not compatible with external storage.
+    }
+
+    @Override
+    public void testUpsertQuery1JSON1Index1field1000characters() throws JSONException {
+        // json1 is not compatible with external storage.
+    }
+
+    @Override
+    public void testUpsertQuery1JSON1Index10fields20characters() throws JSONException {
+        // json1 is not compatible with external storage.
+    }
+
+    @Override
+    public void testUpsertQuery10JSON1Indexes10fields20characters() throws JSONException {
+        // json1 is not compatible with external storage.
     }
 }

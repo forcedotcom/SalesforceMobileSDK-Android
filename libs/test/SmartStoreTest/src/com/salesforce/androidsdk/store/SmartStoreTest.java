@@ -26,15 +26,13 @@
  */
 package com.salesforce.androidsdk.store;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.salesforce.androidsdk.security.Encryptor;
-import com.salesforce.androidsdk.smartstore.store.AlterSoupLongOperation;
-import com.salesforce.androidsdk.smartstore.store.AlterSoupLongOperation.AlterSoupStep;
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
@@ -46,12 +44,8 @@ import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.ArrayList;
-import java.util.Arrays;
+import android.database.Cursor;
+import android.os.SystemClock;
 
 /**
  * Main test suite for SmartStore
@@ -606,7 +600,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
 		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
 
-        QuerySpec querySpec = QuerySpec.buildRangeQuerySpec(TEST_SOUP, "key", "ka1", "ka2", Order.ascending, 2);
+		QuerySpec querySpec = QuerySpec.buildRangeQuerySpec(TEST_SOUP, "key", "ka1", "ka2", "key", Order.ascending, 2);
 
 		store.deleteByQuery(TEST_SOUP, querySpec);
 
@@ -869,7 +863,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 
 	}
 
-    private void runQueryCheckResultsAndExplainPlan(String soupName, QuerySpec querySpec, int page, boolean covering, String expectedDbOperation, JSONObject... expectedResults) throws JSONException {
+    protected void runQueryCheckResultsAndExplainPlan(String soupName, QuerySpec querySpec, int page, boolean covering, String expectedDbOperation, JSONObject... expectedResults) throws JSONException {
         // Run query
         JSONArray result = store.query(querySpec, page);
 
@@ -1215,7 +1209,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
                 soupElt1Created, soupElt3Created);
     }
 
-    private void tryAllQueryOnChangedSoupWithUpdate(String soupName, JSONObject deletedEntry, String orderPath,
+    protected void tryAllQueryOnChangedSoupWithUpdate(String soupName, JSONObject deletedEntry, String orderPath,
                                                     IndexSpec[] newIndexSpecs, JSONObject... expectedResults) throws JSONException {
         //alert the soup
         store.alterSoup(soupName, newIndexSpecs, true);
@@ -1305,7 +1299,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
                 soupElt3Created);
     }
 
-    private void tryExactQueryOnChangedSoup(String soupName, String orderPath, String value,
+    protected void tryExactQueryOnChangedSoup(String soupName, String orderPath, String value,
                                                     IndexSpec[] newIndexSpecs, JSONObject expectedResult) throws JSONException {
         //alert the soup
         store.alterSoup(soupName, newIndexSpecs, true);
@@ -1345,27 +1339,6 @@ public class SmartStoreTest extends SmartStoreTestCase {
 
 		// Clean up
 		db.execSQL("DROP TABLE " + NEW_TEST_TABLE);
-	}
-
-	/**
-	 * Ensure data is still accessible after changing key
-	 */
-	public void testChangeKey() throws JSONException {
-		JSONObject soupElt = new JSONObject("{'key':'ka2', 'value':'testValue'}");
-		String newPasscode = Encryptor.hash("123test", "hashing-key");
-
-		// Use normal key to place files on external storage
-		store.create(TEST_SOUP, soupElt);
-
-		// Act
-		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
-		SmartStore.changeKey(db, getPasscode(), newPasscode);
-		store = new SmartStore(dbOpenHelper, newPasscode);
-
-		// Verify that data is still accessible
-		JSONArray result = store.query(QuerySpec.buildExactQuerySpec(TEST_SOUP, "key", "ka2", null, null, 10), 0);
-		assertEquals("One result expected", 1, result.length());
-		JSONTestHelper.assertSameJSON("Wrong result for query", soupElt, result.getJSONObject(0));
 	}
 
 	/**

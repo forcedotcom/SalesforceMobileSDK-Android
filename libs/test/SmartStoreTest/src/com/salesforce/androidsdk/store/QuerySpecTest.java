@@ -67,7 +67,7 @@ public class QuerySpecTest extends InstrumentationTestCase {
     }
 
     public void testRangeQueryCountSmartSql() {
-        QuerySpec querySpec = QuerySpec.buildRangeQuerySpec("employees", "lastName", "Bond", "Smith", QuerySpec.Order.ascending, 1);
+        QuerySpec querySpec = QuerySpec.buildRangeQuerySpec("employees", "lastName", "Bond", "Smith", "lastName", QuerySpec.Order.ascending, 1);
         assertEquals("Wrong count smart sql for range query spec", "SELECT count(*) FROM {employees} WHERE {employees:lastName} >= ? AND {employees:lastName} <= ? ", querySpec.countSmartSql);
     }
 
@@ -87,7 +87,7 @@ public class QuerySpecTest extends InstrumentationTestCase {
     }
 
     public void testExactQueryCountSmartSql() {
-        QuerySpec querySpec = QuerySpec.buildExactQuerySpec("employees", "lastName", "Bond", 1);
+        QuerySpec querySpec = QuerySpec.buildExactQuerySpec("employees", "lastName", "Bond", "lastName", QuerySpec.Order.ascending, 1);
         assertEquals("Wrong count smart sql for exact query spec", "SELECT count(*) FROM {employees} WHERE {employees:lastName} = ? ", querySpec.countSmartSql);
     }
 
@@ -122,7 +122,7 @@ public class QuerySpecTest extends InstrumentationTestCase {
     }
 
     public void testLikeQueryCountSmartSql() {
-        QuerySpec querySpec = QuerySpec.buildLikeQuerySpec("employees", "lastName", "Bon%" , QuerySpec.Order.ascending, 1);
+        QuerySpec querySpec = QuerySpec.buildLikeQuerySpec("employees", "lastName", "Bon%" , "lastName", QuerySpec.Order.ascending, 1);
         assertEquals("Wrong count smart sql for like query spec", "SELECT count(*) FROM {employees} WHERE {employees:lastName} LIKE ? ", querySpec.countSmartSql);
     }
 

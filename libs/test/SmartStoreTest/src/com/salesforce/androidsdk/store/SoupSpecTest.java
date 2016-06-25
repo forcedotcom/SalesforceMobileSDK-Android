@@ -56,7 +56,7 @@ public class SoupSpecTest extends InstrumentationTestCase {
         assertTrue("SoupSpec does not have given feature", soupSpec.getFeatures().contains(TEST_FEATURE_1));
         assertTrue("SoupSpec does not have given feature", soupSpec.getFeatures().contains(TEST_FEATURE_2));
 
-        soupSpec = new SoupSpec(TEST_SOUP_NAME, null);
+        soupSpec = new SoupSpec(TEST_SOUP_NAME, (String[]) null);
         assertTrue("SoupSpec must not have any features", soupSpec.getFeatures().isEmpty());
     }
 

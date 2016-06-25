@@ -293,7 +293,7 @@ public class AlterSoupLongOperation extends LongOperation {
 			db.beginTransaction();
 
 			// Create new table for soup
-			store.registerSoupUsingTableName(soupName, newIndexSpecs, soupTableName);
+			store.registerSoupUsingTableName(new SoupSpec(soupName, store.usesExternalStorage(soupName) ? SoupSpec.FEATURE_EXTERNAL_STORAGE : null), newIndexSpecs, soupTableName);
 
 			// Update row in alter status table
 			updateLongOperationDbRow(AlterSoupStep.REGISTER_SOUP_USING_TABLE_NAME);
