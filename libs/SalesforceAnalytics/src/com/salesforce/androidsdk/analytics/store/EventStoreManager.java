@@ -59,6 +59,7 @@ public class EventStoreManager {
     private EventFileFilter fileFilter;
     private Context context;
     private String encryptionKey;
+    private boolean isLoggingEnabled = true;
 
     /**
      * Parameterized constructor.
@@ -87,6 +88,9 @@ public class EventStoreManager {
             Log.d(TAG, "Invalid event");
             return;
         }
+        if (!shouldStoreEvent()) {
+            return;
+        }
         final String filename = event.getEventId() + filenameSuffix;
         FileOutputStream outputStream;
         try {
@@ -106,6 +110,9 @@ public class EventStoreManager {
     public void storeEvents(List<InstrumentationEvent> events) {
         if (events == null || events.size() == 0) {
             Log.d(TAG, "No events to store");
+            return;
+        }
+        if (!shouldStoreEvent()) {
             return;
         }
         for (final InstrumentationEvent event : events) {
@@ -197,6 +204,31 @@ public class EventStoreManager {
         deleteAllEvents();
         encryptionKey = newKey;
         storeEvents(storedEvents);
+    }
+
+    /**
+     * Disables or enables logging of events. If logging is disabled, no events
+     * will be stored. However, publishing of events is still possible.
+     *
+     * @param enabled True - if logging should be enabled, False - otherwise.
+     */
+    public synchronized void disableOrEnableLogging(boolean enabled) {
+        isLoggingEnabled = enabled;
+    }
+
+    /**
+     * Returns whether logging is enabled or disabled.
+     *
+     * @return True - if logging is enabled, False - otherwise.
+     */
+    public synchronized boolean isLoggingEnabled() {
+        return isLoggingEnabled;
+    }
+
+    private boolean shouldStoreEvent() {
+        return isLoggingEnabled;
+
+        // TODO: Add number of events limit here.
     }
 
     private InstrumentationEvent fetchEvent(File file) {
