@@ -40,8 +40,14 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
+import okhttp3.MediaType;
 import okhttp3.RequestBody;
+import okio.BufferedSink;
+import okio.GzipSink;
+import okio.Okio;
 
 /**
  * Network publisher for the AILTN endpoint.
@@ -57,8 +63,8 @@ public class AILTNPublisher implements AnalyticsPublisher {
     private static final String LOG_LINES = "logLines";
     private static final String PAYLOAD = "payload";
     private static final String API_PATH = "/services/data/%s/connect/proxy/app-analytics-logging";
-
-    // TODO: Add GZIP compression to the header and data.
+    private static final String CONTENT_ENCODING = "Content-Encoding";
+    private static final String GZIP = "gzip";
 
     @Override
     public boolean publish(JSONArray events) {
@@ -91,8 +97,12 @@ public class AILTNPublisher implements AnalyticsPublisher {
         final String apiPath = String.format(API_PATH,
                 ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()));
         final RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient();
-        final RequestBody requestBody = RequestBody.create(RestRequest.MEDIA_TYPE_JSON, body.toString());
-        final RestRequest restRequest = new RestRequest(RestRequest.RestMethod.POST, apiPath, requestBody);
+        final RequestBody requestBody = gzipCompressedBody(RequestBody.create(RestRequest.MEDIA_TYPE_JSON,
+                body.toString()));
+        final Map<String, String> requestHeaders = new HashMap<>();
+        requestHeaders.put(CONTENT_ENCODING, GZIP);
+        final RestRequest restRequest = new RestRequest(RestRequest.RestMethod.POST, apiPath,
+                requestBody, requestHeaders);
         RestResponse restResponse = null;
         try {
             restResponse = restClient.sendSync(restRequest);
@@ -103,5 +113,27 @@ public class AILTNPublisher implements AnalyticsPublisher {
             return true;
         }
         return false;
+    }
+
+    private RequestBody gzipCompressedBody(final RequestBody body) {
+        return new RequestBody() {
+
+            @Override
+            public MediaType contentType() {
+                return body.contentType();
+            }
+
+            @Override
+            public long contentLength() {
+                return -1;
+            }
+
+            @Override
+            public void writeTo(BufferedSink sink) throws IOException {
+                final BufferedSink gzipSink = Okio.buffer(new GzipSink(sink));
+                body.writeTo(gzipSink);
+                gzipSink.close();
+            }
+        };
     }
 }
