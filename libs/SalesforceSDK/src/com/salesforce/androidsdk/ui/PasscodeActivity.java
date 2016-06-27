@@ -171,18 +171,22 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         case Check:
             title.setText(getEnterTitle());
             instr.setText(getEnterInstructions());
+            getForgotPasscodeView().setVisibility(View.VISIBLE);
             break;
         case Create:
             title.setText(getCreateTitle());
             instr.setText(getCreateInstructions());
+            getForgotPasscodeView().setVisibility(View.INVISIBLE);
             break;
         case CreateConfirm:
             title.setText(getConfirmTitle());
             instr.setText(getConfirmInstructions());
+            getForgotPasscodeView().setVisibility(View.INVISIBLE);
             break;
         case Change:
             title.setText(getCreateTitle());
             instr.setText(getChangeInstructions());
+            getForgotPasscodeView().setVisibility(View.INVISIBLE);
         	break;
         }
         entry.setText("");

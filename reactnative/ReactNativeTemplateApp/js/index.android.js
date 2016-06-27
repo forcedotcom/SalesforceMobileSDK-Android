@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided
@@ -26,8 +26,8 @@
 
 'use strict';
 
-var React = require('react-native');
-var {
+import React from 'react';
+import {
     AppRegistry,
     StyleSheet,
     Text,
@@ -35,7 +35,8 @@ var {
     ListView,
     PixelRatio,
     Navigator
-} = React;
+} from 'react-native';
+
 var forceClient = require('./react.force.net.js');
 var oauth = require('./react.force.oauth.js');
 
