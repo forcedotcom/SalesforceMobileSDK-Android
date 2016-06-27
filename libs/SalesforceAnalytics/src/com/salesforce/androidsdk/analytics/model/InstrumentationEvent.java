@@ -362,10 +362,10 @@ public class InstrumentationEvent {
      * Represents the type of schema being logged.
      */
     public enum SchemaType {
-        interaction,
-        pageView,
-        perf,
-        error
+        LightningInteraction,
+        LightningPageView,
+        LightningPerformance,
+        LightningError
     }
 
     /**
