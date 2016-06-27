@@ -28,11 +28,19 @@ android {
         }
     }
 
-  packagingOptions {
-    exclude 'META-INF/LICENSE'
-    exclude 'META-INF/LICENSE.txt'
-    exclude 'META-INF/DEPENDENCIES'
-    exclude 'META-INF/NOTICE'
-  }
+    // To avoid could find DSO to load: libreactnativejni.so
+    // See https://corbt.com/posts/2015/09/18/mixing-32-and-64bit-dependencies-in-android.html
+    defaultConfig {
+        ndk {
+            abiFilters "armeabi-v7a", "x86"
+        }
+    }
+
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/NOTICE'
+    }
 
 }
