@@ -38,8 +38,7 @@ var path = require('path');
 var outputColors = require('../external/shared/node/outputColors');
 var commandLineUtils = require('../external/shared/node/commandLineUtils');
 var shelljs = require('shelljs') ;
-var fs = require('fs');
-var fse = require('fs-extra');
+var fs = require('fs'); 
 var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
@@ -393,35 +392,17 @@ function getTemplateSourceFilePaths(config) {
 
 function copyFromSDK(packageSdkRootDir, targetDir, srcDirRelative) {
     console.log('Copying ' + srcDirRelative + '.');
+    var destDir = path.join(targetDir, path.basename(packageSdkRootDir), path.dirname(srcDirRelative));
     var srcDir = path.join(packageSdkRootDir, srcDirRelative);
-    var destDir;
-    if (fs.lstatSync(srcDir).isDirectory()) {
-        destDir = path.join(targetDir, path.basename(packageSdkRootDir), srcDirRelative);
-        if (!fse.existsSync(path.join(destDir, path.basename(srcDirRelative)))) {
-            try {
-            fse.mkdirsSync(destDir);
-            fse.copySync(srcDir, destDir);
-            } catch (err) {
-                console.error(err);
-            }
+    if (!fs.existsSync(path.join(destDir, path.basename(srcDirRelative)))) {
+        shelljs.mkdir('-p', destDir);
+        shelljs.cp('-R', srcDir, destDir);
+        if (shelljs.error()) {
+            console.log('There was an error copying ' + srcDirRelative + ' from \'' + packageSdkRootDir + '\' to \'' + destDir + '\': ' + shelljs.error());
+            process.exit(5);
         }
-        else {
-            console.log(outputColors.cyan + 'INFO:' + outputColors.reset + ' ' + srcDirRelative + ' already exists.  Skipping copy.');
-        }
-    }
-    else {
-        destDir = path.join(targetDir, path.basename(packageSdkRootDir), path.dirname(srcDirRelative));
-        if (!fse.existsSync(path.join(destDir, path.basename(srcDirRelative)))) {
-            shelljs.mkdir('-p', destDir);
-            shelljs.cp('-R', srcDir, destDir);
-            if (shelljs.error()) {
-                console.log('There was an error copying ' + srcDirRelative + ' from \'' + packageSdkRootDir + '\' to \'' + destDir + '\': ' + shelljs.error());
-                process.exit(5);
-            }
-        }
-        else {
-            console.log(outputColors.cyan + 'INFO:' + outputColors.reset + ' ' + srcDirRelative + ' already exists.  Skipping copy.');
-        }
+    } else {
+        console.log(outputColors.cyan + 'INFO:' + outputColors.reset + ' ' + srcDirRelative + ' already exists.  Skipping copy.');
     }
 }
 

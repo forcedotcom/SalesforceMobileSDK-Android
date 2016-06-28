@@ -28,11 +28,22 @@ android {
         }
     }
 
-  packagingOptions {
+    packagingOptions {
     exclude 'META-INF/LICENSE'
     exclude 'META-INF/LICENSE.txt'
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
-  }
+    }
 
+    defaultConfig {
+        ndk {
+            abiFilters "armeabi-v7a", "x86"
+        }
+
+        packagingOptions {
+            exclude "lib/arm64-v8a/libbitmaps.so"
+            exclude "lib/arm64-v8a/libimagepipeline.so"
+            exclude "lib/arm64-v8a/libmemchunk.so"
+        }
+    }
 }
