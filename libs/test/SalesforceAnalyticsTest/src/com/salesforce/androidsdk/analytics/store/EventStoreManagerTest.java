@@ -35,6 +35,8 @@ import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -301,9 +303,10 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
         eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.schemaType(InstrumentationEvent.SchemaType.error);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
+        eventBuilder.page(new JSONObject());
         return eventBuilder.buildEvent();
     }
 }

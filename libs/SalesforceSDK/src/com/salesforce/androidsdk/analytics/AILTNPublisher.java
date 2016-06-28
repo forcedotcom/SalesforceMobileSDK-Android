@@ -82,9 +82,10 @@ public class AILTNPublisher implements AnalyticsPublisher {
                     final JSONObject trackingInfo = new JSONObject();
                     trackingInfo.put(CODE, AILTN);
                     final JSONObject data = new JSONObject();
-                    data.put(PAYLOAD, event.toString());
                     final String schemaType = event.optString(InstrumentationEvent.SCHEMA_TYPE_KEY);
                     data.put(InstrumentationEvent.SCHEMA_TYPE_KEY, schemaType);
+                    event.remove(InstrumentationEvent.SCHEMA_TYPE_KEY);
+                    data.put(PAYLOAD, event.toString());
                     trackingInfo.put(DATA, data);
                     logLines.put(trackingInfo);
                 }

@@ -58,6 +58,7 @@ import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 import org.json.JSONArray;
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -183,8 +184,9 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
             builder.name(eventName);
             builder.sessionId(1);
             builder.senderId("SmartSyncExplorer");
-            builder.schemaType(InstrumentationEvent.SchemaType.pageView);
+            builder.schemaType(InstrumentationEvent.SchemaType.LightningPageView);
             builder.eventType(InstrumentationEvent.EventType.user);
+            builder.page(new JSONObject());
             InstrumentationEvent event = null;
             try {
                 event = builder.buildEvent();
