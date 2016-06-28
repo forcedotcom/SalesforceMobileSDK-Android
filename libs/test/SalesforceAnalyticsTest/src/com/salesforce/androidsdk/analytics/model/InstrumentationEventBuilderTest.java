@@ -243,28 +243,6 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
     }
 
     /**
-     * Test for auto population of mandatory field 'end time'.
-     *
-     * @throws Exception
-     */
-    public void testAutoPopulateEndTime() throws Exception {
-        final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
-        long curTime = System.currentTimeMillis();
-        final String eventName = String.format(TEST_EVENT_NAME, curTime);
-        eventBuilder.startTime(curTime);
-        eventBuilder.name(eventName);
-        eventBuilder.sessionId(1);
-        eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningPageView);
-        eventBuilder.eventType(InstrumentationEvent.EventType.system);
-        eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
-        eventBuilder.page(new JSONObject());
-        final InstrumentationEvent event = eventBuilder.buildEvent();
-        long endTime = event.getEndTime();
-        assertTrue("End time should have been auto populated", endTime > 0);
-    }
-
-    /**
      * Test for auto population of mandatory field 'event ID'.
      *
      * @throws Exception

@@ -110,7 +110,7 @@ public class AILTNTransform implements Transform {
             if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction
                     || schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
                 long duration = startTime - endTime;
-                if (endTime != 0 || schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
+                if (duration > 0) {
                     payload.put(DURATION_KEY, duration);
                 }
             }
@@ -154,13 +154,12 @@ public class AILTNTransform implements Transform {
         JSONObject locator = new JSONObject();
         try {
             final String senderId = event.getSenderId();
-            if (!TextUtils.isEmpty(senderId)) {
-                locator.put(TARGET_KEY, senderId);
-            }
             final String senderParentId = event.getSenderParentId();
-            if (!TextUtils.isEmpty(senderParentId)) {
-                locator.put(SCOPE_KEY, senderParentId);
+            if (TextUtils.isEmpty(senderId) || TextUtils.isEmpty(senderParentId)) {
+                return null;
             }
+            locator.put(TARGET_KEY, senderId);
+            locator.put(SCOPE_KEY, senderParentId);
             final JSONObject senderContext = event.getSenderContext();
             if (senderContext != null) {
                 locator.put(CONTEXT_KEY, senderContext);
