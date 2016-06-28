@@ -179,14 +179,17 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
             final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(sfAnalyticsManager.getAnalyticsManager(),
                     SalesforceSDKManager.getInstance().getAppContext());
             long curTime = System.currentTimeMillis();
-            final String eventName = String.format("Contact List Refresh");
+            final String eventName = "Contact List Refresh";
             builder.startTime(curTime);
             builder.name(eventName);
             builder.sessionId(1);
             builder.senderId("SmartSyncExplorer");
-            builder.schemaType(InstrumentationEvent.SchemaType.LightningPageView);
+            builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
             builder.eventType(InstrumentationEvent.EventType.user);
-            builder.page(new JSONObject());
+            final JSONObject page = new JSONObject();
+            page.put("context", "ContactListLoader");
+            builder.page(page);
+			builder.endTime(System.currentTimeMillis());
             InstrumentationEvent event = null;
             try {
                 event = builder.buildEvent();
