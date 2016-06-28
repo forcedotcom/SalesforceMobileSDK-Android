@@ -257,9 +257,6 @@ public class InstrumentationEventBuilder {
         // Defaults to current time if not explicitly set.
         long curTime = System.currentTimeMillis();
         startTime = (startTime == 0) ? curTime : startTime;
-        if (schemaType == InstrumentationEvent.SchemaType.LightningPageView && endTime == 0) {
-            endTime = curTime;
-        }
         sessionStartTime = (sessionStartTime == 0) ? curTime : sessionStartTime;
         return new InstrumentationEvent(eventId, startTime, endTime, name, attributes, sessionId,
                 sequenceId, senderId, senderContext, schemaType, eventType, errorType,
