@@ -56,6 +56,7 @@ public class AILTNTransform implements Transform {
     private static final String SEQUENCE_KEY = "sequence";
     private static final String ATTRIBUTES_KEY = "attributes";
     private static final String LOCATOR_KEY = "locator";
+    private static final String PAGE_KEY = "page";
     private static final String EVENT_TYPE_KEY = "eventType";
     private static final String ERROR_TYPE_KEY = "errorType";
     private static final String TARGET_KEY = "target";
@@ -106,29 +107,40 @@ public class AILTNTransform implements Transform {
             payload.put(TS_KEY, startTime);
             payload.put(PAGE_START_TIME_KEY, event.getSessionStartTime());
             long endTime = event.getEndTime();
-            if (endTime != 0) {
+            if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction
+                    || schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
                 long duration = startTime - endTime;
-                payload.put(DURATION_KEY, duration);
+                if (endTime != 0 || schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
+                    payload.put(DURATION_KEY, duration);
+                }
             }
             int sessionId = event.getSessionId();
             if (sessionId != 0) {
                 payload.put(CLIENT_SESSION_ID_KEY, sessionId);
             }
-            payload.put(SEQUENCE_KEY, event.getSequenceId());
+            if (schemaType != InstrumentationEvent.SchemaType.LightningPerformance) {
+                payload.put(SEQUENCE_KEY, event.getSequenceId());
+            }
             final JSONObject attributes = event.getAttributes();
-            if (attributes != null) {
+            if (attributes != null && schemaType != InstrumentationEvent.SchemaType.LightningPageView) {
                 payload.put(ATTRIBUTES_KEY, attributes);
             }
-            final JSONObject locator = buildLocator(event);
-            if (locator != null) {
-                payload.put(LOCATOR_KEY, locator);
+            if (schemaType != InstrumentationEvent.SchemaType.LightningPerformance) {
+                payload.put(PAGE_KEY, event.getPage());
+            }
+            if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction) {
+                final JSONObject locator = buildLocator(event);
+                if (locator != null) {
+                    payload.put(LOCATOR_KEY, locator);
+                }
             }
             final InstrumentationEvent.EventType eventType = event.getEventType();
-            if (eventType != null && schemaType == InstrumentationEvent.SchemaType.interaction) {
+            if (eventType != null && (schemaType == InstrumentationEvent.SchemaType.LightningInteraction
+                    || schemaType == InstrumentationEvent.SchemaType.LightningPerformance)) {
                 payload.put(EVENT_TYPE_KEY, eventType.name());
             }
             final InstrumentationEvent.ErrorType errorType = event.getErrorType();
-            if (errorType != null && schemaType == InstrumentationEvent.SchemaType.error) {
+            if (errorType != null && schemaType == InstrumentationEvent.SchemaType.LightningError) {
                 payload.put(ERROR_TYPE_KEY, errorType.name());
             }
         } catch (JSONException e) {

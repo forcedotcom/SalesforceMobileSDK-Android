@@ -58,6 +58,7 @@ public class InstrumentationEventBuilder {
     private InstrumentationEvent.ErrorType errorType;
     private String senderParentId;
     private long sessionStartTime;
+    private JSONObject page;
 
     /**
      * Returns an instance of this class.
@@ -209,6 +210,17 @@ public class InstrumentationEventBuilder {
     }
 
     /**
+     * Sets page.
+     *
+     * @param page Page.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder page(JSONObject page) {
+        this.page = page;
+        return this;
+    }
+
+    /**
      * Validates and builds an InstrumentationEvent object. Throws EventBuilderException
      * if mandatory fields are not set.
      *
@@ -228,6 +240,14 @@ public class InstrumentationEventBuilder {
         if (deviceAppAttributes == null) {
             errorMessage = "Mandatory field 'device app attributes' not set!";
         }
+        if ((schemaType == InstrumentationEvent.SchemaType.LightningInteraction
+                || schemaType == InstrumentationEvent.SchemaType.LightningPerformance)
+                && eventType == null) {
+            errorMessage = "Mandatory field 'event type' not set!";
+        }
+        if (schemaType != InstrumentationEvent.SchemaType.LightningPerformance && page == null) {
+            errorMessage = "Mandatory field 'page' not set!";
+        }
         if (errorMessage != null) {
             throw new EventBuilderException(errorMessage);
         }
@@ -237,10 +257,13 @@ public class InstrumentationEventBuilder {
         // Defaults to current time if not explicitly set.
         long curTime = System.currentTimeMillis();
         startTime = (startTime == 0) ? curTime : startTime;
+        if (schemaType == InstrumentationEvent.SchemaType.LightningPageView && endTime == 0) {
+            endTime = curTime;
+        }
         sessionStartTime = (sessionStartTime == 0) ? curTime : sessionStartTime;
         return new InstrumentationEvent(eventId, startTime, endTime, name, attributes, sessionId,
                 sequenceId, senderId, senderContext, schemaType, eventType, errorType,
-                deviceAppAttributes, getConnectionType(), senderParentId, sessionStartTime);
+                deviceAppAttributes, getConnectionType(), senderParentId, sessionStartTime, page);
     }
 
     private String getConnectionType() {

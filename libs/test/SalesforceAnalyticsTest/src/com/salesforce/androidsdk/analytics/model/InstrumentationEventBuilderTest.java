@@ -36,6 +36,8 @@ import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 import junit.framework.Assert;
 
+import org.json.JSONObject;
+
 import java.util.UUID;
 
 /**
@@ -85,11 +87,83 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
+        eventBuilder.page(new JSONObject());
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
         try {
             eventBuilder.buildEvent();
             Assert.fail("Exception should have been thrown for missing mandatory field 'schema type'");
+        } catch (InstrumentationEventBuilder.EventBuilderException e) {
+            Log.v(TAG, "Exception thrown as expected");
+        }
+    }
+
+    /**
+     * Test for missing mandatory field 'event type' in interaction event.
+     *
+     * @throws Exception
+     */
+    public void testMissingEventTypeInInteraction() throws Exception {
+        final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
+        long curTime = System.currentTimeMillis();
+        final String eventName = String.format(TEST_EVENT_NAME, curTime);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
+        eventBuilder.startTime(curTime);
+        eventBuilder.name(eventName);
+        eventBuilder.sessionId(1);
+        eventBuilder.page(new JSONObject());
+        eventBuilder.senderId(TEST_SENDER_ID);
+        try {
+            eventBuilder.buildEvent();
+            Assert.fail("Exception should have been thrown for missing mandatory field 'event type'");
+        } catch (InstrumentationEventBuilder.EventBuilderException e) {
+            Log.v(TAG, "Exception thrown as expected");
+        }
+    }
+
+    /**
+     * Test for missing optional field 'event type' in error event.
+     *
+     * @throws Exception
+     */
+    public void testMissingEventTypeInError() throws Exception {
+        final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
+        long curTime = System.currentTimeMillis();
+        final String eventName = String.format(TEST_EVENT_NAME, curTime);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
+        eventBuilder.startTime(curTime);
+        eventBuilder.name(eventName);
+        eventBuilder.sessionId(1);
+        eventBuilder.page(new JSONObject());
+        eventBuilder.senderId(TEST_SENDER_ID);
+        InstrumentationEvent event = null;
+        try {
+            event = eventBuilder.buildEvent();
+        } catch (InstrumentationEventBuilder.EventBuilderException e) {
+            Assert.fail("Exception should not have been thrown");
+        }
+        assertNotNull("Event should not be null", event);
+    }
+
+    /**
+     * Test for missing mandatory field 'page'.
+     *
+     * @throws Exception
+     */
+    public void testMissingPage() throws Exception {
+        final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
+        long curTime = System.currentTimeMillis();
+        final String eventName = String.format(TEST_EVENT_NAME, curTime);
+        eventBuilder.name(eventName);
+        eventBuilder.startTime(curTime);
+        eventBuilder.sessionId(1);
+        eventBuilder.senderId(TEST_SENDER_ID);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
+        eventBuilder.eventType(InstrumentationEvent.EventType.system);
+        eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
+        try {
+            eventBuilder.buildEvent();
+            Assert.fail("Exception should have been thrown for missing mandatory field 'page'");
         } catch (InstrumentationEventBuilder.EventBuilderException e) {
             Log.v(TAG, "Exception thrown as expected");
         }
@@ -106,9 +180,10 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.startTime(curTime);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.schemaType(InstrumentationEvent.SchemaType.error);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
+        eventBuilder.page(new JSONObject());
         try {
             eventBuilder.buildEvent();
             Assert.fail("Exception should have been thrown for missing mandatory field 'name'");
@@ -132,9 +207,10 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.schemaType(InstrumentationEvent.SchemaType.error);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
+        eventBuilder.page(new JSONObject());
         try {
             eventBuilder.buildEvent();
             Assert.fail("Exception should have been thrown for missing mandatory field 'device app attributes'");
@@ -157,12 +233,35 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.schemaType(InstrumentationEvent.SchemaType.error);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
+        eventBuilder.page(new JSONObject());
         final InstrumentationEvent event = eventBuilder.buildEvent();
         long startTime = event.getStartTime();
         assertTrue("Start time should have been auto populated", startTime > 0);
+    }
+
+    /**
+     * Test for auto population of mandatory field 'end time'.
+     *
+     * @throws Exception
+     */
+    public void testAutoPopulateEndTime() throws Exception {
+        final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
+        long curTime = System.currentTimeMillis();
+        final String eventName = String.format(TEST_EVENT_NAME, curTime);
+        eventBuilder.startTime(curTime);
+        eventBuilder.name(eventName);
+        eventBuilder.sessionId(1);
+        eventBuilder.senderId(TEST_SENDER_ID);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningPageView);
+        eventBuilder.eventType(InstrumentationEvent.EventType.system);
+        eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
+        eventBuilder.page(new JSONObject());
+        final InstrumentationEvent event = eventBuilder.buildEvent();
+        long endTime = event.getEndTime();
+        assertTrue("End time should have been auto populated", endTime > 0);
     }
 
     /**
@@ -174,12 +273,14 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
+        eventBuilder.startTime(curTime);
         eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.schemaType(InstrumentationEvent.SchemaType.error);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
+        eventBuilder.page(new JSONObject());
         final InstrumentationEvent event = eventBuilder.buildEvent();
         final String eventId = event.getEventId();
         assertFalse("Event ID should have been auto populated", TextUtils.isEmpty(eventId));
@@ -194,12 +295,14 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
+        eventBuilder.startTime(curTime);
         eventBuilder.name(eventName);
         eventBuilder.sessionId(1);
         eventBuilder.senderId(TEST_SENDER_ID);
-        eventBuilder.schemaType(InstrumentationEvent.SchemaType.error);
+        eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
         eventBuilder.errorType(InstrumentationEvent.ErrorType.warn);
+        eventBuilder.page(new JSONObject());
         final InstrumentationEvent event = eventBuilder.buildEvent();
         int sequenceId = event.getSequenceId();
         assertTrue("Sequence ID should have been auto populated", sequenceId > 0);
