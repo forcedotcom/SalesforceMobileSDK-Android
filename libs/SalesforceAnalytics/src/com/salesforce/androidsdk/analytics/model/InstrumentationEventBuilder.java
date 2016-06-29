@@ -59,6 +59,7 @@ public class InstrumentationEventBuilder {
     private String senderParentId;
     private long sessionStartTime;
     private JSONObject page;
+    private JSONObject previousPage;
 
     /**
      * Returns an instance of this class.
@@ -221,6 +222,17 @@ public class InstrumentationEventBuilder {
     }
 
     /**
+     * Sets previous page.
+     *
+     * @param previousPage Previous page.
+     * @return Instance of this class.
+     */
+    public InstrumentationEventBuilder previousPage(JSONObject previousPage) {
+        this.previousPage = previousPage;
+        return this;
+    }
+
+    /**
      * Validates and builds an InstrumentationEvent object. Throws EventBuilderException
      * if mandatory fields are not set.
      *
@@ -260,7 +272,8 @@ public class InstrumentationEventBuilder {
         sessionStartTime = (sessionStartTime == 0) ? curTime : sessionStartTime;
         return new InstrumentationEvent(eventId, startTime, endTime, name, attributes, sessionId,
                 sequenceId, senderId, senderContext, schemaType, eventType, errorType,
-                deviceAppAttributes, getConnectionType(), senderParentId, sessionStartTime, page);
+                deviceAppAttributes, getConnectionType(), senderParentId, sessionStartTime, page,
+                previousPage);
     }
 
     private String getConnectionType() {
