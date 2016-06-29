@@ -36,6 +36,7 @@ before_install:
     - nvm install 0.12.0
     - nvm use 0.12.0
     - npm install shelljs@0.7.0
+    - npm install react-native@0.27.2 react@15.1.0 --silent
 
 # Create and start the emulator
 before_script:
