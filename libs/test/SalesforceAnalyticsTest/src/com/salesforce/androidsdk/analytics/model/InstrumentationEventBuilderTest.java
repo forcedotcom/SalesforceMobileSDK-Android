@@ -51,7 +51,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
     private static final String TEST_ENCRYPTION_KEY = Encryptor.hash("test_encryption_key", "key");
     private static final DeviceAppAttributes TEST_DEVICE_APP_ATTRIBUTES = new DeviceAppAttributes("TEST_APP_VERSION",
             "TEST_APP_NAME", "TEST_OS_VERSION", "TEST_OS_NAME", "TEST_NATIVE_APP_TYPE",
-            "TEST_MOBILE_SDK_VERSION", "TEST_DEVICE_MODEL", "TEST_DEVICE_ID");
+            "TEST_MOBILE_SDK_VERSION", "TEST_DEVICE_MODEL", "TEST_DEVICE_ID", "TEST_CLIENT_ID");
     private static final String TEST_EVENT_NAME = "TEST_EVENT_NAME_%s";
     private static final String TEST_SENDER_ID = "TEST_SENDER_ID";
 

@@ -48,6 +48,7 @@ public class DeviceAppAttributes {
     private static final String MOBILE_SDK_VERSION_KEY = "mobileSdkVersion";
     private static final String DEVICE_MODEL_KEY = "deviceModel";
     private static final String DEVICE_ID_KEY = "deviceId";
+    private static final String CLIENT_ID_KEY = "clientId";
 
     private String appVersion;
     private String appName;
@@ -57,6 +58,7 @@ public class DeviceAppAttributes {
     private String mobileSdkVersion;
     private String deviceModel;
     private String deviceId;
+    private String clientId;
 
     /**
      * Parameterized constructor.
@@ -69,10 +71,11 @@ public class DeviceAppAttributes {
      * @param mobileSdkVersion Mobile SDK version.
      * @param deviceModel Device model.
      * @param deviceId Device ID.
+     * @param clientId Client ID.
      */
     public DeviceAppAttributes(String appVersion, String appName, String osVersion, String osName,
                                String nativeAppType, String mobileSdkVersion, String deviceModel,
-                               String deviceId) {
+                               String deviceId, String clientId) {
         this.appVersion = appVersion;
         this.appName = appName;
         this.osVersion = osVersion;
@@ -81,6 +84,7 @@ public class DeviceAppAttributes {
         this.mobileSdkVersion = mobileSdkVersion;
         this.deviceModel = deviceModel;
         this.deviceId = deviceId;
+        this.clientId = clientId;
     }
 
     /**
@@ -100,6 +104,7 @@ public class DeviceAppAttributes {
             mobileSdkVersion = json.optString(MOBILE_SDK_VERSION_KEY);
             deviceModel = json.optString(DEVICE_MODEL_KEY);
             deviceId = json.optString(DEVICE_ID_KEY);
+            clientId = json.optString(CLIENT_ID_KEY);
         }
     }
 
@@ -176,6 +181,15 @@ public class DeviceAppAttributes {
     }
 
     /**
+     * Returns client ID.
+     *
+     * @return Client ID.
+     */
+    public String getClientId() {
+        return clientId;
+    }
+
+    /**
      * Returns a JSON representation of device app attributes.
      *
      * @return JSON object.
@@ -191,6 +205,7 @@ public class DeviceAppAttributes {
             json.put(MOBILE_SDK_VERSION_KEY, mobileSdkVersion);
             json.put(DEVICE_MODEL_KEY, deviceModel);
             json.put(DEVICE_ID_KEY, deviceId);
+            json.put(CLIENT_ID_KEY, clientId);
         } catch (JSONException e) {
             Log.e(TAG, "Exception thrown while attempting to convert to JSON", e);
         }
