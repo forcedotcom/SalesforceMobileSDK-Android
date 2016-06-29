@@ -87,6 +87,10 @@ public class MetadataManagerTest extends ManagerTestCase {
         //retrieve the MRU records before test
         final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(Constants.ACCOUNT,
                 MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
+        int mruObjectsNumberBefore = 0;
+        if (mruObjects_before != null) {
+            mruObjectsNumberBefore = mruObjects_before.size();
+        }
 
         int numberOfRecords = 1;
         Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.ACCOUNT);
@@ -103,7 +107,7 @@ public class MetadataManagerTest extends ManagerTestCase {
             final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.ACCOUNT,
                     MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
             assertNotNull("MRU list should not be null", mruObjects);
-            assertEquals("MRU list size should not be changed", mruObjects_before.size()+numberOfRecords, mruObjects.size());
+            assertEquals("MRU list size should not be changed", mruObjectsNumberBefore+numberOfRecords, mruObjects.size());
             assertEquals("Recently viewed object name is incorrect", names.toArray()[0],
                     mruObjects.get(0).getName());
         } finally {
@@ -235,10 +239,16 @@ public class MetadataManagerTest extends ManagerTestCase {
             Thread.sleep(WAITING_INDEX_TIME);
             final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.ACCOUNT,
                     MAX_QUERY_LIMIT, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL, null);
-            assertNotNull("MRU list should not be null", mruObjects);
-            assertEquals("MRU list size should not be changed", mruObjects_before.size(), mruObjects.size());
-            assertEquals("Recently viewed object name is incorrect", mruObjects_before.get(0).getName(),
-                    mruObjects.get(0).getName());
+            //for the case that there is some MRU Account record before test
+            if (mruObjects_before != null) {
+                assertNotNull("MRU list should not be null", mruObjects);
+                assertEquals("MRU list size should not be changed", mruObjects_before.size(), mruObjects.size());
+                assertEquals("Recently viewed object name is incorrect", mruObjects_before.get(0).getName(),
+                        mruObjects.get(0).getName());
+            }
+            else {
+                assertNull("MRU list should be null", mruObjects);
+            }
         } finally {
             deleteRecordsOnServer(ids, Constants.ACCOUNT);
         }
