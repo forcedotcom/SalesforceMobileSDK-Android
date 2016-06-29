@@ -65,6 +65,7 @@ public class AILTNTransform implements Transform {
     private static final String SCOPE_KEY = "scope";
     private static final String CONTEXT_KEY = "context";
     private static final String DEVICE_ATTRIBUTES_KEY = "deviceAttributes";
+    private static final String PERF_EVENT_TYPE = "defs";
 
     @Override
     public JSONObject transform(InstrumentationEvent event) {
@@ -145,9 +146,15 @@ public class AILTNTransform implements Transform {
                 }
             }
             final InstrumentationEvent.EventType eventType = event.getEventType();
-            if (eventType != null && (schemaType == InstrumentationEvent.SchemaType.LightningInteraction
-                    || schemaType == InstrumentationEvent.SchemaType.LightningPerformance)) {
-                payload.put(EVENT_TYPE_KEY, eventType.name());
+            String eventTypeString = null;
+            if (schemaType == InstrumentationEvent.SchemaType.LightningPerformance) {
+                eventTypeString = PERF_EVENT_TYPE;
+            } else if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction
+                    && eventType != null) {
+                eventTypeString = eventType.name();
+            }
+            if (!TextUtils.isEmpty(eventTypeString)) {
+                payload.put(EVENT_TYPE_KEY, eventTypeString);
             }
             final InstrumentationEvent.ErrorType errorType = event.getErrorType();
             if (errorType != null && schemaType == InstrumentationEvent.SchemaType.LightningError) {
