@@ -220,7 +220,7 @@ public class SalesforceAnalyticsManager {
      * deleted if publishing was successful for all registered endpoints.
      * This method should NOT be called from the main thread.
      */
-    public void publishAllEvents() {
+    public synchronized void publishAllEvents() {
         final List<InstrumentationEvent> events = eventStoreManager.fetchAllEvents();
         publishEvents(events);
     }
@@ -233,7 +233,7 @@ public class SalesforceAnalyticsManager {
      *
      * @param events List of events.
      */
-    public void publishEvents(List<InstrumentationEvent> events) {
+    public synchronized void publishEvents(List<InstrumentationEvent> events) {
         if (events == null || events.size() == 0) {
             return;
         }
@@ -293,7 +293,7 @@ public class SalesforceAnalyticsManager {
      *
      * @param event Event.
      */
-    public void publishEvent(InstrumentationEvent event) {
+    public synchronized void publishEvent(InstrumentationEvent event) {
         if (event == null) {
             return;
         }
