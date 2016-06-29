@@ -655,6 +655,10 @@ public class SyncManagerTest extends ManagerTestCase {
             // Check that locally updated / remotely deleted record has new id (not in idToNames)
             if (accountName.equals(locallyUpdatedRemotelyDeletedName)) {
                 assertFalse(idToNames.containsKey(accountId));
+
+                //update the record entry using the new id
+                idToNames.remove(remotelyDeletedId);
+                idToNames.put(accountId, accountName);
             }
             // Otherwise should be a known id (in idToNames)
             else {
