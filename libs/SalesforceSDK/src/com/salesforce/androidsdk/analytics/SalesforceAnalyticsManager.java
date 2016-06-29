@@ -42,6 +42,7 @@ import com.salesforce.androidsdk.analytics.store.EventStoreManager;
 import com.salesforce.androidsdk.analytics.transform.AILTNTransform;
 import com.salesforce.androidsdk.analytics.transform.Transform;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.config.BootConfig;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -350,7 +351,8 @@ public class SalesforceAnalyticsManager {
         final String mobileSdkVersion = SalesforceSDKManager.SDK_VERSION;
         final String deviceModel = Build.MODEL;
         final String deviceId = sdkManager.getDeviceId();
+        final String clientId = BootConfig.getBootConfig(context).getRemoteAccessConsumerKey();
         return new DeviceAppAttributes(appVersion, appName, osVersion, osName, appType,
-                mobileSdkVersion, deviceModel, deviceId);
+                mobileSdkVersion, deviceModel, deviceId, clientId);
     }
 }
