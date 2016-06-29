@@ -61,6 +61,7 @@ public class MetadataManagerTest extends ManagerTestCase {
 
         int numberOfRecords = 1;
         Map<String, String> idToSubjects = createRecordsOnServer(numberOfRecords, Constants.CASE);
+        assertTrue("Not created the tested record successfully", idToSubjects.size() == numberOfRecords);
         Set<String> ids = idToSubjects.keySet();
 
         try {
@@ -89,6 +90,7 @@ public class MetadataManagerTest extends ManagerTestCase {
 
         int numberOfRecords = 1;
         Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.ACCOUNT);
+        assertTrue("Not created the tested record successfully", idToNames.size() == numberOfRecords);
         Collection<String> names = idToNames.values();
         Set<String> ids = idToNames.keySet();
 
@@ -119,6 +121,7 @@ public class MetadataManagerTest extends ManagerTestCase {
 
         int numberOfRecords = 1;
         Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.OPPORTUNITY);
+        assertTrue("Not created the tested record successfully", idToNames.size() == numberOfRecords);
         Collection<String> names = idToNames.values();
         Set<String> ids = idToNames.keySet();
 
@@ -181,7 +184,7 @@ public class MetadataManagerTest extends ManagerTestCase {
     	final List<SalesforceObjectTypeLayout> objectLayouts = metadataManager.loadObjectTypesLayout(objectTypes,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	assertNotNull("Layout list should not be null", objectLayouts);
-    	assertEquals("Layout list size should be 3", 3, objectLayouts.size());
+    	assertEquals("Wrong Layout list size loaded from server", objectTypeNames.size(), objectLayouts.size());
     }
 
     /**
@@ -192,7 +195,9 @@ public class MetadataManagerTest extends ManagerTestCase {
         final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(null,
                 MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
 
-        Map<String, String> idToSubjects = createRecordsOnServer(1, Constants.CASE);
+        int numberOfRecords = 1;
+        Map<String, String> idToSubjects = createRecordsOnServer(numberOfRecords, Constants.CASE);
+        assertTrue("Not created the tested record successfully", idToSubjects.size() == numberOfRecords);
         Set<String> ids = idToSubjects.keySet();
         try {
 
@@ -217,9 +222,9 @@ public class MetadataManagerTest extends ManagerTestCase {
         //retrieve the MRU records before test
         final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(Constants.ACCOUNT,
                 MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
-        int recordNumberCreated = 1;
-        Map<String, String> idToNames = createRecordsOnServer(recordNumberCreated, Constants.ACCOUNT);
-        assertTrue("Not created the tested record successfully", idToNames.size() == recordNumberCreated);
+        int numberOfRecords = 1;
+        Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.ACCOUNT);
+        assertTrue("Not created the tested record successfully", idToNames.size() == numberOfRecords);
         Set<String> ids = idToNames.keySet();
 
         try {
@@ -248,7 +253,8 @@ public class MetadataManagerTest extends ManagerTestCase {
                 MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
 
         int numberOfRecords = 1;
-        Map<String, String> idToNames = createRecordsOnServer(1, Constants.OPPORTUNITY);
+        Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.OPPORTUNITY);
+        assertTrue("Not created the tested record successfully", idToNames.size() == numberOfRecords);
         Set<String> ids = idToNames.keySet();
 
         try {
@@ -325,6 +331,6 @@ public class MetadataManagerTest extends ManagerTestCase {
     	final List<SalesforceObjectTypeLayout> objectLayouts = metadataManager.loadObjectTypesLayout(objectTypes,
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
     	assertNotNull("Layout list should not be null", objectLayouts);
-    	assertEquals("Layout list size should be 3", 3, objectLayouts.size());
+    	assertEquals("Wrong Layout list size loaded from cache", objectTypeNames.size(), objectLayouts.size());
     }
 }
