@@ -58,6 +58,7 @@ public class AILTNTransform implements Transform {
     private static final String LOCATOR_KEY = "locator";
     private static final String PAGE_KEY = "page";
     private static final String PREVIOUS_PAGE_KEY = "previousPage";
+    private static final String MARKS_KEY = "marks";
     private static final String EVENT_TYPE_KEY = "eventType";
     private static final String ERROR_TYPE_KEY = "errorType";
     private static final String TARGET_KEY = "target";
@@ -132,6 +133,10 @@ public class AILTNTransform implements Transform {
             final JSONObject previousPage = event.getPreviousPage();
             if (previousPage != null && schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
                 payload.put(PREVIOUS_PAGE_KEY, previousPage);
+            }
+            final JSONObject marks = event.getMarks();
+            if (marks != null && schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
+                payload.put(MARKS_KEY, marks);
             }
             if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction) {
                 final JSONObject locator = buildLocator(event);
