@@ -58,6 +58,8 @@ public class InstrumentationEvent {
     public static final String SENDER_PARENT_ID_KEY = "senderParentId";
     public static final String SESSION_START_TIME_KEY = "sessionStartTime";
     public static final String PAGE_KEY = "page";
+    public static final String PREVIOUS_PAGE_KEY = "previousPage";
+    public static final String MARKS_KEY = "marks";
 
     private String eventId;
     private long startTime;
@@ -76,13 +78,16 @@ public class InstrumentationEvent {
     private String senderParentId;
     private long sessionStartTime;
     private JSONObject page;
+    private JSONObject previousPage;
+    private JSONObject marks;
 
     InstrumentationEvent(String eventId, long startTime, long endTime, String name,
                          JSONObject attributes, int sessionId, int sequenceId,
                          String senderId, JSONObject senderContext,
                          SchemaType schemaType, EventType eventType, ErrorType errorType,
                          DeviceAppAttributes deviceAppAttributes, String connectionType,
-                         String senderParentId, long sessionStartTime, JSONObject page) {
+                         String senderParentId, long sessionStartTime, JSONObject page,
+                         JSONObject previousPage, JSONObject marks) {
         this.eventId = eventId;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -100,6 +105,8 @@ public class InstrumentationEvent {
         this.senderParentId = senderParentId;
         this.sessionStartTime = sessionStartTime;
         this.page = page;
+        this.previousPage = previousPage;
+        this.marks = marks;
     }
 
     /**
@@ -140,6 +147,8 @@ public class InstrumentationEvent {
             senderParentId = json.optString(SENDER_PARENT_ID_KEY);
             sessionStartTime = json.optLong(SESSION_START_TIME_KEY);
             page = json.optJSONObject(PAGE_KEY);
+            previousPage = json.optJSONObject(PREVIOUS_PAGE_KEY);
+            marks = json.optJSONObject(MARKS_KEY);
         }
     }
 
@@ -297,6 +306,24 @@ public class InstrumentationEvent {
     }
 
     /**
+     * Returns previous page.
+     *
+     * @return Previous page.
+     */
+    public JSONObject getPreviousPage() {
+        return previousPage;
+    }
+
+    /**
+     * Returns marks.
+     *
+     * @return Marks.
+     */
+    public JSONObject getMarks() {
+        return marks;
+    }
+
+    /**
      * Returns a JSON representation of this event.
      *
      * @return JSON object.
@@ -332,6 +359,12 @@ public class InstrumentationEvent {
             json.put(SESSION_START_TIME_KEY, sessionStartTime);
             if (page != null) {
                 json.put(PAGE_KEY, page);
+            }
+            if (previousPage != null) {
+                json.put(PREVIOUS_PAGE_KEY, previousPage);
+            }
+            if (marks != null) {
+                json.put(MARKS_KEY, marks);
             }
         } catch (JSONException e) {
             Log.e(TAG, "Exception thrown while attempting to convert to JSON", e);
