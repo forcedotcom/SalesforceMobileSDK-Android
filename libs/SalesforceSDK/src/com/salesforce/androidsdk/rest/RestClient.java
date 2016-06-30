@@ -302,6 +302,26 @@ public class RestClient {
         return new RestResponse(response);
 	}
 
+
+    /**
+     * Send the given restRequest synchronously and return a RestResponse
+     * Note: Cannot be used by code on the UI thread (use sendAsync instead).
+     * @param restRequest
+     * @param interceptors Interceptor(s) to add to the network client before making the request
+     * @return
+     * @throws IOException
+     */
+    public RestResponse sendSync(RestRequest restRequest, Interceptor... interceptors) throws IOException {
+        Request request = buildRequest(restRequest);
+        // builder that shares the same connection pool, dispatcher, and configuration with the original client
+        OkHttpClient.Builder clientBuilder = getOkHttpClient().newBuilder();
+        for (Interceptor interceptor : interceptors) {
+            clientBuilder.addNetworkInterceptor(interceptor);
+        }
+        Response response = clientBuilder.build().newCall(request).execute();
+        return new RestResponse(response);
+    }
+
 	/**
 	 * All immutable information for an authenticated client (e.g. username, org ID, etc.).
 	 */
