@@ -52,6 +52,7 @@ public class AILTNTransform implements Transform {
     private static final String TS_KEY = "ts";
     private static final String PAGE_START_TIME_KEY = "pageStartTime";
     private static final String DURATION_KEY = "duration";
+    private static final String EPT_KEY = "ept";
     private static final String CLIENT_SESSION_ID_KEY = "clientSessionId";
     private static final String SEQUENCE_KEY = "sequence";
     private static final String ATTRIBUTES_KEY = "attributes";
@@ -110,11 +111,12 @@ public class AILTNTransform implements Transform {
             payload.put(TS_KEY, startTime);
             payload.put(PAGE_START_TIME_KEY, event.getSessionStartTime());
             long endTime = event.getEndTime();
-            if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction
-                    || schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
-                long duration = startTime - endTime;
-                if (duration > 0) {
+            long duration = startTime - endTime;
+            if (duration > 0) {
+                if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction) {
                     payload.put(DURATION_KEY, duration);
+                } else if (schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
+                    payload.put(EPT_KEY, duration);
                 }
             }
             int sessionId = event.getSessionId();
