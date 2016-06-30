@@ -111,7 +111,7 @@ public class AILTNTransform implements Transform {
             payload.put(TS_KEY, startTime);
             payload.put(PAGE_START_TIME_KEY, event.getSessionStartTime());
             long endTime = event.getEndTime();
-            long duration = startTime - endTime;
+            long duration = endTime - startTime;
             if (duration > 0) {
                 if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction) {
                     payload.put(DURATION_KEY, duration);
