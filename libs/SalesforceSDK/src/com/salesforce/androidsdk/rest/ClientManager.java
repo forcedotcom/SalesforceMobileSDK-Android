@@ -736,6 +736,7 @@ public class ClientManager {
         }
 
         public Bundle asBundle() {
+            bundle.putString(JWT, jwt); //jwt can be updated during flow
             return bundle;
         }
 
