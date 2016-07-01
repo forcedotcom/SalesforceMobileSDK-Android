@@ -626,16 +626,7 @@ public class SyncManager {
 	 * @throws IOException
 	 */
 	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
-
-        Request request = restClient.buildRequest(restRequest);
-
-        // builder that shares the same connection pool, dispatcher, and configuration with the original client
-        OkHttpClient.Builder clientBuilder = restClient.getOkHttpClient().newBuilder()
-                .addNetworkInterceptor(new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
-
-        Response response = clientBuilder.build().newCall(request).execute();
-
-        return new RestResponse(response);
+        return restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
     }
 
 	/**
