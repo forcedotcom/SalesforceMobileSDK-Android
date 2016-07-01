@@ -56,6 +56,6 @@ script:
    - ./gradlew :libs:SalesforceReact:assembleDebug
    - travis_wait 30 ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest
    # make sure the screen is unlocked
-   - adb shell input keyevent 82
+   - adb shell input keyevent 84
    - adb shell input keyevent 84
    - travis_wait 30 ./gradlew :native:TemplateApp:connectedAndroidTest
