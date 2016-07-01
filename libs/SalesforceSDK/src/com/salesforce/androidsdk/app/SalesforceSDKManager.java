@@ -38,7 +38,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -62,7 +61,6 @@ import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
-import com.salesforce.androidsdk.security.PRNGFixes;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -88,7 +86,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "4.0.0";
+    public static final String SDK_VERSION = "4.2.0.unstable";
 
     /**
      * Default app name.
@@ -140,6 +138,14 @@ public class SalesforceSDKManager {
     	} else {
             throw new RuntimeException("Applications need to call SalesforceSDKManager.init() first.");
     	}
+    }
+
+    /**
+     *
+     * @return true if SalesforceSDKManager has been initialized already
+     */
+    public static boolean hasInstance() {
+        return INSTANCE != null;
     }
 
     /**
@@ -308,9 +314,6 @@ public class SalesforceSDKManager {
 	 * @param context Application context.
 	 */
     public static void initInternal(Context context) {
-
-    	// Applies PRNG fixes for certain older versions of Android.
-        PRNGFixes.apply();
 
         // Initializes the encryption module.
         Encryptor.init(context);
@@ -865,7 +868,7 @@ public class SalesforceSDKManager {
     	return getUserAgent("");
     }
     
-    public final String getUserAgent(String qualifier) {
+    public String getUserAgent(String qualifier) {
         String appName = "";
         String appVersion = "";
         try {
@@ -882,7 +885,7 @@ public class SalesforceSDKManager {
         String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s",
                 SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, appTypeWithQualifier, uid);
-	}
+    }
 
     /**
      * @return app type as String
@@ -907,18 +910,6 @@ public class SalesforceSDKManager {
      */
     public String getAccountType() {
         return context.getString(getSalesforceR().stringAccountType());
-    }
-
-    /**
-     * Indicates whether the app is running on a tablet.
-     *
-     * @return True if the application is running on a tablet.
-     */
-    public static boolean isTablet() {
-        if ((INSTANCE.context.getResources().getConfiguration().screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK) == Configuration.SCREENLAYOUT_SIZE_XLARGE) {
-            return true;
-        }
-        return false;
     }
 
     @Override
@@ -980,7 +971,7 @@ public class SalesforceSDKManager {
 		@Override
 		protected Void doInBackground(Void... nothings) {
 	        try {
-	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken);
+	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), refreshToken);
 	        } catch (Exception e) {
 	        	Log.w("SalesforceSDKManager:revokeToken", e);
 	        }

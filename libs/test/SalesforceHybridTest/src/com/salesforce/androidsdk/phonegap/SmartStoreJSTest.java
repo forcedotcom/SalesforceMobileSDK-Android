@@ -42,7 +42,7 @@ public class SmartStoreJSTest extends JSTestCase {
     
     @Override
     protected int getMaxRuntimeInSecondsForTest(String testName) {
-        return 10;
+        return 30;
     }
 
     @Override
@@ -58,6 +58,7 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testUpsertToNonexistentSoup",
                 "testRetrieveSoupEntries",
                 "testRemoveFromSoup",
+                "testRemoveFromSoupByQuery",
                 "testQuerySoupWithExactQuery",
                 "testQuerySoupWithAllQueryDescending",
                 "testQuerySoupWithRangeQueryWithOrderPath",
@@ -89,7 +90,11 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testAlterSoupWithReIndexing",
                 "testAlterSoupWithBogusSoupName",
                 "testReIndexSoup",
-                "testClearSoup"
+                "testClearSoup",
+                "testFullTextSearchAgainstArrayNode",
+                "testLikeQueryAgainstArrayNode",
+                "testExactQueryAgainstArrayNode",
+                "testSmartQueryAgainstArrayNode"
         });
     }
     
@@ -132,6 +137,10 @@ public class SmartStoreJSTest extends JSTestCase {
 
     public void testRemoveFromSoup()  {
         runTest("testRemoveFromSoup");
+    }
+
+    public void testRemoveFromSoupByQuery()  {
+        runTest("testRemoveFromSoupByQuery");
     }
 
     public void testQuerySoupWithExactQuery()  {
@@ -261,5 +270,22 @@ public class SmartStoreJSTest extends JSTestCase {
 
     public void testClearSoup() {
         runTest("testClearSoup");
+    }
+
+
+    public void testFullTextSearchAgainstArrayNode() {
+        runTest("testFullTextSearchAgainstArrayNode");
+    }
+
+    public void testLikeQueryAgainstArrayNode() {
+        runTest("testLikeQueryAgainstArrayNode");
+    }
+
+    public void testExactQueryAgainstArrayNode() {
+        runTest("testExactQueryAgainstArrayNode");
+    }
+
+    public void testSmartQueryAgainstArrayNode() {
+        runTest("testSmartQueryAgainstArrayNode");
     }
 }

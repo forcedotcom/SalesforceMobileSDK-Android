@@ -26,21 +26,27 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.util.EntityUtils;
-
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
-import com.salesforce.androidsdk.auth.HttpAccess.Execution;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
+
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import okhttp3.Headers;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 /**
  * Tests for HttpAccess.
@@ -48,19 +54,22 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 public class HttpAccessTest extends InstrumentationTestCase {
 
 	private HttpAccess httpAccess;
-	Map<String, String> headers;
-	private URI resourcesUri;
+	private OkHttpClient okHttpClient;
+	private Headers headers;
+	private HttpUrl resourcesUrl;
 
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 		TestCredentials.init(getInstrumentation().getContext());
 		httpAccess = new HttpAccess(null, "dummy-agent");
+		okHttpClient = httpAccess.getOkHttpClient();
+		resourcesUrl = HttpUrl.parse(TestCredentials.INSTANCE_URL + "/services/data/" + TestCredentials.API_VERSION + "/");
 		TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
-		headers = new HashMap<String, String>();
-		headers.put("Content-Type", "application/json");
-		headers.put("Authorization", "OAuth " + refreshResponse.authToken);
-		resourcesUri = new URI(TestCredentials.INSTANCE_URL + "/services/data/" + TestCredentials.API_VERSION + "/");
+		headers = new Headers.Builder()
+				.add("Content-Type", "application/json")
+				.add("Authorization", "OAuth " + refreshResponse.authToken)
+				.build();
 	}
 
 	/**
@@ -69,8 +78,8 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 * @throws URISyntaxException 
 	 */
 	public void testDoGet() throws IOException, URISyntaxException {
-		Execution execution = httpAccess.doGet(headers, resourcesUri);
-		checkResponse(execution, HttpStatus.SC_OK, "sobjects", "identity", "recent", "search");
+		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).get().build()).execute();
+		checkResponse(response, HttpURLConnection.HTTP_OK, "sobjects", "identity", "recent", "search");
 	}
 
 	/**
@@ -79,8 +88,8 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 * @throws URISyntaxException 
 	 */
 	public void testDoHead() throws IOException, URISyntaxException {
-		Execution execution = httpAccess.doHead(headers, resourcesUri);
-		assertEquals("200 response expected", HttpStatus.SC_OK, execution.response.getStatusLine().getStatusCode());
+		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).head().build()).execute();
+		assertEquals("200 response expected", HttpURLConnection.HTTP_OK, response.code());
 	}
 	
 	/**
@@ -88,8 +97,9 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 * @throws IOException 
 	 */
 	public void testSendPost() throws IOException {
-		Execution execution = httpAccess.doPost(headers, resourcesUri, null);		
-		checkResponse(execution,  HttpStatus.SC_METHOD_NOT_ALLOWED, "'POST' not allowed");
+		RequestBody body = RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject().toString());
+		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).post(body).build()).execute();
+		checkResponse(response, HttpURLConnection.HTTP_BAD_METHOD, "'POST' not allowed");
 	}
 
 	/**
@@ -97,8 +107,9 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 * @throws IOException 
 	 */
 	public void testSendPut() throws IOException {
-		Execution execution = httpAccess.doPut(headers, resourcesUri, null);
-		checkResponse(execution,  HttpStatus.SC_METHOD_NOT_ALLOWED, "'PUT' not allowed");
+		RequestBody body = RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject().toString());
+		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).put(body).build()).execute();
+		checkResponse(response,  HttpURLConnection.HTTP_BAD_METHOD, "'PUT' not allowed");
 	}
 	
 	/**
@@ -106,8 +117,8 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 * @throws IOException 
 	 */
 	public void testSendDelete() throws IOException {
-		Execution execution = httpAccess.doDelete(headers, resourcesUri);
-		checkResponse(execution,  HttpStatus.SC_METHOD_NOT_ALLOWED, "'DELETE' not allowed");
+		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).delete().build()).execute();
+		checkResponse(response,  HttpURLConnection.HTTP_BAD_METHOD, "'DELETE' not allowed");
 	}
 
 	/**
@@ -115,32 +126,40 @@ public class HttpAccessTest extends InstrumentationTestCase {
 	 * @throws IOException 
 	 */
 	public void testSendPatch() throws IOException {
-		Execution execution = httpAccess.doPatch(headers, resourcesUri, null);
-		checkResponse(execution,  HttpStatus.SC_METHOD_NOT_ALLOWED, "'PATCH' not allowed");
+		RequestBody body = RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject().toString());
+		Response response = okHttpClient.newCall(new Request.Builder().url(resourcesUrl).headers(headers).patch(body).build()).execute();
+		checkResponse(response,  HttpURLConnection.HTTP_BAD_METHOD, "'PATCH' not allowed");
 	}
 	
 	/**
 	 * Helper method to validate responses
-	 * @param execution
+	 * @param response
 	 * @param expectedStatusCode
 	 * @param stringsToMatch
 	 */
-	private void checkResponse(Execution execution, int expectedStatusCode, String... stringsToMatch) {
-		HttpResponse response = execution.response;
+	private void checkResponse(Response response, int expectedStatusCode, String... stringsToMatch) {
 		// Check status code
-		assertEquals(expectedStatusCode  + " response expected", expectedStatusCode, response.getStatusLine().getStatusCode());
+		assertEquals(expectedStatusCode  + " response expected", expectedStatusCode, response.code());
 		try {
 			// Check body
-			String responseAsString = EntityUtils.toString(response.getEntity());
+			String responseAsString = new RestResponse(response).asString();
 			for (String stringToMatch : stringsToMatch) {
 				assertTrue("Response should contain " + stringToMatch, responseAsString.indexOf(stringToMatch) > 0);
 			}
-		} 
-		catch (Exception e) {
+		} catch (Exception e) {
 			fail("Failed to read response body");
 			e.printStackTrace();
 		}
 	}
 
-	
+	/**
+	 * Checks the user agent used by http access.
+	 */
+	public void testUserAgentOfHttpAccess() {
+		final HttpAccess http = new HttpAccess(SalesforceSDKManager.getInstance().getAppContext(),
+				SalesforceSDKManager.getInstance().getUserAgent());
+		final String userAgent = http.getUserAgent();
+		assertTrue("User agent should start with SalesforceMobileSDK/<version>",
+				userAgent.startsWith("SalesforceMobileSDK/" + SalesforceSDKManager.SDK_VERSION));
+	}
 }

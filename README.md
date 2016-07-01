@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/forcedotcom/SalesforceMobileSDK-Android.svg?branch=unstable)](https://travis-ci.org/forcedotcom/SalesforceMobileSDK-Android)
-
 # Salesforce.com Mobile SDK for Android
 
 You have arrived at the source repository for the Salesforce Mobile SDK for Android. Welcome! Starting with our 2.0 release, there are now two ways you can choose to work with the Mobile SDK:
@@ -21,25 +19,16 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 4.0
+### What's New in 4.1
+
+**SmartStore Enhancements**
+- SmartStore now allows internal (non-leaf) nodes in index paths. This feature is useful in LIKE and MATCH queries.
+- SmartStore now allows arrays in compound index paths.
 
 **Library Upgrades**
-- Raised the target Android OS version to `v6.0` (API 23 - Marshmallow). Android Marshmallow is now fully supported.
-- Raised the minimum Android OS version required by Mobile SDK to `v4.4` (API 19 - KitKat).
-- Upgraded the `Cordova` library to `v5.0.2`.
-
-**Library Enhancements**
-- Mobile SDK libraries have been refactored to support better consumption. Native apps no longer require Cordova. Our library projects are listed below.
-	- SalesforceSDK
-	- SmartStore
-	- SmartSync
-	- SalesforceHybrid
-	- SalesforceReact
-- The new SalesforceReact library provides the ability to use React Native. Refer to the React Native chapter in the Mobile SDK Development Guide for details on how to use this feature.
+- We've updated React Native to version 0.20.
 
 **Other Technical Improvements**
-- TLS 1.1 and 1.2 are now the default protocols used for networking on Mobile SDK. See [this](https://developer.salesforce.com/blogs/engineering/2015/11/disabling-tls-1-0-preparing-mobile-sdk-apps-big-change.html) blog post for important information.
-- `Android Studio` and `gradle` are fully supported. `Eclipse` and `ant` are no longer supported.
 - Improvements to sample apps.
 - Various bug fixes.
 

@@ -26,13 +26,6 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.List;
-
-import org.apache.http.client.ClientProtocolException;
-
 import android.accounts.AbstractAccountAuthenticator;
 import android.accounts.Account;
 import android.accounts.AccountAuthenticatorResponse;
@@ -50,6 +43,11 @@ import android.util.Log;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
 
 /**
  * The service used for taking care of authentication for a Salesforce-based application.
@@ -73,6 +71,7 @@ public class AuthenticatorService extends Service {
     public static final String KEY_EMAIL = "email";
     public static final String KEY_FIRST_NAME = "first_name";
     public static final String KEY_LAST_NAME = "last_name";
+    public static final String KEY_DISPLAY_NAME = "display_name";
     public static final String KEY_PHOTO_URL = "photoUrl";
     public static final String KEY_THUMBNAIL_URL = "thumbnailUrl";
 
@@ -114,7 +113,6 @@ public class AuthenticatorService extends Service {
                         String[] requiredFeatures,
                         Bundle options)
                 throws NetworkErrorException {
-            // Log.i("Authenticator:addAccount", "Options: " + options);
         	if (isAddFromSettings(options)) {
         		options.putAll(SalesforceSDKManager.getInstance().getLoginOptions().asBundle());
         	}
@@ -166,8 +164,6 @@ public class AuthenticatorService extends Service {
 
 		/**
          * Uses the refresh token to get a new access token.
-         * Remember that the authenticator runs under its own separate process, so if you want to debug you
-         * need to attach to the :auth process, and not the main chatter process.
          */
         @Override
         public Bundle getAuthToken(
@@ -175,6 +171,8 @@ public class AuthenticatorService extends Service {
                             Account account,
                             String authTokenType,
                             Bundle options) throws NetworkErrorException {
+            final String TAG = "Auth..Ser..:getAuthT..";
+
             final AccountManager mgr = AccountManager.get(context);
             final String passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
             final String refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), passcodeHash);
@@ -190,6 +188,11 @@ public class AuthenticatorService extends Service {
             String firstName = null;
             if (encFirstName != null) {
                  firstName = SalesforceSDKManager.decryptWithPasscode(encFirstName, passcodeHash);
+            }
+            final String encDisplayName = mgr.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME);
+            String displayName = null;
+            if (encDisplayName != null) {
+                displayName = SalesforceSDKManager.decryptWithPasscode(encDisplayName, passcodeHash);
             }
             final String encPhotoUrl = mgr.getUserData(account, AuthenticatorService.KEY_PHOTO_URL);
             String photoUrl = null;
@@ -231,7 +234,7 @@ public class AuthenticatorService extends Service {
                 mgr.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(tr.authToken, passcodeHash));
                 resBundle.putString(AccountManager.KEY_ACCOUNT_NAME, account.name);
                 resBundle.putString(AccountManager.KEY_ACCOUNT_TYPE, account.type);
-                resBundle.putString(AccountManager.KEY_AUTHTOKEN, tr.authToken);
+                resBundle.putString(AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(tr.authToken, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_LOGIN_URL, SalesforceSDKManager.encryptWithPasscode(loginServer, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_INSTANCE_URL, SalesforceSDKManager.encryptWithPasscode(tr.instanceUrl, passcodeHash));
                 resBundle.putString(AuthenticatorService.KEY_CLIENT_ID, SalesforceSDKManager.encryptWithPasscode(clientId, passcodeHash));
@@ -245,6 +248,11 @@ public class AuthenticatorService extends Service {
                     encrFirstName = SalesforceSDKManager.encryptWithPasscode(firstName, passcodeHash);
                 }
                 resBundle.putString(AuthenticatorService.KEY_FIRST_NAME, encrFirstName);
+                String encrDisplayName = null;
+                if (displayName != null) {
+                    encrDisplayName = SalesforceSDKManager.encryptWithPasscode(displayName, passcodeHash);
+                }
+                resBundle.putString(AuthenticatorService.KEY_DISPLAY_NAME, encrDisplayName);
                 String encrPhotoUrl = null;
                 if (photoUrl != null) {
                     encrPhotoUrl = SalesforceSDKManager.encryptWithPasscode(photoUrl, passcodeHash);
@@ -270,26 +278,21 @@ public class AuthenticatorService extends Service {
                 	encrCommunityUrl = SalesforceSDKManager.encryptWithPasscode(communityUrl, passcodeHash);
                 }
                 resBundle.putString(AuthenticatorService.KEY_COMMUNITY_URL, encrCommunityUrl);
-                // Log.i("Authenticator:getAuthToken", "Returning auth bundle for " + account.name);
-            } catch (ClientProtocolException e) {
-                Log.w("Authenticator:getAuthToken", "", e);
-                throw new NetworkErrorException(e);
             } catch (IOException e) {
-                Log.w("Authenticator:getAuthToken", "", e);
+                Log.w(TAG, "", e);
                 throw new NetworkErrorException(e);
             } catch (URISyntaxException e) {
-                Log.w("Authenticator:getAuthToken", "", e);
+                Log.w(TAG, "", e);
                 throw new NetworkErrorException(e);
             } catch (OAuthFailedException e) {
                 if (e.isRefreshTokenInvalid()) {
-                	Log.i("Authenticator:getAuthToken", "Invalid Refresh Token: (Error: " + e.response.error + ", Status Code: " + e.httpStatusCode + ")");
+                	Log.i(TAG, "Invalid Refresh Token: (Error: " + e.response.error + ", Status Code: " + e.httpStatusCode + ")");
                     // the exception explicitly indicates that the refresh token is no longer valid.
                     return makeAuthIntentBundle(response, options);
                 }
                 resBundle.putString(AccountManager.KEY_ERROR_CODE, e.response.error);
                 resBundle.putString(AccountManager.KEY_ERROR_MESSAGE, e.response.errorDescription);
             }
-            // Log.i("Authenticator:getAuthToken", "Result: " + resBundle);
             return resBundle;
         }
 

@@ -53,6 +53,8 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	private static final String DEPT_CODE = "deptCode";
 	private static final String EMPLOYEES_SOUP = "employees";
 	private static final String DEPARTMENTS_SOUP = "departments";
+	private static final String EDUCATION = "education";
+	private static final String BUILDING = "building";
 
 	@Override
 	protected String getPasscode() {
@@ -69,14 +71,15 @@ public class SmartSqlTest extends SmartStoreTestCase {
 				new IndexSpec(DEPT_CODE, Type.string),         // should be TABLE_1_2
 				new IndexSpec(EMPLOYEE_ID, Type.string),       // should be TABLE_1_3
 				new IndexSpec(MANAGER_ID, Type.string),        // should be TABLE_1_4
-				new IndexSpec(SALARY, Type.integer) });        // should be TABLE_1_5
+				new IndexSpec(SALARY, Type.integer),           // should be TABLE_1_5
+				new IndexSpec(EDUCATION, Type.json1)});
 
 		
 		store.registerSoup(DEPARTMENTS_SOUP, new IndexSpec[] { // should be TABLE_2
 				new IndexSpec(DEPT_CODE, Type.string),         // should be TABLE_2_0
 				new IndexSpec(NAME, Type.string),              // should be TABLE_2_1
-				new IndexSpec(BUDGET, Type.integer) } );       // should be TABLE_2_2
-
+				new IndexSpec(BUDGET, Type.integer),           // should be TABLE_2_2
+				new IndexSpec(BUILDING, Type.json1)});
 	}
 	
 	/**
@@ -122,8 +125,8 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	 * Testing smart sql to sql conversion when path is: _soup, _soupEntryId or _soupLastModifiedDate
 	 */
 	public void testConvertSmartSqlWithSpecialColumns() {
-		assertEquals("select TABLE_1.id, TABLE_1.lastModified, TABLE_1.soup from TABLE_1", 
-				store.convertSmartSql("select {employees:_soupEntryId}, {employees:_soupLastModifiedDate}, {employees:_soup} from {employees}"));
+		assertEquals("select TABLE_1.id, TABLE_1.created, TABLE_1.lastModified, TABLE_1.soup from TABLE_1",
+				store.convertSmartSql("select {employees:_soupEntryId}, {employees:_soupCreatedDate}, {employees:_soupLastModifiedDate}, {employees:_soup} from {employees}"));
 	}
 	
 	/**
@@ -156,7 +159,24 @@ public class SmartSqlTest extends SmartStoreTestCase {
 			}
 		}
 	}
-	
+
+	public void testConvertSmartSqlWithJSON1() {
+		assertEquals("select TABLE_1_1, json_extract(soup, '$.education') from TABLE_1 where json_extract(soup, '$.education') = 'MIT'",
+				store.convertSmartSql("select {employees:lastName}, {employees:education} from {employees} where {employees:education} = 'MIT'"));
+	}
+
+	public void testConvertSmartSqlWithJSON1AndTableQualifiedColumn() {
+		assertEquals("select json_extract(TABLE_1.soup, '$.education') from TABLE_1 order by json_extract(TABLE_1.soup, '$.education')",
+				store.convertSmartSql("select {employees}.{employees:education} from {employees} order by {employees}.{employees:education}"));
+	}
+
+	public void testConvertSmartSqlWithJSON1AndTableAliases() {
+		assertEquals("select json_extract(e.soup, '$.education'), json_extract(soup, '$.building') from TABLE_1 as e, TABLE_2",
+				store.convertSmartSql("select e.{employees:education}, {departments:building} from {employees} as e, {departments}"));
+
+		// XXX join query with json1 will only run if all the json1 columns are qualified by table or alias
+	}
+
 	/**
 	 * Test running smart query that does a select count
 	 * @throws JSONException 

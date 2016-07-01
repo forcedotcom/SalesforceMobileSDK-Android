@@ -27,40 +27,22 @@
 package com.salesforce.androidsdk.rest.files;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.google.common.collect.Maps;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
-import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
-import com.salesforce.androidsdk.rest.RestResponse;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpVersion;
-import org.apache.http.ProtocolVersion;
-import org.apache.http.StatusLine;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.BasicHttpEntity;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.message.BasicHttpResponse;
-import org.apache.http.message.BasicStatusLine;
-import org.apache.http.protocol.HTTP;
 import org.json.JSONObject;
 
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URI;
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
+
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 
 /**
  * This defines the HTTP requests in the connect API for files functionality.
@@ -69,8 +51,9 @@ import java.util.Map;
  */
 public class FileRequests extends ApiRequests {
 
-    // files i follow
-    static final String CONTENT_DOCUMENT_LINK = ApiVersionStrings.BASE_SOBJECT_PATH + "ContentDocumentLink";
+    public static String getContentDocumentLinkPath() {
+        return ApiVersionStrings.getBaseSObjectPath() + "ContentDocumentLink";
+    }
 
     /**
      * Build a Request that can fetch a page from the files owned by the
@@ -85,7 +68,7 @@ public class FileRequests extends ApiRequests {
      * @return A new RestRequest that can be used to fetch this data
      */
     public static RestRequest ownedFilesList(String userId, Integer pageNum) {
-        return make(base("users").appendUserId(userId).appendPath("files").appendPageNum(pageNum));
+        return make(base("connect/files/users").appendUserId(userId).appendPageNum(pageNum));
     }
 
     /**
@@ -101,7 +84,7 @@ public class FileRequests extends ApiRequests {
      * @return A new RestRequest that can be used to fetch this data
      */
     public static RestRequest filesInUsersGroups(String userId, Integer pageNum) {
-        return make(base("users").appendUserId(userId).appendPath("files/filter/groups").appendPageNum(pageNum));
+        return make(base("connect/files/users").appendUserId(userId).appendPath("filter/groups").appendPageNum(pageNum));
     }
 
     /**
@@ -117,7 +100,7 @@ public class FileRequests extends ApiRequests {
      * @return A new RestRequest that can be used to fetch this data
      */
     public static RestRequest filesSharedWithUser(String userId, Integer pageNum) {
-        return make(base("users").appendUserId(userId).appendPath("files/filter/sharedwithme").appendPageNum(pageNum));
+        return make(base("connect/files/users").appendUserId(userId).appendPath("filter/sharedwithme").appendPageNum(pageNum));
     }
 
     /**
@@ -133,7 +116,7 @@ public class FileRequests extends ApiRequests {
      */
     public static RestRequest fileDetails(String sfdcId, String version) {
         validateSfdcId(sfdcId);
-        return make(base("files").appendPath(sfdcId).appendVersionNum(version));
+        return make(base("connect/files").appendPath(sfdcId).appendVersionNum(version));
     }
 
     /**
@@ -147,7 +130,7 @@ public class FileRequests extends ApiRequests {
     public static RestRequest batchFileDetails(List<String> sfdcIds) {
         validateSfdcIds(sfdcIds);
         String ids = TextUtils.join(",", sfdcIds);
-        return make(base("files").appendPath("batch").appendPath(ids));
+        return make(base("connect/files").appendPath("batch").appendPath(ids));
     }
 
     /**
@@ -170,7 +153,7 @@ public class FileRequests extends ApiRequests {
         if (renditionType == null) {
             throw new NullPointerException("rendition type can't be null");
         }
-        return make(base("files").appendPath(sfdcId).appendPath("rendition")
+        return make(base("connect/files").appendPath(sfdcId).appendPath("rendition")
                 .appendQueryParam("type", renditionType.toString()).appendVersionNum(version).appendPageNum(pageNum));
     }
 
@@ -186,7 +169,7 @@ public class FileRequests extends ApiRequests {
      */
     public static RestRequest fileContents(String sfdcId, String version) {
         validateSfdcId(sfdcId);
-        return make(base("files").appendPath(sfdcId).appendPath("content").appendVersionNum(version));
+        return make(base("connect/files").appendPath(sfdcId).appendPath("content").appendVersionNum(version));
     }
 
     /**
@@ -202,7 +185,7 @@ public class FileRequests extends ApiRequests {
      */
     public static RestRequest fileShares(String sfdcId, Integer pageNum) {
         validateSfdcId(sfdcId);
-        return make(base("files").appendPath(sfdcId).appendPath("file-shares").appendPageNum(pageNum));
+        return make(base("connect/files").appendPath(sfdcId).appendPath("file-shares").appendPageNum(pageNum));
     }
 
     /**
@@ -221,7 +204,7 @@ public class FileRequests extends ApiRequests {
      */
     public static RestRequest addFileShare(String fileId, String entityId, String shareType) {
         validateSfdcIds(fileId, entityId);
-        return new RestRequest(RestMethod.POST, CONTENT_DOCUMENT_LINK, makeFileShare(fileId, entityId, shareType));
+        return new RestRequest(RestMethod.POST, getContentDocumentLinkPath(), makeFileShare(fileId, entityId, shareType));
     }
 
     /**
@@ -234,21 +217,42 @@ public class FileRequests extends ApiRequests {
      */
     public static RestRequest deleteFileShare(String shareId) {
         validateSfdcId(shareId);
-        return new RestRequest(RestMethod.DELETE, CONTENT_DOCUMENT_LINK + "/" + shareId, null);
+        return new RestRequest(RestMethod.DELETE, getContentDocumentLinkPath() + "/" + shareId, null);
     }
 
-    private static HttpEntity makeFileShare(String fileId, String entityId, String shareType) {
-        Map<String, String> share = Maps.newHashMap();
+    /**
+     * Build a request that can upload a new file to the server, this will
+     * create a new file at version 1.
+     *
+     * @param theFile
+     *            The path of the local file to upload to the server.
+     * @param name
+     *            The name of this file.
+     * @param title
+     *            The title of this file.
+     * @param description
+     *            A description of the file.
+     * @param mimeType
+     *            The mime-type of the file, if known.
+     * @return A RestRequest that can perform this upload.
+     *
+     * @throws UnsupportedEncodingException
+     */
+    public static RestRequest uploadFile(File theFile, String name, String title, String description, String mimeType) throws UnsupportedEncodingException {
+        MediaType mediaType = MediaType.parse(mimeType);
+        MultipartBody.Builder builder = new MultipartBody.Builder();
+        if (title != null) builder.addFormDataPart("title", title);
+        if (description != null) builder.addFormDataPart("desc", description);
+        builder.addFormDataPart("fileData", name, RequestBody.create(mediaType, theFile));
+
+        return new RestRequest(RestMethod.POST, base("connect/files/users").appendPath("me").toString(), builder.build(), HTTP_HEADERS);
+    }
+
+    private static RequestBody makeFileShare(String fileId, String entityId, String shareType) {
+        Map<String, String> share = Maps.newLinkedHashMap();
         share.put("ContentDocumentId", fileId);
         share.put("LinkedEntityId", entityId);
         share.put("ShareType", shareType);
-        try {
-            String json = new JSONObject(share).toString();
-            StringEntity e = new StringEntity(json, HTTP.UTF_8);
-            e.setContentType("application/json");
-            return e;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject(share).toString());
     }
 }

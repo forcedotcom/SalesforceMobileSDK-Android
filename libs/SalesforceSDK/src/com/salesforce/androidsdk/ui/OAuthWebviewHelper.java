@@ -473,7 +473,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             accountOptions = new AccountOptions(id.username, tr.refreshToken,
                     tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId,
                     tr.communityId, tr.communityUrl, id.firstName, id.lastName,
-                    id.email, id.pictureUrl, id.thumbnailUrl);
+                    id.displayName, id.email, id.pictureUrl, id.thumbnailUrl);
 
             // Sets additional admin prefs, if they exist.
             final UserAccount account = new UserAccount(accountOptions.authToken,
@@ -483,7 +483,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     accountOptions.username, buildAccountName(accountOptions.username,
                     accountOptions.instanceUrl), loginOptions.clientSecret,
                     accountOptions.communityId, accountOptions.communityUrl,
-                    accountOptions.firstName, accountOptions.lastName,
+                    accountOptions.firstName, accountOptions.lastName, accountOptions.displayName,
                     accountOptions.email, accountOptions.photoUrl,
                     accountOptions.thumbnailUrl);
 
@@ -590,6 +590,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 accountOptions.communityUrl,
                 accountOptions.firstName,
                 accountOptions.lastName,
+                accountOptions.displayName,
                 accountOptions.email,
                 accountOptions.photoUrl,
                 accountOptions.thumbnailUrl);
@@ -609,7 +610,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             		accountOptions.username, accountName,
             		loginOptions.clientSecret, accountOptions.communityId,
             		accountOptions.communityUrl, accountOptions.firstName,
-                    accountOptions.lastName, accountOptions.email,
+                    accountOptions.lastName, accountOptions.displayName, accountOptions.email,
                     accountOptions.photoUrl, accountOptions.thumbnailUrl);
         	PushMessaging.register(appContext, account);
     	}
@@ -651,6 +652,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         private static final String COMMUNITY_URL = "communityUrl";
         private static final String FIRST_NAME = "firstName";
         private static final String LAST_NAME = "lastName";
+        private static final String DISPLAY_NAME = "displayName";
         private static final String EMAIL = "email";
         private static final String PHOTO_URL = "photoUrl";
         private static final String THUMBNAIL_URL = "thumbnailUrl";
@@ -666,6 +668,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         public final String communityUrl;
         public final String firstName;
         public final String lastName;
+        public final String displayName;
         public final String email;
         public final String photoUrl;
         public final String thumbnailUrl;
@@ -677,7 +680,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         public AccountOptions(String username, String refreshToken,
                 String authToken, String identityUrl, String instanceUrl,
                 String orgId, String userId, String communityId, String communityUrl,
-                String firstName, String lastName, String email, String photoUrl, String thumbnailUrl) {
+                String firstName, String lastName, String displayName, String email, String photoUrl, String thumbnailUrl) {
             super();
             this.username = username;
             this.refreshToken = refreshToken;
@@ -690,6 +693,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             this.communityUrl = communityUrl;
             this.firstName = firstName;
             this.lastName = lastName;
+            this.displayName = displayName;
             this.email = email;
             this.photoUrl = photoUrl;
             this.thumbnailUrl = thumbnailUrl;
@@ -707,6 +711,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             bundle.putString(COMMUNITY_URL, communityUrl);
             bundle.putString(FIRST_NAME, firstName);
             bundle.putString(LAST_NAME, lastName);
+            bundle.putString(DISPLAY_NAME, displayName);
             bundle.putString(EMAIL, email);
             bundle.putString(PHOTO_URL, photoUrl);
             bundle.putString(THUMBNAIL_URL, thumbnailUrl);
@@ -730,6 +735,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     options.getString(COMMUNITY_URL),
                     options.getString(FIRST_NAME),
                     options.getString(LAST_NAME),
+                    options.getString(DISPLAY_NAME),
                     options.getString(EMAIL),
                     options.getString(PHOTO_URL),
                     options.getString(THUMBNAIL_URL)

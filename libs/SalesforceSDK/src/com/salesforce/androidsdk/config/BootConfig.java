@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -36,6 +36,7 @@ import org.json.JSONObject;
 
 import android.content.Context;
 import android.content.res.Resources;
+import android.text.TextUtils;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
@@ -43,10 +44,8 @@ import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
 
 /**
  * Class encapsulating the application configuration (consumer key, oauth scopes, refresh behavior).
- */
-/**
- * @author wmathurin
  *
+ * @author wmathurin
  */
 public class BootConfig {
 
@@ -108,28 +107,29 @@ public class BootConfig {
     	RuntimeConfig runtimeConfig = RuntimeConfig.getRuntimeConfig(ctx);
     	String mdmRemoteAccessConsumeKey = runtimeConfig.getString(ConfigKey.ManagedAppOAuthID);
     	String mdmOauthRedirectURI = runtimeConfig.getString(ConfigKey.ManagedAppCallbackURL);
-    	
-    	if (mdmRemoteAccessConsumeKey != null) remoteAccessConsumerKey = mdmRemoteAccessConsumeKey;
-    	if (mdmOauthRedirectURI != null) oauthRedirectURI = mdmOauthRedirectURI;
+    	if (!TextUtils.isEmpty(mdmRemoteAccessConsumeKey)) {
+            remoteAccessConsumerKey = mdmRemoteAccessConsumeKey;
+        }
+    	if (!TextUtils.isEmpty(mdmOauthRedirectURI)) {
+            oauthRedirectURI = mdmOauthRedirectURI;
+        }
 	}
 
 	/**
      * @return boot config as JSONObject
 	 * @throws JSONException
 	 */
-	public JSONObject asJSON() throws JSONException
-	{
+	public JSONObject asJSON() throws JSONException {
 		JSONObject config = new JSONObject();
-
 		config.put(REMOTE_ACCESS_CONSUMER_KEY, remoteAccessConsumerKey);
 		config.put(OAUTH_REDIRECT_URI, oauthRedirectURI);
 		config.put(OAUTH_SCOPES, new JSONArray(Arrays.asList(oauthScopes)));
         config.put(IS_LOCAL, isLocal);
         config.put(START_PAGE, startPage);
         config.put(ERROR_PAGE, errorPage);
-
-        if (pushNotificationClientId != null) 
+        if (!TextUtils.isEmpty(pushNotificationClientId)) {
             config.put(PUSH_NOTIFICATION_CLIENT_ID, pushNotificationClientId);
+        }
         config.put(SHOULD_AUTHENTICATE, shouldAuthenticate);
         config.put(ATTEMPT_OFFLINE_LOAD, attemptOfflineLoad);
 
@@ -195,7 +195,7 @@ public class BootConfig {
 			oauthRedirectURI = config.getString(OAUTH_REDIRECT_URI);
 			final JSONArray jsonScopes = config.getJSONArray(OAUTH_SCOPES);
 			oauthScopes = new String[jsonScopes.length()];
-			for (int i=0; i<oauthScopes.length; i++) {
+			for (int i = 0; i < oauthScopes.length; i++) {
 				oauthScopes[i] = jsonScopes.getString(i);
 			}
 			isLocal = config.getBoolean(IS_LOCAL);

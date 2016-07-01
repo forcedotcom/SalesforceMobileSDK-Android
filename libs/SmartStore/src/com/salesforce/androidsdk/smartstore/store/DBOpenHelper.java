@@ -129,8 +129,12 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	protected DBOpenHelper(Context context, String dbName) {
 		super(context, dbName, null, DB_VERSION, new DBHook());
-		SQLiteDatabase.loadLibs(context);
+		this.loadLibs(context);
 	}
+
+	 protected void loadLibs(Context context) {
+        SQLiteDatabase.loadLibs(context);
+    }
 
 	@Override
 	public void onCreate(SQLiteDatabase db) {

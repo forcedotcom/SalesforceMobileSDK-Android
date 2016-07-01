@@ -27,7 +27,11 @@
 package com.salesforce.androidsdk.smartsync.manager;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.salesforce.androidsdk.smartsync.manager.CacheManager.CachePolicy;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
@@ -43,71 +47,103 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
 public class MetadataManagerTest extends ManagerTestCase {
 
 	private static final long REFRESH_INTERVAL = 24 * 60 * 60 * 1000;
-	private static final String ACCOUNT_1_ID = "001S000000fkJKm";
-	private static final String ACCOUNT_1_NAME = "Alpha4";
-	private static final String ACCOUNT_2_ID = "001S000000gyAaj";
-	private static final String OPPORTUNITY_1_ID = "006S0000007182b";
-	private static final String OPPORTUNITY_1_NAME = "Test";
-	private static final String OPPORTUNITY_2_ID = "006S0000007182l";
-	private static final String CASE_1_ID = "500S0000003s6Sf";
-	private static final String CASE_1_NAME = "00001007";
-	private static final String CASE_2_ID = "500S0000004O7fd";
+    private static final int MAX_QUERY_LIMIT = 200;
+    private static final int INDEX_WAITINGTIME = 2000;
 
     /**
      * Test for global 'loadMRUObjects' (from the server).
      */
     public void testLoadGlobalMRUObjectsFromServer() throws Exception {
-    	metadataManager.markObjectAsViewed(CASE_1_ID, Constants.CASE, null);
+
+        //retrieve the MRU records before test
+        final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(null,
+                MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
+
+        int numberOfRecords = 1;
+        Map<String, String> idToSubjects = createRecordsOnServer(numberOfRecords, Constants.CASE);
+        assertTrue("Not created the tested record successfully", idToSubjects.size() == numberOfRecords);
+        Set<String> ids = idToSubjects.keySet();
+
+        try {
 
 		/*
 		 * MRU could take a few milliseconds to index on the server. This ensures
 		 * that we don't query too soon and cause the test to flap.
 		 */
-		Thread.sleep(2000);
-    	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(null,
-    			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
-    	assertNotNull("MRU list should not be null", mruObjects);
-    	assertEquals("MRU list size should be 1", 1, mruObjects.size());
-    	assertEquals("Recently viewed object name is incorrect", CASE_1_NAME,
-    			mruObjects.get(0).getName());
-    }
+			Thread.sleep(INDEX_WAITINGTIME);
+			final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(null,
+                    MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
+			assertNotNull("MRU list should not be null", mruObjects);
+			assertEquals("MRU list size should not be changed", mruObjects_before.size()+numberOfRecords, mruObjects.size());
+		} finally {
+			deleteRecordsOnServer(ids, Constants.CASE);
+		}
+	}
 
     /**
      * Test for account 'loadMRUObjects' (from the server).
      */
     public void testLoadAccountMRUObjectsFromServer() throws Exception {
-    	metadataManager.markObjectAsViewed(ACCOUNT_1_ID, Constants.ACCOUNT, null);
+        //retrieve the MRU records before test
+        final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(Constants.ACCOUNT,
+                MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
+        int mruObjectsNumberBefore = 0;
+        if (mruObjects_before != null) {
+            mruObjectsNumberBefore = mruObjects_before.size();
+        }
 
+        int numberOfRecords = 1;
+        Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.ACCOUNT);
+        assertTrue("Not created the tested record successfully", idToNames.size() == numberOfRecords);
+        Collection<String> names = idToNames.values();
+        Set<String> ids = idToNames.keySet();
+
+        try {
 		/*
 		 * MRU could take a few milliseconds to index on the server. This ensures
 		 * that we don't query too soon and cause the test to flap.
 		 */
-		Thread.sleep(2000);
-    	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.ACCOUNT,
-    			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
-    	assertNotNull("MRU list should not be null", mruObjects);
-    	assertEquals("MRU list size should be 1", 1, mruObjects.size());
-    	assertEquals("Recently viewed object name is incorrect", ACCOUNT_1_NAME,
-    			mruObjects.get(0).getName());
+            Thread.sleep(INDEX_WAITINGTIME);
+            final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.ACCOUNT,
+                    MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
+            assertNotNull("MRU list should not be null", mruObjects);
+            assertEquals("MRU list size should not be changed", mruObjectsNumberBefore+numberOfRecords, mruObjects.size());
+            assertEquals("Recently viewed object name is incorrect", names.toArray()[0],
+                    mruObjects.get(0).getName());
+        } finally {
+            deleteRecordsOnServer(ids, Constants.ACCOUNT);
+        }
     }
 
     /**
      * Test for opportunity 'loadMRUObjects' (from the server).
      */
     public void testLoadOpportunityMRUObjectsFromServer() throws Exception {
-    	metadataManager.markObjectAsViewed(OPPORTUNITY_1_ID, Constants.OPPORTUNITY, null);
+        //retrieve the MRU records before test
+        final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
+                MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
 
+        int numberOfRecords = 1;
+        Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.OPPORTUNITY);
+        assertTrue("Not created the tested record successfully", idToNames.size() == numberOfRecords);
+        Collection<String> names = idToNames.values();
+        Set<String> ids = idToNames.keySet();
+
+        try {
 		/*
 		 * MRU could take a few milliseconds to index on the server. This ensures
 		 * that we don't query too soon and cause the test to flap.
 		 */
-		Thread.sleep(2000);
-    	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
-    			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
-    	assertNotNull("MRU list should not be null", mruObjects);
-    	assertEquals("MRU list size should be 1", 1, mruObjects.size());
-    	assertEquals("Recently viewed object name is incorrect", OPPORTUNITY_1_NAME,
-    			mruObjects.get(0).getName());
+            Thread.sleep(INDEX_WAITINGTIME);
+            final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
+                    MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
+            assertNotNull("MRU list should not be null", mruObjects);
+            assertEquals("MRU list size should not be changed", mruObjects_before.size()+numberOfRecords, mruObjects.size());
+            assertEquals("Recently viewed object name is incorrect", names.toArray()[0],
+                    mruObjects.get(0).getName());
+        } finally {
+            deleteRecordsOnServer(ids, Constants.OPPORTUNITY);
+        }
     }
 
     /**
@@ -152,82 +188,100 @@ public class MetadataManagerTest extends ManagerTestCase {
     	final List<SalesforceObjectTypeLayout> objectLayouts = metadataManager.loadObjectTypesLayout(objectTypes,
     			CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL);
     	assertNotNull("Layout list should not be null", objectLayouts);
-    	assertEquals("Layout list size should be 3", 3, objectLayouts.size());
+    	assertEquals("Wrong Layout list size loaded from server", objectTypeNames.size(), objectLayouts.size());
     }
 
     /**
      * Test for global 'loadMRUObjects' (from the cache).
      */
-    public void testLoadGlobalMRUObjectsFromCache() {
-    	metadataManager.markObjectAsViewed(CASE_1_ID, Constants.CASE, null);
-    	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(null,
-    			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
-    	assertNotNull("MRU list should not be null", mruObjects);
-    	assertEquals("MRU list size should be 1", 1, mruObjects.size());
-    	assertEquals("Recently viewed object name is incorrect", CASE_1_NAME,
-    			mruObjects.get(0).getName());
+    public void testLoadGlobalMRUObjectsFromCache() throws Exception {
+        //retrieve the MRU records before test
+        final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(null,
+                MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
 
-    	/*
-    	 * We mark CASE_2 as most recently viewed. However, the cache results
-    	 * should still return CASE_1 as most recently viewed.
-    	 */
-    	metadataManager.markObjectAsViewed(CASE_2_ID, Constants.CASE, null);
-    	final List<SalesforceObject> cachedMruObjects = metadataManager.loadMRUObjects(null,
-    			1, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL, null);
-    	assertNotNull("MRU list should not be null", cachedMruObjects);
-    	assertEquals("MRU list size should be 1", 1, cachedMruObjects.size());
-    	assertEquals("Recently viewed object name is incorrect", CASE_1_NAME,
-    			mruObjects.get(0).getName());
+        int numberOfRecords = 1;
+        Map<String, String> idToSubjects = createRecordsOnServer(numberOfRecords, Constants.CASE);
+        assertTrue("Not created the tested record successfully", idToSubjects.size() == numberOfRecords);
+        Set<String> ids = idToSubjects.keySet();
+        try {
+
+		/*
+		 * MRU could take a few milliseconds to index on the server. This ensures
+		 * that we don't query too soon and cause the test to flap.
+		 */
+            Thread.sleep(INDEX_WAITINGTIME);
+            final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(null,
+                    MAX_QUERY_LIMIT, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL, null);
+            assertNotNull("MRU list should not be null", mruObjects);
+            assertEquals("MRU list size should not be changed", mruObjects_before.size(), mruObjects.size());
+        } finally {
+            deleteRecordsOnServer(ids, Constants.CASE);
+        }
     }
 
     /**
      * Test for account 'loadMRUObjects' (from the cache).
      */
-    public void testLoadAccountMRUObjectsFromCache() {
-    	metadataManager.markObjectAsViewed(ACCOUNT_1_ID, Constants.ACCOUNT, null);
-    	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.ACCOUNT,
-    			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
-    	assertNotNull("MRU list should not be null", mruObjects);
-    	assertEquals("MRU list size should be 1", 1, mruObjects.size());
-    	assertEquals("Recently viewed object name is incorrect", ACCOUNT_1_NAME,
-    			mruObjects.get(0).getName());
+    public void testLoadAccountMRUObjectsFromCache() throws Exception {
+        //retrieve the MRU records before test
+        final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(Constants.ACCOUNT,
+                MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
+        int numberOfRecords = 1;
+        Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.ACCOUNT);
+        assertTrue("Not created the tested record successfully", idToNames.size() == numberOfRecords);
+        Set<String> ids = idToNames.keySet();
 
-    	/*
-    	 * We mark ACCOUNT_2 as most recently viewed. However, the cache results
-    	 * should still return ACCOUNT_1 as most recently viewed.
-    	 */
-    	metadataManager.markObjectAsViewed(ACCOUNT_2_ID, Constants.ACCOUNT, null);
-    	final List<SalesforceObject> cachedMruObjects = metadataManager.loadMRUObjects(Constants.ACCOUNT,
-    			1, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL, null);
-    	assertNotNull("MRU list should not be null", cachedMruObjects);
-    	assertEquals("MRU list size should be 1", 1, cachedMruObjects.size());
-    	assertEquals("Recently viewed object name is incorrect", ACCOUNT_1_NAME,
-    			mruObjects.get(0).getName());
+        try {
+		/*
+		 * MRU could take a few milliseconds to index on the server. This ensures
+		 * that we don't query too soon and cause the test to flap.
+		 */
+            Thread.sleep(INDEX_WAITINGTIME);
+            final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.ACCOUNT,
+                    MAX_QUERY_LIMIT, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL, null);
+            //for the case that there is some MRU Account record before test
+            if (mruObjects_before != null) {
+                assertNotNull("MRU list should not be null", mruObjects);
+                assertEquals("MRU list size should not be changed", mruObjects_before.size(), mruObjects.size());
+                assertEquals("Recently viewed object name is incorrect", mruObjects_before.get(0).getName(),
+                        mruObjects.get(0).getName());
+            }
+            else {
+                assertNull("MRU list should be null", mruObjects);
+            }
+        } finally {
+            deleteRecordsOnServer(ids, Constants.ACCOUNT);
+        }
     }
 
     /**
      * Test for opportunity 'loadMRUObjects' (from the cache).
      */
-    public void testLoadOpportunityMRUObjectsFromCache() {
-    	metadataManager.markObjectAsViewed(OPPORTUNITY_1_ID, Constants.OPPORTUNITY, null);
-    	final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
-    			1, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
-    	assertNotNull("MRU list should not be null", mruObjects);
-    	assertEquals("MRU list size should be 1", 1, mruObjects.size());
-    	assertEquals("Recently viewed object name is incorrect", OPPORTUNITY_1_NAME,
-    			mruObjects.get(0).getName());
+    public void testLoadOpportunityMRUObjectsFromCache() throws Exception {
+        //retrieve the MRU records before test
+        final List<SalesforceObject> mruObjects_before = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
+                MAX_QUERY_LIMIT, CachePolicy.RELOAD_AND_RETURN_CACHE_DATA, REFRESH_INTERVAL, null);
 
-    	/*
-    	 * We mark OPPORTUNITY_2 as most recently viewed. However, the cache results
-    	 * should still return OPPORTUNITY_1 as most recently viewed.
-    	 */
-    	metadataManager.markObjectAsViewed(OPPORTUNITY_2_ID, Constants.OPPORTUNITY, null);
-    	final List<SalesforceObject> cachedMruObjects = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
-    			1, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL, null);
-    	assertNotNull("MRU list should not be null", cachedMruObjects);
-    	assertEquals("MRU list size should be 1", 1, cachedMruObjects.size());
-    	assertEquals("Recently viewed object name is incorrect", OPPORTUNITY_1_NAME,
-    			mruObjects.get(0).getName());
+        int numberOfRecords = 1;
+        Map<String, String> idToNames = createRecordsOnServer(numberOfRecords, Constants.OPPORTUNITY);
+        assertTrue("Not created the tested record successfully", idToNames.size() == numberOfRecords);
+        Set<String> ids = idToNames.keySet();
+
+        try {
+		/*
+		 * MRU could take a few milliseconds to index on the server. This ensures
+		 * that we don't query too soon and cause the test to flap.
+		 */
+            Thread.sleep(INDEX_WAITINGTIME);
+            final List<SalesforceObject> mruObjects = metadataManager.loadMRUObjects(Constants.OPPORTUNITY,
+                    MAX_QUERY_LIMIT, CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL, null);
+            assertNotNull("MRU list should not be null", mruObjects);
+            assertEquals("MRU list size should not be changed", mruObjects_before.size(), mruObjects.size());
+            assertEquals("Recently viewed object name is incorrect", mruObjects_before.get(0).getName(),
+                    mruObjects.get(0).getName());
+        } finally {
+            deleteRecordsOnServer(ids, Constants.OPPORTUNITY);
+        }
     }
 
     /**
@@ -287,6 +341,6 @@ public class MetadataManagerTest extends ManagerTestCase {
     	final List<SalesforceObjectTypeLayout> objectLayouts = metadataManager.loadObjectTypesLayout(objectTypes,
     			CachePolicy.RETURN_CACHE_DATA_DONT_RELOAD, REFRESH_INTERVAL);
     	assertNotNull("Layout list should not be null", objectLayouts);
-    	assertEquals("Layout list size should be 3", 3, objectLayouts.size());
+    	assertEquals("Wrong Layout list size loaded from cache", objectTypeNames.size(), objectLayouts.size());
     }
 }

@@ -360,6 +360,11 @@ public class UserAccountManager {
 		if (encFirstName != null) {
 			firstName = SalesforceSDKManager.decryptWithPasscode(encFirstName, passcodeHash);
 		}
+        final String encDisplayName = accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME);
+        String displayName = null;
+        if (encDisplayName != null) {
+            displayName = SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME), passcodeHash);
+        }
 		final String encPhotoUrl = accountManager.getUserData(account, AuthenticatorService.KEY_PHOTO_URL);
 		String photoUrl = null;
 		if (encPhotoUrl != null) {
@@ -387,7 +392,7 @@ public class UserAccountManager {
 		}
 		return new UserAccount(authToken, refreshToken, loginServer, idUrl,
 				instanceServer, orgId, userId, username, accountName, clientId,
-				communityId, communityUrl, firstName, lastName, email, photoUrl, thumbnailUrl);
+				communityId, communityUrl, firstName, lastName, displayName, email, photoUrl, thumbnailUrl);
 	}
 
 	/**

@@ -26,25 +26,22 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-
-import org.apache.http.HttpStatus;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.utils.URLEncodedUtils;
-
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
-import com.salesforce.androidsdk.auth.HttpAccess.Execution;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.OAuthFailedException;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
+
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
+
+import okhttp3.HttpUrl;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * Tests for OAuth2
@@ -68,7 +65,7 @@ public class OAuth2Test extends InstrumentationTestCase {
 	 */
 	public void testGetAuthorizationUrl() throws URISyntaxException {
 		String callbackUrl = "sfdc://callback";
-		URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID, callbackUrl,null);
+		URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID, callbackUrl, null);
 		URI expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL + "/services/oauth2/authorize?display=touch&response_type=token&client_id=" + TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
 		assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
 		
@@ -76,92 +73,53 @@ public class OAuth2Test extends InstrumentationTestCase {
 		expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL + "/services/oauth2/authorize?display=touch&response_type=token&client_id=" + TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
 		assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
 	}
-	
+
+    private void tryScopes(String[] scopes, String expectedScopeParamValue) throws URISyntaxException {
+        String callbackUrl = "sfdc://callback";
+        URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),TestCredentials.CLIENT_ID,callbackUrl, scopes);
+        HttpUrl url = HttpUrl.get(authorizationUrl);
+
+        boolean scopesFound = false;
+        for (int i = 0, size = url.querySize(); i < size; i++) {
+            if (url.queryParameterName(i).equalsIgnoreCase("scope")) {
+                scopesFound = true;
+                assertEquals("Wrong scopes included", expectedScopeParamValue, url.queryParameterValue(i));
+                break;
+            }
+        }
+
+        if (expectedScopeParamValue == null) {
+            assertFalse("Scope found on empty scope", scopesFound);
+        }
+        else {
+            assertTrue("No scope param found in query", scopesFound);
+        }
+    }
+
     /**
 	 * Testing getAuthorizationUrl with scopes
 	 * @throws URISyntaxException 
 	 * 
 	 */
 	public void testGetAuthorizationUrlWithScopes() throws URISyntaxException {
-		String callbackUrl = "sfdc://callback";
-        String encoding = null;
-        String[] basicScopes = {"foo","bar"};
-		URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),TestCredentials.CLIENT_ID,callbackUrl,basicScopes);
-                
         //verify basic scopes present
-		List<NameValuePair> paramList;
-        ListIterator<NameValuePair> listor;
-        NameValuePair param;
-
-        paramList = URLEncodedUtils.parse(authorizationUrl, encoding);
-        listor = paramList.listIterator();
-        
-        boolean scopesFound = false;
-        while (listor.hasNext()) {
-        	param = listor.next();
-            if (param.getName().equalsIgnoreCase("scope")) {
-                scopesFound = true;
-                assertEquals("Wrong scopes included", "bar foo refresh_token", param.getValue());
-                break;
-            }
-        }
-        assertTrue("No scope param found in query",scopesFound);
+        tryScopes(new String[]{"foo", "bar"}, "bar foo refresh_token");
 
         //include a refresh_token scope even though the docs tell you not to
-        String[] redundantScopes = {"foo","bar","refresh_token"};
-        authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),TestCredentials.CLIENT_ID,callbackUrl,redundantScopes);
-        paramList = URLEncodedUtils.parse(authorizationUrl, encoding);
-        listor = paramList.listIterator();
-
-        scopesFound = false;
-        while (listor.hasNext()) {
-        	param = listor.next();
-            if (param.getName().equalsIgnoreCase("scope")) {
-                scopesFound = true;
-                assertEquals("Wrong scopes included on redundant", "bar foo refresh_token", param.getValue());
-                break;
-            }
-        }
-        assertTrue("No scope param found in redundantScopes",scopesFound);
+        tryScopes(new String[]{"foo", "bar", "refresh_token"}, "bar foo refresh_token");
 
         //include just one scope
-        String[] oneScope = {"web"};
-        authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),TestCredentials.CLIENT_ID,callbackUrl,oneScope);
-        paramList = URLEncodedUtils.parse(authorizationUrl, encoding);
-        listor = paramList.listIterator();
-        scopesFound = false;
-        while (listor.hasNext()) {
-        	param = listor.next();
-            if (param.getName().equalsIgnoreCase("scope")) {
-                scopesFound = true;
-                assertEquals("Wrong scopes included on one scope", "refresh_token web", param.getValue());
-                break;
-            }
-        }
-        assertTrue("No scope param found in one scope",scopesFound);
+        tryScopes(new String[]{"web"}, "refresh_token web");
 
         //empty scopes -- should not find scopes
-        String[] emptyScope = {};
-        authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL),TestCredentials.CLIENT_ID,callbackUrl,emptyScope);
-        paramList = URLEncodedUtils.parse(authorizationUrl, encoding);
-        listor = paramList.listIterator();
-        scopesFound = false;
-        while (listor.hasNext()) {
-        	param = listor.next();
-        	if (param.getName().equalsIgnoreCase("scope")) {
-                scopesFound = true;
-                break;
-            }
-        }
-        assertTrue("Scope found on empty scope",!scopesFound);
-
+        tryScopes(new String[] {}, null);
 	}
 	
 	
 	/**
 	 * Testing refreshAuthToken
 	 * 
-	 * Call refresh token, then try out the auth token by calling /services/data/
+	 * Call refresh token, then try out the auth token by calling /services/data/vXX
 	 * 
 	 * @throws IOException
 	 * @throws URISyntaxException 
@@ -173,11 +131,16 @@ public class OAuth2Test extends InstrumentationTestCase {
 		assertNotNull("Auth token should not be null", refreshResponse.authToken);
 		
 		// Let's try it out
-		Map<String, String> headers = new HashMap<String, String>();
-		headers.put("Content-Type", "application/json");
-		headers.put("Authorization", "OAuth " + refreshResponse.authToken);
-		Execution versionsResponse = httpAccess.doGet(headers, new URI(TestCredentials.INSTANCE_URL + "/services/data/"));
-		assertEquals("HTTP response status code should have been 200 (OK)", HttpStatus.SC_OK, versionsResponse.response.getStatusLine().getStatusCode());
+		Request request = new Request.Builder()
+				.addHeader("Content-Type", "application/json")
+				.addHeader("Authorization", "Bearer " + refreshResponse.authToken)
+				.url(TestCredentials.INSTANCE_URL + "/services/data/" + ApiVersionStrings.VERSION_NUMBER)
+				.get()
+				.build();
+
+		Response resourcesResponse = httpAccess.getOkHttpClient().newCall(request).execute();
+
+		assertEquals("HTTP response status code should have been 200 (OK)", HttpURLConnection.HTTP_OK, resourcesResponse.code());
 	}
 	
 	/**

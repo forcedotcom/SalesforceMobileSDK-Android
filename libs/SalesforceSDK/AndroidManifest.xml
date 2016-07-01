@@ -2,13 +2,17 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk" 
-	android:versionCode="46"
-	android:versionName="4.0.0">
+	android:versionCode="51"
+	android:versionName="4.2.0.unstable">
 
     <uses-sdk android:minSdkVersion="19"
         android:targetSdkVersion="23" />
 
     <application>
+
+        <!-- Metadata for supported app restrictions -->
+        <meta-data android:name="android.content.APP_RESTRICTIONS"
+            android:resource="@xml/app_restrictions" />
 
         <!-- Service required for authentication -->
         <service android:exported="true"
@@ -78,4 +82,6 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.GET_TASKS" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+    <!--TODO: Remove the -sdk-23 tag when the minsdk version is 23-->
+    <uses-permission-sdk-23 android:name="android.permission.USE_FINGERPRINT" />
 </manifest>

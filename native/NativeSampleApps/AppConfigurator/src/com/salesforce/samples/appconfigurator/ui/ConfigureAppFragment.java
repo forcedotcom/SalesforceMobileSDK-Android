@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,23 +26,30 @@
  */
 package com.salesforce.samples.appconfigurator.ui;
 
-import android.app.Activity;
-import android.app.Fragment;
-import android.app.admin.DevicePolicyManager;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
+import java.util.List;
 
 import com.salesforce.samples.appconfigurator.AppConfiguratorAdminReceiver;
 import com.salesforce.samples.appconfigurator.AppConfiguratorState;
 import com.salesforce.samples.appconfigurator.R;
+
+import android.app.Activity;
+import android.app.Fragment;
+import android.app.admin.DevicePolicyManager;
+import android.content.Context;
+import android.content.RestrictionEntry;
+import android.content.RestrictionsManager;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
 
 /**
  * This fragment provides UI and functionality to configure target application
@@ -52,13 +59,16 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
 
     // UI Components
     private TextView mTextStatus;
+    private TextView mTextXmlValues;
     private Button mButtonSave;
+    private Button mButtonShowXml;
     private EditText mLoginServers;
     private EditText mLoginServersLabels;
     private EditText mRemoteAccessConsumerKey;
     private EditText mOauthRedirectURI;
     private EditText mCertAlias;
     private EditText[] mEditTexts;
+    private CheckBox mOnlyShowAuthorizedHosts;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -80,6 +90,11 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
         		mLoginServers, mLoginServersLabels, mRemoteAccessConsumerKey,
         		mOauthRedirectURI, mCertAlias
         };
+        mTextXmlValues = (TextView) view.findViewById(R.id.text_view_xml);
+        mTextXmlValues.setMovementMethod(new ScrollingMovementMethod());
+        mButtonShowXml = (Button) view.findViewById(R.id.show_xml);
+        mButtonShowXml.setOnClickListener(this);
+        mOnlyShowAuthorizedHosts = (CheckBox) view.findViewById(R.id.only_allowed_servers);
     }
 
     @Override
@@ -90,22 +105,36 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
 
     @Override
     public void onClick(View view) {
+        AppConfiguratorState state = AppConfiguratorState.getInstance(getActivity());
         switch (view.getId()) {
             case R.id.save:
-                AppConfiguratorState state = AppConfiguratorState.getInstance(getActivity());
                 boolean isCertAuthEnabled = false;
                 if (mCertAlias.getText() != null && !mCertAlias.getText().toString().trim().isEmpty()) {
                 	isCertAuthEnabled = true;
                 }
+                boolean showOnlyAllowedServers = mOnlyShowAuthorizedHosts.isChecked();
                 state.saveConfigurations(getActivity(),
                         mLoginServers.getText().toString(),
                         mLoginServersLabels.getText().toString(),
                         mRemoteAccessConsumerKey.getText().toString(),
                         mOauthRedirectURI.getText().toString(),
                         isCertAuthEnabled,
-                        mCertAlias.getText().toString());
+                        mCertAlias.getText().toString(),
+                        showOnlyAllowedServers);
                 Toast.makeText(getActivity(), R.string.saved, Toast.LENGTH_SHORT).show();
                 break;
+
+        case R.id.show_xml:
+            RestrictionsManager manager =
+                    (RestrictionsManager) getActivity().getSystemService(Context.RESTRICTIONS_SERVICE);
+
+            List<RestrictionEntry> restrictions = manager.getManifestRestrictions(state.getTargetApp());
+            final StringBuilder stringBuilder = new StringBuilder();
+            for (final RestrictionEntry re : restrictions) {
+                stringBuilder.append(re + "\n");
+            }
+            mTextXmlValues.setText(stringBuilder.toString());
+            break;
         }
     }
 
@@ -138,6 +167,8 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
                 editText.setVisibility(View.VISIBLE);
             }
             mButtonSave.setVisibility(View.VISIBLE);
+            mButtonShowXml.setVisibility(View.VISIBLE);
+            mOnlyShowAuthorizedHosts.setChecked(state.shouldOnlyShowAuthorizedHosts());
         } else {
             mTextStatus.setText(status);
             mTextStatus.setVisibility(View.VISIBLE);
@@ -145,6 +176,8 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
                 editText.setVisibility(View.GONE);
             }
             mButtonSave.setVisibility(View.GONE);
+            mButtonShowXml.setVisibility(View.GONE);
+            mOnlyShowAuthorizedHosts.setChecked(false);
         }
     }
 }

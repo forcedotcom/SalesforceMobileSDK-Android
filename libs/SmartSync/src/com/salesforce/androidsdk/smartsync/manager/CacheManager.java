@@ -798,11 +798,11 @@ public class CacheManager {
     		return;
     	}
     	try {
-        	long soupEntryId = smartStore.lookupSoupEntryId(SOUP_OF_SOUPS,
-        			SOUP_NAMES_KEY, soupName);
-        	smartStore.delete(SOUP_OF_SOUPS, soupEntryId);
+            QuerySpec querySpec = QuerySpec.buildExactQuerySpec(SOUP_OF_SOUPS, SOUP_NAMES_KEY,
+                    soupName, SOUP_NAMES_KEY, QuerySpec.Order.ascending, 1);
+            smartStore.deleteByQuery(SOUP_OF_SOUPS, querySpec);
         } catch (SmartStoreException e) {
-            Log.e(TAG, "SmartStoreException occurred while attempting to cache data", e);
+            Log.e(TAG, "SmartStoreException occurred while attempting to remove data", e);
         }
     }
 

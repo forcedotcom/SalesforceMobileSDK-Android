@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -49,7 +49,7 @@ import javax.net.ssl.SSLSocketFactory;
 public class SalesforceTLSSocketFactory extends SSLSocketFactory {
 
     private static SalesforceTLSSocketFactory INSTANCE;
-    private SSLSocketFactory ssLSocketFactory;
+    private SSLSocketFactory delegate; // XXX needs to be called delegate to work around okhttp3 bug: see https://github.com/square/okhttp/issues/2323#issuecomment-185925554
 
     public static SalesforceTLSSocketFactory getInstance() throws KeyManagementException, NoSuchAlgorithmException {
         if (INSTANCE == null) {
@@ -61,49 +61,49 @@ public class SalesforceTLSSocketFactory extends SSLSocketFactory {
     public SalesforceTLSSocketFactory() throws KeyManagementException, NoSuchAlgorithmException {
         final SSLContext context = SSLContext.getInstance("TLS");
         context.init(null, null, null);
-        ssLSocketFactory = context.getSocketFactory();
+        delegate = context.getSocketFactory();
     }
 
     @Override
     public String[] getDefaultCipherSuites() {
-        return ssLSocketFactory.getDefaultCipherSuites();
+        return delegate.getDefaultCipherSuites();
     }
 
     @Override
     public String[] getSupportedCipherSuites() {
-        return ssLSocketFactory.getSupportedCipherSuites();
+        return delegate.getSupportedCipherSuites();
     }
 
     @Override
     public Socket createSocket(Socket s, String host, int port, boolean autoClose) throws IOException {
-        return disableTLS1Dot0(ssLSocketFactory.createSocket(s, host, port, autoClose));
+        return disableTLS1Dot0(delegate.createSocket(s, host, port, autoClose));
     }
 
     @Override
     public Socket createSocket(String host, int port) throws IOException {
-        return disableTLS1Dot0(ssLSocketFactory.createSocket(host, port));
+        return disableTLS1Dot0(delegate.createSocket(host, port));
     }
 
     @Override
     public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException {
-        return disableTLS1Dot0(ssLSocketFactory.createSocket(host, port, localHost, localPort));
+        return disableTLS1Dot0(delegate.createSocket(host, port, localHost, localPort));
     }
 
     @Override
     public Socket createSocket(InetAddress host, int port) throws IOException {
-        return disableTLS1Dot0(ssLSocketFactory.createSocket(host, port));
+        return disableTLS1Dot0(delegate.createSocket(host, port));
     }
 
     @Override
     public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort) throws IOException {
-        return disableTLS1Dot0(ssLSocketFactory.createSocket(address, port, localAddress, localPort));
+        return disableTLS1Dot0(delegate.createSocket(address, port, localAddress, localPort));
     }
 
     private Socket disableTLS1Dot0(Socket socket) {
         if (socket != null && (socket instanceof SSLSocket)) {
             ((SSLSocket)socket).setEnabledProtocols(new String[] {
-                "TLSv1.1",
-                "TLSv1.2"
+                    "TLSv1.1",
+                    "TLSv1.2"
             });
         }
         return socket;

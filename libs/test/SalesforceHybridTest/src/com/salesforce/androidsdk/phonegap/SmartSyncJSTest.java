@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2015, salesforce.com, inc.
+ * Copyright (c) 2013-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -31,9 +31,8 @@ import java.util.List;
 
 import com.salesforce.androidsdk.phonegap.util.test.JSTestCase;
 
-
 /**
- * Running javascript tests for smart sync library
+ * Running javascript tests for smart sync library.
  */
 public class SmartSyncJSTest extends JSTestCase {
 
@@ -43,9 +42,9 @@ public class SmartSyncJSTest extends JSTestCase {
 
     @Override
     protected int getMaxRuntimeInSecondsForTest(String testName) {
-        return 30;
-    }    
-    
+        return 60;
+    }
+
     @Override
     public List<String> getTestNames() {
         return Arrays.asList(new String[] {
@@ -95,6 +94,7 @@ public class SmartSyncJSTest extends JSTestCase {
                 "testSyncDownToGlobalStore",
                 "testSyncDownWithNoOverwrite",
                 "testReSync",
+                "testCleanResyncGhosts",
                 "testSyncUpLocallyUpdated",
                 "testSyncUpLocallyUpdatedWithGlobalStore",
                 "testSyncUpLocallyUpdatedWithNoOverwrite",
@@ -286,6 +286,10 @@ public class SmartSyncJSTest extends JSTestCase {
 
     public void testReSync() {
         runTest("testReSync");
+    }
+
+    public void testCleanResyncGhosts() {
+        runTest("testCleanResyncGhosts");
     }
 
     public void testSyncUpLocallyUpdated() {

@@ -72,3 +72,4 @@ coverage.em
 coverage/
 .gradle/
 build/
+.github/ISSUE_TEMPLATE

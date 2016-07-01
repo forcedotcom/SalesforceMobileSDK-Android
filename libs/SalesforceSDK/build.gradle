@@ -1,17 +1,20 @@
 
-apply plugin: 'android-library'
+apply plugin: 'com.android.library'
 
 dependencies {
   compile 'com.google.guava:guava:18.0'
-  compile 'org.apache.httpcomponents:httpmime:4.3.2'
-  compile 'org.apache.james:apache-mime4j:0.7.2'
-  compile 'com.mcxiaoke.volley:library:1.0.19'
+  compile 'com.squareup.okhttp3:okhttp:3.2.0'
 }
 
 android {
   compileSdkVersion 23
   buildToolsVersion '23.0.1'
-  useLibrary  'org.apache.http.legacy'
+  
+  buildTypes {
+      debug {
+         testCoverageEnabled = true
+      }
+   }
 
   sourceSets {
     main {
@@ -40,7 +43,7 @@ android {
     exclude 'META-INF/DEPENDENCIES'
     exclude 'META-INF/NOTICE'
   }
-  
+
   lintOptions {
     abortOnError false
   }

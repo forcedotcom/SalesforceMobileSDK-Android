@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,6 +27,8 @@
 package com.salesforce.androidsdk;
 
 import android.content.Context;
+
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.tests.R;
 
 /**
@@ -53,7 +55,7 @@ public class TestCredentials {
     public static String REFRESH_TOKEN;
 
     public static void init(Context ctx) {
-        API_VERSION = ctx.getString(R.string.api_version);
+        API_VERSION = ApiVersionStrings.getVersionNumber(ctx);
         ACCOUNT_TYPE = ctx.getString(R.string.account_type);
         ORG_ID = ctx.getString(R.string.org_id);
         USERNAME = ctx.getString(R.string.username);

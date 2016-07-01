@@ -38,10 +38,28 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
+    <CheckBox
+        android:id="@+id/only_allowed_servers"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/only_allowed_servers" />
+
     <Button
         android:id="@+id/save"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/save" />
 
+    <Button
+        android:id="@+id/show_xml"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/show_xml" />
+
+    <TextView
+        android:id="@+id/text_view_xml"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:maxLines="8"
+        android:scrollbars="vertical" />
 </LinearLayout>

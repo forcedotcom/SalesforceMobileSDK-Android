@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
+import android.util.Log;
+
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
@@ -35,6 +37,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Target for sync defined by a SOSL query
@@ -42,6 +46,7 @@ import java.io.IOException;
 public class SoslSyncDownTarget extends SyncDownTarget {
 	
 	public static final String QUERY = "query";
+    private static final String TAG = "SoslSyncDownTarget";
 	private String query;
 
     /**
@@ -76,13 +81,17 @@ public class SoslSyncDownTarget extends SyncDownTarget {
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        RestRequest request = RestRequest.getRequestForSearch(syncManager.apiVersion, query);
+        return startFetch(syncManager, maxTimeStamp, query);
+    }
+
+    @Override
+    public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
+        RestRequest request = RestRequest.getRequestForSearch(syncManager.apiVersion, queryRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONArray records = response.asJSONArray();
 
         // Recording total size
         totalSize = records.length();
-
         return records;
     }
 
@@ -91,11 +100,29 @@ public class SoslSyncDownTarget extends SyncDownTarget {
         return null;
     }
 
+    @Override
+    public Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds) {
+        if (localIds == null) {
+            return null;
+        }
+        final Set<String> remoteIds = new HashSet<String>();
+
+        // Makes network request and parses the response.
+        try {
+            final JSONArray records = startFetch(syncManager, 0, query);
+            remoteIds.addAll(parseIdsFromResponse(records));
+        } catch (IOException e) {
+            Log.e(TAG, "IOException thrown while fetching records", e);
+        } catch (JSONException e) {
+            Log.e(TAG, "JSONException thrown while fetching records", e);
+        }
+        return remoteIds;
+    }
+
     /**
      * @return sosl query for this target
      */
 	public String getQuery() {
 		return query;
 	}
-	
 }

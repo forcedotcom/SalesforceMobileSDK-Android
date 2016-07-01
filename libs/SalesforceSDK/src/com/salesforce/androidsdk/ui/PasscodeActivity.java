@@ -26,18 +26,25 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import java.util.List;
-
+import android.Manifest;
+import android.Manifest.permission;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.hardware.fingerprint.FingerprintManager;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.text.Html;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.WindowManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
@@ -46,6 +53,8 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.security.PasscodeManager;
+
+import java.util.List;
 
 /**
  * Passcode activity: takes care of creating/verifying a user passcode.
@@ -56,6 +65,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private static final String LOGOUT_EXTRA = "logout_key";
     protected static final int MAX_PASSCODE_ATTEMPTS = 10;
 
+    final private int REQUEST_CODE_ASK_PERMISSIONS = 11;
+
     private PasscodeMode currentMode;
     private TextView title, instr, error;
     private EditText entry;
@@ -65,6 +76,8 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     private boolean logoutEnabled;
     private AlertDialog logoutAlertDialog;
     private boolean isLogoutAlertShowing;
+    private FingerprintManager fingerprintManager;
+    private FingerprintAuthDialogFragment fingerprintAuthDialog;
 
     public enum PasscodeMode {
         Create,
@@ -79,12 +92,18 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
         // Object which allows reference to resources living outside the SDK.
         salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
+
+        // Protect against screenshots
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE);
+
         setContentView(getLayoutId());
         final TextView forgotPasscodeView = getForgotPasscodeView();
         if (forgotPasscodeView != null) {
             forgotPasscodeView.setText(Html.fromHtml(getForgotPasscodeString()));
         }
         forgotPasscodeView.setOnClickListener(this);
+
         logoutAlertDialog = buildLogoutDialog();
         title = getTitleView();
         error = getErrorView();
@@ -95,13 +114,14 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         final Intent i = getIntent();
         boolean shouldChangePasscode = false;
         if (i != null) {
-        	shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CHANGE_PASSCODE_KEY,
-        			false);
+            shouldChangePasscode = i.getBooleanExtra(PasscodeManager.CHANGE_PASSCODE_KEY,
+                                                     false);
         }
         if (shouldChangePasscode) {
-        	setMode(PasscodeMode.Change);
+            setMode(PasscodeMode.Change);
         } else {
             setMode(passcodeManager.hasStoredPasscode(this) ? PasscodeMode.Check : PasscodeMode.Create);
+            showFingerprintDialog();
         }
         Log.i("PasscodeActivity:onCreate", "Mode: " + getMode());
         logoutEnabled = true;
@@ -112,7 +132,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             }
             isLogoutAlertShowing = savedInstanceState.getBoolean(LOGOUT_EXTRA);
             if (isLogoutAlertShowing) {
-            	logoutAlertDialog.show();
+                logoutAlertDialog.show();
             }
         }
     }
@@ -151,18 +171,22 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         case Check:
             title.setText(getEnterTitle());
             instr.setText(getEnterInstructions());
+            getForgotPasscodeView().setVisibility(View.VISIBLE);
             break;
         case Create:
             title.setText(getCreateTitle());
             instr.setText(getCreateInstructions());
+            getForgotPasscodeView().setVisibility(View.INVISIBLE);
             break;
         case CreateConfirm:
             title.setText(getConfirmTitle());
             instr.setText(getConfirmInstructions());
+            getForgotPasscodeView().setVisibility(View.INVISIBLE);
             break;
         case Change:
             title.setText(getCreateTitle());
             instr.setText(getChangeInstructions());
+            getForgotPasscodeView().setVisibility(View.INVISIBLE);
         	break;
         }
         entry.setText("");
@@ -182,12 +206,17 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     @Override
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
         Log.i("onEditorAction", "view=" + v + " actionId=" + actionId + " event=" + event);
-        String pc = entry.getText().toString();
-        if (pc.length() > 0 && pc.length() < getMinPasscodeLength()) {
-            error.setText(getMinLengthInstructions(getMinPasscodeLength()));
-            return false;
+        // Processing the editor action only on key up to avoid sending events like pass code manager unlock twice.
+        if (event != null && event.getAction() == KeyEvent.ACTION_UP) {
+            String pc = entry.getText().toString();
+            if (pc.length() >= 0 && pc.length() < getMinPasscodeLength()) {
+                error.setText(getMinLengthInstructions(getMinPasscodeLength()));
+                return false;
+            }
+            return pc.length() > 0 ? onSubmit(pc) : false;
+        } else {
+            return true;
         }
-        return pc.length() > 0 ? onSubmit(pc) : false;
     }
 
     protected boolean onSubmit(String enteredPasscode) {
@@ -411,5 +440,41 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             }
         })
         .create();
+    }
+
+    private void showFingerprintDialog() {
+        if (passcodeManager != null && passcodeManager.getPasscodeHash() != null && isFingerprintEnabled()) {
+            fingerprintAuthDialog = new FingerprintAuthDialogFragment();
+            fingerprintAuthDialog.setContext(this);
+            fingerprintAuthDialog.show(getFragmentManager(), "fingerprintDialog");
+        }
+    }
+
+    @TargetApi(VERSION_CODES.M)
+    private boolean isFingerprintEnabled() {
+        if (VERSION.SDK_INT >= VERSION_CODES.M) {
+            fingerprintManager = (FingerprintManager) this.getSystemService(Context.FINGERPRINT_SERVICE);
+            // Here, thisActivity is the current activity
+            if (checkSelfPermission(Manifest.permission.USE_FINGERPRINT) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{ permission.USE_FINGERPRINT}, REQUEST_CODE_ASK_PERMISSIONS);
+            } else {
+                return fingerprintManager != null && fingerprintManager.isHardwareDetected() && fingerprintManager.hasEnrolledFingerprints();
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == REQUEST_CODE_ASK_PERMISSIONS && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            showFingerprintDialog();
+            return;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    public void unlockViaFingerprintScan() {
+        passcodeManager.unlock();
+        done();
     }
 }

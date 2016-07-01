@@ -37,6 +37,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
+import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
@@ -86,6 +87,10 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 		requestFeatures();
 
+		// Protect against screenshots
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
+				WindowManager.LayoutParams.FLAG_SECURE);
+
 		// Setup content view
 		setContentView(salesforceR.layoutLogin());
 
@@ -102,13 +107,17 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 		// Let observers know
 		EventsObservable.get().notifyEvent(EventType.LoginActivityCreateComplete, this);
-		if (shouldUseCertBasedAuth()) {
-			final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.ManagedAppCertAlias);
-			KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, alias);
-		} else {
-			webviewHelper.loadLoginPage();
-		}
+        certAuthOrLogin();
 	}
+
+    protected void certAuthOrLogin() {
+        if (shouldUseCertBasedAuth()) {
+            final String alias = RuntimeConfig.getRuntimeConfig(this).getString(ConfigKey.ManagedAppCertAlias);
+            KeyChain.choosePrivateKeyAlias(this, webviewHelper, null, null, null, 0, alias);
+        } else {
+            webviewHelper.loadLoginPage();
+        }
+    }
 
 	protected void requestFeatures() {
 		// We'll show progress in the window title bar

@@ -84,7 +84,7 @@ public class SmartStore  {
     protected static final String SOUP_COL = "soup";
 
 	// Column of a fts soup table
-	protected static final String DOCID_COL = "docid";
+	protected static final String ROWID_COL = "rowid";
 
     // Columns of long operations status table
 	protected static final String TYPE_COL = "type";
@@ -94,18 +94,22 @@ public class SmartStore  {
     // JSON fields added to soup element on insert/update
     public static final String SOUP_ENTRY_ID = "_soupEntryId";
     public static final String SOUP_LAST_MODIFIED_DATE = "_soupLastModifiedDate";
+	public static final String SOUP_CREATED_DATE = "_soupCreatedDate";
 
     // Predicates
     protected static final String SOUP_NAME_PREDICATE = SOUP_NAME_COL + " = ?";
 	protected static final String ID_PREDICATE = ID_COL + " = ?";
-	protected static final String DOCID_PREDICATE = DOCID_COL + " =?";
+	protected static final String ROWID_PREDICATE = ROWID_COL + " =?";
 
 	// Backing database
 	protected SQLiteDatabase dbLocal;
 	protected SQLiteOpenHelper dbOpenHelper;
 	private String passcode;
 
-    /**
+	// FTS extension to use
+	protected FtsExtension ftsExtension = FtsExtension.fts5;
+
+	/**
      * Changes the encryption key on the smartstore.
      *
      * @param db Database object.
@@ -205,7 +209,24 @@ public class SmartStore  {
         }
     }
 
-    /**
+	/**
+	 * If turned on, explain query plan is run before executing a query and stored in lastExplainQueryPlan
+	 * and also get logged
+	 * @param captureExplainQueryPlan true to turn capture on and false to turn off
+	 */
+	public void setCaptureExplainQueryPlan(boolean captureExplainQueryPlan) {
+		DBHelper.getInstance(getDatabase()).setCaptureExplainQueryPlan(captureExplainQueryPlan);
+	}
+
+	/**
+	 * @return explain query plan for last query run (if captureExplainQueryPlan is true)
+	 */
+	public JSONObject getLastExplainQueryPlan() {
+		return DBHelper.getInstance(getDatabase()).getLastExplainQueryPlan();
+	}
+
+
+	/**
      * Get database size
      */
     public int getDatabaseSize() {
@@ -258,19 +279,21 @@ public class SmartStore  {
 	            db.beginTransaction();
 	            long soupId = DBHelper.getInstance(db).insert(db, SOUP_NAMES_TABLE, soupMapValues);
 	            soupTableName = getSoupTableName(soupId);
+
+				// Do the rest - create table / indexes
+				registerSoupUsingTableName(soupName, indexSpecs, soupTableName);
+
 	            db.setTransactionSuccessful();
 	        } finally {
 	            db.endTransaction();
 	        }
-	        
-	        // Do the rest - create table / indexes
-	        registerSoupUsingTableName(soupName, indexSpecs, soupTableName);
     	}
     }
         
     
     /**
      * Helper method for registerSoup
+	 * NB: caller is expected to wrap call in a transaction
      * 
 	 * @param soupName
 	 * @param indexSpecs
@@ -292,12 +315,25 @@ public class SmartStore  {
                         .append(", ").append(CREATED_COL).append(" INTEGER")
                         .append(", ").append(LAST_MODIFIED_COL).append(" INTEGER");
 
+		final String createIndexFormat = "CREATE INDEX %s_%s_idx on %s ( %s )";
+
+		for (String col : new String[]{CREATED_COL, LAST_MODIFIED_COL}) {
+			createIndexStmts.add(String.format(createIndexFormat, soupTableName, col, soupTableName, col));
+		}
+
         int i = 0;
         for (IndexSpec indexSpec : indexSpecs) {
-            // for create table
+            // Column name or expression the db index is on
             String columnName = soupTableName + "_" + i;
-            String columnType = indexSpec.type.getColumnType();
-            createTableStmt.append(", ").append(columnName).append(" ").append(columnType);
+            if (TypeGroup.value_indexed_with_json_extract.isMember(indexSpec.type)) {
+                columnName = "json_extract(" + SOUP_COL + ", '$." + indexSpec.path + "')";
+            }
+
+            // for create table
+            if (TypeGroup.value_extracted_to_column.isMember(indexSpec.type)) {
+                String columnType = indexSpec.type.getColumnType();
+                createTableStmt.append(", ").append(columnName).append(" ").append(columnType);
+            }
 
 			// for fts
 			if (indexSpec.type == Type.full_text) {
@@ -313,8 +349,7 @@ public class SmartStore  {
             soupIndexMapInserts.add(values);
 
             // for create index
-            String indexName = soupTableName + "_" + i + "_idx";
-            createIndexStmts.add(String.format("CREATE INDEX %s on %s ( %s )", indexName, soupTableName, columnName));;
+			createIndexStmts.add(String.format(createIndexFormat, soupTableName, "" + i, soupTableName, columnName));;
 
             // for the cache
             indexSpecsToCache[i] = new IndexSpec(indexSpec.path, indexSpec.type, columnName);
@@ -325,7 +360,7 @@ public class SmartStore  {
 
 		// fts
 		if (columnsForFts.size() > 0) {
-			createFtsStmt.append(String.format("CREATE VIRTUAL TABLE %s%s USING fts4(%s)", soupTableName, FTS_SUFFIX, TextUtils.join(",", columnsForFts)));
+			createFtsStmt.append(String.format("CREATE VIRTUAL TABLE %s%s USING %s(%s)", soupTableName, FTS_SUFFIX, ftsExtension, TextUtils.join(",", columnsForFts)));
 		}
 
         // Run SQL for creating soup table and its indices
@@ -367,7 +402,7 @@ public class SmartStore  {
 				try {
 					longOperation.run();
 				} catch (Exception e) {
-	        		Log.e("SmartStore.resumeLongOperations", "Unexpected error", e);
+	        		Log.e("SmartStore.resumeLongOp", "Unexpected error", e);
 				}
 			}
 		}
@@ -396,7 +431,7 @@ public class SmartStore  {
 				        	longOperations.add(operationType.getOperation(this, rowId, details, statusStr));
 			        	}
 			        	catch (Exception e) {
-			        		Log.e("SmartStore.getLongOperations", "Unexpected error", e);
+			        		Log.e("SmartStore.getLongOp", "Unexpected error", e);
 			        	}
 			        }
 			        while (cursor.moveToNext());
@@ -436,12 +471,15 @@ public class SmartStore  {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 
-	        // Getting index specs from indexPaths
+	        // Getting index specs from indexPaths skipping json1 index specs
 			Map<String, IndexSpec> mapAllSpecs = IndexSpec.mapForIndexSpecs(getSoupIndexSpecs(soupName));
 			List<IndexSpec> indexSpecsList = new ArrayList<IndexSpec>();
 			for (String indexPath : indexPaths) {
 				if (mapAllSpecs.containsKey(indexPath)) {
-					indexSpecsList.add(mapAllSpecs.get(indexPath));
+					IndexSpec indexSpec = mapAllSpecs.get(indexPath);
+					if (TypeGroup.value_extracted_to_column.isMember(indexSpec.type)) {
+						indexSpecsList.add(indexSpec);
+					}
 				}
 				else {
 					Log.w("SmartStore.reIndexSoup", "Cannot re-index " + indexPath + " - it does not have an index");
@@ -469,15 +507,15 @@ public class SmartStore  {
 			        	try {
 			            	JSONObject soupElt = new JSONObject(soupRaw);
 							ContentValues contentValues = new ContentValues();
-							projectIndexedPaths(soupElt, contentValues, indexSpecs, null);
+							projectIndexedPaths(soupElt, contentValues, indexSpecs, TypeGroup.value_extracted_to_column);
 			                DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "");
 
 							// Fts
 							if (hasFts) {
 								String soupTableNameFts = soupTableName + FTS_SUFFIX;
 								ContentValues contentValuesFts = new ContentValues();
-								projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
-								DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, DOCID_PREDICATE, soupEntryId + "");
+								projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, TypeGroup.value_extracted_to_fts_column);
+								DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, ROWID_PREDICATE, soupEntryId + "");
 							}
 			        	}
 			        	catch (JSONException e) {
@@ -640,7 +678,7 @@ public class SmartStore  {
 	            if (cursor.moveToFirst()) {
 	                do {
 	                	// Smart queries
-	                	if (qt == QueryType.smart) {
+	                	if (qt == QueryType.smart || querySpec.selectPaths != null) {
 	                		results.put(getDataFromRow(cursor));	
 	                	}
 	            		// Exact/like/range queries
@@ -667,42 +705,25 @@ public class SmartStore  {
 		JSONArray row = new JSONArray();
 		int columnCount = cursor.getColumnCount();
 		for (int i=0; i<columnCount; i++) {
-			String raw = cursor.getString(i);
-
-            if (raw == null) {
-                row.put(raw);
-            } else {
-    			// Is this column holding a serialized json object?
-    			if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
-    				row.put(new JSONObject(raw));
-    				// Note: we could end up returning a string if you aliased the column
-    			}
-    			else {
-    				// TODO Leverage cursor.getType once our min api is 11 or above
-    				// For now, we do our best to guess
-    				
-    				// Is it holding a integer ?
-    	    		try {
-    	    			Long n = Long.parseLong(raw);
-    	    			row.put(n);
-    	    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
-    	    		}
-    	    		// Is it holding a floating ?
-    	    		catch (NumberFormatException e) {
-    	    			try { 
-    		    			Double d = Double.parseDouble(raw);
-    		    			// No exception, let's get the value straight from the cursor
-    		    			// XXX Double.parseDouble(cursor.getString(i)) is sometimes different from cursor.getDouble(i) !!!
-    		    			d = cursor.getDouble(i);
-    		    			row.put(d);
-    		    			// Note: we could end up returning an integer for a string column if you have a string value that contains just an integer
-    	    			}
-    		    		// It must be holding a string then
-    	    			catch (NumberFormatException ne) {
-    		    			row.put(raw);
-    	    			}
-    	    		}
-    			}
+            int valueType = cursor.getType(i);
+            if (valueType == Cursor.FIELD_TYPE_NULL) {
+                row.put(null);
+            }
+            else if (valueType == Cursor.FIELD_TYPE_STRING) {
+                String raw = cursor.getString(i);
+                if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
+                    row.put(new JSONObject(raw));
+                    // Note: we could end up returning a string if you aliased the column
+                }
+                else {
+                    row.put(raw);
+                }
+            }
+            else if (valueType == Cursor.FIELD_TYPE_INTEGER) {
+                row.put(cursor.getLong(i));
+            }
+            else if (valueType == Cursor.FIELD_TYPE_FLOAT) {
+                row.put(cursor.getDouble(i));
             }
 		}
 		return row;
@@ -778,7 +799,7 @@ public class SmartStore  {
 	            contentValues.put(CREATED_COL, now);
 	            contentValues.put(LAST_MODIFIED_COL, now);
 	            contentValues.put(SOUP_COL, soupElt.toString());
-				projectIndexedPaths(soupElt, contentValues, indexSpecs, null);
+				projectIndexedPaths(soupElt, contentValues, indexSpecs, TypeGroup.value_extracted_to_column);
 
 	            // Inserting into database
 	            boolean success = DBHelper.getInstance(db).insert(db, soupTableName, contentValues) == soupEntryId;
@@ -787,8 +808,8 @@ public class SmartStore  {
 				if (success && hasFTS(soupName)) {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
-					contentValuesFts.put(DOCID_COL, soupEntryId);
-					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
+					contentValuesFts.put(ROWID_COL, soupEntryId);
+					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, TypeGroup.value_extracted_to_fts_column);
 					// InsertHelper not working against virtual fts table
 					db.insert(soupTableNameFts, null, contentValuesFts);
 				}
@@ -823,15 +844,15 @@ public class SmartStore  {
 	}
 
 	/**
-	 * Populate content values by projecting index specs that match typeFilter (or all if typeFilter is null)
+	 * Populate content values by projecting index specs that have a type in typeGroup
 	 * @param soupElt
 	 * @param contentValues
 	 * @param indexSpecs
-	 * @param typeFilter pass null for all
+	 * @param typeGroup
 	 */
-	private void projectIndexedPaths(JSONObject soupElt, ContentValues contentValues, IndexSpec[] indexSpecs, Type typeFilter) {
+	private void projectIndexedPaths(JSONObject soupElt, ContentValues contentValues, IndexSpec[] indexSpecs, TypeGroup typeGroup) {
 		for (IndexSpec indexSpec : indexSpecs) {
-			if (typeFilter == null || typeFilter == indexSpec.type) {
+			if (typeGroup.isMember(indexSpec.type)) {
 				projectIndexedPath(soupElt, contentValues, indexSpec);
 			}
 		}
@@ -852,8 +873,10 @@ public class SmartStore  {
             }
             catch (Exception e) {
                 // Ignore and use the null value
+                Log.e("SmartStore.projIdxPaths", "Unexpected error", e);
             }
-            contentValues.put(indexSpec.columnName, longValToUse); break;
+            contentValues.put(indexSpec.columnName, longValToUse);
+            break;
         case string:
         case full_text:
             contentValues.put(indexSpec.columnName, value != null ? value.toString() : null); break;
@@ -864,6 +887,7 @@ public class SmartStore  {
             }
             catch (Exception e) {
                 // Ignore and use the null value
+                Log.e("SmartStore.projIdxPaths", "Unexpected error", e);
             }
             contentValues.put(indexSpec.columnName, doubleValToUse); break;
         }
@@ -951,7 +975,7 @@ public class SmartStore  {
 				ContentValues contentValues = new ContentValues();
 				contentValues.put(SOUP_COL, soupElt.toString());
 				contentValues.put(LAST_MODIFIED_COL, now);
-				projectIndexedPaths(soupElt, contentValues, indexSpecs, null);
+				projectIndexedPaths(soupElt, contentValues, indexSpecs, TypeGroup.value_extracted_to_column);
 
 				// Updating database
 				boolean success = DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "") == 1;
@@ -960,8 +984,8 @@ public class SmartStore  {
 				if (success && hasFTS(soupName)) {
 					String soupTableNameFts = soupTableName + FTS_SUFFIX;
 					ContentValues contentValuesFts = new ContentValues();
-					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, Type.full_text);
-					success = DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, DOCID_PREDICATE, soupEntryId + "") == 1;
+					projectIndexedPaths(soupElt, contentValuesFts, indexSpecs, TypeGroup.value_extracted_to_fts_column);
+					success = DBHelper.getInstance(db).update(db, soupTableNameFts, contentValuesFts, ROWID_PREDICATE, soupEntryId + "") == 1;
 				}
 
 				if (success) {
@@ -1078,7 +1102,7 @@ public class SmartStore  {
     }
 
     /**
-     * Delete (and commits)
+     * Delete soup elements given by their ids (and commits)
      * @param soupName
      * @param soupEntryIds
      */
@@ -1090,7 +1114,7 @@ public class SmartStore  {
     }
 
     /**
-     * Delete
+     * Delete soup elements given by their ids
      * @param soupName
      * @param soupEntryIds
      * @param handleTx
@@ -1107,7 +1131,7 @@ public class SmartStore  {
 	            db.delete(soupTableName, getSoupEntryIdsPredicate(soupEntryIds), (String []) null);
 
 				if (hasFTS(soupName)) {
-					db.delete(soupTableName + FTS_SUFFIX, getDocidsPredicate(soupEntryIds), (String[]) null);
+					db.delete(soupTableName + FTS_SUFFIX, getRowIdsPredicate(soupEntryIds), (String[]) null);
 				}
 
 	            if (handleTx) {
@@ -1121,19 +1145,90 @@ public class SmartStore  {
     	}
     }
 
+	/**
+	 * Delete soup elements selected by querySpec (and commits)
+	 * @param soupName
+	 * @param querySpec Query returning entries to delete (if querySpec uses smartSQL, it must select soup entry ids)
+	 */
+	public void deleteByQuery(String soupName, QuerySpec querySpec) {
+		final SQLiteDatabase db = getDatabase();
+		synchronized(db) {
+			deleteByQuery(soupName, querySpec, true);
+		}
+	}
+
+	/**
+	 * Delete soup elements selected by querySpec
+	 * @param soupName
+	 * @param querySpec
+	 * @param handleTx
+	 */
+	public void deleteByQuery(String soupName, QuerySpec querySpec, boolean handleTx) {
+		final SQLiteDatabase db = getDatabase();
+		synchronized(db) {
+			String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
+			if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
+			if (handleTx) {
+				db.beginTransaction();
+			}
+			try {
+                String subQuerySql = String.format("SELECT %s FROM (%s) LIMIT %d", ID_COL, convertSmartSql(querySpec.idsSmartSql), querySpec.pageSize);
+                String[] args = querySpec.getArgs();
+                db.delete(soupTableName, buildInStatement(ID_COL, subQuerySql), args);
+
+				if (hasFTS(soupName)) {
+                    db.delete(soupTableName + FTS_SUFFIX, buildInStatement(ROWID_COL, subQuerySql), args);
+				}
+
+				if (handleTx) {
+					db.setTransactionSuccessful();
+				}
+			} finally {
+				if (handleTx) {
+					db.endTransaction();
+				}
+			}
+		}
+	}
+
     /**
      * @return predicate to match soup entries by id
      */
     private String getSoupEntryIdsPredicate(Long[] soupEntryIds) {
-        return ID_COL + " IN (" + TextUtils.join(",", soupEntryIds)+ ")";
+        return buildInStatement(ID_COL, TextUtils.join(",", soupEntryIds));
     }
 
 
 	/**
-	 * @return predicate to match entries by docid
+	 * @return predicate to match entries by rowid
 	 */
-	private String getDocidsPredicate(Long[] docids) {
-		return DOCID_COL + " IN (" + TextUtils.join(",", docids)+ ")";
+	private String getRowIdsPredicate(Long[] rowids) {
+        return buildInStatement(ROWID_COL, TextUtils.join(",", rowids));
+	}
+
+    /**
+     * @param col
+     * @param inPredicate
+     * @return in statement
+     */
+    private String buildInStatement(String col, String inPredicate) {
+        return String.format("%s IN (%s)", col, inPredicate);
+    }
+
+	/**
+	 * @return ftsX to be used when creating the virtual table to support full_text queries
+     */
+	public FtsExtension getFtsExtension() {
+		return ftsExtension;
+	}
+
+	/**
+	 * Sets the ftsX to be used when creating the virtual table to support full_text queries
+	 * NB: only used in tests
+	 * @param ftsExtension
+     */
+	public void setFtsExtension(FtsExtension ftsExtension) {
+		this.ftsExtension = ftsExtension;
 	}
 
     /**
@@ -1157,6 +1252,16 @@ public class SmartStore  {
      * @param soup
      * @param path
      * @return object at path in soup
+	 *
+	 * Examples (in pseudo code):
+	 *
+	 * json = {"a": {"b": [{"c":"xx"}, {"c":"xy"}, {"d": [{"e":1}, {"e":2}]}, {"d": [{"e":3}, {"e":4}]}] }}
+	 * projectIntoJson(jsonObj, "a") = {"b": [{"c":"xx"}, {"c":"xy"}, {"d": [{"e":1}, {"e":2}]}, {"d": [{"e":3}, {"e":4}]} ]}
+	 * projectIntoJson(json, "a.b") = [{c:"xx"}, {c:"xy"}, {"d": [{"e":1}, {"e":2}]}, {"d": [{"e":3}, {"e":4}]}]
+	 * projectIntoJson(json, "a.b.c") = ["xx", "xy"]                                     // new in 4.1
+	 * projectIntoJson(json, "a.b.d") = [[{"e":1}, {"e":2}], [{"e":3}, {"e":4}]]         // new in 4.1
+	 * projectIntoJson(json, "a.b.d.e") = [[1, 2], [3, 4]]                               // new in 4.1
+	 *
      */
     public static Object project(JSONObject soup, String path) {
         if (soup == null) {
@@ -1166,20 +1271,51 @@ public class SmartStore  {
             return soup;
         }
         String[] pathElements = path.split("[.]");
-        Object o = soup;
-        for (String pathElement : pathElements) {
-        	if (o != null) {
-                o = ((JSONObject) o).opt(pathElement);
-        	}
-        }
-        return o;
+		return project(soup, pathElements, 0);
     }
+
+	private static Object project(Object jsonObj, String[] pathElements, int index) {
+		Object result = null;
+		if (index == pathElements.length) {
+			return jsonObj;
+		}
+
+		if (null != jsonObj) {
+			String pathElement = pathElements[index];
+
+			if (jsonObj instanceof JSONObject) {
+				JSONObject jsonDict = (JSONObject) jsonObj;
+				Object dictVal = jsonDict.opt(pathElement);
+				result = project(dictVal, pathElements, index+1);
+			}
+			else if (jsonObj instanceof JSONArray) {
+				JSONArray jsonArr = (JSONArray) jsonObj;
+				result = new JSONArray();
+				for (int i=0; i<jsonArr.length(); i++) {
+					Object arrayElt = jsonArr.opt(i);
+					Object resultPart = project(arrayElt, pathElements, index);
+					if (resultPart != null) {
+						((JSONArray) result).put(resultPart);
+					}
+				}
+				if (((JSONArray) result).length() == 0) {
+					result = null;
+				}
+			}
+		}
+
+		return result;
+	}
 
     /**
      * Enum for column type
      */
     public enum Type {
-        string("TEXT"), integer("INTEGER"), floating("REAL"), full_text("TEXT");
+		string("TEXT"),
+        integer("INTEGER"),
+        floating("REAL"),
+        full_text("TEXT"),
+        json1(null);
 
         private String columnType;
 
@@ -1191,7 +1327,41 @@ public class SmartStore  {
             return columnType;
         }
     }
-    
+
+    /**
+      * Enum for type groups
+      */
+    public enum TypeGroup {
+        value_extracted_to_column {
+            @Override
+            public boolean isMember(Type type) {
+                return type == Type.string || type == Type.integer || type == Type.floating || type == Type.full_text;
+            }
+        },
+        value_extracted_to_fts_column {
+            @Override
+            public boolean isMember(Type type) {
+                return type == Type.full_text;
+            }
+        },
+        value_indexed_with_json_extract {
+            @Override
+            public boolean isMember(Type type) {
+                return type == Type.json1;
+            }
+        };
+
+        public abstract boolean isMember(Type type);
+    }
+
+	/**
+	 * Enum for fts extensions
+	 */
+	public enum FtsExtension {
+		fts4,
+		fts5
+	}
+
     /**
      * Exception thrown by smart store
      *
