@@ -277,6 +277,15 @@ public class SalesforceSDKManager {
 		return loginOptions;
 	}
 
+    public LoginOptions getLoginOptions(String jwt, String url) {
+        if (loginOptions == null) {
+            final BootConfig config = BootConfig.getBootConfig(context);
+            loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
+                    config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null, jwt);
+        }
+        return loginOptions;
+    }
+
 	/**
 	 * For internal use only. Initializes required components.
 	 * @param context Application context.
@@ -1013,7 +1022,14 @@ public class SalesforceSDKManager {
     	return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(), true);
     }
 
-	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    /**
+     * @return ClientManager
+     */
+    public ClientManager getClientManager(String jwt, String url) {
+        return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(jwt, url), true);
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 	public void removeAllCookies() {
 
 		/*

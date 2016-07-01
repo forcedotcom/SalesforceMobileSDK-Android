@@ -117,6 +117,9 @@ public class OAuth2 {
     private static final String AND = "&";
     private static final String EQUAL = "=";
     private static final String TOUCH = "touch";
+    private static final String FRONTDOOR = "/secur/frontdoor.jsp?";
+    private static final String SID = "sid";
+    private static final String RETURL = "retURL";
 
     // Login paths
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
@@ -156,12 +159,15 @@ public class OAuth2 {
     }
 
 
-    public static URI getAuthorizationUrl(String accessToken, String instanceURL, URI loginServer, String clientId,
-                                          String callbackUrl, String[] scopes, String clientSecret, String displayType) {
+    public static URI getAuthorizationUrl(URI loginServer, String clientId,
+                                          String callbackUrl, String[] scopes, String clientSecret, String displayType, String accessToken, String instanceURL) {
+        if(accessToken == null || instanceURL == null) {
+            return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret, displayType);
+        }
         final StringBuilder sb = new StringBuilder(instanceURL);
-        sb.append("/secur/frontdoor.jsp?");
-        sb.append("sid").append(EQUAL).append(accessToken);
-        sb.append(AND).append("retURL").append(EQUAL).append(Uri.encode(getAuthorizationUrlStr(loginServer,clientId,callbackUrl, scopes, clientSecret, displayType)));
+        sb.append(FRONTDOOR);
+        sb.append(SID).append(EQUAL).append(accessToken);
+        sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(getAuthorizationUrlStr(loginServer,clientId,callbackUrl, scopes, clientSecret, displayType)));
         return URI.create(sb.toString());
     }
 
@@ -266,6 +272,28 @@ public class OAuth2 {
         List<NameValuePair> params = makeTokenEndpointParams("authorization_code", clientId, clientSecret);
         params.add(new BasicNameValuePair("code", authCode));
         params.add(new BasicNameValuePair("redirect_uri", callbackUrl));
+        TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServerUrl, params);
+        return tr;
+    }
+
+    /** @returns a TokenEndointResponse from the give JWT, this is typically the first step after
+     * receiving a JWT from email link.
+     * In addition, this will also call the Identity service to fetch & populate the username field.
+     *
+     * @param loginServerUrl  the protocol & host (e.g. https://login.salesforce.com) that the authCode was generated from
+     * @param jwt     the jwt issued by the oauth authorization flow.
+     *
+     * @throws IOException
+     * @throws URISyntaxException
+     * @throws OAuthFailedException
+     *
+     */
+    public static TokenEndpointResponse swapJWTForTokens(HttpAccess httpAccessor, URI loginServerUrl,
+                                                              String jwt) throws IOException, URISyntaxException, OAuthFailedException {
+        // call the token endpoint, and swap jwt for an access tokens.
+        List<NameValuePair> params = new ArrayList<NameValuePair>();
+        params.add(new BasicNameValuePair("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"));
+        params.add(new BasicNameValuePair("assertion", jwt));
         TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServerUrl, params);
         return tr;
     }
