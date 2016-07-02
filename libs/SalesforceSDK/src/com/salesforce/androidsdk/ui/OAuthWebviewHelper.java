@@ -248,6 +248,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 Toast.LENGTH_LONG).show();
     }
 
+
     /**
      * Tells the webview to load the authorization page.
      * We also update the window title, so its easier to
@@ -255,10 +256,19 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      */
     public void loadLoginPage() {
 
-        // Filling in loginUrl.
-        loginOptions.loginUrl = getLoginUrl();
+        if (loginOptions.jwt == null || loginOptions.loginUrl == null) {
+            // Filling in loginUrl.
+            loginOptions.loginUrl = getLoginUrl();
+        }
+        if (loginOptions.jwt != null) {
+            new SwapJWTForAccessTokenTask().execute(loginOptions);
+        }
+        this.doLoadPage(false);
+    }
+
+    private void doLoadPage(Boolean jwtFlow) {
         try {
-            URI uri = getAuthorizationUrl();
+            URI uri = getAuthorizationUrl(jwtFlow);
             callback.loadingLoginPage(loginOptions.loginUrl);
             webview.loadUrl(uri.toString());
         } catch (URISyntaxException ex) {
@@ -270,7 +280,16 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	return loginOptions.oauthClientId;
     }
     
-    protected URI getAuthorizationUrl() throws URISyntaxException {
+    protected URI getAuthorizationUrl(Boolean jwtFlow) throws URISyntaxException {
+        if (jwtFlow) {
+            return OAuth2.getAuthorizationUrl(
+                    new URI(loginOptions.loginUrl),
+                    getOAuthClientId(),
+                    loginOptions.oauthCallbackUrl,
+                    loginOptions.oauthScopes,
+                    null,
+                    getAuthorizationDisplayType(), loginOptions.jwt, loginOptions.loginUrl);
+        }
         return OAuth2.getAuthorizationUrl(
                 new URI(loginOptions.loginUrl),
                 getOAuthClientId(),
@@ -280,6 +299,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 getAuthorizationDisplayType());
     }
 
+    protected URI getAuthorizationUrl() throws URISyntaxException {
+        return getAuthorizationUrl(false);
+    }
    	/** 
    	 * Override this to replace the default login webview's display param with
    	 * your custom display param. You can override this by either subclassing this class,
@@ -371,6 +393,28 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     protected void onAuthFlowComplete(TokenEndpointResponse tr) {
         FinishAuthTask t = new FinishAuthTask();
         t.execute(tr);
+    }
+
+    private class SwapJWTForAccessTokenTask extends BaseFinishAuthFlowTask<LoginOptions> {
+
+        @Override
+        protected TokenEndpointResponse performRequest(LoginOptions options) {
+            try {
+                return OAuth2.swapJWTForTokens(HttpAccess.DEFAULT, new URI(options.loginUrl), options.jwt);
+            } catch (Exception e) {
+                Log.w("OAuth.SwapJWT", e);
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(TokenEndpointResponse tr) {
+            if (tr != null && tr.authToken != null) {
+                loginOptions.jwt = tr.authToken;
+                doLoadPage(true);
+            }
+            loginOptions.jwt = null;
+        }
     }
 
      // base class with common code for the background task that finishes off the auth process
@@ -518,6 +562,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             return tr;
         }
     }
+
 
     protected void addAccount() {
         ClientManager clientManager = new ClientManager(getContext(),
