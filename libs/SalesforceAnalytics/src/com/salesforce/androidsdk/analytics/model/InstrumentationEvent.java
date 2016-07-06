@@ -66,7 +66,7 @@ public class InstrumentationEvent {
     private long endTime;
     private String name;
     private JSONObject attributes;
-    private int sessionId;
+    private String sessionId;
     private int sequenceId;
     private String senderId;
     private JSONObject senderContext;
@@ -82,7 +82,7 @@ public class InstrumentationEvent {
     private JSONObject marks;
 
     InstrumentationEvent(String eventId, long startTime, long endTime, String name,
-                         JSONObject attributes, int sessionId, int sequenceId,
+                         JSONObject attributes, String sessionId, int sequenceId,
                          String senderId, JSONObject senderContext,
                          SchemaType schemaType, EventType eventType, ErrorType errorType,
                          DeviceAppAttributes deviceAppAttributes, String connectionType,
@@ -123,7 +123,7 @@ public class InstrumentationEvent {
             endTime = json.optLong(END_TIME_KEY);
             name = json.optString(NAME_KEY);
             attributes = json.optJSONObject(ATTRIBUTES_KEY);
-            sessionId = json.optInt(SESSION_ID_KEY);
+            sessionId = json.optString(SESSION_ID_KEY);
             sequenceId = json.optInt(SEQUENCE_ID_KEY);
             senderId = json.optString(SENDER_ID_KEY);
             senderContext = json.optJSONObject(SENDER_CONTEXT_KEY);
@@ -202,7 +202,7 @@ public class InstrumentationEvent {
      *
      * @return Session ID.
      */
-    public int getSessionId() {
+    public String getSessionId() {
         return sessionId;
     }
 
@@ -338,7 +338,9 @@ public class InstrumentationEvent {
             if (attributes != null) {
                 json.put(ATTRIBUTES_KEY, attributes);
             }
-            json.put(SESSION_ID_KEY, sessionId);
+            if (sessionId != null) {
+                json.put(SESSION_ID_KEY, sessionId);
+            }
             json.put(SEQUENCE_ID_KEY, sequenceId);
             json.put(SENDER_ID_KEY, senderId);
             if (senderContext != null) {

@@ -63,6 +63,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * A simple AsyncTaskLoader to load a list of Salesforce contacts.
@@ -182,7 +183,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
             final String eventName = "Contact List Refresh";
             builder.startTime(curTime);
             builder.name(eventName);
-            builder.sessionId(1);
+            builder.sessionId(UUID.randomUUID().toString());
             builder.senderId("SmartSyncExplorer");
             builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
             builder.eventType(InstrumentationEvent.EventType.user);

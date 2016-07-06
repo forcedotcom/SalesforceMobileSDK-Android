@@ -113,14 +113,15 @@ public class AILTNTransform implements Transform {
             long endTime = event.getEndTime();
             long duration = endTime - startTime;
             if (duration > 0) {
-                if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction) {
+                if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction
+                        || schemaType == InstrumentationEvent.SchemaType.LightningPerformance) {
                     payload.put(DURATION_KEY, duration);
                 } else if (schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
                     payload.put(EPT_KEY, duration);
                 }
             }
-            int sessionId = event.getSessionId();
-            if (sessionId != 0) {
+            final String sessionId = event.getSessionId();
+            if (!TextUtils.isEmpty(sessionId)) {
                 payload.put(CLIENT_SESSION_ID_KEY, sessionId);
             }
             if (schemaType != InstrumentationEvent.SchemaType.LightningPerformance) {
@@ -141,7 +142,8 @@ public class AILTNTransform implements Transform {
             if (marks != null && schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
                 payload.put(MARKS_KEY, marks);
             }
-            if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction) {
+            if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction
+                    || schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
                 final JSONObject locator = buildLocator(event);
                 if (locator != null) {
                     payload.put(LOCATOR_KEY, locator);
