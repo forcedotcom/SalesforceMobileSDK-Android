@@ -113,7 +113,8 @@ public class AILTNTransform implements Transform {
             long endTime = event.getEndTime();
             long duration = endTime - startTime;
             if (duration > 0) {
-                if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction) {
+                if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction
+                        || schemaType == InstrumentationEvent.SchemaType.LightningPerformance) {
                     payload.put(DURATION_KEY, duration);
                 } else if (schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
                     payload.put(EPT_KEY, duration);
