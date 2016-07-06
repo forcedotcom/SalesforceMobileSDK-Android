@@ -54,6 +54,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
             "TEST_MOBILE_SDK_VERSION", "TEST_DEVICE_MODEL", "TEST_DEVICE_ID", "TEST_CLIENT_ID");
     private static final String TEST_EVENT_NAME = "TEST_EVENT_NAME_%s";
     private static final String TEST_SENDER_ID = "TEST_SENDER_ID";
+    private static final String TEST_SESSION_ID = "TEST_SESSION_ID";
 
     private String uniqueId;
     private Context targetContext;
@@ -85,7 +86,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
         eventBuilder.startTime(curTime);
         eventBuilder.name(eventName);
-        eventBuilder.sessionId(1);
+        eventBuilder.sessionId(TEST_SESSION_ID);
         eventBuilder.senderId(TEST_SENDER_ID);
         eventBuilder.page(new JSONObject());
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
@@ -110,7 +111,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
         eventBuilder.startTime(curTime);
         eventBuilder.name(eventName);
-        eventBuilder.sessionId(1);
+        eventBuilder.sessionId(TEST_SESSION_ID);
         eventBuilder.page(new JSONObject());
         eventBuilder.senderId(TEST_SENDER_ID);
         try {
@@ -133,7 +134,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.startTime(curTime);
         eventBuilder.name(eventName);
-        eventBuilder.sessionId(1);
+        eventBuilder.sessionId(TEST_SESSION_ID);
         eventBuilder.page(new JSONObject());
         eventBuilder.senderId(TEST_SENDER_ID);
         InstrumentationEvent event = null;
@@ -156,7 +157,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
         eventBuilder.name(eventName);
         eventBuilder.startTime(curTime);
-        eventBuilder.sessionId(1);
+        eventBuilder.sessionId(TEST_SESSION_ID);
         eventBuilder.senderId(TEST_SENDER_ID);
         eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
@@ -178,7 +179,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         final InstrumentationEventBuilder eventBuilder = InstrumentationEventBuilder.getInstance(analyticsManager, targetContext);
         long curTime = System.currentTimeMillis();
         eventBuilder.startTime(curTime);
-        eventBuilder.sessionId(1);
+        eventBuilder.sessionId(TEST_SESSION_ID);
         eventBuilder.senderId(TEST_SENDER_ID);
         eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
@@ -205,7 +206,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
         eventBuilder.startTime(curTime);
         eventBuilder.name(eventName);
-        eventBuilder.sessionId(1);
+        eventBuilder.sessionId(TEST_SESSION_ID);
         eventBuilder.senderId(TEST_SENDER_ID);
         eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
@@ -231,7 +232,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         long curTime = System.currentTimeMillis();
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
         eventBuilder.name(eventName);
-        eventBuilder.sessionId(1);
+        eventBuilder.sessionId(TEST_SESSION_ID);
         eventBuilder.senderId(TEST_SENDER_ID);
         eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
@@ -253,7 +254,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
         eventBuilder.startTime(curTime);
         eventBuilder.name(eventName);
-        eventBuilder.sessionId(1);
+        eventBuilder.sessionId(TEST_SESSION_ID);
         eventBuilder.senderId(TEST_SENDER_ID);
         eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.eventType(InstrumentationEvent.EventType.system);
@@ -275,7 +276,7 @@ public class InstrumentationEventBuilderTest extends InstrumentationTestCase {
         final String eventName = String.format(TEST_EVENT_NAME, curTime);
         eventBuilder.startTime(curTime);
         eventBuilder.name(eventName);
-        eventBuilder.sessionId(1);
+        eventBuilder.sessionId(TEST_SESSION_ID);
         eventBuilder.senderId(TEST_SENDER_ID);
         eventBuilder.schemaType(InstrumentationEvent.SchemaType.LightningError);
         eventBuilder.eventType(InstrumentationEvent.EventType.system);

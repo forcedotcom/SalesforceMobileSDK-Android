@@ -50,7 +50,7 @@ public class InstrumentationEventBuilder {
     private long endTime;
     private String name;
     private JSONObject attributes;
-    private int sessionId;
+    private String sessionId;
     private String senderId;
     private JSONObject senderContext;
     private InstrumentationEvent.SchemaType schemaType;
@@ -129,7 +129,7 @@ public class InstrumentationEventBuilder {
      * @param sessionId Session ID.
      * @return Instance of this class.
      */
-    public InstrumentationEventBuilder sessionId(int sessionId) {
+    public InstrumentationEventBuilder sessionId(String sessionId) {
         this.sessionId = sessionId;
         return this;
     }

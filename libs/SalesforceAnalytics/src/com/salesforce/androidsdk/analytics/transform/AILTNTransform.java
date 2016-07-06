@@ -120,8 +120,8 @@ public class AILTNTransform implements Transform {
                     payload.put(EPT_KEY, duration);
                 }
             }
-            int sessionId = event.getSessionId();
-            if (sessionId != 0) {
+            final String sessionId = event.getSessionId();
+            if (!TextUtils.isEmpty(sessionId)) {
                 payload.put(CLIENT_SESSION_ID_KEY, sessionId);
             }
             if (schemaType != InstrumentationEvent.SchemaType.LightningPerformance) {
