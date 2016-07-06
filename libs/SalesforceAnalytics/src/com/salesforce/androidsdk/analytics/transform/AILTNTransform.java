@@ -141,7 +141,8 @@ public class AILTNTransform implements Transform {
             if (marks != null && schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
                 payload.put(MARKS_KEY, marks);
             }
-            if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction) {
+            if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction
+                    || schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
                 final JSONObject locator = buildLocator(event);
                 if (locator != null) {
                     payload.put(LOCATOR_KEY, locator);
