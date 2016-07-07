@@ -68,4 +68,12 @@ public class SmartSyncUserAccountManager extends UserAccountManager {
 		CacheManager.softReset(userAccount);
 		MetadataManager.reset(userAccount);
 	}
+
+	@Override
+	public void switchToNewUser(String jwt, String url) {
+		super.switchToNewUser(jwt, url);
+		final UserAccount userAccount = SmartSyncUserAccountManager.getInstance().getCurrentUser();
+		CacheManager.softReset(userAccount);
+		MetadataManager.reset(userAccount);
+	}
 }
