@@ -120,6 +120,8 @@ public class OAuth2 {
     private static final String AUTHORIZATION_CODE = "authorization_code";
     private static final String AUTHORIZATION = "Authorization";
     private static final String BEARER = "Bearer ";
+    private static final String ASSERTION = "assertion";
+    private static final String JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
 
     // Login paths
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
@@ -160,7 +162,8 @@ public class OAuth2 {
 
 
     public static URI getAuthorizationUrl(URI loginServer, String clientId,
-                                          String callbackUrl, String[] scopes, String clientSecret, String displayType, String accessToken, String instanceURL) {
+                                          String callbackUrl, String[] scopes, String clientSecret,
+                                          String displayType, String accessToken, String instanceURL) {
         if(accessToken == null || instanceURL == null) {
             return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret, displayType);
         }
@@ -294,10 +297,10 @@ public class OAuth2 {
     public static TokenEndpointResponse swapJWTForTokens(HttpAccess httpAccessor, URI loginServerUrl,
                                                               String jwt) throws IOException, URISyntaxException, OAuthFailedException {
         // call the token endpoint, and swap jwt for an access tokens.
-        List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(new BasicNameValuePair("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer"));
-        params.add(new BasicNameValuePair("assertion", jwt));
-        TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServerUrl, params);
+        FormBody.Builder formBodyBuilder = new FormBody.Builder()
+                .add(GRANT_TYPE, JWT_BEARER)
+                .add(ASSERTION, jwt);
+        TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServerUrl, formBodyBuilder);
         return tr;
     }
 
