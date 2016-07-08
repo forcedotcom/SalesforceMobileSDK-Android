@@ -9,6 +9,7 @@ com.salesforce.androidsdk.phonegap.util.test
 com.salesforce.androidsdk.push
 com.salesforce.androidsdk.reactnative.app
 com.salesforce.androidsdk.reactnative.bridge
+com.salesforce.androidsdk.reactnative.ui
 com.salesforce.androidsdk.rest
 com.salesforce.androidsdk.rest.files
 com.salesforce.androidsdk.security
