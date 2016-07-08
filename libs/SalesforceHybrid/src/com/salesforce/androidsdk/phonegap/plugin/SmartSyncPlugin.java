@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -64,13 +64,15 @@ public class SmartSyncPlugin extends ForcePlugin {
         syncUp,
         syncDown,
         getSyncStatus,
-        reSync
+        reSync,
+        cleanResyncGhosts
     }
     
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
         final long start = System.currentTimeMillis();
-        // Figure out action
+
+        // Figure out action.
         final Action action;
         try {
             action = Action.valueOf(actionStr);
@@ -80,22 +82,35 @@ public class SmartSyncPlugin extends ForcePlugin {
             return false;
         }
 
-        // Not running smartstore action on the main thread
+        // Not running smartstore action on the main thread.
         cordova.getThreadPool().execute(new Runnable() {
+
             @Override
             public void run() {
-                // All smart store action need to be serialized
+
+                // All smart store actions need to be serialized.
                 synchronized(SmartSyncPlugin.class) {
                     try {
                         switch(action) {
-                          case syncUp:             syncUp(args, callbackContext); break;
-                          case syncDown:           syncDown(args, callbackContext); break;
-                          case getSyncStatus:      getSyncStatus(args, callbackContext); break;
-                          case reSync:             reSync(args, callbackContext); break;
-                          default: throw new RuntimeException("No handler for action " + action);
+                          case syncUp:
+                              syncUp(args, callbackContext);
+                              break;
+                          case syncDown:
+                              syncDown(args, callbackContext);
+                              break;
+                          case getSyncStatus:
+                              getSyncStatus(args, callbackContext);
+                              break;
+                          case reSync:
+                              reSync(args, callbackContext);
+                              break;
+                          case cleanResyncGhosts:
+                              cleanResyncGhosts(args, callbackContext);
+                              break;
+                          default:
+                              throw new RuntimeException("No handler for action " + action);
                         }
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
                         Log.w("SmartSyncPlugin.execute", e.getMessage(), e);
                         callbackContext.error(e.getMessage());
                     }                   
@@ -108,13 +123,15 @@ public class SmartSyncPlugin extends ForcePlugin {
     }
 
     /**
-     * Native implementation of syncUp
+     * Native implementation of syncUp.
+     *
      * @param args
      * @param callbackContext
      * @throws JSONException 
      */
     private void syncUp(JSONArray args, CallbackContext callbackContext) throws JSONException {
-        // Parse args
+
+        // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
@@ -122,6 +139,7 @@ public class SmartSyncPlugin extends ForcePlugin {
         final boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
         SyncManager syncManager = getSyncManager(isGlobal);
         SyncState sync = syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
+
             @Override
             public void onUpdate(SyncState sync) {
                 handleSyncUpdate(sync, isGlobal);
@@ -131,13 +149,15 @@ public class SmartSyncPlugin extends ForcePlugin {
     }
 
     /**
-     * Native implementation of syncDown
+     * Native implementation of syncDown.
+     *
      * @param args
      * @param callbackContext
      * @throws JSONException 
      */
     private void syncDown(JSONArray args, CallbackContext callbackContext) throws JSONException {
-        // Parse args
+
+        // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
@@ -145,6 +165,7 @@ public class SmartSyncPlugin extends ForcePlugin {
         final boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
         SyncManager syncManager = getSyncManager(isGlobal);
         SyncState sync = syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
+
             @Override
             public void onUpdate(SyncState sync) {
                 handleSyncUpdate(sync, isGlobal);
@@ -154,13 +175,15 @@ public class SmartSyncPlugin extends ForcePlugin {
     }
     
     /**
-     * Native implementation of getSyncStatus
+     * Native implementation of getSyncStatus.
+     *
      * @param args
      * @param callbackContext
      * @throws JSONException 
      */ 
     private void getSyncStatus(JSONArray args, CallbackContext callbackContext) throws JSONException {
-        // Parse args
+
+        // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
         long syncId = arg0.getLong(SYNC_ID);
         boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
@@ -170,29 +193,50 @@ public class SmartSyncPlugin extends ForcePlugin {
     }
 
     /**
-     * Native implementatino of reSync
+     * Native implementation of reSync.
+     *
      * @param args
      * @param callbackContext
      * @throws JSONException
      */
     private void reSync(JSONArray args, CallbackContext callbackContext) throws JSONException {
-        // Parse args
+
+        // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
         long syncId = arg0.getLong(SYNC_ID);
         final boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
         SyncManager syncManager = getSyncManager(isGlobal);
         SyncState sync = syncManager.reSync(syncId, new SyncUpdateCallback() {
+
             @Override
             public void onUpdate(SyncState sync) {
                 handleSyncUpdate(sync, isGlobal);
             }
         });
-
         callbackContext.success(sync.asJSON());
     }
 
     /**
-     * Sync update handler
+     * Native implementation of cleanResyncGhosts.
+     *
+     * @param args
+     * @param callbackContext
+     * @throws JSONException
+     */
+    private void cleanResyncGhosts(JSONArray args, CallbackContext callbackContext) throws JSONException {
+
+        // Parse args.
+        final JSONObject arg0 = args.getJSONObject(0);
+        long syncId = arg0.getLong(SYNC_ID);
+        boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
+        final SyncManager syncManager = getSyncManager(isGlobal);
+        syncManager.cleanResyncGhosts(syncId);
+        callbackContext.success();
+    }
+
+    /**
+     * Sync update handler.
+     *
      * @param sync
      */
     private void handleSyncUpdate(final SyncState sync, final boolean isGlobal) {
@@ -210,7 +254,8 @@ public class SmartSyncPlugin extends ForcePlugin {
     }
 
     /**
-     * Return sync manager to use
+     * Return sync manager to use.
+     *
      * @param isGlobal
      * @return
      */
@@ -218,8 +263,6 @@ public class SmartSyncPlugin extends ForcePlugin {
         SyncManager syncManager = isGlobal
                 ? SyncManager.getInstance(null, null, SmartStoreSDKManager.getInstance().getGlobalSmartStore())
                 : SyncManager.getInstance();
-
         return syncManager;
     }
-
 }

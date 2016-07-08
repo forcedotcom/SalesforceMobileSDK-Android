@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -76,7 +76,6 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         String soupName = args.getString(SOUP_NAME);
         JSONObject options = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(OPTIONS)));
         final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
-
         SyncManager syncManager = getSyncManager(isGlobal);
         try {
             syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncManager.SyncUpdateCallback() {
@@ -105,7 +104,6 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         String soupName = args.getString(SOUP_NAME);
         JSONObject options = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(OPTIONS)));
         final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
-
         SyncManager syncManager = getSyncManager(isGlobal);
         try {
             syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncManager.SyncUpdateCallback() {
@@ -132,7 +130,6 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         // Parse args
         long syncId = args.getInt(SYNC_ID);
         boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
-
         SyncManager syncManager = getSyncManager(isGlobal);
         try {
             SyncState sync = syncManager.getSyncStatus(syncId);
@@ -144,7 +141,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     }
 
     /**
-     * Native implementatino of reSync
+     * Native implementation of reSync
      * @param args
      * @param successCallback
      * @param errorCallback
@@ -155,7 +152,6 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         // Parse args
         long syncId = args.getInt(SYNC_ID);
         final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
-
         SyncManager syncManager = getSyncManager(isGlobal);
         try {
             syncManager.reSync(syncId, new SyncManager.SyncUpdateCallback() {
@@ -171,15 +167,35 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     }
 
     /**
+     * Native implementation of cleanResyncGhosts
+     * @param args
+     * @param successCallback
+     * @param errorCallback
+     */
+    @ReactMethod
+    public void cleanResyncGhosts(ReadableMap args,
+                       final Callback successCallback, final Callback errorCallback) {
+        // Parse args
+        long syncId = args.getInt(SYNC_ID);
+        final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
+        SyncManager syncManager = getSyncManager(isGlobal);
+        try {
+            syncManager.cleanResyncGhosts(syncId);
+            successCallback.invoke();
+        } catch (JSONException e) {
+            Log.e(LOG_TAG, "reSync", e);
+            errorCallback.invoke(e.toString());
+        }
+    }
+
+    /**
      * Sync update handler
      * @param sync
      * @param errorCallback
-     *
      */
     private void handleSyncUpdate(final SyncState sync, Callback successCallback, Callback errorCallback) {
         try {
             switch (sync.getStatus()) {
-
                 case NEW:
                     break;
                 case RUNNING:
@@ -191,7 +207,6 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                     errorCallback.invoke("Sync failed");
                     break;
             }
-
         } catch (JSONException e) {
             Log.e(LOG_TAG, "handleSyncUpdate", e);
         }
@@ -206,8 +221,6 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         SyncManager syncManager = isGlobal
                 ? SyncManager.getInstance(null, null, SmartStoreSDKManager.getInstance().getGlobalSmartStore())
                 : SyncManager.getInstance();
-
         return syncManager;
     }
-
 }

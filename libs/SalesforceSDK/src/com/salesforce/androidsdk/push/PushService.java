@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -49,10 +49,10 @@ import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 
-import org.apache.http.HttpStatus;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -366,7 +366,7 @@ public class PushService extends IntentService {
     	fields.put(SERVICE_TYPE, ANDROID_GCM);
     	try {
     		final RestClient client = getRestClient(account);
-        	final RestRequest req = RestRequest.getRequestForCreate(ApiVersionStrings.VERSION_NUMBER,
+        	final RestRequest req = RestRequest.getRequestForCreate(ApiVersionStrings.getVersionNumber(context),
         			MOBILE_PUSH_SERVICE_DEVICE, fields);
         	if (client != null) {
             	final RestResponse res = client.sendSync(req);
@@ -379,12 +379,12 @@ public class PushService extends IntentService {
             	 * are not enabled for this connected app, which means we
             	 * should not attempt to re-register a few minutes later.
             	 */
-            	if (res.getStatusCode() == HttpStatus.SC_CREATED) {
+            	if (res.getStatusCode() == HttpURLConnection.HTTP_CREATED) {
             		final JSONObject obj = res.asJSONObject();
             		if (obj != null) {
             			id = obj.getString(FIELD_ID);
             		}
-            	} else if (res.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+            	} else if (res.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
             		id = NOT_ENABLED;
             	}
             	res.consume();
@@ -405,13 +405,13 @@ public class PushService extends IntentService {
      */
     private boolean unregisterSFDCPushNotification(String registeredId,
     		UserAccount account) {
-    	final RestRequest req = RestRequest.getRequestForDelete(ApiVersionStrings.VERSION_NUMBER,
+    	final RestRequest req = RestRequest.getRequestForDelete(ApiVersionStrings.getVersionNumber(context),
     			MOBILE_PUSH_SERVICE_DEVICE, registeredId);
     	try {
     		final RestClient client = getRestClient(account);
     		if (client != null) {
             	final RestResponse res = client.sendSync(req);
-            	if (res.getStatusCode() == HttpStatus.SC_NO_CONTENT) {
+            	if (res.getStatusCode() == HttpURLConnection.HTTP_NO_CONTENT) {
             		return true;
             	}
             	res.consume();

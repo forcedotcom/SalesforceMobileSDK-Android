@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,11 +26,6 @@
  */
 package com.salesforce.samples.templateapp;
 
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-
-import org.json.JSONArray;
-
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -38,11 +33,17 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestClient.AsyncRequestCallback;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.ui.SalesforceActivity;
+
+import org.json.JSONArray;
+
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 
 /**
  * Main activity
@@ -120,27 +121,38 @@ public class MainActivity extends SalesforceActivity {
 	}	
 	
 	private void sendRequest(String soql) throws UnsupportedEncodingException {
-		RestRequest restRequest = RestRequest.getRequestForQuery(getString(R.string.api_version), soql);
+		RestRequest restRequest = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(this), soql);
 
 		client.sendAsync(restRequest, new AsyncRequestCallback() {
 			@Override
-			public void onSuccess(RestRequest request, RestResponse result) {
-				try {
-					listAdapter.clear();
-					JSONArray records = result.asJSONObject().getJSONArray("records");
-					for (int i = 0; i < records.length(); i++) {
-						listAdapter.add(records.getJSONObject(i).getString("Name"));
-					}					
-				} catch (Exception e) {
-					onError(e);
-				}
+			public void onSuccess(RestRequest request, final RestResponse result) {
+				result.consumeQuietly(); // consume before going back to main thread
+				runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							listAdapter.clear();
+							JSONArray records = result.asJSONObject().getJSONArray("records");
+							for (int i = 0; i < records.length(); i++) {
+								listAdapter.add(records.getJSONObject(i).getString("Name"));
+							}
+						} catch (Exception e) {
+							onError(e);
+						}
+					}
+				});
 			}
 			
 			@Override
-			public void onError(Exception exception) {
-                Toast.makeText(MainActivity.this,
-                               MainActivity.this.getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericError(), exception.toString()),
-                               Toast.LENGTH_LONG).show();
+			public void onError(final Exception exception) {
+				runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						Toast.makeText(MainActivity.this,
+								MainActivity.this.getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericError(), exception.toString()),
+								Toast.LENGTH_LONG).show();
+					}
+				});
 			}
 		});
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2014, salesforce.com, inc.
+ * Copyright (c) 2011-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,25 +26,6 @@
  */
 package com.salesforce.samples.restexplorer;
 
-import java.io.UnsupportedEncodingException;
-import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.message.BasicNameValuePair;
-import org.json.JSONArray;
-import org.json.JSONObject;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -63,6 +44,7 @@ import android.widget.TextView;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
 import com.salesforce.androidsdk.rest.RestClient;
@@ -75,6 +57,23 @@ import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeSet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import okhttp3.FormBody;
+import okhttp3.RequestBody;
 
 /**
  * Main activity for REST explorer.
@@ -103,7 +102,7 @@ public class ExplorerActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
-		apiVersion = getString(R.string.api_version);
+		apiVersion = ApiVersionStrings.getVersionNumber(this);
 		setContentView(R.layout.explorer);
 		tabHost = (TabHost) findViewById(android.R.id.tabhost);
 		tabHost.setup();
@@ -438,10 +437,10 @@ public class ExplorerActivity extends Activity {
 		try {
 			final EditText editText = (EditText) findViewById(R.id.manual_request_path_text);
 			final String hintText = String.format(getResources().getString(R.string.path_hint),
-					getResources().getString(R.string.api_version));
+					ApiVersionStrings.getVersionNumber(this));
 			editText.setHint(hintText);
 			final String path = editText.getText().toString();
-			final HttpEntity paramsEntity = getParamsEntity(R.id.manual_request_params_text);
+			final RequestBody paramsEntity = getParamsEntity(R.id.manual_request_params_text);
 			final RestMethod method = getMethod(R.id.manual_request_method_radiogroup);
 			request = new RestRequest(method, path, paramsEntity);
 		} catch (UnsupportedEncodingException e) {
@@ -460,7 +459,7 @@ public class ExplorerActivity extends Activity {
     public void onSearchScopeAndOrderClick(View v) {
         RestRequest request = null;
         try {
-            request = RestRequest.getRequestForSearchScopeAndOrder(getResources().getString(R.string.api_version));
+            request = RestRequest.getRequestForSearchScopeAndOrder(ApiVersionStrings.getVersionNumber(this));
         } catch (UnsupportedEncodingException e) {
             printHeader("Could not build search scope and order request");
             printException(e);
@@ -478,7 +477,7 @@ public class ExplorerActivity extends Activity {
         RestRequest request = null;
         final List<String> objectList = parseCommaSeparatedList(R.id.search_result_layout_object_list_text);
         try {
-            request = RestRequest.getRequestForSearchResultLayout(getResources().getString(R.string.api_version), objectList);
+            request = RestRequest.getRequestForSearchResultLayout(ApiVersionStrings.getVersionNumber(this), objectList);
         } catch (UnsupportedEncodingException e) {
             printHeader("Could not build search result layout request");
             printException(e);
@@ -623,18 +622,17 @@ public class ExplorerActivity extends Activity {
         sendRequest(request);
     }
 
-    private HttpEntity getParamsEntity(int manualRequestParamsText)
+    private RequestBody getParamsEntity(int manualRequestParamsText)
 			throws UnsupportedEncodingException {
 		Map<String, Object> params = parseFieldMap(manualRequestParamsText);
 		if (params == null) {
-			params = new HashMap<String, Object>();
+			params = new HashMap<>();
 		}
-		List<NameValuePair> paramsList = new ArrayList<NameValuePair>();
-		for (Entry<String, Object> param : params.entrySet()) {
-			paramsList.add(new BasicNameValuePair(param.getKey(),
-					(String) param.getValue()));
+        FormBody.Builder builder = new FormBody.Builder();
+        for (Entry<String, Object> param : params.entrySet()) {
+            builder.add(param.getKey(), (String) param.getValue());
 		}
-		return new UrlEncodedFormEntity(paramsList);
+        return builder.build();
 	}
 
 	private RestMethod getMethod(int methodRadioGroup) {
@@ -716,25 +714,36 @@ public class ExplorerActivity extends Activity {
 			private long start = System.nanoTime();
 
 			@Override
-			public void onSuccess(RestRequest request, RestResponse result) {
-				try {
-					long duration = System.nanoTime() - start;
-					println(result);
-					int size = result.asString().length();
-					int statusCode = result.getStatusCode();
-					printRequestInfo(duration, size, statusCode);
-					extractIdsFromResponse(result.asString());
-				} catch (Exception e) {
-					printException(e);
-				}
-			
-				EventsObservable.get().notifyEvent(EventType.RenditionComplete);
+			public void onSuccess(RestRequest request, final RestResponse result) {
+                result.consumeQuietly(); // consume before going back to main thread
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            long duration = System.nanoTime() - start;
+                            println(result);
+                            int size = result.asString().length();
+                            int statusCode = result.getStatusCode();
+                            printRequestInfo(duration, size, statusCode);
+                            extractIdsFromResponse(result.asString());
+                        } catch (Exception e) {
+                            printException(e);
+                        }
+
+                        EventsObservable.get().notifyEvent(EventType.RenditionComplete);
+                    }
+                });
 			}
 			
 			@Override
-			public void onError(Exception exception) {
-				printException(exception);
-				EventsObservable.get().notifyEvent(EventType.RenditionComplete);				
+			public void onError(final Exception exception) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        printException(exception);
+                        EventsObservable.get().notifyEvent(EventType.RenditionComplete);
+                    }
+                });
 			}
 		});
 	}
@@ -754,10 +763,10 @@ public class ExplorerActivity extends Activity {
 	 **************************************************************************************************/
 
 	private void printRequestInfo(long nanoDuration, int characterLength, int statusCode) {
-		println(SINGLE_LINE);
-		println("Time (ms): " + nanoDuration / 1000000);
-		println("Size (chars): " + characterLength);
-		println("Status code: " + statusCode);
+        println(SINGLE_LINE);
+        println("Time (ms): " + nanoDuration / 1000000);
+        println("Size (chars): " + characterLength);
+        println("Status code: " + statusCode);
 	}
 
 	private void printException(Exception e) {
@@ -788,15 +797,15 @@ public class ExplorerActivity extends Activity {
 			text = object.toString();
 		}
 		sb.append(text).append("\n");
-		resultText.setText(sb);
+        resultText.setText(sb);
 
-		// Auto scrolls to the bottom if needed.
-		if (resultText.getLayout() != null) {
-			int scroll = resultText.getLayout().getLineTop(
-					resultText.getLineCount())
-					- resultText.getHeight();
-			resultText.scrollTo(0, scroll > 0 ? scroll : 0);
-		}
+        // Auto scrolls to the bottom if needed.
+        if (resultText.getLayout() != null) {
+            int scroll = resultText.getLayout().getLineTop(
+                    resultText.getLineCount())
+                    - resultText.getHeight();
+            resultText.scrollTo(0, scroll > 0 ? scroll : 0);
+        }
 	}
 
 	/**
@@ -810,7 +819,7 @@ public class ExplorerActivity extends Activity {
 
 	/**
 	 * Helper to show/hide several views
-	 * 
+	 *
 	 * @param resIds
 	 */
 	public void showHide(boolean show, int... resIds) {
@@ -823,9 +832,9 @@ public class ExplorerActivity extends Activity {
 	}
 
 	/**************************************************************************************************
-	 * 
+	 *
 	 * Extracting ids from response for auto-complete
-	 * 
+	 *
 	 **************************************************************************************************/
 
 	private Pattern idPattern = Pattern.compile("0[0-9a-zA-Z]{17}");
@@ -867,7 +876,7 @@ public class ExplorerActivity extends Activity {
 						SalesforceSDKManager.getInstance().logout(ExplorerActivity.this);
 						return;
 					}
-					ExplorerActivity.this.client = client;			
+					ExplorerActivity.this.client = client;
 				}
 			});
 		}

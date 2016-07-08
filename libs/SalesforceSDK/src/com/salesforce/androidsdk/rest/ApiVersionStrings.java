@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2013-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,15 +26,47 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import android.content.Context;
+
+import com.salesforce.androidsdk.R;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+
 /**
  * This is where all the API version info lives. This allows us to change one
  * line here and affect all our api calls.
  */
 public class ApiVersionStrings {
+
     public static final String VERSION_NUMBER = "v36.0";
     public static final String API_PREFIX = "/services/data/";
-    public static final String BASE_PATH = API_PREFIX + VERSION_NUMBER;
-    public static final String BASE_CHATTER_PATH = BASE_PATH + "/chatter/";
-    public static final String BASE_CONNECT_PATH = BASE_PATH + "/connect/";
-    public static final String BASE_SOBJECT_PATH = BASE_PATH + "/sobjects/";
+
+    public static String getBasePath() {
+        return API_PREFIX + getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
+    }
+
+    public static String getBaseChatterPath() {
+        return getBasePath() + "/chatter/";
+    }
+
+    public static String getBaseConnectPath() {
+        return getBasePath() + "/connect/";
+    }
+
+    public static String getBaseSObjectPath() {
+        return getBasePath() + "/sobjects/";
+    }
+
+    /**
+     * Returns the API version number to be used.
+     *
+     * @param context Context. Could be null in some test runs.
+     * @return API version number to be used.
+     */
+    public static String getVersionNumber(Context context) {
+        String apiVersion = VERSION_NUMBER;
+        if (context != null) {
+            apiVersion = context.getString(R.string.api_version);
+        }
+        return apiVersion;
+    }
 }

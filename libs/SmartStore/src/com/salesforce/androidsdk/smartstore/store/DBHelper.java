@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartstore.store;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,11 +40,16 @@ import net.sqlcipher.database.SQLiteStatement;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * SmartStore Database Helper
@@ -52,6 +58,12 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
  * It also caches a number of of things to speed things up (e.g. soup table name, index specs, insert helpers etc)
  */
 public class DBHelper {
+
+	// Explain suuport
+	public static final String EXPLAIN_SQL = "sql";
+	public static final String EXPLAIN_ARGS = "args";
+	public static final String EXPLAIN_ROWS = "rows";
+	public static final String EXPLAIN_TAG = "EXPLAIN";
 
 	private static Map<SQLiteDatabase, DBHelper> INSTANCES;
 
@@ -95,6 +107,12 @@ public class DBHelper {
 
 	// Cache of raw count sql to compiled statements
 	private Map<String, SQLiteStatement> rawCountSqlToStatementsMap = new HashMap<String, SQLiteStatement>();
+
+	// Boolean to turn explain query plan capture on or off
+	private boolean captureExplainQueryPlan;
+
+	// Last explain query plan
+	private JSONObject lastExplainQueryPlan;
 
 	/**
 	 * @param soupName
@@ -234,7 +252,38 @@ public class DBHelper {
 	 */
 	public Cursor limitRawQuery(SQLiteDatabase db, String sql, String limit, String... whereArgs) {
 		String limitSql = String.format(LIMIT_SELECT, sql, limit);
+		if (captureExplainQueryPlan) {
+			runExplainQueryPlan(db, limitSql, whereArgs);
+		}
 		return db.rawQuery(limitSql, whereArgs);
+	}
+
+	private void runExplainQueryPlan(SQLiteDatabase db, String sql, String... whereArgs) {
+		JSONObject lastExplain = new JSONObject();
+		Cursor c = null;
+		try {
+			lastExplain.put(EXPLAIN_SQL, sql);
+			if (whereArgs != null && whereArgs.length > 0) lastExplain.put(EXPLAIN_ARGS, new JSONArray(Arrays.asList(whereArgs)));
+			JSONArray rows = new JSONArray();
+
+			c = db.rawQuery("EXPLAIN QUERY PLAN " + sql, whereArgs);
+			while (c.moveToNext()) {
+				JSONObject row = new JSONObject();
+				StringBuilder sb = new StringBuilder();
+				for (int i = 0; i < c.getColumnCount(); i++) {
+					row.put(c.getColumnName(i), c.getString(i));
+				}
+				rows.put(row);
+			}
+			lastExplain.put(EXPLAIN_ROWS, rows);
+			Log.d(EXPLAIN_TAG, lastExplain.toString(2));
+
+		} catch (JSONException e) {
+			Log.d(EXPLAIN_TAG, "Exception", e);
+		} finally {
+			safeClose(c);
+		}
+		lastExplainQueryPlan = lastExplain;
 	}
 
 	/**
@@ -459,6 +508,23 @@ public class DBHelper {
        }
        return soupTableName;
    }
+
+	/**
+	 * If turned on, explain query plan is run before executing a query and stored in lastExplainQueryPlan
+	 * and also get logged
+	 * @param captureExplainQueryPlan true to turn capture on and false to turn off
+     */
+	public void setCaptureExplainQueryPlan(boolean captureExplainQueryPlan) {
+		this.captureExplainQueryPlan = captureExplainQueryPlan;
+	}
+
+	/**
+	 * @return explain query plan for last query run (if captureExplainQueryPlan is true)
+     */
+	public JSONObject getLastExplainQueryPlan() {
+		return lastExplainQueryPlan;
+	}
+
 
    protected String getSoupTableNameFromDb(SQLiteDatabase db, String soupName) {
        Cursor cursor = null;

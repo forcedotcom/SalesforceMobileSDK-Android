@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -30,29 +30,24 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.salesforce.androidsdk.auth.HttpAccess.Execution;
+import com.salesforce.androidsdk.rest.RestResponse;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.protocol.HTTP;
-import org.apache.http.util.EntityUtils;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+
+import okhttp3.FormBody;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 
 /**
  * Helper methods for common OAuth2 requests.
@@ -86,6 +81,7 @@ public class OAuth2 {
     // Misc constants: strings appearing in requests or responses
     private static final String ACCESS_TOKEN = "access_token";
     private static final String CLIENT_ID = "client_id";
+    private static final String CLIENT_SECRET = "client_secret";
     private static final String ERROR = "error";
     private static final String ERROR_DESCRIPTION = "error_description";
     private static final String FORMAT = "format";
@@ -118,6 +114,9 @@ public class OAuth2 {
     private static final String AND = "&";
     private static final String EQUAL = "=";
     private static final String TOUCH = "touch";
+    private static final String AUTHORIZATION_CODE = "authorization_code";
+    private static final String AUTHORIZATION = "Authorization";
+    private static final String BEARER = "Bearer ";
 
     // Login paths
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
@@ -201,12 +200,11 @@ public class OAuth2 {
     public static TokenEndpointResponse refreshAuthToken(
             HttpAccess httpAccessor, URI loginServer, String clientId,
             String refreshToken, String clientSecret) throws OAuthFailedException, IOException {
-        List<NameValuePair> params = makeTokenEndpointParams(REFRESH_TOKEN,
+        FormBody.Builder formBodyBuilder = makeTokenEndpointParams(REFRESH_TOKEN,
                 clientId, clientSecret);
-        params.add(new BasicNameValuePair(REFRESH_TOKEN, refreshToken));
-        params.add(new BasicNameValuePair(FORMAT, JSON));
-        TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor,
-                loginServer, params);
+        formBodyBuilder.add(REFRESH_TOKEN, refreshToken);
+        formBodyBuilder.add(FORMAT, JSON);
+        TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder);
         return tr;
     }
 
@@ -215,19 +213,24 @@ public class OAuth2 {
      *
      * @param httpAccessor
      * @param loginServer
-     * @param clientId
      * @param refreshToken
      * @throws OAuthFailedException
      * @throws IOException
      */
-    public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String clientId, String refreshToken) {
+    public static void revokeRefreshToken(HttpAccess httpAccessor, URI loginServer, String refreshToken) {
+        final StringBuilder sb = new StringBuilder(loginServer.toString());
+        sb.append(OAUTH_REVOKE_PATH);
+        sb.append(Uri.encode(refreshToken));
+
+        Request request = new Request.Builder()
+                .url(sb.toString())
+                .get()
+                .build();
+
         try {
-            final StringBuilder sb = new StringBuilder(loginServer.toString());
-            sb.append(OAUTH_REVOKE_PATH);
-            sb.append(Uri.encode(refreshToken));
-            httpAccessor.doGet(null, URI.create(sb.toString()));
+            httpAccessor.getOkHttpClient().newCall(request).execute();
         } catch (IOException e) {
-        	Log.w("OAuth2:revokeRefreshToken", e);
+            Log.w("OAuth2:revokeRefreshToken", e);
         }
     }
 
@@ -247,10 +250,9 @@ public class OAuth2 {
     public static TokenEndpointResponse swapAuthCodeForTokens(HttpAccess httpAccessor, URI loginServerUrl, String clientSecret,
             String authCode, String clientId, String callbackUrl) throws IOException, URISyntaxException, OAuthFailedException {
         // call the token endpoint, and swap our authorization code for a refresh & access tokens.
-        List<NameValuePair> params = makeTokenEndpointParams("authorization_code", clientId, clientSecret);
-        params.add(new BasicNameValuePair("code", authCode));
-        params.add(new BasicNameValuePair("redirect_uri", callbackUrl));
-        TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServerUrl, params);
+        FormBody.Builder formBodyBuilder = makeTokenEndpointParams(AUTHORIZATION_CODE, clientId, clientSecret);
+        formBodyBuilder.add(REDIRECT_URI, callbackUrl);
+        TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServerUrl, formBodyBuilder);
         return tr;
     }
 
@@ -268,40 +270,53 @@ public class OAuth2 {
     public static final IdServiceResponse callIdentityService(
             HttpAccess httpAccessor, String identityServiceIdUrl,
             String authToken) throws IOException, URISyntaxException {
-        Map<String, String> idHeaders = new HashMap<String, String>();
-        idHeaders.put("Authorization", "Bearer " + authToken);
-        Execution exec = httpAccessor.doGet(idHeaders, new URI(identityServiceIdUrl));
-        return new IdServiceResponse(exec.response);
+
+        Request.Builder builder = new Request.Builder()
+                .url(identityServiceIdUrl)
+                .get();
+        addAuthorizationHeader(builder, authToken);
+
+        Request request = builder.build();
+
+        Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+
+        return new IdServiceResponse(response);
+    }
+
+    /**
+     * Add authorization header to request builder
+     * @param builder
+     * @param authToken
+     */
+    public static final Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken) {
+        return builder.header(AUTHORIZATION, BEARER + authToken);
     }
 
     /**
      * @param httpAccessor
      * @param loginServer
-     * @param params
+     * @param formBodyBuilder
      * @return
      * @throws OAuthFailedException
      * @throws IOException
      */
     private static TokenEndpointResponse makeTokenEndpointRequest(
-            HttpAccess httpAccessor, URI loginServer, List<NameValuePair> params)
+            HttpAccess httpAccessor, URI loginServer, FormBody.Builder formBodyBuilder)
             throws OAuthFailedException, IOException {
-        UrlEncodedFormEntity req = new UrlEncodedFormEntity(params, "UTF-8");
-        try {
+        final String refreshPath = loginServer.toString() + OAUTH_TOKEN_PATH;
+        final RequestBody body = formBodyBuilder.build();
 
-        	// Call the token endpoint, and get tokens, instance url etc.
-            final String refreshPath = loginServer.toString() + OAUTH_TOKEN_PATH;
-            Execution ex = httpAccessor.doPost(null, new URI(refreshPath), req);
-            int statusCode = ex.response.getStatusLine().getStatusCode();
-            if (statusCode == 200) {
-                return new TokenEndpointResponse(ex.response);
-            } else {
-                throw new OAuthFailedException(new TokenErrorResponse(
-                        ex.response), statusCode);
-            }
-        } catch (UnsupportedEncodingException ex1) {
-            throw new RuntimeException(ex1); // should never happen
-        } catch (URISyntaxException ex1) {
-            throw new RuntimeException(ex1); // should never happen
+        Request request = new Request.Builder()
+                .url(refreshPath)
+                .post(body)
+                .build();
+
+        Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
+        if (response.isSuccessful()) {
+            return new TokenEndpointResponse(response);
+        }
+        else {
+            throw new OAuthFailedException(new TokenErrorResponse(response), response.code());
         }
     }
 
@@ -310,15 +325,16 @@ public class OAuth2 {
      * @param clientId
      * @return
      */
-    private static List<NameValuePair> makeTokenEndpointParams(
+    private static FormBody.Builder makeTokenEndpointParams(
             String grantType, String clientId, String clientSecret) {
-        List<NameValuePair> params = new ArrayList<NameValuePair>();
-        params.add(new BasicNameValuePair(GRANT_TYPE, grantType));
-        params.add(new BasicNameValuePair(CLIENT_ID, clientId));
+        FormBody.Builder builder = new FormBody.Builder()
+                .add(GRANT_TYPE, grantType)
+                .add(CLIENT_ID, clientId);
+
         if (clientSecret != null) {
-            params.add(new BasicNameValuePair("client_secret", clientSecret));
+            builder.add(CLIENT_SECRET, clientSecret);
         }
-        return params;
+        return builder;
     }
 
     /**
@@ -336,9 +352,9 @@ public class OAuth2 {
         final int httpStatusCode;
 
         boolean isRefreshTokenInvalid() {
-            return httpStatusCode == HttpStatus.SC_UNAUTHORIZED
-                    || httpStatusCode == HttpStatus.SC_FORBIDDEN
-                    || httpStatusCode == HttpStatus.SC_BAD_REQUEST;
+            return httpStatusCode == HttpURLConnection.HTTP_UNAUTHORIZED
+                    || httpStatusCode == HttpURLConnection.HTTP_FORBIDDEN
+                    || httpStatusCode == HttpURLConnection.HTTP_BAD_REQUEST;
         }
 
         private static final long serialVersionUID = 1L;
@@ -350,21 +366,10 @@ public class OAuth2 {
      *
      **************************************************************************************************/
 
-    public static class AbstractResponse {
-
-        protected JSONObject parseResponse(HttpResponse httpResponse)
-                throws IOException, JSONException {
-            String responseAsString = EntityUtils.toString(httpResponse
-                    .getEntity(), HTTP.UTF_8);
-            JSONObject parsedResponse = new JSONObject(responseAsString);
-            return parsedResponse;
-        }
-    }
-
     /**
      * Helper class to parse an identity service response.
      */
-    public static class IdServiceResponse extends AbstractResponse {
+    public static class IdServiceResponse {
         public String username;
         public String email;
         public String firstName;
@@ -378,9 +383,9 @@ public class OAuth2 {
         public JSONObject customPermissions;
 
 
-        public IdServiceResponse(HttpResponse httpResponse) {
+        public IdServiceResponse(Response response) {
             try {
-                JSONObject parsedResponse = parseResponse(httpResponse);
+                JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 username = parsedResponse.getString(USERNAME);
                 email = parsedResponse.getString(EMAIL);
                 firstName = parsedResponse.getString(FIRST_NAME);
@@ -408,13 +413,13 @@ public class OAuth2 {
     /**
      * Helper class to parse a token refresh error response.
      */
-    public static class TokenErrorResponse extends AbstractResponse {
+    public static class TokenErrorResponse {
         public String error;
         public String errorDescription;
 
-        public TokenErrorResponse(HttpResponse httpResponse) {
+        public TokenErrorResponse(Response response) {
             try {
-                JSONObject parsedResponse = parseResponse(httpResponse);
+                JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 error = parsedResponse.getString(ERROR);
                 errorDescription = parsedResponse
                         .getString(ERROR_DESCRIPTION);
@@ -432,7 +437,7 @@ public class OAuth2 {
     /**
      * Helper class to parse a token refresh response.
      */
-    public static class TokenEndpointResponse extends AbstractResponse {
+    public static class TokenEndpointResponse {
 
         public String authToken;
         public String refreshToken;
@@ -466,11 +471,11 @@ public class OAuth2 {
 
         /**
          * Constructor used during refresh flow
-         * @param httpResponse
+         * @param response
          */
-        public TokenEndpointResponse(HttpResponse httpResponse) {
+        public TokenEndpointResponse(Response response) {
             try {
-                JSONObject parsedResponse = parseResponse(httpResponse);
+                JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
                 idUrl  = parsedResponse.getString(ID);

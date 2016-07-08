@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2013-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,12 +26,22 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
-import junit.framework.TestCase;
-
-import com.salesforce.androidsdk.rest.*;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
+import junit.framework.TestCase;
+
 public class ApiRequestsBaseTest extends TestCase {
+
+    protected String connectPath;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        connectPath = "/services/data/" + ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()) + "/chatter/";
+    }
 
     protected void doAdditionalVerifications(RestRequest req) {
         doAdditionalVerifications(RestMethod.GET, req);
@@ -41,6 +51,4 @@ public class ApiRequestsBaseTest extends TestCase {
         assertEquals(method, req.getMethod());
         assertEquals("false", req.getAdditionalHttpHeaders().get("X-Chatter-Entity-Encoding"));
     }
-
-    protected final String connectPath = "/services/data/" + ApiVersionStrings.VERSION_NUMBER + "/chatter/";
 }

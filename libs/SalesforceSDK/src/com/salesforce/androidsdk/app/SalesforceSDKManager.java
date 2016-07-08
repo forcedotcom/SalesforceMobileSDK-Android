@@ -38,7 +38,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -62,7 +61,6 @@ import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
-import com.salesforce.androidsdk.security.PRNGFixes;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -88,7 +86,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "4.1.2";
+    public static final String SDK_VERSION = "4.2.0";
 
     /**
      * Default app name.
@@ -140,6 +138,14 @@ public class SalesforceSDKManager {
     	} else {
             throw new RuntimeException("Applications need to call SalesforceSDKManager.init() first.");
     	}
+    }
+
+    /**
+     *
+     * @return true if SalesforceSDKManager has been initialized already
+     */
+    public static boolean hasInstance() {
+        return INSTANCE != null;
     }
 
     /**
@@ -299,9 +305,6 @@ public class SalesforceSDKManager {
 	 * @param context Application context.
 	 */
     public static void initInternal(Context context) {
-
-    	// Applies PRNG fixes for certain older versions of Android.
-        PRNGFixes.apply();
 
         // Initializes the encryption module.
         Encryptor.init(context);
@@ -959,7 +962,7 @@ public class SalesforceSDKManager {
 		@Override
 		protected Void doInBackground(Void... nothings) {
 	        try {
-	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken);
+	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), refreshToken);
 	        } catch (Exception e) {
 	        	Log.w("SalesforceSDKManager:revokeToken", e);
 	        }

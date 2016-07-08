@@ -26,10 +26,8 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import android.os.Environment;
 import android.test.InstrumentationTestCase;
 
-import com.android.volley.Request;
 import com.google.common.io.CharStreams;
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.HttpAccess;
@@ -37,20 +35,16 @@ import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
-import com.salesforce.androidsdk.rest.RestClient.WrappedRestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 
-import org.apache.http.HttpStatus;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -70,8 +64,7 @@ import java.util.concurrent.TimeUnit;
 public class RestClientTest extends InstrumentationTestCase {
 
     private static final String ENTITY_NAME_PREFIX = "RestClientTest";
-    private static final String SEARCH_ENTITY_NAME = "RestClientSearchTest";
-    private static final String SEARCH_ENTITY_ID = "001S000000gxUx7IAE";
+    private static final String SEARCH_ENTITY_NAME = "Acme";
     private static final String BAD_TOKEN = "bad-token";
     private ClientInfo clientInfo;
     private HttpAccess httpAccess;
@@ -90,7 +83,7 @@ public class RestClientTest extends InstrumentationTestCase {
     public void setUp() throws Exception {
         super.setUp();
         TestCredentials.init(getInstrumentation().getContext());
-        httpAccess = new HttpAccess(null, null);
+        httpAccess = new HttpAccess(null, "dummy-agent");
         TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
         authToken = refreshResponse.authToken;
         instanceUrl = refreshResponse.instanceUrl;
@@ -183,10 +176,11 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws IOException
      */
     public void testCallWithBadAuthToken() throws URISyntaxException, IOException {
+        RestClient.clearOkClientsCache();
         RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
         assertFalse("Expected error", response.isSuccess());
-        checkResponse(response, HttpStatus.SC_UNAUTHORIZED, true);
+        checkResponse(response, HttpURLConnection.HTTP_UNAUTHORIZED, true);
     }
 
     /**
@@ -196,6 +190,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws IOException
      */
     public void testCallWithBadTokenAndTokenProvider() throws URISyntaxException, IOException {
+        RestClient.clearOkClientsCache();
         AuthTokenProvider authTokenProvider = new AuthTokenProvider() {
             @Override
             public String getNewAuthToken() {
@@ -220,7 +215,7 @@ public class RestClientTest extends InstrumentationTestCase {
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
         assertEquals("RestClient should now be using the good token", authToken, unauthenticatedRestClient.getAuthToken());
         assertTrue("Expected success", response.isSuccess());
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
     }
 
     /**
@@ -230,6 +225,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws IOException
      */
     public void testCallWithBadInstanceUrl() throws URISyntaxException, IOException {
+        RestClient.clearOkClientsCache();
         AuthTokenProvider authTokenProvider = new AuthTokenProvider() {
             @Override
             public String getNewAuthToken() {
@@ -254,7 +250,7 @@ public class RestClientTest extends InstrumentationTestCase {
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
         assertEquals("RestClient should now have the correct instance url", new URI(instanceUrl), unauthenticatedRestClient.getClientInfo().instanceUrl);
         assertTrue("Expected success", response.isSuccess());
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
     }
 
 
@@ -266,7 +262,7 @@ public class RestClientTest extends InstrumentationTestCase {
         // We don't need to be authenticated
         RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForVersions());
-        checkResponse(response, HttpStatus.SC_OK, true);
+        checkResponse(response, HttpURLConnection.HTTP_OK, true);
         checkKeys(response.asJSONArray().getJSONObject(0), "label", "url", "version");
     }
 
@@ -276,7 +272,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testGetResources() throws Exception {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
         checkKeys(response.asJSONObject(), "sobjects", "search", "recent");
     }
 
@@ -286,7 +282,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testGetResourcesAsync() throws Exception {
         RestResponse response = sendAsync(restClient, RestRequest.getRequestForResources(TestCredentials.API_VERSION));
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
         checkKeys(response.asJSONObject(), "sobjects", "search", "recent");
     }
 
@@ -296,7 +292,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testDescribeGlobal() throws Exception {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForDescribeGlobal(TestCredentials.API_VERSION));
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "encoding", "maxBatchSize", "sobjects");
         checkKeys(jsonResponse.getJSONArray("sobjects").getJSONObject(0), "name", "label", "custom", "keyPrefix");
@@ -308,7 +304,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testDescribeGlobalAsync() throws Exception {
         RestResponse response = sendAsync(restClient, RestRequest.getRequestForDescribeGlobal(TestCredentials.API_VERSION));
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "encoding", "maxBatchSize", "sobjects");
         checkKeys(jsonResponse.getJSONArray("sobjects").getJSONObject(0), "name", "label", "custom", "keyPrefix");
@@ -320,7 +316,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testMetadata() throws Exception {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"));
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "objectDescribe", "recentItems");
         checkKeys(jsonResponse.getJSONObject("objectDescribe"), "name", "label", "keyPrefix");
@@ -333,7 +329,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testDescribe() throws Exception {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForDescribe(TestCredentials.API_VERSION, "account"));
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "name", "fields", "urls", "label");
         assertEquals("Wrong object name", "Account", jsonResponse.getString("name"));
@@ -362,7 +358,7 @@ public class RestClientTest extends InstrumentationTestCase {
         List<String> fields = Arrays.asList(new String[] {"name", "ownerId"});
         IdName newAccountIdName = createAccount();
         RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, "account", newAccountIdName.id, fields));
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "attributes", "Name", "OwnerId", "Id");
         assertEquals("Wrong row returned", newAccountIdName.name, jsonResponse.getString("Name"));
@@ -408,7 +404,7 @@ public class RestClientTest extends InstrumentationTestCase {
         // Retrieve - expect 404
         List<String> fields = Arrays.asList(new String[] {"name"});
         RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, "account", newAccountIdName.id, fields));
-        assertEquals("404 was expected", HttpStatus.SC_NOT_FOUND, response.getStatusCode());
+        assertEquals("404 was expected", HttpURLConnection.HTTP_NOT_FOUND, response.getStatusCode());
     }
 
 
@@ -420,7 +416,7 @@ public class RestClientTest extends InstrumentationTestCase {
     public void testQuery() throws Exception {
         IdName newAccountIdName = createAccount();
         RestResponse response = restClient.sendSync(RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select name from account where id = '" + newAccountIdName.id + "'"));
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "done", "totalSize", "records");
         assertEquals("Expected one row", 1, jsonResponse.getInt("totalSize"));
@@ -433,13 +429,13 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws Exception
      */
     public void testSearch() throws Exception {
+        //TODO: add a test base class to supply helpers for test record creation and delete
         RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + SEARCH_ENTITY_NAME + "}"));
-        checkResponse(response, HttpStatus.SC_OK, true);
+        checkResponse(response, HttpURLConnection.HTTP_OK, true);
         JSONArray matchingRows = response.asJSONArray();
-        assertEquals("Expected one row", 1, matchingRows.length());
+        assertTrue("Expected at least one row returned", matchingRows.length()>0);
         JSONObject matchingRow = matchingRows.getJSONObject(0);
         checkKeys(matchingRow, "attributes", "Id");
-        assertEquals("Wrong row returned", SEARCH_ENTITY_ID, matchingRow.get("Id"));
     }
 
     /**
@@ -448,7 +444,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testDoubleConsume() throws Exception {
         RestResponse response = restClient.sendSync(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"));
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
         try {
         	response.consume();
         	response.consume();
@@ -459,54 +455,6 @@ public class RestClientTest extends InstrumentationTestCase {
     }
     
     /**
-     * Testing that WrappedRestRequest's url field is correct with various RestRequest objects
-     * @throws Exception
-     */
-    public void testWrappedRestRequestUrl() throws Exception {
-    	checkWrappedRestRequestUrl(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"), clientInfo.instanceUrl + "/services/data/" + TestCredentials.API_VERSION + "/sobjects/account/");
-		Map<String, Object> fields = new HashMap<String, Object>();
-        fields.put("name", "NewAccount");
-		checkWrappedRestRequestUrl(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), clientInfo.instanceUrl + "/services/data/" + TestCredentials.API_VERSION + "/sobjects/account");
-		checkWrappedRestRequestUrl(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), clientInfo.instanceUrl + "/services/data/" + TestCredentials.API_VERSION + "/sobjects/account/fakeId");
-    }
-
-    /**
-     * Testing that WrappedRestRequest's method field is correct with various RestRequest objects
-     * @throws Exception
-     */
-    public void testWrappedRestRequestMethod() throws Exception {
-    	checkWrappedRestRequestMethod(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"), Request.Method.GET);
-    	Map<String, Object> fields = new HashMap<String, Object>();
-        fields.put("name", "NewAccount");
-		checkWrappedRestRequestMethod(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), Request.Method.POST);
-		checkWrappedRestRequestMethod(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), RestMethod.MethodPATCH);
-    }
-
-    /**
-     * Testing that WrappedRestRequest's body field is correct with various RestRequest objects
-     * @throws Exception
-     */
-    public void testWrappedRestRequestBody() throws Exception {
-		checkWrappedRestRequestBody(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"), null);
-		Map<String, Object> fields = new HashMap<String, Object>();
-        fields.put("name", "NewAccount");
-		checkWrappedRestRequestBody(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), "{\"name\":\"NewAccount\"}".getBytes());
-		checkWrappedRestRequestBody(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), "{\"name\":\"NewAccount\"}".getBytes());
-    }
-
-    /**
-     * Testing that WrappedRestRequest's body content type field is correct with various RestRequest objects
-     * @throws Exception
-     */
-    public void testWrappedRestRequestBodyContentType() throws Exception {
-        checkWrappedRestRequestBodyContentType(RestRequest.getRequestForMetadata(TestCredentials.API_VERSION, "account"), "application/x-www-form-urlencoded; charset=UTF-8");
-        Map<String, Object> fields = new HashMap<String, Object>();
-        fields.put("name", "NewAccount");
-        checkWrappedRestRequestBodyContentType(RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields), "application/json; charset=UTF-8");
-        checkWrappedRestRequestBodyContentType(RestRequest.getRequestForUpdate(TestCredentials.API_VERSION, "account", "fakeId", fields), "application/json; charset=UTF-8");
-    }
-
-    /**
      * Testing doing a sync request against a non salesforce public api with a RestClient that uses an UnauthenticatedClientInfo
      * @return
      * @throws Exception
@@ -515,7 +463,7 @@ public class RestClientTest extends InstrumentationTestCase {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
         RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist", null);
         RestResponse response = unauthenticatedRestClient.sendSync(request);
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "artists");
         checkKeys(jsonResponse.getJSONObject("artists"), "href", "items", "limit", "next", "offset", "previous", "total");
@@ -530,32 +478,10 @@ public class RestClientTest extends InstrumentationTestCase {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
         RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist", null);
         RestResponse response = sendAsync(unauthenticatedRestClient, request);
-        checkResponse(response, HttpStatus.SC_OK, false);
+        checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
         checkKeys(jsonResponse, "artists");
         checkKeys(jsonResponse.getJSONObject("artists"), "href", "items", "limit", "next", "offset", "previous", "total");
-    }
-
-    /**
-     * Tests if the file upload API is working per design.
-     *
-     * @throws Exception
-     */
-    public void testFileUpload() throws Exception {
-        final String filename  = "MyFile.txt";
-        final File file = new File(Environment.getExternalStorageDirectory() + File.separator + filename);
-        if (!file.exists()) {
-            file.createNewFile();
-            final OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
-            out.write("This is a test!");
-            out.close();
-        }
-        assertTrue("File should exist", file.exists());
-        final RestResponse response = restClient.uploadFile(file, filename, "Test Title", "Test Description");
-        assertNotNull("Response should not be null", response);
-        assertEquals("Status code should be 201 CREATED", HttpStatus.SC_CREATED, response.getStatusCode());
-        file.delete();
-        assertFalse("File should not exist", file.exists());
     }
 
     /**
@@ -701,7 +627,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     private RestResponse getStreamTestResponse() throws IOException {
         final RestResponse response = restClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
-        assertEquals("Response code should be HTTP OK", response.getStatusCode(), HttpStatus.SC_OK);
+        assertEquals("Response code should be HTTP OK", response.getStatusCode(), HttpURLConnection.HTTP_OK);
         return response;
     }
 
@@ -746,30 +672,6 @@ public class RestClientTest extends InstrumentationTestCase {
         return responseBlockingQueue.poll(30, TimeUnit.SECONDS);
     }
 
-    private void checkWrappedRestRequestUrl(RestRequest restRequest, String expectedUrl) throws Exception {
-        WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
-        assertEquals("Wrong url", expectedUrl, request.getUrl());
-    }
-
-    private void checkWrappedRestRequestMethod(RestRequest restRequest, int expectedMethod) throws Exception {
-        WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
-        assertEquals("Wrong method", expectedMethod, request.getMethod());
-    }
-
-    private void checkWrappedRestRequestBody(RestRequest restRequest, byte[] expectedBody) throws Exception {
-    	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
-    	if (expectedBody == null) {
-    		assertNull("Body should be null", request.getBody());
-    	} else {
-    		assertEquals("Wrong body", new String(expectedBody), new String(request.getBody()));
-    	}
-    }
-
-    private void checkWrappedRestRequestBodyContentType(RestRequest restRequest, String expectedBodyContentType) throws Exception {
-    	WrappedRestRequest request = new RestClient.WrappedRestRequest(clientInfo, restRequest, null);
-		assertTrue("Wrong body content type", request.getBodyContentType().startsWith(expectedBodyContentType));
-    }    
-    
     /**
      * Helper method to create a account with a unique name and returns its name and id
      */

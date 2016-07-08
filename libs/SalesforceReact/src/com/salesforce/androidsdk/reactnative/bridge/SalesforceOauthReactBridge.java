@@ -33,28 +33,11 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.RestClient;
-
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
 
 public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
 
-    // Keys in credentials map
-    private static final String INSTANCE_URL = "instanceUrl";
-    private static final String LOGIN_URL = "loginUrl";
-    private static final String IDENTITY_URL = "identityUrl";
-    private static final String CLIENT_ID = "clientId";
-    private static final String ORG_ID = "orgId";
-    private static final String USER_ID = "userId";
-    private static final String REFRESH_TOKEN = "refreshToken";
-    private static final String ACCESS_TOKEN = "accessToken";
-    private static final String COMMUNITY_ID = "communityId";
-    private static final String COMMUNITY_URL = "communityUrl";
-
+    private static final String TAG = "SfOauthReactBridge";
 
     public SalesforceOauthReactBridge(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -66,41 +49,27 @@ public class SalesforceOauthReactBridge extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void logoutCurrentUser(ReadableMap args,
-                                  Callback successCallback, Callback errorCallback) {
-        UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
-        SalesforceSDKManager.getInstance().getUserAccountManager().signoutUser(account, null);
-
-        successCallback.invoke();
+    public void authenticate(ReadableMap args,
+                             Callback successCallback, Callback errorCallback) {
+        Log.i(TAG, "authenticate called");
+        final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
+        if (currentActivity != null) currentActivity.authenticate(successCallback, errorCallback);
     }
+
 
     @ReactMethod
     public void getAuthCredentials(ReadableMap args,
                                    Callback successCallback, Callback errorCallback) {
-        ClientManager clientManager = new ClientManager(getReactApplicationContext(), SalesforceSDKManager.getInstance().getAccountType(),
-                SalesforceSDKManager.getInstance().getLoginOptions(),
-                SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
-        RestClient client = clientManager.peekRestClient();
-
-        RestClient.ClientInfo clientInfo = client.getClientInfo();
-        try {
-            JSONObject data = new JSONObject();
-            data.put(ACCESS_TOKEN, client.getAuthToken());
-            data.put(REFRESH_TOKEN, client.getRefreshToken());
-            data.put(USER_ID, clientInfo.userId);
-            data.put(ORG_ID, clientInfo.orgId);
-            data.put(CLIENT_ID, clientInfo.clientId);
-            data.put(LOGIN_URL, clientInfo.loginUrl.toString());
-            data.put(IDENTITY_URL, clientInfo.identityUrl.toString());
-            data.put(INSTANCE_URL, clientInfo.instanceUrl.toString());
-            data.put(COMMUNITY_ID, clientInfo.communityId);
-            data.put(COMMUNITY_URL, clientInfo.communityUrl);
-
-            ReactBridgeHelper.invokeSuccess(successCallback, data);
-        }
-        catch (JSONException e) {
-            Log.e("OauthReactBridge", "getAuthCredentials", e);
-            errorCallback.invoke(e.toString());
-        }
+        Log.i(TAG, "getAuthCredentials called");
+        final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
+        if (currentActivity != null) currentActivity.getAuthCredentials(successCallback, errorCallback);
     }
+
+    @ReactMethod
+    public void logoutCurrentUser(ReadableMap args,
+                                  Callback successCallback, Callback errorCallback) {
+        final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
+        if (currentActivity != null) currentActivity.logout(successCallback);
+    }
+
 }

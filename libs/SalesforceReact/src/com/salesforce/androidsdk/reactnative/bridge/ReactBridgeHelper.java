@@ -98,7 +98,7 @@ public class ReactBridgeHelper  {
         return result;
     }
 
-    public static Map<String, String> toJavaStringMap(ReadableMap map) {
+    public static Map<String, String> toJavaStringStringMap(ReadableMap map) {
         Map<String, String> result = new HashMap<>();
         ReadableMapKeySetIterator iterator = map.keySetIterator();
         while (iterator.hasNextKey()) {
@@ -114,6 +114,24 @@ public class ReactBridgeHelper  {
         }
         return result;
     }
+
+    public static Map<String,Map<String,String>> toJavaStringMapMap(ReadableMap map) {
+        Map<String, Map<String, String>> result = new HashMap<>();
+        ReadableMapKeySetIterator iterator = map.keySetIterator();
+        while (iterator.hasNextKey()) {
+            String key = iterator.nextKey();
+            switch (map.getType(key)) {
+                case Map:
+                    result.put(key, toJavaStringStringMap(map.getMap(key)));
+                    break;
+                default:
+                    // Only expected maps
+                    break;
+            }
+        }
+        return result;
+    }
+
 
     public static List<String> toJavaStringList(ReadableArray array) {
         List<String> result = new ArrayList<>();

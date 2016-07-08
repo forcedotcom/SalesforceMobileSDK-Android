@@ -70,7 +70,16 @@ End If
 ' Copy the hard files to where their symlinks would be.
 Call CopySymlinkFiles()
 
-WScript.Echo vbCrLf & "Successfully initialized submodules and fixed symlinks."
+' Getting npm dependencies (for react-native)
+WScript.Echo "Getting npm dependencies"
+intReturnVal = objShell.Run("npm install react-native@0.27.2 react@15.1.0 --silent", 1, True)
+If intReturnVal <> 0 Then
+    WScript.Echo "Error getting npm dependencies!"
+    WScript.Quit 2
+End If
+
+
+WScript.Echo vbCrLf & "Successfully initialized submodules, fixed symlinks and downloaded npm dependencies."
 WScript.Quit 0
 
 

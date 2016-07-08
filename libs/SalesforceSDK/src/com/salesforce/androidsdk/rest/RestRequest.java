@@ -26,19 +26,17 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.protocol.HTTP;
-import org.json.JSONObject;
-
-import com.android.volley.Request;
-
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
 
 /**
  * RestRequest: Class to represent any REST request.
@@ -65,27 +63,21 @@ import com.android.volley.Request;
 public class RestRequest {
 
 	/**
+	 * application/json media type
+	 */
+	public static final MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json; charset=utf-8");
+
+	/**
+	 * utf_8 charset
+	 */
+	public static final String UTF_8 = StandardCharsets.UTF_8.name();
+
+	/**
 	 * Enumeration for all HTTP methods.
 	 *
 	 */
 	public enum RestMethod {
-		GET, POST, PUT, DELETE, HEAD, PATCH;
-		
-		// Methods missing from Request.Method
-		public static final int MethodPATCH = 4;
-		public static final int MethodHEAD = 5;
-		
-		public int asVolleyMethod() {
-			switch (this) {
-			case DELETE: return Request.Method.DELETE;
-			case GET:    return Request.Method.GET;
-			case POST:   return Request.Method.POST;
-			case PUT:    return Request.Method.PUT;
-			case HEAD:   return MethodHEAD; // not in Request.Method
-			case PATCH:  return MethodPATCH; // not in Request.Method 
-			default: return -2; // should never happen
-			}
-		}
+		GET, POST, PUT, DELETE, HEAD, PATCH
 	}
 	
 	/**
@@ -109,7 +101,7 @@ public class RestRequest {
 
 		private final String pathTemplate;
 
-		private RestAction(String uriTemplate) {
+		RestAction(String uriTemplate) {
 			this.pathTemplate = uriTemplate;
 		}
 		
@@ -120,7 +112,7 @@ public class RestRequest {
 
 	private final RestMethod method;
 	private final String path;
-	private final HttpEntity requestEntity;
+	private final RequestBody requestBody;
 	private final Map<String, String> additionalHttpHeaders;
 	
 	/**
@@ -128,16 +120,16 @@ public class RestRequest {
 	 * 
 	 * @param method				the HTTP method for the request (GET/POST/DELETE etc)
 	 * @param path					the URI path, this will automatically be resolved against the users current instance host.
-	 * @param requestEntity			the request body if there is one, can be null.
+	 * @param requestBody			the request body if there is one, can be null.
 	 */
-	public RestRequest(RestMethod method, String path, HttpEntity requestEntity) {
-		this(method, path, requestEntity, null);
+	public RestRequest(RestMethod method, String path, RequestBody requestBody) {
+		this(method, path, requestBody, null);
 	}
 
-	public RestRequest(RestMethod method, String path, HttpEntity requestEntity, Map<String, String> additionalHttpHeaders) {
+	public RestRequest(RestMethod method, String path, RequestBody requestBody, Map<String, String> additionalHttpHeaders) {
 		this.method = method;
 		this.path = path;
-		this.requestEntity = requestEntity;
+		this.requestBody = requestBody;
 		this.additionalHttpHeaders = additionalHttpHeaders;
 	}
 	
@@ -156,16 +148,19 @@ public class RestRequest {
 	}
 
 	/**
-	 * @return request HttpEntity 
+	 * @return request RequestBody
 	 */
-	public HttpEntity getRequestEntity() {
-		return requestEntity;
+	public RequestBody getRequestBody() {
+		return requestBody;
 	}
-	
+
+	/**
+	 * @return addition http headers
+	 */
 	public Map<String, String> getAdditionalHttpHeaders() {
 		return additionalHttpHeaders;
 	}
-	
+
 	@Override
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
@@ -242,7 +237,7 @@ public class RestRequest {
 	 * @throws UnsupportedEncodingException 
 	 */
 	public static RestRequest getRequestForCreate(String apiVersion, String objectType, Map<String, Object> fields) throws IOException  {
-		HttpEntity fieldsData = prepareFieldsData(fields); 
+		RequestBody fieldsData = prepareFieldsData(fields);
 		return new RestRequest(RestMethod.POST, RestAction.CREATE.getPath(apiVersion, objectType), fieldsData);	
 	}
 
@@ -261,7 +256,7 @@ public class RestRequest {
 		StringBuilder path = new StringBuilder(RestAction.RETRIEVE.getPath(apiVersion, objectType, objectId));
 		if (fieldList != null && fieldList.size() > 0) { 
 			path.append("?fields=");
-			path.append(URLEncoder.encode(toCsv(fieldList).toString(), HTTP.UTF_8));
+			path.append(URLEncoder.encode(toCsv(fieldList).toString(), UTF_8));
 		}
 
 		return new RestRequest(RestMethod.GET, path.toString(), null);
@@ -290,7 +285,7 @@ public class RestRequest {
 	 * @throws IOException 
 	 */
 	public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields) throws IOException  {
-		HttpEntity fieldsData = prepareFieldsData(fields);
+		RequestBody fieldsData = prepareFieldsData(fields);
 		return new RestRequest(RestMethod.PATCH, RestAction.UPDATE.getPath(apiVersion, objectType, objectId), fieldsData);	
 	}
 	
@@ -308,7 +303,7 @@ public class RestRequest {
 	 * @throws IOException 
 	 */
 	public static RestRequest getRequestForUpsert(String apiVersion, String objectType, String externalIdField, String externalId, Map<String, Object> fields) throws IOException  {
-		HttpEntity fieldsData = prepareFieldsData(fields); 
+		RequestBody fieldsData = prepareFieldsData(fields);
 		return new RestRequest(RestMethod.PATCH, RestAction.UPSERT.getPath(apiVersion, objectType, externalIdField, externalId), fieldsData);	
 	}
 	
@@ -337,7 +332,7 @@ public class RestRequest {
 	public static RestRequest getRequestForSearch(String apiVersion, String q) throws UnsupportedEncodingException  {
 		StringBuilder path = new StringBuilder(RestAction.SEARCH.getPath(apiVersion));
 		path.append("?q=");
-		path.append(URLEncoder.encode(q, HTTP.UTF_8));
+		path.append(URLEncoder.encode(q, UTF_8));
 		return new RestRequest(RestMethod.GET, path.toString(), null);	
 	}
 
@@ -353,7 +348,7 @@ public class RestRequest {
 	public static RestRequest getRequestForQuery(String apiVersion, String q) throws UnsupportedEncodingException  {
 		StringBuilder path = new StringBuilder(RestAction.QUERY.getPath(apiVersion));
 		path.append("?q=");
-		path.append(URLEncoder.encode(q, HTTP.UTF_8));
+		path.append(URLEncoder.encode(q, UTF_8));
 		return new RestRequest(RestMethod.GET, path.toString(), null);	
 	}
 
@@ -382,25 +377,23 @@ public class RestRequest {
 	public static RestRequest getRequestForSearchResultLayout(String apiVersion, List<String> objectList) throws UnsupportedEncodingException  {
 		StringBuilder path = new StringBuilder(RestAction.SEARCH_RESULT_LAYOUT.getPath(apiVersion));
 		path.append("?q=");
-		path.append(URLEncoder.encode(toCsv(objectList).toString(), HTTP.UTF_8));
+		path.append(URLEncoder.encode(toCsv(objectList).toString(), UTF_8));
 		return new RestRequest(RestMethod.GET, path.toString(), null);	
 	}	
 	
 	/**
-	 * Jsonize map and create a StringEntity out of it 
+	 * Jsonize map and create a RequestBody out of it
 	 * @param fields
 	 * @return
 	 * @throws UnsupportedEncodingException
 	 */
-	private static StringEntity prepareFieldsData(Map<String, Object> fields)
+	private static RequestBody prepareFieldsData(Map<String, Object> fields)
 			throws UnsupportedEncodingException {
 		if (fields == null) {
 			return null;
 		}
 		else {
-			StringEntity entity = new StringEntity(new JSONObject(fields).toString(), HTTP.UTF_8);
-			entity.setContentType("application/json"); 
-			return entity;
+			return RequestBody.create(MEDIA_TYPE_JSON, new JSONObject(fields).toString());
 		}
 	}
 	

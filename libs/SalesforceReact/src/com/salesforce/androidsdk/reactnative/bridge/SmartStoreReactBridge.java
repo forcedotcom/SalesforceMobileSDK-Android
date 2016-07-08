@@ -33,6 +33,7 @@ import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -106,15 +107,30 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		// Parse args
 		String soupName = args.getString(SOUP_NAME);
         final SmartStore smartStore = getSmartStore(args);
-		List ids = ReactBridgeHelper.toJavaList(args.getArray(ENTRY_IDS));
-		Long[] soupEntryIds = new Long[ids.size()];
-		for (int i=0; i<ids.size(); i++) {
-			soupEntryIds[i] = ((Double) ids.get(i)).longValue();
-		}
+		ReadableArray arraySoupEntryIds = (args.isNull(ENTRY_IDS) ? null : args.getArray(ENTRY_IDS));
+		ReadableMap mapQuerySpec = (args.isNull(QUERY_SPEC) ? null : args.getMap(QUERY_SPEC));
 
-		// Run remove
-		smartStore.delete(soupName, soupEntryIds);
-		successCallback.invoke();
+        // Run remove
+        try {
+            if (arraySoupEntryIds != null) {
+                List ids = ReactBridgeHelper.toJavaList(arraySoupEntryIds);
+                Long[] soupEntryIds = new Long[ids.size()];
+                for (int i = 0; i < ids.size(); i++) {
+                    soupEntryIds[i] = ((Double) ids.get(i)).longValue();
+                }
+                smartStore.delete(soupName, soupEntryIds);
+            } else {
+                JSONObject querySpecJson = new JSONObject(ReactBridgeHelper.toJavaMap(mapQuerySpec));
+                QuerySpec querySpec = QuerySpec.fromJSON(soupName, querySpecJson);
+                smartStore.deleteByQuery(soupName, querySpec);
+            }
+
+            successCallback.invoke();
+        }
+        catch (JSONException e) {
+            Log.e(LOG_TAG, "removeFromSoup", e);
+            errorCallback.invoke(e.toString());
+        }
 	}
 
 	/**
