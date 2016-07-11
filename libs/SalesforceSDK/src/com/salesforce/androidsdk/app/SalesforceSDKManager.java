@@ -86,7 +86,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "4.2.0.unstable";
+    public static final String SDK_VERSION = "4.3.0.unstable";
 
     /**
      * Default app name.
