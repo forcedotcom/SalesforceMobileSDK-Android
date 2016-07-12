@@ -260,7 +260,7 @@ public class UserAccountManager {
 	 * in ClientManager will return a RestClient instance for the new user.
 	 */
 	public void switchToNewUser() {
-		swtichToNewUserInternal(null, null);
+		switchToNewUserInternal(null, null);
 	}
 
 	/**
@@ -273,10 +273,10 @@ public class UserAccountManager {
 	 * @param url Instance/My domain URL.
 	 */
 	public void switchToNewUser(String jwt, String url) {
-		swtichToNewUserInternal(jwt, url);
+		switchToNewUserInternal(jwt, url);
 	}
 
-	private void swtichToNewUserInternal (String jwt, String url) {
+	private void switchToNewUserInternal (String jwt, String url) {
 		final Bundle reply = new Bundle();
 		final Intent i = new Intent(context, SalesforceSDKManager.getInstance().getLoginActivityClass());
 		i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
