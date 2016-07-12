@@ -3,7 +3,7 @@ apply plugin: 'com.android.library'
 
 dependencies {
   compile project(':libs:SalesforceSDK')
-  compile 'net.zetetic:android-database-sqlcipher:3.4.0+'
+  compile 'net.zetetic:android-database-sqlcipher:3.5.2'
 }
 
 android {
