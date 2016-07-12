@@ -247,8 +247,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 getContext().getString(SalesforceSDKManager.getInstance().getSalesforceR().stringGenericError(), exception.toString()),
                 Toast.LENGTH_LONG).show();
     }
-
-
+    
     /**
      * Tells the webview to load the authorization page.
      * We also update the window title, so its easier to
@@ -266,7 +265,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         this.doLoadPage(false);
     }
 
-    private void doLoadPage(Boolean jwtFlow) {
+    private void doLoadPage(boolean jwtFlow) {
         try {
             URI uri = getAuthorizationUrl(jwtFlow);
             callback.loadingLoginPage(loginOptions.loginUrl);
