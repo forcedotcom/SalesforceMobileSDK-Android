@@ -725,7 +725,8 @@ public class ClientManager {
         public String clientSecret;
         public String jwt;
 
-        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl, String oauthClientId, String[] oauthScopes) {
+        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
+                            String oauthClientId, String[] oauthScopes) {
             this.loginUrl = loginUrl;
             this.passcodeHash = passcodeHash;
             this.oauthCallbackUrl = oauthCallbackUrl;
@@ -739,13 +740,15 @@ public class ClientManager {
             bundle.putStringArray(OAUTH_SCOPES, oauthScopes);
         }
 
-        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl, String oauthClientId, String[] oauthScopes, String clientSecret) {
+        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
+                            String oauthClientId, String[] oauthScopes, String clientSecret) {
             this(loginUrl, passcodeHash, oauthCallbackUrl, oauthClientId, oauthScopes);
             this.clientSecret = clientSecret;
             bundle.putString(CLIENT_SECRET, clientSecret);
         }
 
-        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl, String oauthClientId, String[] oauthScopes, String clientSecret, String jwt) {
+        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
+                            String oauthClientId, String[] oauthScopes, String clientSecret, String jwt) {
             this(loginUrl, passcodeHash, oauthCallbackUrl, oauthClientId, oauthScopes, clientSecret);
             this.jwt = jwt;
             bundle.putString(JWT, jwt);

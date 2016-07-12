@@ -275,19 +275,23 @@ public class SalesforceSDKManager {
 	 * @return LoginOptions instance.
 	 */
 	public LoginOptions getLoginOptions() {
-		if (loginOptions == null) {
-			final BootConfig config = BootConfig.getBootConfig(context);
-			loginOptions = new LoginOptions(null, getPasscodeHash(), config.getOauthRedirectURI(),
-	        		config.getRemoteAccessConsumerKey(), config.getOauthScopes());
-		}
-		return loginOptions;
+		return getLoginOptionsInternal(null, null);
 	}
 
     public LoginOptions getLoginOptions(String jwt, String url) {
+        return getLoginOptionsInternal(jwt, url);
+    }
+
+    public LoginOptions getLoginOptionsInternal(String jwt, String url) {
         if (loginOptions == null) {
             final BootConfig config = BootConfig.getBootConfig(context);
-            loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
-                    config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null, jwt);
+            if (jwt != null) {
+                loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
+                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null, jwt);
+            } else {
+                loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
+                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null);
+            }
         }
         return loginOptions;
     }
