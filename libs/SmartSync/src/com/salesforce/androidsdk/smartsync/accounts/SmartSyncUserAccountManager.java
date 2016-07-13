@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.smartsync.accounts;
 
+import android.text.TextUtils;
+
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
@@ -63,8 +65,17 @@ public class SmartSyncUserAccountManager extends UserAccountManager {
 
 	@Override
 	public void switchToNewUser() {
-		super.switchToNewUser();
-    	final UserAccount userAccount = SmartSyncUserAccountManager.getInstance().getCurrentUser();
+        switchToNewUser(null, null);
+	}
+
+    @Override
+	public void switchToNewUser(String jwt, String url) {
+		if (TextUtils.isEmpty(jwt) || TextUtils.isEmpty(url)) {
+			super.switchToNewUser();
+		} else {
+			super.switchToNewUser(jwt, url);
+		}
+		final UserAccount userAccount = SmartSyncUserAccountManager.getInstance().getCurrentUser();
 		CacheManager.softReset(userAccount);
 		MetadataManager.reset(userAccount);
 	}

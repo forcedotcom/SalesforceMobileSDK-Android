@@ -43,6 +43,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -275,13 +276,22 @@ public class SalesforceSDKManager {
 	 * @return LoginOptions instance.
 	 */
 	public LoginOptions getLoginOptions() {
-		if (loginOptions == null) {
-			final BootConfig config = BootConfig.getBootConfig(context);
-			loginOptions = new LoginOptions(null, getPasscodeHash(), config.getOauthRedirectURI(),
-	        		config.getRemoteAccessConsumerKey(), config.getOauthScopes());
-		}
-		return loginOptions;
+		return getLoginOptions(null, null);
 	}
+
+    public LoginOptions getLoginOptions(String jwt, String url) {
+        if (loginOptions == null) {
+            final BootConfig config = BootConfig.getBootConfig(context);
+            if (TextUtils.isEmpty(jwt)) {
+                loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
+                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null);
+            } else {
+                loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
+                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null, jwt);
+            }
+        }
+        return loginOptions;
+    }
 
 	/**
 	 * For internal use only. Initializes required components.
@@ -1004,7 +1014,14 @@ public class SalesforceSDKManager {
     	return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(), true);
     }
 
-	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    /**
+     * @return ClientManager
+     */
+    public ClientManager getClientManager(String jwt, String url) {
+        return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(jwt, url), true);
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 	public void removeAllCookies() {
 
 		/*
