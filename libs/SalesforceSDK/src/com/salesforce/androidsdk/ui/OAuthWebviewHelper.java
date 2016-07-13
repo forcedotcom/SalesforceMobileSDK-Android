@@ -254,15 +254,12 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      * see which system you're logging in to
      */
     public void loadLoginPage() {
-
-        if (loginOptions.jwt == null || loginOptions.loginUrl == null) {
-            // Filling in loginUrl.
+        if (TextUtils.isEmpty(loginOptions.jwt)) {
             loginOptions.loginUrl = getLoginUrl();
-        }
-        if (loginOptions.jwt != null) {
+            doLoadPage(false);
+        } else {
             new SwapJWTForAccessTokenTask().execute(loginOptions);
         }
-        this.doLoadPage(false);
     }
 
     private void doLoadPage(boolean jwtFlow) {
