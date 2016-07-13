@@ -295,8 +295,7 @@ public class OAuth2 {
         FormBody.Builder formBodyBuilder = new FormBody.Builder()
                 .add(GRANT_TYPE, JWT_BEARER)
                 .add(ASSERTION, jwt);
-        TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServerUrl, formBodyBuilder);
-        return tr;
+        return makeTokenEndpointRequest(httpAccessor, loginServerUrl, formBodyBuilder);
     }
 
     /**

@@ -43,6 +43,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -275,22 +276,18 @@ public class SalesforceSDKManager {
 	 * @return LoginOptions instance.
 	 */
 	public LoginOptions getLoginOptions() {
-		return getLoginOptionsInternal(null, null);
+		return getLoginOptions(null, null);
 	}
 
     public LoginOptions getLoginOptions(String jwt, String url) {
-        return getLoginOptionsInternal(jwt, url);
-    }
-
-    public LoginOptions getLoginOptionsInternal(String jwt, String url) {
         if (loginOptions == null) {
             final BootConfig config = BootConfig.getBootConfig(context);
-            if (jwt != null) {
-                loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
-                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null, jwt);
-            } else {
+            if (TextUtils.isEmpty(jwt)) {
                 loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
                         config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null);
+            } else {
+                loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
+                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null, jwt);
             }
         }
         return loginOptions;
