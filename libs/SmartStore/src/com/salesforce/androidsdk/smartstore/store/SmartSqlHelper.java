@@ -32,9 +32,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
-
 import net.sqlcipher.database.SQLiteDatabase;
+
+import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 
 /**
  * SmartSqlHelper "smart" sql Helper

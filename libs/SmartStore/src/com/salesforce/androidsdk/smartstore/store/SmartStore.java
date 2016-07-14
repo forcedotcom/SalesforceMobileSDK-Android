@@ -79,7 +79,7 @@ public class SmartStore  {
     protected static final String LONG_OPERATIONS_STATUS_TABLE = "long_operations_status";
 
     // Columns of the soup index map table
-	protected static final String SOUP_NAME_COL = "soupName";
+    protected static final String SOUP_NAME_COL = "soupName";
     protected static final String PATH_COL = "path";
     protected static final String COLUMN_NAME_COL = "columnName";
     protected static final String COLUMN_TYPE_COL = "columnType";
@@ -120,14 +120,14 @@ public class SmartStore  {
      * Changes the encryption key on the smartstore.
      *
      * @param db Database object.
-	 * @param oldKey Old encryption key.
+     * @param oldKey Old encryption key.
      * @param newKey New encryption key.
      */
     public static synchronized void changeKey(SQLiteDatabase db, String oldKey, String newKey) {
     	synchronized(db) {
 	        if (newKey != null && !newKey.trim().equals("")) {
 	            db.execSQL("PRAGMA rekey = '" + newKey + "'");
-                DBOpenHelper.reEncryptAllFiles(db, oldKey, newKey);
+	            DBOpenHelper.reEncryptAllFiles(db, oldKey, newKey);
 	        }
     	}
     }
@@ -160,12 +160,12 @@ public class SmartStore  {
 	                    .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT")
 	                    .append(",").append(SOUP_NAME_COL).append(" TEXT");
 
-			// Create columns for all possible soup features
-			for (String feature : SoupSpec.ALL_FEATURES) {
-				sb.append(",").append(feature).append(" INTEGER DEFAULT 0");
-			}
+	        // Create columns for all possible soup features
+	        for (String feature : SoupSpec.ALL_FEATURES) {
+		        sb.append(",").append(feature).append(" INTEGER DEFAULT 0");
+	        }
 
-			sb.append(")");
+	        sb.append(")");
 	        db.execSQL(sb.toString());
 	        // Add index on soup_name column
 	        db.execSQL(String.format("CREATE INDEX %s on %s ( %s )", SOUP_ATTRS_TABLE + "_0", SOUP_ATTRS_TABLE, SOUP_NAME_COL));
@@ -245,10 +245,10 @@ public class SmartStore  {
      * Get database size
      */
     public int getDatabaseSize() {
-		int size =  (int) (new File(getDatabase().getPath()).length()); // XXX That cast will be trouble if the file is more than 2GB
-		if (dbOpenHelper instanceof DBOpenHelper) {
-			size += ((DBOpenHelper) dbOpenHelper).getSizeOfDir(null);
-		}
+    	int size =  (int) (new File(getDatabase().getPath()).length()); // XXX That cast will be trouble if the file is more than 2GB
+    	if (dbOpenHelper instanceof DBOpenHelper) {
+    		size += ((DBOpenHelper) dbOpenHelper).getSizeOfDir(null);
+    	}
     	return size;
     }
     
@@ -318,13 +318,14 @@ public class SmartStore  {
 				db.beginTransaction();
 				long soupId = DBHelper.getInstance(db).insert(db, SOUP_ATTRS_TABLE, soupMapValues);
 				soupTableName = getSoupTableName(soupId);
+
+				// Do the rest - create table / indexes
+				registerSoupUsingTableName(soupSpec, indexSpecs, soupTableName);
+
 				db.setTransactionSuccessful();
 			} finally {
 				db.endTransaction();
 			}
-
-			// Do the rest - create table / indexes
-			registerSoupUsingTableName(soupSpec, indexSpecs, soupTableName);
 		}
 	}
 
@@ -338,10 +339,10 @@ public class SmartStore  {
 	 *
 	 * @deprecated Use {@link #registerSoupUsingTableName(SoupSpec, IndexSpec[], String)} instead.
 	 */
-	@Deprecated
+    @Deprecated
     protected void registerSoupUsingTableName(String soupName, IndexSpec[] indexSpecs, String soupTableName) {
-		registerSoupUsingTableName(new SoupSpec(soupName), indexSpecs, soupTableName);
-	}
+    	registerSoupUsingTableName(new SoupSpec(soupName), indexSpecs, soupTableName);
+    }
 
 	/**
 	 * Helper method for registerSoup using soup spec
@@ -356,27 +357,27 @@ public class SmartStore  {
 		StringBuilder createFtsStmt = new StringBuilder();            // to create fts table
         List<String> createIndexStmts = new ArrayList<String>();      // to create indices on new soup table
         List<ContentValues> soupIndexMapInserts = new ArrayList<ContentValues>();  // to be inserted in soup index map table
-		IndexSpec[] indexSpecsToCache = new IndexSpec[indexSpecs.length];
-		List<String> columnsForFts = new ArrayList<String>();
+        IndexSpec[] indexSpecsToCache = new IndexSpec[indexSpecs.length];
+        List<String> columnsForFts = new ArrayList<String>();
 
-		String soupName = soupSpec.getSoupName();
+        String soupName = soupSpec.getSoupName();
 
         createTableStmt.append("CREATE TABLE ").append(soupTableName).append(" (")
                         .append(ID_COL).append(" INTEGER PRIMARY KEY AUTOINCREMENT");
 
-		if (!usesExternalStorage(soupName)) {
-			// If external storage is used, do not add column for soup in the db since it will be empty.
-			createTableStmt.append(", ").append(SOUP_COL).append(" TEXT");
-		}
+        if (!usesExternalStorage(soupName)) {
+	        // If external storage is used, do not add column for soup in the db since it will be empty.
+	        createTableStmt.append(", ").append(SOUP_COL).append(" TEXT");
+        }
 
-		createTableStmt.append(", ").append(CREATED_COL).append(" INTEGER")
+        createTableStmt.append(", ").append(CREATED_COL).append(" INTEGER")
                         .append(", ").append(LAST_MODIFIED_COL).append(" INTEGER");
 
-		final String createIndexFormat = "CREATE INDEX %s_%s_idx on %s ( %s )";
+        final String createIndexFormat = "CREATE INDEX %s_%s_idx on %s ( %s )";
 
-		for (String col : new String[]{CREATED_COL, LAST_MODIFIED_COL}) {
-			createIndexStmts.add(String.format(createIndexFormat, soupTableName, col, soupTableName, col));
-		}
+        for (String col : new String[]{CREATED_COL, LAST_MODIFIED_COL}) {
+            createIndexStmts.add(String.format(createIndexFormat, soupTableName, col, soupTableName, col));
+        }
 
         int i = 0;
         for (IndexSpec indexSpec : indexSpecs) {
@@ -438,9 +439,9 @@ public class SmartStore  {
                 DBHelper.getInstance(db).insert(db, SOUP_INDEX_MAP_TABLE, values);
             }
 
-			if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
-				((DBOpenHelper) dbOpenHelper).createExternalBlobsDirectory(soupTableName);
-			}
+            if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
+                ((DBOpenHelper) dbOpenHelper).createExternalBlobsDirectory(soupTableName);
+            }
 
             db.setTransactionSuccessful();
 
@@ -560,26 +561,26 @@ public class SmartStore  {
 			}
 			Cursor cursor = null;
 			try {
-				String[] projection;
-				if (usesExternalStorage(soupName)) {
-					projection = new String[] {ID_COL};
-				} else {
-					projection = new String[] {ID_COL, SOUP_COL};
-				}
+			    String[] projection;
+			    if (usesExternalStorage(soupName)) {
+			        projection = new String[] {ID_COL};
+			    } else {
+			        projection = new String[] {ID_COL, SOUP_COL};
+			    }
 			    cursor = DBHelper.getInstance(db).query(db, soupTableName, projection, null, null, null);
 	
 			    if (cursor.moveToFirst()) {
 			        do {
 			        	String soupEntryId = cursor.getString(0);
 			        	try {
-							JSONObject soupElt;
-							if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
-								soupElt = ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, Long.parseLong(soupEntryId), passcode);
-							} else {
-								String soupRaw = cursor.getString(1);
-								soupElt = new JSONObject(soupRaw);
-							}
-			            	ContentValues contentValues = new ContentValues();
+			                JSONObject soupElt;
+			                if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
+			                	soupElt = ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, Long.parseLong(soupEntryId), passcode);
+			                } else {
+			                	String soupRaw = cursor.getString(1);
+			                	soupElt = new JSONObject(soupRaw);
+			                }
+			                ContentValues contentValues = new ContentValues();
 			                projectIndexedPaths(soupElt, contentValues, indexSpecs, TypeGroup.value_extracted_to_column);
 			                DBHelper.getInstance(db).update(db, soupTableName, contentValues, ID_PREDICATE, soupEntryId + "");
 
@@ -683,10 +684,10 @@ public class SmartStore  {
 	                db.beginTransaction();
 	                DBHelper.getInstance(db).delete(db, SOUP_ATTRS_TABLE, SOUP_NAME_PREDICATE, soupName);
 	                DBHelper.getInstance(db).delete(db, SOUP_INDEX_MAP_TABLE, SOUP_NAME_PREDICATE, soupName);
-					if (dbOpenHelper instanceof DBOpenHelper) {
+	                if (dbOpenHelper instanceof DBOpenHelper) {
 						((DBOpenHelper) dbOpenHelper).removeExternalBlobsDirectory(soupTableName);
-					}
-					db.setTransactionSuccessful();
+	                }
+	                db.setTransactionSuccessful();
 
 	                // Remove from cache
 	                DBHelper.getInstance(db).removeFromCache(soupName);
@@ -738,7 +739,7 @@ public class SmartStore  {
 	 * Returns the entire SoupSpec of the given soup.
 	 * @param soupName
 	 * @return SoupSpec for given soup name.
-     */
+	 */
 	public SoupSpec getSoupSpec(String soupName) {
 		final SQLiteDatabase db = getDatabase();
 		List<String> features = DBHelper.getInstance(db).getFeatures(db, soupName);
@@ -773,14 +774,14 @@ public class SmartStore  {
 	                	}
 	            		// Exact/like/range queries
 	                	else {
-							if (cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE) >= 0) {
+	                		if (cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE) >= 0) {
 								// Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
 								String soupTableName = cursor.getString(cursor.getColumnIndex(SoupSpec.FEATURE_EXTERNAL_STORAGE));
 								Long soupEntryId = cursor.getLong(cursor.getColumnIndex(SmartStore.SOUP_ENTRY_ID));
 								results.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, passcode));
-							} else {
+	                		} else {
 								results.put(new JSONObject(cursor.getString(0)));
-							}
+	                		}
 	                	}
 	                } while (cursor.moveToNext());
 	            }
@@ -808,13 +809,13 @@ public class SmartStore  {
             }
             else if (valueType == Cursor.FIELD_TYPE_STRING) {
                 String raw = cursor.getString(i);
-				if (cursor.getColumnName(i).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
+                if (cursor.getColumnName(i).equals(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
                     // Presence of external storage column implies we must fetch from storage. Soup name and entry id values can be extracted
-					String soupTableName = cursor.getString(i);
-					Long soupEntryId = cursor.getLong(i + 1);
-					row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, passcode));
-					i++; // skip next column (_soupEntryId)
-				} else if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
+                    String soupTableName = cursor.getString(i);
+                    Long soupEntryId = cursor.getLong(i + 1);
+                    row.put(((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, passcode));
+                    i++; // skip next column (_soupEntryId)
+                } else if (cursor.getColumnName(i).endsWith(SOUP_COL)) {
                     row.put(new JSONObject(raw));
                     // Note: we could end up returning a string if you aliased the column
                 }
@@ -900,10 +901,10 @@ public class SmartStore  {
 	            contentValues.put(ID_COL, soupEntryId);
 	            contentValues.put(CREATED_COL, now);
 	            contentValues.put(LAST_MODIFIED_COL, now);
-				if (!usesExternalStorage(soupName)) {
-					contentValues.put(SOUP_COL, soupElt.toString());
-				}
-				projectIndexedPaths(soupElt, contentValues, indexSpecs, TypeGroup.value_extracted_to_column);
+	            if (!usesExternalStorage(soupName)) {
+	                contentValues.put(SOUP_COL, soupElt.toString());
+	            }
+	            projectIndexedPaths(soupElt, contentValues, indexSpecs, TypeGroup.value_extracted_to_column);
 
 	            // Inserting into database
 	            boolean success = DBHelper.getInstance(db).insert(db, soupTableName, contentValues) == soupEntryId;
@@ -918,12 +919,12 @@ public class SmartStore  {
 					db.insert(soupTableNameFts, null, contentValuesFts);
 				}
 
-				// Add to external storage if applicable
-				if (success && usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
+	            // Add to external storage if applicable
+	            if (success && usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
 					success = ((DBOpenHelper) dbOpenHelper).saveSoupBlob(soupTableName, soupEntryId, soupElt, passcode);
-				}
+	            }
 
-				// Commit if successful
+	            // Commit if successful
 	            if (success) {
 	                if (handleTx) {
 	                    db.setTransactionSuccessful();
@@ -1015,31 +1016,31 @@ public class SmartStore  {
 	        String soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
 	        if (soupTableName == null) throw new SmartStoreException("Soup: " + soupName + " does not exist");
 
-			JSONArray result = new JSONArray();
-			if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
-				for (long soupEntryId : soupEntryIds) {
-					JSONObject raw = ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, passcode);
-					if (raw != null) {
-						result.put(raw);
-					}
-				}
-			} else {
-				Cursor cursor = null;
-				try {
-					cursor = DBHelper.getInstance(db).query(db, soupTableName, new String[] { SOUP_COL }, null, null, getSoupEntryIdsPredicate(soupEntryIds), (String[]) null);
-					if (!cursor.moveToFirst()) {
-						return result;
-					}
-					do {
-						String raw = cursor.getString(cursor.getColumnIndex(SOUP_COL));
-						result.put(new JSONObject(raw));
-					}
-					while (cursor.moveToNext());
-				} finally {
-					safeClose(cursor);
-				}
-			}
-			return result;
+	        JSONArray result = new JSONArray();
+	        if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
+		        for (long soupEntryId : soupEntryIds) {
+			        JSONObject raw = ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, soupEntryId, passcode);
+			        if (raw != null) {
+				        result.put(raw);
+			        }
+		        }
+	        } else {
+		        Cursor cursor = null;
+		        try {
+			        cursor = DBHelper.getInstance(db).query(db, soupTableName, new String[] { SOUP_COL }, null, null, getSoupEntryIdsPredicate(soupEntryIds), (String[]) null);
+			        if (!cursor.moveToFirst()) {
+				        return result;
+			        }
+			        do {
+				        String raw = cursor.getString(cursor.getColumnIndex(SOUP_COL));
+				        result.put(new JSONObject(raw));
+			        }
+			        while (cursor.moveToNext());
+		        } finally {
+			        safeClose(cursor);
+		        }
+	        }
+	        return result;
     	}
     }
 
@@ -1301,9 +1302,9 @@ public class SmartStore  {
 			}
 			try {
                 String subQuerySql = String.format("SELECT %s FROM (%s) LIMIT %d", ID_COL, convertSmartSql(querySpec.idsSmartSql), querySpec.pageSize);
-				String[] args = querySpec.getArgs();
+                String[] args = querySpec.getArgs();
 
-				if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
+                if (usesExternalStorage(soupName) && dbOpenHelper instanceof DBOpenHelper) {
 					// Query list of ids and remove them from external storage
 					Cursor c = null;
 					try {
@@ -1321,9 +1322,9 @@ public class SmartStore  {
 							c.close();
 						}
 					}
-				}
+                }
 
-				db.delete(soupTableName, buildInStatement(ID_COL, subQuerySql), args);
+                db.delete(soupTableName, buildInStatement(ID_COL, subQuerySql), args);
 
 				if (hasFTS(soupName)) {
                     db.delete(soupTableName + FTS_SUFFIX, buildInStatement(ROWID_COL, subQuerySql), args);

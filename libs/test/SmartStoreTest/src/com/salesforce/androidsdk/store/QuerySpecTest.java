@@ -26,9 +26,9 @@
  */
 package com.salesforce.androidsdk.store;
 
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-
 import android.test.InstrumentationTestCase;
+
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 
 /**
  * Test class for QuerySpecTest

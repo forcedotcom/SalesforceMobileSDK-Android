@@ -981,7 +981,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
         assertFalse("Soup third_test_soup should not exist", store.hasSoup(THIRD_TEST_SOUP));
 
         // Register
-		registerSoup(store, THIRD_TEST_SOUP, new IndexSpec[] { new IndexSpec("key", type), new IndexSpec("value", type) });
+        registerSoup(store, THIRD_TEST_SOUP, new IndexSpec[] { new IndexSpec("key", type), new IndexSpec("value", type) });
         assertTrue("Register soup call failed", store.hasSoup(THIRD_TEST_SOUP));
 
 

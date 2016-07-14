@@ -382,7 +382,7 @@ public class SmartStorePlugin extends ForcePlugin {
 
 		final SmartStore smartStore = getSmartStore(arg0);
 
-		// Get soup spec
+		// Get soup spec if available
 		JSONObject soupSpecObj = arg0.optJSONObject(SOUP_SPEC);
 		if (soupSpecObj != null) {
 
@@ -405,15 +405,13 @@ public class SmartStorePlugin extends ForcePlugin {
 			smartStore.registerSoupWithSpec(new SoupSpec(soupName, features), indexSpecs);
 		} else {
 
-			// Get soup name
-			soupName = arg0.isNull(SOUP_NAME) ? null : arg0.getString(SOUP_NAME);
-
 			// Run register soup
 			smartStore.registerSoup(soupName, indexSpecs);
 		}
 
 		callbackContext.success(soupName);
 	}
+
 	/**
 	 * Native implementation of pgQuerySoup
 	 * @param args
@@ -610,11 +608,11 @@ public class SmartStorePlugin extends ForcePlugin {
 		callbackContext.success(indexSpecsJson);
 	}
 
-	/**
-	 * Native implementation of pgGetSoupSpec
-	 * @param args
-	 * @param callbackContext
-	 * @throws JSONException
+    /**
+     * Native implementation of pgGetSoupSpec
+     * @param args
+     * @param callbackContext
+     * @throws JSONException
      */
 	private void getSoupSpec(JSONArray args, CallbackContext callbackContext) throws JSONException {
 		// Parse args

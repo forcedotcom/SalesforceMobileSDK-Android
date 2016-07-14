@@ -56,7 +56,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	// 1 --> up until 2.3
 	// 2 --> starting at 2.3 (new meta data table long_operations_status)
-	// 3 --> starting at 3.1.1 (soup_names table changes to soup_attr)
+	// 3 --> starting at 4.3 (soup_names table changes to soup_attr)
 	public static final int DB_VERSION = 3;
 	public static final String DEFAULT_DB_NAME = "smartstore";
 	public static final String SOUP_ELEMENT_PREFIX = "soupelt_";
@@ -470,7 +470,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @param db DB containing external storage (if applicable).
 	 * @param oldKey Old key with which to decrypt the existing data.
 	 * @param newKey New key with which to encrypt the existing data.
-     */
+	 */
 	public static void reEncryptAllFiles(SQLiteDatabase db, String oldKey, String newKey) {
 		StringBuilder path = new StringBuilder(db.getPath()).append(EXTERNAL_BLOBS_SUFFIX);
 		File dir = new File(path.toString());

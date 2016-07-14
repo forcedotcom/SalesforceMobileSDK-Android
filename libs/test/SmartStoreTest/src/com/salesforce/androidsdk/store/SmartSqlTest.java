@@ -65,19 +65,21 @@ public class SmartSqlTest extends SmartStoreTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 		
-		registerSoup(store, EMPLOYEES_SOUP, new IndexSpec[] {   // should be TABLE_1
+		store.registerSoup(EMPLOYEES_SOUP, new IndexSpec[] {   // should be TABLE_1
 				new IndexSpec(FIRST_NAME, Type.string),        // should be TABLE_1_0
 				new IndexSpec(LAST_NAME, Type.string),         // should be TABLE_1_1
 				new IndexSpec(DEPT_CODE, Type.string),         // should be TABLE_1_2
 				new IndexSpec(EMPLOYEE_ID, Type.string),       // should be TABLE_1_3
 				new IndexSpec(MANAGER_ID, Type.string),        // should be TABLE_1_4
-				new IndexSpec(SALARY, Type.integer)});
+				new IndexSpec(SALARY, Type.integer),           // should be TABLE_1_5
+				new IndexSpec(EDUCATION, Type.json1)});
 
 		
-		registerSoup(store, DEPARTMENTS_SOUP, new IndexSpec[] { // should be TABLE_2
+		store.registerSoup(DEPARTMENTS_SOUP, new IndexSpec[] { // should be TABLE_2
 				new IndexSpec(DEPT_CODE, Type.string),         // should be TABLE_2_0
 				new IndexSpec(NAME, Type.string),              // should be TABLE_2_1
-				new IndexSpec(BUDGET, Type.integer)});
+				new IndexSpec(BUDGET, Type.integer),           // should be TABLE_2_2
+				new IndexSpec(BUILDING, Type.json1)});
 	}
 	
 	/**
@@ -156,6 +158,23 @@ public class SmartSqlTest extends SmartStoreTestCase {
 				// Expected
 			}
 		}
+	}
+
+	public void testConvertSmartSqlWithJSON1() {
+		assertEquals("select TABLE_1_1, json_extract(soup, '$.education') from TABLE_1 where json_extract(soup, '$.education') = 'MIT'",
+				store.convertSmartSql("select {employees:lastName}, {employees:education} from {employees} where {employees:education} = 'MIT'"));
+	}
+
+	public void testConvertSmartSqlWithJSON1AndTableQualifiedColumn() {
+		assertEquals("select json_extract(TABLE_1.soup, '$.education') from TABLE_1 order by json_extract(TABLE_1.soup, '$.education')",
+				store.convertSmartSql("select {employees}.{employees:education} from {employees} order by {employees}.{employees:education}"));
+	}
+
+	public void testConvertSmartSqlWithJSON1AndTableAliases() {
+		assertEquals("select json_extract(e.soup, '$.education'), json_extract(soup, '$.building') from TABLE_1 as e, TABLE_2",
+				store.convertSmartSql("select e.{employees:education}, {departments:building} from {employees} as e, {departments}"));
+
+		// XXX join query with json1 will only run if all the json1 columns are qualified by table or alias
 	}
 
 	/**
