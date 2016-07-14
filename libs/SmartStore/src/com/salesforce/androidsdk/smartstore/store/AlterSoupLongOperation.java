@@ -293,7 +293,7 @@ public class AlterSoupLongOperation extends LongOperation {
 			db.beginTransaction();
 
 			// Create new table for soup
-			store.registerSoupUsingTableName(soupName, newIndexSpecs, soupTableName);
+			store.registerSoupUsingTableName(new SoupSpec(soupName, store.usesExternalStorage(soupName) ? SoupSpec.FEATURE_EXTERNAL_STORAGE : null), newIndexSpecs, soupTableName);
 
 			// Update row in alter status table
 			updateLongOperationDbRow(AlterSoupStep.REGISTER_SOUP_USING_TABLE_NAME);
@@ -316,7 +316,7 @@ public class AlterSoupLongOperation extends LongOperation {
 			this.newIndexSpecs = store.getSoupIndexSpecs(soupName);
 		
 			// Move data (core columns + indexed paths that we are still indexing)
-			copyOldData();
+			copyOldData(store.usesExternalStorage(soupName));
 
 			// Update row in alter status table 
 			updateLongOperationDbRow(AlterSoupStep.COPY_TABLE);
@@ -443,9 +443,12 @@ public class AlterSoupLongOperation extends LongOperation {
 	
 	/**
 	 * Helper method
+	 *
+	 * @param usesExternalStorage True if the soup uses external storage, false otherwise.
+	 *
 	 * @return insert statement to copy data from soup old backing table to soup new backing table
 	 */
-	private void copyOldData() {
+	private void copyOldData(boolean usesExternalStorage) {
 		Map<String, IndexSpec> mapOldSpecs = IndexSpec.mapForIndexSpecs(oldIndexSpecs);
 		Map<String, IndexSpec> mapNewSpecs = IndexSpec.mapForIndexSpecs(newIndexSpecs);
 
@@ -459,7 +462,13 @@ public class AlterSoupLongOperation extends LongOperation {
 		List<String> newColumns = new ArrayList<String>();
 
 		// Adding core columns
-		for (String column : new String[] {SmartStore.ID_COL, SmartStore.SOUP_COL, SmartStore.CREATED_COL, SmartStore.LAST_MODIFIED_COL}) {
+		String[] columns;
+		if (usesExternalStorage) {
+			columns = new String[] {SmartStore.ID_COL, SmartStore.CREATED_COL, SmartStore.LAST_MODIFIED_COL};
+		} else {
+			columns = new String[] {SmartStore.ID_COL, SmartStore.SOUP_COL, SmartStore.CREATED_COL, SmartStore.LAST_MODIFIED_COL};
+		}
+		for (String column : columns) {
 			oldColumns.add(column);
 			newColumns.add(column);
 		}

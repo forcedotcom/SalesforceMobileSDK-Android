@@ -98,7 +98,8 @@ public class SmartSqlHelper  {
 			String soupTableName = getSoupTableNameForSmartSql(db, soupName, position);
 			boolean tableQualified = smartSql.charAt(position-1) == '.';
 			String tableQualifier = tableQualified ? "" : soupTableName + ".";
-			
+			boolean useExternalStorage = DBHelper.getInstance(db).getFeatures(db, soupName).contains(SoupSpec.FEATURE_EXTERNAL_STORAGE);
+
 			// {soupName}
 			if (parts.length == 1) {
 				matcher.appendReplacement(sql, soupTableName);
@@ -107,7 +108,13 @@ public class SmartSqlHelper  {
 
 				// {soupName:_soup}
 				if (path.equals(SOUP)) {
-					matcher.appendReplacement(sql, tableQualifier + SmartStore.SOUP_COL);
+					if (useExternalStorage) {
+						// Since soup column doesn't exist, create new columns for the soup name and soup entry id so they can be retrieved from storage
+						String newColumn = String.format("'%s' as '%s', %s%s as '%s'", soupTableName, SoupSpec.FEATURE_EXTERNAL_STORAGE, tableQualifier, SmartStore.ID_COL, SmartStore.SOUP_ENTRY_ID);
+						matcher.appendReplacement(sql, newColumn);
+					} else {
+						matcher.appendReplacement(sql, tableQualifier + SmartStore.SOUP_COL);
+					}
 				}
 				// {soupName:_soupEntryId}
 				else if (path.equals(SmartStore.SOUP_ENTRY_ID)) {
