@@ -168,5 +168,18 @@ public class IndexSpec {
 		}
 		return false;
 	}
-	
+
+	/**
+	 * @param indexSpecs
+	 * @return true if at least one of the indexSpec is of type json1
+	 */
+	public static boolean hasJSON1(IndexSpec[] indexSpecs) {
+		for (IndexSpec indexSpec : indexSpecs) {
+			if (indexSpec.type == Type.json1) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 }
