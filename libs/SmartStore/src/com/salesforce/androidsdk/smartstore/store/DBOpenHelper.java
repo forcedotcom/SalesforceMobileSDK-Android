@@ -123,7 +123,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static DBOpenHelper getOpenHelper(Context ctx, String dbNamePrefix,
 			UserAccount account, String communityId) {
 		final StringBuffer dbName = new StringBuffer(dbNamePrefix);
-		dataDir = ctx.getApplicationInfo().dataDir;
 
 		// If we have account information, we will use it to create a database suffix for the user.
 		if (account != null) {
@@ -146,6 +145,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		super(context, dbName, null, DB_VERSION, new DBHook());
 		this.loadLibs(context);
 		this.dbName = dbName;
+		dataDir = context.getApplicationInfo().dataDir;
 	}
 
 	 protected void loadLibs(Context context) {
@@ -460,7 +460,11 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @return True if directory was removed, false otherwise.
 	 */
 	public boolean removeExternalBlobsDirectory(String soupTableName) {
-		return removeAllFiles(new File(getExternalSoupBlobsPath(soupTableName)));
+		if (dataDir != null) {
+			return removeAllFiles(new File(getExternalSoupBlobsPath(soupTableName)));
+		} else {
+			return false;
+		}
 	}
 
 
