@@ -52,7 +52,7 @@ import java.util.List;
  */
 public class SmartStoreLoadTest extends SmartStoreTestCase {
 
-    private static final String TEST_SOUP = "test_soup";
+    protected static final String TEST_SOUP = "test_soup";
 
     private static final int NUMBER_ENTRIES = 1000;
     private static final int NUMBER_ENTRIES_PER_BATCH = 100;
@@ -120,12 +120,12 @@ public class SmartStoreLoadTest extends SmartStoreTestCase {
         queryEntries();
     }
 
-    private void setupSoup(String soupName, int numberIndexes, Type indexType) {
+    protected void setupSoup(String soupName, int numberIndexes, Type indexType) {
         IndexSpec[] indexSpecs = new IndexSpec[numberIndexes];
         for (int indexNumber=0; indexNumber<numberIndexes; indexNumber++) {
             indexSpecs[indexNumber] = new IndexSpec("k_" + indexNumber, indexType);
         }
-        store.registerSoup(soupName, indexSpecs);
+        registerSoup(store, soupName, indexSpecs);
         Log.i(getTag(), String.format("Creating table with %d %s indexes", numberIndexes, indexType));
     }
 
