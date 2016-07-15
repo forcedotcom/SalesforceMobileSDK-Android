@@ -120,7 +120,7 @@ public class Encryptor {
      * @return decrypted data
      */
     public static String decrypt(String data, String key) {
-        if (key == null || data == null) {
+        if (key == null || key.isEmpty() || data == null) {
             return data;
         }
         try {
@@ -145,7 +145,7 @@ public class Encryptor {
      * @return base64, aes256 encrypted data
      */
     public static String encrypt(String data, String key) {
-        if (key == null || data == null) {
+        if (key == null || key.isEmpty() || data == null) {
             return data;
         }
         try {
