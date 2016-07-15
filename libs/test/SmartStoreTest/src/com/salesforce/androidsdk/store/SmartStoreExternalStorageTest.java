@@ -68,6 +68,21 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 	}
 
 	/**
+	 * Ensure that a soup cannot be using external storage and JSON1
+	 */
+	public void testRegisterSoupWithExternalStorageAndJSON1() {
+		assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
+		try {
+			registerSoup(store, OTHER_TEST_SOUP, new IndexSpec[]{new IndexSpec("lastName", Type.json1), new IndexSpec("address.city", Type.string)});
+			fail("Registering soup with external storage and json1 should have thrown an exception");
+		}
+		catch (SmartStore.SmartStoreException e) {
+			assertEquals("Wrong exception", "Can't have JSON1 index specs in externally stored soup:" + OTHER_TEST_SOUP, e.getMessage());
+		}
+		assertFalse("Register soup call should have failed", store.hasSoup(OTHER_TEST_SOUP));
+	}
+
+	/**
 	 * Ensure data is still accessible after changing key
 	 */
 	public void testChangeKey() throws JSONException {
