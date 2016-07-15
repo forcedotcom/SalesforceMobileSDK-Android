@@ -27,12 +27,9 @@
 package com.salesforce.androidsdk.store;
 
 
-import java.io.File;
+import android.database.Cursor;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
+import com.google.common.primitives.Longs;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -45,7 +42,13 @@ import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
-import android.database.Cursor;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Tests for encrypted smart store with external storage
@@ -233,4 +236,16 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 										   QuerySpec.buildAllQuerySpec(TEST_SOUP, "value", Order.ascending, 10),
 										   0, true, "SCAN", soupElt1Created, soupElt1Upserted, soupElt2Created, soupElt3Created);
 	}
+
+    @Override
+    public void testDeleteByQuery() throws JSONException {
+        List<Long> idsDeleted = new ArrayList<>();
+        List<Long> idsNotDeleted = new ArrayList<>();
+
+        tryDeleteByQuery(idsDeleted, idsNotDeleted);
+
+        // Check file system
+        checkFileSystem(TEST_SOUP, Longs.toArray(idsDeleted), false);
+        checkFileSystem(TEST_SOUP, Longs.toArray(idsNotDeleted), true);
+    }
 }

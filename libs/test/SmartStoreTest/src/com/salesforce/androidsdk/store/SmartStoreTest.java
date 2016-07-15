@@ -26,12 +26,8 @@
  */
 package com.salesforce.androidsdk.store;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import android.database.Cursor;
+import android.os.SystemClock;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -44,8 +40,14 @@ import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
-import android.database.Cursor;
-import android.os.SystemClock;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Main test suite for SmartStore
@@ -592,6 +594,16 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 * @throws JSONException
 	 */
 	public void testDeleteByQuery() throws JSONException {
+        tryDeleteByQuery(null, null);
+	}
+
+	/**
+     * Testing delete: create soup elements, delete by query and check database directly that deleted entries are in fact gone
+     * Populate idsDeleted and idsNotDeleted if not null
+	 * @param idsDeleted
+     * @param idsNotDeleted
+     */
+	protected void tryDeleteByQuery(List<Long> idsDeleted, List<Long> idsNotDeleted) throws JSONException {
 		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1'}");
 		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2'}");
 		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3'}");
@@ -600,15 +612,19 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
 		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
 
+		long id1 = soupElt1Created.getLong(SmartStore.SOUP_ENTRY_ID);
+		long id2 = soupElt2Created.getLong(SmartStore.SOUP_ENTRY_ID);
+		long id3 = soupElt3Created.getLong(SmartStore.SOUP_ENTRY_ID);
+
 		QuerySpec querySpec = QuerySpec.buildRangeQuerySpec(TEST_SOUP, "key", "ka1", "ka2", "key", Order.ascending, 2);
 
 		store.deleteByQuery(TEST_SOUP, querySpec);
 
-        JSONArray soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Created));
+		JSONArray soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Created));
 		JSONArray soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created));
 		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created)).getJSONObject(0);
 
-        assertEquals("Should be empty", 0, soupElt1Retrieved.length());
+		assertEquals("Should be empty", 0, soupElt1Retrieved.length());
 		assertEquals("Should be empty", 0, soupElt2Retrieved.length());
 		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt3Created, soupElt3Retrieved);
 
@@ -624,6 +640,18 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		} finally {
 			safeClose(c);
 		}
+
+
+        // Populate idsDeleted
+        if (idsDeleted != null) {
+            idsDeleted.add(id1);
+            idsDeleted.add(id2);
+        }
+
+        // Populate idsNotDeleted
+        if (idsNotDeleted != null) {
+            idsNotDeleted.add(id3);
+        }
 	}
 
 	/**
