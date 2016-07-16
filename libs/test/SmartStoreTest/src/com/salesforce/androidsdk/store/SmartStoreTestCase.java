@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.store;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -190,6 +191,18 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
         assertTrue("Wrong query plan:" + detail, detail.startsWith(expectedDetailPrefix));
     }
 
+	public void checkFileSystem(String soupName, long[] expectedIds, boolean shouldExist) {
+		String soupTableName = getSoupTableName(soupName);
+		for (long expectedId : expectedIds) {
+			File file = ((DBOpenHelper) dbOpenHelper).getSoupBlobFile(soupTableName, expectedId);
+			if (shouldExist) {
+				assertTrue("External file for " + expectedId + " should exist", file.exists());
+			}
+			else {
+				assertFalse("External file for " + expectedId + " should not exist", file.exists());
+			}
+		}
+	}
 
 	/**
 	 * Close cursor if not null

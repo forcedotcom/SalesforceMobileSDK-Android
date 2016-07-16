@@ -302,6 +302,7 @@ public class SmartStore  {
 			String soupName = soupSpec.getSoupName();
 			if (soupName == null) throw new SmartStoreException("Bogus soup name:" + soupName);
 			if (indexSpecs.length == 0) throw new SmartStoreException("No indexSpecs specified for soup: " + soupName);
+			if (IndexSpec.hasJSON1(indexSpecs) && soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE))  throw new SmartStoreException("Can't have JSON1 index specs in externally stored soup:" + soupName);
 			if (hasSoup(soupName)) return; // soup already exist - do nothing
 
 			// First get a table name

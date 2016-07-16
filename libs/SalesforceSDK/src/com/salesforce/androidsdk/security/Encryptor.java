@@ -43,6 +43,7 @@ import javax.crypto.spec.SecretKeySpec;
 import android.app.Service;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 
@@ -116,11 +117,11 @@ public class Encryptor {
     /**
      * Decrypt data with key using aes256
      * @param data
-     * @param key base64 encoded 256 bits key or null to leave data unchanged
+     * @param key base64 encoded 256 bits key or null/"" to leave data unchanged
      * @return decrypted data
      */
     public static String decrypt(String data, String key) {
-        if (key == null || data == null) {
+        if (TextUtils.isEmpty(key) || data == null) {
             return data;
         }
         try {
@@ -141,11 +142,11 @@ public class Encryptor {
     /**
      * Encrypt data with key using aes256
      * @param data
-     * @param key base64 encoded 256 bits key or null to leave data unchanged
+     * @param key base64 encoded 256 bits key or null/"" to leave data unchanged
      * @return base64, aes256 encrypted data
      */
     public static String encrypt(String data, String key) {
-        if (key == null || data == null) {
+        if (TextUtils.isEmpty(key) || data == null) {
             return data;
         }
         try {
