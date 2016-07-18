@@ -111,7 +111,7 @@ public class SmartStore  {
 	// Backing database
 	protected SQLiteDatabase dbLocal;
 	protected SQLiteOpenHelper dbOpenHelper;
-	private String passcode;
+	protected String passcode;
 
 	// FTS extension to use
 	protected FtsExtension ftsExtension = FtsExtension.fts5;
@@ -508,7 +508,7 @@ public class SmartStore  {
 	}
     
 	/**
-	 * Alter soup
+	 * Alter soup using only soup name without extra soup features.
 	 * 
 	 * @param soupName
 	 * @param indexSpecs array of index specs
@@ -517,7 +517,20 @@ public class SmartStore  {
 	 */
 	public void alterSoup(String soupName, IndexSpec[] indexSpecs,
 			boolean reIndexData) throws JSONException {
-		AlterSoupLongOperation operation = new AlterSoupLongOperation(this, soupName, indexSpecs, reIndexData);
+		alterSoup(new SoupSpec(soupName), indexSpecs, reIndexData);
+	}
+
+	/**
+	 * Alter soup with new soup spec.
+	 *
+	 * @param soupSpec
+	 * @param indexSpecs array of index specs
+	 * @param reIndexData
+	 * @throws JSONException
+	 */
+	public void alterSoup(SoupSpec soupSpec, IndexSpec[] indexSpecs,
+			boolean reIndexData) throws JSONException {
+		AlterSoupLongOperation operation = new AlterSoupLongOperation(this, soupSpec, indexSpecs, reIndexData);
 		operation.run();
 	}
 
