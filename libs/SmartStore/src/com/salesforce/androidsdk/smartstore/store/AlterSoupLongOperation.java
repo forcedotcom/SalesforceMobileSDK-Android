@@ -141,12 +141,12 @@ public class AlterSoupLongOperation extends LongOperation {
     		// Setting soupName field
     		this.soupName = newSoupSpec.getSoupName();
 
-			// Setting new soup spec
-			this.newSoupSpec = newSoupSpec;
+    		// Setting new soup spec
+    		this.newSoupSpec = newSoupSpec;
 
-			// Get old soup spec
-			List<String> features = DBHelper.getInstance(db).getFeatures(db, soupName);
-			this.oldSoupSpec = new SoupSpec(soupName, features.size() == 0 ? null : features.toArray(new String[features.size()]));
+    		// Get old soup spec
+    		List<String> features = DBHelper.getInstance(db).getFeatures(db, soupName);
+    		this.oldSoupSpec = new SoupSpec(soupName, features.size() == 0 ? null : features.toArray(new String[features.size()]));
 
 			// Get backing table for soup
 	        this.soupTableName = DBHelper.getInstance(db).getSoupTableName(db, soupName);
@@ -439,8 +439,8 @@ public class AlterSoupLongOperation extends LongOperation {
 		JSONObject details = new JSONObject();
     	details.put(SOUP_NAME, soupName);
     	details.put(SOUP_TABLE_NAME, soupTableName);
-		details.put(OLD_SOUP_SPEC, oldSoupSpec.toJSON());
-		details.put(NEW_SOUP_SPEC, newSoupSpec.toJSON());
+    	details.put(OLD_SOUP_SPEC, oldSoupSpec.toJSON());
+    	details.put(NEW_SOUP_SPEC, newSoupSpec.toJSON());
     	details.put(OLD_INDEX_SPECS, IndexSpec.toJSON(oldIndexSpecs));
     	details.put(NEW_INDEX_SPECS, IndexSpec.toJSON(newIndexSpecs));
     	details.put(RE_INDEX_DATA, reIndexData);
