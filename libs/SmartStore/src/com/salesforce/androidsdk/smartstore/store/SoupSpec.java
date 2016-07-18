@@ -47,6 +47,9 @@ public class SoupSpec {
     private String soupName;
     private List<String> features;
 
+    private static final String NAME = "name";
+    private static final String FEATURES = "features";
+
     /**
      * Creates a soup spec without any features.
      *
@@ -96,8 +99,29 @@ public class SoupSpec {
      */
     public JSONObject toJSON() throws JSONException {
         JSONObject result = new JSONObject();
-        result.put("name", soupName);
-        result.put("features", new JSONArray(features));
+        result.put(NAME, soupName);
+        result.put(FEATURES, new JSONArray(features));
         return result;
+    }
+
+    /**
+     * Constructs a soup spec from JSON
+     *
+     * @param json JSON with which to construct soup spec
+     * @return Soup Spec from given JSON
+     * @throws JSONException
+     */
+    public static SoupSpec fromJSON(JSONObject json) throws JSONException {
+        JSONArray jsonArray = json.optJSONArray(FEATURES);
+        if (jsonArray != null) {
+            String[] featureArray = new String[jsonArray.length()];
+            for (int i = 0; i < jsonArray.length(); i++) {
+                featureArray[i] = (String) jsonArray.get(i);
+            }
+
+            return new SoupSpec(json.getString(NAME), featureArray);
+        } else {
+            return new SoupSpec(json.getString(NAME));
+        }
     }
 }
