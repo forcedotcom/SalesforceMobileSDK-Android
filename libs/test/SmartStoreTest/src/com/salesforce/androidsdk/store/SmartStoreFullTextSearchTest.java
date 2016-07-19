@@ -33,6 +33,7 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
@@ -54,9 +55,9 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
     private static final String EMPLOYEES_SOUP = "employees";
 
     private static final String TABLE_NAME = "TABLE_1";
-    private static final String FIRST_NAME_COL = TABLE_NAME + "_0";
-    private static final String LAST_NAME_COL = TABLE_NAME + "_1";
-    private static final String EMPLOYEE_ID_COL = TABLE_NAME + "_2";
+    protected static final String FIRST_NAME_COL = TABLE_NAME + "_0";
+    protected static final String LAST_NAME_COL = TABLE_NAME + "_1";
+    protected static final String EMPLOYEE_ID_COL = TABLE_NAME + "_2";
     
     // Populated by loadData()
     private long christineHaasId;
@@ -74,7 +75,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
 
     private void setupSoup(SmartStore.FtsExtension ftsExtension) {
         store.setFtsExtension(ftsExtension);
-        store.registerSoup(EMPLOYEES_SOUP, new IndexSpec[]{   // should be TABLE_1
+        registerSoup(store, EMPLOYEES_SOUP, new IndexSpec[]{   // should be TABLE_1
                 new IndexSpec(FIRST_NAME, Type.full_text),    // should be TABLE_1_0
                 new IndexSpec(LAST_NAME, Type.full_text),     // should be TABLE_1_1
                 new IndexSpec(EMPLOYEE_ID, Type.string),      // should be TABLE_1_2
@@ -157,7 +158,7 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
             c = DBHelper.getInstance(db).query(db, soupTableName, null, "id ASC", null, null);
             assertTrue("Expected a row", c.moveToFirst());
             assertEquals("Expected two rows", 3, c.getCount());
-            assertTrue("Wrong columns", Arrays.deepEquals(new String[]{"id", "soup", "created", "lastModified", FIRST_NAME_COL, LAST_NAME_COL, EMPLOYEE_ID_COL}, c.getColumnNames()));
+            assertTrue("Wrong columns", Arrays.deepEquals(getExpectedColumns(), c.getColumnNames()));
 
             assertEquals("Wrong id", firstEmployeeId, c.getLong(c.getColumnIndex("id")));
             assertEquals("Wrong value in index column", "Christine", c.getString(c.getColumnIndex(FIRST_NAME_COL)));
@@ -706,5 +707,19 @@ public class SmartStoreFullTextSearchTest extends SmartStoreTestCase {
         if (employeeId != null) employee.put(EMPLOYEE_ID, employeeId);
         JSONObject employeeSaved = store.create(EMPLOYEES_SOUP, employee);
         return idOf(employeeSaved);
+    }
+
+    /**
+     * Registers a soup with the given name and index specs. Can be overridden if extra features are desired.
+     */
+    protected void registerSoup(SmartStore store, String soupName, IndexSpec[] indexSpecs) {
+        store.registerSoup(soupName, indexSpecs);
+    }
+
+    /**
+     * @return expected columns in soup table
+     */
+    protected String[] getExpectedColumns() {
+        return new String[]{"id", "soup", "created", "lastModified", FIRST_NAME_COL, LAST_NAME_COL, EMPLOYEE_ID_COL};
     }
 }

@@ -29,20 +29,17 @@ package com.salesforce.androidsdk.analytics.security;
 import android.app.Service;
 import android.app.admin.DevicePolicyManager;
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Mac;
-import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -131,7 +128,7 @@ public class Encryptor {
      * @return Decrypted data.
      */
     public static String decrypt(String data, String key) {
-        if (key == null || data == null) {
+        if (TextUtils.isEmpty(key) || data == null) {
             return data;
         }
         try {
@@ -157,7 +154,7 @@ public class Encryptor {
      * @return Base64, AES-256 encrypted data.
      */
     public static String encrypt(String data, String key) {
-        if (key == null || data == null) {
+        if (TextUtils.isEmpty(key) || data == null) {
             return data;
         }
         try {

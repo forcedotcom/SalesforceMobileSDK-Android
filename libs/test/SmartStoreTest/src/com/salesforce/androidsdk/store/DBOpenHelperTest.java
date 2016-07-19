@@ -378,7 +378,7 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	}
 
 	/**
-	 * Ensures expected folder was created
+	 * Ensures external blobs directory was removed
 	 */
 	public void testRemoveExternalBlobsDirectory() {
 		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);
@@ -394,6 +394,25 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 		// Test
 		assertTrue("Remove operation was not successful", result);
 		assertFalse("Folder for external blobs was not removed.", folder.exists());
+	}
+
+	/**
+	 * Ensures error is not thrown if dataDir is null
+	 */
+	public void testRemoveExternalBlobsDirectoryNullDataDir() {
+		String realDataDir = targetContext.getApplicationInfo().dataDir;
+		targetContext.getApplicationInfo().dataDir = null;
+		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, "test_db_null_datadir", null, null);
+
+		// Act - attempt to delete external blobs dir with null dataDir
+		boolean result = helper.removeExternalBlobsDirectory(TEST_SOUP);
+
+		// Test
+		assertFalse("Remove operation was not successful since dataDir was null", result);
+
+		// Reset dataDir back to real value (calling getOpenHelper with a new db resets the dataDir)
+		targetContext.getApplicationInfo().dataDir = realDataDir;
+		DBOpenHelper.getOpenHelper(targetContext, "some_uncached_helper", null, null);
 	}
 
 	/**

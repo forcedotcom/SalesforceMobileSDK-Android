@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-present, salesforce.com, inc.
+ * Copyright (c) 2016-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,12 +27,9 @@
 package com.salesforce.androidsdk.store;
 
 
-import java.io.File;
+import android.database.Cursor;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
+import com.google.common.primitives.Longs;
 import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -45,7 +42,13 @@ import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
-import android.database.Cursor;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Tests for encrypted smart store with external storage
@@ -65,6 +68,21 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 	@Override
 	protected void assertSameSoupAsDB(JSONObject soup, Cursor c, String soupTableName, Long id) throws JSONException {
 		JSONTestHelper.assertSameJSON("Wrong value in external storage", soup, ((DBOpenHelper) dbOpenHelper).loadSoupBlob(soupTableName, id, getPasscode()));
+	}
+
+	/**
+	 * Ensure that a soup cannot be using external storage and JSON1
+	 */
+	public void testRegisterSoupWithExternalStorageAndJSON1() {
+		assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
+		try {
+			registerSoup(store, OTHER_TEST_SOUP, new IndexSpec[]{new IndexSpec("lastName", Type.json1), new IndexSpec("address.city", Type.string)});
+			fail("Registering soup with external storage and json1 should have thrown an exception");
+		}
+		catch (SmartStore.SmartStoreException e) {
+			assertEquals("Wrong exception", "Can't have JSON1 index specs in externally stored soup:" + OTHER_TEST_SOUP, e.getMessage());
+		}
+		assertFalse("Register soup call should have failed", store.hasSoup(OTHER_TEST_SOUP));
 	}
 
 	/**
@@ -154,7 +172,7 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 	protected void tryAllQueryOnChangedSoupWithUpdate(String soupName, JSONObject deletedEntry, String orderPath,
 			IndexSpec[] newIndexSpecs, JSONObject... expectedResults) throws JSONException {
 		//alert the soup
-		store.alterSoup(soupName, newIndexSpecs, true);
+		store.alterSoup(new SoupSpec(soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE), newIndexSpecs, true);
 
 		//delete an entry
 		store.delete(soupName, idOf(deletedEntry));
@@ -186,7 +204,7 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 	protected void tryExactQueryOnChangedSoup(String soupName, String orderPath, String value,
 			IndexSpec[] newIndexSpecs, JSONObject expectedResult) throws JSONException {
 		//alert the soup
-		store.alterSoup(soupName, newIndexSpecs, true);
+		store.alterSoup(new SoupSpec(soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE), newIndexSpecs, true);
 
 		// Exact Query
 		runQueryCheckResultsAndExplainPlan(soupName,
@@ -210,7 +228,7 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 		JSONObject soupElt3ForUpsert = new JSONObject("{'key':'ka3u', 'value':'va3u'}");
 
 		//CASE 1: index spec from key to value
-		store.alterSoup(TEST_SOUP, new IndexSpec[]{new IndexSpec("value", Type.string)}, true);
+		store.alterSoup(new SoupSpec(TEST_SOUP, SoupSpec.FEATURE_EXTERNAL_STORAGE), new IndexSpec[]{new IndexSpec("value", Type.string)}, true);
 		//upsert an entry
 		JSONObject soupElt1Upserted = store.upsert(TEST_SOUP, soupElt1ForUpsert);
 		// Query all - small page
@@ -218,4 +236,16 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 										   QuerySpec.buildAllQuerySpec(TEST_SOUP, "value", Order.ascending, 10),
 										   0, true, "SCAN", soupElt1Created, soupElt1Upserted, soupElt2Created, soupElt3Created);
 	}
+
+    @Override
+    public void testDeleteByQuery() throws JSONException {
+        List<Long> idsDeleted = new ArrayList<>();
+        List<Long> idsNotDeleted = new ArrayList<>();
+
+        tryDeleteByQuery(idsDeleted, idsNotDeleted);
+
+        // Check file system
+        checkFileSystem(TEST_SOUP, Longs.toArray(idsDeleted), false);
+        checkFileSystem(TEST_SOUP, Longs.toArray(idsNotDeleted), true);
+    }
 }
