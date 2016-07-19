@@ -70,6 +70,12 @@ libs/SalesforceAnalytics/SalesforceSDK.iml
 gradle/gradle.iml
 SalesforceMobileSDK-Android.iml
 
+libs/SalesforceHybrid/build/
+libs/SalesforceReact/build/
+libs/SalesforceSDK/build/
+libs/SmartStore/build/
+libs/SmartSync/build/
+
 .gitignore
 .metadata/
 .idea/
