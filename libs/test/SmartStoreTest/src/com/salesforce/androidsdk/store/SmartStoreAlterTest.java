@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,12 +27,9 @@
 package com.salesforce.androidsdk.store;
 
 import android.database.Cursor;
-import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.AlterSoupLongOperation;
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.LongOperation;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
@@ -47,7 +44,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -799,5 +795,4 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
             }
         }
     }
-
 }
