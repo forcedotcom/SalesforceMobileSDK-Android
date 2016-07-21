@@ -26,10 +26,6 @@
  */
 package com.salesforce.samples.smartsyncexplorer.ui;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import android.accounts.Account;
 import android.app.LoaderManager;
 import android.content.BroadcastReceiver;
@@ -69,6 +65,10 @@ import com.salesforce.androidsdk.ui.SalesforceListActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Main activity.
