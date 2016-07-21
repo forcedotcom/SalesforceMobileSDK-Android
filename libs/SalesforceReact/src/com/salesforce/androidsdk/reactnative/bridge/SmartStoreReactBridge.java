@@ -543,7 +543,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	}
 
     /**
-     * Native implementation of getSoupIndexSpecs
+     * Native implementation of getSoupSpecs
      * @param args
      * @param successCallback
      * @param errorCallback
