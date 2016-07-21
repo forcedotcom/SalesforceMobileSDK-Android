@@ -36,8 +36,8 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
-import com.salesforce.androidsdk.smartstore.store.StoreCursor;
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
+import com.salesforce.androidsdk.smartstore.store.StoreCursor;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 
 import net.sqlcipher.database.SQLiteDatabase;
