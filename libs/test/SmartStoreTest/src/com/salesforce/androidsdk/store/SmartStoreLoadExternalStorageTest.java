@@ -43,7 +43,7 @@ import android.util.Log;
  */
 public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
 
-    static final int ONE_MEGABYTE = 1024 * 1024;
+    static final int LARGE_BYTES = 512 * 1024;
 
     @Override
     protected String getPasscode() {
@@ -63,7 +63,7 @@ public class SmartStoreLoadExternalStorageTest extends SmartStoreLoadTest {
 
         for (int i = 0; i < 5; i++) {
             StringBuilder sb = new StringBuilder();
-            for (int j = 0; j < ONE_MEGABYTE; j++) {
+            for (int j = 0; j < LARGE_BYTES; j++) {
                 sb.append(i);
             }
             entry.put("value_" + i, sb.toString());
