@@ -51,7 +51,7 @@ script:
    #run template app generation
    - travis_wait 30 set -o pipefail && node external/shared/node/test_force.js --os=android --test=native
 
-   - travis_wait 30 ./gradlew createDebugCoverageReport
+   - travis_wait 50 ./gradlew createDebugCoverageReport
    - travis_wait 30 ./gradlew :libs:SalesforceHybrid:connectedAndroidTest
    - ./gradlew :libs:SalesforceReact:assembleDebug
    - travis_wait 30 ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest
