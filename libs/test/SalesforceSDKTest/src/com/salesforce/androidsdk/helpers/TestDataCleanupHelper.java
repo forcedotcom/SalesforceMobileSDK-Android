@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, salesforce.com, inc.
+ * Copyright (c) 2011-2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,10 +24,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk;
+package com.salesforce.androidsdk.helpers;
 
 import android.test.InstrumentationTestCase;
 
+import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
@@ -37,13 +38,12 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
 import com.salesforce.androidsdk.rest.RestResponse;
 
-import java.net.HttpURLConnection;
 import java.net.URI;
 /**
  * Do org data cleanup
  *
  */
-public class ClearupOrgData extends InstrumentationTestCase {
+public class TestDataCleanupHelper extends InstrumentationTestCase {
 
     private ClientInfo clientInfo;
     private HttpAccess httpAccess;
@@ -55,8 +55,7 @@ public class ClearupOrgData extends InstrumentationTestCase {
     public static final String TEST_EMAIL = "test@email.com";
     public static final String TEST_PHOTO_URL = "http://some.photo.url";
     public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
-    private final int MaxTransactCount = 100;
-    private final String EXPECTED_DELETE = "ExpectedDeletes";
+    private static final String EXPECTED_DELETE = "ExpectedDeletes";
 
 
     @Override
@@ -67,58 +66,31 @@ public class ClearupOrgData extends InstrumentationTestCase {
         TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
         authToken = refreshResponse.authToken;
         clientInfo = new ClientInfo(TestCredentials.CLIENT_ID,
-        		new URI(TestCredentials.INSTANCE_URL),
-        		new URI(TestCredentials.LOGIN_URL),
-        		new URI(TestCredentials.IDENTITY_URL),
-        		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
-        		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
+                new URI(TestCredentials.INSTANCE_URL),
+                new URI(TestCredentials.LOGIN_URL),
+                new URI(TestCredentials.IDENTITY_URL),
+                TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
+                TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
                 TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL);
         restClient = new RestClient(clientInfo, authToken, httpAccess, null);
     }
 
     /**
-     * Testing a customer apex api call.
+     * Cleanup all records that created by test account.
+     *
      * @throws Exception
      */
-    public void testcleanOrgData() throws Exception {
+    public void testCleanupOrgData() throws Exception {
         int stop = 0;
         int expectedCount = 0;
         String requestFormat = "/services/apexrest/Cleanup?start=%d&stop=%d";
+        int maxTransactCount = 100;
         do {
             int start = stop;
-            stop = stop + MaxTransactCount;
+            stop = stop + maxTransactCount;
 
             RestResponse response = restClient.sendSync(new RestRequest(RestMethod.DELETE, String.format(requestFormat, start, stop), null));
-            checkResponse(response, HttpURLConnection.HTTP_OK, false);
             expectedCount = response.asJSONObject().getInt(EXPECTED_DELETE);
-        } while (expectedCount >= MaxTransactCount);
-    }
-
-    //
-    // Helper methods
-    //
-
-    /**
-     * Helper method to validate responses
-     * @param response
-     * @param expectedStatusCode
-     */
-    private void checkResponse(RestResponse response, int expectedStatusCode, boolean isJsonArray) {
-        // Check status code
-        assertEquals(expectedStatusCode  + " response expected", expectedStatusCode, response.getStatusCode());
-
-        // Try to parse as json
-        try {
-            if (isJsonArray) {
-                response.asJSONArray();
-            }
-            else {
-                response.asJSONObject();
-            }
-        }
-        catch (Exception e) {
-            fail("Failed to parse response body");
-            e.printStackTrace();
-        }
+        } while (expectedCount >= maxTransactCount);
     }
 }
