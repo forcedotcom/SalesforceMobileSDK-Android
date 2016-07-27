@@ -406,10 +406,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         @Override
         protected void onPostExecute(TokenEndpointResponse tr) {
             if (tr != null && tr.authToken != null) {
-                loginOptions.jwt = tr.authToken;
+                loginOptions.setJwt(tr.authToken);
                 doLoadPage(true);
             }
-            loginOptions.jwt = null;
+            else {
+                doLoadPage(false);
+            }
+            loginOptions.setJwt(null);
         }
     }
 
