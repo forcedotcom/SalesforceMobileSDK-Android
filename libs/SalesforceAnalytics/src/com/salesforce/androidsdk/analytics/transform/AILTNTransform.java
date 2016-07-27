@@ -128,7 +128,7 @@ public class AILTNTransform implements Transform {
                 payload.put(SEQUENCE_KEY, event.getSequenceId());
             }
             final JSONObject attributes = event.getAttributes();
-            if (attributes != null && schemaType != InstrumentationEvent.SchemaType.LightningPageView) {
+            if (attributes != null) {
                 payload.put(ATTRIBUTES_KEY, attributes);
             }
             if (schemaType != InstrumentationEvent.SchemaType.LightningPerformance) {
