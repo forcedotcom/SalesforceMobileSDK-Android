@@ -750,8 +750,17 @@ public class ClientManager {
         public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
                             String oauthClientId, String[] oauthScopes, String clientSecret, String jwt) {
             this(loginUrl, passcodeHash, oauthCallbackUrl, oauthClientId, oauthScopes, clientSecret);
+            this.setJwt(jwt);
+        }
+
+        public void setJwt(String jwt) {
             this.jwt = jwt;
             bundle.putString(JWT, jwt);
+        }
+
+        public void setUrl(String url) {
+            this.loginUrl = url;
+            bundle.putString(LOGIN_URL, url);
         }
 
         public Bundle asBundle() {

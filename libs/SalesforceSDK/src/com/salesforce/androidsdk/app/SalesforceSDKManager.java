@@ -299,6 +299,9 @@ public class SalesforceSDKManager {
                 loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
                         config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null, jwt);
             }
+        } else {
+            loginOptions.setJwt(jwt);
+            loginOptions.setUrl(url);
         }
         return loginOptions;
     }
