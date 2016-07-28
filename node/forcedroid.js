@@ -107,7 +107,7 @@ function createApp(config) {
     }
 
     //If no target directory specified, default to current directory
-    if(config.targetdir == null || config.targetdir == undefined || config.targetdir.length == 0) {
+    if(config.targetdir == undefined || config.targetdir.length == 0) {
         config.targetdir = config.appname;
     }
 
