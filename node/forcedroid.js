@@ -106,6 +106,11 @@ function createApp(config) {
         process.exit(8);
     }
 
+    //If no target directory specified, default to current directory
+    if(config.targetdir == undefined || config.targetdir.length == 0) {
+        config.targetdir = config.appname;
+    }
+
     // Native app creation
     if (config.apptype === 'native') {
         config.relativeTemplateDir = path.join('native', 'TemplateApp');
@@ -151,7 +156,7 @@ function getAndroidSDKToolPath() {
 // Helper to create hybrid application
 //
 function createHybridApp(config) {
-    config.projectDir = path.join(config.targetdir, config.appname);
+    config.projectDir = config.targetdir;
 
     // Make sure the Cordova CLI client exists.
     var cordovaCliVersion = cordovaHelper.getCordovaCliVersion();
@@ -478,7 +483,7 @@ function createArgsProcessorList() {
     addProcessorFor(argProcessorList, 'appname', 'Enter your application name:', 'Invalid value for application name: \'$val\'.', /^\S+$/);
 
     // Target dir
-    addProcessorFor(argProcessorList, 'targetdir', 'Enter the target directory of your app (must be an existing empty folder):', 'Invalid value for target dir: \'$val\'.',  /^\S+$/);
+    addProcessorForOptional(argProcessorList, 'targetdir', 'Enter the target directory of your app (defaults to current directory):');
 
     // Package name
     addProcessorFor(argProcessorList, 'packagename', 'Enter the package name for your app (com.mycompany.my_app):', '\'$val\' is not a valid Java package name.', /^[a-z]+[a-z0-9_]*(\.[a-z]+[a-z0-9_]*)*$/);
@@ -524,4 +529,14 @@ function addProcessorFor(argProcessorList, argName, prompt, error, validation, p
        }
 
    }, preprocessor);
+}
+
+//
+// Helper function to add arg processor for optional arg- should unset value when nothing is typed in
+// * argProcessorList: ArgProcessorList
+// * argName: string, name of argument
+// * prompt: string for prompt
+//
+function addProcessorForOptional(argProcessorList, argName, prompt) {
+    addProcessorFor(argProcessorList, argName, prompt, undefined, function() { return true;}, undefined, undefined);
 }
