@@ -107,8 +107,8 @@ function createApp(config) {
     }
 
     //If no target directory specified, default to current directory
-    if(config.targetdir == null || config.targetdir.length == 0) {
-        config.targetdir = process.cwd();
+    if(config.targetdir == null || config.targetdir == undefined || config.targetdir.length == 0) {
+        config.targetdir = config.appname;
     }
 
     // Native app creation
@@ -156,7 +156,7 @@ function getAndroidSDKToolPath() {
 // Helper to create hybrid application
 //
 function createHybridApp(config) {
-    config.projectDir = path.join(config.targetdir, config.appname);
+    config.projectDir = config.targetdir;
 
     // Make sure the Cordova CLI client exists.
     var cordovaCliVersion = cordovaHelper.getCordovaCliVersion();
@@ -220,8 +220,7 @@ function createNativeOrReactNativeApp(config) {
 
     // Computed config
     config.projectDir = path.join(config.targetdir, config.appname);
-    config.appDir = path.join(config.targetdir, config.appname, config.appname);
-    config.bootConfigPath = path.join(config.appDir, 'res', 'values', 'bootconfig.xml');
+    config.bootConfigPath = path.join(config.projectDir, 'res', 'values', 'bootconfig.xml');
     config.templatePackageDir = config.templatePackageName.replace(/\./g, path.sep);
     var packageSdkRootDir = path.resolve(__dirname, '..');
     config.templateDir = path.join(packageSdkRootDir, config.relativeTemplateDir);
@@ -230,14 +229,12 @@ function createNativeOrReactNativeApp(config) {
     // Checking if config.projectDir already exists
     if (!fs.existsSync(config.projectDir)) {
         shelljs.mkdir('-p', config.projectDir);
-        shelljs.mkdir('-p', config.appDir);
     }
 
-
     // Copy the template files to the destination directory.
-    shelljs.cp('-R', path.join(config.templateDir, '*'), config.appDir);
+    shelljs.cp('-R', path.join(config.templateDir, '*'), config.projectDir);
     if (shelljs.error()) {
-        console.log('There was an error copying the template files from \'' + config.templateDir + '\' to \'' + config.appDir + '\': ' + shelljs.error());
+        console.log('There was an error copying the template files from \'' + config.templateDir + '\' to \'' + config.projectDir + '\': ' + shelljs.error());
         process.exit(4);
     }
     var contentFilesWithReplacements = makeContentReplacementPathsArray(config);
@@ -268,18 +265,18 @@ function createNativeOrReactNativeApp(config) {
     console.log('Moving source files to proper package path.')
     var srcFilePaths = getTemplateSourceFilePaths(config);
     srcFilePaths.forEach(function(srcFile) {
-        fs.renameSync(srcFile.path, path.join(config.appDir, 'src', srcFile.name));  // Temporary location
+        fs.renameSync(srcFile.path, path.join(config.projectDir, 'src', srcFile.name));  // Temporary location
     });
-    shelljs.rm('-rf', path.join(config.appDir, 'src', 'com'));
+    shelljs.rm('-rf', path.join(config.projectDir, 'src', 'com'));
     var packageDir = config.packagename.replace(/\./g, path.sep);
-    shelljs.mkdir('-p', path.resolve(config.appDir, 'src', packageDir));
+    shelljs.mkdir('-p', path.resolve(config.projectDir, 'src', packageDir));
     srcFilePaths.forEach(function(srcFile) {
-        fs.renameSync(path.join(config.appDir, 'src', srcFile.name), path.resolve(config.appDir, 'src', packageDir, srcFile.name));
+        fs.renameSync(path.join(config.projectDir, 'src', srcFile.name), path.resolve(config.projectDir, 'src', packageDir, srcFile.name));
     });
 
     // Rename the app class name.
     console.log('Renaming the app class filename to ' + appClassName + '.java.');
-    var appClassDir = path.join(config.appDir, 'src', packageDir);
+    var appClassDir = path.join(config.projectDir, 'src', packageDir);
     var templateAppClassPath = path.join(appClassDir, config.templateAppClassName) + '.java';
     var appClassPath = path.join(appClassDir, appClassName) + '.java';
     fs.renameSync(templateAppClassPath, appClassPath);
@@ -301,55 +298,55 @@ function createNativeOrReactNativeApp(config) {
     // Copy SalesforceSDK library project into the app folder as well, if it's not already there.
     // copy <Android Package>/libs/SalesforceSDK -> <App Folder>/forcedroid/libs/SalesforceSDK
     var salesforceSDKRelativePath = path.join('libs', 'SalesforceSDK');
-    copyFromSDK(packageSdkRootDir, config.projectDir, salesforceSDKRelativePath);
+    copyFromSDK(packageSdkRootDir, config.targetdir, salesforceSDKRelativePath);
 
     // Copy SmartStore and SmartSync library projects into the app folder as well, if it's not already there - if required.
     // copy <Android Package>/libs/SmartStore -> <App Folder>/forcedroid/libs/SmartStore
     // copy <Android Package>/libs/SmartSync -> <App Folder>/forcedroid/libs/SmartSync
     if (config.usesmartstore) {
         var smartStoreRelativePath = path.join('libs', 'SmartStore');
-        copyFromSDK(packageSdkRootDir, config.projectDir, smartStoreRelativePath);
+        copyFromSDK(packageSdkRootDir, config.targetdir, smartStoreRelativePath);
         var smartSyncRelativePath = path.join('libs', 'SmartSync');
-        copyFromSDK(packageSdkRootDir, config.projectDir, smartSyncRelativePath);
+        copyFromSDK(packageSdkRootDir, config.targetdir, smartSyncRelativePath);
     }
 
     // React native specific fixes
     if (config.apptype === 'react_native') {
         console.log('Changing name in package.json.');
-        miscUtils.replaceTextInFile(path.join(config.appDir, 'package.json'), config.templateAppName, config.appname);
+        miscUtils.replaceTextInFile(path.join(config.projectDir, 'package.json'), config.templateAppName, config.appname);
         console.log('Changing app name in index.android.js.');
-        miscUtils.replaceTextInFile(path.join(config.appDir, 'js', 'index.android.js'), config.templateAppName, config.appname);
+        miscUtils.replaceTextInFile(path.join(config.projectDir, 'js', 'index.android.js'), config.templateAppName, config.appname);
 
         // Copy SalesforceReact library project into the app folder as well.
         var salesforceReactRelativePath = path.join('libs', 'SalesforceReact');
-        copyFromSDK(packageSdkRootDir, config.projectDir, salesforceReactRelativePath);
+        copyFromSDK(packageSdkRootDir, config.targetdir, salesforceReactRelativePath);
 
         // Moving up js directory and package.json
         console.log("Moving js directory up");
-        shelljs.mv(path.join(config.appDir, "js"), config.projectDir);
+        shelljs.mv(path.join(config.projectDir, "js"), config.targetdir);
         console.log("Moving package.json up");
-        shelljs.mv(path.join(config.appDir, "package.json"), path.join(config.projectDir, 'package.json'))
+        shelljs.mv(path.join(config.projectDir, "package.json"), path.join(config.targetdir, 'package.json'))
     }
 
     createAppRootGradleFile(config);
     fixAppGradleFile(config);
     fixSdkGradleFiles(config);
-    copyFromSDK(packageSdkRootDir, config.projectDir, "gradle.properties");
-    copyFromSDK(packageSdkRootDir, config.projectDir, "gradlew.bat");
-    copyFromSDK(packageSdkRootDir, config.projectDir, "gradlew");
-    copyFromSDK(packageSdkRootDir, config.projectDir, "gradle");
-    copyFromSDK(packageSdkRootDir, config.projectDir, "build.gradle");
-    shelljs.mv(path.join(config.projectDir, "forcedroid", "gradle.properties"), path.join(config.projectDir, "gradle.properties"));
-    shelljs.mv(path.join(config.projectDir, "forcedroid", "gradlew.bat"), path.join(config.projectDir, "gradlew.bat"));
-    shelljs.mv(path.join(config.projectDir, "forcedroid", "gradlew"), path.join(config.projectDir, "gradlew"));
-    shelljs.mv(path.join(config.projectDir, "forcedroid", "gradle"), path.join(config.projectDir, "gradle"));
-    shelljs.mv(path.join(config.projectDir, "forcedroid", "build.gradle"), path.join(config.projectDir, "build.gradle"));
-    miscUtils.replaceTextInFile(path.join(config.projectDir, "build.gradle"), 'group = \'com.salesforce.androidsdk\'', '');
+    copyFromSDK(packageSdkRootDir, config.targetdir, "gradle.properties");
+    copyFromSDK(packageSdkRootDir, config.targetdir, "gradlew.bat");
+    copyFromSDK(packageSdkRootDir, config.targetdir, "gradlew");
+    copyFromSDK(packageSdkRootDir, config.targetdir, "gradle");
+    copyFromSDK(packageSdkRootDir, config.targetdir, "build.gradle");
+    shelljs.mv(path.join(config.targetdir, "forcedroid", "gradle.properties"), path.join(config.targetdir, "gradle.properties"));
+    shelljs.mv(path.join(config.targetdir, "forcedroid", "gradlew.bat"), path.join(config.targetdir, "gradlew.bat"));
+    shelljs.mv(path.join(config.targetdir, "forcedroid", "gradlew"), path.join(config.targetdir, "gradlew"));
+    shelljs.mv(path.join(config.targetdir, "forcedroid", "gradle"), path.join(config.targetdir, "gradle"));
+    shelljs.mv(path.join(config.targetdir, "forcedroid", "build.gradle"), path.join(config.targetdir, "build.gradle"));
+    miscUtils.replaceTextInFile(path.join(config.targetdir, "build.gradle"), 'group = \'com.salesforce.androidsdk\'', '');
 
     // Running npm install for react native apps
     if (config.apptype === 'react_native') {
         console.log("Running npm install to install npm packages required by react native.");
-        shelljs.pushd(config.projectDir);
+        shelljs.pushd(config.targetdir);
         shelljs.exec('npm install');
         shelljs.popd();
     }
@@ -361,11 +358,11 @@ function createNativeOrReactNativeApp(config) {
          '',
          outputColors.cyan + 'To use your new application in Android Studio, do the following:' + outputColors.reset,
          '   - Launch Android Studio and select `Import project (Eclipse ADT, Gradle, etc.)` from the Welcome screen ',
-         '   - Navigate to the ' + outputColors.magenta + config.projectDir + outputColors.reset + ' folder, select it and click `Ok`',
+         '   - Navigate to the ' + outputColors.magenta + config.targetdir + outputColors.reset + ' folder, select it and click `Ok`',
          '   - From the dropdown that displays the available targets, choose the sample app you want to run and click the play button',
          '',
          outputColors.cyan + 'To work with your new project from the command line, use the following instructions:' + outputColors.reset,
-         '   - cd ' + config.projectDir,
+         '   - cd ' + config.targetdir,
          '   - ./gradlew assembleDebug',
          ''].join('\n');
     console.log(nextStepsOutput);
@@ -376,8 +373,8 @@ function createNativeOrReactNativeApp(config) {
 
 function makeContentReplacementPathsArray(config) {
     var returnArray = [];
-    returnArray.push(path.join(config.appDir, 'AndroidManifest.xml'));
-    returnArray.push(path.join(config.appDir, 'res', 'values', 'strings.xml'));
+    returnArray.push(path.join(config.projectDir, 'AndroidManifest.xml'));
+    returnArray.push(path.join(config.projectDir, 'res', 'values', 'strings.xml'));
     returnArray.push(config.bootConfigPath);
     var srcFilePaths = getTemplateSourceFilePaths(config);
     srcFilePaths.forEach(function(srcFile) {
@@ -389,7 +386,7 @@ function makeContentReplacementPathsArray(config) {
 
 function getTemplateSourceFilePaths(config) {
     var srcFilesArray = [];
-    var srcDir = path.join(config.appDir, 'src', config.templatePackageDir);
+    var srcDir = path.join(config.projectDir, 'src', config.templatePackageDir);
     fs.readdirSync(srcDir).forEach(function(srcFile) {
         if (/\.java$/.test(srcFile))
             srcFilesArray.push({ 'name': srcFile, 'path': path.join(srcDir, srcFile) });
@@ -418,8 +415,8 @@ function copyFromSDK(packageSdkRootDir, targetDir, srcDirRelative) {
 // Creates a root level 'settings.gradle' file for the app
 //
 function createAppRootGradleFile(config) {
-    console.log('Creating settings.gradle in ' + config.projectDir);
-    var pathPrefix = (config.projectDir === '.' ? '' : config.projectDir);
+    console.log('Creating settings.gradle in ' + config.targetdir);
+    var pathPrefix = (config.targetdir === '.' ? '' : config.targetdir);
     var salesforceSdkGradleSpec = "include 'forcedroid:libs:SalesforceSDK'\n";
     var smartStoreGradleSpec = "include 'forcedroid:libs:SmartStore'\n";
     var smartSyncGradleSpec = "include 'forcedroid:libs:SmartSync'\n";
@@ -431,7 +428,7 @@ function createAppRootGradleFile(config) {
         + (config.apptype === 'react_native' ? salesforceReactGradleSpec : "")
         + appGradleSpec;
 
-    fs.writeFileSync(path.join(config.projectDir, 'settings.gradle'), gradleSpec);
+    fs.writeFileSync(path.join(config.targetdir, 'settings.gradle'), gradleSpec);
 }
 
 //
@@ -439,10 +436,10 @@ function createAppRootGradleFile(config) {
 //
 function fixAppGradleFile(config) {
     if (config.apptype === 'react_native') {
-        fixAppGradleFileHelper(config.projectDir, config.appname, "SalesforceReact", "SalesforceReact");
+        fixAppGradleFileHelper(config.targetdir, config.appname, "SalesforceReact", "SalesforceReact");
     }
     else {
-        fixAppGradleFileHelper(config.projectDir, config.appname, "SalesforceSDK", config.usesmartstore ? "SmartSync" : "SalesforceSDK");
+        fixAppGradleFileHelper(config.targetdir, config.appname, "SalesforceSDK", config.usesmartstore ? "SmartSync" : "SalesforceSDK");
     }
 }
 
@@ -457,13 +454,13 @@ function fixAppGradleFileHelper(appFolderName, appName, originalDependency, newD
 // Fixes library dependency references in the SDK's build.gradle files
 //
 function fixSdkGradleFiles(config) {
-    fixSdkGradleFileHelper(config.projectDir, "SalesforceSDK");
+    fixSdkGradleFileHelper(config.targetdir, "SalesforceSDK");
     if (config.usesmartstore) {
-        fixSdkGradleFileHelper(config.projectDir, "SmartStore");
-        fixSdkGradleFileHelper(config.projectDir, "SmartSync");
+        fixSdkGradleFileHelper(config.targetdir, "SmartStore");
+        fixSdkGradleFileHelper(config.targetdir, "SmartSync");
     }
     if (config.apptype === 'react_native') {
-        fixSdkGradleFileHelper(config.projectDir, "SalesforceReact");
+        fixSdkGradleFileHelper(config.targetdir, "SalesforceReact");
     }
 }    
 
