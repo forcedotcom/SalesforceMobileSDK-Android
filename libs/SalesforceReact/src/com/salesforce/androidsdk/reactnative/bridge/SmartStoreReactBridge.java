@@ -388,8 +388,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @param successCallback
 	 * @throws JSONException
 	 */
-    @ReactMethod
-	public void runQuery(SmartStore smartStore, QuerySpec querySpec,
+	private void runQuery(SmartStore smartStore, QuerySpec querySpec,
                          final Callback successCallback) throws JSONException {
 
 		// Build store cursor
