@@ -38,12 +38,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
-import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
@@ -62,7 +62,6 @@ import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.Encryptor;
-import com.salesforce.androidsdk.security.PRNGFixes;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -88,7 +87,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "4.1.2";
+    public static final String SDK_VERSION = "4.3.0.unstable";
 
     /**
      * Default app name.
@@ -140,6 +139,14 @@ public class SalesforceSDKManager {
     	} else {
             throw new RuntimeException("Applications need to call SalesforceSDKManager.init() first.");
     	}
+    }
+
+    /**
+     *
+     * @return true if SalesforceSDKManager has been initialized already
+     */
+    public static boolean hasInstance() {
+        return INSTANCE != null;
     }
 
     /**
@@ -269,13 +276,25 @@ public class SalesforceSDKManager {
 	 * @return LoginOptions instance.
 	 */
 	public LoginOptions getLoginOptions() {
-		if (loginOptions == null) {
-			final BootConfig config = BootConfig.getBootConfig(context);
-			loginOptions = new LoginOptions(null, getPasscodeHash(), config.getOauthRedirectURI(),
-	        		config.getRemoteAccessConsumerKey(), config.getOauthScopes());
-		}
-		return loginOptions;
+		return getLoginOptions(null, null);
 	}
+
+    public LoginOptions getLoginOptions(String jwt, String url) {
+        if (loginOptions == null) {
+            final BootConfig config = BootConfig.getBootConfig(context);
+            if (TextUtils.isEmpty(jwt)) {
+                loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
+                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null);
+            } else {
+                loginOptions = new LoginOptions(url, getPasscodeHash(), config.getOauthRedirectURI(),
+                        config.getRemoteAccessConsumerKey(), config.getOauthScopes(), null, jwt);
+            }
+        } else {
+            loginOptions.setJwt(jwt);
+            loginOptions.setUrl(url);
+        }
+        return loginOptions;
+    }
 
 	/**
 	 * For internal use only. Initializes required components.
@@ -299,9 +318,6 @@ public class SalesforceSDKManager {
 	 * @param context Application context.
 	 */
     public static void initInternal(Context context) {
-
-    	// Applies PRNG fixes for certain older versions of Android.
-        PRNGFixes.apply();
 
         // Initializes the encryption module.
         Encryptor.init(context);
@@ -959,7 +975,7 @@ public class SalesforceSDKManager {
 		@Override
 		protected Void doInBackground(Void... nothings) {
 	        try {
-	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken);
+	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), refreshToken);
 	        } catch (Exception e) {
 	        	Log.w("SalesforceSDKManager:revokeToken", e);
 	        }
@@ -1001,7 +1017,14 @@ public class SalesforceSDKManager {
     	return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(), true);
     }
 
-	@TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    /**
+     * @return ClientManager
+     */
+    public ClientManager getClientManager(String jwt, String url) {
+        return new ClientManager(getAppContext(), getAccountType(), getLoginOptions(jwt, url), true);
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 	public void removeAllCookies() {
 
 		/*

@@ -29,10 +29,13 @@ package com.salesforce.androidsdk.phonegap;
 import android.content.Context;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.test.InstrumentationTestCase;
+import android.text.TextUtils;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.phonegap.plugin.SDKInfoPlugin;
+
+import junit.framework.Assert;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -58,10 +61,13 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 		assertEquals("Wrong app name", "SalesforceHybridTest", sdkInfo.getString("appName"));
 		assertEquals("Wrong app version", "1.0", sdkInfo.getString("appVersion"));
 		List<String> sdkInfoPlugins = toList(sdkInfo.getJSONArray("forcePluginsAvailable"));
-		assertEquals("Wrong number of plugins", 3, sdkInfoPlugins.size());
+		assertEquals("Wrong number of plugins", 6, sdkInfoPlugins.size());
 		assertTrue("oauth plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.oauth"));
 		assertTrue("sdkinfo plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.sdkinfo"));
 		assertTrue("sfaccountmanager plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.sfaccountmanager"));
+		assertTrue("smartstore plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.smartstore"));
+		assertTrue("smartsync plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.smartsync"));
+		assertTrue("testrunner plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.testrunner"));
 		assertEquals("Wrong version", SalesforceSDKManager.SDK_VERSION, sdkInfo.getString("sdkVersion"));
 	
 		JSONObject sdkInfoBootConfig = sdkInfo.getJSONObject("bootConfig");
@@ -73,9 +79,15 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 		assertTrue("Wrong bootconfig oauthScopes", sdkInfoOAuthScopes.contains("api"));
 		assertEquals("Wrong bootconfig oauthRedirectURI", bootconfig.getOauthRedirectURI(), sdkInfoBootConfig.getString("oauthRedirectURI"));
 		assertEquals("Wrong bootconfig remoteAccessConsumerKey", bootconfig.getRemoteAccessConsumerKey(), sdkInfoBootConfig.getString("remoteAccessConsumerKey"));
-		assertEquals("Wrong bootconfig androidPushNotificationClientId", bootconfig.getPushNotificationClientId(), sdkInfoBootConfig.getString("androidPushNotificationClientId"));
-		assertEquals("Wrong bootconfig startPage", "", sdkInfoBootConfig.optString("startPage")); // this is a native app
-		assertEquals("Wrong bootconfig errorPage", "", sdkInfoBootConfig.optString("errorPage")); // this is a native app
+        try {
+            sdkInfoBootConfig.getString("androidPushNotificationClientId");
+            Assert.fail("Wrong bootconfig having androidPushNotificationClientId field");
+        } catch (Exception ex) {
+            //don't do anything since the exception is expected
+        }
+		assertEquals("Wrong bootconfig startPage", "index.html", sdkInfoBootConfig.optString("startPage"));
+		assertEquals("Wrong bootconfig errorPage", "error.html", sdkInfoBootConfig.optString("errorPage"));
+
 	}
 
 	/**

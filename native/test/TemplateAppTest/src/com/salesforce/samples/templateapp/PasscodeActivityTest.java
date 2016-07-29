@@ -30,6 +30,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.test.ActivityInstrumentationTestCase2;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
@@ -64,7 +65,7 @@ public class PasscodeActivityTest extends
         eq = new EventsListenerQueue();
 
         // Waits for app initialization to complete.
-        if (SalesforceSDKManager.getInstance() == null) {
+        if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
 		targetContext = getInstrumentation().getTargetContext();
@@ -141,6 +142,14 @@ public class PasscodeActivityTest extends
 		// Get activity
 		passcodeActivity = getActivity();
 		assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
+
+		// Entering nothing and submitting -> expect passcode too short error
+		setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "");
+		doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+		assertTrue("Application should still be locked", passcodeManager.isLocked());
+		assertEquals("Activity expected in create mode still", PasscodeMode.Create, passcodeActivity.getMode());
+		assertEquals("Error expected", "The passcode must be at least 4 characters long",
+				((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText());
 
 		// Entering in 123 and submitting -> expect passcode too short error
 		setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123");

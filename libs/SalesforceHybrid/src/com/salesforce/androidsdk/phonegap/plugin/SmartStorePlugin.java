@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
+import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 import com.salesforce.androidsdk.smartstore.store.StoreCursor;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
 
@@ -68,6 +69,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	public static final String ORDER = "order";
 	public static final String PAGE_SIZE = "pageSize";
 	public static final String QUERY_TYPE = "queryType";
+	private static final String SOUP_SPEC = "soupSpec";
+	private static final String SOUP_SPEC_NAME = "name";
+	private static final String SOUP_SPEC_FEATURES = "features";
 	static final String TOTAL_ENTRIES = "totalEntries";
 	static final String TOTAL_PAGES = "totalPages";
 	static final String RE_INDEX_DATA = "reIndexData";
@@ -106,6 +110,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		pgCloseCursor,
 		pgGetDatabaseSize,
 		pgGetSoupIndexSpecs,
+		pgGetSoupSpec,
 		pgMoveCursorToPageIndex,
 		pgQuerySoup,
 		pgRegisterSoup,
@@ -148,6 +153,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		                  case pgCloseCursor:           closeCursor(args, callbackContext); break;
 		                  case pgGetDatabaseSize:       getDatabaseSize(args, callbackContext); break;
 		                  case pgGetSoupIndexSpecs:     getSoupIndexSpecs(args, callbackContext); break;
+		                  case pgGetSoupSpec:           getSoupSpec(args, callbackContext); break;
 		                  case pgMoveCursorToPageIndex: moveCursorToPageIndex(args, callbackContext); break;
 		                  case pgQuerySoup:             querySoup(args, callbackContext); break;
 		                  case pgRegisterSoup:          registerSoup(args, callbackContext); break;
@@ -186,15 +192,25 @@ public class SmartStorePlugin extends ForcePlugin {
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
         final SmartStore smartStore = getSmartStore(arg0);
+		JSONArray jsonSoupEntryIds = arg0.optJSONArray(ENTRY_IDS);
+		JSONObject querySpecJson = arg0.optJSONObject(QUERY_SPEC);
 
-		JSONArray jsonSoupEntryIds = arg0.getJSONArray(ENTRY_IDS);
-		Long[] soupEntryIds = new Long[jsonSoupEntryIds.length()];
-		for (int i = 0; i < jsonSoupEntryIds.length(); i++) {
-			soupEntryIds[i] = jsonSoupEntryIds.getLong(i);
+		if (jsonSoupEntryIds != null) {
+			Long[] soupEntryIds = new Long[jsonSoupEntryIds.length()];
+			for (int i = 0; i < jsonSoupEntryIds.length(); i++) {
+				soupEntryIds[i] = jsonSoupEntryIds.getLong(i);
+			}
+
+			// Run remove
+			smartStore.delete(soupName, soupEntryIds);
 		}
-		
-		// Run remove
-		smartStore.delete(soupName, soupEntryIds);
+		else {
+			QuerySpec querySpec = QuerySpec.fromJSON(soupName, querySpecJson);
+
+			// Run remove
+			smartStore.deleteByQuery(soupName, querySpec);
+		}
+
 		callbackContext.success();
 	}
 
@@ -364,9 +380,35 @@ public class SmartStorePlugin extends ForcePlugin {
 		JSONArray indexesJson = arg0.getJSONArray(INDEXES);
 		IndexSpec[] indexSpecs = IndexSpec.fromJSON(indexesJson);
 
-		// Run register
 		final SmartStore smartStore = getSmartStore(arg0);
-		smartStore.registerSoup(soupName, indexSpecs);
+
+		// Get soup spec if available
+		JSONObject soupSpecObj = arg0.optJSONObject(SOUP_SPEC);
+		if (soupSpecObj != null) {
+
+			// Get soup name
+			soupName = soupSpecObj.getString(SOUP_SPEC_NAME);
+
+			// Get features
+			JSONArray featuresJson = soupSpecObj.optJSONArray(SOUP_SPEC_FEATURES);
+
+			if (featuresJson == null) {
+				featuresJson = new JSONArray();
+			}
+
+			String[] features = new String[featuresJson.length()];
+			for (int i = 0; i < featuresJson.length(); i++) {
+				features[i] = featuresJson.getString(i);
+			}
+
+			// Run register soup with spec
+			smartStore.registerSoupWithSpec(new SoupSpec(soupName, features), indexSpecs);
+		} else {
+
+			// Run register soup
+			smartStore.registerSoup(soupName, indexSpecs);
+		}
+
 		callbackContext.success(soupName);
 	}
 
@@ -564,6 +606,23 @@ public class SmartStorePlugin extends ForcePlugin {
 			indexSpecsJson.put(indexSpecJson);
 		}
 		callbackContext.success(indexSpecsJson);
+	}
+
+    /**
+     * Native implementation of pgGetSoupSpec
+     * @param args
+     * @param callbackContext
+     * @throws JSONException
+     */
+	private void getSoupSpec(JSONArray args, CallbackContext callbackContext) throws JSONException {
+		// Parse args
+		JSONObject arg0 = args.getJSONObject(0);
+		String soupName = arg0.getString(SOUP_NAME);
+
+		// Get soup specs
+		SmartStore smartStore = getSmartStore(arg0);
+		SoupSpec soupSpec = smartStore.getSoupSpec(soupName);
+		callbackContext.success(soupSpec.toJSON());
 	}
 
     /**

@@ -44,6 +44,8 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
@@ -91,6 +93,11 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
 
         // Object which allows reference to resources living outside the SDK.
         salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
+
+        // Protect against screenshots
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_SECURE,
+                WindowManager.LayoutParams.FLAG_SECURE);
+
         setContentView(getLayoutId());
         final TextView forgotPasscodeView = getForgotPasscodeView();
         if (forgotPasscodeView != null) {
@@ -165,18 +172,22 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         case Check:
             title.setText(getEnterTitle());
             instr.setText(getEnterInstructions());
+            getForgotPasscodeView().setVisibility(View.VISIBLE);
             break;
         case Create:
             title.setText(getCreateTitle());
             instr.setText(getCreateInstructions());
+            getForgotPasscodeView().setVisibility(View.INVISIBLE);
             break;
         case CreateConfirm:
             title.setText(getConfirmTitle());
             instr.setText(getConfirmInstructions());
+            getForgotPasscodeView().setVisibility(View.INVISIBLE);
             break;
         case Change:
             title.setText(getCreateTitle());
             instr.setText(getChangeInstructions());
+            getForgotPasscodeView().setVisibility(View.INVISIBLE);
         	break;
         }
         entry.setText("");
@@ -196,12 +207,18 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     @Override
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
         Log.i("onEditorAction", "view=" + v + " actionId=" + actionId + " event=" + event);
-        String pc = entry.getText().toString();
-        if (pc.length() > 0 && pc.length() < getMinPasscodeLength()) {
-            error.setText(getMinLengthInstructions(getMinPasscodeLength()));
-            return false;
+        // Processing the editor action only on key up to avoid sending events like pass code manager unlock twice.
+        if ( actionId ==  EditorInfo.IME_ACTION_GO ||
+                (event != null && event.getAction() == KeyEvent.ACTION_UP)) {
+            String pc = entry.getText().toString();
+            if (pc.length() >= 0 && pc.length() < getMinPasscodeLength()) {
+                error.setText(getMinLengthInstructions(getMinPasscodeLength()));
+                return false;
+            }
+            return pc.length() > 0 ? onSubmit(pc) : false;
+        } else {
+            return true;
         }
-        return pc.length() > 0 ? onSubmit(pc) : false;
     }
 
     protected boolean onSubmit(String enteredPasscode) {

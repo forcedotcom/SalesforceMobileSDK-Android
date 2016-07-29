@@ -26,19 +26,28 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.security.Encryptor;
 
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteDatabaseHook;
 import net.sqlcipher.database.SQLiteOpenHelper;
+
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
-
-import com.salesforce.androidsdk.accounts.UserAccount;
 
 /**
  * Helper class to manage SmartStore's database creation and version management.
@@ -47,10 +56,15 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 	// 1 --> up until 2.3
 	// 2 --> starting at 2.3 (new meta data table long_operations_status)
-	public static final int DB_VERSION = 2;
+	// 3 --> starting at 4.3 (soup_names table changes to soup_attr)
+	public static final int DB_VERSION = 3;
 	public static final String DEFAULT_DB_NAME = "smartstore";
+	public static final String SOUP_ELEMENT_PREFIX = "soupelt_";
 	private static final String DB_NAME_SUFFIX = ".db";
 	private static final String ORG_KEY_PREFIX = "00D";
+	private static final String EXTERNAL_BLOBS_SUFFIX = "_external_soup_blobs/";
+	private static String dataDir;
+	private String dbName;
 
 	/*
 	 * Cache for the helper instances
@@ -130,6 +144,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	protected DBOpenHelper(Context context, String dbName) {
 		super(context, dbName, null, DB_VERSION, new DBHook());
 		this.loadLibs(context);
+		this.dbName = dbName;
+		dataDir = context.getApplicationInfo().dataDir;
 	}
 
 	 protected void loadLibs(Context context) {
@@ -165,6 +181,11 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		db.setLockingEnabled(false);
 		if (oldVersion == 1) {
 			SmartStore.createLongOperationsStatusTable(db);
+		}
+
+		if (oldVersion < 3) {
+			// DB versions before 3 used soup_names, which has changed to soup_attrs
+			SmartStore.updateTableNameAndAddColumns(db, SmartStore.SOUP_NAMES_TABLE, SmartStore.SOUP_ATTRS_TABLE, new String[] { SoupSpec.FEATURE_EXTERNAL_STORAGE });
 		}
 	}
 	
@@ -237,6 +258,11 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 				communityDBNamePrefix.append(accountSuffix);
 		    	deleteFiles(ctx, communityDBNamePrefix.toString());
 			}
+
+			// Delete external blobs directory
+			StringBuilder blobsDbPath = new StringBuilder(ctx.getApplicationInfo().dataDir);
+			blobsDbPath.append("/databases/").append(fullDBName).append(EXTERNAL_BLOBS_SUFFIX);
+			removeAllFiles(new File(blobsDbPath.toString()));
 		} catch (Exception e) {
 			Log.e("DBOpenHelper:deleteDatabase", "Exception occurred while attempting to delete database.", e);
 		}
@@ -343,4 +369,233 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			return false;
 		}
     }
+
+	/**
+	 * Returns the path to external blobs folder for the given soup in this db. If no soup is provided, the db folder is returned.
+	 *
+	 * @param soupTableName Name of the soup for which to get external blobs folder.
+	 *
+	 * @return Path to external blobs folder for the given soup. If no soup is provided, the parent directory is returned.
+	 */
+	public String getExternalSoupBlobsPath(String soupTableName) {
+		StringBuilder path = new StringBuilder(dataDir);
+		path.append("/databases/").append(dbName).append(EXTERNAL_BLOBS_SUFFIX);
+		if (soupTableName != null) {
+			path.append(soupTableName).append('/');
+		}
+		return path.toString();
+	}
+
+	/**
+	 * Recursively determines size of all files in the given subdirectory of the soup storage.
+	 *
+	 * @param subDir Subdirectory to determine size of. Use null for top-level directory.
+	 *
+	 * @return Size of all files in all subdirectories.
+     */
+	public int getSizeOfDir(File subDir) {
+		int size = 0;
+		if (subDir == null) {
+			// Top level directory
+			subDir = new File(getExternalSoupBlobsPath(null));
+		}
+		if (subDir.exists()) {
+			File[] files = subDir.listFiles();
+			if (files != null) {
+				for (File file : files) {
+					if (file.isFile()) {
+						size += file.length();
+					} else {
+						size += getSizeOfDir(file);
+					}
+				}
+			}
+		}
+		return size;
+	}
+
+	/**
+	 * Removes all files and folders in the given directory recursively as well as removes itself.
+	 *
+	 * @param dir Directory to remove all files and folders recursively.
+	 * @return True if all delete operations were successful. False otherwise.
+     */
+	public static boolean removeAllFiles(File dir) {
+		if (dir != null && dir.exists()) {
+			boolean success = true;
+			File[] files = dir.listFiles();
+			if (files != null) {
+				for (File file : files) {
+					if (file.isFile()) {
+						success &= file.delete();
+					} else {
+						success &= removeAllFiles(file);
+					}
+				}
+			}
+			success &= dir.delete();
+			return success;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * Creates the folder for external blobs for the given soup name.
+	 *
+	 * @param soupTableName Soup for which to create the external blobs folder
+	 *
+	 * @return True if directory was created, false otherwise.
+	 */
+	public boolean createExternalBlobsDirectory(String soupTableName) {
+		File blobsDirectory = new File(getExternalSoupBlobsPath(soupTableName));
+		return blobsDirectory.mkdirs();
+	}
+
+	/**
+	 * Removes the folder for external blobs for the given soup name.
+	 *
+	 * @param soupTableName Soup for which to remove the external blobs folder
+	 *
+	 * @return True if directory was removed, false otherwise.
+	 */
+	public boolean removeExternalBlobsDirectory(String soupTableName) {
+		if (dataDir != null) {
+			return removeAllFiles(new File(getExternalSoupBlobsPath(soupTableName)));
+		} else {
+			return false;
+		}
+	}
+
+
+	/**
+	 * Re-encrypts the files on external storage with the new key. If external storage is not enabled for any table in the db, this operation is ignored.
+	 *
+	 * @param db DB containing external storage (if applicable).
+	 * @param oldKey Old key with which to decrypt the existing data.
+	 * @param newKey New key with which to encrypt the existing data.
+	 */
+	public static void reEncryptAllFiles(SQLiteDatabase db, String oldKey, String newKey) {
+		StringBuilder path = new StringBuilder(db.getPath()).append(EXTERNAL_BLOBS_SUFFIX);
+		File dir = new File(path.toString());
+		if (dir.exists()) {
+			File[] tables = dir.listFiles();
+			if (tables != null) {
+				for (File table : tables) {
+					File[] blobs = table.listFiles();
+					if (blobs != null) {
+						for (File blob : blobs) {
+							StringBuilder json = new StringBuilder();
+							String result = null;
+							try {
+								BufferedReader br = new BufferedReader(new FileReader(blob));
+								String line;
+
+								while ((line = br.readLine()) != null) {
+									json.append(line).append('\n');
+								}
+
+								br.close();
+								result = Encryptor.decrypt(json.toString(), oldKey);
+
+								blob.delete();
+
+								FileOutputStream outputStream = new FileOutputStream(blob, false);
+								outputStream.write(Encryptor.encrypt(result, newKey).getBytes());
+								outputStream.close();
+
+							} catch (IOException ex) {
+								Log.e("DBOpenHelper:reEncryptAllFiles", "Exception occurred while rekeying external files.", ex);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Places the soup blob on file storage. The name and folder are determined by the soup and soup entry id.
+	 *
+	 * @param soupTableName Name of the soup that the blob belongs to.
+	 * @param soupEntryId Entry id for the soup blob.
+	 * @param soupElt Blob to store on file storage in JSON format.
+	 * @param passcode Key with which to encrypt the data.
+	 *
+	 * @return True if operation was successful, false otherwise.
+	 */
+	public boolean saveSoupBlob(String soupTableName, long soupEntryId, JSONObject soupElt, String passcode) {
+		FileOutputStream outputStream;
+		File file = getSoupBlobFile(soupTableName, soupEntryId);
+
+		try {
+			outputStream = new FileOutputStream(file, false);
+			outputStream.write(Encryptor.encrypt(soupElt.toString(), passcode).getBytes());
+			outputStream.close();
+			return true;
+		} catch (IOException ex) {
+			Log.e("DBOpenHelper:saveSoupBlob", "Exception occurred while attempting to write external soup blob.", ex);
+		}
+		return false;
+	}
+
+	/**
+	 * Retrieves the soup blob for the given soup entry id from file storage.
+	 *
+	 * @param soupTableName Soup name to which the blob belongs.
+	 * @param soupEntryId Entry id for the requested soup blob.
+	 * @param passcode Key with which to decrypt the data.
+	 *
+	 * @return The blob from file storage represented as JSON. Returns null if there was an error.
+	 */
+	public JSONObject loadSoupBlob(String soupTableName, long soupEntryId, String passcode) {
+		File file = getSoupBlobFile(soupTableName, soupEntryId);
+		StringBuilder json = new StringBuilder();
+		JSONObject result = null;
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(file));
+			String line;
+
+			while ((line = br.readLine()) != null) {
+				json.append(line).append('\n');
+			}
+
+			br.close();
+			result = new JSONObject(Encryptor.decrypt(json.toString(), passcode));
+
+		} catch (JSONException | IOException ex) {
+			Log.e("DBOpenHelper:loadSoupBlob", "Exception occurred while attempting to read external soup blob.", ex);
+		}
+		return result;
+	}
+
+	/**
+	 * Removes the blobs represented by the given list of soup entry ids from external storage.
+	 *
+	 * @param soupTableName Soup name to which the blobs belong.
+	 * @param soupEntryIds List of soup entry ids to delete.
+	 *
+	 * @return True if all soup entry ids were deleted, false if blob could not be found or had an error.
+	 */
+	public boolean removeSoupBlob(String soupTableName, Long[] soupEntryIds) {
+		File file;
+		boolean success = true;
+		for (long soupEntryId : soupEntryIds) {
+			file = getSoupBlobFile(soupTableName, soupEntryId);
+			success &= file.delete();
+		}
+		return success;
+	}
+
+	/**
+	 * Returns a file that the soup data is stored in for the given soup name and entry id.
+	 *
+	 * @param soupTableName Soup name to which the blob belongs.
+	 * @param soupEntryId Entry id for the requested soup blob.
+	 *
+	 * @return A File representing the soup blob in external storage.
+	 */
+	public File getSoupBlobFile(String soupTableName, long soupEntryId) {
+		return new File(getExternalSoupBlobsPath(soupTableName), SOUP_ELEMENT_PREFIX + soupEntryId);
+	}
 }

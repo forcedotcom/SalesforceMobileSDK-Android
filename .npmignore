@@ -65,6 +65,12 @@ libs/SalesforceSDK/SalesforceSDK.iml
 gradle/gradle.iml
 SalesforceMobileSDK-Android.iml
 
+libs/SalesforceHybrid/build/
+libs/SalesforceReact/build/
+libs/SalesforceSDK/build/
+libs/SmartStore/build/
+libs/SmartSync/build/
+
 .gitignore
 .metadata/
 .idea/
@@ -72,3 +78,4 @@ coverage.em
 coverage/
 .gradle/
 build/
+.github/ISSUE_TEMPLATE

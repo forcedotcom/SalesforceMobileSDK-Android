@@ -36,20 +36,24 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.protocol.HTTP;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
-import java.util.Iterator;
 import java.util.Map;
+
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
 
 public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
@@ -58,6 +62,10 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
     public static final String PATH_KEY = "path";
     public static final String QUERY_PARAMS_KEY = "queryParams";
     public static final String HEADER_PARAMS_KEY = "headerParams";
+    public static final String FILE_PARAMS_KEY = "fileParams";
+    public static final String FILE_MIME_TYPE_KEY = "fileMimeType";
+    public static final String FILE_URL_KEY = "fileUrl";
+    public static final String FILE_NAME_KEY = "fileName";
 
     private RestClient restClient;
 
@@ -81,6 +89,10 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
 
             // Sending request
             RestClient restClient = getRestClient();
+
+            if (restClient == null)
+                return; // we are detached - do nothing
+
             restClient.sendAsync(request, new RestClient.AsyncRequestCallback() {
                 @Override
                 public void onSuccess(RestRequest request, RestResponse response) {
@@ -111,61 +123,74 @@ public class SalesforceNetReactBridge extends ReactContextBaseJavaModule {
     }
 
     @NonNull
-    private RestRequest prepareRestRequest(ReadableMap args) throws UnsupportedEncodingException {
+    private RestRequest prepareRestRequest(ReadableMap args) throws UnsupportedEncodingException, URISyntaxException {
         // Parse args
         RestRequest.RestMethod method = RestRequest.RestMethod.valueOf(args.getString(METHOD_KEY));
         String endPoint = args.getString(END_POINT_KEY);
         String path = args.getString(PATH_KEY);
         ReadableMap queryParams = args.getMap(QUERY_PARAMS_KEY);
         ReadableMap headerParams = args.getMap(HEADER_PARAMS_KEY);
+        ReadableMap fileParams = args.getMap(FILE_PARAMS_KEY);
 
         // Preparing request
-        Map<String, String> additionalHeaders = ReactBridgeHelper.toJavaStringMap(headerParams);
-        Map<String, String> queryParamsMap = ReactBridgeHelper.toJavaStringMap(queryParams);
+        Map<String, String> additionalHeaders = ReactBridgeHelper.toJavaStringStringMap(headerParams);
+        Map<String, String> queryParamsMap = ReactBridgeHelper.toJavaStringStringMap(queryParams);
+        Map<String, Map<String, String>> fileParamsMap = ReactBridgeHelper.toJavaStringMapMap(fileParams);
 
         String urlParams = "";
-        HttpEntity requestEntity = null;
+        RequestBody requestBody = null;
         if (method == RestRequest.RestMethod.DELETE || method == RestRequest.RestMethod.GET || method == RestRequest.RestMethod.HEAD) {
             urlParams = buildQueryString(queryParamsMap);
         } else {
-            requestEntity = buildEntity(queryParamsMap);
+            requestBody = buildRequestBody(queryParamsMap, fileParamsMap);
         }
-        return new RestRequest(method, endPoint + path + urlParams, requestEntity, additionalHeaders);
+
+        String separator = urlParams.isEmpty()
+                ? ""
+                : path.contains("?")
+                    ? (path.endsWith("&") ? "" : "&")
+                    : "?";
+
+        return new RestRequest(method, endPoint + path + separator + urlParams, requestBody, additionalHeaders);
     }
 
     private RestClient getRestClient() {
-        if (restClient == null) {
-            UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
-            if (account == null) {
-                restClient = SalesforceSDKManager.getInstance().getClientManager().peekUnauthenticatedRestClient();
-            } else {
-                restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient(account);
-            }
-        }
-        return restClient;
+        final SalesforceReactActivity currentActivity = (SalesforceReactActivity) getCurrentActivity();
+        return currentActivity != null ? currentActivity.getRestClient() : null;
     }
 
     private static String buildQueryString(Map<String, String> params) throws UnsupportedEncodingException {
         StringBuilder sb = new StringBuilder();
-        Iterator it = params.entrySet().iterator();
-        sb.append("?");
-        while (it.hasNext()) {
-            Map.Entry<String, String> pair = (Map.Entry) it.next();
-            sb.append(pair.getKey()).append("=").append(URLEncoder.encode(pair.getValue(), HTTP.UTF_8)).append("&");
+        for(Map.Entry<String, String> entry : params.entrySet()) {
+            sb.append(entry.getKey()).append("=").append(URLEncoder.encode(entry.getValue(), RestRequest.UTF_8)).append("&");
         }
         return sb.toString();
     }
 
-    private static HttpEntity buildEntity(Map<String, String> params) {
-        HttpEntity entity = null;
-        if (params != null) {
-            try {
-                JSONObject json = new JSONObject(params);
-                entity = new StringEntity(json.toString(), HTTP.UTF_8);
-            } catch (UnsupportedEncodingException e) {
-                Log.e("NetReactBridge", "buildEntity failed", e);
-            }
+    private static RequestBody buildRequestBody(Map<String, String> params, Map<String, Map<String, String>> fileParams) throws URISyntaxException {
+        if (fileParams.isEmpty()) {
+            return RequestBody.create(RestRequest.MEDIA_TYPE_JSON, new JSONObject(params).toString());
         }
-        return entity;
+        else {
+            MultipartBody.Builder builder = new MultipartBody.Builder().setType(MultipartBody.FORM);
+            for (Map.Entry<String, String> entry : params.entrySet()) {
+                builder.addFormDataPart(entry.getKey(), entry.getValue());
+            }
+
+            // File params expected to be of the form:
+            // {<fileParamNameInPost>: {fileMimeType:<someMimeType>, fileUrl:<fileUrl>, fileName:<fileNameForPost>}}
+            for(Map.Entry<String, Map<String, String>> fileParamEntry : fileParams.entrySet()) {
+                Map<String, String> fileParam = fileParamEntry.getValue();
+                String fileParamName = fileParamEntry.getKey();
+                String mimeType = fileParam.get(FILE_MIME_TYPE_KEY);
+                String name = fileParam.get(FILE_NAME_KEY);
+                URI url = new URI(fileParam.get(FILE_URL_KEY));
+                File file = new File(url);
+                MediaType mediaType = MediaType.parse(mimeType);
+                builder.addFormDataPart(fileParamName, name, RequestBody.create(mediaType, file));
+            }
+
+            return builder.build();
+        }
     }
 }

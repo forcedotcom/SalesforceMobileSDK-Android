@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided
@@ -26,8 +26,8 @@
 
 'use strict';
 
-var React = require('react-native');
-var {
+import React from 'react';
+import {
     AppRegistry,
     StyleSheet,
     Text,
@@ -35,23 +35,42 @@ var {
     ListView,
     PixelRatio,
     Navigator
-} = React;
+} from 'react-native';
+
 var forceClient = require('./react.force.net.js');
+var oauth = require('./react.force.oauth.js');
 
 var App = React.createClass({
+    getInitialState: function() {
+        return {
+            authenticated: false
+        };
+    },
+
+    componentDidMount: function() {
+        var that = this;
+        oauth.authenticate(
+            function() {
+                that.setState({authenticated:true});
+            },
+            function(error) {
+                console.log('Failed to authenticate:' + error);
+            }
+        );
+    },
+
     render: function() {
+        if (!this.state.authenticated)
+            return (<View/>); // Show splash screen if you have one
+
         return (<Navigator
                   style={styles.container}
                   initialRoute={{name: 'Mobile SDK Sample App', index: 0}}
                   renderScene={(route, navigator) => (<UserList/>)}
-                  navigationBar={
-                          <Navigator.NavigationBar
-                            routeMapper={NavigationBarRouteMapper}
-                          />
-                  }
-                />);
+                  navigationBar={<Navigator.NavigationBar routeMapper={NavigationBarRouteMapper} />} />);
     }
 });
+
 
 var NavigationBarRouteMapper = {
 

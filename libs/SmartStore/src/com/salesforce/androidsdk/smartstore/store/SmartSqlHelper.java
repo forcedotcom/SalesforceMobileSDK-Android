@@ -43,6 +43,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException
  */
 public class SmartSqlHelper  {
 
+	public static final Pattern SOUP_PATH_PATTERN = Pattern.compile("\\{([^}]+)\\}");
 	private static Map<SQLiteDatabase, SmartSqlHelper> INSTANCES;
 
 	/**
@@ -53,7 +54,7 @@ public class SmartSqlHelper  {
 	 */
 	public static synchronized SmartSqlHelper getInstance(SQLiteDatabase db) {
 		if (INSTANCES == null) {
-			INSTANCES = new HashMap<SQLiteDatabase, SmartSqlHelper>();
+			INSTANCES = new HashMap<>();
 		}
 		SmartSqlHelper instance = INSTANCES.get(db);
 		if (instance == null) {
@@ -86,9 +87,8 @@ public class SmartSqlHelper  {
 		}
 
 		// Replacing {soupName} and {soupName:path}
-		Pattern pattern  = Pattern.compile("\\{([^}]+)\\}");
 		StringBuffer sql = new StringBuffer();
-		Matcher matcher = pattern.matcher(smartSql);
+		Matcher matcher = SOUP_PATH_PATTERN.matcher(smartSql);
 		while (matcher.find()) {
 			String fullMatch = matcher.group();
 			String match = matcher.group(1);
@@ -98,7 +98,8 @@ public class SmartSqlHelper  {
 			String soupTableName = getSoupTableNameForSmartSql(db, soupName, position);
 			boolean tableQualified = smartSql.charAt(position-1) == '.';
 			String tableQualifier = tableQualified ? "" : soupTableName + ".";
-			
+			boolean useExternalStorage = DBHelper.getInstance(db).getFeatures(db, soupName).contains(SoupSpec.FEATURE_EXTERNAL_STORAGE);
+
 			// {soupName}
 			if (parts.length == 1) {
 				matcher.appendReplacement(sql, soupTableName);
@@ -107,11 +108,21 @@ public class SmartSqlHelper  {
 
 				// {soupName:_soup}
 				if (path.equals(SOUP)) {
-					matcher.appendReplacement(sql, tableQualifier + SmartStore.SOUP_COL);
+					if (useExternalStorage) {
+						// Since soup column doesn't exist, create new columns for the soup name and soup entry id so they can be retrieved from storage
+						String newColumn = String.format("'%s' as '%s', %s%s as '%s'", soupTableName, SoupSpec.FEATURE_EXTERNAL_STORAGE, tableQualifier, SmartStore.ID_COL, SmartStore.SOUP_ENTRY_ID);
+						matcher.appendReplacement(sql, newColumn);
+					} else {
+						matcher.appendReplacement(sql, tableQualifier + SmartStore.SOUP_COL);
+					}
 				}
 				// {soupName:_soupEntryId}
 				else if (path.equals(SmartStore.SOUP_ENTRY_ID)) {
 					matcher.appendReplacement(sql, tableQualifier + SmartStore.ID_COL);
+				}
+				// {soupName:_soupCreatedDate}
+				else if (path.equals(SmartStore.SOUP_CREATED_DATE)) {
+					matcher.appendReplacement(sql, tableQualifier + SmartStore.CREATED_COL);
 				}
 				// {soupName:_soupLastModifiedDate}
 				else if (path.equals(SmartStore.SOUP_LAST_MODIFIED_DATE)) {
@@ -120,7 +131,7 @@ public class SmartSqlHelper  {
 				// {soupName:path}
 				else {
 					String columnName = getColumnNameForPathForSmartSql(db, soupName, path, position);
-					matcher.appendReplacement(sql, columnName);
+					matcher.appendReplacement(sql, columnName.replace("$", "\\$") /* treat any $ as litteral */);
 				}
 			} else if (parts.length > 2) {
 				reportSmartSqlError("Invalid soup/path reference " + fullMatch, position);
@@ -128,8 +139,16 @@ public class SmartSqlHelper  {
 		}
 		matcher.appendTail(sql);
 
+        // SQL query as string
+		String sqlStr = sql.toString();
+
+		// With json1 support, the column name could be an expression of the form json_extract(soup, '$.x.y.z')
+		// We can't have TABLE_x.json_extract(soup, ...) or table_alias.json_extract(soup, ...) in the sql query
+        // Instead we should have json_extract(TABLE_x.soup, ...)
+		sqlStr = sqlStr.replaceAll("([^ ]+)\\.json_extract\\(soup", "json_extract($1.soup");
+
 		// Done
-		return sql.toString();
+		return sqlStr;
 	}
 	
 	private String getColumnNameForPathForSmartSql(SQLiteDatabase db, String soupName, String path, int position) {

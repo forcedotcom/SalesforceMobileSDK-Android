@@ -144,18 +144,22 @@ public class SyncUpTarget extends SyncTarget {
      * @param objectType
      * @param objectId
      * @return
-     * @throws JSONException
-     * @throws IOException
      */
-    public String fetchLastModifiedDate(SyncManager syncManager, String objectType, String objectId) throws JSONException, IOException {
-        final String query = SOQLBuilder.getInstanceWithFields(getModificationDateFieldName())
-                .from(objectType)
-                .where(getIdFieldName() + " = '" + objectId + "'")
-                .build();
+    public String fetchLastModifiedDate(SyncManager syncManager, String objectType, String objectId) {
+        try {
+            final String query = SOQLBuilder.getInstanceWithFields(getModificationDateFieldName())
+                    .from(objectType)
+                    .where(getIdFieldName() + " = '" + objectId + "'")
+                    .build();
 
-        RestResponse lastModResponse = syncManager.sendSyncWithSmartSyncUserAgent(RestRequest.getRequestForQuery(syncManager.apiVersion, query));
-        JSONArray records = lastModResponse.asJSONObject().optJSONArray(Constants.RECORDS);
-        return records != null && records.length() > 0 ? records.optJSONObject(0).optString(getModificationDateFieldName()) : null;
+            RestResponse lastModResponse = syncManager.sendSyncWithSmartSyncUserAgent(RestRequest.getRequestForQuery(syncManager.apiVersion, query));
+            JSONArray records = lastModResponse.asJSONObject().optJSONArray(Constants.RECORDS);
+            return records != null && records.length() > 0 ? records.optJSONObject(0).optString(getModificationDateFieldName()) : null;
+        }
+        catch (Exception e) {
+            // Caller expects null to be returned if the last modified date could not be fetched
+            return null;
+        }
     }
 
     /**

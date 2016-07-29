@@ -66,7 +66,7 @@ public class LoginServerManagerTest extends InstrumentationTestCase {
         // Wait for app initialization to complete.
         final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
         getInstrumentation().callApplicationOnCreate(app);
-        if (SalesforceSDKManager.getInstance() == null) {
+        if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
