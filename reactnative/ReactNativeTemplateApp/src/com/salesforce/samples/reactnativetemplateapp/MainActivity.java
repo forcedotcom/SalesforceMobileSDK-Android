@@ -26,12 +26,6 @@
  */
 package com.salesforce.samples.reactnativetemplateapp;
 
-import android.annotation.TargetApi;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Build;
-import android.provider.Settings;
-
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
 import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
@@ -41,8 +35,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends SalesforceReactActivity {
-
-	final private int REQUEST_CODE_ASK_PERMISSIONS = 11;
 
     /**
      *
@@ -82,17 +74,6 @@ public class MainActivity extends SalesforceReactActivity {
 				new MainReactPackage(),
 				SalesforceReactSDKManager.getInstance().getReactPackage()
 		);
-	}
-
-	@TargetApi(Build.VERSION_CODES.M)
-	@Override
-	public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-		if (requestCode == REQUEST_CODE_ASK_PERMISSIONS && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-			final Intent myIntent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
-			startActivity(myIntent);
-			return;
-		}
-		super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 	}
 }
 

@@ -26,7 +26,11 @@
  */
 package com.salesforce.androidsdk.reactnative.ui;
 
+import android.annotation.TargetApi;
+import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -93,21 +97,19 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         super.onResume();
 
         // Brings up the passcode screen if needed.
-        if (passcodeManager.onResume(this)) {
+        if (isScreenOverlayEnabled() && passcodeManager.onResume(this)) {
 
-            // Get client (if already logged in)
+            // Get client (if already logged in).
             try {
                 client = clientManager.peekRestClient();
             } catch (ClientManager.AccountInfoNotFoundException e) {
                 client = null;
             }
 
-            // Not logged in
+            // Not logged in.
             if (client == null) {
                 onResumeNotLoggedIn();
-            }
-            // Logged in
-            else {
+            } else {
                 Log.i(TAG, "onResume - Already logged in");
             }
         }
@@ -222,4 +224,14 @@ public abstract class SalesforceReactActivity extends ReactActivity {
                 SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
     }
 
+    @TargetApi(Build.VERSION_CODES.M)
+    private boolean isScreenOverlayEnabled() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(this)) {
+                final Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+                startActivity(intent);
+            }
+        }
+        return true;
+    }
 }
