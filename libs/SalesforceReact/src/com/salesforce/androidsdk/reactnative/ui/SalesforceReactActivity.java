@@ -226,11 +226,9 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
     @TargetApi(Build.VERSION_CODES.M)
     private boolean isScreenOverlayEnabled() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (!Settings.canDrawOverlays(this)) {
-                final Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
-                startActivity(intent);
-            }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            final Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+            startActivity(intent);
         }
         return true;
     }
