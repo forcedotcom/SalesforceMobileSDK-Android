@@ -229,7 +229,9 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
             final Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
             startActivity(intent);
+            return false;
+        } else {
+            return true;
         }
-        return true;
     }
 }
