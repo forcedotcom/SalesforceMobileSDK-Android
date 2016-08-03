@@ -4,7 +4,7 @@ apply plugin: 'com.android.library'
 dependencies {
   compile project(':libs:SmartSync')
   compile 'com.android.support:appcompat-v7:23.0.1'
-  compile 'com.facebook.react:react-native:0.27.+'
+  compile 'com.facebook.react:react-native:0.30.0'
 }
 
 android {
