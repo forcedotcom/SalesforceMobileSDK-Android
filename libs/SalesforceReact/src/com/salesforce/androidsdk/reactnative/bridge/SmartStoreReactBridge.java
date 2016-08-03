@@ -295,7 +295,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 			final IndexSpec[] indexSpecs = IndexSpec.fromJSON(indexesJson);
 
             // Get soup spec if available.
-            final ReadableMap soupSpecObj = args.getMap(SOUP_SPEC);
+            final ReadableMap soupSpecObj = (args.hasKey(SOUP_SPEC) ? args.getMap(SOUP_SPEC) : null);
             if (soupSpecObj != null) {
 
                 // Get soup name.

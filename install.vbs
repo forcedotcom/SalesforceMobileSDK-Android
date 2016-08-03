@@ -72,7 +72,7 @@ Call CopySymlinkFiles()
 
 ' Getting npm dependencies (for react-native)
 WScript.Echo "Getting npm dependencies"
-intReturnVal = objShell.Run("npm install react-native@0.27.2 react@15.1.0 --silent", 1, True)
+intReturnVal = objShell.Run("npm install react-native@0.30.0 react@15.2.0 --silent", 1, True)
 If intReturnVal <> 0 Then
     WScript.Echo "Error getting npm dependencies!"
     WScript.Quit 2
