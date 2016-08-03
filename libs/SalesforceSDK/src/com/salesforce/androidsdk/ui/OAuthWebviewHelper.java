@@ -394,13 +394,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     private class SwapJWTForAccessTokenTask extends BaseFinishAuthFlowTask<LoginOptions> {
 
         @Override
-        protected TokenEndpointResponse performRequest(LoginOptions options) {
-            try {
-                return OAuth2.swapJWTForTokens(HttpAccess.DEFAULT, new URI(options.loginUrl), options.jwt);
-            } catch (Exception e) {
-                Log.w("OAuth.SwapJWT", e);
-            }
-            return null;
+        protected TokenEndpointResponse performRequest(LoginOptions options) throws Exception {
+            return OAuth2.swapJWTForTokens(HttpAccess.DEFAULT, new URI(options.loginUrl), options.jwt);
         }
 
         @Override
@@ -410,7 +405,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 doLoadPage(true);
             }
             else {
-                doLoadPage(false);
+                onAuthFlowError("jwt_oauth_error", "fail to swap jwt");
+                callback.finish();
             }
             loginOptions.setJwt(null);
         }
