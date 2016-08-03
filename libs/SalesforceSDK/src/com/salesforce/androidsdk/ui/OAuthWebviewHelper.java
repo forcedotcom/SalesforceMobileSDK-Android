@@ -395,7 +395,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         @Override
         protected TokenEndpointResponse performRequest(LoginOptions options) throws Exception {
-            return OAuth2.swapJWTForTokens(HttpAccess.DEFAULT, new URI(options.loginUrl), options.jwt);
+            try {
+                return OAuth2.swapJWTForTokens(HttpAccess.DEFAULT, new URI(options.loginUrl), options.jwt);
+            } catch (Exception e) {
+                onAuthFlowError("jwt_oauth_error", e.getLocalizedMessage());
+                callback.finish();
+            }
+            return null;
         }
 
         @Override
