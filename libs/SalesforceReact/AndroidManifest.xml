@@ -7,6 +7,8 @@
 
     <uses-sdk android:minSdkVersion="19"
         android:targetSdkVersion="23" />
-
     <application />
+
+    <!--TODO: Remove the -sdk-23 tag when the minsdk version is 23-->
+    <uses-permission-sdk-23 android:name="android.settings.action.MANAGE_OVERLAY_PERMISSION" />
 </manifest>
