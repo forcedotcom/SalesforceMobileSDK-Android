@@ -398,7 +398,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             try {
                 return OAuth2.swapJWTForTokens(HttpAccess.DEFAULT, new URI(options.loginUrl), options.jwt);
             } catch (Exception e) {
-                Log.w("OAuth.SwapJWT", e);
+                onAuthFlowError("jwt_oauth_error", e.getLocalizedMessage());
+                callback.finish();
             }
             return null;
         }
@@ -410,7 +411,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 doLoadPage(true);
             }
             else {
-                doLoadPage(false);
+                onAuthFlowError("jwt_oauth_error", "fail to swap jwt");
+                callback.finish();
             }
             loginOptions.setJwt(null);
         }
