@@ -112,7 +112,7 @@ public class RestResponse {
 			ResponseBody body = response.body();
 			if (body != null) {
 				responseAsBytes = body.bytes();
-				responseCharSet = body.contentType() != null ? body.contentType().charset() : Charsets.UTF_8;
+				responseCharSet = body.contentType() == null || body.contentType().charset() == null ? Charsets.UTF_8 : body.contentType().charset();
 				body.close();
 			}
 			else {
