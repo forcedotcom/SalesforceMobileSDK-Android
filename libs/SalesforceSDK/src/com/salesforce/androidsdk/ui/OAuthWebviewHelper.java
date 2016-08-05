@@ -394,7 +394,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     private class SwapJWTForAccessTokenTask extends BaseFinishAuthFlowTask<LoginOptions> {
 
         @Override
-        protected TokenEndpointResponse performRequest(LoginOptions options) throws Exception {
+        protected TokenEndpointResponse performRequest(LoginOptions options) {
             try {
                 return OAuth2.swapJWTForTokens(HttpAccess.DEFAULT, new URI(options.loginUrl), options.jwt);
             } catch (Exception e) {
