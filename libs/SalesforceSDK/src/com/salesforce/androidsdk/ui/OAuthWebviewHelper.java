@@ -87,7 +87,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     // Set a custom permission on your connected application with that name if you want
     // the application to be restricted to managed devices
     public static final String MUST_BE_MANAGED_APP_PERM = "must_be_managed_app";
-    public static final String JWT_AUTHENTICATION_FAILED_INTENT = "com.salesforce.auth.jwt.error";
+    public static final String AUTHENTICATION_FAILED_INTENT = "com.salesforce.auth.intent.AUTHENTICATION_ERROR";
     private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
 
@@ -225,6 +225,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         if ("access_denied".equals(error)
                 && "end-user denied authorization".equals(errorDesc)) {
             webview.post(new Runnable() {
+
                 @Override
                 public void run() {
                     clearCookies();
@@ -242,6 +243,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             }, t.getDuration());
             t.show();
         }
+        final Intent intent = new Intent(AUTHENTICATION_FAILED_INTENT);
+        SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
     }
 
     protected void showError(Exception exception) {
@@ -426,8 +429,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             final SalesforceSDKManager mgr = SalesforceSDKManager.getInstance();
             onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
                     getContext().getString(mgr.getSalesforceR().stringJWTAuthenticationErrorBody()));
-            final Intent intent = new Intent(JWT_AUTHENTICATION_FAILED_INTENT);
-            mgr.getAppContext().sendBroadcast(intent);
         }
     }
 
