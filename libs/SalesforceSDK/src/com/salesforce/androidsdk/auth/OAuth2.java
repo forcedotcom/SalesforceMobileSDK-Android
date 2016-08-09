@@ -399,6 +399,14 @@ public class OAuth2 {
                     || httpStatusCode == HttpURLConnection.HTTP_BAD_REQUEST;
         }
 
+        public TokenErrorResponse getTokenErrorResponse() {
+            return response;
+        }
+
+        public int getHttpStatusCode() {
+            return httpStatusCode;
+        }
+
         private static final long serialVersionUID = 1L;
     }
 

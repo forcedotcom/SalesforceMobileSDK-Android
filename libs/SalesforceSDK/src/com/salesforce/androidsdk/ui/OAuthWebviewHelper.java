@@ -88,6 +88,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     // the application to be restricted to managed devices
     public static final String MUST_BE_MANAGED_APP_PERM = "must_be_managed_app";
     public static final String AUTHENTICATION_FAILED_INTENT = "com.salesforce.auth.intent.AUTHENTICATION_ERROR";
+    public static final String HTTP_ERROR_RESPONSE_CODE_INTENT = "com.salesforce.auth.intent.HTTP_RESPONSE_CODE";
+    public static final String RESPONSE_ERROR_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR";
+    public static final String RESPONSE_ERROR_DESCRIPTION_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR_DESCRIPTION";
     private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
 
@@ -217,8 +220,12 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     /**
      * Called when the user facing part of the auth flow completed with an error.
      * We show the user an error and end the activity.
+     *
+     * @param error Error.
+     * @param errorDesc Error description.
+     * @param e Exception.
      */
-    protected void onAuthFlowError(String error, String errorDesc) {
+    protected void onAuthFlowError(String error, String errorDesc, Exception e) {
         Log.w(TAG, error + ":" + errorDesc);
 
         // look for deny. kick them back to login, so clear cookies and repoint browser
@@ -244,6 +251,18 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             t.show();
         }
         final Intent intent = new Intent(AUTHENTICATION_FAILED_INTENT);
+        if (e != null && e instanceof OAuth2.OAuthFailedException) {
+            final OAuth2.OAuthFailedException exception = (OAuth2.OAuthFailedException) e;
+            int statusCode = exception.getHttpStatusCode();
+            intent.putExtra(HTTP_ERROR_RESPONSE_CODE_INTENT, statusCode);
+            final OAuth2.TokenErrorResponse errorResponse = exception.getTokenErrorResponse();
+            if (errorResponse != null) {
+                final String tokenError = errorResponse.error;
+                final String tokenErrorDesc = errorResponse.errorDescription;
+                intent.putExtra(RESPONSE_ERROR_INTENT, tokenError);
+                intent.putExtra(RESPONSE_ERROR_DESCRIPTION_INTENT, tokenErrorDesc);
+            }
+        }
         SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
     }
 
@@ -347,7 +366,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 // Did we fail?
                 if (error != null) {
                     String errorDesc = params.get("error_description");
-                    onAuthFlowError(error, errorDesc);
+                    onAuthFlowError(error, errorDesc, null);
                 }
                 // Or succeed?
                 else {
@@ -428,7 +447,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         private void handleJWTError() {
             final SalesforceSDKManager mgr = SalesforceSDKManager.getInstance();
             onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                    getContext().getString(mgr.getSalesforceR().stringJWTAuthenticationErrorBody()));
+                    getContext().getString(mgr.getSalesforceR().stringJWTAuthenticationErrorBody()), backgroundException);
         }
     }
 
@@ -465,7 +484,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             if (backgroundException != null) {
                 Log.w(TAG, backgroundException);
                 onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                        getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorBody()));
+                        getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorBody()), backgroundException);
                 callback.finish();
                 return;
             }
@@ -473,7 +492,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 final boolean mustBeManagedApp = id.customPermissions.optBoolean(MUST_BE_MANAGED_APP_PERM);
                 if (mustBeManagedApp && !RuntimeConfig.getRuntimeConfig(getContext()).isManagedApp()) {
                     onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                            getContext().getString(mgr.getSalesforceR().stringManagedAppError()));
+                            getContext().getString(mgr.getSalesforceR().stringManagedAppError()), backgroundException);
                     callback.finish();
                     return;
                 }
