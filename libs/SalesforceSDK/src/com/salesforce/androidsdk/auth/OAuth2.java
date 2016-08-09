@@ -399,10 +399,20 @@ public class OAuth2 {
                     || httpStatusCode == HttpURLConnection.HTTP_BAD_REQUEST;
         }
 
+        /**
+         * Returns token error response.
+         *
+         * @return Token error response.
+         */
         public TokenErrorResponse getTokenErrorResponse() {
             return response;
         }
 
+        /**
+         * Returns HTTP status code.
+         *
+         * @return HTTP status code.
+         */
         public int getHttpStatusCode() {
             return httpStatusCode;
         }
