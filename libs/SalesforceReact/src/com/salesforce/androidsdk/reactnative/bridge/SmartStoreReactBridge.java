@@ -286,38 +286,19 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	@ReactMethod
 	public void registerSoup(ReadableMap args, final Callback successCallback,
                              final Callback errorCallback) {
-
-		// Parse args.
-		String soupName = args.isNull(SOUP_NAME) ? null : args.getString(SOUP_NAME);
-		final JSONArray indexesJson = new JSONArray(ReactBridgeHelper.toJavaList(args.getArray(INDEXES)));
-        final SmartStore smartStore = getSmartStore(args);
 		try {
-			final IndexSpec[] indexSpecs = IndexSpec.fromJSON(indexesJson);
+			// Parse args.
+			final SmartStore smartStore = getSmartStore(args);
+			String soupName = args.isNull(SOUP_NAME) ? null : args.getString(SOUP_NAME);
+			IndexSpec[] indexSpecs = getIndexSpecsFromArg(args);
+			SoupSpec soupSpec = getSoupSpecFromArg(args);
 
-            // Get soup spec if available.
-            final ReadableMap soupSpecObj = (args.hasKey(SOUP_SPEC) ? args.getMap(SOUP_SPEC) : null);
-            if (soupSpecObj != null) {
-
-                // Get soup name.
-                soupName = soupSpecObj.getString(SOUP_SPEC_NAME);
-
-                // Get features.
-                final ReadableArray featuresJson = soupSpecObj.getArray(SOUP_SPEC_FEATURES);
-                int size = (featuresJson == null) ? 0 : featuresJson.size();
-                final String[] features = new String[size];
-                if (featuresJson != null) {
-                    for (int i = 0; i < featuresJson.size(); i++) {
-                        features[i] = featuresJson.getString(i);
-                    }
-                }
-
-                // Run register soup with spec.
-                smartStore.registerSoupWithSpec(new SoupSpec(soupName, features), indexSpecs);
+			if (soupSpec != null) {
+                smartStore.registerSoupWithSpec(soupSpec, indexSpecs);
             } else {
-
-                // Run register soup.
                 smartStore.registerSoup(soupName, indexSpecs);
             }
+
 			ReactBridgeHelper.invokeSuccess(successCallback, soupName);
 		} catch (JSONException e) {
 			Log.e(LOG_TAG, "registerSoup", e);
@@ -469,17 +450,20 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	@ReactMethod
 	public void alterSoup(ReadableMap args, final Callback successCallback,
                           final Callback errorCallback) {
-
-		// Parse args
-		String soupName = args.getString(SOUP_NAME);
-        final SmartStore smartStore = getSmartStore(args);
-		boolean reIndexData = args.getBoolean(RE_INDEX_DATA);
-		JSONArray indexesJson = new JSONArray(ReactBridgeHelper.toJavaList(args.getArray(INDEXES)));
 		try {
-			IndexSpec[] indexSpecs = IndexSpec.fromJSON(indexesJson);
+			// Parse args.
+			final SmartStore smartStore = getSmartStore(args);
+			String soupName = args.isNull(SOUP_NAME) ? null : args.getString(SOUP_NAME);
+			IndexSpec[] indexSpecs = getIndexSpecsFromArg(args);
+			SoupSpec soupSpec = getSoupSpecFromArg(args);
+			boolean reIndexData = args.getBoolean(RE_INDEX_DATA);
 
-			// Run register
-			smartStore.alterSoup(soupName, indexSpecs, reIndexData);
+			if (soupSpec != null) {
+				smartStore.alterSoup(soupSpec, indexSpecs, reIndexData);
+			} else {
+				smartStore.alterSoup(soupName, indexSpecs, reIndexData);
+			}
+
 			ReactBridgeHelper.invokeSuccess(successCallback, soupName);
 		} catch (JSONException e) {
 			Log.e(LOG_TAG, "alterSoup", e);
@@ -587,4 +571,45 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	private boolean getIsGlobal(ReadableMap args) {
 		return args != null ? args.getBoolean(IS_GLOBAL_STORE) : false;
 	}
+
+	/**
+	 * Build index specs array from javascript argument
+	 * @param args
+	 * @return
+	 * @throws JSONException
+     */
+	private IndexSpec[] getIndexSpecsFromArg(ReadableMap args) throws JSONException {
+		JSONArray indexesJson = new JSONArray(ReactBridgeHelper.toJavaList(args.getArray(INDEXES)));
+		return IndexSpec.fromJSON(indexesJson);
+	}
+
+	/**
+	 * Build soup spec from javascript argument
+	 * @param args
+	 * @return
+	 * @throws JSONException
+     */
+	private SoupSpec getSoupSpecFromArg(ReadableMap args) throws JSONException {
+		final ReadableMap soupSpecObj = args.hasKey(SOUP_SPEC) ? args.getMap(SOUP_SPEC) : null;
+
+		if (soupSpecObj != null) {
+			// Get soup name.
+			String soupName = soupSpecObj.getString(SOUP_SPEC_NAME);
+
+			// Get features.
+			final ReadableArray featuresJson = soupSpecObj.hasKey(SOUP_SPEC_FEATURES) ? soupSpecObj.getArray(SOUP_SPEC_FEATURES) : null;
+			int size = featuresJson == null ? 0 : featuresJson.size();
+			final String[] features = new String[size];
+			if (featuresJson != null) {
+				for (int i = 0; i < featuresJson.size(); i++) {
+					features[i] = featuresJson.getString(i);
+				}
+			}
+
+			return new SoupSpec(soupName, features);
+		} else {
+			return null;
+		}
+	}
+
 }
