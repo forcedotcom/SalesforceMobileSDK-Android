@@ -213,7 +213,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
             String pc = entry.getText().toString();
             if (pc.length() >= 0 && pc.length() < getMinPasscodeLength()) {
                 error.setText(getMinLengthInstructions(getMinPasscodeLength()));
-                return false;
+                return true; // return true indicating we consumed the action.
             }
             return pc.length() > 0 ? onSubmit(pc) : false;
         } else {
@@ -226,7 +226,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         case Create:
             firstPasscode = enteredPasscode;
             setMode(PasscodeMode.CreateConfirm);
-            return false;
+            return true;
 
         case CreateConfirm:
             if (enteredPasscode.equals(firstPasscode)) {
@@ -265,7 +265,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         case Change:
             firstPasscode = enteredPasscode;
             setMode(PasscodeMode.CreateConfirm);
-            return false;
+            return true;
         }
         return false;
     }
