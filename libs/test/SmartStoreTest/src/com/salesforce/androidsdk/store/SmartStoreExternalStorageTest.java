@@ -172,7 +172,7 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 	protected void tryAllQueryOnChangedSoupWithUpdate(String soupName, JSONObject deletedEntry, String orderPath,
 			IndexSpec[] newIndexSpecs, JSONObject... expectedResults) throws JSONException {
 		//alert the soup
-		store.alterSoup(new SoupSpec(soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE), newIndexSpecs, true);
+		store.alterSoup(soupName, new SoupSpec(soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE), newIndexSpecs, true);
 
 		//delete an entry
 		store.delete(soupName, idOf(deletedEntry));
@@ -204,7 +204,7 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 	protected void tryExactQueryOnChangedSoup(String soupName, String orderPath, String value,
 			IndexSpec[] newIndexSpecs, JSONObject expectedResult) throws JSONException {
 		//alert the soup
-		store.alterSoup(new SoupSpec(soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE), newIndexSpecs, true);
+		store.alterSoup(soupName, new SoupSpec(soupName, SoupSpec.FEATURE_EXTERNAL_STORAGE), newIndexSpecs, true);
 
 		// Exact Query
 		runQueryCheckResultsAndExplainPlan(soupName,
@@ -228,7 +228,7 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 		JSONObject soupElt3ForUpsert = new JSONObject("{'key':'ka3u', 'value':'va3u'}");
 
 		//CASE 1: index spec from key to value
-		store.alterSoup(new SoupSpec(TEST_SOUP, SoupSpec.FEATURE_EXTERNAL_STORAGE), new IndexSpec[]{new IndexSpec("value", Type.string)}, true);
+		store.alterSoup(TEST_SOUP, new SoupSpec(TEST_SOUP, SoupSpec.FEATURE_EXTERNAL_STORAGE), new IndexSpec[]{new IndexSpec("value", Type.string)}, true);
 		//upsert an entry
 		JSONObject soupElt1Upserted = store.upsert(TEST_SOUP, soupElt1ForUpsert);
 		// Query all - small page

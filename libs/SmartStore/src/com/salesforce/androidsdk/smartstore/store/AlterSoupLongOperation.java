@@ -123,12 +123,13 @@ public class AlterSoupLongOperation extends LongOperation {
 	 * Constructor
 	 * 
 	 * @param store
+	 * @param soupName
 	 * @param newSoupSpec
 	 * @param newIndexSpecs
 	 * @param reIndexData
 	 * @throws JSONException 
 	 */
-	public AlterSoupLongOperation(SmartStore store, SoupSpec newSoupSpec, IndexSpec[] newIndexSpecs,
+	public AlterSoupLongOperation(SmartStore store, String soupName, SoupSpec newSoupSpec, IndexSpec[] newIndexSpecs,
 			boolean reIndexData) throws JSONException {
 		
     	synchronized(SmartStore.class) {
@@ -139,7 +140,7 @@ public class AlterSoupLongOperation extends LongOperation {
     		this.db = store.getDatabase();
     		
     		// Setting soupName field
-    		this.soupName = newSoupSpec.getSoupName();
+    		this.soupName = soupName;
 
     		// Setting new soup spec
     		this.newSoupSpec = newSoupSpec;

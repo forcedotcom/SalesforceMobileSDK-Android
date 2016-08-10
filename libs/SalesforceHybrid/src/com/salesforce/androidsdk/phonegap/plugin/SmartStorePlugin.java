@@ -505,7 +505,7 @@ public class SmartStorePlugin extends ForcePlugin {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
-		String soupName = arg0.isNull(SOUP_NAME) ? null : arg0.getString(SOUP_NAME);
+		String soupName = arg0.getString(SOUP_NAME);
 		SoupSpec soupSpec = getSoupSpecFromArg(arg0);
 		IndexSpec[] indexSpecs = getIndexSpecsFromArg(arg0);
 		boolean reIndexData = arg0.getBoolean(RE_INDEX_DATA);
@@ -513,7 +513,7 @@ public class SmartStorePlugin extends ForcePlugin {
 
 		// Run alter
 		if (soupSpec != null) {
-			smartStore.alterSoup(soupSpec, indexSpecs, reIndexData);
+			smartStore.alterSoup(soupName, soupSpec, indexSpecs, reIndexData);
 		} else {
 			smartStore.alterSoup(soupName, indexSpecs, reIndexData);
 		}
@@ -611,49 +611,24 @@ public class SmartStorePlugin extends ForcePlugin {
 
 
     /**
-     * Build index specs array from jsonobject argument
+     * Build index specs array from json object argument
      * @param arg0
      * @return
      * @throws JSONException
      */
     private IndexSpec[] getIndexSpecsFromArg(JSONObject arg0) throws JSONException {
-        List<IndexSpec> indexSpecs = new ArrayList<IndexSpec>();
         JSONArray indexesJson = arg0.getJSONArray(INDEXES);
-        for (int i = 0; i < indexesJson.length(); i++) {
-            JSONObject indexJson = indexesJson.getJSONObject(i);
-            indexSpecs.add(new IndexSpec(indexJson.getString(PATH), SmartStore.Type.valueOf(indexJson.getString(TYPE))));
-        }
-        return indexSpecs.toArray(new IndexSpec[0]);
+        return IndexSpec.fromJSON(indexesJson);
     }
 
     /**
-     * Build soup spec from jsonobject argument
+     * Build soup spec from json object argument
      * @param arg0
      * @return
      * @throws JSONException
      */
     private SoupSpec getSoupSpecFromArg(JSONObject arg0) throws JSONException {
         JSONObject soupSpecObj = arg0.optJSONObject(SOUP_SPEC);
-        if (soupSpecObj != null) {
-
-            // Get soup name
-            String soupName = soupSpecObj.getString(SOUP_SPEC_NAME);
-
-            // Get features
-            JSONArray featuresJson = soupSpecObj.optJSONArray(SOUP_SPEC_FEATURES);
-
-            if (featuresJson == null) {
-                featuresJson = new JSONArray();
-            }
-
-            String[] features = new String[featuresJson.length()];
-            for (int i = 0; i < featuresJson.length(); i++) {
-                features[i] = featuresJson.getString(i);
-            }
-            return new SoupSpec(soupName, features);
-        }
-        else {
-            return null;
-        }
+        return soupSpecObj == null ? null : SoupSpec.fromJSON(soupSpecObj);
     }
 }
