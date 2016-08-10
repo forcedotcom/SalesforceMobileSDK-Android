@@ -589,7 +589,7 @@ public class AlterSoupLongOperation extends LongOperation {
 					do {
 						long id = c.getLong(0);
 						JSONObject entry = new JSONObject(c.getString(1));
-						store.update(soupName, entry, id);
+						((DBOpenHelper) store.dbOpenHelper).saveSoupBlob(soupTableName, id, entry, store.passcode);
 					} while (c.moveToNext());
 				}
 			} catch (JSONException ex) {
