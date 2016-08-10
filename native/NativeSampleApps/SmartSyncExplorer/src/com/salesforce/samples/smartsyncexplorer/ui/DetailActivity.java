@@ -62,7 +62,7 @@ import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 public class DetailActivity extends SalesforceActivity implements LoaderManager.LoaderCallbacks<ContactObject> {
 
 	private static final int CONTACT_DETAIL_LOADER_ID = 2;
-    private static final String TAG = "SmartSyncExplorer: DetailActivity";
+    private static final String TAG = "DetailActivity";
 
     private UserAccount curAccount;
     private String objectId;
@@ -93,9 +93,9 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 	}
 
 	@Override
-	public void onDestroy() {
+	public void onPause() {
 		getLoaderManager().destroyLoader(CONTACT_DETAIL_LOADER_ID);
-		super.onDestroy();
+		super.onPause();
 	}
 
 	@Override
