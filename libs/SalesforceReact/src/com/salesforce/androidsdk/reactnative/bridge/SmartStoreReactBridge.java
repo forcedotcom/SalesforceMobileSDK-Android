@@ -453,13 +453,13 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		try {
 			// Parse args.
 			final SmartStore smartStore = getSmartStore(args);
-			String soupName = args.isNull(SOUP_NAME) ? null : args.getString(SOUP_NAME);
+			String soupName = args.getString(SOUP_NAME);
 			IndexSpec[] indexSpecs = getIndexSpecsFromArg(args);
 			SoupSpec soupSpec = getSoupSpecFromArg(args);
 			boolean reIndexData = args.getBoolean(RE_INDEX_DATA);
 
 			if (soupSpec != null) {
-				smartStore.alterSoup(soupSpec, indexSpecs, reIndexData);
+				smartStore.alterSoup(soupName, soupSpec, indexSpecs, reIndexData);
 			} else {
 				smartStore.alterSoup(soupName, indexSpecs, reIndexData);
 			}
@@ -590,26 +590,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @throws JSONException
      */
 	private SoupSpec getSoupSpecFromArg(ReadableMap args) throws JSONException {
-		final ReadableMap soupSpecObj = args.hasKey(SOUP_SPEC) ? args.getMap(SOUP_SPEC) : null;
-
-		if (soupSpecObj != null) {
-			// Get soup name.
-			String soupName = soupSpecObj.getString(SOUP_SPEC_NAME);
-
-			// Get features.
-			final ReadableArray featuresJson = soupSpecObj.hasKey(SOUP_SPEC_FEATURES) ? soupSpecObj.getArray(SOUP_SPEC_FEATURES) : null;
-			int size = featuresJson == null ? 0 : featuresJson.size();
-			final String[] features = new String[size];
-			if (featuresJson != null) {
-				for (int i = 0; i < featuresJson.size(); i++) {
-					features[i] = featuresJson.getString(i);
-				}
-			}
-
-			return new SoupSpec(soupName, features);
-		} else {
-			return null;
-		}
+		JSONObject soupSpecJson = args.hasKey(SOUP_SPEC) ? new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(SOUP_SPEC))) : null;
+		return soupSpecJson == null ? null : SoupSpec.fromJSON(soupSpecJson);
 	}
 
 }
