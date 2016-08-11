@@ -517,7 +517,7 @@ public class SmartStore  {
 	 */
 	public void alterSoup(String soupName, IndexSpec[] indexSpecs,
 			boolean reIndexData) throws JSONException {
-		alterSoup(soupName, new SoupSpec(soupName, null), indexSpecs, reIndexData);
+		alterSoup(soupName, new SoupSpec(soupName, new String[0]), indexSpecs, reIndexData);
 	}
 
 	/**

@@ -525,19 +525,33 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @return True if operation was successful, false otherwise.
 	 */
 	public boolean saveSoupBlob(String soupTableName, long soupEntryId, JSONObject soupElt, String passcode) {
-		FileOutputStream outputStream;
-		File file = getSoupBlobFile(soupTableName, soupEntryId);
-
-		try {
-			outputStream = new FileOutputStream(file, false);
-			outputStream.write(Encryptor.encrypt(soupElt.toString(), passcode).getBytes());
-			outputStream.close();
-			return true;
-		} catch (IOException ex) {
-			Log.e("DBOpenHelper:saveSoupBlob", "Exception occurred while attempting to write external soup blob.", ex);
-		}
-		return false;
+        return saveSoupBlobFromString(soupTableName, soupEntryId, soupElt.toString(), passcode);
 	}
+
+    /**
+     * Places the soup blob on file storage. The name and folder are determined by the soup and soup entry id.
+     *
+     * @param soupTableName Name of the soup that the blob belongs to.
+     * @param soupEntryId Entry id for the soup blob.
+     * @param soupEltStr Blob to store on file storage as a String.
+     * @param passcode Key with which to encrypt the data.
+     *
+     * @return True if operation was successful, false otherwise.
+     */
+    public boolean saveSoupBlobFromString(String soupTableName, long soupEntryId, String soupEltStr, String passcode) {
+        FileOutputStream outputStream;
+        File file = getSoupBlobFile(soupTableName, soupEntryId);
+
+        try {
+            outputStream = new FileOutputStream(file, false);
+            outputStream.write(Encryptor.encrypt(soupEltStr, passcode).getBytes());
+            outputStream.close();
+            return true;
+        } catch (IOException ex) {
+            Log.e("DBOpenHelper:saveSoupBlob", "Exception occurred while attempting to write external soup blob.", ex);
+        }
+        return false;
+    }
 
 	/**
 	 * Retrieves the soup blob for the given soup entry id from file storage.
@@ -549,9 +563,30 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 * @return The blob from file storage represented as JSON. Returns null if there was an error.
 	 */
 	public JSONObject loadSoupBlob(String soupTableName, long soupEntryId, String passcode) {
+		JSONObject result = null;
+		try {
+			result = new JSONObject(loadSoupBlobAsString(soupTableName, soupEntryId, passcode));
+
+		} catch (JSONException ex) {
+			Log.e("DBOpenHelper:loadSoupBlob", "Exception occurred while attempting to read external soup blob.", ex);
+		}
+		return result;
+	}
+
+
+	/**
+	 * Retrieves the soup blob for the given soup entry id from file storage.
+	 *
+	 * @param soupTableName Soup name to which the blob belongs.
+	 * @param soupEntryId Entry id for the requested soup blob.
+	 * @param passcode Key with which to decrypt the data.
+	 *
+	 * @return The blob from file storage represented as String. Returns null if there was an error.
+	 */
+	public String loadSoupBlobAsString(String soupTableName, long soupEntryId, String passcode) {
 		File file = getSoupBlobFile(soupTableName, soupEntryId);
 		StringBuilder json = new StringBuilder();
-		JSONObject result = null;
+		String result = null;
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(file));
 			String line;
@@ -561,9 +596,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			}
 
 			br.close();
-			result = new JSONObject(Encryptor.decrypt(json.toString(), passcode));
+			result = Encryptor.decrypt(json.toString(), passcode);
 
-		} catch (JSONException | IOException ex) {
+		} catch (IOException ex) {
 			Log.e("DBOpenHelper:loadSoupBlob", "Exception occurred while attempting to read external soup blob.", ex);
 		}
 		return result;
