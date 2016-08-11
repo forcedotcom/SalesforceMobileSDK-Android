@@ -30,6 +30,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.test.ActivityInstrumentationTestCase2;
+import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -102,7 +103,9 @@ public class PasscodeActivityTest extends
 		doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
 		assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
-		
+		assertTrue("Error message should be empty", TextUtils.isEmpty(
+				((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText()));
+
 		// Re-entering 123456 and submitting
 		setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
 		doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
@@ -127,6 +130,8 @@ public class PasscodeActivityTest extends
 		doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
 		assertTrue("Application should still be locked", passcodeManager.isLocked());
 		assertEquals("Activity expected in check mode", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
+		assertTrue("Error message should be empty", TextUtils.isEmpty(
+				((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText()));
 
 		// Re-entering 123456 and submitting
 		setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "123456");
@@ -170,6 +175,24 @@ public class PasscodeActivityTest extends
 		doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
 		assertFalse("Application should be unlocked", passcodeManager.isLocked());
 		assertTrue("Stored passcode should match entered passcode", passcodeManager.check(targetContext, "123456"));
+	}
+
+	/**
+	 * Test passcode creation flow when user try to enter a passcode matching the minimum value
+	 */
+	public void testCreatewithPasscodeMinimumLength() {
+
+		// Get activity
+		passcodeActivity = getActivity();
+		assertEquals("Activity expected in create mode", PasscodeMode.Create, passcodeActivity.getMode());
+
+		// Entering nothing and submitting -> expect passcode too short error
+		setText(com.salesforce.androidsdk.R.id.sf__passcode_text, "1234");
+		doEditorAction(com.salesforce.androidsdk.R.id.sf__passcode_text, EditorInfo.IME_ACTION_GO);
+		assertTrue("Application should still be locked", passcodeManager.isLocked());
+		assertEquals("Activity expected in create mode still", PasscodeMode.CreateConfirm, passcodeActivity.getMode());
+		assertTrue("Error Message should be empty", TextUtils.isEmpty(
+				((TextView) passcodeActivity.findViewById(com.salesforce.androidsdk.R.id.sf__passcode_error)).getText()));
 	}
 
 	/**
