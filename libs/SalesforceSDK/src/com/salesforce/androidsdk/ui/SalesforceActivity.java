@@ -39,6 +39,7 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
 
 /**
@@ -48,6 +49,7 @@ public abstract class SalesforceActivity extends Activity {
 
 	private PasscodeManager passcodeManager;
     private UserSwitchReceiver userSwitchReceiver;
+    private LogoutCompleteReceiver logoutCompleteReceiver;
 
 	/**
 	 * Method that is called after the activity resumes once we have a RestClient.
@@ -64,6 +66,8 @@ public abstract class SalesforceActivity extends Activity {
 		passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         userSwitchReceiver = new ActivityUserSwitchReceiver();
         registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
+        logoutCompleteReceiver = new ActivityLogoutCompleteReceiver();
+        registerReceiver(logoutCompleteReceiver, new IntentFilter(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION));
 
 		// Lets observers know that activity creation is complete.
 		EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
@@ -113,6 +117,7 @@ public abstract class SalesforceActivity extends Activity {
     @Override
     public void onDestroy() {
     	unregisterReceiver(userSwitchReceiver);
+        unregisterReceiver(logoutCompleteReceiver);
     	super.onDestroy();
     }
 
@@ -146,6 +151,12 @@ public abstract class SalesforceActivity extends Activity {
 	}
 
     /**
+     * Performs actions on logout complete.
+     */
+    protected void logoutCompleteActions() {
+    }
+
+    /**
      * Acts on the user switch event.
      *
      * @author bhariharan
@@ -157,4 +168,17 @@ public abstract class SalesforceActivity extends Activity {
 			refreshIfUserSwitched();
 		}
     }
+
+	/**
+	 * Acts on the logout complete event.
+	 *
+	 * @author bhariharan
+	 */
+	private class ActivityLogoutCompleteReceiver extends LogoutCompleteReceiver {
+
+		@Override
+		protected void onLogoutComplete() {
+            logoutCompleteActions();
+		}
+	}
 }
