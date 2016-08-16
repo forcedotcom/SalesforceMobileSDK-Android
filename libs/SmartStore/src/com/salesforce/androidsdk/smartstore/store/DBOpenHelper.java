@@ -567,7 +567,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		try {
 			result = new JSONObject(loadSoupBlobAsString(soupTableName, soupEntryId, passcode));
 
-		} catch (JSONException ex) {
+		} catch (Exception ex) {
 			Log.e("DBOpenHelper:loadSoupBlob", "Exception occurred while attempting to read external soup blob.", ex);
 		}
 		return result;
