@@ -565,8 +565,10 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public JSONObject loadSoupBlob(String soupTableName, long soupEntryId, String passcode) {
 		JSONObject result = null;
 		try {
-			result = new JSONObject(loadSoupBlobAsString(soupTableName, soupEntryId, passcode));
-
+			final String soupBlobString = loadSoupBlobAsString(soupTableName, soupEntryId, passcode);
+			if (soupBlobString != null) {
+				result = new JSONObject(soupBlobString);
+			}
 		} catch (JSONException ex) {
 			Log.e("DBOpenHelper:loadSoupBlob", "Exception occurred while attempting to read external soup blob.", ex);
 		}
@@ -590,11 +592,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(file));
 			String line;
-
 			while ((line = br.readLine()) != null) {
 				json.append(line).append('\n');
 			}
-
 			br.close();
 			result = Encryptor.decrypt(json.toString(), passcode);
 
