@@ -148,8 +148,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		dataDir = context.getApplicationInfo().dataDir;
 	}
 
-	 protected void loadLibs(Context context) {
-        SQLiteDatabase.loadLibs(context);
+    protected void loadLibs(Context context) {
+        new SqliteLibraryLoader().loadSqlCipher(context);
     }
 
 	@Override
