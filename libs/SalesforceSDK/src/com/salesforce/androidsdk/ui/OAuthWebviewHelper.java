@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, salesforce.com, inc.
+ * Copyright (c) 2011-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,16 +26,10 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.PrivateKey;
-import java.security.cert.X509Certificate;
-import java.util.Locale;
-import java.util.Map;
-
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.net.http.SslError;
 import android.os.AsyncTask;
@@ -70,6 +64,13 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.security.PrivateKey;
+import java.security.cert.X509Certificate;
+import java.util.Locale;
+import java.util.Map;
+
 /**
  * Helper class to manage a WebView instance that is going through the OAuth login process.
  * Basic flow is
@@ -86,7 +87,11 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     // Set a custom permission on your connected application with that name if you want
     // the application to be restricted to managed devices
     public static final String MUST_BE_MANAGED_APP_PERM = "must_be_managed_app";
-
+    public static final String AUTHENTICATION_FAILED_INTENT = "com.salesforce.auth.intent.AUTHENTICATION_ERROR";
+    public static final String HTTP_ERROR_RESPONSE_CODE_INTENT = "com.salesforce.auth.intent.HTTP_RESPONSE_CODE";
+    public static final String RESPONSE_ERROR_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR";
+    public static final String RESPONSE_ERROR_DESCRIPTION_INTENT = "com.salesforce.auth.intent.RESPONSE_ERROR_DESCRIPTION";
+    private static final String TAG = "OAuthWebViewHelper";
     private static final String ACCOUNT_OPTIONS = "accountOptions";
 
     /**
@@ -215,14 +220,19 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     /**
      * Called when the user facing part of the auth flow completed with an error.
      * We show the user an error and end the activity.
+     *
+     * @param error Error.
+     * @param errorDesc Error description.
+     * @param e Exception.
      */
-    protected void onAuthFlowError(String error, String errorDesc) {
-        Log.w("LoginActivity:onAuthFlowError", error + ":" + errorDesc);
+    protected void onAuthFlowError(String error, String errorDesc, Exception e) {
+        Log.w(TAG, error + ":" + errorDesc);
 
         // look for deny. kick them back to login, so clear cookies and repoint browser
         if ("access_denied".equals(error)
                 && "end-user denied authorization".equals(errorDesc)) {
             webview.post(new Runnable() {
+
                 @Override
                 public void run() {
                     clearCookies();
@@ -240,6 +250,20 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             }, t.getDuration());
             t.show();
         }
+        final Intent intent = new Intent(AUTHENTICATION_FAILED_INTENT);
+        if (e != null && e instanceof OAuth2.OAuthFailedException) {
+            final OAuth2.OAuthFailedException exception = (OAuth2.OAuthFailedException) e;
+            int statusCode = exception.getHttpStatusCode();
+            intent.putExtra(HTTP_ERROR_RESPONSE_CODE_INTENT, statusCode);
+            final OAuth2.TokenErrorResponse errorResponse = exception.getTokenErrorResponse();
+            if (errorResponse != null) {
+                final String tokenError = errorResponse.error;
+                final String tokenErrorDesc = errorResponse.errorDescription;
+                intent.putExtra(RESPONSE_ERROR_INTENT, tokenError);
+                intent.putExtra(RESPONSE_ERROR_DESCRIPTION_INTENT, tokenErrorDesc);
+            }
+        }
+        SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(intent);
     }
 
     protected void showError(Exception exception) {
@@ -298,6 +322,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     protected URI getAuthorizationUrl() throws URISyntaxException {
         return getAuthorizationUrl(false);
     }
+
    	/** 
    	 * Override this to replace the default login webview's display param with
    	 * your custom display param. You can override this by either subclassing this class,
@@ -322,7 +347,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     /**
      * WebViewClient which intercepts the redirect to the oauth callback url.
      * That redirect marks the end of the user facing portion of the authentication flow.
-     *
      */
     protected class AuthWebViewClient extends WebViewClient {
 
@@ -342,7 +366,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 // Did we fail?
                 if (error != null) {
                     String errorDesc = params.get("error_description");
-                    onAuthFlowError(error, errorDesc);
+                    onAuthFlowError(error, errorDesc, null);
                 }
                 // Or succeed?
                 else {
@@ -398,32 +422,44 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             try {
                 return OAuth2.swapJWTForTokens(HttpAccess.DEFAULT, new URI(options.loginUrl), options.jwt);
             } catch (Exception e) {
-                Log.w("OAuth.SwapJWT", e);
+                backgroundException = e;
             }
             return null;
         }
 
         @Override
         protected void onPostExecute(TokenEndpointResponse tr) {
+            if (backgroundException != null) {
+                handleJWTError();
+                loginOptions.setJwt(null);
+                return;
+            }
             if (tr != null && tr.authToken != null) {
                 loginOptions.setJwt(tr.authToken);
                 doLoadPage(true);
-            }
-            else {
+            } else {
                 doLoadPage(false);
+                handleJWTError();
             }
             loginOptions.setJwt(null);
         }
+
+        private void handleJWTError() {
+            final SalesforceSDKManager mgr = SalesforceSDKManager.getInstance();
+            onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
+                    getContext().getString(mgr.getSalesforceR().stringJWTAuthenticationErrorBody()), backgroundException);
+        }
     }
 
-     // base class with common code for the background task that finishes off the auth process
+    /**
+     * Base class with common code for the background task that finishes off the auth process.
+     */
     protected abstract class BaseFinishAuthFlowTask<RequestType> extends AsyncTask<RequestType, Boolean, TokenEndpointResponse> {
 
         protected volatile Exception backgroundException;
         protected volatile IdServiceResponse id = null;
 
         public BaseFinishAuthFlowTask() {
-
         }
 
         @SafeVarargs
@@ -444,31 +480,25 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         protected void onPostExecute(OAuth2.TokenEndpointResponse tr) {
             final SalesforceSDKManager mgr = SalesforceSDKManager.getInstance();
 
-            //
             // Failure cases.
-            //
             if (backgroundException != null) {
-                Log.w("LoginActiviy.onAuthFlowComplete", backgroundException);
-                // Error
+                Log.w(TAG, backgroundException);
                 onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                        getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorBody()));
+                        getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorBody()), backgroundException);
                 callback.finish();
                 return;
             }
-
             if (id.customPermissions != null) {
                 final boolean mustBeManagedApp = id.customPermissions.optBoolean(MUST_BE_MANAGED_APP_PERM);
                 if (mustBeManagedApp && !RuntimeConfig.getRuntimeConfig(getContext()).isManagedApp()) {
                     onAuthFlowError(getContext().getString(mgr.getSalesforceR().stringGenericAuthenticationErrorTitle()),
-                            getContext().getString(mgr.getSalesforceR().stringManagedAppError()));
+                            getContext().getString(mgr.getSalesforceR().stringManagedAppError()), backgroundException);
                     callback.finish();
                     return;
                 }
             }
 
-            //
             // Putting together all the information needed to create the new account.
-            //
             accountOptions = new AccountOptions(id.username, tr.refreshToken,
                     tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId,
                     tr.communityId, tr.communityUrl, id.firstName, id.lastName,
@@ -485,17 +515,14 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     accountOptions.firstName, accountOptions.lastName, accountOptions.displayName,
                     accountOptions.email, accountOptions.photoUrl,
                     accountOptions.thumbnailUrl);
-
             if (id.customAttributes != null) {
                 mgr.getAdminSettingsManager().setPrefs(id.customAttributes, account);
             }
-
             if (id.customPermissions != null) {
                 mgr.getAdminPermsManager().setPrefs(id.customPermissions, account);
             }
 
-
-            // Screen lock required by mobile policy
+            // Screen lock required by mobile policy.
             if (id.screenLockTimeout > 0) {
 
                 // Stores the mobile policy for the org.
@@ -534,8 +561,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         }
 
         protected void handleException(Exception ex) {
-            if (ex.getMessage() != null)
-                Log.w("BaseFinishAuthFlowTask", "handleException", ex);
+            if (ex.getMessage() != null) {
+                Log.w(TAG, "handleException", ex);
+            }
             backgroundException = ex;
         }
 
@@ -550,6 +578,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      * the Identity service, and finally wrap up and create account.
      */
     private class FinishAuthTask extends BaseFinishAuthFlowTask<TokenEndpointResponse> {
+
         @Override
         protected TokenEndpointResponse performRequest(TokenEndpointResponse tr) throws Exception {
             try {
@@ -561,7 +590,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             return tr;
         }
     }
-
 
     protected void addAccount() {
         ClientManager clientManager = new ClientManager(getContext(),
@@ -671,10 +699,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         public final String email;
         public final String photoUrl;
         public final String thumbnailUrl;
-
         private final Bundle bundle;
-
-
 
         public AccountOptions(String username, String refreshToken,
                 String authToken, String identityUrl, String instanceUrl,
@@ -696,8 +721,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             this.email = email;
             this.photoUrl = photoUrl;
             this.thumbnailUrl = thumbnailUrl;
-
-
             bundle = new Bundle();
             bundle.putString(USERNAME, username);
             bundle.putString(REFRESH_TOKEN, refreshToken);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -88,7 +88,12 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "4.3.0.unstable";
+    public static final String SDK_VERSION = "5.0.0.unstable";
+
+    /**
+     * Intent action that specifies that logout was completed.
+     */
+    public static final String LOGOUT_COMPLETE_INTENT_ACTION = "com.salesforce.LOGOUT_COMPLETE";
 
     /**
      * Default app name.
@@ -722,7 +727,7 @@ public class SalesforceSDKManager {
             try {
                 context.unregisterReceiver(pushReceiver);
             } catch (Exception e) {
-            	Log.e("SalesforceSDKManager:postPushUnregister", "Exception occurred while un-registering.", e);
+            	Log.e("SalesforceSDKManager", "Exception occurred while un-registering.", e);
             }
     		removeAccount(clientMgr, showLoginPage, refreshToken, clientId, loginServer, account, frontActivity);
         }
@@ -869,6 +874,7 @@ public class SalesforceSDKManager {
 
     private void notifyLogoutComplete(boolean showLoginPage) {
     	EventsObservable.get().notifyEvent(EventType.LogoutComplete);
+        sendLogoutCompleteIntent();
 		if (showLoginPage) {
 			startSwitcherActivityIfRequired();
 		}
@@ -892,11 +898,11 @@ public class SalesforceSDKManager {
             appName = context.getString(packageInfo.applicationInfo.labelRes);
             appVersion = packageInfo.versionName;
         } catch (NameNotFoundException e) {
-            Log.w("SalesforceSDKManager:getUserAgent", e);
+            Log.w("SalesforceSDKManager", e);
         } catch (Resources.NotFoundException nfe) {
 
     	   	// A test harness such as Gradle does NOT have an application name.
-            Log.w("SalesforceSDKManager:getUserAgent", nfe);
+            Log.w("SalesforceSDKManager", nfe);
         }
         String appTypeWithQualifier = getAppType() + qualifier;
         return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s",
@@ -989,7 +995,7 @@ public class SalesforceSDKManager {
 	        try {
 	        	OAuth2.revokeRefreshToken(HttpAccess.DEFAULT, new URI(loginServer), refreshToken);
 	        } catch (Exception e) {
-	        	Log.w("SalesforceSDKManager:revokeToken", e);
+	        	Log.w("SalesforceSDKManager", e);
 	        }
 	        return null;
 		}
@@ -1076,5 +1082,11 @@ public class SalesforceSDKManager {
 	        CookieSyncManager.createInstance(context);
 	        CookieSyncManager.getInstance().sync();
 		}
+    }
+
+    private void sendLogoutCompleteIntent() {
+        final Intent intent = new Intent(LOGOUT_COMPLETE_INTENT_ACTION);
+        intent.setPackage(context.getPackageName());
+        context.sendBroadcast(intent);
     }
 }

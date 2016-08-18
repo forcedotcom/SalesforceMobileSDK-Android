@@ -45,6 +45,7 @@ public class SalesforceR {
 	public int stringGenericError() {return R.string.sf__generic_error; }
 	public int stringGenericAuthenticationErrorTitle() {return R.string.sf__generic_authentication_error_title; }
 	public int stringGenericAuthenticationErrorBody() {return R.string.sf__generic_authentication_error; }
+	public int stringJWTAuthenticationErrorBody() {return R.string.sf__jwt_authentication_error; }
     public int stringManagedAppError() { return R.string.sf__managed_app_error; }
 	public int menuLogin() { return R.menu.sf__login; }
 	public int idItemClearCookies() { return R.id.sf__menu_clear_cookies; }

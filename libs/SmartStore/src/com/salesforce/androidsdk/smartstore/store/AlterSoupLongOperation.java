@@ -123,12 +123,13 @@ public class AlterSoupLongOperation extends LongOperation {
 	 * Constructor
 	 * 
 	 * @param store
+	 * @param soupName
 	 * @param newSoupSpec
 	 * @param newIndexSpecs
 	 * @param reIndexData
 	 * @throws JSONException 
 	 */
-	public AlterSoupLongOperation(SmartStore store, SoupSpec newSoupSpec, IndexSpec[] newIndexSpecs,
+	public AlterSoupLongOperation(SmartStore store, String soupName, SoupSpec newSoupSpec, IndexSpec[] newIndexSpecs,
 			boolean reIndexData) throws JSONException {
 		
     	synchronized(SmartStore.class) {
@@ -139,7 +140,7 @@ public class AlterSoupLongOperation extends LongOperation {
     		this.db = store.getDatabase();
     		
     		// Setting soupName field
-    		this.soupName = newSoupSpec.getSoupName();
+    		this.soupName = soupName;
 
     		// Setting new soup spec
     		this.newSoupSpec = newSoupSpec;
@@ -568,12 +569,13 @@ public class AlterSoupLongOperation extends LongOperation {
 					} while (c.moveToNext());
 
 					for (long id : ids) {
-						store.upsert(soupName, ((DBOpenHelper) store.dbOpenHelper).loadSoupBlob(soupTableName, id, store.passcode));
+                        String entry = ((DBOpenHelper) store.dbOpenHelper).loadSoupBlobAsString(soupTableName, id, store.passcode);
+                        ContentValues contentValues = new ContentValues();
+                        contentValues.put(SmartStore.SOUP_COL, entry);
+                        DBHelper.getInstance(db).update(db, soupTableName, contentValues, SmartStore.ID_PREDICATE, id + "");
 						((DBOpenHelper) store.dbOpenHelper).removeSoupBlob(soupTableName, new Long[] {id});
 					}
 				}
-			} catch (JSONException ex) {
-				throw new SmartStoreException("Error inserting external soup entry into new soup.");
 			} finally {
 				if (c != null) {
 					c.close();
@@ -587,12 +589,10 @@ public class AlterSoupLongOperation extends LongOperation {
 				if (c.moveToFirst()) {
 					do {
 						long id = c.getLong(0);
-						JSONObject entry = new JSONObject(c.getString(1));
-						store.update(soupName, entry, id);
+						String entry = c.getString(1);
+						((DBOpenHelper) store.dbOpenHelper).saveSoupBlobFromString(soupTableName, id, entry, store.passcode);
 					} while (c.moveToNext());
 				}
-			} catch (JSONException ex) {
-				throw new SmartStoreException("Error creating external soup entry from old soup entry.");
 			} finally {
 				if (c != null) {
 					c.close();

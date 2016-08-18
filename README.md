@@ -21,25 +21,14 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 4.2
+### What's New in 4.3
 
 **SmartStore Enhancements**
-- FTS 5 is now supported.
-- We've added a new index type for JSON1.
-- We've added a new API to support deleting soup elements by specifying a query.
-- We've added a new optional parameter to our query APIs, called `selectPaths`.
-
-**SmartSync Enhancements**
-- SmartSync now provides a `cleanResyncGhosts` method for removing ghost records, that is, records that don't match sync criteria or have been deleted from the server.
-
-**SalesforceReact Enhancements**
-- SalesforceReact now supports deferred authentication.
+- To enhance performance in certain edge cases, SmartStore adds an option for serializing unusually large soup elements in external storage.
 
 **Library Upgrades**
-- The `Instant Run` feature on `Android Studio` is now supported.
-- We've replaced `Volley` with `OkHttp` for networking.
-- We've updated React Native to version 0.27.2.
-- We've updated SQLCipher to version 3.4.
+- We've updated React Native to version 0.30.0.
+- We've updated SQLCipher to version 3.5.2.
 
 **Other Technical Improvements**
 - Improvements to sample apps.

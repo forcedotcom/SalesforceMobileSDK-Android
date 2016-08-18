@@ -422,7 +422,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         // Alter soup - country now full_text
         IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec(CITY, fromType), new IndexSpec(COUNTRY, toType)};
         SoupSpec toSoupSpec = toStorageInternal ? new SoupSpec(TEST_SOUP) : new SoupSpec(TEST_SOUP, SoupSpec.FEATURE_EXTERNAL_STORAGE);
-        store.alterSoup(toSoupSpec, indexSpecsNew, true);
+        store.alterSoup(TEST_SOUP, toSoupSpec, indexSpecsNew, true);
 
         // Checking db
         checkDb(new long[]{elt1Id, elt2Id}, indexSpecsNew[0].type, indexSpecsNew[1].type, toStorageInternal);
@@ -433,7 +433,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
         // Alter soup - city now full_text
         indexSpecsNew = new IndexSpec[] {new IndexSpec(CITY, toType), new IndexSpec(COUNTRY, toType)};
         SoupSpec toSoupSpec2 = toStorageInternal2 ? new SoupSpec(TEST_SOUP) : new SoupSpec(TEST_SOUP, SoupSpec.FEATURE_EXTERNAL_STORAGE);
-        store.alterSoup(toSoupSpec2, indexSpecsNew, true);
+        store.alterSoup(TEST_SOUP, toSoupSpec2, indexSpecsNew, true);
 
         // Checking db
         checkDb(new long[]{elt1Id, elt2Id}, indexSpecsNew[0].type, indexSpecsNew[1].type, toStorageInternal2);
@@ -734,7 +734,7 @@ public class SmartStoreAlterTest extends SmartStoreTestCase {
 
         // Partial alter - up to toStep included
         IndexSpec[] indexSpecsNew = new IndexSpec[] {new IndexSpec("lastName", SmartStore.Type.string), new IndexSpec("address.city", SmartStore.Type.string), new IndexSpec("address.street", SmartStore.Type.string)};
-        AlterSoupLongOperation operation = new AlterSoupLongOperation(store, new SoupSpec(TEST_SOUP), indexSpecsNew, true);
+        AlterSoupLongOperation operation = new AlterSoupLongOperation(store, TEST_SOUP, new SoupSpec(TEST_SOUP), indexSpecsNew, true);
         operation.run(toStep);
 
         // Validate long_operations_status table

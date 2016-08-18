@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, salesforce.com, inc.
+ * Copyright (c) 2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,50 +24,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.smartsyncexplorer.sync;
+package com.salesforce.androidsdk.util;
 
-import android.accounts.Account;
-import android.content.AbstractThreadedSyncAdapter;
-import android.content.ContentProviderClient;
+import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.SyncResult;
-import android.os.Bundle;
+import android.content.Intent;
 
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 
 /**
- * A simple sync adapter to perform background sync of contacts.
+ * Listens for the logout complete event, and acts on it.
  *
  * @author bhariharan
  */
-public class ContactSyncAdapter extends AbstractThreadedSyncAdapter {
+public abstract class LogoutCompleteReceiver extends BroadcastReceiver {
 
-	/**
-	 * Parameterized constructor.
-	 *
-	 * @param context Context.
-	 * @param autoInitialize True - if it should be initialized automatically, False - otherwise.
-	 */
-	public ContactSyncAdapter(Context context, boolean autoInitialize,
-            boolean allowParallelSyncs) {
-        super(context, autoInitialize, allowParallelSyncs);
-	}
-
-	@Override
-	public void onPerformSync(Account account, Bundle extras, String authority,
-			ContentProviderClient provider, SyncResult syncResult) {
-        final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
-        final UserAccountManager accManager = sdkManager.getUserAccountManager();
-        if (sdkManager.isLoggingOut() || accManager.getAuthenticatedUsers() == null) {
-            return;
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if (intent != null && intent.getAction().equals(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION)) {
+            onLogoutComplete();
         }
-		if (account != null) {
-			final UserAccount user = sdkManager.getUserAccountManager().buildUserAccount(account);
-			final ContactListLoader contactLoader = new ContactListLoader(getContext(), user);
-			contactLoader.syncUp();
-		}
-	}
+    }
+
+    protected abstract void onLogoutComplete();
 }

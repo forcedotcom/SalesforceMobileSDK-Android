@@ -51,6 +51,7 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
 import com.salesforce.androidsdk.util.UserSwitchReceiver;
 
 import org.apache.cordova.CallbackContext;
@@ -79,6 +80,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     private BootConfig bootconfig;
     private PasscodeManager passcodeManager;
     private UserSwitchReceiver userSwitchReceiver;
+    private LogoutCompleteReceiver logoutCompleteReceiver;
 
     // Web app loaded?
     private boolean webAppLoaded = false;
@@ -100,6 +102,8 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         passcodeManager = SalesforceSDKManager.getInstance().getPasscodeManager();
         userSwitchReceiver = new DroidGapUserSwitchReceiver();
         registerReceiver(userSwitchReceiver, new IntentFilter(UserAccountManager.USER_SWITCH_INTENT_ACTION));
+        logoutCompleteReceiver = new DroidGapLogoutCompleteReceiver();
+        registerReceiver(logoutCompleteReceiver, new IntentFilter(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION));
 
         // Let observers know
         EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
@@ -258,6 +262,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
     @Override
     public void onDestroy() {
         unregisterReceiver(userSwitchReceiver);
+        unregisterReceiver(logoutCompleteReceiver);
         super.onDestroy();
     }
 
@@ -543,6 +548,12 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
    }
 
     /**
+     * Performs actions on logout complete.
+     */
+    protected void logoutCompleteActions() {
+    }
+
+    /**
      * Acts on the user switch event.
      *
      * @author bhariharan
@@ -552,6 +563,19 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         @Override
         protected void onUserSwitch() {
             restartIfUserSwitched();
+        }
+    }
+
+    /**
+     * Acts on the logout complete event.
+     *
+     * @author bhariharan
+     */
+    private class DroidGapLogoutCompleteReceiver extends LogoutCompleteReceiver {
+
+        @Override
+        protected void onLogoutComplete() {
+            logoutCompleteActions();
         }
     }
 }
