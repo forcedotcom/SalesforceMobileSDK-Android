@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * Copyright (c) 2013-2015, salesforce.com, inc.
+ * Copyright (c) 2013-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -42,7 +42,7 @@ var fs = require('fs');
 var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
-var version = '4.3.0';
+var version = '5.0.0';
 var targetApi = {'versionNumber': 23, 'versionName': 'Marshmallow'};
 var minimumCordovaCliVersion = '5.4.0';
 var cordovaPlatformVersion = '5.0.0';
