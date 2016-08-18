@@ -45,6 +45,7 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
@@ -207,11 +208,12 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
         Log.i("onEditorAction", "view=" + v + " actionId=" + actionId + " event=" + event);
         // Processing the editor action only on key up to avoid sending events like pass code manager unlock twice.
-        if (event != null && event.getAction() == KeyEvent.ACTION_UP) {
+        if ( actionId ==  EditorInfo.IME_ACTION_GO ||
+                (event != null && event.getAction() == KeyEvent.ACTION_UP)) {
             String pc = entry.getText().toString();
             if (pc.length() >= 0 && pc.length() < getMinPasscodeLength()) {
                 error.setText(getMinLengthInstructions(getMinPasscodeLength()));
-                return false;
+                return true; // return true indicating we consumed the action.
             }
             return pc.length() > 0 ? onSubmit(pc) : false;
         } else {
@@ -224,7 +226,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         case Create:
             firstPasscode = enteredPasscode;
             setMode(PasscodeMode.CreateConfirm);
-            return false;
+            return true;
 
         case CreateConfirm:
             if (enteredPasscode.equals(firstPasscode)) {
@@ -263,7 +265,7 @@ public class PasscodeActivity extends Activity implements OnEditorActionListener
         case Change:
             firstPasscode = enteredPasscode;
             setMode(PasscodeMode.CreateConfirm);
-            return false;
+            return true;
         }
         return false;
     }

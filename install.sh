@@ -7,4 +7,4 @@ git submodule sync
 git submodule update
 
 # for react-native
-npm install react-native@0.27.2 react@15.1.0 --silent
+npm install react-native@0.30.0 react@15.2.0 --silent

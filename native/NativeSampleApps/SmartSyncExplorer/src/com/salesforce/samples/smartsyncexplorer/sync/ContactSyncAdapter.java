@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -34,6 +34,7 @@ import android.content.SyncResult;
 import android.os.Bundle;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactListLoader;
 
@@ -58,8 +59,13 @@ public class ContactSyncAdapter extends AbstractThreadedSyncAdapter {
 	@Override
 	public void onPerformSync(Account account, Bundle extras, String authority,
 			ContentProviderClient provider, SyncResult syncResult) {
+        final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
+        final UserAccountManager accManager = sdkManager.getUserAccountManager();
+        if (sdkManager.isLoggingOut() || accManager.getAuthenticatedUsers() == null) {
+            return;
+        }
 		if (account != null) {
-			final UserAccount user = SalesforceSDKManager.getInstance().getUserAccountManager().buildUserAccount(account);
+			final UserAccount user = sdkManager.getUserAccountManager().buildUserAccount(account);
 			final ContactListLoader contactLoader = new ContactListLoader(getContext(), user);
 			contactLoader.syncUp();
 		}

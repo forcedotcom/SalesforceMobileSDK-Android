@@ -26,16 +26,13 @@
  */
 package com.salesforce.androidsdk.store;
 
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteOpenHelper;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import android.content.Context;
-import android.database.Cursor;
-import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
@@ -43,10 +40,12 @@ import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteOpenHelper;
+
+import android.content.Context;
+import android.database.Cursor;
+import android.test.InstrumentationTestCase;
 
 /**
  * Abstract super class for smart store tests
@@ -192,6 +191,18 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
         assertTrue("Wrong query plan:" + detail, detail.startsWith(expectedDetailPrefix));
     }
 
+	public void checkFileSystem(String soupName, long[] expectedIds, boolean shouldExist) {
+		String soupTableName = getSoupTableName(soupName);
+		for (long expectedId : expectedIds) {
+			File file = ((DBOpenHelper) dbOpenHelper).getSoupBlobFile(soupTableName, expectedId);
+			if (shouldExist) {
+				assertTrue("External file for " + expectedId + " should exist", file.exists());
+			}
+			else {
+				assertFalse("External file for " + expectedId + " should not exist", file.exists());
+			}
+		}
+	}
 
 	/**
 	 * Close cursor if not null
@@ -219,5 +230,12 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	 */
 	public static long idOf(JSONObject soupElt) throws JSONException {
 		return soupElt.getLong(SmartStore.SOUP_ENTRY_ID);
-	}	
+	}
+
+	/**
+	 * Registers a soup with the given name and index specs. Can be overridden if extra features are desired.
+	 */
+	protected void registerSoup(SmartStore store, String soupName, IndexSpec[] indexSpecs) {
+		store.registerSoup(soupName, indexSpecs);
+	}
 }

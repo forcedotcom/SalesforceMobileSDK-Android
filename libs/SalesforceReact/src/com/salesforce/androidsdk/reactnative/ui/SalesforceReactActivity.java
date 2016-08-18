@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.reactnative.ui;
 
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Toast;
@@ -41,6 +42,7 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.LogoutCompleteReceiver;
 
 /**
  * Super class for all Salesforce activities.
@@ -52,6 +54,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     private RestClient client;
     private ClientManager clientManager;
     private PasscodeManager passcodeManager;
+    private LogoutCompleteReceiver logoutCompleteReceiver;
 
     /**
      * @return true if you want login to happen as soon as activity is loaded
@@ -69,7 +72,6 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         t.show();
     }
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "onCreate called");
@@ -83,9 +85,17 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
         // TODO
         // Have a user switcher once we have an account manager bridge for react native
+        logoutCompleteReceiver = new ReactActivityLogoutCompleteReceiver();
+        registerReceiver(logoutCompleteReceiver, new IntentFilter(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION));
 
         // Let observers know
         EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
+    }
+
+    @Override
+    public void onDestroy() {
+        unregisterReceiver(logoutCompleteReceiver);
+        super.onDestroy();
     }
 
     @Override
@@ -177,7 +187,6 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         SalesforceSDKManager.getInstance().logout(this);
     }
 
-
     /**
      * Method called from bridge to authenticate
      * @param successCallback
@@ -222,4 +231,22 @@ public abstract class SalesforceReactActivity extends ReactActivity {
                 SalesforceSDKManager.getInstance().shouldLogoutWhenTokenRevoked());
     }
 
+    /**
+     * Performs actions on logout complete.
+     */
+    protected void logoutCompleteActions() {
+    }
+
+    /**
+     * Acts on the logout complete event.
+     *
+     * @author bhariharan
+     */
+    private class ReactActivityLogoutCompleteReceiver extends LogoutCompleteReceiver {
+
+        @Override
+        protected void onLogoutComplete() {
+            logoutCompleteActions();
+        }
+    }
 }

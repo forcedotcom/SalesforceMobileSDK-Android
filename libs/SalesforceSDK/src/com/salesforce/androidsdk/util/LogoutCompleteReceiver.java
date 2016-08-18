@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, salesforce.com, inc.
+ * Copyright (c) 2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,29 +24,27 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.samples.reactnativetemplateapp;
+package com.salesforce.androidsdk.util;
 
-import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
 
-public class MainActivity extends SalesforceReactActivity {
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
-    /**
-     *
-     * @return true if you want login to happen when application launches
-     *         false otherwise
-     */
-	@Override
-	public boolean shouldAuthenticate() {
-		return true;
-	}
+/**
+ * Listens for the logout complete event, and acts on it.
+ *
+ * @author bhariharan
+ */
+public abstract class LogoutCompleteReceiver extends BroadcastReceiver {
 
-	/**
-	 * Returns the name of the main component registered from JavaScript.
-	 * This is used to schedule rendering of the component.
-	 */
-	@Override
-	protected String getMainComponentName() {
-		return "ReactNativeTemplateApp";
-	}
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if (intent != null && intent.getAction().equals(SalesforceSDKManager.LOGOUT_COMPLETE_INTENT_ACTION)) {
+            onLogoutComplete();
+        }
+    }
+
+    protected abstract void onLogoutComplete();
 }
-

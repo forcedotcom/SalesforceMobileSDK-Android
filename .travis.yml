@@ -36,7 +36,7 @@ before_install:
     - nvm install 0.12.0
     - nvm use 0.12.0
     - npm install shelljs@0.7.0
-    - npm install react-native@0.27.2 react@15.1.0 --silent
+    - npm install react-native@0.30.0 react@15.2.0 --silent
 
 # Create and start the emulator
 before_script:
@@ -51,7 +51,7 @@ script:
    #run template app generation
    - travis_wait 30 set -o pipefail && node external/shared/node/test_force.js --os=android --test=native
 
-   - travis_wait 30 ./gradlew createDebugCoverageReport
+   - travis_wait 50 ./gradlew createDebugCoverageReport
    - travis_wait 30 ./gradlew :libs:SalesforceHybrid:connectedAndroidTest
    - ./gradlew :libs:SalesforceReact:assembleDebug
    - travis_wait 30 ./gradlew :native:NativeSampleApps:RestExplorer:connectedAndroidTest

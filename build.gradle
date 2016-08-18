@@ -10,7 +10,7 @@ buildscript {
 
 allprojects {
   group = 'com.salesforce.androidsdk'
-  
+
   repositories {
     maven {
       // All of React Native (JS, Android binaries) is installed from npm

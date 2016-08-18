@@ -35,6 +35,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.Order;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
@@ -45,6 +46,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Main test suite for SmartStore
@@ -52,8 +55,8 @@ import java.util.Arrays;
  */
 public class SmartStoreTest extends SmartStoreTestCase {
 
-	private static final String TEST_SOUP = "test_soup";
-	private static final String OTHER_TEST_SOUP = "other_test_soup";
+	protected static final String TEST_SOUP = "test_soup";
+	protected static final String OTHER_TEST_SOUP = "other_test_soup";
 	private static final String THIRD_TEST_SOUP = "third_test_soup";
 	private static final String FOURTH_TEST_SOUP = "fourth_test_soup";
 
@@ -63,7 +66,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
         store.setCaptureExplainQueryPlan(true);
         assertFalse("Table for test_soup should not exist", hasTable("TABLE_1"));
 		assertFalse("Soup test_soup should not exist", store.hasSoup(TEST_SOUP));
-		store.registerSoup(TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string)});
+		registerSoup(store, TEST_SOUP, new IndexSpec[] { new IndexSpec("key", Type.string) });
 		assertEquals("Table for test_soup was expected to be called TABLE_1", "TABLE_1", getSoupTableName(TEST_SOUP));
 		assertTrue("Table for test_soup should now exist", hasTable("TABLE_1"));
 		assertTrue("Soup test_soup should now exist", store.hasSoup(TEST_SOUP));
@@ -95,6 +98,13 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		assertTrue("ENABLE_FTS3_PARENTHESIS flag not found in compile options", compileOptions.contains("ENABLE_FTS3_PARENTHESIS"));
 		assertTrue("ENABLE_FTS5 flag not found in compile options", compileOptions.contains("ENABLE_FTS5"));
 		assertTrue("ENABLE_JSON1 flag not found in compile options", compileOptions.contains("ENABLE_JSON1"));
+	}
+
+	/**
+	 * Method to check soup blob with one stored by db. Can be overridden to check external storage if necessary.
+	 */
+	protected void assertSameSoupAsDB(JSONObject soup, Cursor c, String soupName, Long id) throws JSONException {
+		JSONTestHelper.assertSameJSON("Wrong value in soup column", soup, new JSONObject(c.getString(c.getColumnIndex("soup"))));
 	}
 
 	/**
@@ -166,7 +176,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		assertFalse("Soup third_test_soup should not exist", store.hasSoup(THIRD_TEST_SOUP));
 		
 		// Register
-		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
+		registerSoup(store, THIRD_TEST_SOUP, new IndexSpec[] { new IndexSpec("key", Type.string), new IndexSpec("value", Type.string) });
 		String soupTableName = getSoupTableName(THIRD_TEST_SOUP);
 		assertEquals("getSoupTableName should have returned TABLE_2", "TABLE_2", soupTableName);
 		assertTrue("Table for soup third_test_soup does exist", hasTable(soupTableName));
@@ -207,7 +217,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		assertTrue(TEST_SOUP + " should have been returned by getAllSoupNames", store.getAllSoupNames().contains(TEST_SOUP));
 
 		// Register another soup
-		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
+		registerSoup(store, THIRD_TEST_SOUP, new IndexSpec[] { new IndexSpec("key", Type.string), new IndexSpec("value", Type.string) });
 		assertEquals("Two soup names expected", 2, store.getAllSoupNames().size());
 		assertTrue(TEST_SOUP + " should have been returned by getAllSoupNames", store.getAllSoupNames().contains(TEST_SOUP));
 		assertTrue(THIRD_TEST_SOUP + " should have been returned by getAllSoupNames", store.getAllSoupNames().contains(THIRD_TEST_SOUP));
@@ -224,7 +234,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	public void testDropAllSoups() {
 		// Register another soup
 		assertEquals("One soup name expected", 1, store.getAllSoupNames().size());
-		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", Type.string), new IndexSpec("value", Type.string)});
+		registerSoup(store, THIRD_TEST_SOUP, new IndexSpec[] { new IndexSpec("key", Type.string), new IndexSpec("value", Type.string) });
 		assertEquals("Two soup names expected", 2, store.getAllSoupNames().size());
 
 		// Drop all
@@ -254,7 +264,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 			assertEquals("Wrong id", idOf(soupEltCreated), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupEltCreated.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
 			assertEquals("Wrong value in index column", "ka", c.getString(c.getColumnIndex(soupTableName + "_0")));
-			JSONTestHelper.assertSameJSON("Wrong value in soup column", soupEltCreated, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+			assertSameSoupAsDB(soupEltCreated, c, soupTableName, idOf(soupEltCreated));
 			assertEquals("Created date and last modified date should be equal", c.getLong(c.getColumnIndex("created")),  c.getLong(c.getColumnIndex("lastModified")));
 		}
 		finally {
@@ -268,7 +278,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 */
 	public void testCreateMultiple() throws JSONException {
 		assertFalse("Soup other_test_soup should not exist", store.hasSoup(OTHER_TEST_SOUP));
-		store.registerSoup(OTHER_TEST_SOUP, new IndexSpec[] {new IndexSpec("lastName", Type.string), new IndexSpec("address.city", Type.string)});
+		registerSoup(store, OTHER_TEST_SOUP, new IndexSpec[] { new IndexSpec("lastName", Type.string), new IndexSpec("address.city", Type.string) });
 		assertTrue("Register soup call failed", store.hasSoup(OTHER_TEST_SOUP));
 
 		JSONObject soupElt1 = new JSONObject("{'lastName':'Doe', 'address':{'city':'San Francisco','street':'1 market'}}");
@@ -294,22 +304,22 @@ public class SmartStoreTest extends SmartStoreTestCase {
 			assertEquals("Wrong created date", soupElt1Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
 			assertEquals("Wrong value in index column", "Doe", c.getString(c.getColumnIndex(soupTableName + "_0")));
 			assertEquals("Wrong value in index column", "San Francisco", c.getString(c.getColumnIndex(soupTableName + "_1")));
-			JSONTestHelper.assertSameJSON("Wrong value in soup column", soupElt1Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
-			
+			assertSameSoupAsDB(soupElt1Created, c, soupTableName, idOf(soupElt1Created));
+
 			c.moveToNext();
 			assertEquals("Wrong id", idOf(soupElt2Created), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupElt2Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
 			assertEquals("Wrong value in index column", "Jackson", c.getString(c.getColumnIndex(soupTableName + "_0")));
 			assertEquals("Wrong value in index column", "Los Angeles", c.getString(c.getColumnIndex(soupTableName + "_1")));
-			JSONTestHelper.assertSameJSON("Wrong value in soup column", soupElt2Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
+			assertSameSoupAsDB(soupElt2Created, c, soupTableName, idOf(soupElt2Created));
 
 			c.moveToNext();
 			assertEquals("Wrong id", idOf(soupElt3Created), c.getLong(c.getColumnIndex("id")));
 			assertEquals("Wrong created date", soupElt3Created.getLong(SmartStore.SOUP_LAST_MODIFIED_DATE), c.getLong(c.getColumnIndex("lastModified")));
 			assertEquals("Wrong value in index column", "Watson", c.getString(c.getColumnIndex(soupTableName + "_0")));
 			assertEquals("Wrong value in index column", "London", c.getString(c.getColumnIndex(soupTableName + "_1")));
-			JSONTestHelper.assertSameJSON("Wrong value in soup column", soupElt3Created, new JSONObject(c.getString(c.getColumnIndex("soup"))));
-			
+			assertSameSoupAsDB(soupElt3Created, c, soupTableName, idOf(soupElt3Created));
+
 		}
 		finally {
 			safeClose(c);
@@ -584,6 +594,16 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 * @throws JSONException
 	 */
 	public void testDeleteByQuery() throws JSONException {
+        tryDeleteByQuery(null, null);
+	}
+
+	/**
+     * Testing delete: create soup elements, delete by query and check database directly that deleted entries are in fact gone
+     * Populate idsDeleted and idsNotDeleted if not null
+	 * @param idsDeleted
+     * @param idsNotDeleted
+     */
+	protected void tryDeleteByQuery(List<Long> idsDeleted, List<Long> idsNotDeleted) throws JSONException {
 		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1'}");
 		JSONObject soupElt2 = new JSONObject("{'key':'ka2', 'value':'va2'}");
 		JSONObject soupElt3 = new JSONObject("{'key':'ka3', 'value':'va3'}");
@@ -592,15 +612,19 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		JSONObject soupElt2Created = store.create(TEST_SOUP, soupElt2);
 		JSONObject soupElt3Created = store.create(TEST_SOUP, soupElt3);
 
-        QuerySpec querySpec = QuerySpec.buildRangeQuerySpec(TEST_SOUP, "key", "ka1", "ka2", "key", Order.ascending, 2);
+		long id1 = soupElt1Created.getLong(SmartStore.SOUP_ENTRY_ID);
+		long id2 = soupElt2Created.getLong(SmartStore.SOUP_ENTRY_ID);
+		long id3 = soupElt3Created.getLong(SmartStore.SOUP_ENTRY_ID);
+
+		QuerySpec querySpec = QuerySpec.buildRangeQuerySpec(TEST_SOUP, "key", "ka1", "ka2", "key", Order.ascending, 2);
 
 		store.deleteByQuery(TEST_SOUP, querySpec);
 
-        JSONArray soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Created));
+		JSONArray soupElt1Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt1Created));
 		JSONArray soupElt2Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt2Created));
 		JSONObject soupElt3Retrieved = store.retrieve(TEST_SOUP, idOf(soupElt3Created)).getJSONObject(0);
 
-        assertEquals("Should be empty", 0, soupElt1Retrieved.length());
+		assertEquals("Should be empty", 0, soupElt1Retrieved.length());
 		assertEquals("Should be empty", 0, soupElt2Retrieved.length());
 		JSONTestHelper.assertSameJSON("Retrieve mismatch", soupElt3Created, soupElt3Retrieved);
 
@@ -616,6 +640,18 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		} finally {
 			safeClose(c);
 		}
+
+
+        // Populate idsDeleted
+        if (idsDeleted != null) {
+            idsDeleted.add(id1);
+            idsDeleted.add(id2);
+        }
+
+        // Populate idsNotDeleted
+        if (idsNotDeleted != null) {
+            idsNotDeleted.add(id3);
+        }
 	}
 
 	/**
@@ -855,7 +891,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 
 	}
 
-    private void runQueryCheckResultsAndExplainPlan(String soupName, QuerySpec querySpec, int page, boolean covering, String expectedDbOperation, JSONObject... expectedResults) throws JSONException {
+    protected void runQueryCheckResultsAndExplainPlan(String soupName, QuerySpec querySpec, int page, boolean covering, String expectedDbOperation, JSONObject... expectedResults) throws JSONException {
         // Run query
         JSONArray result = store.query(querySpec, page);
 
@@ -902,7 +938,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		assertFalse("Soup third_test_soup should not exist", store.hasSoup(THIRD_TEST_SOUP));
 
 		// Register
-		store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", type), new IndexSpec("value", type)});
+		registerSoup(store, THIRD_TEST_SOUP, new IndexSpec[] { new IndexSpec("key", type), new IndexSpec("value", type) });
 		assertTrue("Register soup call failed", store.hasSoup(THIRD_TEST_SOUP));
 
 		// Upsert
@@ -936,7 +972,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		final JSONObject soupElt1 = new JSONObject("{'amount':10.2}");
 		final JSONObject soupElt2 = new JSONObject("{'amount':9.9}");
 		final IndexSpec[] indexSpecs = { new IndexSpec("amount", type) };
-		store.registerSoup(FOURTH_TEST_SOUP, indexSpecs);
+		registerSoup(store, FOURTH_TEST_SOUP, indexSpecs);
 		assertTrue("Soup " + FOURTH_TEST_SOUP + " should have been created", store.hasSoup(FOURTH_TEST_SOUP));
 		store.upsert(FOURTH_TEST_SOUP, soupElt1);
 		store.upsert(FOURTH_TEST_SOUP, soupElt2);
@@ -973,7 +1009,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
         assertFalse("Soup third_test_soup should not exist", store.hasSoup(THIRD_TEST_SOUP));
 
         // Register
-        store.registerSoup(THIRD_TEST_SOUP, new IndexSpec[] {new IndexSpec("key", type), new IndexSpec("value", type)});
+        registerSoup(store, THIRD_TEST_SOUP, new IndexSpec[] { new IndexSpec("key", type), new IndexSpec("value", type) });
         assertTrue("Register soup call failed", store.hasSoup(THIRD_TEST_SOUP));
 
 
@@ -1007,7 +1043,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 * Test to verify proper indexing of integer and longs
 	 */
 	public void testIntegerIndexedField() throws JSONException {
-		store.registerSoup(FOURTH_TEST_SOUP, new IndexSpec[] { new IndexSpec("amount", Type.integer) });
+		registerSoup(store, FOURTH_TEST_SOUP, new IndexSpec[] { new IndexSpec("amount", Type.integer) });
 		tryNumber(Type.integer, Integer.MIN_VALUE, Integer.MIN_VALUE);
 		tryNumber(Type.integer, Integer.MAX_VALUE, Integer.MAX_VALUE);
 		tryNumber(Type.integer, Long.MIN_VALUE, Long.MIN_VALUE);
@@ -1020,7 +1056,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 * Test to verify proper indexing of doubles
 	 */
 	public void testFloatingIndexedField() throws JSONException {
-		store.registerSoup(FOURTH_TEST_SOUP, new IndexSpec[] { new IndexSpec("amount", Type.floating) });
+		registerSoup(store, FOURTH_TEST_SOUP, new IndexSpec[] { new IndexSpec("amount", Type.floating) });
 		tryNumber(Type.floating, Integer.MIN_VALUE, (double) Integer.MIN_VALUE);
 		tryNumber(Type.floating, Integer.MAX_VALUE, (double) Integer.MAX_VALUE);
 		tryNumber(Type.floating, Long.MIN_VALUE, (double) Long.MIN_VALUE);
@@ -1064,7 +1100,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 * Test using smart sql to retrieve integer indexed fields
 	 */
 	public void testIntegerIndexedFieldWithSmartSql() throws JSONException {
-		store.registerSoup(FOURTH_TEST_SOUP, new IndexSpec[] { new IndexSpec("amount", Type.integer) });
+		registerSoup(store, FOURTH_TEST_SOUP, new IndexSpec[] { new IndexSpec("amount", Type.integer) });
 		tryNumberWithSmartSql(Type.integer, Integer.MIN_VALUE, Integer.MIN_VALUE);
 		tryNumberWithSmartSql(Type.integer, Integer.MAX_VALUE, Integer.MAX_VALUE);
 		tryNumberWithSmartSql(Type.integer, Long.MIN_VALUE, Long.MIN_VALUE);
@@ -1078,7 +1114,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
 	 * NB smart sql will return a long when querying a double field that contains a long
 	 */
 	public void testFloatingIndexedFieldWithSmartSql() throws JSONException {
-		store.registerSoup(FOURTH_TEST_SOUP, new IndexSpec[] { new IndexSpec("amount", Type.floating) });
+		registerSoup(store, FOURTH_TEST_SOUP, new IndexSpec[] { new IndexSpec("amount", Type.floating) });
 		tryNumberWithSmartSql(Type.floating, Integer.MIN_VALUE, Integer.MIN_VALUE);
 		tryNumberWithSmartSql(Type.floating, Integer.MAX_VALUE, Integer.MAX_VALUE);
 		tryNumberWithSmartSql(Type.floating, Long.MIN_VALUE, Long.MIN_VALUE);
@@ -1201,7 +1237,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
                 soupElt1Created, soupElt3Created);
     }
 
-    private void tryAllQueryOnChangedSoupWithUpdate(String soupName, JSONObject deletedEntry, String orderPath,
+    protected void tryAllQueryOnChangedSoupWithUpdate(String soupName, JSONObject deletedEntry, String orderPath,
                                                     IndexSpec[] newIndexSpecs, JSONObject... expectedResults) throws JSONException {
         //alert the soup
         store.alterSoup(soupName, newIndexSpecs, true);
@@ -1291,7 +1327,7 @@ public class SmartStoreTest extends SmartStoreTestCase {
                 soupElt3Created);
     }
 
-    private void tryExactQueryOnChangedSoup(String soupName, String orderPath, String value,
+    protected void tryExactQueryOnChangedSoup(String soupName, String orderPath, String value,
                                                     IndexSpec[] newIndexSpecs, JSONObject expectedResult) throws JSONException {
         //alert the soup
         store.alterSoup(soupName, newIndexSpecs, true);
@@ -1301,4 +1337,56 @@ public class SmartStoreTest extends SmartStoreTestCase {
                 QuerySpec.buildExactQuerySpec(soupName, orderPath, value, null, null, 5),
                 0, false, "SEARCH", expectedResult);
     }
+
+	/**
+	 * Test updateSoupNamesToAttrs
+	 */
+	public void testUpdateTableNameAndAddColumns() {
+		// Setup db and test values
+		final SQLiteDatabase db = dbOpenHelper.getWritableDatabase(getPasscode());
+		final String TEST_TABLE = "test_table";
+		final String NEW_TEST_TABLE = "new_test_table";
+		final String NEW_COLUMN = "new_column";
+		db.execSQL("CREATE TABLE " + TEST_TABLE + " (id INTEGER PRIMARY KEY)");
+
+		// Ensure old table doesn't already exist
+		Cursor cursor = db.query("sqlite_master", new String[] { "sql" }, "name = ?", new String[] { NEW_TEST_TABLE }, null, null, null);
+		assertEquals("New table should not already be in db.", 0, cursor.getCount());
+		cursor.close();
+
+		// Test table renamed and column added
+		SmartStore.updateTableNameAndAddColumns(db, TEST_TABLE, NEW_TEST_TABLE, new String[] { NEW_COLUMN });
+
+		// Ensure new table has replaced old table
+		cursor = db.query("sqlite_master", new String[] { "sql" }, "name = ?", new String[] { NEW_TEST_TABLE }, null, null, null);
+		cursor.moveToFirst();
+		String schema = cursor.getString(0);
+		cursor.close();
+		assertTrue("New table not found", schema.contains(NEW_TEST_TABLE));
+		assertTrue("New column not found", schema.contains(NEW_COLUMN));
+
+		// Clean up
+		db.execSQL("DROP TABLE " + NEW_TEST_TABLE);
+	}
+
+	/**
+	 * Ensure correct soup spec is returned from getSoupSpec
+	 */
+	public void testGetSoupSpec() throws JSONException {
+		final String SOUP_SPEC_TEST = "soup_spec_test";
+		IndexSpec[] indexSpecs = new IndexSpec[] {new IndexSpec("index", Type.string)};
+		SoupSpec TEST_SPEC = new SoupSpec(SOUP_SPEC_TEST, SoupSpec.FEATURE_EXTERNAL_STORAGE);
+		store.registerSoupWithSpec(TEST_SPEC, indexSpecs);
+
+		// Act
+		SoupSpec result = store.getSoupSpec(TEST_SPEC.getSoupName());
+
+		// Verify the result
+		assertEquals("Soup name in soup spec is incorrect", SOUP_SPEC_TEST, result.getSoupName());
+		assertEquals("Feature set in soup spec is incorrect", SoupSpec.FEATURE_EXTERNAL_STORAGE, result.getFeatures().get(0));
+
+		// Verify JSON form
+		assertEquals("Soup name in json of soup spec is incorrect", SOUP_SPEC_TEST, result.toJSON().getString("name"));
+		assertEquals("Feature set in json of soup spec is incorrect", SoupSpec.FEATURE_EXTERNAL_STORAGE, result.toJSON().getJSONArray("features").get(0));
+	}
 }
