@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartsync.util;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -38,7 +39,9 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Target for sync that downloads most recently used records
@@ -46,7 +49,8 @@ import java.util.List;
 public class MruSyncDownTarget extends SyncDownTarget {
 	
 	public static final String FIELDLIST = "fieldlist";
-	public static final String SOBJECT_TYPE = "sobjectType";	
+	public static final String SOBJECT_TYPE = "sobjectType";
+    private static final String TAG = "MruSyncDownTarget";
 	private List<String> fieldlist;
 	private String objectType;
 
@@ -86,28 +90,55 @@ public class MruSyncDownTarget extends SyncDownTarget {
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        RestRequest request = RestRequest.getRequestForMetadata(syncManager.apiVersion, objectType);
-        RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-        List<String> recentItems = pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
+        final RestRequest request = RestRequest.getRequestForMetadata(syncManager.apiVersion, objectType);
+        final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final List<String> recentItems = pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
 
-        // Building SOQL query to get requested at
-        String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where("Id IN ('" + TextUtils.join("', '", recentItems) + "')").build();
+        // Building SOQL query to get requested at.
+        final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(getIdFieldName()
+                + " IN ('" + TextUtils.join("', '", recentItems) + "')").build();
+        return startFetch(syncManager, maxTimeStamp, soql);
+    }
 
-        // Get recent items attributes from server
-        request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
-        response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-        JSONObject responseJson = response.asJSONObject();
-        JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
+    @Override
+    public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
+        final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, queryRun);
+        final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        final JSONObject responseJson = response.asJSONObject();
+        final JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
 
         // Recording total size
         totalSize = records.length();
-
         return records;
     }
 
     @Override
     public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
         return null;
+    }
+
+    @Override
+    public Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds) {
+        if (localIds == null) {
+            return null;
+        }
+        final String idFieldName = getIdFieldName();
+        final Set<String> remoteIds = new HashSet<String>();
+
+        // Alters the SOQL query to get only IDs.
+        final String soql = SOQLBuilder.getInstanceWithFields(idFieldName).from(objectType).where(idFieldName
+                + " IN ('" + TextUtils.join("', '", localIds) + "')").build();
+
+        // Makes network request and parses the response.
+        try {
+            final JSONArray records = startFetch(syncManager, 0, soql);
+            remoteIds.addAll(parseIdsFromResponse(records));
+        } catch (IOException e) {
+            Log.e(TAG, "IOException thrown while fetching records", e);
+        } catch (JSONException e) {
+            Log.e(TAG, "JSONException thrown while fetching records", e);
+        }
+        return remoteIds;
     }
 
     /**

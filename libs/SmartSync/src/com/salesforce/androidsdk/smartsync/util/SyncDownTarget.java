@@ -37,6 +37,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Target for sync down:
@@ -118,12 +120,31 @@ public abstract class SyncDownTarget extends SyncTarget {
     public abstract JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException;
 
     /**
+     * Starts fetching records conforming to target query.
+     *
+     * @param syncManager SyncManager instance.
+     * @param maxTimeStamp Max timestamp.
+     * @param queryRun Query to run.
+     * @throws IOException, JSONException
+     */
+    public abstract JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException;
+
+    /**
      * Continue fetching records conforming to target if any
      * @param syncManager
      * @return null if there are no more records to fetch
      * @throws IOException, JSONException
      */
     public abstract JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException;
+
+    /**
+     * Fetches list of IDs still present on the server from the list of local IDs.
+     *
+     * @param syncManager SyncManager instance.
+     * @param localIds Local IDs from SmartStore.
+     * @return List of IDs still present on the server.
+     */
+    public abstract Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds);
 
     /**
      * @return number of records expected to be fetched - is set when startFetch() is called
@@ -138,7 +159,6 @@ public abstract class SyncDownTarget extends SyncTarget {
     public QueryType getQueryType() {
         return queryType;
     }
-
 
     /**
      * Gets the latest modification timestamp from the array of records.
@@ -174,5 +194,24 @@ public abstract class SyncDownTarget extends SyncTarget {
     	sosl,
     	soql,
         custom
+    }
+
+    /**
+     * Helper method to parse IDs from a network response to a SOQL query.
+     *
+     * @param records SObject records.
+     * @return Set of IDs.
+     */
+    protected Set<String> parseIdsFromResponse(JSONArray records) {
+        final Set<String> remoteIds = new HashSet<String>();
+        if (records != null) {
+            for (int i = 0; i < records.length(); i++) {
+                final JSONObject idJson = records.optJSONObject(i);
+                if (idJson != null) {
+                    remoteIds.add(idJson.optString(getIdFieldName()));
+                }
+            }
+        }
+        return remoteIds;
     }
 }

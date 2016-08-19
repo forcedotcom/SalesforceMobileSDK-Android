@@ -28,11 +28,11 @@ package com.salesforce.androidsdk.smartsync.manager;
 
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 
-import org.apache.http.HttpStatus;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -95,7 +95,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
     public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws JSONException, IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
-                return HttpStatus.SC_BAD_REQUEST;
+                return HttpURLConnection.HTTP_BAD_REQUEST;
             case HARD_FAIL_ON_SYNC:
                 throw new RuntimeException("delete hard fail");
             default: // case NO_FAIL:
@@ -103,7 +103,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
                     actionCollector.deletedRecordIds.add(objectId);
                 }
 
-                return HttpStatus.SC_OK;
+                return HttpURLConnection.HTTP_OK;
         }
     }
 
@@ -111,7 +111,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
     public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws JSONException, IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
-                return HttpStatus.SC_BAD_REQUEST;
+                return HttpURLConnection.HTTP_BAD_REQUEST;
             case HARD_FAIL_ON_SYNC:
                 throw new RuntimeException("update hard fail");
             default: // case NO_FAIL:
@@ -119,7 +119,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
                     actionCollector.updatedRecordIds.add(objectId);
                 }
 
-                return HttpStatus.SC_OK;
+                return HttpURLConnection.HTTP_OK;
         }
     }
 

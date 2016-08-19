@@ -26,8 +26,14 @@
  */
 package com.salesforce.androidsdk.rest.files;
 
+import android.os.Environment;
+
 import com.google.common.collect.Lists;
 import com.salesforce.androidsdk.rest.RestRequest;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
 
 /**
  * 
@@ -37,7 +43,7 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
 
     public void testBatchFileInfo() {
         RestRequest r = FileRequests.batchFileDetails(Lists.newArrayList("06930000001LkwtAAC", "06930000001LkwtAAD"));
-        assertEquals(connectPath + "files/batch/06930000001LkwtAAC,06930000001LkwtAAD", r.getPath());
+        assertEquals(connectPath + "connect/files/batch/06930000001LkwtAAC,06930000001LkwtAAD", r.getPath());
         doAdditionalVerifications(r);
         try {
             FileRequests.batchFileDetails(Lists.newArrayList("06930000001LkwtAAC", null));
@@ -52,7 +58,7 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
     }
 
     public void testFileContents() {
-        assertEquals(connectPath + "files/" + sfdcId + "/content?versionNumber=1",
+        assertEquals(connectPath + "connect/files/" + sfdcId + "/content?versionNumber=1",
                 FileRequests.fileContents(sfdcId, "1").getPath());
         try {
             FileRequests.fileContents("", "1");
@@ -63,9 +69,9 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
     }
 
     public void testOwnedFilesList() {
-        assertEquals(connectPath + "users/me/files", FileRequests.ownedFilesList(null, null).getPath());
-        assertEquals(connectPath + "users/me/files?page=0", FileRequests.ownedFilesList(null, 0).getPath());
-        assertEquals(connectPath + "users/" + userId + "/files?page=1", FileRequests.ownedFilesList(userId, 1)
+        assertEquals(connectPath + "connect/files/users/me", FileRequests.ownedFilesList(null, null).getPath());
+        assertEquals(connectPath + "connect/files/users/me?page=0", FileRequests.ownedFilesList(null, 0).getPath());
+        assertEquals(connectPath + "connect/files/users/" + userId + "?page=1", FileRequests.ownedFilesList(userId, 1)
                 .getPath());
         try {
             FileRequests.ownedFilesList("", 1);
@@ -76,11 +82,11 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
     }
 
     public void testFilesInUsersGroups() {
-        assertEquals(connectPath + "users/me/files/filter/groups", FileRequests.filesInUsersGroups(null, null)
+        assertEquals(connectPath + "connect/files/users/me/filter/groups", FileRequests.filesInUsersGroups(null, null)
                 .getPath());
-        assertEquals(connectPath + "users/me/files/filter/groups?page=0", FileRequests.filesInUsersGroups(null, 0)
+        assertEquals(connectPath + "connect/files/users/me/filter/groups?page=0", FileRequests.filesInUsersGroups(null, 0)
                 .getPath());
-        assertEquals(connectPath + "users/" + userId + "/files/filter/groups?page=1",
+        assertEquals(connectPath + "connect/files/users/" + userId + "/filter/groups?page=1",
                 FileRequests.filesInUsersGroups(userId, 1).getPath());
         try {
             FileRequests.filesInUsersGroups("", 1);
@@ -91,11 +97,11 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
     }
 
     public void testFilesSharedWithUser() {
-        assertEquals(connectPath + "users/me/files/filter/sharedwithme", FileRequests.filesSharedWithUser(null, null)
+        assertEquals(connectPath + "connect/files/users/me/filter/sharedwithme", FileRequests.filesSharedWithUser(null, null)
                 .getPath());
-        assertEquals(connectPath + "users/me/files/filter/sharedwithme?page=0",
+        assertEquals(connectPath + "connect/files/users/me/filter/sharedwithme?page=0",
                 FileRequests.filesSharedWithUser(null, 0).getPath());
-        assertEquals(connectPath + "users/" + userId + "/files/filter/sharedwithme?page=1", FileRequests
+        assertEquals(connectPath + "connect/files/users/" + userId + "/filter/sharedwithme?page=1", FileRequests
                 .filesSharedWithUser(userId, 1).getPath());
         try {
             FileRequests.filesSharedWithUser("", 1);
@@ -106,8 +112,8 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
     }
 
     public void testFileDetails() {
-        assertEquals(connectPath + "files/" + sfdcId, FileRequests.fileDetails(sfdcId, null).getPath());
-        assertEquals(connectPath + "files/" + sfdcId + "?versionNumber=2", FileRequests.fileDetails(sfdcId, "2")
+        assertEquals(connectPath + "connect/files/" + sfdcId, FileRequests.fileDetails(sfdcId, null).getPath());
+        assertEquals(connectPath + "connect/files/" + sfdcId + "?versionNumber=2", FileRequests.fileDetails(sfdcId, "2")
                 .getPath());
         try {
             FileRequests.fileDetails(null, "3");
@@ -123,15 +129,15 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
     }
 
     public void testFileRendition() {
-        assertEquals(connectPath + "files/" + sfdcId + "/rendition?type=PDF",
+        assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=PDF",
                 FileRequests.fileRendition(sfdcId, null, RenditionType.PDF, null).getPath());
-        assertEquals(connectPath + "files/" + sfdcId + "/rendition?type=PDF&versionNumber=2", FileRequests
+        assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=PDF&versionNumber=2", FileRequests
                 .fileRendition(sfdcId, "2", RenditionType.PDF, null).getPath());
-        assertEquals(connectPath + "files/" + sfdcId + "/rendition?type=PDF",
+        assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=PDF",
                 FileRequests.fileRendition(sfdcId, null, RenditionType.PDF, null).getPath());
-        assertEquals(connectPath + "files/" + sfdcId + "/rendition?type=FLASH&page=0",
+        assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=FLASH&page=0",
                 FileRequests.fileRendition(sfdcId, null, RenditionType.FLASH, 0).getPath());
-        assertEquals(connectPath + "files/" + sfdcId + "/rendition?type=THUMB120BY90&versionNumber=2&page=2",
+        assertEquals(connectPath + "connect/files/" + sfdcId + "/rendition?type=THUMB120BY90&versionNumber=2&page=2",
                 FileRequests.fileRendition(sfdcId, "2", RenditionType.THUMB120BY90, 2).getPath());
         try {
             FileRequests.fileRendition("", "1", RenditionType.PDF, 3);
@@ -157,8 +163,8 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
     }
 
     public void testFileShares() {
-        assertEquals(connectPath + "files/" + sfdcId + "/file-shares", FileRequests.fileShares(sfdcId, null).getPath());
-        assertEquals(connectPath + "files/" + sfdcId + "/file-shares?page=4", FileRequests.fileShares(sfdcId, 4)
+        assertEquals(connectPath + "connect/files/" + sfdcId + "/file-shares", FileRequests.fileShares(sfdcId, null).getPath());
+        assertEquals(connectPath + "connect/files/" + sfdcId + "/file-shares?page=4", FileRequests.fileShares(sfdcId, 4)
                 .getPath());
         try {
             FileRequests.fileShares(null, 3);
@@ -172,6 +178,34 @@ public class FileRequestsTest extends ApiRequestsBaseTest {
         }
         doAdditionalVerifications(FileRequests.fileShares(sfdcId, 4));
     }
+
+    /**
+     * Tests if the file upload API is working per design.
+     *
+     * @throws Exception
+     */
+    public void testFileUpload() throws Exception {
+        final String filename  = "MyFile.txt";
+        final File file = new File(Environment.getExternalStorageDirectory() + File.separator + filename);
+        if (!file.exists()) {
+            file.createNewFile();
+            final OutputStreamWriter out = new OutputStreamWriter(new FileOutputStream(file));
+            out.write("This is a test!");
+            out.close();
+        }
+        assertTrue("File should exist", file.exists());
+
+
+        RestRequest request = FileRequests.uploadFile(file, filename, "Test Title", "Test Description", "text/plain");
+
+        assertEquals(connectPath + "connect/files/users/me", request.getPath());
+        doAdditionalVerifications(RestRequest.RestMethod.POST, request);
+
+        file.delete();
+        assertFalse("File should not exist", file.exists());
+    }
+
+
 
     private final String userId = "005T0000000ABCD";
     private final String sfdcId = "06930000001LkwtAAC";

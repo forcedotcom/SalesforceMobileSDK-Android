@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartstore.store;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,11 +40,16 @@ import net.sqlcipher.database.SQLiteStatement;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * SmartStore Database Helper
@@ -52,6 +58,12 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
  * It also caches a number of of things to speed things up (e.g. soup table name, index specs, insert helpers etc)
  */
 public class DBHelper {
+
+	// Explain suuport
+	public static final String EXPLAIN_SQL = "sql";
+	public static final String EXPLAIN_ARGS = "args";
+	public static final String EXPLAIN_ROWS = "rows";
+	public static final String EXPLAIN_TAG = "EXPLAIN";
 
 	private static Map<SQLiteDatabase, DBHelper> INSTANCES;
 
@@ -87,6 +99,9 @@ public class DBHelper {
 	// Cache of soup name to boolean indicating if soup uses FTS
 	private Map<String, Boolean> soupNameToHasFTS = new HashMap<String, Boolean>();
 
+	// Cache of soup name to soup features
+	private Map<String, List<String>> soupNameToFeaturesMap = new HashMap<>();
+
 	// Cache of table name to get-next-id compiled statements
 	private Map<String, SQLiteStatement> tableNameToNextIdStatementsMap = new HashMap<String, SQLiteStatement>();
 
@@ -95,6 +110,12 @@ public class DBHelper {
 
 	// Cache of raw count sql to compiled statements
 	private Map<String, SQLiteStatement> rawCountSqlToStatementsMap = new HashMap<String, SQLiteStatement>();
+
+	// Boolean to turn explain query plan capture on or off
+	private boolean captureExplainQueryPlan;
+
+	// Last explain query plan
+	private JSONObject lastExplainQueryPlan;
 
 	/**
 	 * @param soupName
@@ -130,6 +151,24 @@ public class DBHelper {
 	}
 
 	/**
+	 * Caches a set of features given the soup name.
+	 *
+	 * @param soupName
+	 * @param features
+	 */
+	public void cacheFeatures(String soupName, List<String> features) {
+		soupNameToFeaturesMap.put(soupName, features);
+	}
+
+	/**
+	 * @param soupName
+	 * @return The set of features belonging to the given soup name.
+	 */
+	public List<String> getCachedFeatures(String soupName) {
+		return soupNameToFeaturesMap.get(soupName);
+	}
+
+	/**
 	 * @param soupName
 	 * @return
 	 */
@@ -156,6 +195,7 @@ public class DBHelper {
 		soupNameToTableNamesMap.remove(soupName);
 		soupNameToIndexSpecsMap.remove(soupName);
 		soupNameToHasFTS.remove(soupName);
+		soupNameToFeaturesMap.remove(soupName);
 	}
 
 	private void cleanupRawCountSqlToStatementMaps(String tableName) {
@@ -234,7 +274,38 @@ public class DBHelper {
 	 */
 	public Cursor limitRawQuery(SQLiteDatabase db, String sql, String limit, String... whereArgs) {
 		String limitSql = String.format(LIMIT_SELECT, sql, limit);
+		if (captureExplainQueryPlan) {
+			runExplainQueryPlan(db, limitSql, whereArgs);
+		}
 		return db.rawQuery(limitSql, whereArgs);
+	}
+
+	private void runExplainQueryPlan(SQLiteDatabase db, String sql, String... whereArgs) {
+		JSONObject lastExplain = new JSONObject();
+		Cursor c = null;
+		try {
+			lastExplain.put(EXPLAIN_SQL, sql);
+			if (whereArgs != null && whereArgs.length > 0) lastExplain.put(EXPLAIN_ARGS, new JSONArray(Arrays.asList(whereArgs)));
+			JSONArray rows = new JSONArray();
+
+			c = db.rawQuery("EXPLAIN QUERY PLAN " + sql, whereArgs);
+			while (c.moveToNext()) {
+				JSONObject row = new JSONObject();
+				StringBuilder sb = new StringBuilder();
+				for (int i = 0; i < c.getColumnCount(); i++) {
+					row.put(c.getColumnName(i), c.getString(i));
+				}
+				rows.put(row);
+			}
+			lastExplain.put(EXPLAIN_ROWS, rows);
+			Log.d(EXPLAIN_TAG, lastExplain.toString(2));
+
+		} catch (JSONException e) {
+			Log.d(EXPLAIN_TAG, "Exception", e);
+		} finally {
+			safeClose(c);
+		}
+		lastExplainQueryPlan = lastExplain;
 	}
 
 	/**
@@ -372,6 +443,7 @@ public class DBHelper {
 		// Clears all maps.
 		soupNameToTableNamesMap.clear();
 		soupNameToIndexSpecsMap.clear();
+		soupNameToFeaturesMap.clear();
 		tableNameToInsertHelpersMap.clear();
 		tableNameToNextIdStatementsMap.clear();
 		rawCountSqlToStatementsMap.clear();
@@ -442,6 +514,49 @@ public class DBHelper {
 	}
 
 	/**
+	 * Retrieves the set of features belonging to the given soup.
+	 *
+	 * @param db
+	 * @param soupName
+	 * @return A list of features that belong to the given soup.
+	 */
+	public List<String> getFeatures(SQLiteDatabase db, String soupName) {
+		List<String> features = getCachedFeatures(soupName);
+		if (features == null) {
+			features = getFeaturesFromDb(db, soupName);
+			cacheFeatures(soupName, features);
+		}
+		return features;
+	}
+
+	/**
+	 * Queries the database for features that belong to the given soup name.
+	 *
+	 * @param db
+	 * @param soupName
+	 * @return A list of features that belong to the given soup.
+	 */
+	protected List<String> getFeaturesFromDb(SQLiteDatabase db, String soupName) {
+		Cursor cursor = null;
+		List<String> features = new ArrayList<>();
+		try {
+			cursor = query(db, SmartStore.SOUP_ATTRS_TABLE, SoupSpec.ALL_FEATURES, null, null, SmartStore.SOUP_NAME_PREDICATE, soupName);
+			if (!cursor.moveToFirst()) {
+				return null;
+			}
+			for (String feature : SoupSpec.ALL_FEATURES) {
+				int enabled = cursor.getInt(cursor.getColumnIndex(feature));
+				if (enabled > 0) {
+					features.add(feature);
+				}
+			}
+		} finally {
+			safeClose(cursor);
+		}
+		return features;
+	}
+
+    /**
      * Return table name for a given soup or null if the soup doesn't exist
      * @param db
      * @param soupName
@@ -460,10 +575,27 @@ public class DBHelper {
        return soupTableName;
    }
 
+	/**
+	 * If turned on, explain query plan is run before executing a query and stored in lastExplainQueryPlan
+	 * and also get logged
+	 * @param captureExplainQueryPlan true to turn capture on and false to turn off
+     */
+	public void setCaptureExplainQueryPlan(boolean captureExplainQueryPlan) {
+		this.captureExplainQueryPlan = captureExplainQueryPlan;
+	}
+
+	/**
+	 * @return explain query plan for last query run (if captureExplainQueryPlan is true)
+     */
+	public JSONObject getLastExplainQueryPlan() {
+		return lastExplainQueryPlan;
+	}
+
+
    protected String getSoupTableNameFromDb(SQLiteDatabase db, String soupName) {
        Cursor cursor = null;
        try {
-           cursor = query(db, SmartStore.SOUP_NAMES_TABLE, new String[] {SmartStore.ID_COL}, null, null, SmartStore.SOUP_NAME_PREDICATE, soupName);
+           cursor = query(db, SmartStore.SOUP_ATTRS_TABLE, new String[] {SmartStore.ID_COL}, null, null, SmartStore.SOUP_NAME_PREDICATE, soupName);
            if (!cursor.moveToFirst()) {
                return null;
            }

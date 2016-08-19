@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,19 +26,22 @@
  */
 package com.salesforce.androidsdk.ui;
 
-import java.util.List;
-
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.RadioGroup;
 
+import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.LoginServerManager.LoginServer;
+import com.salesforce.androidsdk.config.RuntimeConfig;
+
+import java.util.List;
 
 /**
  * This class provides UI to change the login server URL to use
@@ -111,6 +114,17 @@ public class ServerPickerActivity extends Activity implements
         salesforceR = SalesforceSDKManager.getInstance().getSalesforceR();
         loginServerManager = SalesforceSDKManager.getInstance().getLoginServerManager();
         setContentView(salesforceR.layoutServerPicker());
+
+        /*
+         * Hides the 'Add Connection' button if the MDM variable to disable
+         * adding of custom hosts is set.
+         */
+        final Button addConnectionButton = (Button) findViewById(R.id.sf__show_custom_url_edit);
+        if (addConnectionButton != null) {
+            if (RuntimeConfig.getRuntimeConfig(this).getBoolean(RuntimeConfig.ConfigKey.OnlyShowAuthorizedHosts)) {
+                addConnectionButton.setVisibility(View.GONE);
+            }
+        }
         final RadioGroup radioGroup = (RadioGroup) findViewById(getServerListGroupId());
         radioGroup.setOnCheckedChangeListener(this);
     	urlEditDialog = new CustomServerUrlEditor();
@@ -165,7 +179,8 @@ public class ServerPickerActivity extends Activity implements
      */
     public void showCustomUrlDialog(View v) {
     	final FragmentManager fragMgr = getFragmentManager();
-        //Add fragment only if it has not been added already
+
+        // Adds fragment only if it has not been added already.
         if(!urlEditDialog.isAdded()) {
             urlEditDialog.show(fragMgr, SERVER_DIALOG_NAME);
         }

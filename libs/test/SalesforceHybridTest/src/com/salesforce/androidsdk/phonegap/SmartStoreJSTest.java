@@ -42,7 +42,7 @@ public class SmartStoreJSTest extends JSTestCase {
     
     @Override
     protected int getMaxRuntimeInSecondsForTest(String testName) {
-        return 10;
+        return 30;
     }
 
     @Override
@@ -50,6 +50,7 @@ public class SmartStoreJSTest extends JSTestCase {
         return Arrays.asList(new String[] {
                 "testGetDatabaseSize",
                 "testRegisterRemoveSoup",
+                "testRegisterWithSpec",
                 "testRegisterRemoveSoupGlobalStore",
                 "testRegisterBogusSoup",
                 "testRegisterSoupNoIndices",
@@ -58,6 +59,7 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testUpsertToNonexistentSoup",
                 "testRetrieveSoupEntries",
                 "testRemoveFromSoup",
+                "testRemoveFromSoupByQuery",
                 "testQuerySoupWithExactQuery",
                 "testQuerySoupWithAllQueryDescending",
                 "testQuerySoupWithRangeQueryWithOrderPath",
@@ -87,6 +89,8 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testGetSoupIndexSpecsWithBogusSoupName",
                 "testAlterSoupNoReIndexing",
                 "testAlterSoupWithReIndexing",
+                "testAlterSoupWithSpecNoReIndexing",
+                "testAlterSoupWithSpecWithReIndexing",
                 "testAlterSoupWithBogusSoupName",
                 "testReIndexSoup",
                 "testClearSoup",
@@ -103,6 +107,10 @@ public class SmartStoreJSTest extends JSTestCase {
     }
 
     public void testRegisterRemoveSoup()  {
+        runTest("testRegisterRemoveSoup");
+    }
+
+    public void testRegisterWithSpec()  {
         runTest("testRegisterRemoveSoup");
     }
 
@@ -136,6 +144,10 @@ public class SmartStoreJSTest extends JSTestCase {
 
     public void testRemoveFromSoup()  {
         runTest("testRemoveFromSoup");
+    }
+
+    public void testRemoveFromSoupByQuery()  {
+        runTest("testRemoveFromSoupByQuery");
     }
 
     public void testQuerySoupWithExactQuery()  {
@@ -253,6 +265,14 @@ public class SmartStoreJSTest extends JSTestCase {
 
     public void testAlterSoupWithReIndexing() {
         runTest("testAlterSoupWithReIndexing");
+    }
+
+    public void testAlterSoupWithSpecNoReIndexing() {
+        runTest("testAlterSoupWithSpecNoReIndexing");
+    }
+
+    public void testAlterSoupWithSpecWithReIndexing() {
+        runTest("testAlterSoupWithSpecWithReIndexing");
     }
 
     public void testAlterSoupWithBogusSoupName() {

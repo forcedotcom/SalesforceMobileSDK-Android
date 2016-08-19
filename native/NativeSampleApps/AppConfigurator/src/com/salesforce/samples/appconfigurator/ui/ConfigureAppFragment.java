@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -46,6 +46,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -67,6 +68,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
     private EditText mOauthRedirectURI;
     private EditText mCertAlias;
     private EditText[] mEditTexts;
+    private CheckBox mOnlyShowAuthorizedHosts;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -92,6 +94,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
         mTextXmlValues.setMovementMethod(new ScrollingMovementMethod());
         mButtonShowXml = (Button) view.findViewById(R.id.show_xml);
         mButtonShowXml.setOnClickListener(this);
+        mOnlyShowAuthorizedHosts = (CheckBox) view.findViewById(R.id.only_allowed_servers);
     }
 
     @Override
@@ -109,13 +112,15 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
                 if (mCertAlias.getText() != null && !mCertAlias.getText().toString().trim().isEmpty()) {
                 	isCertAuthEnabled = true;
                 }
+                boolean showOnlyAllowedServers = mOnlyShowAuthorizedHosts.isChecked();
                 state.saveConfigurations(getActivity(),
                         mLoginServers.getText().toString(),
                         mLoginServersLabels.getText().toString(),
                         mRemoteAccessConsumerKey.getText().toString(),
                         mOauthRedirectURI.getText().toString(),
                         isCertAuthEnabled,
-                        mCertAlias.getText().toString());
+                        mCertAlias.getText().toString(),
+                        showOnlyAllowedServers);
                 Toast.makeText(getActivity(), R.string.saved, Toast.LENGTH_SHORT).show();
                 break;
 
@@ -163,6 +168,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
             }
             mButtonSave.setVisibility(View.VISIBLE);
             mButtonShowXml.setVisibility(View.VISIBLE);
+            mOnlyShowAuthorizedHosts.setChecked(state.shouldOnlyShowAuthorizedHosts());
         } else {
             mTextStatus.setText(status);
             mTextStatus.setVisibility(View.VISIBLE);
@@ -171,6 +177,7 @@ public class ConfigureAppFragment extends Fragment implements View.OnClickListen
             }
             mButtonSave.setVisibility(View.GONE);
             mButtonShowXml.setVisibility(View.GONE);
+            mOnlyShowAuthorizedHosts.setChecked(false);
         }
     }
 }

@@ -381,8 +381,6 @@ public class ClientManager {
             // WARNING! This assumes all user data is a String!
             accountManager.setUserData(acc, key, extras.getString(key));
         }
-
-        accountManager.setAuthToken(acc, AccountManager.KEY_AUTHTOKEN, authToken);
         SalesforceSDKManager.getInstance().getUserAccountManager().storeCurrentUserInfo(userId, orgId);
         return extras;
     }
@@ -458,7 +456,6 @@ public class ClientManager {
                     	communityUrl = SalesforceSDKManager.decryptWithPasscode(encCommunityUrl, oldPass);
                     }
 
-
                     // Encrypt data with new hash and put it back in AccountManager.
                     acctManager.setUserData(account, AccountManager.KEY_AUTHTOKEN, SalesforceSDKManager.encryptWithPasscode(authToken, newPass));
                     acctManager.setPassword(account, SalesforceSDKManager.encryptWithPasscode(refreshToken, newPass));
@@ -492,7 +489,6 @@ public class ClientManager {
                     if (communityUrl != null) {
                         acctManager.setUserData(account, AuthenticatorService.KEY_COMMUNITY_URL, SalesforceSDKManager.encryptWithPasscode(communityUrl, newPass));
                     }
-                    acctManager.setAuthToken(account, AccountManager.KEY_AUTHTOKEN, authToken);
                 }
             }
         }
@@ -617,17 +613,20 @@ public class ClientManager {
                 gettingAuthToken = true;
             }
 
-            // Invalidate current auth token
-            clientManager.invalidateToken(lastNewAuthToken);
+            // Invalidate current auth token.
+            final String cachedAuthToken = clientManager.accountManager.peekAuthToken(acc, AccountManager.KEY_AUTHTOKEN);
+            clientManager.invalidateToken(cachedAuthToken);
             String newAuthToken = null;
             String newInstanceUrl = null;
-
             try {
                 final Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, null, false, null, null).getResult();
                 if (bundle == null) {
                     Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
                 } else {
-                    newAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                    final String encryptedAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
+                    if (encryptedAuthToken != null) {
+                        newAuthToken = SalesforceSDKManager.decryptWithPasscode(encryptedAuthToken, SalesforceSDKManager.getInstance().getPasscodeHash());
+                    }
                     final String encryptedInstanceUrl = bundle.getString(AuthenticatorService.KEY_INSTANCE_URL);
                     if (encryptedInstanceUrl != null) {
                         newInstanceUrl = SalesforceSDKManager.decryptWithPasscode(encryptedInstanceUrl, SalesforceSDKManager.getInstance().getPasscodeHash());
@@ -646,14 +645,14 @@ public class ClientManager {
                         // Broadcasts an intent that the access token has been revoked.
                         broadcastIntent = new Intent(ACCESS_TOKEN_REVOKE_INTENT);
                     } else if (newInstanceUrl != null && !newInstanceUrl.equalsIgnoreCase(lastNewInstanceUrl)) {
-                        // Broadcasts an intent that the instance server has changed (implicitly token refreshed too)
+
+                        // Broadcasts an intent that the instance server has changed (implicitly token refreshed too).
                         broadcastIntent = new Intent(INSTANCE_URL_UPDATE_INTENT);
                     } else {
 
                         // Broadcasts an intent that the access token has been refreshed.
                         broadcastIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
                     }
-
                     broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
                     SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
                 }
@@ -709,11 +708,12 @@ public class ClientManager {
      */
     public static class LoginOptions {
 
+        public static final String JWT = "jwt";
+        public static final String LOGIN_URL = "loginUrl";
         private static final String OAUTH_SCOPES = "oauthScopes";
         private static final String OAUTH_CLIENT_ID = "oauthClientId";
         private static final String OAUTH_CALLBACK_URL = "oauthCallbackUrl";
         private static final String PASSCODE_HASH = "passcodeHash";
-        private static final String LOGIN_URL = "loginUrl";
         private static final String CLIENT_SECRET = "clientSecret";
 
         public String loginUrl;
@@ -723,8 +723,10 @@ public class ClientManager {
         public final String[] oauthScopes;
         private final Bundle bundle;
         public String clientSecret;
+        public String jwt;
 
-        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl, String oauthClientId, String[] oauthScopes) {
+        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
+                            String oauthClientId, String[] oauthScopes) {
             this.loginUrl = loginUrl;
             this.passcodeHash = passcodeHash;
             this.oauthCallbackUrl = oauthCallbackUrl;
@@ -738,10 +740,27 @@ public class ClientManager {
             bundle.putStringArray(OAUTH_SCOPES, oauthScopes);
         }
 
-        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl, String oauthClientId, String[] oauthScopes, String clientSecret) {
+        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
+                            String oauthClientId, String[] oauthScopes, String clientSecret) {
             this(loginUrl, passcodeHash, oauthCallbackUrl, oauthClientId, oauthScopes);
             this.clientSecret = clientSecret;
             bundle.putString(CLIENT_SECRET, clientSecret);
+        }
+
+        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
+                            String oauthClientId, String[] oauthScopes, String clientSecret, String jwt) {
+            this(loginUrl, passcodeHash, oauthCallbackUrl, oauthClientId, oauthScopes, clientSecret);
+            this.setJwt(jwt);
+        }
+
+        public void setJwt(String jwt) {
+            this.jwt = jwt;
+            bundle.putString(JWT, jwt);
+        }
+
+        public void setUrl(String url) {
+            this.loginUrl = url;
+            bundle.putString(LOGIN_URL, url);
         }
 
         public Bundle asBundle() {
@@ -754,7 +773,8 @@ public class ClientManager {
                                     options.getString(OAUTH_CALLBACK_URL),
                                     options.getString(OAUTH_CLIENT_ID),
                                     options.getStringArray(OAUTH_SCOPES),
-                                    options.getString(CLIENT_SECRET));
+                                    options.getString(CLIENT_SECRET),
+                                    options.getString(JWT));
         }
     }
 }

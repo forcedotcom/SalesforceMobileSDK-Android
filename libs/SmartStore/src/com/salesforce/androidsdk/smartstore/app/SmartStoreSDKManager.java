@@ -166,7 +166,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
                             final SQLiteDatabase db = dbHelper.getWritableDatabase(getEncryptionKeyForPasscode(oldPass));
 
                             // If the new passcode is null, use the default key.
-                            SmartStore.changeKey(db, getEncryptionKeyForPasscode(newPass));
+                            SmartStore.changeKey(db, getEncryptionKeyForPasscode(oldPass), getEncryptionKeyForPasscode(newPass));
                         }
                     }
                 }

@@ -83,6 +83,9 @@ public class PasscodeManager  {
     // Key used to specify that a longer passcode needs to be created.
     public static final String CHANGE_PASSCODE_KEY = "change_passcode";
 
+    // Key in preference for failed attempts
+    private static final String FAILED_ATTEMPTS = "failed_attempts";
+
     // this is a hash of the passcode to be used as part of the key to encrypt/decrypt oauth tokens
     // It's using a different salt/key than the one used to verify the entry
     private String passcodeHash;
@@ -90,7 +93,6 @@ public class PasscodeManager  {
     // Misc
     private HashConfig verificationHashConfig;
     private HashConfig encryptionHashConfig;
-    private int failedPasscodeAttempts;
     private Activity frontActivity;
     private Handler handler;
     private long lastActivity;
@@ -235,12 +237,12 @@ public class PasscodeManager  {
     	}
     	lastActivity = now();
         locked = true;
-        failedPasscodeAttempts = 0;
         passcodeHash = null;
         SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME,
         		Context.MODE_PRIVATE);
         Editor e = sp.edit();
         e.remove(KEY_PASSCODE);
+        e.remove(FAILED_ATTEMPTS);
         e.commit();
         timeoutMs = 0;
         minPasscodeLength = MIN_PASSCODE_LENGTH;
@@ -291,7 +293,9 @@ public class PasscodeManager  {
      * @return the new failure count
      */
     public int addFailedPasscodeAttempt() {
-        return ++failedPasscodeAttempts;
+        int failedAttempts = getFailedPasscodeAttempts() + 1;
+        setFailedPasscodeAttempts(failedAttempts);
+        return failedAttempts;
     }
 
     /**
@@ -338,7 +342,15 @@ public class PasscodeManager  {
      * @return number of failed passcode attempts
      */
     public int getFailedPasscodeAttempts() {
-        return failedPasscodeAttempts;
+        SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
+        return sp.getInt(FAILED_ATTEMPTS, 0);
+    }
+
+    private void setFailedPasscodeAttempts(int failedPasscodeAttempts) {
+        SharedPreferences sp = SalesforceSDKManager.getInstance().getAppContext().getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
+        Editor e = sp.edit();
+        e.putInt(FAILED_ATTEMPTS, failedPasscodeAttempts);
+        e.commit();
     }
 
     /**
@@ -526,7 +538,7 @@ public class PasscodeManager  {
      */
     public void unlock() {
         locked = false;
-        failedPasscodeAttempts = 0;
+        setFailedPasscodeAttempts(0);
         updateLast();
         EventsObservable.get().notifyEvent(EventType.AppUnlocked);
     }

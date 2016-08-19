@@ -45,7 +45,7 @@ public class ConnectUriBuilder {
     private static final String VERSIONNUMBER = "versionNumber";
 
     public ConnectUriBuilder() {
-        this(Uri.parse(ApiVersionStrings.BASE_CHATTER_PATH).buildUpon());
+        this(Uri.parse(ApiVersionStrings.getBaseChatterPath()).buildUpon());
     }
 
     public ConnectUriBuilder(Uri.Builder b) {

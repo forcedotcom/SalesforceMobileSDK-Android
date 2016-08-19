@@ -21,14 +21,14 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 4.1
+### What's New in 4.3
 
 **SmartStore Enhancements**
-- SmartStore now allows internal (non-leaf) nodes in index paths. This feature is useful in LIKE and MATCH queries.
-- SmartStore now allows arrays in compound index paths.
+- To enhance performance in certain edge cases, SmartStore adds an option for serializing unusually large soup elements in external storage.
 
 **Library Upgrades**
-- We've updated React Native to version 0.20.
+- We've updated React Native to version 0.30.0.
+- We've updated SQLCipher to version 3.5.2.
 
 **Other Technical Improvements**
 - Improvements to sample apps.

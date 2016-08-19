@@ -66,7 +66,7 @@ public class ServerPickerActivityTest extends
         eq = new EventsListenerQueue();
 
         // Waits for app initialization to complete.
-        if (SalesforceSDKManager.getInstance() == null) {
+        if (!SalesforceSDKManager.hasInstance()) {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         activity = getActivity();

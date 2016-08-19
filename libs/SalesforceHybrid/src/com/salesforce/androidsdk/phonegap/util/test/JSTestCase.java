@@ -72,9 +72,9 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 
 	        // Wait for app initialization to complete
 			EventsListenerQueue eq = new EventsListenerQueue();
-	        if (SalesforceSDKManager.getInstance() == null) {
+	        if (!SalesforceSDKManager.hasInstance()) {
 	            eq.waitForEvent(EventType.AppCreateComplete, 5000);
-	        }			
+	        }
 
 			// Start main activity
     		Instrumentation instrumentation = getInstrumentation();
@@ -88,11 +88,16 @@ public abstract class JSTestCase extends InstrumentationTestCase {
 
 			// Now run all the tests and collect the resuts in testResults
 			for (String testName : getTestNames()) {
-		        String jsCmd = "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
+		        final String jsCmd = "javascript:" + "navigator.testrunner.setTestSuite('" + jsSuite + "');" +
 		            "navigator.testrunner.startTest('" + testName + "');";
 				final CordovaWebView appView = activity.getAppView();
 				if (appView != null) {
-					appView.sendJavascript(jsCmd);
+                    appView.getView().post(new Runnable() {
+                        @Override
+                        public void run() {
+                                appView.loadUrl(jsCmd);
+                        }
+                    });
 				}
 				Log.i(getClass().getSimpleName(), "running test:" + testName);
 		        

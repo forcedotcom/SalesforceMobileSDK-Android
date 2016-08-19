@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -33,11 +33,13 @@ import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 import com.salesforce.androidsdk.smartstore.store.StoreCursor;
 
 import net.sqlcipher.database.SQLiteDatabase;
@@ -64,6 +66,9 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	static final String PATH = "path";
 	static final String PATHS = "paths";
 	static final String QUERY_SPEC = "querySpec";
+    static final String SOUP_SPEC = "soupSpec";
+    static final String SOUP_SPEC_NAME = "name";
+    static final String SOUP_SPEC_FEATURES = "features";
 	static final String EXTERNAL_ID_PATH = "externalIdPath";
 	static final String ENTRIES = "entries";
 	static final String ENTRY_IDS = "entryIds";
@@ -82,8 +87,6 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 		return STORE_CURSORS.get(db);
 	}
 
-
-
     public SmartStoreReactBridge(ReactApplicationContext reactContext) {
         super(reactContext);
     }
@@ -100,21 +103,34 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 */
 	@ReactMethod
-	public void removeFromSoup(ReadableMap args,
-                               final Callback successCallback, final Callback errorCallback){
+	public void removeFromSoup(ReadableMap args, final Callback successCallback,
+							   final Callback errorCallback){
 
 		// Parse args
 		String soupName = args.getString(SOUP_NAME);
         final SmartStore smartStore = getSmartStore(args);
-		List ids = ReactBridgeHelper.toJavaList(args.getArray(ENTRY_IDS));
-		Long[] soupEntryIds = new Long[ids.size()];
-		for (int i=0; i<ids.size(); i++) {
-			soupEntryIds[i] = ((Double) ids.get(i)).longValue();
-		}
+		ReadableArray arraySoupEntryIds = (args.isNull(ENTRY_IDS) ? null : args.getArray(ENTRY_IDS));
+		ReadableMap mapQuerySpec = (args.isNull(QUERY_SPEC) ? null : args.getMap(QUERY_SPEC));
 
-		// Run remove
-		smartStore.delete(soupName, soupEntryIds);
-		successCallback.invoke();
+        // Run remove
+        try {
+            if (arraySoupEntryIds != null) {
+                List ids = ReactBridgeHelper.toJavaList(arraySoupEntryIds);
+                Long[] soupEntryIds = new Long[ids.size()];
+                for (int i = 0; i < ids.size(); i++) {
+                    soupEntryIds[i] = ((Double) ids.get(i)).longValue();
+                }
+                smartStore.delete(soupName, soupEntryIds);
+            } else {
+                JSONObject querySpecJson = new JSONObject(ReactBridgeHelper.toJavaMap(mapQuerySpec));
+                QuerySpec querySpec = QuerySpec.fromJSON(soupName, querySpecJson);
+                smartStore.deleteByQuery(soupName, querySpec);
+            }
+            successCallback.invoke();
+        } catch (JSONException e) {
+            Log.e(LOG_TAG, "removeFromSoup", e);
+            errorCallback.invoke(e.toString());
+        }
 	}
 
 	/**
@@ -125,8 +141,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void retrieveSoupEntries(ReadableMap args,
-                                    final Callback successCallback, final Callback errorCallback){
+	public void retrieveSoupEntries(ReadableMap args, final Callback successCallback,
+                                    final Callback errorCallback){
 
 		// Parse args
 		String soupName = args.getString(SOUP_NAME);
@@ -151,8 +167,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void closeCursor(ReadableMap args,
-                            final Callback successCallback, final Callback errorCallback){
+	public void closeCursor(ReadableMap args, final Callback successCallback,
+                            final Callback errorCallback){
 
 		// Parse args
 		Integer cursorId = args.getInt(CURSOR_ID);
@@ -171,8 +187,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void moveCursorToPageIndex(ReadableMap args,
-                                      final Callback successCallback, final Callback errorCallback){
+	public void moveCursorToPageIndex(ReadableMap args, final Callback successCallback,
+                                      final Callback errorCallback){
 
 		// Parse args
 		Integer cursorId = args.getInt(CURSOR_ID);
@@ -207,8 +223,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void soupExists(ReadableMap args,
-                           final Callback successCallback, final Callback errorCallback){
+	public void soupExists(ReadableMap args, final Callback successCallback,
+                           final Callback errorCallback){
 
 		// Parse args
 		String soupName = args.getString(SOUP_NAME);
@@ -227,8 +243,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void upsertSoupEntries(ReadableMap args,
-                                  final Callback successCallback, final Callback errorCallback){
+	public void upsertSoupEntries(ReadableMap args, final Callback successCallback,
+                                  final Callback errorCallback){
 
 		// Parse args
 		String soupName = args.getString(SOUP_NAME);
@@ -251,8 +267,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 				}
 				smartStore.setTransactionSuccessful();
 				ReactBridgeHelper.invokeSuccess(successCallback, results);
-			}
-			catch (JSONException e) {
+			} catch (JSONException e) {
 				Log.e(LOG_TAG, "upsertSoupEntries", e);
 				errorCallback.invoke(e.toString());
 			} finally {
@@ -269,21 +284,23 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void registerSoup(ReadableMap args,
-                             final Callback successCallback, final Callback errorCallback){
-
-		// Parse args
-		String soupName = args.isNull(SOUP_NAME) ? null : args.getString(SOUP_NAME);
-		JSONArray indexesJson = new JSONArray(ReactBridgeHelper.toJavaList(args.getArray(INDEXES)));
+	public void registerSoup(ReadableMap args, final Callback successCallback,
+                             final Callback errorCallback) {
 		try {
-			IndexSpec[] indexSpecs = IndexSpec.fromJSON(indexesJson);
-
-			// Run register
+			// Parse args.
 			final SmartStore smartStore = getSmartStore(args);
-			smartStore.registerSoup(soupName, indexSpecs);
+			String soupName = args.isNull(SOUP_NAME) ? null : args.getString(SOUP_NAME);
+			IndexSpec[] indexSpecs = getIndexSpecsFromArg(args);
+			SoupSpec soupSpec = getSoupSpecFromArg(args);
+
+			if (soupSpec != null) {
+                smartStore.registerSoupWithSpec(soupSpec, indexSpecs);
+            } else {
+                smartStore.registerSoup(soupName, indexSpecs);
+            }
+
 			ReactBridgeHelper.invokeSuccess(successCallback, soupName);
-		}
-		catch (JSONException e) {
+		} catch (JSONException e) {
 			Log.e(LOG_TAG, "registerSoup", e);
 			errorCallback.invoke(e.toString());
 		}
@@ -297,14 +314,13 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void querySoup(ReadableMap args,
-                          final Callback successCallback, final Callback errorCallback){
+	public void querySoup(ReadableMap args, final Callback successCallback,
+                          final Callback errorCallback){
 
 		// Parse args
 		String soupName = args.getString(SOUP_NAME);
         final SmartStore smartStore = getSmartStore(args);
 		JSONObject querySpecJson = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(QUERY_SPEC)));
-
 		try {
 			QuerySpec querySpec = QuerySpec.fromJSON(soupName, querySpecJson);
 			if (querySpec.queryType == QuerySpec.QueryType.smart) {
@@ -327,13 +343,12 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
      * @param errorCallback
 	 */
 	@ReactMethod
-	public void runSmartQuery(ReadableMap args,
-                              final Callback successCallback, final Callback errorCallback){
+	public void runSmartQuery(ReadableMap args, final Callback successCallback,
+                              final Callback errorCallback){
 
 		// Parse args
 		JSONObject querySpecJson = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(QUERY_SPEC)));
         final SmartStore smartStore = getSmartStore(args);
-
 		try {
 			QuerySpec querySpec = QuerySpec.fromJSON(null, querySpecJson);
 			if (querySpec.queryType != QuerySpec.QueryType.smart) {
@@ -354,8 +369,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @param successCallback
 	 * @throws JSONException
 	 */
-	public void runQuery(SmartStore smartStore, QuerySpec querySpec,
-						 final Callback successCallback) throws JSONException {
+	private void runQuery(SmartStore smartStore, QuerySpec querySpec,
+                         final Callback successCallback) throws JSONException {
 
 		// Build store cursor
 		final StoreCursor storeCursor = new StoreCursor(smartStore, querySpec);
@@ -376,8 +391,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void removeSoup(ReadableMap args,
-                           final Callback successCallback, final Callback errorCallback){
+	public void removeSoup(ReadableMap args, final Callback successCallback,
+                           final Callback errorCallback) {
 
 		// Parse args
 		String soupName = args.getString(SOUP_NAME);
@@ -396,8 +411,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void clearSoup(ReadableMap args,
-                          final Callback successCallback, final Callback errorCallback){
+	public void clearSoup(ReadableMap args, final Callback successCallback,
+                          final Callback errorCallback) {
 
 		// Parse args
 		String soupName = args.getString(SOUP_NAME);
@@ -416,8 +431,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void getDatabaseSize(ReadableMap args,
-                                final Callback successCallback, final Callback errorCallback) {
+	public void getDatabaseSize(ReadableMap args, final Callback successCallback,
+                                final Callback errorCallback) {
 
 		// Parse args
 		final SmartStore smartStore = getSmartStore(args);
@@ -433,22 +448,24 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void alterSoup(ReadableMap args,
-                          final Callback successCallback, final Callback errorCallback) {
-
-		// Parse args
-		String soupName = args.getString(SOUP_NAME);
-        final SmartStore smartStore = getSmartStore(args);
-		boolean reIndexData = args.getBoolean(RE_INDEX_DATA);
-		JSONArray indexesJson = new JSONArray(ReactBridgeHelper.toJavaList(args.getArray(INDEXES)));
+	public void alterSoup(ReadableMap args, final Callback successCallback,
+                          final Callback errorCallback) {
 		try {
-			IndexSpec[] indexSpecs = IndexSpec.fromJSON(indexesJson);
+			// Parse args.
+			final SmartStore smartStore = getSmartStore(args);
+			String soupName = args.getString(SOUP_NAME);
+			IndexSpec[] indexSpecs = getIndexSpecsFromArg(args);
+			SoupSpec soupSpec = getSoupSpecFromArg(args);
+			boolean reIndexData = args.getBoolean(RE_INDEX_DATA);
 
-			// Run register
-			smartStore.alterSoup(soupName, indexSpecs, reIndexData);
+			if (soupSpec != null) {
+				smartStore.alterSoup(soupName, soupSpec, indexSpecs, reIndexData);
+			} else {
+				smartStore.alterSoup(soupName, indexSpecs, reIndexData);
+			}
+
 			ReactBridgeHelper.invokeSuccess(successCallback, soupName);
-		}
-		catch (JSONException e) {
+		} catch (JSONException e) {
 			Log.e(LOG_TAG, "alterSoup", e);
 			errorCallback.invoke(e.toString());
 		}
@@ -462,8 +479,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void reIndexSoup(ReadableMap args,
-                            final Callback successCallback, final Callback errorCallback){
+	public void reIndexSoup(ReadableMap args, final Callback successCallback,
+                            final Callback errorCallback){
 
 		// Parse args
 		String soupName = args.getString(SOUP_NAME);
@@ -483,8 +500,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	@ReactMethod
-	public void getSoupIndexSpecs(ReadableMap args,
-                                  final Callback successCallback, final Callback errorCallback){
+	public void getSoupIndexSpecs(ReadableMap args, final Callback successCallback,
+                                  final Callback errorCallback) {
 
 		// Parse args
 		String soupName = args.getString(SOUP_NAME);
@@ -502,12 +519,37 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 				indexSpecsJson.put(indexSpecJson);
 			}
 			ReactBridgeHelper.invokeSuccess(successCallback, indexSpecsJson);
-		}
-		catch (JSONException e) {
+		} catch (JSONException e) {
 			Log.e(LOG_TAG, "getSoupIndexSpecs", e);
 			errorCallback.invoke(e.toString());
 		}
 	}
+
+    /**
+     * Native implementation of getSoupSpecs
+     * @param args
+     * @param successCallback
+     * @param errorCallback
+     * @return
+     */
+    @ReactMethod
+    public void getSoupSpec(ReadableMap args, final Callback successCallback,
+                                  final Callback errorCallback) {
+
+        // Parse args.
+        final String soupName = args.getString(SOUP_NAME);
+        final SmartStore smartStore = getSmartStore(args);
+
+        // Get soup specs.
+        final SoupSpec soupSpec = smartStore.getSoupSpec(soupName);
+        try {
+            final JSONObject soupSpecJSON = soupSpec.toJSON();
+            ReactBridgeHelper.invokeSuccess(successCallback, soupSpecJSON);
+        } catch (JSONException e) {
+            Log.e(LOG_TAG, "getSoupSpec", e);
+            errorCallback.invoke(e.toString());
+        }
+    }
 
     /**
      * Return smartstore to use
@@ -529,4 +571,27 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	private boolean getIsGlobal(ReadableMap args) {
 		return args != null ? args.getBoolean(IS_GLOBAL_STORE) : false;
 	}
+
+	/**
+	 * Build index specs array from javascript argument
+	 * @param args
+	 * @return
+	 * @throws JSONException
+     */
+	private IndexSpec[] getIndexSpecsFromArg(ReadableMap args) throws JSONException {
+		JSONArray indexesJson = new JSONArray(ReactBridgeHelper.toJavaList(args.getArray(INDEXES)));
+		return IndexSpec.fromJSON(indexesJson);
+	}
+
+	/**
+	 * Build soup spec from javascript argument
+	 * @param args
+	 * @return
+	 * @throws JSONException
+     */
+	private SoupSpec getSoupSpecFromArg(ReadableMap args) throws JSONException {
+		JSONObject soupSpecJson = args.hasKey(SOUP_SPEC) ? new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(SOUP_SPEC))) : null;
+		return soupSpecJson == null ? null : SoupSpec.fromJSON(soupSpecJson);
+	}
+
 }

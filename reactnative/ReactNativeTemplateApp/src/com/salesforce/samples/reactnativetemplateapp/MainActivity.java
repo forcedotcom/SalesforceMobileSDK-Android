@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,76 +26,27 @@
  */
 package com.salesforce.samples.reactnativetemplateapp;
 
-import android.os.Bundle;
-import android.view.KeyEvent;
+import com.salesforce.androidsdk.reactnative.ui.SalesforceReactActivity;
 
-import com.facebook.react.LifecycleState;
-import com.facebook.react.ReactInstanceManager;
-import com.facebook.react.ReactRootView;
-import com.facebook.react.modules.core.DefaultHardwareBackBtnHandler;
-import com.facebook.react.shell.MainReactPackage;
-import com.salesforce.androidsdk.reactnative.app.SalesforceReactSDKManager;
-import com.salesforce.androidsdk.rest.RestClient;
-import com.salesforce.androidsdk.ui.SalesforceActivity;
+public class MainActivity extends SalesforceReactActivity {
 
-public class MainActivity extends SalesforceActivity implements DefaultHardwareBackBtnHandler {
-
-	private ReactInstanceManager mReactInstanceManager;
-	private ReactRootView mReactRootView;
-
+    /**
+     *
+     * @return true if you want login to happen when application launches
+     *         false otherwise
+     */
 	@Override
-	public void onResume(RestClient restClient) {
-        if (mReactInstanceManager == null) {
-            mReactInstanceManager = ReactInstanceManager.builder()
-				.setApplication(getApplication())
-				.setBundleAssetName("index.android.bundle")
-				.setJSMainModuleName("index.android")
-				.addPackage(new MainReactPackage())
-				.addPackage(SalesforceReactSDKManager.getInstance().getReactPackage())
-				.setUseDeveloperSupport(BuildConfig.DEBUG)
-				.setInitialLifecycleState(LifecycleState.RESUMED)
-				.build();
-
-            mReactRootView.startReactApplication(mReactInstanceManager, "ReactNativeTemplateApp", null);
-        }
+	public boolean shouldAuthenticate() {
+		return true;
 	}
 
+	/**
+	 * Returns the name of the main component registered from JavaScript.
+	 * This is used to schedule rendering of the component.
+	 */
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		mReactRootView = new ReactRootView(this);
-		setContentView(mReactRootView);
-	}
-
-	@Override
-	public boolean onKeyUp(int keyCode, KeyEvent event) {
-		if (keyCode == KeyEvent.KEYCODE_MENU && mReactInstanceManager != null) {
-			mReactInstanceManager.showDevOptionsDialog();
-			return true;
-		}
-		return super.onKeyUp(keyCode, event);
-	}
-
-	@Override
-	public void invokeDefaultOnBackPressed() {
-		super.onBackPressed();
-	}
-
-	@Override
-	public void onPause() {
-		super.onPause();
-
-		if (mReactInstanceManager != null) {
-			mReactInstanceManager.onPause();
-		}
-	}
-
-	@Override
-	public void onResume() {
-		super.onResume();
-
-		if (mReactInstanceManager != null) {
-			mReactInstanceManager.onResume(this, this);
-		}
+	protected String getMainComponentName() {
+		return "ReactNativeTemplateApp";
 	}
 }
+

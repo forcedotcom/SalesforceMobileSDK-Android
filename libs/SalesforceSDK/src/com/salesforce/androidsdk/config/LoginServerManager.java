@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -50,6 +50,8 @@ import java.util.Map;
  * @author bhariharan
  */
 public class LoginServerManager {
+
+	private static final String TAG = "LoginServerManager";
 
 	// Default login servers.
     public static final String PRODUCTION_LOGIN_URL = "https://login.salesforce.com";
@@ -200,8 +202,7 @@ public class LoginServerManager {
 		try {
 			mdmLoginServers = runtimeConfig.getStringArray(ConfigKey.AppServiceHosts);
 		} catch (Exception e) {
-			Log.w("LoginServerManager.getLoginServersFromRuntimeConfig",
-					"Exception thrown while attempting to read array, attempting to read string value instead");
+			Log.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead");
 		}
 		if (mdmLoginServers == null) {
 			final String loginServer = runtimeConfig.getString(ConfigKey.AppServiceHosts);
@@ -215,8 +216,7 @@ public class LoginServerManager {
 			try {
 				mdmLoginServersLabels = runtimeConfig.getStringArray(ConfigKey.AppServiceHostLabels);
 			} catch (Exception e) {
-				Log.w("LoginServerManager.getLoginServersFromRuntimeConfig",
-						"Exception thrown while attempting to read array, attempting to read string value instead");
+				Log.w(TAG, "Exception thrown while attempting to read array, attempting to read string value instead");
 			}
 			if (mdmLoginServersLabels == null) {
 				final String loginServerLabel = runtimeConfig.getString(ConfigKey.AppServiceHostLabels);
@@ -225,8 +225,7 @@ public class LoginServerManager {
 				}
 			}
 			if (mdmLoginServersLabels == null || mdmLoginServersLabels.length != mdmLoginServers.length) {
-				Log.w("LoginServerManager.getLoginServersFromRuntimeConfig",
-						"No login servers labels provided or wrong number of login servers labels provided - Using URLs for the labels");
+				Log.w(TAG, "No login servers labels provided or wrong number of login servers labels provided - Using URLs for the labels");
 				mdmLoginServersLabels = mdmLoginServers;
 			}
             final List<LoginServer> storedServers = getLoginServersFromPreferences(runtimePrefs);
@@ -293,9 +292,9 @@ public class LoginServerManager {
 				try {
 					eventType = xml.next();
 				} catch (XmlPullParserException e) {
-					Log.w("LoginServerManager:getLoginServersFromXml", e);
+					Log.w(TAG, e);
 				} catch (IOException e) {
-					Log.w("LoginServerManager:getLoginServersFromXml", e);
+					Log.w(TAG, e);
 				}
 			}
 		}

@@ -49,7 +49,7 @@ import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
  */
 public class ContactDetailLoader extends AsyncTaskLoader<ContactObject> {
 
-    private static final String TAG = "SmartSyncExplorer: ContactDetailLoader";
+    private static final String TAG = "ContactDetailLoader";
 
 	private String objectId;
 	private SmartStore smartStore;

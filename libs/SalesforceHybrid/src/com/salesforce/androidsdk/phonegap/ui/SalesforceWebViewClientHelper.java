@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -37,9 +37,8 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
-import org.apache.http.HttpStatus;
-
 import java.io.File;
+import java.net.HttpURLConnection;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -147,8 +146,8 @@ public class SalesforceWebViewClientHelper {
     	final String ec = params.get("ec");
     	int ecInt = (ec != null ? Integer.parseInt(ec) : -1);
     	final String startURL = params.get("startURL");
-        if ((ecInt == HttpStatus.SC_MOVED_PERMANENTLY
-    			|| ecInt == HttpStatus.SC_MOVED_TEMPORARILY)
+        if ((ecInt == HttpURLConnection.HTTP_MOVED_PERM
+    			|| ecInt == HttpURLConnection.HTTP_MOVED_TEMP)
     			&& startURL != null) {
     		return startURL;
     	} else {
