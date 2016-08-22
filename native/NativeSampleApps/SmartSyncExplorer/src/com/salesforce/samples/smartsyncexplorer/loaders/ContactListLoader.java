@@ -26,19 +26,15 @@
  */
 package com.salesforce.samples.smartsyncexplorer.loaders;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-
 import android.content.AsyncTaskLoader;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
@@ -59,6 +55,15 @@ import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * A simple AsyncTaskLoader to load a list of Salesforce contacts.
@@ -81,6 +86,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 		new IndexSpec(SyncManager.LOCAL, Type.string)
 	};
 
+	private SalesforceAnalyticsManager sfAnalyticsManager;
     private SmartStore smartStore;
     private SyncManager syncMgr;
     private long syncId = -1;
@@ -93,6 +99,7 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 	 */
 	public ContactListLoader(Context context, UserAccount account) {
 		super(context);
+        sfAnalyticsManager = SalesforceAnalyticsManager.getInstance(account);
 		smartStore = SmartSyncSDKManager.getInstance().getSmartStore(account);
 		syncMgr = SyncManager.getInstance(account);
 	}
@@ -170,6 +177,28 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
             } else {
                 syncMgr.reSync(syncId, callback);
             }
+            final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(sfAnalyticsManager.getAnalyticsManager(),
+                    SalesforceSDKManager.getInstance().getAppContext());
+            long curTime = System.currentTimeMillis();
+            final String eventName = "Contact List Refresh";
+            builder.startTime(curTime);
+            builder.name(eventName);
+            builder.sessionId(UUID.randomUUID().toString());
+            builder.senderId("SmartSyncExplorer");
+            builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
+            builder.eventType(InstrumentationEvent.EventType.user);
+            final JSONObject page = new JSONObject();
+            page.put("context", "ContactListLoader");
+            builder.page(page);
+			builder.endTime(System.currentTimeMillis());
+            InstrumentationEvent event = null;
+            try {
+                event = builder.buildEvent();
+            } catch (InstrumentationEventBuilder.EventBuilderException e) {
+                Log.w(TAG, "Exception thrown while attempting to build event");
+            }
+            sfAnalyticsManager.getEventStoreManager().storeEvent(event);
+			sfAnalyticsManager.publishAllEvents();
         } catch (JSONException e) {
             Log.e(TAG, "JSONException occurred while parsing", e);
         } catch (SmartSyncException e) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,49 +24,61 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.security;
+package com.salesforce.androidsdk.analytics.security;
 
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 
 /**
- * Tests for Encryptor
+ * Tests for Encryptor.
  *
+ * @author bhariharan
  */
 public class EncryptorTest extends InstrumentationTestCase {
 
-	private static final String[] TEST_KEYS = new String[] {null, makeKey("test1234"), makeKey("123456")};
-	private static final String[] TEST_DATA = new String[] {"hello world", "fake-token"};
+	private static final String[] TEST_KEYS = new String[] {
+			null,
+            makeKey("test1234"),
+            makeKey("123456")
+    };
+	private static final String[] TEST_DATA = new String[] {
+            "hello world",
+            "fake-token"
+    };
 
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
-		Context targetContext = getInstrumentation().getTargetContext();
+		final Context targetContext = getInstrumentation().getTargetContext();
 		Encryptor.init(targetContext);
 	}
-	
+
 	@Override
 	public void tearDown() throws Exception {
+        super.tearDown();
 	}
 
 	/**
-	 * Make sure that encrypt does nothing when given a null key
+	 * Test to make sure that encrypt does nothing when given a null key.
 	 */
 	public void testEncryptWithNullKey() {
-		for (String data : TEST_DATA) {
+		for (final String data : TEST_DATA) {
 			assertEquals("Encrypt should have left the string unchanged", data, Encryptor.encrypt(data, null));
 		}
 	}
 	
 	/**
-	 * Make sure that decrypt does nothing when given a null key
+	 * Test to make sure that decrypt does nothing when given a null key.
 	 */
 	public void testDecryptWithNullKey() {
-		for (String data : TEST_DATA) {
+		for (final String data : TEST_DATA) {
 			assertEquals("Decrypt should have left the string unchanged", data, Encryptor.decrypt(data, null));
 		}
 	}
 
+    /**
+     * Test to ensure encryption and decryption work as expected.
+     */
 	public void testEncryptDecrypt() {
 		for (String key : TEST_KEYS) {
 			for (String data : TEST_DATA) {
@@ -76,22 +88,21 @@ public class EncryptorTest extends InstrumentationTestCase {
 			}
 		}
 	}
-	
+
 	/**
-	 * Make sure encrypt returns a string different from the original and that decrypt restores the original.
-	 * Make sure that two distinct strings have different encryption.
+	 * Test to make sure encrypt returns a string different from the original
+     * and that decrypt restores the original.
 	 */
 	public void testEncryptDecryptWithDifferentData() {
-		String key = makeKey("123456");
-		for (String data : TEST_DATA) {
+		final String key = makeKey("123456");
+		for (final String data : TEST_DATA) {
 			assertFalse("Encrypted string should be different from original", data.equals(Encryptor.encrypt(data, key)));
 			assertEquals("Decrypt should restore original", data, Encryptor.decrypt(Encryptor.encrypt(data, key), key));
-			for (String otherData : TEST_DATA) {
-				String encryptedA = Encryptor.encrypt(data, key);
-				String decryptedA = Encryptor.decrypt(encryptedA, key);
-				String encryptedB = Encryptor.encrypt(otherData, key);
-				String decryptedB = Encryptor.decrypt(encryptedB, key);
-				
+			for (final String otherData : TEST_DATA) {
+                final String encryptedA = Encryptor.encrypt(data, key);
+                final String decryptedA = Encryptor.decrypt(encryptedA, key);
+                final String encryptedB = Encryptor.encrypt(otherData, key);
+                final String decryptedB = Encryptor.decrypt(encryptedB, key);
 				boolean sameDecrypted = decryptedA.equals(decryptedB); 
 				boolean sameData = data.equals(otherData);
 				assertEquals("Decrypted strings '" 
@@ -102,25 +113,22 @@ public class EncryptorTest extends InstrumentationTestCase {
 			}
 		}
 	}
-	
+
 	/**
-	 * Make sure that encrypting with different keys produces different results.
+	 * Test to make sure that encrypting with different keys produces different results.
 	 */
 	public void testEncryptDecryptWithDifferentKeys() {
-		String data = "fake-token";
-		for (String key : TEST_KEYS) {
+		final String data = "fake-token";
+		for (final String key : TEST_KEYS) {
 			assertEquals("Decrypt should restore original", data, Encryptor.decrypt(Encryptor.encrypt(data, key), key));
-			for (String otherKey : TEST_KEYS) {
+			for (final String otherKey : TEST_KEYS) {
 				boolean sameKey = (key == null && otherKey == null) || (key != null && key.equals(otherKey));
-				
 				if (!sameKey) {
-					String encryptedA = Encryptor.encrypt(data, key);
-					String decryptedA = Encryptor.decrypt(encryptedA, key);
-	
-					String encryptedB = Encryptor.encrypt(data, otherKey);
-					String decryptedB = Encryptor.decrypt(encryptedB, otherKey);
-	
-					assertEquals("Decrypted values should be the same",decryptedA,decryptedB);
+                    final String encryptedA = Encryptor.encrypt(data, key);
+                    final String decryptedA = Encryptor.decrypt(encryptedA, key);
+                    final String encryptedB = Encryptor.encrypt(data, otherKey);
+                    final String decryptedB = Encryptor.decrypt(encryptedB, otherKey);
+					assertEquals("Decrypted values should be the same", decryptedA, decryptedB);
 					boolean sameEncrypted = encryptedA.equals(encryptedB); 
 					assertEquals("Encrypted strings '" 
 							+ encryptedA + "','" + encryptedB 
@@ -132,12 +140,7 @@ public class EncryptorTest extends InstrumentationTestCase {
 		}
 	}
 
-	/**
-	 * @param passcode
-	 * @return base64 encoded 256 bits key based on passcode 
-	 */
 	private static String makeKey(String passcode) {
-		return Encryptor.hash(passcode, "hashing-key");
+        return Encryptor.hash(passcode, "hashing-key");
 	}
-	
 }

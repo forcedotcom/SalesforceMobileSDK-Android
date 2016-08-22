@@ -2,8 +2,9 @@
 apply plugin: 'com.android.library'
 
 dependencies {
-  compile 'com.google.guava:guava:18.0'
+  compile project(':libs:SalesforceAnalytics')
   compile 'com.squareup.okhttp3:okhttp:3.2.0'
+  compile 'com.google.guava:guava:18.0'
 }
 
 android {
@@ -35,7 +36,7 @@ android {
   }
   defaultConfig {
     testApplicationId "com.salesforce.androidsdk.tests"
-    testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
+    testInstrumentationRunner "com.salesforce.androidsdk.analytics.util.test.JUnitReportTestRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

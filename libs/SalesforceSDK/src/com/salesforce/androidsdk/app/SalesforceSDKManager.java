@@ -50,6 +50,7 @@ import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -61,7 +62,7 @@ import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -275,6 +276,15 @@ public class SalesforceSDKManager {
     	return loginActivityClass;
     }
 
+    /**
+     * Returns unique device ID.
+     *
+     * @return Device ID.
+     */
+    public String getDeviceId() {
+        return uid;
+    }
+
 	/**
      * Returns login options associated with the app.
      *
@@ -480,7 +490,6 @@ public class SalesforceSDKManager {
         return adminPermsManager;
     }
 
-
     /**
      * Changes the passcode to a new value.
      *
@@ -494,6 +503,7 @@ public class SalesforceSDKManager {
 
         // Resets the cached encryption key, since the passcode has changed.
         encryptionKey = null;
+        SalesforceAnalyticsManager.changePasscode(oldPass, newPass);
         ClientManager.changePasscode(oldPass, newPass);
     }
 
@@ -568,6 +578,8 @@ public class SalesforceSDKManager {
      * @param account Account.
      */
     protected void cleanUp(Activity frontActivity, Account account) {
+        final UserAccount userAccount = UserAccountManager.getInstance().buildUserAccount(account);
+        SalesforceAnalyticsManager.reset(userAccount);
         final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
 
         // Finishes front activity if specified, and if this is the last account.

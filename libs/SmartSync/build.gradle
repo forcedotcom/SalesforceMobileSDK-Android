@@ -35,7 +35,7 @@ android {
   }
   defaultConfig {
     testApplicationId "com.salesforce.androidsdk.smartsync.tests"
-    testInstrumentationRunner "com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
+    testInstrumentationRunner "com.salesforce.androidsdk.analytics.util.test.JUnitReportTestRunner"
   }
   packagingOptions {
     exclude 'META-INF/LICENSE'

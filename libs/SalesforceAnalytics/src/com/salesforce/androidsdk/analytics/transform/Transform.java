@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2016, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,21 +24,24 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+package com.salesforce.androidsdk.analytics.transform;
 
-package com.salesforce.androidsdk.util.test;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 
-import android.test.AndroidTestRunner;
-import android.test.InstrumentationTestRunner;
-
-import java.util.concurrent.TimeUnit;
+import org.json.JSONObject;
 
 /**
- * This extends the report runner that generates a standard junit report file, with the timerun cap.
+ * Represents a transformation of generic event to a specific format.
+ *
+ * @author bhariharan
  */
-public class JUnitReportTestRunner extends InstrumentationTestRunner {
+public interface Transform {
 
-    @Override
-    protected AndroidTestRunner getAndroidTestRunner() {
-        return new TimeLimitedTestRunner(60 * 60, TimeUnit.SECONDS);
-    }
+    /**
+     * Transforms an event into the required format.
+     *
+     * @param event Event to be transformed.
+     * @return JSON representation after transformation.
+     */
+    public JSONObject transform(InstrumentationEvent event);
 }

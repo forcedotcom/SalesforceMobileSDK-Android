@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,21 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.security;
-
-import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SecureRandom;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.Mac;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.spec.IvParameterSpec;
-import javax.crypto.spec.SecretKeySpec;
+package com.salesforce.androidsdk.analytics.security;
 
 import android.app.Service;
 import android.app.admin.DevicePolicyManager;
@@ -47,8 +33,18 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 
+import java.security.GeneralSecurityException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SecureRandom;
+
+import javax.crypto.Cipher;
+import javax.crypto.Mac;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
 /**
- * Helper class for encryption/decryption/hash computations
+ * Helper class for encryption/decryption/hash computations.
  */
 public class Encryptor {
 
@@ -60,12 +56,13 @@ public class Encryptor {
     private static boolean isFileSystemEncrypted;
 
     /**
-     * @param ctx
-     * @return true if the cryptographic module was successfully initialized
-     * @throws GeneralSecurityException
+     * Initializes this module.
+     *
+     * @param ctx Context.
+     * @return True - if the cryptographic module was successfully initialized, False - otherwise.
      */
     public static boolean init(Context ctx) {
-  
+
     	// Checks if file system encryption is available and active.
         DevicePolicyManager devicePolicyManager = (DevicePolicyManager) ctx.getSystemService(Service.DEVICE_POLICY_SERVICE);
         isFileSystemEncrypted = devicePolicyManager.getStorageEncryptionStatus() == DevicePolicyManager.ENCRYPTION_STATUS_ACTIVE;
@@ -75,6 +72,7 @@ public class Encryptor {
         try {
             getBestCipher();
         } catch (GeneralSecurityException gex) {
+            Log.e(TAG, "Security exception thrown", gex);
         }
         if (bestCipherAvailable == null) {
             return false;
@@ -82,12 +80,18 @@ public class Encryptor {
         try {
             Mac.getInstance(MAC_TRANSFORMATION, "BC");
         } catch (GeneralSecurityException e) {
-            Log.e(TAG, "No mac transformation available");
+            Log.e(TAG, "No MAC transformation available", e);
             return false;
         }
         return true;
     }
 
+    /**
+     * Returns the best cipher available.
+     *
+     * @return Best cipher available.
+     * @throws GeneralSecurityException
+     */
     public static Cipher getBestCipher() throws GeneralSecurityException {
         Cipher cipher = null;
         if (bestCipherAvailable != null) {
@@ -99,7 +103,7 @@ public class Encryptor {
                 bestCipherAvailable = PREFER_CIPHER_TRANSFORMATION;
             }
         } catch (GeneralSecurityException gex1) {
-            // Preferred combo not available.
+            Log.e(TAG, "Preferred combo not available", gex1);
         }
         if (bestCipherAvailable == null) {
             Log.e(TAG, "No cipher transformation available");
@@ -108,17 +112,20 @@ public class Encryptor {
     }
 
     /**
-     * @return true if file system encryption is available and active
+     * Checks if the file system is encrypted.
+     *
+     * @return True - if file system encryption is available and active, False - otherwise.
      */
     public static boolean isFileSystemEncrypted() {
         return isFileSystemEncrypted;
     }
 
     /**
-     * Decrypt data with key using aes256
-     * @param data
-     * @param key base64 encoded 256 bits key or null/"" to leave data unchanged
-     * @return decrypted data
+     * Decrypts data with key using AES-256.
+     *
+     * @param data Data.
+     * @param key Base64 encoded 256 bit key or null (to leave data unchanged).
+     * @return Decrypted data.
      */
     public static String decrypt(String data, String key) {
         if (TextUtils.isEmpty(key) || data == null) {
@@ -126,24 +133,25 @@ public class Encryptor {
         }
         try {
 
-            // Decode with base64.
+            // Decodes with Base64.
             byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = Base64.decode(data, Base64.DEFAULT);
 
-            // Decrypt with aes256.
+            // Decrypts with AES-256.
             byte[] decryptedData = decrypt(dataBytes, 0, dataBytes.length, keyBytes);
             return new String(decryptedData, 0, decryptedData.length, UTF8);
         } catch (Exception ex) {
-            Log.w("Encryptor:decrypt", "error during decryption", ex);
+            Log.w(TAG, "Error during decryption", ex);
         }
         return null;
     }
 
     /**
-     * Encrypt data with key using aes256
-     * @param data
-     * @param key base64 encoded 256 bits key or null/"" to leave data unchanged
-     * @return base64, aes256 encrypted data
+     * Encrypts data with key using AES-256.
+     *
+     * @param data Data.
+     * @param key Base64 encoded 256 bit key or null (to leave data unchanged).
+     * @return Base64, AES-256 encrypted data.
      */
     public static String encrypt(String data, String key) {
         if (TextUtils.isEmpty(key) || data == null) {
@@ -151,15 +159,15 @@ public class Encryptor {
         }
         try {
 
-            // Encrypt with our preferred cipher.
+            // Encrypts with our preferred cipher.
             byte[] keyBytes = Base64.decode(key, Base64.DEFAULT);
             byte[] dataBytes = data.getBytes(UTF8);
             byte[] encryptedData = encrypt(dataBytes, keyBytes);
 
-            // Encode with base64.
+            // Encodes with Base64.
             return Base64.encodeToString(encryptedData, Base64.DEFAULT);
         } catch (Exception ex) {
-            Log.w("Encryptor:encrypt", "error during encryption", ex);
+            Log.w(TAG, "Error during encryption", ex);
             return null;
         }
     }
@@ -180,14 +188,16 @@ public class Encryptor {
     }
 
     /**
-     * Return hmac-sha256 hash of data using key
-     * @param data
-     * @param key
-     * @return
+     * Return HMAC SHA-256 hash of data using key.
+     *
+     * @param data Data.
+     * @param key Key.
+     * @return Hash.
      */
     public static String hash(String data, String key) {
         try {
-            // Sign with sha256
+
+            // Signs with SHA-256.
             byte [] keyBytes = key.getBytes(UTF8);
             byte [] dataBytes = data.getBytes(UTF8);
             Mac sha = Mac.getInstance(MAC_TRANSFORMATION, "BC");
@@ -195,7 +205,7 @@ public class Encryptor {
             sha.init(keySpec);
             byte [] sig = sha.doFinal(dataBytes);
 
-            // Encode with base64.
+            // Encodes with Base64.
             String hash = Base64.encodeToString(sig, Base64.DEFAULT);
 
             /*
@@ -207,7 +217,7 @@ public class Encryptor {
             hash = removeNewLine(hash);
             return hash;
         } catch (Exception ex) {
-            Log.w("Encryptor:hash", "error during hashing", ex);
+            Log.w(TAG, "Error during hashing", ex);
             return null;
         }
     }
@@ -226,71 +236,43 @@ public class Encryptor {
     }
 
     private static byte[] generateInitVector() throws NoSuchAlgorithmException, NoSuchProviderException {
-        SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+        final SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
         byte[] iv = new byte[16];
         random.nextBytes(iv);
         return iv;
     }
 
-    /**
-     * Encrypt data bytes using key
-     * @param data
-     * @param key
-     * @return
-     * @throws NoSuchAlgorithmException
-     * @throws NoSuchPaddingException
-     * @throws InvalidKeyException
-     * @throws IllegalBlockSizeException
-     * @throws BadPaddingException
-     */
-    private static byte[] encrypt(byte[] data, byte[] key) throws GeneralSecurityException,
-            InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    private static byte[] encrypt(byte[] data, byte[] key) throws GeneralSecurityException {
+        final Cipher cipher = getBestCipher();
+        final SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
 
-        // encrypt
-        Cipher cipher = getBestCipher();
-        SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-
-        //generate a unique IV per encrypt
+        // Generates a unique IV per encryption.
         byte[] initVector = generateInitVector();
-        IvParameterSpec ivSpec = new IvParameterSpec(initVector);
+        final IvParameterSpec ivSpec = new IvParameterSpec(initVector);
         cipher.init(Cipher.ENCRYPT_MODE, skeySpec, ivSpec);
         byte[] meat = cipher.doFinal(data);
 
-        //prepend the IV to the encoded data (first 16 bytes / 128 bits )
+        // Prepends the IV to the encoded data (first 16 bytes / 128 bits).
         byte[] result = new byte[initVector.length + meat.length];
         System.arraycopy(initVector, 0, result, 0, initVector.length);
         System.arraycopy(meat, 0, result, initVector.length, meat.length);
         return result;
     }
 
-    /**
-     * Decrypt data bytes using key
-     * @param data
-     * @param offset
-     * @param length
-     * @param key
-     * @return
-     * @throws NoSuchAlgorithmException
-     * @throws NoSuchPaddingException
-     * @throws InvalidKeyException
-     * @throws IllegalBlockSizeException
-     * @throws BadPaddingException
-     */
-    private static byte[] decrypt(byte[] data, int offset, int length, byte[] key) throws GeneralSecurityException,
-            InvalidKeyException, IllegalBlockSizeException, BadPaddingException {
+    private static byte[] decrypt(byte[] data, int offset, int length, byte[] key) throws GeneralSecurityException {
 
-        //grab the init vector prefix (first 16 bytes / 128 bits)
+        // Grabs the init vector prefix (first 16 bytes / 128 bits).
         byte[] initVector = new byte[16];
         System.arraycopy(data, offset, initVector, 0, initVector.length);
 
-        //grab the encrypted body after the init vector prefix
+        // Grabs the encrypted body after the init vector prefix.
         int meatLen = length - initVector.length;
         int meatOffset = offset + initVector.length;
         byte[] meat = new byte[meatLen];
         System.arraycopy(data, meatOffset, meat, 0, meatLen);
-        Cipher cipher = getBestCipher();
-        SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
-        IvParameterSpec ivSpec = new IvParameterSpec(initVector);
+        final Cipher cipher = getBestCipher();
+        final SecretKeySpec skeySpec = new SecretKeySpec(key, cipher.getAlgorithm());
+        final IvParameterSpec ivSpec = new IvParameterSpec(initVector);
         cipher.init(Cipher.DECRYPT_MODE, skeySpec, ivSpec);
         byte[] padded = cipher.doFinal(meat, 0, meatLen);
         byte[] result = padded;
