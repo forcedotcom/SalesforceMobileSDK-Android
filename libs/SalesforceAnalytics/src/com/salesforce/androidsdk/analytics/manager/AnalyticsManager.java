@@ -39,7 +39,6 @@ import com.salesforce.androidsdk.analytics.store.EventStoreManager;
  */
 public class AnalyticsManager {
 
-    private boolean showEventsInConsole;
     private EventStoreManager storeManager;
     private DeviceAppAttributes deviceAppAttributes;
     private int globalSequenceId;
