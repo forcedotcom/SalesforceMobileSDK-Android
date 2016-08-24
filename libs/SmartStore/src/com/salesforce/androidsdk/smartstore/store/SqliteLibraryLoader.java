@@ -1,7 +1,28 @@
 /*
- * Copyright 2015 Salesforce.com.
- * All Rights Reserved.
- * Company Confidential.
+ * Copyright (c) 2014-2016, salesforce.com, inc.
+ * All rights reserved.
+ * Redistribution and use of this software in source and binary forms, with or
+ * without modification, are permitted provided that the following conditions
+ * are met:
+ * - Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ * - Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ * - Neither the name of salesforce.com, inc. nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission of salesforce.com, inc.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 package com.salesforce.androidsdk.smartstore.store;
 
@@ -24,22 +45,13 @@ import android.os.Build;
 import android.util.Log;
 
 /**
- * When loading sqlite library we see UnsatisfiedLinkError exceptions (https://gus.my.salesforce.com/apex/adm_bugdetail?id=a07B0000001DT0hIAG&sfdc.override=1)
+ * When loading sqlite library we see UnsatisfiedLinkError exceptions
  * This stack overflow post (http://stackoverflow.com/questions/18111739/why-do-some-android-phones-cause-our-app-to-throw-an-java-lang-unsatisfiedlinker) suggests the problem is
  * with unzipping the apk, and manually doing it.
  * Since we don't want to modify sql cipher's code, we will have to duplicate  SQLiteDatabase.loadLibs code in this class.
  * This class will handle loading sql cipher for us. If we get an unsatisfied error, we will unzip the application apk, extract the so files to the application's data directory,
  * and call System.load() from the application directory
  * <p/>
- * Note: SQLiteDatabase.loadLibs loads 3 native libraries in the following order
- * 1. stlport_shared
- * 2. sqlcipher_android
- * 3. database_sqlcipher.
- * <p/>
- * The code in this class assumes the first one fails, and we load all 3 from application directory.
- * We don't handle the case where the first and/or second one loaded successfully (since we haven't seen that in the wild, and makes the logic in  this class simpler)
- * <p/>
- * Created by ktanna on 3/16/15.
  */
 public class SqliteLibraryLoader {
 
@@ -65,7 +77,7 @@ public class SqliteLibraryLoader {
     }
 
     /**
-     * Extracts the given library from the apk and places in the correct path. If library still cannot be read, a flag to show a request uninstall dialog is set to be displayed on
+     * Extracts the given library from the apk and places in the correct path. If library still cannot be read, return false to let caller decide appropriate error handling
      * the ui thread.
      *
      * @param context
