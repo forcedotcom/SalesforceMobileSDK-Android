@@ -149,7 +149,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
     protected void loadLibs(Context context) {
-        new SqliteLibraryLoader().loadSqlCipher(context);
+        SqliteLibraryLoader.loadSqlCipher(context);
     }
 
 	@Override

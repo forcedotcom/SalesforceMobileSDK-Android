@@ -55,14 +55,13 @@ import android.util.Log;
  */
 public class SqliteLibraryLoader {
 
-    protected static final String TAG = SqliteLibraryLoader.class.getSimpleName();
+    private static final String TAG = SqliteLibraryLoader.class.getSimpleName();
     private static final String DATABASE_SQLCIPHER = "libsqlcipher.so";
-    public static final String LIB_LOAD_FAILURE = "LibLoadFailure";
 
     /**
      * Sql cipher needs other libraries to also load. This method ensures we load all the required libraries
      */
-    public boolean loadSqlCipher(Context context) {
+    public static boolean loadSqlCipher(Context context) {
         try {
             loadLibs(context);
         } catch (UnsatisfiedLinkError ule) {
@@ -87,7 +86,7 @@ public class SqliteLibraryLoader {
      *
      * @return True if the library can be read from new location, false otherwise.
      */
-    private boolean extractAndLoadAgain(Context context, String libraryName, String[] supportedABIs) {
+    private static boolean extractAndLoadAgain(Context context, String libraryName, String[] supportedABIs) {
         final String METHOD_TAG = TAG + ":extractAndLoadAgain";
 
         ApplicationInfo appInfo = context.getApplicationInfo();
@@ -201,7 +200,7 @@ public class SqliteLibraryLoader {
      *
      * @throws UnsatisfiedLinkError
      */
-    public void loadLibs(Context context) throws UnsatisfiedLinkError {
+    public static void loadLibs(Context context) throws UnsatisfiedLinkError {
         SQLiteDatabase.loadLibs(context);
     }
 
@@ -213,7 +212,7 @@ public class SqliteLibraryLoader {
      *
      * @return True if file can be read, false otherwise.
      */
-    public boolean canReadFile(File file) {
+    public static boolean canReadFile(File file) {
         return file.canRead();
     }
 
@@ -221,7 +220,7 @@ public class SqliteLibraryLoader {
      * @return Returns a list of all supported ABIs for the platform
      */
     @SuppressLint("NewApi")
-    public String[] getSupportedAbis() {
+    public static String[] getSupportedAbis() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Build.SUPPORTED_ABIS.length > 0) {
             return Build.SUPPORTED_ABIS;
         } else {
