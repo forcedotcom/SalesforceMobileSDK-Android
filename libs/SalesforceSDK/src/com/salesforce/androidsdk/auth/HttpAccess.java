@@ -176,10 +176,12 @@ public class HttpAccess extends BroadcastReceiver {
 
         // Tries mobile connection.
         final NetworkInfo mobileInfo = conMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-        if (mobileInfo == null || mobileInfo.getDetailedState() == NetworkInfo.DetailedState.DISCONNECTED) {
-            setHasNetwork(false);
+        if (mobileInfo != null && mobileInfo.isConnected()) {
+            setHasNetwork(true);
             return;
         }
+        setHasNetwork(false);
+        return;
     }
 
     /**
