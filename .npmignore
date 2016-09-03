@@ -75,6 +75,7 @@ libs/SalesforceReact/build/
 libs/SalesforceSDK/build/
 libs/SmartStore/build/
 libs/SmartSync/build/
+libs/SalesforceAnalytics/build/
 
 .gitignore
 .metadata/

@@ -30,7 +30,7 @@ package com.salesforce.androidsdk.store;
 import android.database.Cursor;
 
 import com.google.common.primitives.Longs;
-import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
