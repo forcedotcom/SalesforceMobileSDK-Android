@@ -34,7 +34,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
