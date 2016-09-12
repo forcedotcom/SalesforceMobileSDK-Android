@@ -84,8 +84,7 @@ public class SoslSyncDownTarget extends SyncDownTarget {
         return startFetch(syncManager, maxTimeStamp, query);
     }
 
-    @Override
-    public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
+    private JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
         RestRequest request = RestRequest.getRequestForSearch(syncManager.apiVersion, queryRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONArray records = response.asJSONArray();

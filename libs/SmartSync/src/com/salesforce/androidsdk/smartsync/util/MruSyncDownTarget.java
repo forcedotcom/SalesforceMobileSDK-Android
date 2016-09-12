@@ -32,6 +32,7 @@ import android.util.Log;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -61,7 +62,7 @@ public class MruSyncDownTarget extends SyncDownTarget {
      */
 	public MruSyncDownTarget(JSONObject target) throws JSONException {
         super(target);
-        this.fieldlist = toList(target.getJSONArray(FIELDLIST));
+        this.fieldlist = JSONObjectHelper.toList(target.getJSONArray(FIELDLIST));
         this.objectType = target.getString(SOBJECT_TYPE);
 	}
 
@@ -92,7 +93,7 @@ public class MruSyncDownTarget extends SyncDownTarget {
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
         final RestRequest request = RestRequest.getRequestForMetadata(syncManager.apiVersion, objectType);
         final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-        final List<String> recentItems = pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
+        final List<String> recentItems = JSONObjectHelper.pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
 
         // Building SOQL query to get requested at.
         final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(getIdFieldName()
@@ -100,8 +101,7 @@ public class MruSyncDownTarget extends SyncDownTarget {
         return startFetch(syncManager, maxTimeStamp, soql);
     }
 
-    @Override
-    public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
+    private JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, queryRun);
         final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         final JSONObject responseJson = response.asJSONObject();
@@ -154,25 +154,5 @@ public class MruSyncDownTarget extends SyncDownTarget {
 	public String getObjectType() {
 		return objectType;
 	}
-	
-	@SuppressWarnings("unchecked")
-	private static <T> List<T> toList(JSONArray jsonArray) throws JSONException {
-		if (jsonArray == null) {
-			return null;
-		}
-		List<T> arr = new ArrayList<T>();
-		for (int i=0; i<jsonArray.length(); i++) {
-			arr.add((T) jsonArray.get(i));
-		}
-		return arr;
-	}
 
-    @SuppressWarnings("unchecked")
-    private <T> List<T> pluck(JSONArray jsonArray, String key) throws JSONException {
-        List<T> arr = new ArrayList<T>();
-        for (int i=0; i<jsonArray.length(); i++) {
-            arr.add((T) jsonArray.getJSONObject(i).get(key));
-        }
-        return arr;
-    }
 }

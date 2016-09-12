@@ -629,7 +629,14 @@ public class SyncManager {
         return restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
     }
 
-	/**
+    /**
+     * @return SmartStore used by this SyncManager
+     */
+    public SmartStore getSmartStore() {
+        return smartStore;
+    }
+
+    /**
      * Enum for action
      *
      */
