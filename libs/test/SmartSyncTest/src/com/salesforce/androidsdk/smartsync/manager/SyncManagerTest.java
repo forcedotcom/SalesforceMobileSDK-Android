@@ -1255,7 +1255,7 @@ public class SyncManagerTest extends ManagerTestCase {
     /**
      Soql sync down target that pauses for a second at the beginning of the fetch
      */
-    static class SlowSoqlSyncDownTarget extends SoqlSyncDownTarget {
+    public static class SlowSoqlSyncDownTarget extends SoqlSyncDownTarget {
 
         public SlowSoqlSyncDownTarget(String query) throws JSONException {
             super(query);
