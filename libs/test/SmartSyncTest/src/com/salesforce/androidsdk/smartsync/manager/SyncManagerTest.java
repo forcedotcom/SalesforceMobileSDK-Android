@@ -37,6 +37,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.MruSyncDownTarget;
+import com.salesforce.androidsdk.smartsync.util.RefreshSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SOSLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SOSLReturningBuilder;
@@ -877,6 +878,56 @@ public class SyncManagerTest extends ManagerTestCase {
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
         dropAccountsSoup(soupName);
         deleteSyncs();
+    }
+
+    /**
+     * Tests refresh-sync-down
+     * @throws Exception
+     */
+    public void testRefreshSyncDown() throws Exception {
+        // Setup has created records on the server
+        // Adding soup elements with just ids to soup
+        for (String id : idToNames.keySet()) {
+            JSONObject soupElement = new JSONObject();
+            soupElement.put(Constants.ID, id);
+            smartStore.create(ACCOUNTS_SOUP, soupElement);
+        }
+        // Running a refresh-sync-down for soup
+        final SyncDownTarget target = new RefreshSyncDownTarget(Arrays.asList(Constants.ID, Constants.NAME), Constants.ACCOUNT, ACCOUNTS_SOUP);
+        trySyncDown(MergeMode.OVERWRITE, target, idToNames, ACCOUNTS_SOUP);
+        // Make sure the soup has the records with id and names
+        checkDb(idToNames);
+    }
+
+    /**
+     * Tests refresh-sync-down when they are more records in the table than can be enumerated in one
+     * soql call to the server
+     * @throws Exception
+     */
+    public void testRefreshSyncDownWithMultipleRoundTrips() throws Exception {
+        // Setup has created records on the server
+        // Adding soup elements with just ids to soup
+        for (String id : idToNames.keySet()) {
+            JSONObject soupElement = new JSONObject();
+            soupElement.put(Constants.ID, id);
+            smartStore.create(ACCOUNTS_SOUP, soupElement);
+        }
+        // Running a refresh-sync-down for soup with one id per soql query (to force multiple round trips)
+        final RefreshSyncDownTarget target = new RefreshSyncDownTarget(Arrays.asList(Constants.ID, Constants.NAME), Constants.ACCOUNT, ACCOUNTS_SOUP);
+        target.setCountIdsPerSoql(1);
+        trySyncDown(MergeMode.OVERWRITE, target, idToNames, ACCOUNTS_SOUP);
+
+        // TBD verify that multiple fetch calls took place
+
+        // Make sure the soup has the records with id and names
+        checkDb(idToNames);
+    }
+
+    /**
+     * Tests if ghost records are cleaned locally for a refresh target.
+     */
+    public void testCleanResyncGhostsForRefreshTarget() throws Exception {
+        // TBD
     }
 
 	/**

@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Target for sync which syncs down the records currently in the database
+ * Target for sync which syncs down the records currently in a soup
  */
 public class RefreshSyncDownTarget extends SyncDownTarget {
 
@@ -97,7 +97,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
      */
     public RefreshSyncDownTarget(List<String> fieldlist, String objectType, String soupName) throws JSONException {
         super();
-        this.queryType = QueryType.mru;
+        this.queryType = QueryType.refresh;
         this.fieldlist = fieldlist;
         this.objectType = objectType;
         this.soupName = soupName;
@@ -118,6 +118,9 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
         return  getIdsFromSmartStoreAndFetchFromServer(syncManager);
+        // NB refresh sync down are used for soups which are populated directly from the server by the app
+        //    so reSync is not an option (individual records could have been saved at different time)
+        //    and for that reason, we don't make use of maxTimeStamp
     }
 
     @Override
@@ -129,9 +132,8 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         final List<String> idsInSmartStore = getIdsFromSmartStore(syncManager);
         final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlist);
 
-        final int countIdsFetched = getCountIdsPerSoql() * (page + 1);
+        final int countIdsFetched = getCountIdsPerSoql() * page + records.length();
         page = (countIdsFetched < totalSize ? page + 1 /* not done */: 0 /* done */);
-
         return records;
     }
 
@@ -143,7 +145,12 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
             totalSize = syncManager.getSmartStore().countQuery(querySpec);
         }
 
-        return JSONObjectHelper.toList(syncManager.getSmartStore().query(querySpec, page));
+        JSONArray result = syncManager.getSmartStore().query(querySpec, page);
+        List<String> ids = new ArrayList<>();
+        for (int i=0; i<result.length(); i++) {
+            ids.add(result.getJSONArray(i).getString(0));
+        }
+        return ids;
     }
 
     private JSONArray fetchFromServer(SyncManager syncManager, List<String> ids, List<String> fieldlist) throws IOException, JSONException {
