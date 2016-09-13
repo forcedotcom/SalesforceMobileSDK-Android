@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartsync.util;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -39,6 +40,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -113,52 +117,42 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        return fetch(syncManager);
+        return  getIdsFromSmartStoreAndFetchFromServer(syncManager);
     }
 
     @Override
     public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
-        return page > 0 ? fetch(syncManager) : null;
+        return page > 0 ? getIdsFromSmartStoreAndFetchFromServer(syncManager) : null;
     }
 
-    /**
-     * Helper method for startFetch / continueFetch
-     * @param syncManager
-     * @return
-     * @throws IOException
-     * @throws JSONException
-     */
-    private JSONArray fetch(SyncManager syncManager) throws IOException, JSONException {
+    private JSONArray getIdsFromSmartStoreAndFetchFromServer(SyncManager syncManager) throws IOException, JSONException {
+        final List<String> idsInSmartStore = getIdsFromSmartStore(syncManager);
+        final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlist);
+
+        final int countIdsFetched = getCountIdsPerSoql() * (page + 1);
+        page = (countIdsFetched < totalSize ? page + 1 /* not done */: 0 /* done */);
+
+        return records;
+    }
+
+    private List<String> getIdsFromSmartStore(SyncManager syncManager) throws JSONException {
         QuerySpec querySpec = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":" + getIdFieldName()
                 + "} FROM {" + soupName + "}", getCountIdsPerSoql());
 
         if (page == 0) {
-            // Get total size
             totalSize = syncManager.getSmartStore().countQuery(querySpec);
         }
 
-        final List<String>  idsInSmartStore = JSONObjectHelper.toList(syncManager.getSmartStore().query(querySpec, page));
+        return JSONObjectHelper.toList(syncManager.getSmartStore().query(querySpec, page));
+    }
 
-
+    private JSONArray fetchFromServer(SyncManager syncManager, List<String> ids, List<String> fieldlist) throws IOException, JSONException {
         final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(getIdFieldName()
-                + " IN ('" + TextUtils.join("', '", idsInSmartStore) + "')").build();
-
+                + " IN ('" + TextUtils.join("', '", ids) + "')").build();
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
         final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-        final JSONObject responseJson = response.asJSONObject();
-        final JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
-
-        final int countIdsReadSmartstore = getCountIdsPerSoql()*(page +1);
-        if (countIdsReadSmartstore < totalSize) {
-            // There is more
-            page++;
-        }
-        else {
-            // Done
-            page = 0;
-        }
-
-        return records;
+        JSONObject responseJson = response.asJSONObject();
+        return responseJson.getJSONArray(Constants.RECORDS);
     }
 
     @Override
@@ -167,8 +161,24 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
             return null;
         }
 
-        return null;
-        // FIXME
+        Set<String> remoteIds = new HashSet<>();
+
+        try {
+            List<String> localIdsList = new ArrayList<>(localIds);
+            int sliceSize = getCountIdsPerSoql();
+            int countSlices = (int) Math.ceil((double) localIds.size() / sliceSize);
+            for (int slice=0; slice<countSlices; slice++) {
+                List<String> idsToFetch = localIdsList.subList(slice*sliceSize, Math.min(localIdsList.size(), (slice+1)*sliceSize));
+                JSONArray records = fetchFromServer(syncManager, idsToFetch, Arrays.asList(getIdFieldName()));
+                remoteIds.addAll(parseIdsFromResponse(records));
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "IOException thrown while fetching records", e);
+        } catch (JSONException e) {
+            Log.e(TAG, "JSONException thrown while fetching records", e);
+        }
+
+        return remoteIds;
     }
 
     /**
