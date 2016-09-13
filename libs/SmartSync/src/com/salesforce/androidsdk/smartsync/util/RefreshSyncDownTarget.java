@@ -55,6 +55,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     public static final String FIELDLIST = "fieldlist";
     public static final String SOBJECT_TYPE = "sobjectType";
     public static final String SOUP_NAME = "soupName";
+    public static final String COUNT_IDS_PER_SOQL = "coundIdsPerSoql";
     private List<String> fieldlist;
     private String objectType;
     private String soupName;
@@ -88,6 +89,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         this.fieldlist = JSONObjectHelper.toList(target.getJSONArray(FIELDLIST));
         this.objectType = target.getString(SOBJECT_TYPE);
         this.soupName = target.getString(SOUP_NAME);
+        this.countIdsPerSoql = target.getInt(COUNT_IDS_PER_SOQL);
     }
 
     /**
@@ -112,6 +114,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         target.put(FIELDLIST, new JSONArray(fieldlist));
         target.put(SOBJECT_TYPE, objectType);
         target.put(SOUP_NAME, soupName);
+        target.put(COUNT_IDS_PER_SOQL, countIdsPerSoql);
         return target;
     }
 
