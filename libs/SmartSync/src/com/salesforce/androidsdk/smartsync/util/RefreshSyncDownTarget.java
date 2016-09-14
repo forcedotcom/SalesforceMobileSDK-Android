@@ -62,9 +62,12 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     private String soupName;
     private int countIdsPerSoql = 500;
 
-    // Properties of a run
-    private int page = 0;
+    // NB: For each sync run - a fresh sync down target is created (by deserializing it from smartstore)
+    // The following members are specific to a run
+    // page will change during a run as we call start/continueFetch
     private boolean isResync = false;
+    private int page = 0;
+
 
     /**
      * Return number of ids to pack in a single SOQL call
@@ -145,7 +148,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         if (isResync) {
             // Getting full records from SmartStore to compute maxTimeStamp
             // So doing more db work in the hope of doing less server work
-            querySpec = QuerySpec.buildAllQuerySpec(SOUP_NAME, null, null, getCountIdsPerSoql());
+            querySpec = QuerySpec.buildAllQuerySpec(soupName, getIdFieldName(), QuerySpec.Order.ascending, getCountIdsPerSoql());
             JSONArray recordsFromSmartStore = syncManager.getSmartStore().query(querySpec, page);
 
             // Compute max time stamp
@@ -158,7 +161,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         }
         else {
             querySpec = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":" + getIdFieldName()
-                    + "} FROM {" + soupName + "}", getCountIdsPerSoql());
+                    + "} FROM {" + soupName + "} ORDER BY {" + soupName + ":" + getIdFieldName() + "} ASC", getCountIdsPerSoql());
             JSONArray result = syncManager.getSmartStore().query(querySpec, page);
 
             // Not a resync
@@ -171,6 +174,8 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         }
 
         // If fetch is starting, figuring out totalSize
+        // NB: it might not be the correct value during resync
+        //     since not all records will have changed
         if (page == 0) {
             totalSize = syncManager.getSmartStore().countQuery(querySpec);
         }
@@ -179,8 +184,9 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlist, maxTimeStamp);
 
         // Increment page if there is more to fetch
-        final int countIdsFetched = getCountIdsPerSoql() * page + records.length();
-        page = (countIdsFetched < totalSize ? page + 1 /* not done */: 0 /* done */);
+        boolean done = getCountIdsPerSoql() * (page + 1) >= totalSize;
+        page = (done ? 0 : page+1);
+
         return records;
     }
 

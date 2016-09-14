@@ -923,6 +923,72 @@ public class SyncManagerTest extends ManagerTestCase {
     }
 
     /**
+     * Tests resync for a refresh-sync-down when they are more records in the table than can be enumerated
+     * in one soql call to the server
+     * @throws Exception
+     */
+    public void testRefreshReSyncWithMultipleRoundTrips() throws Exception {
+        // Setup has created records on the server
+        // Adding soup elements with just ids to soup
+        for (String id : idToNames.keySet()) {
+            JSONObject soupElement = new JSONObject();
+            soupElement.put(Constants.ID, id);
+            smartStore.create(ACCOUNTS_SOUP, soupElement);
+        }
+        // Running a refresh-sync-down for soup
+        final RefreshSyncDownTarget target = new RefreshSyncDownTarget(Arrays.asList(Constants.ID, Constants.NAME, Constants.LAST_MODIFIED_DATE), Constants.ACCOUNT, ACCOUNTS_SOUP);
+        target.setCountIdsPerSoql(1); //  to exercise continueFetch
+        long syncId = trySyncDown(MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, idToNames.size(), 10);
+
+        // Check sync time stamp
+        SyncState sync = syncManager.getSyncStatus(syncId);
+        SyncOptions options = sync.getOptions();
+        long maxTimeStamp = sync.getMaxTimeStamp();
+        assertTrue("Wrong time stamp", maxTimeStamp > 0);
+
+        // Make sure the soup has the records with id and names
+        checkDb(idToNames);
+
+        // Make some remote change
+        Thread.sleep(1000); // time stamp precision is in seconds
+        Map<String, String> idToNamesUpdated = new HashMap<String, String>();
+        String[] allIds = idToNames.keySet().toArray(new String[0]);
+        Arrays.sort(allIds); // to make the status updates sequence deterministic
+        String[] ids = new String[]{allIds[0], allIds[2]};
+        for (int i = 0; i < ids.length; i++) {
+            String id = ids[i];
+            idToNamesUpdated.put(id, idToNames.get(id) + "_updated");
+        }
+        updateAccountsOnServer(idToNamesUpdated);
+
+        // Call reSync
+        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        syncManager.reSync(syncId, queue);
+
+        // Check status updates
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, idToNames.size()); // totalSize is off for resync of sync-down-target if not all recrods got updated
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 10, idToNames.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 10, idToNames.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, idToNames.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, idToNames.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, idToNames.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, idToNames.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, idToNames.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, idToNames.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, idToNames.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 20, idToNames.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, idToNames.size());
+
+        // Check db
+        checkDb(idToNamesUpdated);
+
+        // Check sync time stamp
+        assertTrue("Wrong time stamp", syncManager.getSyncStatus(syncId).getMaxTimeStamp() > maxTimeStamp);
+    }
+
+
+    /**
      * Tests if ghost records are cleaned locally for a refresh target.
      */
     public void testCleanResyncGhostsForRefreshTarget() throws Exception {
