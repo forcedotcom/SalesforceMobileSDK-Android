@@ -108,7 +108,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     }
 
     private JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
-        String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(queryRun, maxTimeStamp) : queryRun;
+        String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(queryRun, getModificationDateFieldName(), maxTimeStamp) : queryRun;
         RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, queryToRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONObject responseJson = response.asJSONObject();
@@ -170,9 +170,9 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         return remoteIds;
     }
 
-    public static String addFilterForReSync(String query, long maxTimeStamp) {
+    public static String addFilterForReSync(String query, String modificationFieldDatName, long maxTimeStamp) {
         if (maxTimeStamp > 0) {
-            String extraPredicate = Constants.LAST_MODIFIED_DATE + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp));
+            String extraPredicate = modificationFieldDatName + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp));
             query = query.toLowerCase().contains(" where ")
                     ? query.replaceFirst("( [wW][hH][eE][rR][eE] )", "$1" + extraPredicate + " and ")
                     : query.replaceFirst("( [fF][rR][oO][mM][ ]+[^ ]*)", "$1 where " + extraPredicate);

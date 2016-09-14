@@ -42,6 +42,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -60,7 +61,10 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     private String objectType;
     private String soupName;
     private int countIdsPerSoql = 500;
+
+    // Properties of a run
     private int page = 0;
+    private boolean isResync = false;
 
     /**
      * Return number of ids to pack in a single SOQL call
@@ -120,10 +124,11 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
+        // During reSync, we can't make use of the maxTimeStamp that was captured during last refresh
+        // since we expect records to have been fetched from the server and written to the soup directly outside a sync down operation
+        // Instead during a reSymc, we compute maxTimeStamp from the records in the soup
+        isResync = maxTimeStamp > 0;
         return  getIdsFromSmartStoreAndFetchFromServer(syncManager);
-        // NB refresh sync down are used for soups which are populated directly from the server by the app
-        //    so reSync is not an option (individual records could have been saved at different time)
-        //    and for that reason, we don't make use of maxTimeStamp
     }
 
     @Override
@@ -132,33 +137,59 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     }
 
     private JSONArray getIdsFromSmartStoreAndFetchFromServer(SyncManager syncManager) throws IOException, JSONException {
-        final List<String> idsInSmartStore = getIdsFromSmartStore(syncManager);
-        final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlist);
+        // Read from smartstore
+        final QuerySpec querySpec;
+        final List<String> idsInSmartStore = new ArrayList<>();
+        final long maxTimeStamp;
 
+        if (isResync) {
+            // Getting full records from SmartStore to compute maxTimeStamp
+            // So doing more db work in the hope of doing less server work
+            querySpec = QuerySpec.buildAllQuerySpec(SOUP_NAME, null, null, getCountIdsPerSoql());
+            JSONArray recordsFromSmartStore = syncManager.getSmartStore().query(querySpec, page);
+
+            // Compute max time stamp
+            maxTimeStamp = getLatestModificationTimeStamp(recordsFromSmartStore);
+
+            // Get ids
+            for (int i = 0; i < recordsFromSmartStore.length(); i++) {
+                idsInSmartStore.add(recordsFromSmartStore.getJSONObject(i).getString(getIdFieldName()));
+            }
+        }
+        else {
+            querySpec = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":" + getIdFieldName()
+                    + "} FROM {" + soupName + "}", getCountIdsPerSoql());
+            JSONArray result = syncManager.getSmartStore().query(querySpec, page);
+
+            // Not a resync
+            maxTimeStamp = 0;
+
+            // Get ids
+            for (int i=0; i<result.length(); i++) {
+                idsInSmartStore.add(result.getJSONArray(i).getString(0));
+            }
+        }
+
+        // If fetch is starting, figuring out totalSize
+        if (page == 0) {
+            totalSize = syncManager.getSmartStore().countQuery(querySpec);
+        }
+
+        // Get records from server that have changed after maxTimeStamp
+        final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlist, maxTimeStamp);
+
+        // Increment page if there is more to fetch
         final int countIdsFetched = getCountIdsPerSoql() * page + records.length();
         page = (countIdsFetched < totalSize ? page + 1 /* not done */: 0 /* done */);
         return records;
     }
 
-    private List<String> getIdsFromSmartStore(SyncManager syncManager) throws JSONException {
-        QuerySpec querySpec = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":" + getIdFieldName()
-                + "} FROM {" + soupName + "}", getCountIdsPerSoql());
-
-        if (page == 0) {
-            totalSize = syncManager.getSmartStore().countQuery(querySpec);
-        }
-
-        JSONArray result = syncManager.getSmartStore().query(querySpec, page);
-        List<String> ids = new ArrayList<>();
-        for (int i=0; i<result.length(); i++) {
-            ids.add(result.getJSONArray(i).getString(0));
-        }
-        return ids;
-    }
-
-    private JSONArray fetchFromServer(SyncManager syncManager, List<String> ids, List<String> fieldlist) throws IOException, JSONException {
-        final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(getIdFieldName()
-                + " IN ('" + TextUtils.join("', '", ids) + "')").build();
+    private JSONArray fetchFromServer(SyncManager syncManager, List<String> ids, List<String> fieldlist, long maxTimeStamp) throws IOException, JSONException {
+        final String whereClause = ""
+                + getIdFieldName() + " IN ('" + TextUtils.join("', '", ids) + "')"
+                + (maxTimeStamp > 0 ? " AND " + getModificationDateFieldName() + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp))
+                : "");
+        final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(whereClause).build();
         final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, soql);
         final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONObject responseJson = response.asJSONObject();
@@ -179,7 +210,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
             int countSlices = (int) Math.ceil((double) localIds.size() / sliceSize);
             for (int slice=0; slice<countSlices; slice++) {
                 List<String> idsToFetch = localIdsList.subList(slice*sliceSize, Math.min(localIdsList.size(), (slice+1)*sliceSize));
-                JSONArray records = fetchFromServer(syncManager, idsToFetch, Arrays.asList(getIdFieldName()));
+                JSONArray records = fetchFromServer(syncManager, idsToFetch, Arrays.asList(getIdFieldName()), 0 /* get all */);
                 remoteIds.addAll(parseIdsFromResponse(records));
             }
         } catch (IOException e) {
