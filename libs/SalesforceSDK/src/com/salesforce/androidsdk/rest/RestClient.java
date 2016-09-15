@@ -69,7 +69,6 @@ public class RestClient {
 
 
     private static Map<String, OkHttpClient> OK_CLIENTS;
-	private ClientInfo clientInfo;
     private HttpAccess httpAccessor;
     private OAuthRefreshInterceptor oAuthRefreshInterceptor;
 	private OkHttpClient okHttpClient;
@@ -132,11 +131,10 @@ public class RestClient {
      * @param authTokenProvider
 	 */
 	public RestClient(ClientInfo clientInfo, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
-		this(clientInfo, httpAccessor, new OAuthRefreshInterceptor(clientInfo, authToken, authTokenProvider));
+		this(httpAccessor, new OAuthRefreshInterceptor(clientInfo, authToken, authTokenProvider));
 	}
 
-	public RestClient(ClientInfo clientInfo, HttpAccess httpAccessor, OAuthRefreshInterceptor httpInterceptor) {
-		this.clientInfo = clientInfo;
+	public RestClient(HttpAccess httpAccessor, OAuthRefreshInterceptor httpInterceptor) {
         this.httpAccessor = httpAccessor;
         this.oAuthRefreshInterceptor = httpInterceptor;
 		setOkHttpClient();
@@ -158,7 +156,7 @@ public class RestClient {
 		if (OK_CLIENTS == null) {
 			OK_CLIENTS = new HashMap<>();
 		}
-		final String uniqueId = clientInfo.buildUniqueId();
+		final String uniqueId = this.oAuthRefreshInterceptor.clientInfo.buildUniqueId();
 		OkHttpClient okHttpClient = null;
 		if (uniqueId != null) {
 			okHttpClient = OK_CLIENTS.get(uniqueId);
@@ -206,7 +204,7 @@ public class RestClient {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("RestClient: {\n")
-		  .append(clientInfo.toString())
+		  .append(this.oAuthRefreshInterceptor.clientInfo.toString())
 		  // Un-comment if you must: tokens should not be printed to the log
 		  // .append("   authToken: ").append(getAuthToken()).append("\n")
 		  // .append("   refreshToken: ").append(getRefreshToken()).append("\n")
@@ -233,7 +231,7 @@ public class RestClient {
 	 * @return The client info.
 	 */
 	public ClientInfo getClientInfo() {
-		return clientInfo;
+		return oAuthRefreshInterceptor.clientInfo;
 	}
 
 	/**
@@ -250,7 +248,7 @@ public class RestClient {
      */
     public Request buildRequest(RestRequest restRequest) {
         Request.Builder builder =  new Request.Builder()
-                .url(HttpUrl.get(clientInfo.resolveUrl(restRequest.getPath())))
+                .url(HttpUrl.get(this.oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest.getPath())))
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
 
         // Adding addition headers
