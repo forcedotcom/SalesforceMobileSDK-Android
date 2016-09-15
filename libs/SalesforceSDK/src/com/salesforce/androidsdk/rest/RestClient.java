@@ -233,7 +233,7 @@ public class RestClient {
 	 * @return The client info.
 	 */
 	public ClientInfo getClientInfo() {
-		return clientInfo;
+		return oAuthRefreshInterceptor.clientInfo;
 	}
 
 	/**
