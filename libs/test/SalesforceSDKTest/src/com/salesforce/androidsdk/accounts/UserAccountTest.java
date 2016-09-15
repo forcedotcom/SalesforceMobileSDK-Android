@@ -49,7 +49,7 @@ public class UserAccountTest extends InstrumentationTestCase {
     public static final String TEST_LOGIN_URL = "https://test.salesforce.com";
     public static final String TEST_INSTANCE_URL = "https://cs1.salesforce.com";
     public static final String TEST_IDENTITY_URL = "https://test.salesforce.com";
-    public static final String TEST_COMMUNITY_URL = "https://test.salesforce.com/community";
+    public static final String TEST_COMMUNITY_URL = "https://mobilesdk.cs1.my.salesforce.com";
     public static final String TEST_AUTH_TOKEN = "test_auth_token";
     public static final String TEST_REFRESH_TOKEN = "test_refresh_token";
     public static final String TEST_COMMUNITY_ID = "test_community_id";
