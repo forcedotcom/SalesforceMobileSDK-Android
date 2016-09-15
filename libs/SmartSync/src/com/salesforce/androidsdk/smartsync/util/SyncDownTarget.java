@@ -37,7 +37,9 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -71,6 +73,7 @@ public abstract class SyncDownTarget extends SyncTarget {
         case mru:     return new MruSyncDownTarget(target);
         case sosl:    return new SoslSyncDownTarget(target);
         case soql:    return new SoqlSyncDownTarget(target);
+        case refresh: return new RefreshSyncDownTarget(target);
         case custom:
         default:
             try {
@@ -118,16 +121,6 @@ public abstract class SyncDownTarget extends SyncTarget {
      * @throws IOException, JSONException
      */
     public abstract JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException;
-
-    /**
-     * Starts fetching records conforming to target query.
-     *
-     * @param syncManager SyncManager instance.
-     * @param maxTimeStamp Max timestamp.
-     * @param queryRun Query to run.
-     * @throws IOException, JSONException
-     */
-    public abstract JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException;
 
     /**
      * Continue fetching records conforming to target if any
@@ -193,6 +186,7 @@ public abstract class SyncDownTarget extends SyncTarget {
     	mru,
     	sosl,
     	soql,
+        refresh,
         custom
     }
 
