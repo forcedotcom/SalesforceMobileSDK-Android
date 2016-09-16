@@ -275,6 +275,10 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         return bootconfig;
     }
 
+    public RestClient getRestClient() {
+        return client;
+    }
+
     public void logout(CallbackContext callbackContext) {
         Log.i(TAG, "logout called");
         SalesforceSDKManager.getInstance().logout(this);
