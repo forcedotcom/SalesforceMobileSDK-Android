@@ -40,7 +40,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -77,7 +76,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
      * Supported plugin actions that the client can take.
      */
     enum Action {
-        sendRequest
+        pgSendRequest
     }
 
     @Override
@@ -87,7 +86,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
         try {
             action = Action.valueOf(actionStr);
             switch(action) {
-                case sendRequest:
+                case pgSendRequest:
                     sendRequest(args, callbackContext);
                     return true;
                 default:
@@ -119,9 +118,9 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                 @Override
                 public void onSuccess(RestRequest request, RestResponse response) {
                     try {
-                        final String responseAsString = response.asString();
-                        callbackContext.success(responseAsString);
-                    } catch (IOException e) {
+                        final JSONObject responseAsJSON = response.asJSONObject();
+                        callbackContext.success(responseAsJSON);
+                    } catch (Exception e) {
                         Log.e(TAG, "sendRequest", e);
                         onError(e);
                     }
