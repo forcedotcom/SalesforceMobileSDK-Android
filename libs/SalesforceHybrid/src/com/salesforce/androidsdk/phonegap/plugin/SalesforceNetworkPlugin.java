@@ -46,7 +46,6 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 
 import okhttp3.MediaType;
@@ -70,8 +69,6 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     private static final String FILE_MIME_TYPE_KEY = "fileMimeType";
     private static final String FILE_URL_KEY = "fileUrl";
     private static final String FILE_NAME_KEY = "fileName";
-    private static final String CONTENT_TYPE_HEADER_KEY = "Content-Type";
-    private static final String CONTENT_TYPE_HEADER_VALUE = "application/json";
 
     private RestClient restClient;
 
@@ -123,30 +120,10 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                     try {
 
                         /*
-                         * Parses the response headers to determine how to treat the response body,
-                         * if it exists. Typically, there's no response body for a POST, so in those
-                         * cases, we simply pass along the success callback.
-                         */
-                        boolean hasResponseBody = false;
-                        final Map<String, List<String>> responseHeaders = response.getAllHeaders();
-                        if (responseHeaders != null) {
-                            if (responseHeaders.containsKey(CONTENT_TYPE_HEADER_KEY)) {
-                                final List<String> contentTypes = responseHeaders.get(CONTENT_TYPE_HEADER_KEY);
-                                if (contentTypes != null) {
-                                    for (final String contentType : contentTypes) {
-                                        if (contentType != null && contentType.contains(CONTENT_TYPE_HEADER_VALUE)) {
-                                            hasResponseBody = true;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        /*
                          * Response body could be either JSONObject or JSONArray, and there's no
                          * good way to determine this from the response headers. Hence, we try both.
                          */
-                        if (hasResponseBody) {
+                        if (response.hasResponseBody()) {
                             try {
                                 final JSONObject responseAsJSONObject = response.asJSONObject();
                                 callbackContext.success(responseAsJSONObject);

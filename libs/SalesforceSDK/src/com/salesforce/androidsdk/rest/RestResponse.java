@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -43,13 +43,15 @@ import java.util.Map;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-
 /**
  * RestResponse: Class to represent any REST response.
  * 
  */
 public class RestResponse {
-	
+
+    private static final String CONTENT_TYPE_HEADER_KEY = "Content-Type";
+    private static final String CONTENT_TYPE_HEADER_VALUE = "application/json";
+
 	private final Response response;
 
 	// Populated when "consume" is called
@@ -145,6 +147,34 @@ public class RestResponse {
 			consume();
 		}
 		return responseAsBytes;
+	}
+
+    /**
+     * Checks if the response has a body.
+     *
+     * @return True - if response body is present, False - otherwise.
+     */
+	public boolean hasResponseBody() {
+
+        /*
+         * Parses the response headers to determine how to treat the response body,
+         * if it exists. Typically, there's no response body for a POST.
+         */
+        boolean hasResponseBody = false;
+        final Map<String, List<String>> responseHeaders = getAllHeaders();
+        if (responseHeaders != null) {
+            if (responseHeaders.containsKey(CONTENT_TYPE_HEADER_KEY)) {
+                final List<String> contentTypes = responseHeaders.get(CONTENT_TYPE_HEADER_KEY);
+                if (contentTypes != null) {
+                    for (final String contentType : contentTypes) {
+                        if (contentType != null && contentType.contains(CONTENT_TYPE_HEADER_VALUE)) {
+                            hasResponseBody = true;
+                        }
+                    }
+                }
+            }
+        }
+        return hasResponseBody;
 	}
 
 	/**
