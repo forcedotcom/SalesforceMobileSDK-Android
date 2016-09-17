@@ -118,11 +118,30 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                 @Override
                 public void onSuccess(RestRequest request, RestResponse response) {
                     try {
+
+                        /*
+                         * Since we don't know which format to send it back in, we try
+                         * JSONObject first, which is the most common. This might fail
+                         * for a POST that has no response body, in which case we will
+                         * send the body as a String. If all else fails, we will check
+                         * the status of the response and send a success callback.
+                         */
                         final JSONObject responseAsJSON = response.asJSONObject();
                         callbackContext.success(responseAsJSON);
                     } catch (Exception e) {
-                        Log.e(TAG, "sendRequest", e);
-                        onError(e);
+                        Log.e(TAG, "Error while converting response to JSONObject", e);
+                        try {
+                            final String responseAsString = response.asString();
+                            callbackContext.success(responseAsString);
+                        } catch (Exception ex) {
+                            Log.e(TAG, "Error while converting response to String", ex);
+                        } finally {
+                            if (response.isSuccess()) {
+                                callbackContext.success();
+                            } else {
+                                onError(e);
+                            }
+                        }
                     }
                 }
 
@@ -136,13 +155,18 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
         }
     }
 
-    private RestRequest prepareRestRequest(JSONArray args) throws UnsupportedEncodingException, URISyntaxException {
+    private RestRequest prepareRestRequest(JSONArray args) throws UnsupportedEncodingException,
+            URISyntaxException, JSONException {
         final JSONObject arg0 = args.optJSONObject(0);
         if (arg0 != null) {
             final RestRequest.RestMethod method = RestRequest.RestMethod.valueOf(arg0.optString(METHOD_KEY));
             final String endPoint = arg0.optString(END_POINT_KEY);
             final String path = arg0.optString(PATH_KEY);
-            final JSONObject queryParams = arg0.optJSONObject(QUERY_PARAMS_KEY);
+            final String queryParamString = arg0.optString(QUERY_PARAMS_KEY);
+            JSONObject queryParams = new JSONObject();
+            if (!TextUtils.isEmpty(queryParamString)) {
+                queryParams = new JSONObject(queryParamString);
+            }
             final JSONObject headerParams = arg0.optJSONObject(HEADER_PARAMS_KEY);
             final Iterator<String> headerKeys = headerParams.keys();
             final Map<String, String> additionalHeaders = new HashMap<String, String>();
@@ -182,8 +206,8 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     }
 
     private static String buildQueryString(JSONObject params) throws UnsupportedEncodingException {
-        if (params == null) {
-            return null;
+        if (params == null || params.length() == 0) {
+            return "";
         }
         final StringBuilder sb = new StringBuilder();
         final Iterator<String> keys = params.keys();
@@ -200,7 +224,7 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     }
 
     private static RequestBody buildRequestBody(JSONObject params, JSONObject fileParams) throws URISyntaxException {
-        if (fileParams == null) {
+        if (fileParams == null || fileParams.length() == 0) {
             return RequestBody.create(RestRequest.MEDIA_TYPE_JSON, params.toString());
         } else {
             final MultipartBody.Builder builder = new MultipartBody.Builder().setType(MultipartBody.FORM);
