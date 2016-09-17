@@ -141,15 +141,30 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                                 }
                             }
                         }
+
+                        /*
+                         * Response body could be either JSONObject or JSONArray, and there's no
+                         * good way to determine this from the response headers. Hence, we try both.
+                         */
                         if (hasResponseBody) {
-                            final JSONObject responseAsJSON = response.asJSONObject();
-                            callbackContext.success(responseAsJSON);
+                            try {
+                                final JSONObject responseAsJSONObject = response.asJSONObject();
+                                callbackContext.success(responseAsJSONObject);
+                            } catch (Exception ex) {
+                                Log.e(TAG, "Error while parsing response", ex);
+                                final JSONArray responseAsJSONArray = response.asJSONArray();
+                                callbackContext.success(responseAsJSONArray);
+                            }
                         } else {
                             callbackContext.success();
                         }
                     } catch (Exception e) {
                         Log.e(TAG, "Error while parsing response", e);
-                        onError(e);
+                        if (response.isSuccess()) {
+                            callbackContext.success();
+                        } else {
+                            onError(e);
+                        }
                     }
                 }
 
