@@ -46,6 +46,7 @@ import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import okhttp3.MediaType;
@@ -69,6 +70,8 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
     private static final String FILE_MIME_TYPE_KEY = "fileMimeType";
     private static final String FILE_URL_KEY = "fileUrl";
     private static final String FILE_NAME_KEY = "fileName";
+    private static final String CONTENT_TYPE_HEADER_KEY = "Content-Type";
+    private static final String CONTENT_TYPE_HEADER_VALUE = "application/json";
 
     private RestClient restClient;
 
@@ -120,28 +123,33 @@ public class SalesforceNetworkPlugin extends ForcePlugin {
                     try {
 
                         /*
-                         * Since we don't know which format to send it back in, we try
-                         * JSONObject first, which is the most common. This might fail
-                         * for a POST that has no response body, in which case we will
-                         * send the body as a String. If all else fails, we will check
-                         * the status of the response and send a success callback.
+                         * Parses the response headers to determine how to treat the response body,
+                         * if it exists. Typically, there's no response body for a POST, so in those
+                         * cases, we simply pass along the success callback.
                          */
-                        final JSONObject responseAsJSON = response.asJSONObject();
-                        callbackContext.success(responseAsJSON);
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error while converting response to JSONObject", e);
-                        try {
-                            final String responseAsString = response.asString();
-                            callbackContext.success(responseAsString);
-                        } catch (Exception ex) {
-                            Log.e(TAG, "Error while converting response to String", ex);
-                        } finally {
-                            if (response.isSuccess()) {
-                                callbackContext.success();
-                            } else {
-                                onError(e);
+                        boolean hasResponseBody = false;
+                        final Map<String, List<String>> responseHeaders = response.getAllHeaders();
+                        if (responseHeaders != null) {
+                            if (responseHeaders.containsKey(CONTENT_TYPE_HEADER_KEY)) {
+                                final List<String> contentTypes = responseHeaders.get(CONTENT_TYPE_HEADER_KEY);
+                                if (contentTypes != null) {
+                                    for (final String contentType : contentTypes) {
+                                        if (contentType != null && contentType.contains(CONTENT_TYPE_HEADER_VALUE)) {
+                                            hasResponseBody = true;
+                                        }
+                                    }
+                                }
                             }
                         }
+                        if (hasResponseBody) {
+                            final JSONObject responseAsJSON = response.asJSONObject();
+                            callbackContext.success(responseAsJSON);
+                        } else {
+                            callbackContext.success();
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error while parsing response", e);
+                        onError(e);
                     }
                 }
 
