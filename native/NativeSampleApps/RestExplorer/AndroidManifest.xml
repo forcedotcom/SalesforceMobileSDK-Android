@@ -23,7 +23,7 @@
 	</application>
 
     <uses-sdk android:minSdkVersion="19"
-        android:targetSdkVersion="23" />
+        android:targetSdkVersion="24" />
 
     <!--
         GCM permission to ensure that only this application can
