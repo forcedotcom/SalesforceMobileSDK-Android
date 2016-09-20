@@ -50,7 +50,7 @@ Setting up your Development Environment
 
 The following steps will help you get started with your development environment, whether you choose to develop native apps or hybrid apps. See the `README` files in the `native/` and `hybrid/` folders for additional notes pertaining to development in those environments.
 
-1. Install the Android SDK (r23 or above) and Android Studio: http://developer.android.com/sdk/index.html
+1. Install the Android SDK (r24 or above) and Android Studio: http://developer.android.com/sdk/index.html
 2. Get setup on github: http://help.github.com/
 
 Downloading the Salesforce SDK

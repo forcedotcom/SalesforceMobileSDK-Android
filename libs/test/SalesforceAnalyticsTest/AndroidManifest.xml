@@ -13,5 +13,5 @@
 		android:name="com.salesforce.androidsdk.analytics.util.test.JUnitReportTestRunner" />
 
     <uses-sdk android:minSdkVersion="19"
-        android:targetSdkVersion="23" />
+        android:targetSdkVersion="24" />
 </manifest>

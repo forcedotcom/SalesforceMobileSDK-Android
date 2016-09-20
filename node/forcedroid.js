@@ -43,7 +43,7 @@ var cordovaHelper = require('../external/shared/node/cordovaHelper');
 var miscUtils = require('../external/shared/node/utils');
 
 var version = '5.0.0';
-var targetApi = {'versionNumber': 23, 'versionName': 'Marshmallow'};
+var targetApi = {'versionNumber': 24, 'versionName': 'Nougat'};
 var minimumCordovaCliVersion = '5.4.0';
 var cordovaPlatformVersion = '5.0.0';
 var androidExePath;
