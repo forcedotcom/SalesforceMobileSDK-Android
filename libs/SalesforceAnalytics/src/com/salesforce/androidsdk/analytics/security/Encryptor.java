@@ -277,7 +277,7 @@ public class Encryptor {
         byte[] padded = cipher.doFinal(meat, 0, meatLen);
         byte[] result = padded;
         byte paddingValue = padded[padded.length - 1];
-        if (0 != paddingValue) {
+        if (0 <= paddingValue) {
             if (paddingValue < (byte) 16) {
                 byte compare = padded[padded.length - paddingValue];
                 if (compare == paddingValue) {
