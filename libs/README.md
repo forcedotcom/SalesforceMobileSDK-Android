@@ -4,8 +4,6 @@ This folder contains the library projects provided in the Salesforce Mobile SDK,
 
 ### SDK notes
 
-* The SDK is supported and tested for Android 4.2.2 and above.
-
 # Setting up your development environment
 
 Please follow the instructions for setting up your development environment from the README file at the root of this repo, prior to working with the Salesforce SDK.
