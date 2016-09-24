@@ -60,7 +60,8 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     private List<String> fieldlist;
     private String objectType;
     private String soupName;
-    private int countIdsPerSoql = 500;
+    private int countIdsPerSoql;
+    private static final int defaultCountIdsPerSoql = 500;
 
     // NB: For each sync run - a fresh sync down target is created (by deserializing it from smartstore)
     // The following members are specific to a run
@@ -96,7 +97,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         this.fieldlist = JSONObjectHelper.toList(target.getJSONArray(FIELDLIST));
         this.objectType = target.getString(SOBJECT_TYPE);
         this.soupName = target.getString(SOUP_NAME);
-        this.countIdsPerSoql = target.getInt(COUNT_IDS_PER_SOQL);
+        this.countIdsPerSoql = target.optInt(COUNT_IDS_PER_SOQL, defaultCountIdsPerSoql);
     }
 
     /**
@@ -110,6 +111,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
         this.fieldlist = fieldlist;
         this.objectType = objectType;
         this.soupName = soupName;
+        this.countIdsPerSoql = defaultCountIdsPerSoql;
     }
 
     /**
@@ -168,7 +170,7 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
             maxTimeStamp = 0;
 
             // Get ids
-            for (int i=0; i<result.length(); i++) {
+            for (int i = 0; i < result.length(); i++) {
                 idsInSmartStore.add(result.getJSONArray(i).getString(0));
             }
         }
@@ -180,14 +182,20 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
             totalSize = syncManager.getSmartStore().countQuery(querySpec);
         }
 
-        // Get records from server that have changed after maxTimeStamp
-        final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlist, maxTimeStamp);
+        if (idsInSmartStore.size() > 0) {
+            // Get records from server that have changed after maxTimeStamp
+            final JSONArray records = fetchFromServer(syncManager, idsInSmartStore, fieldlist, maxTimeStamp);
 
-        // Increment page if there is more to fetch
-        boolean done = getCountIdsPerSoql() * (page + 1) >= totalSize;
-        page = (done ? 0 : page+1);
+            // Increment page if there is more to fetch
+            boolean done = getCountIdsPerSoql() * (page + 1) >= totalSize;
+            page = (done ? 0 : page + 1);
 
-        return records;
+            return records;
+        }
+        else {
+            page = 0; // done
+            return null;
+        }
     }
 
     private JSONArray fetchFromServer(SyncManager syncManager, List<String> ids, List<String> fieldlist, long maxTimeStamp) throws IOException, JSONException {
