@@ -43,6 +43,7 @@ import android.util.Log;
 import android.webkit.ClientCertRequest;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebChromeClient;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
@@ -123,15 +124,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     /**
      * Construct a new OAuthWebviewHelper and perform the initial configuration of the Webview.
      */
-    @Deprecated
-	public OAuthWebviewHelper(OAuthWebviewHelperEvents callback,
-			LoginOptions options, WebView webview, Bundle savedInstanceState) {
-    	this(new LoginActivity(), callback, options, webview, savedInstanceState);
-    }
-
-    /**
-     * Construct a new OAuthWebviewHelper and perform the initial configuration of the Webview.
-     */
 	public OAuthWebviewHelper(Activity activity, OAuthWebviewHelperEvents callback,
 			LoginOptions options, WebView webview, Bundle savedInstanceState) {
         assert options != null && callback != null && webview != null && activity != null;
@@ -139,13 +131,17 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         this.callback = callback;
         this.loginOptions = options;
         this.webview = webview;
-        webview.getSettings().setJavaScriptEnabled(true);
+        final WebSettings webSettings = webview.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setUserAgentString(SalesforceSDKManager.getInstance().getUserAgent());
         webview.setWebViewClient(makeWebViewClient());
         webview.setWebChromeClient(makeWebChromeClient());
 
-        // Restore webview's state if available.
-        // This ensures the user is not forced to type in credentials again
-        // once the auth process has been kicked off.
+        /*
+         * Restores WebView's state if available.
+         * This ensures the user is not forced to type in credentials again
+         * once the auth process has been kicked off.
+         */
         if (savedInstanceState != null) {
             webview.restoreState(savedInstanceState);
             accountOptions = AccountOptions.fromBundle(savedInstanceState.getBundle(ACCOUNT_OPTIONS));
