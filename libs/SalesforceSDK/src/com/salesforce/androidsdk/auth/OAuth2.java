@@ -122,6 +122,7 @@ public class OAuth2 {
     private static final String BEARER = "Bearer ";
     private static final String ASSERTION = "assertion";
     private static final String JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
+    private static final String TAG = "OAuth2";
 
     // Login paths
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
@@ -166,7 +167,6 @@ public class OAuth2 {
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
         return URI.create(sb.toString());
     }
-
 
     public static URI getAuthorizationUrl(URI loginServer, String clientId,
                                           String callbackUrl, String[] scopes, String clientSecret,
@@ -242,16 +242,14 @@ public class OAuth2 {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_REVOKE_PATH);
         sb.append(Uri.encode(refreshToken));
-
         Request request = new Request.Builder()
                 .url(sb.toString())
                 .get()
                 .build();
-
         try {
             httpAccessor.getOkHttpClient().newCall(request).execute();
         } catch (IOException e) {
-            Log.w("OAuth2:revokeRefreshToken", e);
+            Log.w(TAG, e);
         }
     }
 
@@ -312,16 +310,12 @@ public class OAuth2 {
     public static final IdServiceResponse callIdentityService(
             HttpAccess httpAccessor, String identityServiceIdUrl,
             String authToken) throws IOException, URISyntaxException {
-
         Request.Builder builder = new Request.Builder()
                 .url(identityServiceIdUrl)
                 .get();
         addAuthorizationHeader(builder, authToken);
-
         Request request = builder.build();
-
         Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
-
         return new IdServiceResponse(response);
     }
 
@@ -347,17 +341,14 @@ public class OAuth2 {
             throws OAuthFailedException, IOException {
         final String refreshPath = loginServer.toString() + OAUTH_TOKEN_PATH;
         final RequestBody body = formBodyBuilder.build();
-
         Request request = new Request.Builder()
                 .url(refreshPath)
                 .post(body)
                 .build();
-
         Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
         if (response.isSuccessful()) {
             return new TokenEndpointResponse(response);
-        }
-        else {
+        } else {
             throw new OAuthFailedException(new TokenErrorResponse(response), response.code());
         }
     }
@@ -372,7 +363,6 @@ public class OAuth2 {
         FormBody.Builder builder = new FormBody.Builder()
                 .add(GRANT_TYPE, grantType)
                 .add(CLIENT_ID, clientId);
-
         if (clientSecret != null) {
             builder.add(CLIENT_SECRET, clientSecret);
         }
@@ -465,7 +455,7 @@ public class OAuth2 {
                     screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
                 }
             } catch (Exception e) {
-                Log.w("IdServiceResponse:constructor", "", e);
+                Log.w(TAG, e);
             }
         }
     }
@@ -484,7 +474,7 @@ public class OAuth2 {
                 errorDescription = parsedResponse
                         .getString(ERROR_DESCRIPTION);
             } catch (Exception e) {
-                Log.w("TokenErrorResponse:constructor", "", e);
+                Log.w(TAG, e);
             }
         }
 
@@ -525,7 +515,7 @@ public class OAuth2 {
                 communityId = callbackUrlParams.get(SFDC_COMMUNITY_ID);
                 communityUrl = callbackUrlParams.get(SFDC_COMMUNITY_URL);
             } catch (Exception e) {
-                Log.w("TokenEndpointResponse:constructor", "", e);
+                Log.w(TAG, e);
             }
         }
 
@@ -550,7 +540,7 @@ public class OAuth2 {
                 	communityUrl = parsedResponse.getString(SFDC_COMMUNITY_URL);
                 }
             } catch (Exception e) {
-                Log.w("TokenEndpointResponse:constructor", "", e);
+                Log.w(TAG, e);
             }
         }
 
