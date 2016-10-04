@@ -157,7 +157,7 @@
 "external\shared\test\MockSmartSyncPlugin.js" "external\shared\samples\simplesyncreact\js\MockSmartSyncPlugin.js"
 "external\shared\test\MockSmartSyncPlugin.js" "external\shared\samples\smartsyncexplorer\js\MockSmartSyncPlugin.js"
 "external\shared\test\SFAbstractSmartStoreTestSuite.js" "libs\test\SalesforceHybridTest\assets\www\test\SFAbstractSmartStoreTestSuite.js"
-"external\shared\test\SFForcetkTestSuite.js" "libs\test\SalesforceHybridTest\assets\www\test\SFForcetkTestSuite.js"
+"external\shared\test\SFForceJSTestSuite.js" "libs\test\SalesforceHybridTest\assets\www\test\SFForceJSTestSuite.js"
 "external\shared\test\SFSDKInfoTestSuite.js" "libs\test\SalesforceHybridTest\assets\www\test\SFSDKInfoTestSuite.js"
 "external\shared\test\SFSmartStoreLoadTestSuite.js" "libs\test\SalesforceHybridTest\assets\www\test\SFSmartStoreLoadTestSuite.js"
 "external\shared\test\SFSmartStoreTestSuite.js" "libs\test\SalesforceHybridTest\assets\www\test\SFSmartStoreTestSuite.js"

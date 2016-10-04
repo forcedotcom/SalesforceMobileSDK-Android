@@ -32,28 +32,32 @@ import java.util.List;
 import com.salesforce.androidsdk.phonegap.util.test.JSTestCase;
 
 /**
- * Running javascript tests for forcetk library
+ * Running javascript tests for force.js library
  */
-public class ForcetkJSTest extends JSTestCase {
+public class ForceJSTest extends JSTestCase {
 
-	public ForcetkJSTest() {
-		super("ForcetkTestSuite");
+	public ForceJSTest() {
+		super("ForceJSTestSuite");
 	}
 
 	@Override
 	public List<String> getTestNames() {
 		return Arrays.asList(new String[] {
+				"testParseUrl",
 				"testComputeWebAppSdkAgentForUnrecognizedUserAgents",
 				"testComputeWebAppSdkAgentForIOSUserAgents",
 				"testComputeWebAppSdkAgentForAndroidUserAgents",
 				"testComputeWebAppSdkAgentForWindowsPhoneUserAgents",
 				"testComputeWebAppSdkAgentForDesktopUserAgents",
+				"testComputeEndPointIfMissing",
 				"testOwnedFilesList", "testFilesInUsersGroups",
 				"testFilesSharedWithUser", "testFileDetails",
-				"testBatchFileDetails", "testFileRenditionPath",
-				"testFileRendition", "testFileContentsPath",
-				"testFileContents", "testFileShares", "testAddFileShare",
+				"testBatchFileDetails", "testFileShares", "testAddFileShare",
 				"testDeleteFileShare" });
+	}
+
+	public void testParseUrl() {
+		runTest("testParseUrl");
 	}
 
 	public void testComputeWebAppSdkAgentForUnrecognizedUserAgents() {
@@ -76,6 +80,10 @@ public class ForcetkJSTest extends JSTestCase {
 		runTest("testComputeWebAppSdkAgentForDesktopUserAgents");
 	}
 
+	public void testComputeEndPointIfMissing() {
+		runTest("testComputeEndPointIfMissing");
+	}
+
 	public void testOwnedFilesList() {
 		runTest("testOwnedFilesList");
 	}
@@ -95,23 +103,7 @@ public class ForcetkJSTest extends JSTestCase {
 	public void testBatchFileDetails() {
 		runTest("testBatchFileDetails");
 	}
-
-	public void testFileRenditionPath() {
-		runTest("testFileRenditionPath");
-	}
-
-	public void testFileRendition() {
-		runTest("testFileRendition");
-	}
-
-	public void testFileContentsPath() {
-		runTest("testFileContentsPath");
-	}
-
-	public void testFileContents() {
-		runTest("testFileContents");
-	}
-
+	
 	public void testFileShares() {
 		runTest("testFileShares");
 	}
