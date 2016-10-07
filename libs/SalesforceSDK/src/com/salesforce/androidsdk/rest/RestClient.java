@@ -179,6 +179,13 @@ public class RestClient {
 		this.okHttpClient = okHttpClient;
 	}
 
+	/**
+	 * Set the client info. Used by clients to implement Login As
+	 * @param clientInfo The new client info to set
+	 */
+	public void setClientInfo(final ClientInfo clientInfo) {
+		this.clientInfo = clientInfo;
+	}
 
 	/**
 	 * @return credentials as JSONObject
@@ -239,6 +246,13 @@ public class RestClient {
 	 */
 	public OkHttpClient getOkHttpClient() {
 		return okHttpClient;
+	}
+
+	/**
+	 * @return underlying OAuthRefreshInterceptor
+	 */
+	public OAuthRefreshInterceptor getoAuthRefreshInterceptor() {
+		return oAuthRefreshInterceptor;
 	}
 
     /**
@@ -635,7 +649,7 @@ public class RestClient {
          *
          * @param newAuthToken
          */
-        private synchronized void setAuthToken(String newAuthToken) {
+        public synchronized void setAuthToken(String newAuthToken) {
             authToken = newAuthToken;
         }
 
