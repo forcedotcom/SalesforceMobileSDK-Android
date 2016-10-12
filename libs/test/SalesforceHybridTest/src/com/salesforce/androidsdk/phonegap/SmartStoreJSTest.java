@@ -257,7 +257,6 @@ public class SmartStoreJSTest extends JSTestCase {
     public void testGetSoupIndexSpecsWithBogusSoupName() {
         runTest("testGetSoupIndexSpecsWithBogusSoupName");
     }
-    
 
     public void testAlterSoupNoReIndexing() {
         runTest("testAlterSoupNoReIndexing");
