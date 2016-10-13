@@ -248,7 +248,7 @@ public class RestClient {
 		return okHttpClient;
 	}
 
-	/**
+    /**
      * Helper to build okHttp Request from RestRequest
      * @param restRequest
      * @return
