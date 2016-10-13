@@ -249,13 +249,6 @@ public class RestClient {
 	}
 
 	/**
-	 * @return underlying OAuthRefreshInterceptor
-	 */
-	public OAuthRefreshInterceptor getoAuthRefreshInterceptor() {
-		return oAuthRefreshInterceptor;
-	}
-
-    /**
      * Helper to build okHttp Request from RestRequest
      * @param restRequest
      * @return
@@ -649,7 +642,7 @@ public class RestClient {
          *
          * @param newAuthToken
          */
-        public synchronized void setAuthToken(String newAuthToken) {
+        private synchronized void setAuthToken(String newAuthToken) {
             authToken = newAuthToken;
         }
 
