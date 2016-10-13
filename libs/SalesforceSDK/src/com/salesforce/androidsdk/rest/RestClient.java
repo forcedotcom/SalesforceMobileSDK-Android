@@ -179,6 +179,13 @@ public class RestClient {
 		this.okHttpClient = okHttpClient;
 	}
 
+	/**
+	 * Set the client info. Used by clients to implement Login As
+	 * @param clientInfo The new client info to set
+	 */
+	public void setClientInfo(final ClientInfo clientInfo) {
+		this.clientInfo = clientInfo;
+	}
 
 	/**
 	 * @return credentials as JSONObject
