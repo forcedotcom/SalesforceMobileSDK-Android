@@ -44,11 +44,6 @@ public class ForceJSTest extends JSTestCase {
 	public List<String> getTestNames() {
 		return Arrays.asList(new String[] {
 				"testParseUrl",
-				"testComputeWebAppSdkAgentForUnrecognizedUserAgents",
-				"testComputeWebAppSdkAgentForIOSUserAgents",
-				"testComputeWebAppSdkAgentForAndroidUserAgents",
-				"testComputeWebAppSdkAgentForWindowsPhoneUserAgents",
-				"testComputeWebAppSdkAgentForDesktopUserAgents",
 				"testComputeEndPointIfMissing",
 				"testOwnedFilesList", "testFilesInUsersGroups",
 				"testFilesSharedWithUser", "testFileDetails",
@@ -58,26 +53,6 @@ public class ForceJSTest extends JSTestCase {
 
 	public void testParseUrl() {
 		runTest("testParseUrl");
-	}
-
-	public void testComputeWebAppSdkAgentForUnrecognizedUserAgents() {
-		runTest("testComputeWebAppSdkAgentForUnrecognizedUserAgents");
-	}
-
-	public void testComputeWebAppSdkAgentForIOSUserAgents() {
-		runTest("testComputeWebAppSdkAgentForIOSUserAgents");
-	}
-
-	public void testComputeWebAppSdkAgentForAndroidUserAgents() {
-		runTest("testComputeWebAppSdkAgentForAndroidUserAgents");
-	}
-
-	public void testComputeWebAppSdkAgentForWindowsPhoneUserAgents() {
-		runTest("testComputeWebAppSdkAgentForWindowsPhoneUserAgents");
-	}
-
-	public void testComputeWebAppSdkAgentForDesktopUserAgents() {
-		runTest("testComputeWebAppSdkAgentForDesktopUserAgents");
 	}
 
 	public void testComputeEndPointIfMissing() {
