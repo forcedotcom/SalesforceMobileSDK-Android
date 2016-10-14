@@ -184,7 +184,7 @@ public class RestClient {
 	 * @param clientInfo The new client info to set
 	 */
 	public void setClientInfo(final ClientInfo clientInfo) {
-		this.clientInfo = clientInfo;
+		oAuthRefreshInterceptor.setClientInfo(clientInfo);
 	}
 
 	/**
@@ -696,6 +696,10 @@ public class RestClient {
                     }
                 }
             }
+        }
+
+        public void setClientInfo(final ClientInfo clientInfo) {
+            this.clientInfo = clientInfo;
         }
     }
 }
