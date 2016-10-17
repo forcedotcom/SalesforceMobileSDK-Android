@@ -42,6 +42,7 @@ import com.salesforce.androidsdk.analytics.store.EventStoreManager;
 import com.salesforce.androidsdk.analytics.transform.AILTNTransform;
 import com.salesforce.androidsdk.analytics.transform.Transform;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.config.AdminSettingsManager;
 import com.salesforce.androidsdk.config.BootConfig;
 
 import org.json.JSONArray;
@@ -61,12 +62,15 @@ import java.util.Set;
  */
 public class SalesforceAnalyticsManager {
 
+    private static final String ANALYTICS_ON_OFF_KEY = "ailtn_enabled";
+    private static final String FALSE = "false";
     private static final String TAG = "AnalyticsManager";
 
     private static Map<String, SalesforceAnalyticsManager> INSTANCES;
 
     private AnalyticsManager analyticsManager;
     private EventStoreManager eventStoreManager;
+    private UserAccount account;
     private Map<Class<? extends Transform>, Class<? extends AnalyticsPublisher>> remotes;
 
     /**
@@ -206,6 +210,21 @@ public class SalesforceAnalyticsManager {
     }
 
     /**
+     * Updates the preferences of this library.
+     */
+    public void updateLoggingPrefs() {
+        final AdminSettingsManager settingsManager = new AdminSettingsManager();
+        final String enabled = settingsManager.getPref(SalesforceAnalyticsManager.ANALYTICS_ON_OFF_KEY, account);
+        if (!TextUtils.isEmpty(enabled)) {
+            if (FALSE.equals(enabled.trim().toLowerCase())) {
+                disableOrEnableLogging(false);
+            } else {
+                disableOrEnableLogging(true);
+            }
+        }
+    }
+
+    /**
      * Returns whether logging is enabled or disabled.
      *
      * @return True - if logging is enabled, False - otherwise.
@@ -318,6 +337,7 @@ public class SalesforceAnalyticsManager {
     }
 
     private SalesforceAnalyticsManager(UserAccount account, String communityId) {
+        this.account = account;
         final DeviceAppAttributes deviceAppAttributes = buildDeviceAppAttributes();
         final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
         analyticsManager = new AnalyticsManager(account.getCommunityLevelFilenameSuffix(),
