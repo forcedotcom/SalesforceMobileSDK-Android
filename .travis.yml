@@ -45,8 +45,10 @@ before_script:
    - android-wait-for-emulator
    - adb shell input keyevent 82
    - adb shell input keyevent 84
+   #Cleanup test org before all tests
+   - adb shell am instrument -w -e class com.salesforce.androidsdk.util.TestDataCleanupHelper com.salesforce.androidsdk.tests/com.salesforce.androidsdk.util.test.JUnitReportTestRunner
 
-#Build all projects and run the tests
+#Build all projects and run all tests
 script:
    #run template app generation
    - travis_wait 30 set -o pipefail && node external/shared/node/test_force.js --os=android --test=native
