@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Salesforce Hybrid Application Bootstrap Page</title>
+        
+        <script src="cordova-1.8.1.js"></script>
+        <script src="SFHybridApp.js"></script>
+        <script src="SalesforceOAuthPlugin.js"></script>
+        <script src="bootconfig.js"></script>
+        
+        <!-- log window styling -->
+        <style>
+          .logWindow {display:none; width:700px;}
+          .logWindow > p {padding:0px; margin:0px; word-wrap:break-word;}
+        </style>
+
+        <script>
+        document.addEventListener("deviceready", cordova.require("salesforce/util/bootstrap").onDeviceReady);
+        </script>
+    </head>
+
+    <body>
+        <div id="main">
+            <h1>Loading...</h1>
+            <fieldset id="errors" class="logWindow">
+                <legend>Errors</legend>
+            </fieldset>
+            <fieldset id="console" class="logWindow">
+                <legend>Debug Console</legend>
+            </fieldset>
+        </div>
+    </body>
+</html>
