@@ -63,7 +63,6 @@ import java.util.Set;
 public class SalesforceAnalyticsManager {
 
     private static final String ANALYTICS_ON_OFF_KEY = "ailtn_enabled";
-    private static final String FALSE = "false";
     private static final String TAG = "AnalyticsManager";
 
     private static Map<String, SalesforceAnalyticsManager> INSTANCES;
@@ -216,7 +215,7 @@ public class SalesforceAnalyticsManager {
         final AdminSettingsManager settingsManager = new AdminSettingsManager();
         final String enabled = settingsManager.getPref(SalesforceAnalyticsManager.ANALYTICS_ON_OFF_KEY, account);
         if (!TextUtils.isEmpty(enabled)) {
-            if (FALSE.equals(enabled.trim().toLowerCase())) {
+            if (!Boolean.parseBoolean(enabled)) {
                 disableOrEnableLogging(false);
             } else {
                 disableOrEnableLogging(true);
