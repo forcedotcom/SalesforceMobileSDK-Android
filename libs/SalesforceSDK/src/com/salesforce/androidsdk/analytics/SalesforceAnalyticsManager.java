@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, salesforce.com, inc.
+ * Copyright (c) 2016-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.analytics;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -63,6 +64,7 @@ import java.util.Set;
 public class SalesforceAnalyticsManager {
 
     private static final String ANALYTICS_ON_OFF_KEY = "ailtn_enabled";
+    private static final String AILTN_POLICY_PREF = "ailtn_policy";
     private static final String TAG = "AnalyticsManager";
 
     private static Map<String, SalesforceAnalyticsManager> INSTANCES;
@@ -70,6 +72,7 @@ public class SalesforceAnalyticsManager {
     private AnalyticsManager analyticsManager;
     private EventStoreManager eventStoreManager;
     private UserAccount account;
+    private boolean enabled;
     private Map<Class<? extends Transform>, Class<? extends AnalyticsPublisher>> remotes;
 
     /**
@@ -205,6 +208,7 @@ public class SalesforceAnalyticsManager {
      * @param enabled True - if logging should be enabled, False - otherwise.
      */
     public void disableOrEnableLogging(boolean enabled) {
+        storeAnalyticsPolicy(enabled);
         eventStoreManager.disableOrEnableLogging(enabled);
     }
 
@@ -229,7 +233,7 @@ public class SalesforceAnalyticsManager {
      * @return True - if logging is enabled, False - otherwise.
      */
     public boolean isLoggingEnabled() {
-        return eventStoreManager.isLoggingEnabled();
+        return enabled;
     }
 
     /**
@@ -346,6 +350,10 @@ public class SalesforceAnalyticsManager {
         eventStoreManager = analyticsManager.getEventStoreManager();
         remotes = new HashMap<Class<? extends Transform>, Class<? extends AnalyticsPublisher>>();
         remotes.put(AILTNTransform.class, AILTNPublisher.class);
+
+        // Reads the existing analytics policy and sets it upon initialization.
+        readAnalyticsPolicy();
+        disableOrEnableLogging(enabled);
     }
 
     private DeviceAppAttributes buildDeviceAppAttributes() {
@@ -373,5 +381,25 @@ public class SalesforceAnalyticsManager {
         final String clientId = BootConfig.getBootConfig(context).getRemoteAccessConsumerKey();
         return new DeviceAppAttributes(appVersion, appName, osVersion, osName, appType,
                 mobileSdkVersion, deviceModel, deviceId, clientId);
+    }
+
+    private synchronized void storeAnalyticsPolicy(boolean enabled) {
+        final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final String filename = AILTN_POLICY_PREF + account.getUserLevelFilenameSuffix();
+        final SharedPreferences sp = context.getSharedPreferences(filename, Context.MODE_PRIVATE);
+        final SharedPreferences.Editor e = sp.edit();
+        e.putBoolean(ANALYTICS_ON_OFF_KEY, enabled);
+        e.commit();
+        this.enabled = enabled;
+    }
+
+    private void readAnalyticsPolicy() {
+        final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final String filename = AILTN_POLICY_PREF + account.getUserLevelFilenameSuffix();
+        final SharedPreferences sp = context.getSharedPreferences(filename, Context.MODE_PRIVATE);
+        if (!sp.contains(ANALYTICS_ON_OFF_KEY)) {
+            storeAnalyticsPolicy(true);
+        }
+        enabled = sp.getBoolean(ANALYTICS_ON_OFF_KEY, true);
     }
 }
