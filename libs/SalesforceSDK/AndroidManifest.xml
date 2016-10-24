@@ -71,7 +71,7 @@
             android:exported="false" />
         <service android:name="com.salesforce.androidsdk.push.PushService"
             android:exported="false" />
-        <service android:name="com.salesforce.androidsdk.analytics.AILTNPublisherService"
+        <service android:name="com.salesforce.androidsdk.analytics.AnalyticsPublisherService"
             android:exported="false" />
     </application>
 
