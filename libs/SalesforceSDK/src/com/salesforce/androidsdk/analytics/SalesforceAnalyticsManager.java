@@ -166,6 +166,7 @@ public class SalesforceAnalyticsManager {
                 final SalesforceAnalyticsManager manager = INSTANCES.get(uniqueId);
                 if (manager != null) {
                     manager.analyticsManager.reset();
+                    manager.resetAnalyticsPolicy();
                 }
                 INSTANCES.remove(uniqueId);
             }
@@ -437,6 +438,15 @@ public class SalesforceAnalyticsManager {
             storeAnalyticsPolicy(true);
         }
         enabled = sp.getBoolean(ANALYTICS_ON_OFF_KEY, true);
+    }
+
+    private void resetAnalyticsPolicy() {
+        final Context context = SalesforceSDKManager.getInstance().getAppContext();
+        final String filename = AILTN_POLICY_PREF + account.getUserLevelFilenameSuffix();
+        final SharedPreferences sp = context.getSharedPreferences(filename, Context.MODE_PRIVATE);
+        final SharedPreferences.Editor e = sp.edit();
+        e.clear();
+        e.commit();
     }
 
     private static ScheduledFuture createPublishHandler() {
