@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -73,6 +74,7 @@ public class SalesforceAnalyticsManager {
 
     private static Map<String, SalesforceAnalyticsManager> INSTANCES;
     private static boolean PUBLISH_HANDLER_ACTIVE;
+    private static ScheduledFuture SCHEDULER;
     private static int PUBLISH_FREQUENCY_IN_HOURS = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
 
     private AnalyticsManager analyticsManager;
@@ -127,7 +129,7 @@ public class SalesforceAnalyticsManager {
 
         // Adds a handler for publishing if not already active.
         if (!PUBLISH_HANDLER_ACTIVE) {
-            createPublishHandler();
+            SCHEDULER = createPublishHandler();
             PUBLISH_HANDLER_ACTIVE = true;
         }
         return instance;
@@ -202,6 +204,10 @@ public class SalesforceAnalyticsManager {
      */
     public static synchronized void setPublishFrequencyInHours(int publishFrequencyInHours) {
         PUBLISH_FREQUENCY_IN_HOURS = publishFrequencyInHours;
+        if (SCHEDULER != null) {
+            SCHEDULER.cancel(false);
+            SCHEDULER = createPublishHandler();
+        }
     }
 
     /**
@@ -433,7 +439,7 @@ public class SalesforceAnalyticsManager {
         enabled = sp.getBoolean(ANALYTICS_ON_OFF_KEY, true);
     }
 
-    private static void createPublishHandler() {
+    private static ScheduledFuture createPublishHandler() {
         final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         final Runnable publishRunnable = new Runnable() {
 
@@ -442,6 +448,6 @@ public class SalesforceAnalyticsManager {
                 AnalyticsPublisherService.startActionPublish(SalesforceSDKManager.getInstance().getAppContext());
             }
         };
-        scheduler.scheduleAtFixedRate(publishRunnable, 0, PUBLISH_FREQUENCY_IN_HOURS, TimeUnit.HOURS);
+        return scheduler.scheduleAtFixedRate(publishRunnable, 0, PUBLISH_FREQUENCY_IN_HOURS, TimeUnit.HOURS);
     }
 }
