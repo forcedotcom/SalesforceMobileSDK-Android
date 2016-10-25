@@ -38,15 +38,15 @@ import com.salesforce.androidsdk.accounts.UserAccountManager;
  *
  * @author bhariharan
  */
-public class AILTNPublisherService extends IntentService {
+public class AnalyticsPublisherService extends IntentService {
 
-    private static final String ACTION_PUBLISH = "com.salesforce.androidsdk.analytics.action.AILTN_PUBLISH";
-    private static final String TAG = "AILTNPublisherService";
+    private static final String ACTION_PUBLISH = "com.salesforce.androidsdk.analytics.action.ANALYTICS_PUBLISH";
+    private static final String TAG = "AnalyticsPublisherService";
 
     /**
      * Default constructor.
      */
-    public AILTNPublisherService() {
+    public AnalyticsPublisherService() {
         super(TAG);
     }
 
@@ -57,7 +57,7 @@ public class AILTNPublisherService extends IntentService {
      * @param context Context.
      */
     public static void startActionPublish(Context context) {
-        final Intent intent = new Intent(context, AILTNPublisherService.class);
+        final Intent intent = new Intent(context, AnalyticsPublisherService.class);
         intent.setAction(ACTION_PUBLISH);
         context.startService(intent);
     }

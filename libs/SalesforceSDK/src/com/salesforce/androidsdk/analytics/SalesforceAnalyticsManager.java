@@ -54,6 +54,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class contains APIs that can be used to interact with
@@ -65,9 +68,12 @@ public class SalesforceAnalyticsManager {
 
     private static final String ANALYTICS_ON_OFF_KEY = "ailtn_enabled";
     private static final String AILTN_POLICY_PREF = "ailtn_policy";
+    private static final int DEFAULT_PUBLISH_FREQUENCY_IN_HOURS = 8;
     private static final String TAG = "AnalyticsManager";
 
     private static Map<String, SalesforceAnalyticsManager> INSTANCES;
+    private static boolean PUBLISH_HANDLER_ACTIVE;
+    private static int PUBLISH_FREQUENCY_IN_HOURS = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
 
     private AnalyticsManager analyticsManager;
     private EventStoreManager eventStoreManager;
@@ -117,6 +123,12 @@ public class SalesforceAnalyticsManager {
         if (instance == null) {
             instance = new SalesforceAnalyticsManager(account, communityId);
             INSTANCES.put(uniqueId, instance);
+        }
+
+        // Adds a handler for publishing if not already active.
+        if (!PUBLISH_HANDLER_ACTIVE) {
+            createPublishHandler();
+            PUBLISH_HANDLER_ACTIVE = true;
         }
         return instance;
     }
@@ -181,6 +193,24 @@ public class SalesforceAnalyticsManager {
                 }
             }
         }
+    }
+
+    /**
+     * Sets the publish frequency, in hours.
+     *
+     * @param publishFrequencyInHours Publish frequency, in hours.
+     */
+    public static synchronized void setPublishFrequencyInHours(int publishFrequencyInHours) {
+        PUBLISH_FREQUENCY_IN_HOURS = publishFrequencyInHours;
+    }
+
+    /**
+     * Returns the publish frequency currently set, in hours.
+     *
+     * @return Publish frequency, in hours.
+     */
+    public static int getPublishFrequencyInHours() {
+        return PUBLISH_FREQUENCY_IN_HOURS;
     }
 
     /**
@@ -401,5 +431,17 @@ public class SalesforceAnalyticsManager {
             storeAnalyticsPolicy(true);
         }
         enabled = sp.getBoolean(ANALYTICS_ON_OFF_KEY, true);
+    }
+
+    private static void createPublishHandler() {
+        final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        final Runnable publishRunnable = new Runnable() {
+
+            @Override
+            public void run() {
+                AnalyticsPublisherService.startActionPublish(SalesforceSDKManager.getInstance().getAppContext());
+            }
+        };
+        scheduler.scheduleAtFixedRate(publishRunnable, 0, PUBLISH_FREQUENCY_IN_HOURS, TimeUnit.HOURS);
     }
 }

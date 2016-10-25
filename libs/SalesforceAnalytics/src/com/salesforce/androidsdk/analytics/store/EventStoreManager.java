@@ -235,6 +235,29 @@ public class EventStoreManager {
         this.maxEvents = maxEvents;
     }
 
+    /**
+     * Returns the maximum number of events that can be stored.
+     *
+     * @return Maximum number of events.
+     */
+    public int getMaxEvents() {
+        return maxEvents;
+    }
+
+    /**
+     * Returns number of stored events.
+     *
+     * @return Number of stored events.
+     */
+    public int getNumStoredEvents() {
+        int numFiles = 0;
+        final File[] listOfFiles = rootDir.listFiles();
+        if (listOfFiles != null) {
+            numFiles = listOfFiles.length;
+        }
+        return numFiles;
+    }
+
     private boolean shouldStoreEvent() {
         final List<File> files = getAllFiles();
         int fileCount = 0;
