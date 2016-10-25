@@ -56,6 +56,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -72,8 +73,9 @@ public class SalesforceAnalyticsManager {
     private static final String TAG = "AnalyticsManager";
 
     private static Map<String, SalesforceAnalyticsManager> INSTANCES;
-    private static boolean PUBLISH_HANDLER_ACTIVE;
-    private static int PUBLISH_FREQUENCY_IN_HOURS = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
+    private static boolean sPublishHandlerActive;
+    private static ScheduledFuture sScheduler;
+    private static int sPublishFrequencyInHours = DEFAULT_PUBLISH_FREQUENCY_IN_HOURS;
 
     private AnalyticsManager analyticsManager;
     private EventStoreManager eventStoreManager;
@@ -126,9 +128,9 @@ public class SalesforceAnalyticsManager {
         }
 
         // Adds a handler for publishing if not already active.
-        if (!PUBLISH_HANDLER_ACTIVE) {
-            createPublishHandler();
-            PUBLISH_HANDLER_ACTIVE = true;
+        if (!sPublishHandlerActive) {
+            sScheduler = createPublishHandler();
+            sPublishHandlerActive = true;
         }
         return instance;
     }
@@ -201,7 +203,11 @@ public class SalesforceAnalyticsManager {
      * @param publishFrequencyInHours Publish frequency, in hours.
      */
     public static synchronized void setPublishFrequencyInHours(int publishFrequencyInHours) {
-        PUBLISH_FREQUENCY_IN_HOURS = publishFrequencyInHours;
+        sPublishFrequencyInHours = publishFrequencyInHours;
+        if (sScheduler != null) {
+            sScheduler.cancel(false);
+            sScheduler = createPublishHandler();
+        }
     }
 
     /**
@@ -210,7 +216,7 @@ public class SalesforceAnalyticsManager {
      * @return Publish frequency, in hours.
      */
     public static int getPublishFrequencyInHours() {
-        return PUBLISH_FREQUENCY_IN_HOURS;
+        return sPublishFrequencyInHours;
     }
 
     /**
@@ -433,7 +439,7 @@ public class SalesforceAnalyticsManager {
         enabled = sp.getBoolean(ANALYTICS_ON_OFF_KEY, true);
     }
 
-    private static void createPublishHandler() {
+    private static ScheduledFuture createPublishHandler() {
         final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         final Runnable publishRunnable = new Runnable() {
 
@@ -442,6 +448,6 @@ public class SalesforceAnalyticsManager {
                 AnalyticsPublisherService.startActionPublish(SalesforceSDKManager.getInstance().getAppContext());
             }
         };
-        scheduler.scheduleAtFixedRate(publishRunnable, 0, PUBLISH_FREQUENCY_IN_HOURS, TimeUnit.HOURS);
+        return scheduler.scheduleAtFixedRate(publishRunnable, 0, sPublishFrequencyInHours, TimeUnit.HOURS);
     }
 }
