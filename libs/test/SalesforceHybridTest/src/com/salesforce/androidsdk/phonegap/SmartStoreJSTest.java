@@ -97,10 +97,13 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testFullTextSearchAgainstArrayNode",
                 "testLikeQueryAgainstArrayNode",
                 "testExactQueryAgainstArrayNode",
-                "testSmartQueryAgainstArrayNode"
+                "testSmartQueryAgainstArrayNode",
+                "testGetAllGlobalStores",
+                "testGetAllStores",
+                "testCreateMultipleGlobalStores",
+                "testCreateMultipleUserStores"
         });
     }
-    
 
     public void testGetDatabaseSize() {
         runTest("testGetDatabaseSize");
@@ -133,7 +136,7 @@ public class SmartStoreJSTest extends JSTestCase {
     public void testUpsertSoupEntriesWithExternalId()  {
         runTest("testUpsertSoupEntriesWithExternalId");
     }
-    
+
     public void testUpsertToNonexistentSoup()  {
         runTest("testUpsertToNonexistentSoup");
     }
@@ -221,7 +224,7 @@ public class SmartStoreJSTest extends JSTestCase {
     public void testIntegerQuerySpec()  {
         runTest("testIntegerQuerySpec");
     }
-    
+
     public void testSmartQueryWithCount() {
         runTest("testSmartQueryWithCount");
     }
@@ -253,7 +256,7 @@ public class SmartStoreJSTest extends JSTestCase {
     public void testGetSoupIndexSpecs() {
         runTest("testGetSoupIndexSpecs");
     }
-    
+
     public void testGetSoupIndexSpecsWithBogusSoupName() {
         runTest("testGetSoupIndexSpecsWithBogusSoupName");
     }
@@ -302,4 +305,21 @@ public class SmartStoreJSTest extends JSTestCase {
     public void testSmartQueryAgainstArrayNode() {
         runTest("testSmartQueryAgainstArrayNode");
     }
+
+    public void testGetAllGlobalStores() {
+        runTest("testGetAllGlobalStores");
+    }
+
+    public void testGetAllStores() {
+        runTest("testGetAllStores");
+    }
+
+    public void testCreateMultipleGlobalStores() {
+        runTest("testCreateMultipleGlobalStores");
+    }
+
+    public void testCreateMultipleUserStores() {
+        runTest("testCreateMultipleUserStores");
+    }
+
 }

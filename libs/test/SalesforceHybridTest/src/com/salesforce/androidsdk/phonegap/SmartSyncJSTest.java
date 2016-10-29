@@ -42,7 +42,7 @@ public class SmartSyncJSTest extends JSTestCase {
 
     @Override
     protected int getMaxRuntimeInSecondsForTest(String testName) {
-        return 60;
+        return 30;
     }
 
     @Override

@@ -80,7 +80,7 @@ public class SyncState {
 	 * @return
 	 * @throws JSONException 
 	 */
-	public static SyncState createSyncDown(SmartStore store, SyncDownTarget target, SyncOptions options, String soupName) throws JSONException {
+	public static SyncState  createSyncDown(SmartStore store, SyncDownTarget target, SyncOptions options, String soupName) throws JSONException {
     	JSONObject sync = new JSONObject();
     	sync.put(SYNC_TYPE, Type.syncDown);
     	sync.put(SYNC_TARGET, target.asJSON());

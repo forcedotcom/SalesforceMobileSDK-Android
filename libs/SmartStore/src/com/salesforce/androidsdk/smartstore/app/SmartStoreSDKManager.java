@@ -42,6 +42,9 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -360,6 +363,21 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public void removeSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
         DBOpenHelper.deleteDatabase(context, dbNamePrefix, account, communityId);
+    }
+
+    public List<String> getGlobalStoresPrefixList() throws JSONException {
+        UserAccount userAccount = getUserAccountManager().getCurrentUser();
+        String communityId = userAccount!=null?userAccount.getCommunityId():null;
+        List<String> globalDBNames = DBOpenHelper.getGlobalDatabasePrefixList(context,getUserAccountManager().getCurrentUser(),communityId);
+
+        return globalDBNames;
+    }
+
+    public List<String> getUserStoresPrefixList() throws JSONException {
+        UserAccount userAccount = getUserAccountManager().getCurrentUser();
+        String communityId = userAccount!=null?userAccount.getCommunityId():null;
+        List<String> userDBName = DBOpenHelper.getUserDatabasePrefixList(context,getUserAccountManager().getCurrentUser(),communityId);
+        return userDBName;
     }
 
 }

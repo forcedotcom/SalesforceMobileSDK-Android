@@ -32,7 +32,9 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.json.JSONException;
@@ -80,6 +82,58 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static synchronized Map<String, DBOpenHelper> getOpenHelpers() {
 		return openHelpers;
 	}
+
+	/**
+	 * Returns a map of all DBOpenHelper instances created. The key is the
+	 * database name and the value is the instance itself.
+	 *
+	 * @return Map of DBOpenHelper instances.
+	 */
+	public static synchronized List<String> getUserDatabasePrefixList(Context ctx,
+																	  UserAccount account, String communityId) {
+		List<String> result = new ArrayList<>();
+
+		final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
+		SmartStoreFileFilter globalFileFilter = new SmartStoreFileFilter(accountSuffix);
+		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
+		final File dir = new File(dbPath);
+		String [] fileNames = dir.list(globalFileFilter);
+
+		if(fileNames!=null && fileNames.length>0) {
+			for (String fileName : fileNames) {
+				int dbFileIndx = fileName.indexOf(".db");
+				if(dbFileIndx>-1) {
+					result.add(fileName.substring(0, fileName.indexOf(accountSuffix)));
+				}
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Returns a map of all DBOpenHelper instances created. The key is the
+	 * database name and the value is the instance itself.
+	 *
+	 * @return Map of DBOpenHelper instances.
+	 */
+	public static synchronized List<String> getGlobalDatabasePrefixList(Context ctx,
+																	  UserAccount account, String communityId) {
+		List<String> result = new ArrayList<>();
+
+		final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
+		SmartStoreGlobalFileFilter globalFileFilter = new SmartStoreGlobalFileFilter(accountSuffix,account.getOrgId());
+		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
+		final File dir = new File(dbPath);
+		String [] fileNames = dir.list(globalFileFilter);
+
+		for(String fileName : fileNames) {
+			int dbFileIndx = fileName.indexOf(".db");
+			if(dbFileIndx>-1)
+				result.add(fileName.substring(0,dbFileIndx));
+		}
+		return result;
+	}
+
 
 	/**
 	 * Returns the DBOpenHelper instance associated with this user account.
@@ -264,7 +318,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			blobsDbPath.append("/databases/").append(fullDBName).append(EXTERNAL_BLOBS_SUFFIX);
 			removeAllFiles(new File(blobsDbPath.toString()));
 		} catch (Exception e) {
-			Log.e("DBOpenHelper:deleteDatabase", "Exception occurred while attempting to delete database.", e);
+			Log.e("DBOpenHelper:deleteDB", "Exception occurred while attempting to delete database.", e);
 		}
 	}
 
@@ -369,6 +423,19 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			return false;
 		}
     }
+
+	private static class SmartStoreGlobalFileFilter extends SmartStoreFileFilter {
+		String orgId;
+		public SmartStoreGlobalFileFilter(String dbNamePrefix,String orgId) {
+			super(dbNamePrefix);
+			this.orgId = orgId;
+		}
+
+		@Override
+		public boolean accept(File dir, String filename) {
+			return !super.accept(dir,filename) && !filename.contains(this.orgId);
+		}
+	}
 
 	/**
 	 * Returns the path to external blobs folder for the given soup in this db. If no soup is provided, the db folder is returned.
@@ -505,7 +572,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 								outputStream.close();
 
 							} catch (IOException ex) {
-								Log.e("DBOpenHelper:reEncryptAllFiles", "Exception occurred while rekeying external files.", ex);
+								Log.e("reEncryptAllFiles", "Exception occurred while rekeying external files.", ex);
 							}
 						}
 					}

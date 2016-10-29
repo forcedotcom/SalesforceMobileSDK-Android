@@ -28,13 +28,16 @@ package com.salesforce.androidsdk.phonegap.plugin;
 
 import android.util.Log;
 
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.*;
 
 import org.apache.cordova.CallbackContext;
 import org.json.JSONArray;
@@ -47,12 +50,7 @@ import org.json.JSONObject;
 public class SmartSyncPlugin extends ForcePlugin {
 
     // Keys in json from/to javascript
-    static final String TARGET = "target";
-    static final String SOUP_NAME = "soupName";
-    static final String OPTIONS = "options";
-    static final String SYNC_ID = "syncId";
-    private static final String IS_GLOBAL_STORE = "isGlobalStore";
-
+    private static final String SYNC_ID = "syncId";
     // Event
     private static final String SYNC_EVENT_TYPE = "sync";
     private static final String DETAIL = "detail";
@@ -136,13 +134,14 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.optJSONObject(OPTIONS);
-        final boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
-        SyncManager syncManager = getSyncManager(isGlobal);
+        final boolean isGlobal = getIsGlobal(arg0);
+        final String storeName = getStoreName(arg0);
+        SyncManager syncManager = getSyncManager(isGlobal,storeName);
         SyncState sync = syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
 
             @Override
             public void onUpdate(SyncState sync) {
-                handleSyncUpdate(sync, isGlobal);
+                handleSyncUpdate(sync, isGlobal,storeName);
             }
         });
         callbackContext.success(sync.asJSON());
@@ -162,13 +161,15 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.getJSONObject(OPTIONS);
-        final boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
-        SyncManager syncManager = getSyncManager(isGlobal);
+        final boolean isGlobal = getIsGlobal(arg0);
+        final String storeName = getStoreName(arg0);
+
+        SyncManager syncManager = getSyncManager(isGlobal,storeName);
         SyncState sync = syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
 
             @Override
             public void onUpdate(SyncState sync) {
-                handleSyncUpdate(sync, isGlobal);
+                handleSyncUpdate(sync, isGlobal,storeName);
             }
         });
         callbackContext.success(sync.asJSON());
@@ -186,8 +187,7 @@ public class SmartSyncPlugin extends ForcePlugin {
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
         long syncId = arg0.getLong(SYNC_ID);
-        boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
-        SyncManager syncManager = getSyncManager(isGlobal);
+        SyncManager syncManager = getSyncManager(arg0);
         SyncState sync = syncManager.getSyncStatus(syncId);
         callbackContext.success(sync.asJSON());
     }
@@ -204,13 +204,15 @@ public class SmartSyncPlugin extends ForcePlugin {
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
         long syncId = arg0.getLong(SYNC_ID);
-        final boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
-        SyncManager syncManager = getSyncManager(isGlobal);
+        final boolean isGlobal = getIsGlobal(arg0);
+        final String storeName = getStoreName(arg0);
+
+        SyncManager syncManager = getSyncManager(isGlobal,storeName);
         SyncState sync = syncManager.reSync(syncId, new SyncUpdateCallback() {
 
             @Override
             public void onUpdate(SyncState sync) {
-                handleSyncUpdate(sync, isGlobal);
+                handleSyncUpdate(sync, isGlobal,storeName);
             }
         });
         callbackContext.success(sync.asJSON());
@@ -228,8 +230,7 @@ public class SmartSyncPlugin extends ForcePlugin {
         // Parse args.
         final JSONObject arg0 = args.getJSONObject(0);
         long syncId = arg0.getLong(SYNC_ID);
-        boolean isGlobal = arg0.optBoolean(IS_GLOBAL_STORE, false);
-        final SyncManager syncManager = getSyncManager(isGlobal);
+        final SyncManager syncManager = getSyncManager(arg0);
         syncManager.cleanResyncGhosts(syncId);
         callbackContext.success();
     }
@@ -239,11 +240,14 @@ public class SmartSyncPlugin extends ForcePlugin {
      *
      * @param sync
      */
-    private void handleSyncUpdate(final SyncState sync, final boolean isGlobal) {
+    private void handleSyncUpdate(final SyncState sync, final boolean isGlobal, final String storeName) {
         cordova.getActivity().runOnUiThread(new Runnable() {
             public void run() {
                 try {
-                    String syncAsString = sync.asJSON().put(IS_GLOBAL_STORE, isGlobal).toString();
+                    JSONObject jsonObject = sync.asJSON();
+                    jsonObject.put(IS_GLOBAL_STORE,isGlobal);
+                    jsonObject.put(storeName,storeName);
+                    String syncAsString = jsonObject.toString();
                     String js = "javascript:document.dispatchEvent(new CustomEvent(\"" + SYNC_EVENT_TYPE + "\", { \"" + DETAIL + "\": " + syncAsString + "}))";
                     webView.loadUrl(js);
                 } catch (Exception e) {
@@ -256,13 +260,66 @@ public class SmartSyncPlugin extends ForcePlugin {
     /**
      * Return sync manager to use.
      *
-     * @param isGlobal
+     * @param arg0
+     * @return SyncManager
+     */
+    private SyncManager getSyncManager(JSONObject arg0) {
+        SmartStore store = getSmartStore(arg0);
+        SyncManager syncManager = SyncManager.getInstance(null,null,store);
+        return syncManager;
+    }
+
+    /**
+     * Return sync manager to use.
+     *
+     * @param  isGlobal
+     * @param  storeName
+     * @return SyncManager
+     */
+    private SyncManager getSyncManager(boolean isGlobal,String storeName) {
+        SmartStore store = getSmartStore(isGlobal,storeName);
+        SyncManager syncManager = SyncManager.getInstance(null,null,store);
+        return syncManager;
+    }
+
+    /**
+     * Return smartstore to use
+     * @param arg0 first argument passed in plugin call
      * @return
      */
-    private SyncManager getSyncManager(boolean isGlobal) {
-        SyncManager syncManager = isGlobal
-                ? SyncManager.getInstance(null, null, SmartStoreSDKManager.getInstance().getGlobalSmartStore())
-                : SyncManager.getInstance();
-        return syncManager;
+    private static SmartStore getSmartStore(JSONObject arg0) {
+        boolean isGlobal = getIsGlobal(arg0);
+        String  storeName = getStoreName(arg0);
+        return getSmartStore(isGlobal,storeName);
+    }
+
+    /**
+     *
+     * @param isGlobal
+     * @param storeName
+     * @return
+     */
+    private static SmartStore getSmartStore(boolean isGlobal,String storeName) {
+        return (isGlobal
+                ? SmartStoreSDKManager.getInstance().getGlobalSmartStore(storeName)
+                : SmartStoreSDKManager.getInstance().getSmartStore(storeName, UserAccountManager.getInstance().getCurrentUser(),UserAccountManager.getInstance().getCurrentUser().getCommunityId()));
+    }
+
+    /**
+     * Return the value of the isGlobalStore argument
+     * @param arg0
+     * @return
+     */
+    private static boolean getIsGlobal(JSONObject arg0) {
+        return arg0 != null ? arg0.optBoolean(IS_GLOBAL_STORE, false) : false;
+    }
+
+    /**
+     * Return the value of the isGlobalStore argument
+     * @param arg0
+     * @return
+     */
+    private static String getStoreName(JSONObject arg0) {
+        return arg0 != null ? arg0.optString(STORE_NAME) : DEFAULT_STORE_NAME;
     }
 }
