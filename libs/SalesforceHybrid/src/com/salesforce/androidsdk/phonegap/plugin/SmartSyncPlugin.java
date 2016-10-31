@@ -315,11 +315,12 @@ public class SmartSyncPlugin extends ForcePlugin {
     }
 
     /**
-     * Return the value of the isGlobalStore argument
+     * Return the value of the storeName argument
      * @param arg0
      * @return
      */
     private static String getStoreName(JSONObject arg0) {
-        return arg0 != null ? arg0.optString(STORE_NAME) : DEFAULT_STORE_NAME;
+        String storeName = arg0 != null ? arg0.optString(STORE_NAME, DEFAULT_STORE_NAME) : DEFAULT_STORE_NAME;
+        return storeName==null?DEFAULT_STORE_NAME:storeName;
     }
 }
