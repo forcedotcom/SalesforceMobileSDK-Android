@@ -363,11 +363,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @throws JSONException
 	 */
 	private void removeAllGlobalStores(JSONArray args, CallbackContext callbackContext) throws JSONException {
-
-		List<String> globalDBNames = SmartStoreSDKManager.getInstance().getGlobalStoresPrefixList();
-		for(String storeName : globalDBNames) {
-			SmartStoreSDKManager.getInstance().removeGlobalSmartStore(storeName);
-		}
+		SmartStoreSDKManager.getInstance().removeAllGlobalStores();
 		PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, true);
 		callbackContext.sendPluginResult(pluginResult);
 	}
@@ -379,10 +375,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @throws JSONException
 	 */
     private void removeAllStores(JSONArray args, CallbackContext callbackContext) throws JSONException {
-		List<String> userDatabaseNames = SmartStoreSDKManager.getInstance().getUserStoresPrefixList();
-		for(String storeName : userDatabaseNames) {
-			SmartStoreSDKManager.getInstance().removeSmartStore(storeName,UserAccountManager.getInstance().getCurrentUser(),UserAccountManager.getInstance().getCurrentUser().getCommunityId());
-		}
+		SmartStoreSDKManager.getInstance().removeAllUserStores();
 		PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, true);
 		callbackContext.sendPluginResult(pluginResult);
 	}
