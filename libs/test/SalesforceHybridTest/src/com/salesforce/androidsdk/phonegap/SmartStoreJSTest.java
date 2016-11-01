@@ -98,8 +98,6 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testLikeQueryAgainstArrayNode",
                 "testExactQueryAgainstArrayNode",
                 "testSmartQueryAgainstArrayNode",
-                "testGetAllGlobalStores",
-                "testGetAllStores",
                 "testCreateMultipleGlobalStores",
                 "testCreateMultipleUserStores"
         });
@@ -304,14 +302,6 @@ public class SmartStoreJSTest extends JSTestCase {
 
     public void testSmartQueryAgainstArrayNode() {
         runTest("testSmartQueryAgainstArrayNode");
-    }
-
-    public void testGetAllGlobalStores() {
-        runTest("testGetAllGlobalStores");
-    }
-
-    public void testGetAllStores() {
-        runTest("testGetAllStores");
     }
 
     public void testCreateMultipleGlobalStores() {
