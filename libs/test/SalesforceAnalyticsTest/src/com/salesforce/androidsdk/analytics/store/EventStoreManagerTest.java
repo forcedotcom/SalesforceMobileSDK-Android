@@ -232,7 +232,7 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
     public void testDisablingLogging() throws Exception {
         final InstrumentationEvent event = createTestEvent();
         assertNotNull("Generated event stored should not be null", event);
-        storeManager.disableOrEnableLogging(false);
+        storeManager.enableLogging(false);
         storeManager.storeEvent(event);
         final List<InstrumentationEvent> events = storeManager.fetchAllEvents();
         assertNotNull("List of events stored should not be null", events);
@@ -247,12 +247,12 @@ public class EventStoreManagerTest extends InstrumentationTestCase {
     public void testEnablingLogging() throws Exception {
         final InstrumentationEvent event = createTestEvent();
         assertNotNull("Generated event stored should not be null", event);
-        storeManager.disableOrEnableLogging(false);
+        storeManager.enableLogging(false);
         storeManager.storeEvent(event);
         List<InstrumentationEvent> events = storeManager.fetchAllEvents();
         assertNotNull("List of events stored should not be null", events);
         assertEquals("Number of events stored should be 0", 0, events.size());
-        storeManager.disableOrEnableLogging(true);
+        storeManager.enableLogging(true);
         storeManager.storeEvent(event);
         events = storeManager.fetchAllEvents();
         assertNotNull("List of events stored should not be null", events);

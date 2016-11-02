@@ -244,9 +244,9 @@ public class SalesforceAnalyticsManager {
      *
      * @param enabled True - if logging should be enabled, False - otherwise.
      */
-    public void disableOrEnableLogging(boolean enabled) {
+    public void enableLogging(boolean enabled) {
         storeAnalyticsPolicy(enabled);
-        eventStoreManager.disableOrEnableLogging(enabled);
+        eventStoreManager.enableLogging(enabled);
     }
 
     /**
@@ -257,9 +257,9 @@ public class SalesforceAnalyticsManager {
         final String enabled = settingsManager.getPref(SalesforceAnalyticsManager.ANALYTICS_ON_OFF_KEY, account);
         if (!TextUtils.isEmpty(enabled)) {
             if (!Boolean.parseBoolean(enabled)) {
-                disableOrEnableLogging(false);
+                enableLogging(false);
             } else {
-                disableOrEnableLogging(true);
+                enableLogging(true);
             }
         }
     }
@@ -390,7 +390,7 @@ public class SalesforceAnalyticsManager {
 
         // Reads the existing analytics policy and sets it upon initialization.
         readAnalyticsPolicy();
-        disableOrEnableLogging(enabled);
+        enableLogging(enabled);
     }
 
     private DeviceAppAttributes buildDeviceAppAttributes() {

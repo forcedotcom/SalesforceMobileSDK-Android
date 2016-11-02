@@ -213,7 +213,7 @@ public class EventStoreManager {
      *
      * @param enabled True - if logging should be enabled, False - otherwise.
      */
-    public synchronized void disableOrEnableLogging(boolean enabled) {
+    public synchronized void enableLogging(boolean enabled) {
         isLoggingEnabled = enabled;
     }
 
