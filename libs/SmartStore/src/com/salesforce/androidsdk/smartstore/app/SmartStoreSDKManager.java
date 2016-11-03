@@ -32,6 +32,7 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -41,6 +42,9 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
+
+import org.json.JSONArray;
+import org.json.JSONException;
 
 import java.util.Collection;
 import java.util.List;
@@ -364,6 +368,55 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
     public void removeSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
         DBOpenHelper.deleteDatabase(context, dbNamePrefix, account, communityId);
+    }
+
+    /**
+     * Returns a list of global store names.
+     * @return
+     * @throws JSONException
+     */
+    public List<String> getGlobalStoresPrefixList(){
+        UserAccount userAccount = getUserAccountManager().getCurrentUser();
+        String communityId = userAccount!=null?userAccount.getCommunityId():null;
+        List<String> globalDBNames = DBOpenHelper.getGlobalDatabasePrefixList(context,getUserAccountManager().getCurrentUser(),communityId);
+
+        return globalDBNames;
+    }
+
+    /**
+     * Returns a list of store names for current user.
+     * @return
+     * @throws JSONException
+     */
+    public List<String> getUserStoresPrefixList() {
+        UserAccount userAccount = getUserAccountManager().getCurrentUser();
+        String communityId = userAccount!=null?userAccount.getCommunityId():null;
+        List<String> userDBName = DBOpenHelper.getUserDatabasePrefixList(context,getUserAccountManager().getCurrentUser(),communityId);
+        return userDBName;
+    }
+
+    /**
+     * Removes all the global stores.
+     *
+     */
+    public void removeAllGlobalStores() {
+        List<String> globalDBNames = this.getGlobalStoresPrefixList();
+        for(String storeName : globalDBNames) {
+            SmartStoreSDKManager.getInstance().removeGlobalSmartStore(storeName);
+        }
+    }
+
+    /**
+     * Removes all the stores for current user.
+     *
+     */
+    public void removeAllUserStores() {
+        List<String> globalDBNames = this.getUserStoresPrefixList();
+        for(String storeName : globalDBNames) {
+            SmartStoreSDKManager.getInstance().removeSmartStore(storeName,
+                    UserAccountManager.getInstance().getCurrentUser(),
+                    UserAccountManager.getInstance().getCurrentUser().getCommunityId());
+        }
     }
 
 }

@@ -97,10 +97,11 @@ public class SmartStoreJSTest extends JSTestCase {
                 "testFullTextSearchAgainstArrayNode",
                 "testLikeQueryAgainstArrayNode",
                 "testExactQueryAgainstArrayNode",
-                "testSmartQueryAgainstArrayNode"
+                "testSmartQueryAgainstArrayNode",
+                "testCreateMultipleGlobalStores",
+                "testCreateMultipleUserStores"
         });
     }
-    
 
     public void testGetDatabaseSize() {
         runTest("testGetDatabaseSize");
@@ -133,7 +134,7 @@ public class SmartStoreJSTest extends JSTestCase {
     public void testUpsertSoupEntriesWithExternalId()  {
         runTest("testUpsertSoupEntriesWithExternalId");
     }
-    
+
     public void testUpsertToNonexistentSoup()  {
         runTest("testUpsertToNonexistentSoup");
     }
@@ -221,7 +222,7 @@ public class SmartStoreJSTest extends JSTestCase {
     public void testIntegerQuerySpec()  {
         runTest("testIntegerQuerySpec");
     }
-    
+
     public void testSmartQueryWithCount() {
         runTest("testSmartQueryWithCount");
     }
@@ -253,7 +254,7 @@ public class SmartStoreJSTest extends JSTestCase {
     public void testGetSoupIndexSpecs() {
         runTest("testGetSoupIndexSpecs");
     }
-    
+
     public void testGetSoupIndexSpecsWithBogusSoupName() {
         runTest("testGetSoupIndexSpecsWithBogusSoupName");
     }
@@ -302,4 +303,13 @@ public class SmartStoreJSTest extends JSTestCase {
     public void testSmartQueryAgainstArrayNode() {
         runTest("testSmartQueryAgainstArrayNode");
     }
+
+    public void testCreateMultipleGlobalStores() {
+        runTest("testCreateMultipleGlobalStores");
+    }
+
+    public void testCreateMultipleUserStores() {
+        runTest("testCreateMultipleUserStores");
+    }
+
 }
