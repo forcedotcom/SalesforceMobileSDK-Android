@@ -68,6 +68,7 @@ public class UserAccount {
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
+	private static final String FEATURE_USER_AUTH = "UA";
 
 	private String authToken;
 	private String refreshToken;
@@ -161,6 +162,7 @@ public class UserAccount {
         this.email = email;
         this.photoUrl = photoUrl;
         this.thumbnailUrl = thumbnailUrl;
+		SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_USER_AUTH);
 	}
 
 	/**

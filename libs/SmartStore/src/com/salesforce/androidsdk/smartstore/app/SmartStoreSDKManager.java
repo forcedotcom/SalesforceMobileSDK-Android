@@ -50,6 +50,8 @@ import java.util.Map;
  * SDK Manager for all native applications that use SmartStore
  */
 public class SmartStoreSDKManager extends SalesforceSDKManager {
+    private static final String FEATURE_SMART_STORE_USER = "US";
+    private static final String FEATURE_SMART_STORE_GLOBAL = "GS";
 
     /**
      * Protected constructor.
@@ -193,6 +195,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
 
     public SmartStore getGlobalSmartStore(String dbName) {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_STORE_GLOBAL);
         if (TextUtils.isEmpty(dbName)) {
             dbName = DBOpenHelper.DEFAULT_DB_NAME;
         }
@@ -246,6 +249,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return SmartStore instance.
      */
     public SmartStore getSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_STORE_USER);
         final String passcodeHash = getPasscodeHash();
         final String passcode = (passcodeHash == null ?
                 getEncryptionKeyForPasscode(null) : passcodeHash);
