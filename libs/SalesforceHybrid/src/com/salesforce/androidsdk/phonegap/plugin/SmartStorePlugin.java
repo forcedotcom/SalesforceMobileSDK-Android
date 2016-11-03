@@ -683,8 +683,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @return
 	 */
 	private static String getStoreName(JSONObject arg0) {
-		String storeName =  arg0 != null ? arg0.optString(STORE_NAME, DEFAULT_STORE_NAME) : DEFAULT_STORE_NAME;
-		return storeName==null?DEFAULT_STORE_NAME:storeName;
+		return  arg0 != null ? arg0.optString(STORE_NAME, DEFAULT_STORE_NAME) : DEFAULT_STORE_NAME;
 	}
 
 
