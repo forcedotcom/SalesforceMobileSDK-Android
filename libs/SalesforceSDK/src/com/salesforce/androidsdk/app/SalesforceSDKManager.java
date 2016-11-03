@@ -915,8 +915,6 @@ public class SalesforceSDKManager {
 
     /**
      * Adds AppFeature code to User Agent header for reporting.
-     *
-     * @return void.
      */
     public void registerUsedAppFeature(String appFeatureCode) {
         features.add(appFeatureCode);
