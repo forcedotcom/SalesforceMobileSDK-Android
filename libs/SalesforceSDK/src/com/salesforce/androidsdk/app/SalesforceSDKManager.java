@@ -73,6 +73,8 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 import java.net.URI;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * This class serves as an interface to the various
@@ -128,6 +130,7 @@ public class SalesforceSDKManager {
     private PushNotificationInterface pushNotificationInterface;
     private String uid; // device id
     private volatile boolean loggedOut = false;
+    private SortedSet<String> features;
 
     /**
      * PasscodeManager object lock.
@@ -171,6 +174,7 @@ public class SalesforceSDKManager {
     	if (loginActivity != null) {
             this.loginActivityClass = loginActivity;	
     	}
+        this.features  = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
     }
 
     /**
@@ -905,8 +909,17 @@ public class SalesforceSDKManager {
             Log.w("SalesforceSDKManager", nfe);
         }
         String appTypeWithQualifier = getAppType() + qualifier;
-        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s",
-                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, appTypeWithQualifier, uid);
+        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
+                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, appTypeWithQualifier, uid, TextUtils.join(".",features));
+    }
+
+    /**
+     * Adds AppFeature code to User Agent header for reporting.
+     *
+     * @return void.
+     */
+    public void registerUsedAppFeature(String appFeatureCode) {
+        features.add(appFeatureCode);
     }
 
     /**
