@@ -101,7 +101,10 @@ public class SmartSyncJSTest extends JSTestCase {
                 "testSyncUpLocallyUpdatedWithNoOverwrite",
                 "testSyncUpLocallyDeleted",
                 "testSyncUpLocallyDeletedWithNoOverwrite",
-                "testSyncUpLocallyCreated"
+                "testSyncUpLocallyCreated",
+                "testStoreCacheWithGlobalStoreNamed",
+                "testSyncDownToGlobalStoreNamed",
+                "testSyncUpLocallyUpdatedWithGlobalStoreNamed"
             });
     }
 
@@ -319,5 +322,17 @@ public class SmartSyncJSTest extends JSTestCase {
 
     public void testSyncUpLocallyCreated() {
         runTest("testSyncUpLocallyCreated");
+    }
+
+    public void testStoreCacheWithGlobalStoreNamed() {
+        runTest("testStoreCacheWithGlobalStoreNamed");
+    }
+
+    public void testSyncDownToGlobalStoreNamed() {
+        runTest("testSyncDownToGlobalStoreNamed");
+    }
+
+    public void testSyncUpLocallyUpdatedWithGlobalStoreNamed() {
+        runTest("testSyncUpLocallyUpdatedWithGlobalStoreNamed");
     }
 }
