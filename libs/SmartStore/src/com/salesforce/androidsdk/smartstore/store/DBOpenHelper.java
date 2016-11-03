@@ -84,10 +84,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	/**
-	 * Returns a map of all DBOpenHelper instances created. The key is the
-	 * database name and the value is the instance itself.
+	 * Returns a list of all prefixes for  user databases.
 	 *
-	 * @return Map of DBOpenHelper instances.
+	 * @return List of Database names(prefixes).
 	 */
 	public static synchronized List<String> getUserDatabasePrefixList(Context ctx,
 																	  UserAccount account, String communityId) {
@@ -111,10 +110,9 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	}
 
 	/**
-	 * Returns a map of all DBOpenHelper instances created. The key is the
-	 * database name and the value is the instance itself.
+	 * Returns a list of all prefixes for  user databases.
 	 *
-	 * @return Map of DBOpenHelper instances.
+	 * @return List of Database names(prefixes).
 	 */
 	public static synchronized List<String> getGlobalDatabasePrefixList(Context ctx,
 																	  UserAccount account, String communityId) {

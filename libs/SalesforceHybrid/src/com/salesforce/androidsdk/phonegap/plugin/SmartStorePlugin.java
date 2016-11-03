@@ -678,7 +678,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	}
 
 	/**
-	 * Return the value of the isGlobalStore argument
+	 * Return the value of the storename argument
 	 * @param arg0
 	 * @return
 	 */

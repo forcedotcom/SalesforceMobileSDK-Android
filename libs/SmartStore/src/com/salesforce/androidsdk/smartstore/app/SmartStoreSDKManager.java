@@ -403,7 +403,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     }
 
     /**
-     * Removes all the user stores.
+     * Removes all the stores for current user.
      *
      */
     public void removeAllUserStores() {
