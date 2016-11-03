@@ -246,7 +246,7 @@ public class SmartSyncPlugin extends ForcePlugin {
                 try {
                     JSONObject jsonObject = sync.asJSON();
                     jsonObject.put(IS_GLOBAL_STORE,isGlobal);
-                    jsonObject.put(storeName,storeName);
+                    jsonObject.put(STORE_NAME,storeName);
                     String syncAsString = jsonObject.toString();
                     String js = "javascript:document.dispatchEvent(new CustomEvent(\"" + SYNC_EVENT_TYPE + "\", { \"" + DETAIL + "\": " + syncAsString + "}))";
                     webView.loadUrl(js);
