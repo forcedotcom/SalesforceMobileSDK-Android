@@ -81,6 +81,9 @@ public class SyncManager {
     // For user agent
     private static final String SMART_SYNC = "SmartSync";
 
+    private static final String FEATURE_SMART_SYNC = "SY";
+
+
     // Local fields
     public static final String LOCALLY_CREATED = "__locally_created__";
     public static final String LOCALLY_UPDATED = "__locally_updated__";
@@ -173,6 +176,7 @@ public class SyncManager {
             instance = new SyncManager(smartStore, restClient);
             INSTANCES.put(uniqueId, instance);
         }
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_SYNC);
         return instance;
     }
 

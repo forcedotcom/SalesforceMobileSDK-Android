@@ -47,8 +47,6 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  */
 public class SmartSyncSDKManager extends SmartStoreSDKManager {
 
-	private static final String FEATURE_SMART_SYNC = "SY";
-
 	/**
      * Protected constructor.
      * @param context Application context.
@@ -118,7 +116,6 @@ public class SmartSyncSDKManager extends SmartStoreSDKManager {
      */
     public static SmartSyncSDKManager getInstance() {
     	if (INSTANCE != null) {
-			SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_SYNC);
     		return (SmartSyncSDKManager) INSTANCE;
     	} else {
             throw new RuntimeException("Applications need to call SmartSyncSDKManager.init() first.");
