@@ -33,7 +33,9 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
@@ -51,6 +53,8 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     static final String OPTIONS = "options";
     static final String SYNC_ID = "syncId";
     static final String IS_GLOBAL_STORE = "isGlobalStore";
+    static final String STORE_NAME = "storeName";
+    static final String DEFAULT_STORE_NAME = "smartstore";
     public static final String LOG_TAG = "SmartSyncReactBridge";
 
     public SmartSyncReactBridge(ReactApplicationContext reactContext) {
@@ -75,8 +79,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         JSONObject target = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(TARGET)));
         String soupName = args.getString(SOUP_NAME);
         JSONObject options = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(OPTIONS)));
-        final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
-        SyncManager syncManager = getSyncManager(isGlobal);
+        SyncManager syncManager = getSyncManager(args);
         try {
             syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncManager.SyncUpdateCallback() {
                 @Override
@@ -103,8 +106,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         JSONObject target = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(TARGET)));
         String soupName = args.getString(SOUP_NAME);
         JSONObject options = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(OPTIONS)));
-        final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
-        SyncManager syncManager = getSyncManager(isGlobal);
+        SyncManager syncManager = getSyncManager(args);
         try {
             syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncManager.SyncUpdateCallback() {
                 @Override
@@ -129,8 +131,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                               final Callback successCallback, final Callback errorCallback) {
         // Parse args
         long syncId = args.getInt(SYNC_ID);
-        boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
-        SyncManager syncManager = getSyncManager(isGlobal);
+        SyncManager syncManager = getSyncManager(args);
         try {
             SyncState sync = syncManager.getSyncStatus(syncId);
             ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
@@ -151,8 +152,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                        final Callback successCallback, final Callback errorCallback) {
         // Parse args
         long syncId = args.getInt(SYNC_ID);
-        final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
-        SyncManager syncManager = getSyncManager(isGlobal);
+        SyncManager syncManager = getSyncManager(args);
         try {
             syncManager.reSync(syncId, new SyncManager.SyncUpdateCallback() {
                 @Override
@@ -177,8 +177,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                        final Callback successCallback, final Callback errorCallback) {
         // Parse args
         long syncId = args.getInt(SYNC_ID);
-        final boolean isGlobal = args.getBoolean(IS_GLOBAL_STORE);
-        SyncManager syncManager = getSyncManager(isGlobal);
+        SyncManager syncManager = getSyncManager(args);
         try {
             syncManager.cleanResyncGhosts(syncId);
             successCallback.invoke();
@@ -214,13 +213,44 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
 
     /**
      * Return sync manager to use
-     * @param isGlobal
+     * @param args Arguments passed to the bridge
      * @return
      */
-    private SyncManager getSyncManager(boolean isGlobal) {
-        SyncManager syncManager = isGlobal
-                ? SyncManager.getInstance(null, null, SmartStoreSDKManager.getInstance().getGlobalSmartStore())
-                : SyncManager.getInstance();
+    private SyncManager getSyncManager(ReadableMap args) {
+        SmartStore smartStore = getSmartStore(args);
+        SyncManager syncManager = SyncManager.getInstance(null,null,smartStore);
         return syncManager;
     }
+
+    /**
+     * Return the value of the isGlobalStore argument
+     * @param args
+     * @return
+     */
+    private boolean getIsGlobal(ReadableMap args) {
+        return args != null ? args.getBoolean(IS_GLOBAL_STORE) : false;
+    }
+
+    /**
+     * Return smartstore to use
+     * @param args arguments passed in bridge call
+     * @return
+     */
+    private SmartStore getSmartStore(ReadableMap args) {
+        boolean isGlobal = getIsGlobal(args);
+        String  storeName = getStoreName(args);
+        return (isGlobal
+                ? SmartStoreSDKManager.getInstance().getGlobalSmartStore(storeName)
+                : SmartStoreSDKManager.getInstance().getSmartStore(storeName, UserAccountManager.getInstance().getCurrentUser(),UserAccountManager.getInstance().getCurrentUser().getCommunityId()));
+    }
+
+    /**
+     * Return the value of the storename argument
+     * @param args arguments passed in bridge call
+     * @return
+     */
+    private static String getStoreName(ReadableMap args) {
+        return  args != null ? args.getString(STORE_NAME): DEFAULT_STORE_NAME;
+    }
+
 }
