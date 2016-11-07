@@ -31,6 +31,12 @@ import android.database.Cursor;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 
@@ -58,6 +64,7 @@ public class SmartStore  {
 
     // Default
     public static final int DEFAULT_PAGE_SIZE = 10;
+	private static final String TAG = "SmartStore";
 
 	/**
 	 * Table to keep track of soup names.
@@ -240,7 +247,6 @@ public class SmartStore  {
 		return DBHelper.getInstance(getDatabase()).getLastExplainQueryPlan();
 	}
 
-
 	/**
      * Get database size
      */
@@ -304,6 +310,17 @@ public class SmartStore  {
 			if (indexSpecs.length == 0) throw new SmartStoreException("No indexSpecs specified for soup: " + soupName);
 			if (IndexSpec.hasJSON1(indexSpecs) && soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE))  throw new SmartStoreException("Can't have JSON1 index specs in externally stored soup:" + soupName);
 			if (hasSoup(soupName)) return; // soup already exist - do nothing
+			final JSONArray features = new JSONArray();
+			if (IndexSpec.hasJSON1(indexSpecs)) {
+				features.put("JSON1");
+			}
+			if (IndexSpec.hasFTS(indexSpecs)) {
+				features.put("FTS");
+			}
+			if (soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
+				features.put("ExternalStorage");
+			}
+			logAnalyticsEventWithName("registerSoup", null, features);
 
 			// First get a table name
 			String soupTableName = null;
@@ -583,7 +600,6 @@ public class SmartStore  {
 			        projection = new String[] {ID_COL, SOUP_COL};
 			    }
 			    cursor = DBHelper.getInstance(db).query(db, soupTableName, projection, null, null, null);
-	
 			    if (cursor.moveToFirst()) {
 			        do {
 			        	String soupEntryId = cursor.getString(0);
@@ -614,8 +630,7 @@ public class SmartStore  {
 			        }
 			        while (cursor.moveToNext());
 			    }
-			}
-			finally {
+			} finally {
 				if (handleTx) {
 					db.setTransactionSuccessful();
 					db.endTransaction();
@@ -1412,6 +1427,47 @@ public class SmartStore  {
             cursor.close();
         }
     }
+
+	private static void logAnalyticsEventWithName(String name, JSONObject storeAttributes, JSONArray features) {
+		UserAccount account = UserAccountManager.getInstance().getCurrentUser();
+		if (account == null) {
+			return;
+		}
+		final SalesforceAnalyticsManager manager = SalesforceAnalyticsManager.getInstance(account);
+		final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(),
+				SmartStoreSDKManager.getInstance().getAppContext());
+		builder.name(name);
+		builder.startTime(System.currentTimeMillis());
+		final JSONObject page = new JSONObject();
+		try {
+			page.put("context", TAG);
+		} catch (JSONException e) {
+			Log.e(TAG, "Exception thrown while building page object", e);
+		}
+		builder.page(page);
+		JSONObject attributes = null;
+		if (storeAttributes != null) {
+			attributes = storeAttributes;
+		} else {
+			attributes = new JSONObject();
+		}
+		try {
+			if (features != null) {
+				attributes.put("features", features);
+			}
+		} catch (JSONException e) {
+			Log.e(TAG, "Exception thrown while building page object", e);
+		}
+		builder.attributes(attributes);
+		builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
+		builder.eventType(InstrumentationEvent.EventType.system);
+		try {
+			final InstrumentationEvent event = builder.buildEvent();
+			manager.getAnalyticsManager().getEventStoreManager().storeEvent(event);
+		} catch (InstrumentationEventBuilder.EventBuilderException e) {
+			Log.e(TAG, "Exception thrown while building event", e);
+		}
+	}
 
     /**
      * @param soup
