@@ -30,6 +30,9 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -65,10 +68,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-
 /**
  * Sync Manager
  */
@@ -77,6 +76,7 @@ public class SyncManager {
     // Constants
     public static final int PAGE_SIZE = 2000;
     private static final int UNCHANGED = -1;
+    private static final String TAG = "SyncManager";
 
     // For user agent
     private static final String SMART_SYNC = "SmartSync";
@@ -340,12 +340,46 @@ public class SyncManager {
 
         // Deletes extra IDs from SmartStore.
         int localIdSize = localIds.size();
+        logAnalyticsEventWithSyncState(sync, "cleanResyncGhosts", localIdSize);
         if (localIdSize > 0) {
             String smartSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} IN (%s)",
                     soupName, SmartStore.SOUP_ENTRY_ID, soupName, soupName, idFieldName,
                     "'" + TextUtils.join("', '", localIds) + "'");
             querySpec = QuerySpec.buildSmartQuerySpec(smartSql, localIdSize);
             smartStore.deleteByQuery(soupName, querySpec);
+        }
+    }
+
+    private void logAnalyticsEventWithSyncState(SyncState syncState, String name, int numRecords) {
+        final SalesforceAnalyticsManager manager = SalesforceAnalyticsManager.getInstance(SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
+        final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(), SmartSyncSDKManager.getInstance().getAppContext());
+        builder.name(name);
+        builder.startTime(System.currentTimeMillis());
+        final JSONObject page = new JSONObject();
+        try {
+            page.put("context", getClass().getName());
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception thrown while building page object", e);
+        }
+        builder.page(page);
+        final JSONObject attributes = new JSONObject();
+        try {
+            if (numRecords > 0) {
+                attributes.put("numRecords", numRecords);
+            }
+            attributes.put("syncId", syncState.getId());
+            attributes.put("syncTarget", syncState.getTarget().getClass().getName());
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception thrown while building page object", e);
+        }
+        builder.attributes(attributes);
+        builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
+        builder.eventType(InstrumentationEvent.EventType.system);
+        try {
+            final InstrumentationEvent event = builder.buildEvent();
+            manager.getAnalyticsManager().getEventStoreManager().storeEvent(event);
+        } catch (InstrumentationEventBuilder.EventBuilderException e) {
+            Log.e(TAG, "Exception thrown while building event", e);
         }
     }
 
@@ -370,20 +404,21 @@ public class SyncManager {
                     break;
                 case DONE:
                 case FAILED:
+                    logAnalyticsEventWithSyncState(sync, sync.getType().name(), sync.getTotalSize());
                     runningSyncIds.remove(sync.getId());
                     break;
             }
             sync.save(smartStore);
     	} catch (JSONException e) {
-    		Log.e("SmartSyncMgr:updateSync", "Unexpected json error for sync: " + sync.getId(), e);
+    		Log.e(TAG, "Unexpected json error for sync: " + sync.getId(), e);
     	} catch (SmartStoreException e) {
-            Log.e("SmartSyncMgr:updateSync", "Unexpected smart store error for sync: " + sync.getId(), e);
+            Log.e(TAG, "Unexpected smart store error for sync: " + sync.getId(), e);
         }
         finally {
             callback.onUpdate(sync);
         }
     }
-    
+
     private void syncUp(SyncState sync, SyncUpdateCallback callback) throws Exception {
 		final String soupName = sync.getSoupName();
         final SyncUpTarget target = (SyncUpTarget) sync.getTarget();
@@ -415,21 +450,17 @@ public class SyncManager {
             // We didn't capture the last modified date so we can't really enforce merge mode, returning true so that we will behave like an "overwrite" merge mode
             return true;
         }
-
         try {
             String serverLastModStr = target.fetchLastModifiedDate(this, objectType, objectId);
-
             if (serverLastModStr == null) {
                 // We were unable to get the last modified date from the server
                 return true;
             }
-
             long lastModifiedDate = Constants.TIMESTAMP_FORMAT.parse(lastModStr).getTime();
             long serverLastModifiedDate = Constants.TIMESTAMP_FORMAT.parse(serverLastModStr).getTime();
-
             return (serverLastModifiedDate <= lastModifiedDate);
         } catch (Exception e) {
-            Log.e("SmartSyncMgr:isNewerThanServer", "Couldn't figure out last modified date", e);
+            Log.e(TAG, "Couldn't figure out last modified date", e);
             throw new SmartSyncException(e);
         }
     }
@@ -472,8 +503,7 @@ public class SyncManager {
         		!isNewerThanServer(target, objectType, objectId, lastModStr)) {
 
         	// Nothing to do for this record
-    		Log.i("SmartSyncManager:syncUpOneRecord",
-    				"Record not synced since client does not have the latest from server");
+    		Log.i(TAG, "Record not synced since client does not have the latest from server");
         	return;
         }
 
@@ -572,7 +602,7 @@ public class SyncManager {
         }
         return set;
     }
-	
+
 	private void saveRecordsToSmartStore(String soupName, JSONArray records, MergeMode mergeMode, String idField)
 			throws JSONException {
         // Gather ids of dirty records
@@ -666,7 +696,6 @@ public class SyncManager {
 
 		private static final long serialVersionUID = 1L;
     }
-    
 
     /**
      * Sets the rest client to be used.
@@ -683,8 +712,7 @@ public class SyncManager {
     public RestClient getRestClient() {
         return this.restClient;
     }
-    
-    
+
 	/**
 	 * Callback to get sync status udpates
 	 */
