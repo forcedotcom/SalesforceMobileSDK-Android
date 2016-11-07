@@ -32,7 +32,6 @@ import android.content.Context;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartsync.accounts.SmartSyncUserAccountManager;
 import com.salesforce.androidsdk.smartsync.manager.CacheManager;
@@ -47,7 +46,7 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
  */
 public class SmartSyncSDKManager extends SmartStoreSDKManager {
 
-	/**
+    /**
      * Protected constructor.
      * @param context Application context.
      * @param keyImpl Implementation of KeyInterface.
