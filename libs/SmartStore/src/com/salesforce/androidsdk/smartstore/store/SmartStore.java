@@ -320,7 +320,7 @@ public class SmartStore  {
 			if (soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
 				features.put("ExternalStorage");
 			}
-			logAnalyticsEventWithName("registerSoup", null, features);
+			logAnalyticsEvent("registerSoup", features);
 
 			// First get a table name
 			String soupTableName = null;
@@ -1428,8 +1428,8 @@ public class SmartStore  {
         }
     }
 
-	private static void logAnalyticsEventWithName(String name, JSONObject storeAttributes, JSONArray features) {
-		UserAccount account = UserAccountManager.getInstance().getCurrentUser();
+	private void logAnalyticsEvent(String name, JSONArray features) {
+		final UserAccount account = UserAccountManager.getInstance().getCurrentUser();
 		if (account == null) {
 			return;
 		}
@@ -1445,12 +1445,7 @@ public class SmartStore  {
 			Log.e(TAG, "Exception thrown while building page object", e);
 		}
 		builder.page(page);
-		JSONObject attributes = null;
-		if (storeAttributes != null) {
-			attributes = storeAttributes;
-		} else {
-			attributes = new JSONObject();
-		}
+		final JSONObject attributes = new JSONObject();
 		try {
 			if (features != null) {
 				attributes.put("features", features);

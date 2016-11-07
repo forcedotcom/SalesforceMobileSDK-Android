@@ -26,6 +26,25 @@
  */
 package com.salesforce.androidsdk.smartstore.store;
 
+import android.content.Context;
+import android.text.TextUtils;
+import android.util.Log;
+
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
+import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+
+import net.sqlcipher.database.SQLiteDatabase;
+import net.sqlcipher.database.SQLiteDatabaseHook;
+import net.sqlcipher.database.SQLiteOpenHelper;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -36,20 +55,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
-
-import net.sqlcipher.database.SQLiteDatabase;
-import net.sqlcipher.database.SQLiteDatabaseHook;
-import net.sqlcipher.database.SQLiteOpenHelper;
-
-import android.content.Context;
-import android.text.TextUtils;
-import android.util.Log;
 
 /**
  * Helper class to manage SmartStore's database creation and version management.
@@ -62,6 +67,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static final int DB_VERSION = 3;
 	public static final String DEFAULT_DB_NAME = "smartstore";
 	public static final String SOUP_ELEMENT_PREFIX = "soupelt_";
+    private static final String TAG = "DBOpenHelper";
 	private static final String DB_NAME_SUFFIX = ".db";
 	private static final String ORG_KEY_PREFIX = "00D";
 	private static final String EXTERNAL_BLOBS_SUFFIX = "_external_soup_blobs/";
@@ -91,17 +97,15 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static synchronized List<String> getUserDatabasePrefixList(Context ctx,
 																	  UserAccount account, String communityId) {
 		List<String> result = new ArrayList<>();
-
 		final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
-		SmartStoreFileFilter globalFileFilter = new SmartStoreFileFilter(accountSuffix);
+		SmartStoreFileFilter userFileFilter = new SmartStoreFileFilter(accountSuffix);
 		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
 		final File dir = new File(dbPath);
-		String [] fileNames = dir.list(globalFileFilter);
-
-		if(fileNames!=null && fileNames.length>0) {
+		String[] fileNames = dir.list(userFileFilter);
+		if (fileNames != null && fileNames.length > 0) {
 			for (String fileName : fileNames) {
 				int dbFileIndx = fileName.indexOf(".db");
-				if(dbFileIndx>-1) {
+				if (dbFileIndx >- 1) {
 					result.add(fileName.substring(0, fileName.indexOf(accountSuffix)));
 				}
 			}
@@ -117,21 +121,22 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static synchronized List<String> getGlobalDatabasePrefixList(Context ctx,
 																	  UserAccount account, String communityId) {
 		List<String> result = new ArrayList<>();
-
-		final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
-		SmartStoreGlobalFileFilter globalFileFilter = new SmartStoreGlobalFileFilter(accountSuffix,account.getOrgId());
+        String accountSuffix = null;
+        if (account != null) {
+            accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
+        }
+		SmartStoreGlobalFileFilter globalFileFilter = new SmartStoreGlobalFileFilter(accountSuffix,
+                account.getOrgId());
 		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
 		final File dir = new File(dbPath);
-		String [] fileNames = dir.list(globalFileFilter);
-
+		String[] fileNames = dir.list(globalFileFilter);
 		for(String fileName : fileNames) {
 			int dbFileIndx = fileName.indexOf(".db");
-			if(dbFileIndx>-1)
-				result.add(fileName.substring(0,dbFileIndx));
+			if(dbFileIndx >- 1)
+				result.add(fileName.substring(0, dbFileIndx));
 		}
 		return result;
 	}
-
 
 	/**
 	 * Returns the DBOpenHelper instance associated with this user account.
@@ -158,7 +163,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		return getOpenHelper(ctx, DEFAULT_DB_NAME, account, communityId);
 	}
 
-	
 	/**
 	 * Returns the DBOpenHelper instance for the given database name.
 	 * 
@@ -187,7 +191,25 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		final String fullDBName = dbName.toString();
 		DBOpenHelper helper = openHelpers.get(fullDBName);
 		if (helper == null) {
-			helper = new DBOpenHelper(ctx, fullDBName);
+            List<String> numDbs = null;
+            String key = "numGlobalStores";
+            String eventName = "globalSmartStoreInit";
+            if (account == null) {
+                numDbs = getGlobalDatabasePrefixList(ctx, account, communityId);
+            } else {
+                key = "numUserStores";
+                eventName = "userSmartStoreInit";
+                numDbs = getUserDatabasePrefixList(ctx, account, communityId);
+            }
+            int numStores = (numDbs == null) ? 0 : numDbs.size();
+            final JSONObject storeAttributes = new JSONObject();
+            try {
+                storeAttributes.put(key, numStores);
+            } catch (JSONException e) {
+                Log.e(TAG, "Error occurred while creating JSON", e);
+            }
+            logAnalyticsEvent(eventName, account, storeAttributes);
+            helper = new DBOpenHelper(ctx, fullDBName);
 			openHelpers.put(fullDBName, helper);
 		}
 		return helper;
@@ -237,7 +259,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 		if (oldVersion < 3) {
 			// DB versions before 3 used soup_names, which has changed to soup_attrs
-			SmartStore.updateTableNameAndAddColumns(db, SmartStore.SOUP_NAMES_TABLE, SmartStore.SOUP_ATTRS_TABLE, new String[] { SoupSpec.FEATURE_EXTERNAL_STORAGE });
+			SmartStore.updateTableNameAndAddColumns(db, SmartStore.SOUP_NAMES_TABLE,
+                    SmartStore.SOUP_ATTRS_TABLE, new String[] { SoupSpec.FEATURE_EXTERNAL_STORAGE });
 		}
 	}
 	
@@ -423,15 +446,17 @@ public class DBOpenHelper extends SQLiteOpenHelper {
     }
 
 	private static class SmartStoreGlobalFileFilter extends SmartStoreFileFilter {
+
 		String orgId;
-		public SmartStoreGlobalFileFilter(String dbNamePrefix,String orgId) {
+
+		public SmartStoreGlobalFileFilter(String dbNamePrefix, String orgId) {
 			super(dbNamePrefix);
 			this.orgId = orgId;
 		}
 
 		@Override
 		public boolean accept(File dir, String filename) {
-			return !super.accept(dir,filename) && !filename.contains(this.orgId);
+			return !super.accept(dir, filename) && (!filename.contains(this.orgId) || orgId == null);
 		}
 	}
 
@@ -532,7 +557,6 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 		}
 	}
 
-
 	/**
 	 * Re-encrypts the files on external storage with the new key. If external storage is not enabled for any table in the db, this operation is ignored.
 	 *
@@ -555,22 +579,17 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 							try {
 								BufferedReader br = new BufferedReader(new FileReader(blob));
 								String line;
-
 								while ((line = br.readLine()) != null) {
 									json.append(line).append('\n');
 								}
-
 								br.close();
 								result = Encryptor.decrypt(json.toString(), oldKey);
-
 								blob.delete();
-
 								FileOutputStream outputStream = new FileOutputStream(blob, false);
 								outputStream.write(Encryptor.encrypt(result, newKey).getBytes());
 								outputStream.close();
-
 							} catch (IOException ex) {
-								Log.e("reEncryptAllFiles", "Exception occurred while rekeying external files.", ex);
+								Log.e(TAG, "Exception occurred while rekeying external files.", ex);
 							}
 						}
 					}
@@ -613,7 +632,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
             outputStream.close();
             return true;
         } catch (IOException ex) {
-            Log.e("DBOpenHelper:saveSoupBlob", "Exception occurred while attempting to write external soup blob.", ex);
+            Log.e(TAG, "Exception occurred while attempting to write external soup blob.", ex);
         }
         return false;
     }
@@ -635,11 +654,10 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 				result = new JSONObject(soupBlobString);
 			}
 		} catch (JSONException ex) {
-			Log.e("DBOpenHelper:loadSoupBlob", "Exception occurred while attempting to read external soup blob.", ex);
+			Log.e(TAG, "Exception occurred while attempting to read external soup blob.", ex);
 		}
 		return result;
 	}
-
 
 	/**
 	 * Retrieves the soup blob for the given soup entry id from file storage.
@@ -664,7 +682,7 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			result = Encryptor.decrypt(json.toString(), passcode);
 
 		} catch (IOException ex) {
-			Log.e("DBOpenHelper:loadSoupBlob", "Exception occurred while attempting to read external soup blob.", ex);
+			Log.e(TAG, "Exception occurred while attempting to read external soup blob.", ex);
 		}
 		return result;
 	}
@@ -697,5 +715,36 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	 */
 	public File getSoupBlobFile(String soupTableName, long soupEntryId) {
 		return new File(getExternalSoupBlobsPath(soupTableName), SOUP_ELEMENT_PREFIX + soupEntryId);
+	}
+
+	private static void logAnalyticsEvent(String name, UserAccount userAccount, JSONObject storeAttributes) {
+		UserAccount account = userAccount;
+		if (account == null) {
+            account = UserAccountManager.getInstance().getCurrentUser();
+		}
+        if (account == null) {
+            return;
+        }
+		final SalesforceAnalyticsManager manager = SalesforceAnalyticsManager.getInstance(account);
+		final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(),
+				SmartStoreSDKManager.getInstance().getAppContext());
+		builder.name(name);
+		builder.startTime(System.currentTimeMillis());
+		final JSONObject page = new JSONObject();
+		try {
+			page.put("context", TAG);
+		} catch (JSONException e) {
+			Log.e(TAG, "Exception thrown while building page object", e);
+		}
+		builder.page(page);
+		builder.attributes(storeAttributes);
+		builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
+		builder.eventType(InstrumentationEvent.EventType.system);
+		try {
+			final InstrumentationEvent event = builder.buildEvent();
+			manager.getAnalyticsManager().getEventStoreManager().storeEvent(event);
+		} catch (InstrumentationEventBuilder.EventBuilderException e) {
+			Log.e(TAG, "Exception thrown while building event", e);
+		}
 	}
 }
