@@ -31,13 +31,28 @@ import android.content.Context;
 import android.content.RestrictionsManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
+
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Set;
 
 /**
  * Classes responsible for reading runtime configurations (from MDM provider).
  * For an example, see the ConfiguratorApp and ConfiguredApp sample applications.
  */
 public class RuntimeConfig {
-	
+
+	private static final String TAG = "RuntimeConfig";
+
 	public enum ConfigKey {
 
         // The keys here should match the key entries in 'app_restrictions.xml'.
@@ -59,9 +74,26 @@ public class RuntimeConfig {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 			configurations = getRestrictions(ctx);
             isManaged = hasRestrictionsProvider(ctx);
+
+            // Logs analytics event for MDM.
+            final JSONObject attributes = new JSONObject();
+            try {
+                attributes.put("mdmIsActive", isManaged);
+                if (configurations != null) {
+                    final JSONObject mdmValues = new JSONObject();
+                    final Set<String> keys = configurations.keySet();
+                    for (final String key : keys) {
+                        mdmValues.put(key, JSONObject.wrap(configurations.get(key)));
+                    }
+                    attributes.put("mdmConfigs", mdmValues);
+                }
+            } catch (JSONException e) {
+                Log.e(TAG, "Exception thrown while creating JSON", e);
+            }
+            logAnalyticsEvent("mdmConfiguration", attributes);
         }
 	}
-	
+
 	/**
      * Method to (build and) get the singleton instance.
      *
@@ -121,4 +153,32 @@ public class RuntimeConfig {
         RestrictionsManager restrictionsManager = (RestrictionsManager) ctx.getSystemService(Context.RESTRICTIONS_SERVICE);
         return restrictionsManager.hasRestrictionsProvider();
     }
+
+	private void logAnalyticsEvent(String name, JSONObject attributes) {
+        final UserAccount account = UserAccountManager.getInstance().getCurrentUser();
+		if (account == null) {
+			return;
+		}
+		final SalesforceAnalyticsManager manager = SalesforceAnalyticsManager.getInstance(account);
+		final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(),
+				SalesforceSDKManager.getInstance().getAppContext());
+		builder.name(name);
+		builder.startTime(System.currentTimeMillis());
+		final JSONObject page = new JSONObject();
+		try {
+			page.put("context", TAG);
+		} catch (JSONException e) {
+			Log.e(TAG, "Exception thrown while building page object", e);
+		}
+		builder.page(page);
+		builder.attributes(attributes);
+		builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
+		builder.eventType(InstrumentationEvent.EventType.system);
+		try {
+			final InstrumentationEvent event = builder.buildEvent();
+			manager.getAnalyticsManager().getEventStoreManager().storeEvent(event);
+		} catch (InstrumentationEventBuilder.EventBuilderException e) {
+			Log.e(TAG, "Exception thrown while building event", e);
+		}
+	}
 }

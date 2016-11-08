@@ -50,12 +50,17 @@ import android.widget.Toast;
 
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
+import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.IdServiceResponse;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.config.BootConfig;
+import com.salesforce.androidsdk.config.LoginServerManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.rest.ClientManager;
@@ -65,10 +70,15 @@ import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -587,6 +597,33 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         }
     }
 
+    private void logAnalyticsEvent(String name, UserAccount account, JSONObject attributes) {
+        if (account == null) {
+            return;
+        }
+        final SalesforceAnalyticsManager manager = SalesforceAnalyticsManager.getInstance(account);
+        final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(),
+                SalesforceSDKManager.getInstance().getAppContext());
+        builder.name(name);
+        builder.startTime(System.currentTimeMillis());
+        final JSONObject page = new JSONObject();
+        try {
+            page.put("context", TAG);
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception thrown while building page object", e);
+        }
+        builder.page(page);
+        builder.attributes(attributes);
+        builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
+        builder.eventType(InstrumentationEvent.EventType.system);
+        try {
+            final InstrumentationEvent event = builder.buildEvent();
+            manager.getAnalyticsManager().getEventStoreManager().storeEvent(event);
+        } catch (InstrumentationEventBuilder.EventBuilderException e) {
+            Log.e(TAG, "Exception thrown while building event", e);
+        }
+    }
+
     protected void addAccount() {
         ClientManager clientManager = new ClientManager(getContext(),
         		SalesforceSDKManager.getInstance().getAccountType(),
@@ -625,18 +662,47 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	 */
     	final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
     	final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
+        final UserAccount account = new UserAccount(accountOptions.authToken,
+                accountOptions.refreshToken, loginOptions.loginUrl,
+                accountOptions.identityUrl, accountOptions.instanceUrl,
+                accountOptions.orgId, accountOptions.userId,
+                accountOptions.username, accountName,
+                loginOptions.clientSecret, accountOptions.communityId,
+                accountOptions.communityUrl, accountOptions.firstName,
+                accountOptions.lastName, accountOptions.displayName, accountOptions.email,
+                accountOptions.photoUrl, accountOptions.thumbnailUrl);
     	if (!TextUtils.isEmpty(pushNotificationId)) {
-            final UserAccount account = new UserAccount(accountOptions.authToken,
-            		accountOptions.refreshToken, loginOptions.loginUrl,
-            		accountOptions.identityUrl, accountOptions.instanceUrl,
-            		accountOptions.orgId, accountOptions.userId,
-            		accountOptions.username, accountName,
-            		loginOptions.clientSecret, accountOptions.communityId,
-            		accountOptions.communityUrl, accountOptions.firstName,
-                    accountOptions.lastName, accountOptions.displayName, accountOptions.email,
-                    accountOptions.photoUrl, accountOptions.thumbnailUrl);
         	PushMessaging.register(appContext, account);
     	}
+
+        // Logs analytics event for new user.
+        final JSONObject userAttr = new JSONObject();
+        try {
+            final List<UserAccount> users = UserAccountManager.getInstance().getAuthenticatedUsers();
+            userAttr.put("numUsers", (users == null) ? 0 : users.size());
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception thrown while creating JSON", e);
+        }
+        logAnalyticsEvent("addUser", account, userAttr);
+
+        // Logs analytics event for servers.
+        final JSONObject serverAttr = new JSONObject();
+        try {
+            final List<LoginServerManager.LoginServer> servers = SalesforceSDKManager.getInstance().getLoginServerManager().getLoginServers();
+            serverAttr.put("numLoginServers", (servers == null) ? 0 : servers.size());
+            if (servers != null) {
+                final JSONArray serversJson = new JSONArray();
+                for (final LoginServerManager.LoginServer server : servers) {
+                    if (server != null) {
+                        serversJson.put(server.url);
+                    }
+                }
+                serverAttr.put("loginServers", serversJson);
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception thrown while creating JSON", e);
+        }
+        logAnalyticsEvent("addUser", account, serverAttr);
         callback.onAccountAuthenticatorResult(extras);
     }
 
