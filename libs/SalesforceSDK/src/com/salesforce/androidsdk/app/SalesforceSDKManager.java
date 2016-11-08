@@ -112,6 +112,8 @@ public class SalesforceSDKManager {
      */
     private static final int PUSH_UNREGISTER_TIMEOUT_MILLIS = 30000;
 
+    private static final String FEATURE_PUSH_NOTIFICATIONS = "PN";
+
     protected Context context;
     protected KeyInterface keyImpl;
     protected LoginOptions loginOptions;
@@ -435,6 +437,7 @@ public class SalesforceSDKManager {
      * @param pnInterface Implementation of PushNotificationInterface.
      */
     public synchronized void setPushNotificationReceiver(PushNotificationInterface pnInterface) {
+        this.registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS);
     	pushNotificationInterface = pnInterface;
     }
 
