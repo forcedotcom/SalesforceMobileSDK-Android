@@ -66,5 +66,4 @@ public final class PluginConstants {
 
     static final String STORE_NAME = "storeName";
 
-    static final String DEFAULT_STORE_NAME = "defaultStore";
 }

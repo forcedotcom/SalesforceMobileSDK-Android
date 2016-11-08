@@ -30,6 +30,7 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
@@ -320,7 +321,6 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @return
      */
     private static String getStoreName(JSONObject arg0) {
-        String storeName = arg0 != null ? arg0.optString(STORE_NAME, DEFAULT_STORE_NAME) : DEFAULT_STORE_NAME;
-        return storeName==null?DEFAULT_STORE_NAME:storeName;
+        return arg0 != null ? arg0.optString(STORE_NAME, DBOpenHelper.DEFAULT_DB_NAME) : DBOpenHelper.DEFAULT_DB_NAME;
     }
 }
