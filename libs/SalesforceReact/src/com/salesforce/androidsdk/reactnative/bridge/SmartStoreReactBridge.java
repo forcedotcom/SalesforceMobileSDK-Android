@@ -686,7 +686,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	private static String getStoreName(ReadableMap args) {
-		return  args != null ? args.getString(STORE_NAME): DBOpenHelper.DEFAULT_DB_NAME;
+		String storeName =  args != null ? args.getString(STORE_NAME) : DBOpenHelper.DEFAULT_DB_NAME;
+		return (storeName!=null && storeName.trim().length()>0) ? storeName : DBOpenHelper.DEFAULT_DB_NAME;
 	}
 
 	/**
