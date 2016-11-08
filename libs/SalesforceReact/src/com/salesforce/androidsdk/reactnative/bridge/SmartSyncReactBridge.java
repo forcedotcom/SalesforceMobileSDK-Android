@@ -35,6 +35,7 @@ import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
@@ -54,7 +55,6 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
     static final String SYNC_ID = "syncId";
     static final String IS_GLOBAL_STORE = "isGlobalStore";
     static final String STORE_NAME = "storeName";
-    static final String DEFAULT_STORE_NAME = "smartstore";
     public static final String LOG_TAG = "SmartSyncReactBridge";
 
     public SmartSyncReactBridge(ReactApplicationContext reactContext) {
@@ -250,7 +250,8 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
      * @return
      */
     private static String getStoreName(ReadableMap args) {
-        return  args != null ? args.getString(STORE_NAME): DEFAULT_STORE_NAME;
+        String storeName =  args != null ? args.getString(STORE_NAME) : DBOpenHelper.DEFAULT_DB_NAME;
+        return (storeName!=null && storeName.trim().length()>0) ? storeName : DBOpenHelper.DEFAULT_DB_NAME;
     }
 
 }

@@ -37,6 +37,7 @@ import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -77,7 +78,6 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	static final String INDEXES = "indexes";
 	static final String IS_GLOBAL_STORE = "isGlobalStore";
 	static final String STORE_NAME = "storeName";
-	static final String DEFAULT_STORE_NAME = "smartstore";
 
 	// Map of cursor id to StoreCursor, per database.
 	private static Map<SQLiteDatabase, SparseArray<StoreCursor>> STORE_CURSORS = new HashMap<SQLiteDatabase, SparseArray<StoreCursor>>();
@@ -686,7 +686,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	private static String getStoreName(ReadableMap args) {
-		return  args != null ? args.getString(STORE_NAME): DEFAULT_STORE_NAME;
+		return  args != null ? args.getString(STORE_NAME): DBOpenHelper.DEFAULT_DB_NAME;
 	}
 
 	/**
