@@ -34,6 +34,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
 import org.json.JSONException;
 import org.json.JSONObject;
