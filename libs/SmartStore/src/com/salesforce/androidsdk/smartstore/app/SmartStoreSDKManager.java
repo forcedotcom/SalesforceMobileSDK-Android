@@ -253,6 +253,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return SmartStore instance.
      */
     public SmartStore getSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
+        if (TextUtils.isEmpty(dbNamePrefix)) {
+            dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
+        }
         SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_STORE_USER);
         final String passcodeHash = getPasscodeHash();
         final String passcode = (passcodeHash == null ?
@@ -316,6 +319,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return True - if the user has a smart store database, False - otherwise.
      */
     public boolean hasSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
+        if (TextUtils.isEmpty(dbNamePrefix)) {
+            dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
+        }
         return DBOpenHelper.smartStoreExists(context, dbNamePrefix, account, communityId);
     }
 
@@ -367,6 +373,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @param communityId  Community ID.
      */
     public void removeSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
+        if (TextUtils.isEmpty(dbNamePrefix)) {
+            dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
+        }
         DBOpenHelper.deleteDatabase(context, dbNamePrefix, account, communityId);
     }
 

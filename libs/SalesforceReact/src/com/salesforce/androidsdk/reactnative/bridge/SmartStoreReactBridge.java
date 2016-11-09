@@ -35,7 +35,9 @@ import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -75,6 +77,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	static final String INDEX = "index";
 	static final String INDEXES = "indexes";
 	static final String IS_GLOBAL_STORE = "isGlobalStore";
+	static final String STORE_NAME = "storeName";
 
 	// Map of cursor id to StoreCursor, per database.
 	private static Map<SQLiteDatabase, SparseArray<StoreCursor>> STORE_CURSORS = new HashMap<SQLiteDatabase, SparseArray<StoreCursor>>();
@@ -551,17 +554,109 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
         }
     }
 
-    /**
-     * Return smartstore to use
-     * @param args first argument passed in plugin call
-     * @return
-     */
-    private SmartStore getSmartStore(ReadableMap args) {
-        boolean isGlobal = getIsGlobal(args);
-        return (isGlobal
-                ? SmartStoreSDKManager.getInstance().getGlobalSmartStore()
-                : SmartStoreSDKManager.getInstance().getSmartStore());
-    }
+
+	/**
+	 * @param args
+	 * @param successCallback
+	 * @param errorCallback
+	 * @return
+	 */
+	public void getAllGlobalStores(ReadableMap args, final Callback successCallback,
+										   final Callback errorCallback) throws JSONException {
+		// return list of StoreConfigs
+		List<String> globalDBNames = SmartStoreSDKManager.getInstance().getGlobalStoresPrefixList();
+		JSONArray storeList = new JSONArray();
+		try {
+			if(globalDBNames !=null ) {
+				for (int i = 0; i < globalDBNames.size(); i++) {
+					JSONObject dbName = new JSONObject();
+					dbName.put(IS_GLOBAL_STORE,true);
+					dbName.put(STORE_NAME,globalDBNames.get(i));
+					storeList.put(dbName);
+				}
+			}
+			ReactBridgeHelper.invokeSuccess(successCallback, storeList);
+		} catch (JSONException e) {
+				Log.e(LOG_TAG, "getAllGlobalStorePrefixes", e);
+				errorCallback.invoke(e.toString());
+		}
+	}
+
+	/**
+	 *
+	 * @param args
+	 * @param successCallback
+	 * @param errorCallback
+	 * @return
+	 */
+	public void getAllStores(ReadableMap args, final Callback successCallback,
+									 final Callback errorCallback) {
+		// return list of StoreConfigs
+		List<String> userStoreNames = SmartStoreSDKManager.getInstance().getUserStoresPrefixList();
+		JSONArray storeList = new JSONArray();
+		try {
+			if(userStoreNames !=null ) {
+				for (int i = 0; i < userStoreNames.size(); i++) {
+					JSONObject dbName = new JSONObject();
+					dbName.put(IS_GLOBAL_STORE,true);
+					dbName.put(STORE_NAME,userStoreNames.get(i));
+					storeList.put(dbName);
+				}
+			}
+			ReactBridgeHelper.invokeSuccess(successCallback, storeList);
+		} catch (JSONException e) {
+			Log.e(LOG_TAG, "getAllStorePrefixes", e);
+			errorCallback.invoke(e.toString());
+		}
+	}
+
+	/**
+	 *
+	 * @param args
+	 * @param successCallback
+	 * @param errorCallback
+	 * @return
+	 */
+	public void removeStore(ReadableMap args, final Callback successCallback,
+							 final Callback errorCallback){
+
+		boolean isGlobal = getIsGlobal(args);
+		String storeName = getStoreName(args);
+
+		if (isGlobal)
+			SmartStoreSDKManager.getInstance().removeGlobalSmartStore(storeName);
+		else
+			SmartStoreSDKManager.getInstance().removeSmartStore(storeName,UserAccountManager.getInstance().getCurrentUser(),UserAccountManager.getInstance().getCurrentUser().getCommunityId());
+
+		ReactBridgeHelper.invokeSuccess(successCallback, true);
+	}
+
+	/**
+	 *
+	 * @param args
+	 * @param successCallback
+	 * @param errorCallback
+	 * @return
+	 */
+	public void removeAllGlobalStores(ReadableMap args, final Callback successCallback,
+							final Callback errorCallback){
+		SmartStoreSDKManager.getInstance().removeAllGlobalStores();
+		ReactBridgeHelper.invokeSuccess(successCallback, true);
+	}
+
+	/**
+	 *
+	 * @param args
+	 * @param successCallback
+	 * @param errorCallback
+	 * @return
+	 */
+	public void removeAllStores(ReadableMap args, final Callback successCallback,
+								final Callback errorCallback){
+		SmartStoreSDKManager.getInstance().removeAllUserStores();
+		ReactBridgeHelper.invokeSuccess(successCallback, true);
+	}
+
 
 	/**
 	 * Return the value of the isGlobalStore argument
@@ -570,6 +665,29 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 */
 	private boolean getIsGlobal(ReadableMap args) {
 		return args != null ? args.getBoolean(IS_GLOBAL_STORE) : false;
+	}
+
+	/**
+	 * Return smartstore to use
+	 * @param args arguments passed in bridge call
+	 * @return
+	 */
+	private SmartStore getSmartStore(ReadableMap args) {
+		boolean isGlobal = getIsGlobal(args);
+		String  storeName = getStoreName(args);
+		return (isGlobal
+				? SmartStoreSDKManager.getInstance().getGlobalSmartStore(storeName)
+				: SmartStoreSDKManager.getInstance().getSmartStore(storeName, UserAccountManager.getInstance().getCurrentUser(),UserAccountManager.getInstance().getCurrentUser().getCommunityId()));
+	}
+
+	/**
+	 * Return the value of the storename argument
+	 * @param args arguments passed in bridge call
+	 * @return
+	 */
+	private static String getStoreName(ReadableMap args) {
+		String storeName =  args != null ? args.getString(STORE_NAME) : DBOpenHelper.DEFAULT_DB_NAME;
+		return (storeName!=null && storeName.trim().length()>0) ? storeName : DBOpenHelper.DEFAULT_DB_NAME;
 	}
 
 	/**

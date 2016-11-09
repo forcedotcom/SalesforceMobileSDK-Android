@@ -93,6 +93,8 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 	public static synchronized List<String> getUserDatabasePrefixList(Context ctx,
 																	  UserAccount account, String communityId) {
 		List<String> result = new ArrayList<>();
+		if(account==null) return  result;
+
 		final String accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
 		SmartStoreFileFilter userFileFilter = new SmartStoreFileFilter(accountSuffix);
 		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
@@ -118,18 +120,22 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 																	  UserAccount account, String communityId) {
 		List<String> result = new ArrayList<>();
         String accountSuffix = null;
+		String orgId = null;
         if (account != null) {
             accountSuffix = account.getCommunityLevelFilenameSuffix(communityId);
+			orgId = account.getOrgId();
         }
 		SmartStoreGlobalFileFilter globalFileFilter = new SmartStoreGlobalFileFilter(accountSuffix,
-                account.getOrgId());
+                orgId);
 		final String dbPath = ctx.getApplicationInfo().dataDir + "/databases";
 		final File dir = new File(dbPath);
 		String[] fileNames = dir.list(globalFileFilter);
-		for(String fileName : fileNames) {
-			int dbFileIndx = fileName.indexOf(".db");
-			if(dbFileIndx >- 1)
-				result.add(fileName.substring(0, dbFileIndx));
+		if (fileNames != null && fileNames.length > 0) {
+			for (String fileName : fileNames) {
+				int dbFileIndx = fileName.indexOf(".db");
+				if (dbFileIndx > -1)
+					result.add(fileName.substring(0, dbFileIndx));
+			}
 		}
 		return result;
 	}
@@ -439,6 +445,10 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 			}
 			return false;
 		}
+
+		String getDbNamePrefix(){
+			return  dbNamePrefix;
+		}
     }
 
 	private static class SmartStoreGlobalFileFilter extends SmartStoreFileFilter {
@@ -452,7 +462,10 @@ public class DBOpenHelper extends SQLiteOpenHelper {
 
 		@Override
 		public boolean accept(File dir, String filename) {
-			return !super.accept(dir, filename) && (!filename.contains(this.orgId) || orgId == null);
+			// if there isn't a prefix   OR
+			// ( IS NOT A USER's DB)  AND does not have an orgid (belong to  another user)
+			// then it is a global file
+			return (this.getDbNamePrefix()==null) || (!super.accept(dir, filename) && !filename.contains(this.orgId));
 		}
 	}
 
