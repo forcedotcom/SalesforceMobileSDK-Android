@@ -2,7 +2,7 @@
 	"name": "SalesforceMobileSDK-Android",
 	"version": "5.0.0",
 	"description": "Salesforce Mobile SDK for Android",
-	"keywords": [ "mobilesdk", "ios", "salesforce", "mobile", "sdk" ],
+	"keywords": [ "mobilesdk", "android", "salesforce", "mobile", "sdk" ],
 	"homepage": "https://github.com/forcedotcom/SalesforceMobileSDK-Android",
 	"bugs": "https://github.com/forcedotcom/SalesforceMobileSDK-Android/issues",
 	"licenses" : [
