@@ -51,9 +51,7 @@ import android.widget.Toast;
 import com.salesforce.androidsdk.R;
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
-import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
-import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -597,33 +595,6 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         }
     }
 
-    private void logAnalyticsEvent(String name, UserAccount account, JSONObject attributes) {
-        if (account == null) {
-            return;
-        }
-        final SalesforceAnalyticsManager manager = SalesforceAnalyticsManager.getInstance(account);
-        final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(),
-                SalesforceSDKManager.getInstance().getAppContext());
-        builder.name(name);
-        builder.startTime(System.currentTimeMillis());
-        final JSONObject page = new JSONObject();
-        try {
-            page.put("context", TAG);
-        } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while building page object", e);
-        }
-        builder.page(page);
-        builder.attributes(attributes);
-        builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
-        builder.eventType(InstrumentationEvent.EventType.system);
-        try {
-            final InstrumentationEvent event = builder.buildEvent();
-            manager.getAnalyticsManager().getEventStoreManager().storeEvent(event);
-        } catch (InstrumentationEventBuilder.EventBuilderException e) {
-            Log.e(TAG, "Exception thrown while building event", e);
-        }
-    }
-
     protected void addAccount() {
         ClientManager clientManager = new ClientManager(getContext(),
         		SalesforceSDKManager.getInstance().getAccountType(),
@@ -683,7 +654,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         } catch (JSONException e) {
             Log.e(TAG, "Exception thrown while creating JSON", e);
         }
-        logAnalyticsEvent("addUser", account, userAttr);
+        EventBuilderHelper.createAndStoreEvent("addUser", account, TAG, userAttr);
 
         // Logs analytics event for servers.
         final JSONObject serverAttr = new JSONObject();
@@ -702,7 +673,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         } catch (JSONException e) {
             Log.e(TAG, "Exception thrown while creating JSON", e);
         }
-        logAnalyticsEvent("addUser", account, serverAttr);
+        EventBuilderHelper.createAndStoreEvent("addUser", account, TAG, serverAttr);
         callback.onAccountAuthenticatorResult(extras);
     }
 

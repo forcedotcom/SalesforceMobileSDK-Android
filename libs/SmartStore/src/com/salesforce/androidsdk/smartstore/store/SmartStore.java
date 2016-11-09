@@ -31,12 +31,7 @@ import android.database.Cursor;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
-import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
-import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
-import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 
@@ -320,7 +315,13 @@ public class SmartStore  {
 			if (soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
 				features.put("ExternalStorage");
 			}
-			logAnalyticsEvent("registerSoup", features);
+			final JSONObject attributes = new JSONObject();
+			try {
+				attributes.put("features", features);
+			} catch (JSONException e) {
+				Log.e(TAG, "Exception thrown while building page object", e);
+			}
+			EventBuilderHelper.createAndStoreEvent("registerSoup", null, TAG, attributes);
 
 			// First get a table name
 			String soupTableName = null;
@@ -1427,42 +1428,6 @@ public class SmartStore  {
             cursor.close();
         }
     }
-
-	private void logAnalyticsEvent(String name, JSONArray features) {
-		final UserAccount account = UserAccountManager.getInstance().getCurrentUser();
-		if (account == null) {
-			return;
-		}
-		final SalesforceAnalyticsManager manager = SalesforceAnalyticsManager.getInstance(account);
-		final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(),
-				SmartStoreSDKManager.getInstance().getAppContext());
-		builder.name(name);
-		builder.startTime(System.currentTimeMillis());
-		final JSONObject page = new JSONObject();
-		try {
-			page.put("context", TAG);
-		} catch (JSONException e) {
-			Log.e(TAG, "Exception thrown while building page object", e);
-		}
-		builder.page(page);
-		final JSONObject attributes = new JSONObject();
-		try {
-			if (features != null) {
-				attributes.put("features", features);
-			}
-		} catch (JSONException e) {
-			Log.e(TAG, "Exception thrown while building page object", e);
-		}
-		builder.attributes(attributes);
-		builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
-		builder.eventType(InstrumentationEvent.EventType.system);
-		try {
-			final InstrumentationEvent event = builder.buildEvent();
-			manager.getAnalyticsManager().getEventStoreManager().storeEvent(event);
-		} catch (InstrumentationEventBuilder.EventBuilderException e) {
-			Log.e(TAG, "Exception thrown while building event", e);
-		}
-	}
 
     /**
      * @param soup

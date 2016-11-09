@@ -35,18 +35,12 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
-import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
-import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.app.UUIDManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -539,35 +533,12 @@ public class PasscodeManager  {
         unlock();
     }
 
-    private void logAnalyticsEvent(String name) {
-        final SalesforceAnalyticsManager manager = SalesforceAnalyticsManager.getInstance(UserAccountManager.getInstance().getCurrentUser());
-        final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(),
-                SalesforceSDKManager.getInstance().getAppContext());
-        builder.name(name);
-        builder.startTime(System.currentTimeMillis());
-        final JSONObject page = new JSONObject();
-        try {
-            page.put("context", TAG);
-        } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while building page object", e);
-        }
-        builder.page(page);
-        builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
-        builder.eventType(InstrumentationEvent.EventType.system);
-        try {
-            final InstrumentationEvent event = builder.buildEvent();
-            manager.getAnalyticsManager().getEventStoreManager().storeEvent(event);
-        } catch (InstrumentationEventBuilder.EventBuilderException e) {
-            Log.e(TAG, "Exception thrown while building event", e);
-        }
-    }
-
     /**
      * This is used when unlocking via the fingerprint authentication.
      * The passcode hash isn't updated as the authentication is verified by the OS.
      */
     public void unlock() {
-        logAnalyticsEvent("passcodeUnlock");
+        EventBuilderHelper.createAndStoreEvent("passcodeUnlock", null, TAG, null);
         locked = false;
         setFailedPasscodeAttempts(0);
         updateLast();

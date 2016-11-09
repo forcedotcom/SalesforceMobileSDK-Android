@@ -30,9 +30,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
-import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
-import com.salesforce.androidsdk.analytics.model.InstrumentationEventBuilder;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
@@ -340,46 +338,23 @@ public class SyncManager {
 
         // Deletes extra IDs from SmartStore.
         int localIdSize = localIds.size();
-        logAnalyticsEventWithSyncState(sync, "cleanResyncGhosts", localIdSize);
+        final JSONObject attributes = new JSONObject();
+        try {
+            if (localIdSize > 0) {
+                attributes.put("numRecords", localIdSize);
+            }
+            attributes.put("syncId", sync.getId());
+            attributes.put("syncTarget", sync.getTarget().getClass().getName());
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception thrown while building attributes", e);
+        }
+        EventBuilderHelper.createAndStoreEvent("cleanResyncGhosts", null, TAG, attributes);
         if (localIdSize > 0) {
             String smartSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} IN (%s)",
                     soupName, SmartStore.SOUP_ENTRY_ID, soupName, soupName, idFieldName,
                     "'" + TextUtils.join("', '", localIds) + "'");
             querySpec = QuerySpec.buildSmartQuerySpec(smartSql, localIdSize);
             smartStore.deleteByQuery(soupName, querySpec);
-        }
-    }
-
-    private void logAnalyticsEventWithSyncState(SyncState syncState, String name, int numRecords) {
-        final SalesforceAnalyticsManager manager = SalesforceAnalyticsManager.getInstance(SmartSyncSDKManager.getInstance().getUserAccountManager().getCurrentUser());
-        final InstrumentationEventBuilder builder = InstrumentationEventBuilder.getInstance(manager.getAnalyticsManager(), SmartSyncSDKManager.getInstance().getAppContext());
-        builder.name(name);
-        builder.startTime(System.currentTimeMillis());
-        final JSONObject page = new JSONObject();
-        try {
-            page.put("context", getClass().getName());
-        } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while building page object", e);
-        }
-        builder.page(page);
-        final JSONObject attributes = new JSONObject();
-        try {
-            if (numRecords > 0) {
-                attributes.put("numRecords", numRecords);
-            }
-            attributes.put("syncId", syncState.getId());
-            attributes.put("syncTarget", syncState.getTarget().getClass().getName());
-        } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while building page object", e);
-        }
-        builder.attributes(attributes);
-        builder.schemaType(InstrumentationEvent.SchemaType.LightningInteraction);
-        builder.eventType(InstrumentationEvent.EventType.system);
-        try {
-            final InstrumentationEvent event = builder.buildEvent();
-            manager.getAnalyticsManager().getEventStoreManager().storeEvent(event);
-        } catch (InstrumentationEventBuilder.EventBuilderException e) {
-            Log.e(TAG, "Exception thrown while building event", e);
         }
     }
 
@@ -404,7 +379,18 @@ public class SyncManager {
                     break;
                 case DONE:
                 case FAILED:
-                    logAnalyticsEventWithSyncState(sync, sync.getType().name(), sync.getTotalSize());
+                    int totalSize = sync.getTotalSize();
+                    final JSONObject attributes = new JSONObject();
+                    try {
+                        if (totalSize > 0) {
+                            attributes.put("numRecords", totalSize);
+                        }
+                        attributes.put("syncId", sync.getId());
+                        attributes.put("syncTarget", sync.getTarget().getClass().getName());
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Exception thrown while building attributes", e);
+                    }
+                    EventBuilderHelper.createAndStoreEvent("cleanResyncGhosts", null, TAG, attributes);
                     runningSyncIds.remove(sync.getId());
                     break;
             }
