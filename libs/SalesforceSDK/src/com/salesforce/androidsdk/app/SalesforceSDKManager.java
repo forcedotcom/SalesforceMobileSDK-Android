@@ -50,7 +50,9 @@ import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -62,7 +64,6 @@ import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -101,6 +102,7 @@ public class SalesforceSDKManager {
      * Default app name.
      */
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
+    private static final String TAG = "SalesforceSDKManager";
 
     /**
      * Instance of the SalesforceSDKManager to use for this process.
@@ -782,6 +784,7 @@ public class SalesforceSDKManager {
      * @param showLoginPage If true, displays the login page after removing the account.
      */
     public void logout(Account account, Activity frontActivity, final boolean showLoginPage) {
+        EventBuilderHelper.createAndStoreEvent("userLogout", null, TAG, null);
         final ClientManager clientMgr = new ClientManager(context, getAccountType(),
         		null, shouldLogoutWhenTokenRevoked());
         isLoggingOut = true;
@@ -921,6 +924,13 @@ public class SalesforceSDKManager {
      */
     public void registerUsedAppFeature(String appFeatureCode) {
         features.add(appFeatureCode);
+    }
+
+    /**
+     * Removed AppFeature code to User Agent header for reporting.
+     */
+    public void unregisterUsedAppFeature(String appFeatureCode) {
+        features.remove(appFeatureCode);
     }
 
     /**

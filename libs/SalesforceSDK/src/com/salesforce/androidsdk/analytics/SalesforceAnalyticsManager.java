@@ -71,6 +71,7 @@ public class SalesforceAnalyticsManager {
     private static final String AILTN_POLICY_PREF = "ailtn_policy";
     private static final int DEFAULT_PUBLISH_FREQUENCY_IN_HOURS = 8;
     private static final String TAG = "AnalyticsManager";
+    private static final String FEATURE_AILTN_ENABLED = "AI";
 
     private static Map<String, SalesforceAnalyticsManager> INSTANCES;
     private static boolean sPublishHandlerActive;
@@ -245,6 +246,11 @@ public class SalesforceAnalyticsManager {
      * @param enabled True - if logging should be enabled, False - otherwise.
      */
     public void enableLogging(boolean enabled) {
+        if (enabled) {
+            SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_AILTN_ENABLED);
+        } else {
+            SalesforceSDKManager.getInstance().unregisterUsedAppFeature(FEATURE_AILTN_ENABLED);
+        }
         storeAnalyticsPolicy(enabled);
         eventStoreManager.enableLogging(enabled);
     }
