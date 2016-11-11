@@ -57,8 +57,6 @@ public class SmartSyncPlugin extends ForcePlugin {
     private static final String SYNC_EVENT_TYPE = "sync";
     private static final String DETAIL = "detail";
 
-    private static final String FEATURE_SMART_SYNC_JS = "SJ";
-
     /**
      * Supported plugin actions that the client can take.
      */
@@ -68,12 +66,6 @@ public class SmartSyncPlugin extends ForcePlugin {
         getSyncStatus,
         reSync,
         cleanResyncGhosts
-    }
-
-    @Override
-    protected void pluginInitialize() {
-        super.pluginInitialize();
-        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_SYNC_JS);
     }
 
     @Override

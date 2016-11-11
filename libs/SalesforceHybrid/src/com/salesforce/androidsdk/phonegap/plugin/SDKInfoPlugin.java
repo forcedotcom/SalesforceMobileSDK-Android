@@ -56,7 +56,7 @@ public class SDKInfoPlugin extends ForcePlugin {
     private static final String APP_VERSION = "appVersion";
 	private static final String FORCE_PLUGINS_AVAILABLE = "forcePluginsAvailable";
 	private static final String BOOT_CONFIG = "bootConfig";
-    	
+
 	// Cached 
 	private static List<String> forcePlugins;
     
@@ -64,7 +64,8 @@ public class SDKInfoPlugin extends ForcePlugin {
      * Supported plugin actions that the client can take.
      */
     enum Action {
-        getInfo
+        getInfo,
+        registerAppFeature
     }
 
     @Override
@@ -75,6 +76,7 @@ public class SDKInfoPlugin extends ForcePlugin {
             action = Action.valueOf(actionStr);
             switch(action) {
                 case getInfo:  getInfo(args, callbackContext); return true;
+                case registerAppFeature: registerAppFeature(args, callbackContext); return true;
                 default: return false;
             }
         }
@@ -96,6 +98,24 @@ public class SDKInfoPlugin extends ForcePlugin {
         catch (NameNotFoundException e) {
             callbackContext.error(e.getMessage());
         }
+    }
+
+    /**
+     * Native implementation for "registerSmartSyncJS" action.
+     * @param callbackContext Used when calling back into Javascript.
+     * @throws JSONException
+     */
+    protected void registerAppFeature(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        Log.i("SDKInfoPlugin.registerAppFeature", "registerAppFeature called");
+        // Parse args.
+        JSONObject arg0 = args.getJSONObject(0);
+        if(arg0 != null){
+            String appFeatureCode = arg0.getString("feature");
+            if(appFeatureCode != null && !appFeatureCode.isEmpty()){
+                SalesforceSDKManager.getInstance().registerUsedAppFeature(appFeatureCode);
+            }
+        }
+        callbackContext.success();
     }
 
     /**************************************************************************************************
