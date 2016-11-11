@@ -42,6 +42,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
+import android.text.TextUtils;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -113,7 +114,7 @@ public class SDKInfoPlugin extends ForcePlugin {
         JSONObject arg0 = args.getJSONObject(0);
         if(arg0 != null){
             String appFeatureCode = arg0.getString("feature");
-            if(appFeatureCode != null && !appFeatureCode.isEmpty()){
+            if(!TextUtils.isEmpty(appFeatureCode)){
                 SalesforceSDKManager.getInstance().registerUsedAppFeature(appFeatureCode);
             }
         }
@@ -131,7 +132,7 @@ public class SDKInfoPlugin extends ForcePlugin {
         JSONObject arg0 = args.getJSONObject(0);
         if(arg0 != null){
             String appFeatureCode = arg0.getString("feature");
-            if(appFeatureCode != null && !appFeatureCode.isEmpty()){
+            if(!TextUtils.isEmpty(appFeatureCode)){
                 SalesforceSDKManager.getInstance().unregisterUsedAppFeature(appFeatureCode);
             }
         }
