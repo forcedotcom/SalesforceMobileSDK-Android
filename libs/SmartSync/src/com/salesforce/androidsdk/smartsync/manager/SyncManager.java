@@ -390,7 +390,7 @@ public class SyncManager {
                     } catch (JSONException e) {
                         Log.e(TAG, "Exception thrown while building attributes", e);
                     }
-                    EventBuilderHelper.createAndStoreEvent("cleanResyncGhosts", null, TAG, attributes);
+                    EventBuilderHelper.createAndStoreEvent(sync.getType().name(), null, TAG, attributes);
                     runningSyncIds.remove(sync.getId());
                     break;
             }
