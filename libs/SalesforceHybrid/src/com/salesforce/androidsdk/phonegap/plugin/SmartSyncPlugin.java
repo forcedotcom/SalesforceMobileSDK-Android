@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.phonegap.plugin;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -67,7 +66,6 @@ public class SmartSyncPlugin extends ForcePlugin {
         reSync,
         cleanResyncGhosts
     }
-
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
         final long start = System.currentTimeMillis();
