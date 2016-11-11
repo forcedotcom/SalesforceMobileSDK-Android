@@ -927,6 +927,13 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Removed AppFeature code to User Agent header for reporting.
+     */
+    public void unregisterUsedAppFeature(String appFeatureCode) {
+        features.remove(appFeatureCode);
+    }
+
+    /**
      * @return app type as String
      */
     public String getAppType() {
