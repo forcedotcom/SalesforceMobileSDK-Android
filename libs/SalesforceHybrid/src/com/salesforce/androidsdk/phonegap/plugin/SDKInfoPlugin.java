@@ -101,7 +101,7 @@ public class SDKInfoPlugin extends ForcePlugin {
     }
 
     /**
-     * Native implementation for "registerSmartSyncJS" action.
+     * Native implementation for "registerAppFeature" action.
      * @param callbackContext Used when calling back into Javascript.
      * @throws JSONException
      */
