@@ -398,7 +398,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
                 // Only logout if we are NOT offline
                 if (!(exception instanceof NoNetworkException)) {
-                    SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
+                    logout(null);
                 }
             }
         });
