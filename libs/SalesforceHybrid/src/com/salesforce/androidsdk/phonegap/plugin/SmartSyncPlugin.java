@@ -66,6 +66,7 @@ public class SmartSyncPlugin extends ForcePlugin {
         reSync,
         cleanResyncGhosts
     }
+    
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
         final long start = System.currentTimeMillis();
