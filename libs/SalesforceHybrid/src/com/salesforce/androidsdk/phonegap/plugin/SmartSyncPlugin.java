@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.phonegap.plugin;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -56,6 +57,8 @@ public class SmartSyncPlugin extends ForcePlugin {
     private static final String SYNC_EVENT_TYPE = "sync";
     private static final String DETAIL = "detail";
 
+    private static final String FEATURE_SMART_SYNC_JS = "SJ";
+
     /**
      * Supported plugin actions that the client can take.
      */
@@ -66,7 +69,13 @@ public class SmartSyncPlugin extends ForcePlugin {
         reSync,
         cleanResyncGhosts
     }
-    
+
+    @Override
+    protected void pluginInitialize() {
+        super.pluginInitialize();
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_SYNC_JS);
+    }
+
     @Override
     public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
         final long start = System.currentTimeMillis();
