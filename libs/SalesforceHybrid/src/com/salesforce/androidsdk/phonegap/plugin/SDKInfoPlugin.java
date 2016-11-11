@@ -65,7 +65,8 @@ public class SDKInfoPlugin extends ForcePlugin {
      */
     enum Action {
         getInfo,
-        registerAppFeature
+        registerAppFeature,
+        unregisterAppFeature
     }
 
     @Override
@@ -77,6 +78,7 @@ public class SDKInfoPlugin extends ForcePlugin {
             switch(action) {
                 case getInfo:  getInfo(args, callbackContext); return true;
                 case registerAppFeature: registerAppFeature(args, callbackContext); return true;
+                case unregisterAppFeature: unregisterAppFeature(args, callbackContext); return true;
                 default: return false;
             }
         }
@@ -113,6 +115,24 @@ public class SDKInfoPlugin extends ForcePlugin {
             String appFeatureCode = arg0.getString("feature");
             if(appFeatureCode != null && !appFeatureCode.isEmpty()){
                 SalesforceSDKManager.getInstance().registerUsedAppFeature(appFeatureCode);
+            }
+        }
+        callbackContext.success();
+    }
+
+    /**
+     * Native implementation for "unregisterAppFeature" action.
+     * @param callbackContext Used when calling back into Javascript.
+     * @throws JSONException
+     */
+    protected void unregisterAppFeature(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        Log.i("SDKInfoPlugin.unregisterAppFeature", "unregisterAppFeature called");
+        // Parse args.
+        JSONObject arg0 = args.getJSONObject(0);
+        if(arg0 != null){
+            String appFeatureCode = arg0.getString("feature");
+            if(appFeatureCode != null && !appFeatureCode.isEmpty()){
+                SalesforceSDKManager.getInstance().unregisterUsedAppFeature(appFeatureCode);
             }
         }
         callbackContext.success();
