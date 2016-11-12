@@ -620,8 +620,8 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	public void removeStore(ReadableMap args, final Callback successCallback,
 							 final Callback errorCallback){
 
-		boolean isGlobal = getIsGlobal(args);
-		String storeName = getStoreName(args);
+		boolean isGlobal = SmartStoreReactBridge.getIsGlobal(args);
+		String storeName = SmartStoreReactBridge.getStoreName(args);
 
 		if (isGlobal)
 			SmartStoreSDKManager.getInstance().removeGlobalSmartStore(storeName);
@@ -663,7 +663,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @param args
 	 * @return
 	 */
-	private boolean getIsGlobal(ReadableMap args) {
+	private static boolean getIsGlobal(ReadableMap args) {
 		return args != null ? args.getBoolean(IS_GLOBAL_STORE) : false;
 	}
 
@@ -672,7 +672,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @param args arguments passed in bridge call
 	 * @return
 	 */
-	private SmartStore getSmartStore(ReadableMap args) {
+	public static SmartStore getSmartStore(ReadableMap args) {
 		boolean isGlobal = getIsGlobal(args);
 		String  storeName = getStoreName(args);
 		return (isGlobal
@@ -686,7 +686,7 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	 * @return
 	 */
 	private static String getStoreName(ReadableMap args) {
-		String storeName =  args != null ? args.getString(STORE_NAME) : DBOpenHelper.DEFAULT_DB_NAME;
+		String storeName =  args != null && args.hasKey(STORE_NAME) ? args.getString(STORE_NAME) : DBOpenHelper.DEFAULT_DB_NAME;
 		return (storeName!=null && storeName.trim().length()>0) ? storeName : DBOpenHelper.DEFAULT_DB_NAME;
 	}
 

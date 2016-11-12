@@ -217,41 +217,10 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
      * @return
      */
     private SyncManager getSyncManager(ReadableMap args) {
-        SmartStore smartStore = getSmartStore(args);
+        SmartStore smartStore = SmartStoreReactBridge.getSmartStore(args);
         SyncManager syncManager = SyncManager.getInstance(null,null,smartStore);
         return syncManager;
     }
 
-    /**
-     * Return the value of the isGlobalStore argument
-     * @param args
-     * @return
-     */
-    private boolean getIsGlobal(ReadableMap args) {
-        return args != null ? args.getBoolean(IS_GLOBAL_STORE) : false;
-    }
-
-    /**
-     * Return smartstore to use
-     * @param args arguments passed in bridge call
-     * @return
-     */
-    private SmartStore getSmartStore(ReadableMap args) {
-        boolean isGlobal = getIsGlobal(args);
-        String  storeName = getStoreName(args);
-        return (isGlobal
-                ? SmartStoreSDKManager.getInstance().getGlobalSmartStore(storeName)
-                : SmartStoreSDKManager.getInstance().getSmartStore(storeName, UserAccountManager.getInstance().getCurrentUser(),UserAccountManager.getInstance().getCurrentUser().getCommunityId()));
-    }
-
-    /**
-     * Return the value of the storename argument
-     * @param args arguments passed in bridge call
-     * @return
-     */
-    private static String getStoreName(ReadableMap args) {
-        String storeName =  args != null ? args.getString(STORE_NAME) : DBOpenHelper.DEFAULT_DB_NAME;
-        return (storeName!=null && storeName.trim().length()>0) ? storeName : DBOpenHelper.DEFAULT_DB_NAME;
-    }
 
 }
