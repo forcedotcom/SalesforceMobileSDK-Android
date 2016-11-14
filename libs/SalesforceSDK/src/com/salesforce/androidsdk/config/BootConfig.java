@@ -63,6 +63,7 @@ public class BootConfig {
 	private static final String SHOULD_AUTHENTICATE = "shouldAuthenticate";
 	private static final String ATTEMPT_OFFLINE_LOAD = "attemptOfflineLoad";
 	private static final String PUSH_NOTIFICATION_CLIENT_ID = "androidPushNotificationClientId";
+	private static final String REQUIRE_CERT_AUTH = "requireCertAuth";
 
 	// Default for optional configs.
 	private static final boolean DEFAULT_SHOULD_AUTHENTICATE = true;
@@ -77,6 +78,7 @@ public class BootConfig {
 	private boolean shouldAuthenticate;
 	private boolean attemptOfflineLoad;
 	private String pushNotificationClientId;
+	private boolean requireCertAuth;
 
 	private static BootConfig INSTANCE = null;
 
@@ -113,6 +115,7 @@ public class BootConfig {
     	if (!TextUtils.isEmpty(mdmOauthRedirectURI)) {
             oauthRedirectURI = mdmOauthRedirectURI;
         }
+		requireCertAuth = runtimeConfig.getBoolean(ConfigKey.RequireCertAuth);
 	}
 
 	/**
@@ -125,6 +128,7 @@ public class BootConfig {
 		config.put(OAUTH_REDIRECT_URI, oauthRedirectURI);
 		config.put(OAUTH_SCOPES, new JSONArray(Arrays.asList(oauthScopes)));
         config.put(IS_LOCAL, isLocal);
+		config.put(REQUIRE_CERT_AUTH, requireCertAuth);
         config.put(START_PAGE, startPage);
         config.put(ERROR_PAGE, errorPage);
         if (!TextUtils.isEmpty(pushNotificationClientId)) {
@@ -199,6 +203,7 @@ public class BootConfig {
 				oauthScopes[i] = jsonScopes.getString(i);
 			}
 			isLocal = config.getBoolean(IS_LOCAL);
+			requireCertAuth = config.getBoolean(REQUIRE_CERT_AUTH);
 			startPage = config.getString(START_PAGE);
 			errorPage = config.getString(ERROR_PAGE);
 
@@ -244,6 +249,15 @@ public class BootConfig {
 	 */
 	public boolean isLocal() {
 		return isLocal;
+	}
+
+	/**
+	 * Returns if Certificate Authentication is required.
+	 *
+	 * @return True - if required, False - if not required.
+	 */
+	public boolean isCertAuthRequired() {
+		return requireCertAuth;
 	}
 
 	/**
