@@ -40,7 +40,6 @@ import android.os.Bundle;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
-import com.salesforce.androidsdk.config.BootConfig;
 import com.salesforce.androidsdk.rest.ClientManager;
 
 /**
@@ -69,8 +68,6 @@ public class UserAccountManager {
 	private static final String USER_ID_KEY = "user_id";
 	private static final String ORG_ID_KEY = "org_id";
 
-	private static final String FEATURE_CERT_AUTH = "CT";
-
 	public static final String USER_SWITCH_INTENT_ACTION = "com.salesforce.USERSWITCHED";
 
 	private static UserAccountManager INSTANCE;
@@ -98,9 +95,6 @@ public class UserAccountManager {
 		context = SalesforceSDKManager.getInstance().getAppContext();
 		accountManager = AccountManager.get(context);
 		accountType = SalesforceSDKManager.getInstance().getAccountType();
-		if(BootConfig.getBootConfig(context).isCertAuthRequired()){
-			SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_CERT_AUTH);
-		}
 	}
 
 	/**
