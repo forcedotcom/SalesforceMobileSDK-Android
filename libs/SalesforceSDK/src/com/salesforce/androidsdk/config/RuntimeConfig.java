@@ -78,10 +78,9 @@ public class RuntimeConfig {
 			// Register MDM App Feature for User-Agent reporting
 			if(isManaged && configurations!=null && !configurations.isEmpty()){
 				SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_MDM);
-			}
-
-			if(getBoolean(RuntimeConfig.ConfigKey.RequireCertAuth)){
-				SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_CERT_AUTH);
+				if(getBoolean(RuntimeConfig.ConfigKey.RequireCertAuth)){
+					SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_CERT_AUTH);
+				}
 			}
 
             // Logs analytics event for MDM.
