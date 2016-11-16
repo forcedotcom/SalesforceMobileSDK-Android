@@ -74,18 +74,6 @@ public class ClientManager {
      * @param ctx Context.
      * @param accountType Account type.
      * @param loginOptions Login options.
-     */
-    @Deprecated
-    public ClientManager(Context ctx, String accountType, LoginOptions loginOptions) {
-        this(ctx, accountType, loginOptions, true);
-    }
-
-    /**
-     * Construct a ClientManager using a custom account type.
-     *
-     * @param ctx Context.
-     * @param accountType Account type.
-     * @param loginOptions Login options.
      * @param revokedTokenShouldLogout True - if the SDK should logout when the access token is revoked, False - otherwise.
      */
     public ClientManager(Context ctx, String accountType, LoginOptions loginOptions, boolean revokedTokenShouldLogout) {

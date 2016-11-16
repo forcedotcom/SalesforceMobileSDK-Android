@@ -348,21 +348,6 @@ public class SmartStore  {
 		}
 	}
 
-    /**
-     * Helper method for registerSoup
-	 * NB: caller is expected to wrap call in a transaction
-     * 
-	 * @param soupName
-	 * @param indexSpecs
-	 * @param soupTableName
-	 *
-	 * @deprecated Use {@link #registerSoupUsingTableName(SoupSpec, IndexSpec[], String)} instead.
-	 */
-    @Deprecated
-    protected void registerSoupUsingTableName(String soupName, IndexSpec[] indexSpecs, String soupTableName) {
-    	registerSoupUsingTableName(new SoupSpec(soupName), indexSpecs, soupTableName);
-    }
-
 	/**
 	 * Helper method for registerSoup using soup spec
 	 *
