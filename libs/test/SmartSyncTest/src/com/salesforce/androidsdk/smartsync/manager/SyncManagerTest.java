@@ -768,6 +768,17 @@ public class SyncManagerTest extends ManagerTestCase {
     }
 
     /**
+     * Test query with "From_customer__c" field
+     */
+    public void testQueryWithFromFieldtoSOQLTarget() throws Exception {
+        final String soqlQueryWithFromField = SOQLBuilder.getInstanceWithFields("From_customer__c, Id")
+                .from(Constants.ACCOUNT).limit(10).build();
+        final SoqlSyncDownTarget target = new SoqlSyncDownTarget(soqlQueryWithFromField);
+        Set<String> result = target.getListOfRemoteIds(syncManager, new HashSet<String>());
+        assertTrue("Wrong query was generate", result.size()>0);
+    }
+
+    /**
      * Tests if missing fields are added to a SOQL target.
      */
     public void testAddMissingFieldsToSOQLTarget() throws Exception {
