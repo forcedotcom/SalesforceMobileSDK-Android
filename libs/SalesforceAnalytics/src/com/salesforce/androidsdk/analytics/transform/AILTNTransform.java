@@ -139,7 +139,8 @@ public class AILTNTransform implements Transform {
                 payload.put(PREVIOUS_PAGE_KEY, previousPage);
             }
             final JSONObject marks = event.getMarks();
-            if (marks != null && schemaType == InstrumentationEvent.SchemaType.LightningPageView) {
+            if (marks != null && (schemaType == InstrumentationEvent.SchemaType.LightningPageView
+                    || schemaType == InstrumentationEvent.SchemaType.LightningPerformance)) {
                 payload.put(MARKS_KEY, marks);
             }
             if (schemaType == InstrumentationEvent.SchemaType.LightningInteraction
