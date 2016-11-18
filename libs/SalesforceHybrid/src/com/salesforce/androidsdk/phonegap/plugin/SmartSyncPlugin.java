@@ -28,6 +28,7 @@ package com.salesforce.androidsdk.phonegap.plugin;
 
 import android.util.Log;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
@@ -38,12 +39,17 @@ import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.*;
 
 import org.apache.cordova.CallbackContext;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.IS_GLOBAL_STORE;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.OPTIONS;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SOUP_NAME;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.STORE_NAME;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.TARGET;
 
 /**
  * PhoneGap plugin for smart sync.
@@ -52,6 +58,8 @@ public class SmartSyncPlugin extends ForcePlugin {
 
     // Keys in json from/to javascript
     private static final String SYNC_ID = "syncId";
+    private static final String TAG = "SmartSyncPlugin";
+
     // Event
     private static final String SYNC_EVENT_TYPE = "sync";
     private static final String DETAIL = "detail";
@@ -77,7 +85,7 @@ public class SmartSyncPlugin extends ForcePlugin {
             action = Action.valueOf(actionStr);
         }
         catch (IllegalArgumentException e) {
-            Log.e("SmartSyncPlugin.execute", "Unknown action " + actionStr);
+            Log.e(TAG, "Unknown action " + actionStr);
             return false;
         }
 
@@ -110,14 +118,14 @@ public class SmartSyncPlugin extends ForcePlugin {
                               throw new RuntimeException("No handler for action " + action);
                         }
                     } catch (Exception e) {
-                        Log.w("SmartSyncPlugin.execute", e.getMessage(), e);
+                        Log.w(TAG, e.getMessage(), e);
                         callbackContext.error(e.getMessage());
                     }                   
-                    Log.d("SmartSyncPlugin.execute", "Total time for " + action + "->" + (System.currentTimeMillis() - start));
+                    Log.d(TAG, "Total time for " + action + "->" + (System.currentTimeMillis() - start));
                 }
             }
         });
-        Log.d("SmartSyncPlugin.execute", "Main thread time for " + action + "->" + (System.currentTimeMillis() - start));
+        Log.d(TAG, "Main thread time for " + action + "->" + (System.currentTimeMillis() - start));
         return true;
     }
 
@@ -128,7 +136,7 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @param callbackContext
      * @throws JSONException 
      */
-    private void syncUp(JSONArray args, CallbackContext callbackContext) throws JSONException {
+    private void syncUp(JSONArray args, CallbackContext callbackContext) throws Exception {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
@@ -155,7 +163,7 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @param callbackContext
      * @throws JSONException 
      */
-    private void syncDown(JSONArray args, CallbackContext callbackContext) throws JSONException {
+    private void syncDown(JSONArray args, CallbackContext callbackContext) throws Exception {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
@@ -164,7 +172,6 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject options = arg0.getJSONObject(OPTIONS);
         final boolean isGlobal = getIsGlobal(arg0);
         final String storeName = getStoreName(arg0);
-
         SyncManager syncManager = getSyncManager(isGlobal,storeName);
         SyncState sync = syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
 
@@ -183,7 +190,7 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @param callbackContext
      * @throws JSONException 
      */ 
-    private void getSyncStatus(JSONArray args, CallbackContext callbackContext) throws JSONException {
+    private void getSyncStatus(JSONArray args, CallbackContext callbackContext) throws Exception {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
@@ -200,7 +207,7 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @param callbackContext
      * @throws JSONException
      */
-    private void reSync(JSONArray args, CallbackContext callbackContext) throws JSONException {
+    private void reSync(JSONArray args, CallbackContext callbackContext) throws Exception {
 
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
@@ -226,7 +233,7 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @param callbackContext
      * @throws JSONException
      */
-    private void cleanResyncGhosts(JSONArray args, CallbackContext callbackContext) throws JSONException {
+    private void cleanResyncGhosts(JSONArray args, CallbackContext callbackContext) throws Exception {
 
         // Parse args.
         final JSONObject arg0 = args.getJSONObject(0);
@@ -252,7 +259,7 @@ public class SmartSyncPlugin extends ForcePlugin {
                     String js = "javascript:document.dispatchEvent(new CustomEvent(\"" + SYNC_EVENT_TYPE + "\", { \"" + DETAIL + "\": " + syncAsString + "}))";
                     webView.loadUrl(js);
                 } catch (Exception e) {
-                    Log.e("SmartSyncPlugin.handleSyncUpdate", "Failed to dispatch event", e);
+                    Log.e(TAG, "Failed to dispatch event", e);
                 }
             }
         });
@@ -264,7 +271,7 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @param arg0
      * @return SyncManager
      */
-    private SyncManager getSyncManager(JSONObject arg0) {
+    private SyncManager getSyncManager(JSONObject arg0) throws Exception {
         SmartStore store = getSmartStore(arg0);
         SyncManager syncManager = SyncManager.getInstance(null,null,store);
         return syncManager;
@@ -277,7 +284,7 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @param  storeName
      * @return SyncManager
      */
-    private SyncManager getSyncManager(boolean isGlobal,String storeName) {
+    private SyncManager getSyncManager(boolean isGlobal,String storeName) throws Exception {
         SmartStore store = getSmartStore(isGlobal,storeName);
         SyncManager syncManager = SyncManager.getInstance(null,null,store);
         return syncManager;
@@ -288,7 +295,7 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @param arg0 first argument passed in plugin call
      * @return
      */
-    private static SmartStore getSmartStore(JSONObject arg0) {
+    private static SmartStore getSmartStore(JSONObject arg0) throws Exception {
         boolean isGlobal = getIsGlobal(arg0);
         String  storeName = getStoreName(arg0);
         return getSmartStore(isGlobal,storeName);
@@ -300,10 +307,17 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @param storeName
      * @return
      */
-    private static SmartStore getSmartStore(boolean isGlobal,String storeName) {
-        return (isGlobal
-                ? SmartStoreSDKManager.getInstance().getGlobalSmartStore(storeName)
-                : SmartStoreSDKManager.getInstance().getSmartStore(storeName, UserAccountManager.getInstance().getCurrentUser(),UserAccountManager.getInstance().getCurrentUser().getCommunityId()));
+    private static SmartStore getSmartStore(boolean isGlobal, String storeName) throws Exception {
+        if (isGlobal) {
+            return SmartStoreSDKManager.getInstance().getGlobalSmartStore(storeName);
+        } else {
+            final UserAccount account = UserAccountManager.getInstance().getCurrentUser();
+            if (account == null) {
+                throw new Exception("No user account found");
+            }  else {
+                return SmartStoreSDKManager.getInstance().getSmartStore(storeName, account, account.getCommunityId());
+            }
+        }
     }
 
     /**

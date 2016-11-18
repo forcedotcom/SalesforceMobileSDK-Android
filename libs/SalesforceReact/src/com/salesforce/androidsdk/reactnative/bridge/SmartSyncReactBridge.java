@@ -33,9 +33,6 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableMap;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
@@ -43,7 +40,6 @@ import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
@@ -87,7 +83,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                     handleSyncUpdate(sync, successCallback, errorCallback);
                 }
             });
-        } catch (JSONException e) {
+        } catch (Exception e) {
             Log.e(LOG_TAG, "syncUp", e);
             errorCallback.invoke(e.toString());
         }
@@ -114,7 +110,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                     handleSyncUpdate(sync, successCallback, errorCallback);
                 }
             });
-        } catch (JSONException e) {
+        } catch (Exception e) {
             Log.e(LOG_TAG, "syncDown", e);
             errorCallback.invoke(e.toString());
         }
@@ -135,7 +131,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         try {
             SyncState sync = syncManager.getSyncStatus(syncId);
             ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
-        } catch (JSONException e) {
+        } catch (Exception e) {
             Log.e(LOG_TAG, "getSyncStatus", e);
             errorCallback.invoke(e.toString());
         }
@@ -160,7 +156,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                     handleSyncUpdate(sync, successCallback, errorCallback);
                 }
             });
-        } catch (JSONException e) {
+        } catch (Exception e) {
             Log.e(LOG_TAG, "reSync", e);
             errorCallback.invoke(e.toString());
         }
@@ -181,7 +177,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         try {
             syncManager.cleanResyncGhosts(syncId);
             successCallback.invoke();
-        } catch (JSONException e) {
+        } catch (Exception e) {
             Log.e(LOG_TAG, "reSync", e);
             errorCallback.invoke(e.toString());
         }
@@ -206,7 +202,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                     errorCallback.invoke("Sync failed");
                     break;
             }
-        } catch (JSONException e) {
+        } catch (Exception e) {
             Log.e(LOG_TAG, "handleSyncUpdate", e);
         }
     }
@@ -217,10 +213,8 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
      * @return
      */
     private SyncManager getSyncManager(ReadableMap args) {
-        SmartStore smartStore = SmartStoreReactBridge.getSmartStore(args);
-        SyncManager syncManager = SyncManager.getInstance(null,null,smartStore);
+        final SmartStore smartStore = SmartStoreReactBridge.getSmartStore(args);
+        final SyncManager syncManager = SyncManager.getInstance(null, null, smartStore);
         return syncManager;
     }
-
-
 }
