@@ -677,7 +677,7 @@ public class SmartStorePlugin extends ForcePlugin {
      * @param arg0 first argument passed in plugin call
      * @return
      */
-    private SmartStore getSmartStore(JSONObject arg0) throws Exception {
+    public static SmartStore getSmartStore(JSONObject arg0) throws Exception {
         boolean isGlobal = getIsGlobal(arg0);
 		final String storeName = getStoreName(arg0);
         if (isGlobal) {
@@ -697,7 +697,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param arg0
 	 * @return
 	 */
-	static boolean getIsGlobal(JSONObject arg0) {
+	public static boolean getIsGlobal(JSONObject arg0) {
 		return arg0 != null ? arg0.optBoolean(IS_GLOBAL_STORE, false) : false;
 	}
 
@@ -706,7 +706,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param arg0
 	 * @return
 	 */
-	private static String getStoreName(JSONObject arg0) {
+	public static String getStoreName(JSONObject arg0) {
 		return  arg0 != null ? arg0.optString(STORE_NAME, DBOpenHelper.DEFAULT_DB_NAME) : DBOpenHelper.DEFAULT_DB_NAME;
 	}
 

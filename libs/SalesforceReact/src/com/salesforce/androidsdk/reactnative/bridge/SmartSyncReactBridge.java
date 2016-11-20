@@ -75,8 +75,8 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         JSONObject target = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(TARGET)));
         String soupName = args.getString(SOUP_NAME);
         JSONObject options = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(OPTIONS)));
-        SyncManager syncManager = getSyncManager(args);
         try {
+            final SyncManager syncManager = getSyncManager(args);
             syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncManager.SyncUpdateCallback() {
                 @Override
                 public void onUpdate(SyncState sync) {
@@ -102,8 +102,8 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
         JSONObject target = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(TARGET)));
         String soupName = args.getString(SOUP_NAME);
         JSONObject options = new JSONObject(ReactBridgeHelper.toJavaMap(args.getMap(OPTIONS)));
-        SyncManager syncManager = getSyncManager(args);
         try {
+            final SyncManager syncManager = getSyncManager(args);
             syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncManager.SyncUpdateCallback() {
                 @Override
                 public void onUpdate(SyncState sync) {
@@ -127,8 +127,8 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                               final Callback successCallback, final Callback errorCallback) {
         // Parse args
         long syncId = args.getInt(SYNC_ID);
-        SyncManager syncManager = getSyncManager(args);
         try {
+            final SyncManager syncManager = getSyncManager(args);
             SyncState sync = syncManager.getSyncStatus(syncId);
             ReactBridgeHelper.invokeSuccess(successCallback, sync.asJSON());
         } catch (Exception e) {
@@ -148,8 +148,8 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                        final Callback successCallback, final Callback errorCallback) {
         // Parse args
         long syncId = args.getInt(SYNC_ID);
-        SyncManager syncManager = getSyncManager(args);
         try {
+            final SyncManager syncManager = getSyncManager(args);
             syncManager.reSync(syncId, new SyncManager.SyncUpdateCallback() {
                 @Override
                 public void onUpdate(SyncState sync) {
@@ -173,8 +173,8 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
                        final Callback successCallback, final Callback errorCallback) {
         // Parse args
         long syncId = args.getInt(SYNC_ID);
-        SyncManager syncManager = getSyncManager(args);
         try {
+            final SyncManager syncManager = getSyncManager(args);
             syncManager.cleanResyncGhosts(syncId);
             successCallback.invoke();
         } catch (Exception e) {
@@ -212,7 +212,7 @@ public class SmartSyncReactBridge extends ReactContextBaseJavaModule {
      * @param args Arguments passed to the bridge
      * @return
      */
-    private SyncManager getSyncManager(ReadableMap args) {
+    private SyncManager getSyncManager(ReadableMap args) throws Exception {
         final SmartStore smartStore = SmartStoreReactBridge.getSmartStore(args);
         final SyncManager syncManager = SyncManager.getInstance(null, null, smartStore);
         return syncManager;

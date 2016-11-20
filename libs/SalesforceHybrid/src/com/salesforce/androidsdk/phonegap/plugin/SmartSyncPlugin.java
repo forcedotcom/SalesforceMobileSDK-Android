@@ -28,10 +28,6 @@ package com.salesforce.androidsdk.phonegap.plugin;
 
 import android.util.Log;
 
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.accounts.UserAccountManager;
-import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
-import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
@@ -76,15 +72,15 @@ public class SmartSyncPlugin extends ForcePlugin {
     }
     
     @Override
-    public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, final JSONArray args, final CallbackContext callbackContext) throws JSONException {
+    public boolean execute(String actionStr, JavaScriptPluginVersion jsVersion, final JSONArray args,
+                           final CallbackContext callbackContext) throws JSONException {
         final long start = System.currentTimeMillis();
 
         // Figure out action.
         final Action action;
         try {
             action = Action.valueOf(actionStr);
-        }
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             Log.e(TAG, "Unknown action " + actionStr);
             return false;
         }
@@ -143,9 +139,9 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.optJSONObject(OPTIONS);
-        final boolean isGlobal = getIsGlobal(arg0);
-        final String storeName = getStoreName(arg0);
-        SyncManager syncManager = getSyncManager(isGlobal,storeName);
+        final boolean isGlobal = SmartStorePlugin.getIsGlobal(arg0);
+        final String storeName = SmartStorePlugin.getStoreName(arg0);
+        SyncManager syncManager = getSyncManager(arg0);
         SyncState sync = syncManager.syncUp(SyncUpTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
 
             @Override
@@ -170,9 +166,9 @@ public class SmartSyncPlugin extends ForcePlugin {
         JSONObject target = arg0.getJSONObject(TARGET);
         String soupName = arg0.getString(SOUP_NAME);
         JSONObject options = arg0.getJSONObject(OPTIONS);
-        final boolean isGlobal = getIsGlobal(arg0);
-        final String storeName = getStoreName(arg0);
-        SyncManager syncManager = getSyncManager(isGlobal,storeName);
+        final boolean isGlobal = SmartStorePlugin.getIsGlobal(arg0);
+        final String storeName = SmartStorePlugin.getStoreName(arg0);
+        SyncManager syncManager = getSyncManager(arg0);
         SyncState sync = syncManager.syncDown(SyncDownTarget.fromJSON(target), SyncOptions.fromJSON(options), soupName, new SyncUpdateCallback() {
 
             @Override
@@ -212,10 +208,9 @@ public class SmartSyncPlugin extends ForcePlugin {
         // Parse args.
         JSONObject arg0 = args.getJSONObject(0);
         long syncId = arg0.getLong(SYNC_ID);
-        final boolean isGlobal = getIsGlobal(arg0);
-        final String storeName = getStoreName(arg0);
-
-        SyncManager syncManager = getSyncManager(isGlobal,storeName);
+        final boolean isGlobal = SmartStorePlugin.getIsGlobal(arg0);
+        final String storeName = SmartStorePlugin.getStoreName(arg0);
+        final SyncManager syncManager = getSyncManager(arg0);
         SyncState sync = syncManager.reSync(syncId, new SyncUpdateCallback() {
 
             @Override
@@ -272,69 +267,8 @@ public class SmartSyncPlugin extends ForcePlugin {
      * @return SyncManager
      */
     private SyncManager getSyncManager(JSONObject arg0) throws Exception {
-        SmartStore store = getSmartStore(arg0);
-        SyncManager syncManager = SyncManager.getInstance(null,null,store);
+        final SmartStore smartStore = SmartStorePlugin.getSmartStore(arg0);
+        final SyncManager syncManager = SyncManager.getInstance(null, null, smartStore);
         return syncManager;
-    }
-
-    /**
-     * Return sync manager to use.
-     *
-     * @param  isGlobal
-     * @param  storeName
-     * @return SyncManager
-     */
-    private SyncManager getSyncManager(boolean isGlobal,String storeName) throws Exception {
-        SmartStore store = getSmartStore(isGlobal,storeName);
-        SyncManager syncManager = SyncManager.getInstance(null,null,store);
-        return syncManager;
-    }
-
-    /**
-     * Return smartstore to use
-     * @param arg0 first argument passed in plugin call
-     * @return
-     */
-    private static SmartStore getSmartStore(JSONObject arg0) throws Exception {
-        boolean isGlobal = getIsGlobal(arg0);
-        String  storeName = getStoreName(arg0);
-        return getSmartStore(isGlobal,storeName);
-    }
-
-    /**
-     *
-     * @param isGlobal
-     * @param storeName
-     * @return
-     */
-    private static SmartStore getSmartStore(boolean isGlobal, String storeName) throws Exception {
-        if (isGlobal) {
-            return SmartStoreSDKManager.getInstance().getGlobalSmartStore(storeName);
-        } else {
-            final UserAccount account = UserAccountManager.getInstance().getCurrentUser();
-            if (account == null) {
-                throw new Exception("No user account found");
-            }  else {
-                return SmartStoreSDKManager.getInstance().getSmartStore(storeName, account, account.getCommunityId());
-            }
-        }
-    }
-
-    /**
-     * Return the value of the isGlobalStore argument
-     * @param arg0
-     * @return
-     */
-    private static boolean getIsGlobal(JSONObject arg0) {
-        return arg0 != null ? arg0.optBoolean(IS_GLOBAL_STORE, false) : false;
-    }
-
-    /**
-     * Return the value of the storeName argument
-     * @param arg0
-     * @return
-     */
-    private static String getStoreName(JSONObject arg0) {
-        return arg0 != null ? arg0.optString(STORE_NAME, DBOpenHelper.DEFAULT_DB_NAME) : DBOpenHelper.DEFAULT_DB_NAME;
     }
 }
