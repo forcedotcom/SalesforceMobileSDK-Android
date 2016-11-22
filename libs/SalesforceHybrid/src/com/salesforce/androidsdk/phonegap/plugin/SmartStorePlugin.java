@@ -30,6 +30,7 @@ import android.app.Activity;
 import android.util.Log;
 import android.util.SparseArray;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
@@ -41,7 +42,6 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 import com.salesforce.androidsdk.smartstore.store.StoreCursor;
 import com.salesforce.androidsdk.smartstore.ui.SmartStoreInspectorActivity;
-import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.*;
 
 import net.sqlcipher.database.SQLiteDatabase;
 
@@ -55,6 +55,22 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.CURSOR_ID;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.ENTRIES;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.ENTRY_IDS;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.EXTERNAL_ID_PATH;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.INDEX;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.INDEXES;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.IS_GLOBAL_STORE;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.PATH;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.PATHS;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.QUERY_SPEC;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.RE_INDEX_DATA;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SOUP_NAME;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.SOUP_SPEC;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.STORE_NAME;
+import static com.salesforce.androidsdk.phonegap.plugin.PluginConstants.TYPE;
 
 
 /**
@@ -166,9 +182,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * Native implementation of pgRemoveFromSoup
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void removeFromSoup(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void removeFromSoup(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -200,9 +216,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * Native implementation of pgRetrieveSoupEntries
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void retrieveSoupEntries(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void retrieveSoupEntries(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -226,9 +242,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 * @return void
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void closeCursor(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void closeCursor(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -245,9 +261,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 * @return
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void moveCursorToPageIndex(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void moveCursorToPageIndex(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -294,9 +310,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 * @return
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void soupExists(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void soupExists(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -333,27 +349,28 @@ public class SmartStorePlugin extends ForcePlugin {
 		this.sendStoreConfig(callbackContext,userDBNames,false);
 	}
 
-
 	/**
 	 *
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-    private void removeStore(JSONArray args, CallbackContext callbackContext) throws JSONException {
-
-		JSONObject arg0 = args.getJSONObject(0);
+    private void removeStore(JSONArray args, CallbackContext callbackContext) throws Exception {
+		final JSONObject arg0 = args.getJSONObject(0);
 		boolean isGlobal = getIsGlobal(arg0);
-		String storeName = getStoreName(arg0);
-
-		if (isGlobal)
-			SmartStoreSDKManager.getInstance().removeGlobalSmartStore(storeName);
-		else
-			SmartStoreSDKManager.getInstance().removeSmartStore(storeName,UserAccountManager.getInstance().getCurrentUser(),UserAccountManager.getInstance().getCurrentUser().getCommunityId());
-
-		PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, true);
+		final String storeName = getStoreName(arg0);
+        if (isGlobal) {
+            SmartStoreSDKManager.getInstance().removeGlobalSmartStore(storeName);
+        } else {
+            final UserAccount account = UserAccountManager.getInstance().getCurrentUser();
+            if (account == null) {
+                throw new Exception("No user account found");
+            }  else {
+                SmartStoreSDKManager.getInstance().removeSmartStore(storeName, account, account.getCommunityId());
+            }
+        }
+		final PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, true);
 		callbackContext.sendPluginResult(pluginResult);
-
 	}
 
 	/**
@@ -385,9 +402,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 * @return
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void upsertSoupEntries(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void upsertSoupEntries(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -423,9 +440,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 * @return
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void registerSoup(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void registerSoup(JSONArray args, CallbackContext callbackContext) throws Exception {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.isNull(SOUP_NAME) ? null : arg0.getString(SOUP_NAME);
@@ -448,9 +465,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 * @return
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void querySoup(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void querySoup(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -472,7 +489,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 */
-	private void runSmartQuery(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void runSmartQuery(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -512,9 +529,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 * @return
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void removeSoup(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void removeSoup(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -531,9 +548,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 * @return
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void clearSoup(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void clearSoup(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -550,9 +567,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 * @return
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void getDatabaseSize(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void getDatabaseSize(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		final JSONObject arg0 = args.optJSONObject(0);
@@ -566,9 +583,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 * @return
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void alterSoup(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void alterSoup(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -592,9 +609,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 * @return
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void reIndexSoup(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void reIndexSoup(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -616,9 +633,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param args JSONArray with arguments from JS
 	 * @param callbackContext CallbackContext for plugin
 	 * @return
-	 * @throws JSONException
+	 * @throws Exception
 	 */
-	private void getSoupIndexSpecs(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void getSoupIndexSpecs(JSONArray args, CallbackContext callbackContext) throws Exception {
 
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
@@ -642,9 +659,9 @@ public class SmartStorePlugin extends ForcePlugin {
      * Native implementation of pgGetSoupSpec
      * @param args JSONArray with arguments from JS
      * @param callbackContext CallbackContext for plugin
-     * @throws JSONException
+     * @throws Exception
      */
-	private void getSoupSpec(JSONArray args, CallbackContext callbackContext) throws JSONException {
+	private void getSoupSpec(JSONArray args, CallbackContext callbackContext) throws Exception {
 		// Parse args
 		JSONObject arg0 = args.getJSONObject(0);
 		String soupName = arg0.getString(SOUP_NAME);
@@ -660,12 +677,19 @@ public class SmartStorePlugin extends ForcePlugin {
      * @param arg0 first argument passed in plugin call
      * @return
      */
-    private SmartStore getSmartStore(JSONObject arg0) {
+    public static SmartStore getSmartStore(JSONObject arg0) throws Exception {
         boolean isGlobal = getIsGlobal(arg0);
-		String  storeName = getStoreName(arg0);
-        return (isGlobal
-                ? SmartStoreSDKManager.getInstance().getGlobalSmartStore(storeName)
-                : SmartStoreSDKManager.getInstance().getSmartStore(storeName,UserAccountManager.getInstance().getCurrentUser(),UserAccountManager.getInstance().getCurrentUser().getCommunityId()));
+		final String storeName = getStoreName(arg0);
+        if (isGlobal) {
+            return SmartStoreSDKManager.getInstance().getGlobalSmartStore(storeName);
+        } else {
+            final UserAccount account = UserAccountManager.getInstance().getCurrentUser();
+            if (account == null) {
+                throw new Exception("No user account found");
+            }  else {
+                return SmartStoreSDKManager.getInstance().getSmartStore(storeName, account, account.getCommunityId());
+            }
+        }
     }
 
 	/**
@@ -673,7 +697,7 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param arg0
 	 * @return
 	 */
-	static boolean getIsGlobal(JSONObject arg0) {
+	public static boolean getIsGlobal(JSONObject arg0) {
 		return arg0 != null ? arg0.optBoolean(IS_GLOBAL_STORE, false) : false;
 	}
 
@@ -682,10 +706,9 @@ public class SmartStorePlugin extends ForcePlugin {
 	 * @param arg0
 	 * @return
 	 */
-	private static String getStoreName(JSONObject arg0) {
+	public static String getStoreName(JSONObject arg0) {
 		return  arg0 != null ? arg0.optString(STORE_NAME, DBOpenHelper.DEFAULT_DB_NAME) : DBOpenHelper.DEFAULT_DB_NAME;
 	}
-
 
     /**
      * Build index specs array from json object argument
@@ -720,9 +743,4 @@ public class SmartStorePlugin extends ForcePlugin {
 		PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, jsonArray);
 		callbackContext.sendPluginResult(pluginResult);
 	}
-
-
-
-
-
 }
