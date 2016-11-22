@@ -47,7 +47,9 @@ import java.io.IOException;
 public class SalesforceWebViewClient extends SystemWebViewClient {
 
 	static final String WWW_DIR = "/android_asset/www";
-	
+    private static final String FEATURE_LOCALHOST = "LH";
+    private static final String TAG = "SalesforceWebViewClient";
+
     // The first non-reserved URL that's loaded will be considered the app's "home page", for caching purposes.
     protected boolean foundHomeUrl = false;
     protected SalesforceDroidGapActivity ctx;
@@ -117,8 +119,9 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
 		if (host == null || !host.equals("localhost")) {
 			return null;
 		}
-			
+
 		// Localhost request.
+		SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_LOCALHOST);
 		try {
 			String localPath = WWW_DIR + origUri.getPath();
 
@@ -129,12 +132,11 @@ public class SalesforceWebViewClient extends SystemWebViewClient {
 				Uri localUri = Uri.parse("file://" + localPath);
 				CordovaResourceApi resourceApi = cordovaWebView.getResourceApi();
 				OpenForReadResult result = resourceApi.openForRead(localUri, true);
-				Log.i("SalesforceWebViewClient.shouldInterceptRequest", "Loading local file:" + localUri);
+				Log.i(TAG, "Loading local file:" + localUri);
 				return new WebResourceResponse(result.mimeType, "UTF-8", result.inputStream);
 			}
-			
 		} catch (IOException e) {    	
-			Log.e("SalesforceWebViewClient.shouldInterceptRequest", "Invalid localhost url:" + url, e);
+			Log.e(TAG, "Invalid localhost url:" + url, e);
 			return new WebResourceResponse("text/plain", "UTF-8", null); 
 		}
     }
