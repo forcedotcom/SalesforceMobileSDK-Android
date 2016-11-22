@@ -307,10 +307,6 @@ public class SmartStoreReactBridge extends ReactContextBaseJavaModule {
 	@ReactMethod
 	public void registerSoup(ReadableMap args, final Callback successCallback,
                              final Callback errorCallback) {
-		if(UserAccountManager.getInstance().getCurrentUser() == null){
-			errorCallback.invoke("not logged in");
-			return;
-		}
 		try {
 			// Parse args.
 			final SmartStore smartStore = getSmartStore(args);
