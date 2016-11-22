@@ -32,6 +32,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import com.facebook.react.ReactActivity;
+import com.facebook.react.ReactActivityDelegate;
 import com.facebook.react.bridge.Callback;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.reactnative.R;
@@ -55,6 +56,8 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     private ClientManager clientManager;
     private PasscodeManager passcodeManager;
     private LogoutCompleteReceiver logoutCompleteReceiver;
+
+    private SalesforceReactActivityDelegate reactActivityDelegate;
 
     /**
      * @return true if you want login to happen as soon as activity is loaded
@@ -100,6 +103,9 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
     @Override
     public void onResume() {
+        if(client != null && reactActivityDelegate != null){
+            reactActivityDelegate.onReadyCreate();
+        }
         super.onResume();
 
         // Brings up the passcode screen if needed.
@@ -121,6 +127,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
                 Log.i(TAG, "onResume - Already logged in");
             }
         }
+
     }
 
     /**
@@ -248,5 +255,14 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         protected void onLogoutComplete() {
             logoutCompleteActions();
         }
+    }
+
+    /**
+     * Called at construction time, override if you have a custom delegate implementation.
+     */
+    @Override
+    protected ReactActivityDelegate createReactActivityDelegate() {
+        reactActivityDelegate = new SalesforceReactActivityDelegate(this, getMainComponentName());
+        return reactActivityDelegate;
     }
 }
