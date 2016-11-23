@@ -260,4 +260,11 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     protected ReactActivityDelegate createReactActivityDelegate() {
         return new SalesforceReactActivityDelegate(this, getMainComponentName());
     }
+
+    protected boolean shouldReactBeRunning(){
+        if(shouldAuthenticate()){
+            return client != null;
+        }
+        return true;
+    }
 }

@@ -35,7 +35,7 @@ public class SalesforceReactActivityDelegate extends ReactActivityDelegate {
 
     private String appComponentName;
     private SalesforceReactActivity salesforceReactActivity;
-    private RestClient restClient;
+    private boolean loaded = false;
 
 
     public SalesforceReactActivityDelegate(SalesforceReactActivity activity, @Nullable String mainComponentName) {
@@ -45,22 +45,17 @@ public class SalesforceReactActivityDelegate extends ReactActivityDelegate {
     }
 
 
-    public void onReadyLoadApp() {
-        super.loadApp(appComponentName);
-        restClient = salesforceReactActivity.getRestClient();
-    }
-
     @Override
     protected void loadApp(String appKey) {
-        if(salesforceReactActivity != null && !salesforceReactActivity.shouldAuthenticate()){
-            super.loadApp(appKey);
-        }
     }
 
     @Override
     protected void onResume() {
-        if(salesforceReactActivity != null && salesforceReactActivity.shouldAuthenticate() && salesforceReactActivity.getRestClient()!= restClient){
-            onReadyLoadApp();
+        if(salesforceReactActivity != null && salesforceReactActivity.shouldReactBeRunning()){
+            if(!loaded){
+                super.loadApp(appComponentName);
+                loaded = true;
+            }
         }
         super.onResume();
     }
