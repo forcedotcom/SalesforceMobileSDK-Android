@@ -56,11 +56,9 @@ public class SalesforceReactActivityDelegate extends ReactActivityDelegate {
     }
 
     protected void loadReactAppOnceIfReady(String appKey) {
-        if(salesforceReactActivity != null && salesforceReactActivity.shouldReactBeRunning()){
-            if(!loaded){
-                super.loadApp(appKey);
-                loaded = true;
-            }
+        if(!loaded && salesforceReactActivity != null && salesforceReactActivity.shouldReactBeRunning()){
+            super.loadApp(appKey);
+            loaded = true;
         }
     }
 
