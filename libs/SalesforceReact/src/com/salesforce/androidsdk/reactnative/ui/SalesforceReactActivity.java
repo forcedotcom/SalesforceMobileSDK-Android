@@ -103,9 +103,6 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
     @Override
     public void onResume() {
-        if(client != null && reactActivityDelegate != null){
-            reactActivityDelegate.onReadyCreate();
-        }
         super.onResume();
 
         // Brings up the passcode screen if needed.
@@ -126,6 +123,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
             else {
                 Log.i(TAG, "onResume - Already logged in");
             }
+
         }
 
     }
