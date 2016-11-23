@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.reactnative.ui;
 import com.facebook.react.ReactActivityDelegate;
-import com.salesforce.androidsdk.rest.RestClient;
 
 import javax.annotation.Nullable;
 

@@ -253,9 +253,6 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         }
     }
 
-    /**
-     * Called at construction time, override if you have a custom delegate implementation.
-     */
     @Override
     protected ReactActivityDelegate createReactActivityDelegate() {
         return new SalesforceReactActivityDelegate(this, getMainComponentName());
