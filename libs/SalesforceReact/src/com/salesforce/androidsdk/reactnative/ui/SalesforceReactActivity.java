@@ -57,8 +57,6 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     private PasscodeManager passcodeManager;
     private LogoutCompleteReceiver logoutCompleteReceiver;
 
-    private SalesforceReactActivityDelegate reactActivityDelegate;
-
     /**
      * @return true if you want login to happen as soon as activity is loaded
      *         false if you want do login at a later point
@@ -260,7 +258,6 @@ public abstract class SalesforceReactActivity extends ReactActivity {
      */
     @Override
     protected ReactActivityDelegate createReactActivityDelegate() {
-        reactActivityDelegate = new SalesforceReactActivityDelegate(this, getMainComponentName());
-        return reactActivityDelegate;
+        return new SalesforceReactActivityDelegate(this, getMainComponentName());
     }
 }
