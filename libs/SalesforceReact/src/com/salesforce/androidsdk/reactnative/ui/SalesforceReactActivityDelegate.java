@@ -46,17 +46,22 @@ public class SalesforceReactActivityDelegate extends ReactActivityDelegate {
 
     @Override
     protected void loadApp(String appKey) {
+        loadReactAppOnceIfReady(appKey);
     }
 
     @Override
     protected void onResume() {
+        loadReactAppOnceIfReady(appComponentName);
+        super.onResume();
+    }
+
+    protected void loadReactAppOnceIfReady(String appKey) {
         if(salesforceReactActivity != null && salesforceReactActivity.shouldReactBeRunning()){
             if(!loaded){
-                super.loadApp(appComponentName);
+                super.loadApp(appKey);
                 loaded = true;
             }
         }
-        super.onResume();
     }
 
 }
