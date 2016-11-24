@@ -56,6 +56,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     private ClientManager clientManager;
     private PasscodeManager passcodeManager;
     private LogoutCompleteReceiver logoutCompleteReceiver;
+    private SalesforceReactActivityDelegate reactActivityDelegate;
 
     /**
      * @return true if you want login to happen as soon as activity is loaded
@@ -108,9 +109,9 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
             // Get client (if already logged in)
             try {
-                client = clientManager.peekRestClient();
+                setRestClient(clientManager.peekRestClient());
             } catch (ClientManager.AccountInfoNotFoundException e) {
-                client = null;
+                setRestClient(client);
             }
 
             // Not logged in
@@ -200,7 +201,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         clientManager.getRestClient(this, new RestClientCallback() {
             @Override
             public void authenticatedRestClient(RestClient client) {
-                SalesforceReactActivity.this.client = client;
+                SalesforceReactActivity.this.setRestClient(client);
                 getAuthCredentials(successCallback, errorCallback);
             }
         });
@@ -226,6 +227,15 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
     public RestClient getRestClient() {
         return client;
+    }
+
+    protected void setRestClient(RestClient restClient) {
+        if(restClient!= null && client != restClient){
+            if(reactActivityDelegate != null){
+                reactActivityDelegate.loadReactAppOnceIfReady(getMainComponentName());
+            }
+        }
+        client = restClient;
     }
 
     protected ClientManager buildClientManager() {
@@ -255,7 +265,8 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
     @Override
     protected ReactActivityDelegate createReactActivityDelegate() {
-        return new SalesforceReactActivityDelegate(this, getMainComponentName());
+        reactActivityDelegate = new SalesforceReactActivityDelegate(this, getMainComponentName());
+        return reactActivityDelegate;
     }
 
     protected boolean shouldReactBeRunning(){
