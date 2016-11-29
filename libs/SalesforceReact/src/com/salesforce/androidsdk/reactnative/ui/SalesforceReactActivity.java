@@ -230,12 +230,10 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     }
 
     protected void setRestClient(RestClient restClient) {
-        if(restClient!= null && client != restClient){
-            if(reactActivityDelegate != null){
-                reactActivityDelegate.loadReactAppOnceIfReady(getMainComponentName());
-            }
-        }
         client = restClient;
+        if(client != null && reactActivityDelegate != null){
+            reactActivityDelegate.loadReactAppOnceIfReady(getMainComponentName());
+        }
     }
 
     protected ClientManager buildClientManager() {
