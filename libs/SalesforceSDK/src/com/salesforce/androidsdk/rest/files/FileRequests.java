@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.rest.files;
 
 import android.text.TextUtils;
 
-import com.google.common.collect.Maps;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
@@ -37,6 +36,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -249,7 +249,7 @@ public class FileRequests extends ApiRequests {
     }
 
     private static RequestBody makeFileShare(String fileId, String entityId, String shareType) {
-        Map<String, String> share = Maps.newLinkedHashMap();
+        Map<String, String> share = new LinkedHashMap<>();
         share.put("ContentDocumentId", fileId);
         share.put("LinkedEntityId", entityId);
         share.put("ShareType", shareType);
