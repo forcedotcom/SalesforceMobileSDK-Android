@@ -243,7 +243,6 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
         tryDeleteByQuery(idsDeleted, idsNotDeleted);
 
         // Check file system
-		idsDeleted.toArray(new Long[idsDeleted.size()]);
         checkFileSystem(TEST_SOUP, listToArray(idsDeleted), false);
         checkFileSystem(TEST_SOUP, listToArray(idsNotDeleted), true);
     }
