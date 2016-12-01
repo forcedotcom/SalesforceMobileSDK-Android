@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.rest;
 
 import android.test.InstrumentationTestCase;
 
-import com.google.common.io.CharStreams;
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -41,6 +40,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -646,7 +646,15 @@ public class RestClientTest extends InstrumentationTestCase {
     }
 
     private String inputStreamToString(InputStream inputStream) throws IOException {
-        return CharStreams.toString(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+        StringBuilder builder = new StringBuilder();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+        String line;
+
+        while ((line = reader.readLine()) != null) {
+            builder.append(line);
+        }
+
+        return builder.toString();
     }
 
     /**

@@ -4,13 +4,12 @@ apply plugin: 'com.android.library'
 dependencies {
   compile project(':libs:SalesforceAnalytics')
   compile 'com.squareup.okhttp3:okhttp:3.2.0'
-  androidTestCompile 'com.google.guava:guava:18.0'
 }
 
 android {
   compileSdkVersion 25
   buildToolsVersion '23.0.1'
-  
+
   buildTypes {
       debug {
          testCoverageEnabled = true
