@@ -4,7 +4,6 @@ apply plugin: 'com.android.library'
 dependencies {
   compile project(':libs:SalesforceSDK')
   compile 'net.zetetic:android-database-sqlcipher:3.5.2'
-  androidTestCompile 'com.google.guava:guava:18.0'
 }
 
 android {
