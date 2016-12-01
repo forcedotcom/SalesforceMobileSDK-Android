@@ -176,7 +176,8 @@ public abstract class SalesforceReactActivity extends ReactActivity {
                     logout(null);
                 } else {
                     Log.i(TAG, "login - authenticatedRestClient called with actual client");
-                    SalesforceReactActivity.this.recreate(); // starting fresh
+                    SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager()
+                            .getDevSupportManager().handleReloadJS();
                 }
             }
         });
