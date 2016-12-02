@@ -39,8 +39,24 @@ import java.util.List;
 public class JSONObjectHelper {
 
 	/**
-	 * Return the null if obj doesn't have key or if obj has null for key - and return value as a  String[] otherwise
-	 * JSONObject.optString(key, fallback) returns the string "null" if object has null for key and null is object doesn't have key
+	 * Return null if object doesn't have key or if obj has null for key
+	 * JSONObject.opt(key) return the JSONObject.NULL if object has null for key and null if object doesn't have key
+	 */
+	public static Object opt(JSONObject obj, String key) {
+		return obj.isNull(key) ? null : obj.opt(key);
+	}
+
+	/**
+	 * Return null if arr doesn't have value at index or the value is null
+	 * JSONArray.opt(index) return the JSONObject.NULL if array has null at index and null if array doesn't have value at index
+	 */
+	public static Object opt(JSONArray arr, int index) {
+		return arr.isNull(index) ? null : arr.opt(index);
+	}
+
+
+	/**
+	 * Return null if obj doesn't have key or if obj has null for key - and return value as a  String[] otherwise
 	 *
 	 * @param obj
 	 * @param key
@@ -61,7 +77,7 @@ public class JSONObjectHelper {
 
 	/**
 	 * Return null if obj doesn't have key or if obj has null for key
-	 * JSONObject.optString(key, fallback) returns the string "null" if object has null for key and null is object doesn't have key
+	 * JSONObject.optString(key, fallback) returns the string "null" if object has null for key and null if object doesn't have key
 	 *
 	 * @param obj
 	 * @param key
