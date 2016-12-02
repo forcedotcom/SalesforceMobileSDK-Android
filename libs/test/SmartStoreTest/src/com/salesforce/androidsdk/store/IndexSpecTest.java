@@ -26,16 +26,16 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.test.InstrumentationTestCase;
-
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+
+import junit.framework.TestCase;
 
 /**
  * Test class for IndexSpec
  *
  */
-public class IndexSpecTest extends InstrumentationTestCase {
+public class IndexSpecTest extends TestCase {
 
 	private static final IndexSpec keyStringSpec = new IndexSpec("key", Type.string);
 	private static final IndexSpec keyIntegerSpec = new IndexSpec("key", Type.integer);

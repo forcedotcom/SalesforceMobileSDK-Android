@@ -34,6 +34,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.store.DBHelper;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
@@ -60,6 +61,7 @@ public abstract class SmartStoreTestCase extends InstrumentationTestCase {
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
+		EventBuilderHelper.enableDisable(false);
 		targetContext = getInstrumentation().getTargetContext();
 		dbOpenHelper = DBOpenHelper.getOpenHelper(targetContext, null);
 		DBHelper.getInstance(dbOpenHelper.getWritableDatabase(getPasscode())).reset(targetContext, null);

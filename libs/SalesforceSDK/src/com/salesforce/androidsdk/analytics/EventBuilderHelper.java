@@ -43,6 +43,20 @@ import org.json.JSONObject;
 public class EventBuilderHelper {
 
     private static final String TAG = "EventBuilderHelper";
+    private static boolean enabled = true;
+
+    /**
+     * This method allows event creation/storage to be disabled across the board.
+     *
+     * It is meant for tests.
+     * It allows tests to be run individually.
+     * When running individual tests in Android Studio the SalesforceSDKManager.init() is not called
+     * As a result, if the test cause createAndStoreEvent to run, it will fail because
+     * the call to UserAccountManager.getInstance() does a SalesforceSDKManager.getInstance().
+     */
+    public static void enableDisable(boolean b) {
+        enabled = b;
+    }
 
     /**
      * Creates and stores an analytics event with the supplied parameters.
@@ -54,6 +68,10 @@ public class EventBuilderHelper {
      */
     public static void createAndStoreEvent(String name, UserAccount userAccount, String className,
                                            JSONObject attributes) {
+
+        // Do nothing if not enabled
+        if (!enabled) return;
+
         UserAccount account = userAccount;
         if (account == null) {
             account = UserAccountManager.getInstance().getCurrentUser();

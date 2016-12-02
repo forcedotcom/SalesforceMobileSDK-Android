@@ -34,6 +34,7 @@ import android.util.Log;
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
@@ -1451,14 +1452,14 @@ public class SmartStore  {
 
 			if (jsonObj instanceof JSONObject) {
 				JSONObject jsonDict = (JSONObject) jsonObj;
-				Object dictVal = jsonDict.opt(pathElement);
+				Object dictVal = JSONObjectHelper.opt(jsonDict, pathElement);
 				result = project(dictVal, pathElements, index+1);
 			}
 			else if (jsonObj instanceof JSONArray) {
 				JSONArray jsonArr = (JSONArray) jsonObj;
 				result = new JSONArray();
 				for (int i=0; i<jsonArr.length(); i++) {
-					Object arrayElt = jsonArr.opt(i);
+					Object arrayElt = JSONObjectHelper.opt(jsonArr, i);
 					Object resultPart = project(arrayElt, pathElements, index);
 					if (resultPart != null) {
 						((JSONArray) result).put(resultPart);
