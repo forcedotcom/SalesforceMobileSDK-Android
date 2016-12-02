@@ -34,6 +34,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 
@@ -62,6 +63,7 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	@Override
 	protected void setUp() throws Exception {
 		this.targetContext = getInstrumentation().getTargetContext();
+		EventBuilderHelper.enableDisable(false);
 
 		// Delete external blobs folder for test db and test soup
 		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);

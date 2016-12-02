@@ -26,15 +26,15 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.test.InstrumentationTestCase;
-
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+
+import junit.framework.TestCase;
 
 /**
  * Test class for QuerySpecTest
  *
  */
-public class QuerySpecTest extends InstrumentationTestCase {
+public class QuerySpecTest extends TestCase {
 
     public void testAllQuerySmartSql() {
         QuerySpec querySpec = QuerySpec.buildAllQuerySpec("employees", "lastName", QuerySpec.Order.descending, 1);

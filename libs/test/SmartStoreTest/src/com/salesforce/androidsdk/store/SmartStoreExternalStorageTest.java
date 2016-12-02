@@ -150,6 +150,11 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 	}
 
 	@Override
+	public void testSelectWithNullInJSON1IndexedField() throws JSONException {
+		// json1 is not compatible with external storage.
+	}
+
+	@Override
 	public void testDeleteAgainstChangedSoup() throws JSONException {
 		//create a new soup with multiple entries
 		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1'}");

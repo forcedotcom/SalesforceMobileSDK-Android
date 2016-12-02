@@ -26,17 +26,17 @@
  */
 package com.salesforce.androidsdk.store;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 
-import android.test.InstrumentationTestCase;
+import junit.framework.TestCase;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Tests for SoupSpec
  */
-public class SoupSpecTest extends InstrumentationTestCase {
+public class SoupSpecTest extends TestCase {
     private static final String TEST_SOUP_NAME = "testSoupName";
     private static final String TEST_FEATURE_1 = "testFeature1";
     private static final String TEST_FEATURE_2 = "testFeature2";
