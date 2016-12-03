@@ -275,13 +275,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     }
 
     protected void restartReactNativeApp(){
-        if(SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().getDevSupportManager().getDevSupportEnabled()){
-            SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager()
-                    .getDevSupportManager().handleReloadJS();
-        }
-        else{
-            SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().destroy();
-            SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().createReactContextInBackground();
-        }
+        SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().destroy();
+        SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().createReactContextInBackground();
     }
 }
