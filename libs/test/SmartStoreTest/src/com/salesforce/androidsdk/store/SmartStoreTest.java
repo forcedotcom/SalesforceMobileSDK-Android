@@ -47,7 +47,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Main test suite for SmartStore
@@ -916,6 +915,46 @@ public class SmartStoreTest extends SmartStoreTestCase {
 		// Check explain plan and make sure index was used
 		checkExplainQueryPlan(soupName, 0, covering, expectedDbOperation);
 	}
+
+	/**
+	 *  Test smart sql select with null value in string indexed field
+	 *  @throws JSONException
+	 */
+	public void testSelectWithNullInStringIndexedField() throws JSONException {
+		trySelectWithNullInIndexedField(Type.string);
+	}
+
+	/**
+	 *  Test smart sql select with null value in json1 indexed field
+	 *  @throws JSONException
+	 */
+	public void testSelectWithNullInJSON1IndexedField() throws JSONException {
+		trySelectWithNullInIndexedField(Type.json1);
+	}
+
+	private void trySelectWithNullInIndexedField(Type type) throws JSONException {
+		// Before
+		assertFalse("Soup third_test_soup should not exist", store.hasSoup(THIRD_TEST_SOUP));
+
+		// Register
+		registerSoup(store, THIRD_TEST_SOUP, new IndexSpec[] { new IndexSpec("key", type), new IndexSpec("value", type) });
+		assertTrue("Register soup call failed", store.hasSoup(THIRD_TEST_SOUP));
+
+		// Upsert
+		JSONObject soupElt1 = new JSONObject("{'key':'ka', 'value':null}");
+		JSONObject soupElt1Upserted = store.upsert(THIRD_TEST_SOUP, soupElt1);
+
+		// Smart sql
+		final String smartSql = "SELECT {" + THIRD_TEST_SOUP + ":value}, {" + THIRD_TEST_SOUP + ":key}  FROM {" + THIRD_TEST_SOUP + "} WHERE {" + THIRD_TEST_SOUP + ":key} = 'ka'";
+		final QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 25);
+		final JSONArray result = store.query(querySpec, 0);
+
+		// Check
+		assertNotNull("Result should not be null", result);
+		assertEquals("One result expected", 1, result.length());
+		JSONTestHelper.assertSameJSON("Wrong result for query", new JSONArray("[[null, 'ka']]"), result);
+	}
+
 
 	/**
 	 * Test upsert soup element with null value in string indexed field

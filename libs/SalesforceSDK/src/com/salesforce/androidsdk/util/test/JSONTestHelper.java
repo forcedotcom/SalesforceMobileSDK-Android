@@ -44,17 +44,16 @@ public class JSONTestHelper {
 	 * @throws JSONException
 	 */
 	public static void assertSameJSON(String message, Object expected, Object actual) throws JSONException {
-		// At least one null
-		if (expected == null || actual == null) {
-			// Both null
-			if (expected == null && actual == null) {
-				return;
-			}
-			// One null, not the other
-			else {
-				Assert.assertTrue(message, false);
-			}
+		// Only one null
+		if (actual != expected && (expected == null || actual == null)) {
+			Assert.fail(message);
 		}
+
+		// One one JSONObject.NULL
+		if (actual != expected && (expected == JSONObject.NULL || actual == JSONObject.NULL)) {
+			Assert.fail(message);
+		}
+
 		// Both arrays
 		else if (expected instanceof JSONArray && actual instanceof JSONArray) {
 			assertSameJSONArray(message, (JSONArray) expected, (JSONArray) actual); 
