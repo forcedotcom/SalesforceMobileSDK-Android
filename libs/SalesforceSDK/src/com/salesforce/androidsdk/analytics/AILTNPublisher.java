@@ -109,7 +109,7 @@ public class AILTNPublisher implements AnalyticsPublisher {
                     requestBody, requestHeaders);
             restResponse = restClient.sendSync(restRequest);
         } catch (ClientManager.AccountInfoNotFoundException e) {
-            Log.e(TAG, "Exception thrown while making constructing rest client", e);
+            Log.e(TAG, "Exception thrown while constructing rest client", e);
         } catch (IOException e) {
             Log.e(TAG, "Exception thrown while making network request", e);
         }
