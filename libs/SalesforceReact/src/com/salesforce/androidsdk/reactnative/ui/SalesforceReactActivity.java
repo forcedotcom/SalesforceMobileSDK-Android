@@ -176,7 +176,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
                     logout(null);
                 } else {
                     Log.i(TAG, "login - authenticatedRestClient called with actual client");
-                    SalesforceReactActivity.this.recreate(); // starting fresh
+                    SalesforceReactActivity.this.restartReactNativeApp();
                 }
             }
         });
@@ -272,5 +272,10 @@ public abstract class SalesforceReactActivity extends ReactActivity {
             return client != null;
         }
         return true;
+    }
+
+    protected void restartReactNativeApp(){
+        SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().destroy();
+        SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().createReactContextInBackground();
     }
 }
