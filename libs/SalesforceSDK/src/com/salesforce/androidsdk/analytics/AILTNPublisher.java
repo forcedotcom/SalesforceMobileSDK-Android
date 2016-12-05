@@ -31,6 +31,7 @@ import android.util.Log;
 import com.salesforce.androidsdk.analytics.model.InstrumentationEvent;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -95,18 +96,20 @@ public class AILTNPublisher implements AnalyticsPublisher {
             Log.e(TAG, "Exception thrown while constructing event payload", e);
             return false;
         }
-        final String apiPath = String.format(API_PATH,
-                ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()));
-        final RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient();
-        final RequestBody requestBody = gzipCompressedBody(RequestBody.create(RestRequest.MEDIA_TYPE_JSON,
-                body.toString()));
-        final Map<String, String> requestHeaders = new HashMap<>();
-        requestHeaders.put(CONTENT_ENCODING, GZIP);
-        final RestRequest restRequest = new RestRequest(RestRequest.RestMethod.POST, apiPath,
-                requestBody, requestHeaders);
         RestResponse restResponse = null;
         try {
+            final String apiPath = String.format(API_PATH,
+                    ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext()));
+            final RestClient restClient = SalesforceSDKManager.getInstance().getClientManager().peekRestClient();
+            final RequestBody requestBody = gzipCompressedBody(RequestBody.create(RestRequest.MEDIA_TYPE_JSON,
+                    body.toString()));
+            final Map<String, String> requestHeaders = new HashMap<>();
+            requestHeaders.put(CONTENT_ENCODING, GZIP);
+            final RestRequest restRequest = new RestRequest(RestRequest.RestMethod.POST, apiPath,
+                    requestBody, requestHeaders);
             restResponse = restClient.sendSync(restRequest);
+        } catch (ClientManager.AccountInfoNotFoundException e) {
+            Log.e(TAG, "Exception thrown while constructing rest client", e);
         } catch (IOException e) {
             Log.e(TAG, "Exception thrown while making network request", e);
         }
