@@ -30,10 +30,15 @@ import android.os.Bundle;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.MapUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -61,18 +66,21 @@ public class UserAccountTest extends InstrumentationTestCase {
     public static final String TEST_EMAIL = "test@email.com";
     public static final String TEST_PHOTO_URL = "http://some.photo.url";
     public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
+    public static final String TEST_CUSTOM_KEY = "test_custom_key";
+    public static final String TEST_CUSTOM_VALUE = "test_custom_value";
 
     /**
      * Tests bundle creation.
      */
     public void testConvertAccountToBundle() {
-        UserAccount account = new UserAccount(TEST_AUTH_TOKEN,
+        final UserAccount account = new UserAccount(TEST_AUTH_TOKEN,
                 TEST_REFRESH_TOKEN, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_INSTANCE_URL,
                 TEST_ORG_ID, TEST_USER_ID, TEST_USERNAME, TEST_ACCOUNT_NAME,
                 TEST_CLIENT_ID, TEST_COMMUNITY_ID, TEST_COMMUNITY_URL, TEST_FIRST_NAME,
-                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL);
-        Bundle bundle = account.toBundle();
-        Bundle expectedBundle = createTestAccountBundle();
+                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL,
+                createCustomIdentityMap());
+        final Bundle bundle = account.toBundle();
+        final Bundle expectedBundle = createTestAccountBundle();
         assertTrue(equalBundles(bundle, expectedBundle));
     }
 
@@ -80,8 +88,8 @@ public class UserAccountTest extends InstrumentationTestCase {
      * Tests creating an account from a bundle.
      */
     public void testCreateAccountFromBundle() {
-        Bundle testBundle = createTestAccountBundle();
-        UserAccount account = new UserAccount(testBundle);
+        final Bundle testBundle = createTestAccountBundle();
+        final UserAccount account = new UserAccount(testBundle);
         assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
         assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
         assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
@@ -100,6 +108,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         assertEquals("Email should match", TEST_EMAIL, account.getEmail());
         assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
         assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
+        assertEquals("Custom identity values should match", createCustomIdentityMap(), account.getCustomIdentityValues());
     }
 
     /**
@@ -125,6 +134,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         assertEquals("Email should match", TEST_EMAIL, account.getEmail());
         assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
         assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
+        assertEquals("Custom identity values should match", createCustomIdentityMap(), account.getCustomIdentityValues());
         assertEquals("Account name should match",
                 String.format("%s (%s) (%s)", TEST_USERNAME, TEST_INSTANCE_URL, SalesforceSDKManager.getInstance().getApplicationName()),
                 account.getAccountName());
@@ -155,6 +165,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         object.put(UserAccount.EMAIL, TEST_EMAIL);
         object.put(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.put(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
+        MapUtil.addMapToJSONObject(createCustomIdentityMap(), createCustomIdentityKeys(), object);
         return object;
     }
 
@@ -183,6 +194,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         object.putString(UserAccount.EMAIL, TEST_EMAIL);
         object.putString(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.putString(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
+        MapUtil.addMapToBundle(createCustomIdentityMap(), createCustomIdentityKeys(), object);
         return object;
     }
 
@@ -208,11 +220,23 @@ public class UserAccountTest extends InstrumentationTestCase {
                     !equalBundles((Bundle) valueOne, (Bundle) valueTwo)) {
                 return false;
             } else if(valueOne == null) {
-                if(valueTwo != null || !two.containsKey(key))
+                if (valueTwo != null || !two.containsKey(key))
                     return false;
-            } else if(!valueOne.equals(valueTwo))
+            } else if (!valueOne.equals(valueTwo))
                 return false;
         }
         return true;
+    }
+
+    private Map<String, String> createCustomIdentityMap() {
+        final Map<String, String> testIdentityValues = new HashMap<>();
+        testIdentityValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
+        return testIdentityValues;
+    }
+
+    private List<String> createCustomIdentityKeys() {
+        final List<String> testIdentityKeys = new ArrayList<>();
+        testIdentityKeys.add(TEST_CUSTOM_KEY);
+        return testIdentityKeys;
     }
 }
