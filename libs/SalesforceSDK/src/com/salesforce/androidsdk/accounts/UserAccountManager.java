@@ -379,7 +379,7 @@ public class UserAccountManager {
 		}
         Map<String, String> customIdentityValues = null;
         final List<String> customIdentityKeys = SalesforceSDKManager.getInstance().getCustomIdentityKeys();
-        if (customIdentityKeys != null || !customIdentityKeys.isEmpty()) {
+        if (customIdentityKeys != null && !customIdentityKeys.isEmpty()) {
             customIdentityValues = new HashMap<>();
             for (final String key : customIdentityKeys) {
                 if (!TextUtils.isEmpty(key)) {
