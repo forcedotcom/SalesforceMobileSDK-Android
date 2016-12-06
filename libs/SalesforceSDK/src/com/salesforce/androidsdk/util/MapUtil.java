@@ -57,7 +57,7 @@ public class MapUtil {
     public static Map<String, String> addBundleToMap(Bundle bundle, List<String> keys,
                                                      Map<String, String> map) {
         if (bundle == null || keys == null || bundle.isEmpty() || keys.isEmpty()) {
-            return null;
+            return map;
         }
         if (map == null) {
             map = new HashMap<>();
@@ -80,7 +80,7 @@ public class MapUtil {
      */
     public static Bundle addMapToBundle(Map<String, String> map, List<String> keys, Bundle bundle) {
         if (map == null || keys == null || map.isEmpty() || keys.isEmpty()) {
-            return null;
+            return bundle;
         }
         if (bundle == null) {
             bundle = new Bundle();
@@ -104,7 +104,7 @@ public class MapUtil {
     public static Map<String, String> addJSONObjectToMap(JSONObject jsonObject, List<String> keys,
                                                          Map<String, String> map) {
         if (jsonObject == null || keys == null || jsonObject.length() == 0 || keys.isEmpty()) {
-            return null;
+            return map;
         }
         if (map == null) {
             map = new HashMap<>();
@@ -128,7 +128,7 @@ public class MapUtil {
     public static JSONObject addMapToJSONObject(Map<String, String> map, List<String> keys,
                                                 JSONObject jsonObject) {
         if (map == null || keys == null || map.isEmpty() || keys.isEmpty()) {
-            return null;
+            return jsonObject;
         }
         if (jsonObject == null) {
             jsonObject = new JSONObject();
