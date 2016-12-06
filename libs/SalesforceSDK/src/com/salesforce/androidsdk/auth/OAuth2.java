@@ -30,7 +30,9 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestResponse;
+import com.salesforce.androidsdk.util.MapUtil;
 
 import org.json.JSONObject;
 
@@ -420,6 +422,7 @@ public class OAuth2 {
      * Helper class to parse an identity service response.
      */
     public static class IdServiceResponse {
+
         public String username;
         public String email;
         public String firstName;
@@ -431,28 +434,30 @@ public class OAuth2 {
         public int screenLockTimeout = -1;
         public JSONObject customAttributes;
         public JSONObject customPermissions;
-
+        public Map<String, String> customIdentityValues;
 
         public IdServiceResponse(Response response) {
             try {
-                JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 username = parsedResponse.getString(USERNAME);
                 email = parsedResponse.getString(EMAIL);
                 firstName = parsedResponse.getString(FIRST_NAME);
                 lastName = parsedResponse.getString(LAST_NAME);
                 displayName = parsedResponse.getString(DISPLAY_NAME);
-                JSONObject photos = parsedResponse.getJSONObject(PHOTOS);
+                final JSONObject photos = parsedResponse.getJSONObject(PHOTOS);
                 if (photos != null) {
                     pictureUrl = photos.getString(PICTURE);
                     thumbnailUrl = photos.getString(THUMBNAIL);
                 }
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
-
-                // With connected apps (pilot in Summer '12), the server can specify a policy.
                 if (parsedResponse.has(MOBILE_POLICY)) {
                     pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
                     screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
+                }
+                final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
+                if (sdkManager != null) {
+                    MapUtil.addJSONObjectToMap(parsedResponse, sdkManager.getCustomIdentityKeys(), customIdentityValues);
                 }
             } catch (Exception e) {
                 Log.w(TAG, e);
@@ -464,6 +469,7 @@ public class OAuth2 {
      * Helper class to parse a token refresh error response.
      */
     public static class TokenErrorResponse {
+
         public String error;
         public String errorDescription;
 

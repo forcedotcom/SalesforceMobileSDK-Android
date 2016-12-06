@@ -28,7 +28,9 @@ package com.salesforce.androidsdk.accounts;
 
 import android.os.Bundle;
 import android.test.InstrumentationTestCase;
+
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -60,7 +62,6 @@ public class UserAccountTest extends InstrumentationTestCase {
     public static final String TEST_PHOTO_URL = "http://some.photo.url";
     public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
 
-
     /**
      * Tests bundle creation.
      */
@@ -70,11 +71,8 @@ public class UserAccountTest extends InstrumentationTestCase {
                 TEST_ORG_ID, TEST_USER_ID, TEST_USERNAME, TEST_ACCOUNT_NAME,
                 TEST_CLIENT_ID, TEST_COMMUNITY_ID, TEST_COMMUNITY_URL, TEST_FIRST_NAME,
                 TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL);
-
         Bundle bundle = account.toBundle();
-
         Bundle expectedBundle = createTestAccountBundle();
-
         assertTrue(equalBundles(bundle, expectedBundle));
     }
 
@@ -83,9 +81,7 @@ public class UserAccountTest extends InstrumentationTestCase {
      */
     public void testCreateAccountFromBundle() {
         Bundle testBundle = createTestAccountBundle();
-
         UserAccount account = new UserAccount(testBundle);
-
         assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
         assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
         assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
@@ -111,9 +107,7 @@ public class UserAccountTest extends InstrumentationTestCase {
      */
     public void testCreateAccountFromJSON() throws JSONException {
         JSONObject testJSON = createTestAccountJSON();
-
         UserAccount account = new UserAccount(testJSON);
-
         assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
         assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
         assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
@@ -131,14 +125,10 @@ public class UserAccountTest extends InstrumentationTestCase {
         assertEquals("Email should match", TEST_EMAIL, account.getEmail());
         assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
         assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
-
         assertEquals("Account name should match",
                 String.format("%s (%s) (%s)", TEST_USERNAME, TEST_INSTANCE_URL, SalesforceSDKManager.getInstance().getApplicationName()),
                 account.getAccountName());
     }
-
-
-
 
     /**
      * Creates a test {@link JSONObject} with all {@link UserAccount} fields populated
@@ -168,7 +158,6 @@ public class UserAccountTest extends InstrumentationTestCase {
         return object;
     }
 
-
     /**
      * Creates a test {@link Bundle} with all {@link UserAccount} fields populated
      *
@@ -197,7 +186,6 @@ public class UserAccountTest extends InstrumentationTestCase {
         return object;
     }
 
-
     /**
      * Check for equality of two bundles.
      *
@@ -207,29 +195,24 @@ public class UserAccountTest extends InstrumentationTestCase {
      *         false otherwise
      */
     public boolean equalBundles(Bundle one, Bundle two) {
-        if(one.size() != two.size())
+        if (one.size() != two.size()) {
             return false;
-
+        }
         Set<String> setOne = one.keySet();
         Object valueOne;
         Object valueTwo;
-
-        for(String key : setOne) {
+        for (String key : setOne) {
             valueOne = one.get(key);
             valueTwo = two.get(key);
-            if(valueOne instanceof Bundle && valueTwo instanceof Bundle &&
+            if (valueOne instanceof Bundle && valueTwo instanceof Bundle &&
                     !equalBundles((Bundle) valueOne, (Bundle) valueTwo)) {
                 return false;
-            }
-            else if(valueOne == null) {
+            } else if(valueOne == null) {
                 if(valueTwo != null || !two.containsKey(key))
                     return false;
-            }
-            else if(!valueOne.equals(valueTwo))
+            } else if(!valueOne.equals(valueTwo))
                 return false;
         }
-
         return true;
     }
-
 }

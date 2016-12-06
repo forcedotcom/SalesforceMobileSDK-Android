@@ -26,14 +26,17 @@
  */
 package com.salesforce.androidsdk.accounts;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.MapUtil;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Map;
 
 /**
  * This class represents a single user account that is currently
@@ -88,6 +91,7 @@ public class UserAccount {
 	private String email;
     private String photoUrl;
     private String thumbnailUrl;
+    private Map<String, String> customIdentityValues;
 
 	/**
 	 * Parameterized constructor.
@@ -143,7 +147,41 @@ public class UserAccount {
 			String orgId, String userId, String username, String accountName,
 			String clientId, String communityId, String communityUrl,
             String firstName, String lastName, String displayName, String email, String photoUrl,
-            String thumbnailUrl ) {
+            String thumbnailUrl) {
+		this(authToken, refreshToken, loginServer, idUrl, instanceServer, orgId, userId, username,
+				accountName, clientId, communityId, communityUrl, firstName, lastName, displayName,
+				email, photoUrl, thumbnailUrl, null);
+	}
+
+	/**
+	 * Parameterized constructor.
+	 *
+	 * @param authToken Auth token.
+	 * @param refreshToken Refresh token.
+	 * @param loginServer Login server.
+	 * @param idUrl Identity URL.
+	 * @param instanceServer Instance server.
+	 * @param orgId Org ID.
+	 * @param userId User ID.
+	 * @param username Username.
+	 * @param accountName Account name.
+	 * @param clientId Client ID.
+	 * @param communityId Community ID.
+	 * @param communityUrl Community URL.
+	 * @param firstName First Name.
+	 * @param lastName Last Name.
+	 * @param displayName Display Name.
+	 * @param email Email.
+	 * @param photoUrl Photo URL.
+	 * @param thumbnailUrl Thumbnail URL.
+	 * @param customIdentityValues Custom identity values.
+	 */
+	public UserAccount(String authToken, String refreshToken,
+					   String loginServer, String idUrl, String instanceServer,
+					   String orgId, String userId, String username, String accountName,
+					   String clientId, String communityId, String communityUrl,
+					   String firstName, String lastName, String displayName, String email, String photoUrl,
+					   String thumbnailUrl, Map<String, String> customIdentityValues) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
@@ -156,12 +194,13 @@ public class UserAccount {
 		this.clientId = clientId;
 		this.communityId = communityId;
 		this.communityUrl = communityUrl;
-        this.firstName = firstName;
-        this.lastName = lastName;
+		this.firstName = firstName;
+		this.lastName = lastName;
 		this.displayName = displayName;
-        this.email = email;
-        this.photoUrl = photoUrl;
-        this.thumbnailUrl = thumbnailUrl;
+		this.email = email;
+		this.photoUrl = photoUrl;
+		this.thumbnailUrl = thumbnailUrl;
+		this.customIdentityValues = customIdentityValues;
 		SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_USER_AUTH);
 	}
 
@@ -193,6 +232,7 @@ public class UserAccount {
 			email = object.optString(EMAIL, null);
             photoUrl = object.optString(PHOTO_URL, null);
 			thumbnailUrl = object.optString(THUMBNAIL_URL, null);
+            MapUtil.addJSONObjectToMap(object, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), customIdentityValues);
 		}
 	}
 
@@ -221,6 +261,7 @@ public class UserAccount {
 			email = bundle.getString(EMAIL);
             photoUrl = bundle.getString(PHOTO_URL);
             thumbnailUrl = bundle.getString(THUMBNAIL_URL);
+            MapUtil.addBundleToMap(bundle, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), customIdentityValues);
 		}
 	}
 
@@ -384,6 +425,15 @@ public class UserAccount {
      */
     public String getThumbnailUrl() {
         return thumbnailUrl;
+    }
+
+    /**
+     * Returns the custom identity values for this user.
+     *
+     * @return Custom identity values.
+     */
+    public Map<String, String> getCustomIdentityValues() {
+        return customIdentityValues;
     }
 
 	/**
@@ -588,6 +638,7 @@ public class UserAccount {
 			object.put(EMAIL, email);
             object.put(PHOTO_URL, photoUrl);
             object.put(THUMBNAIL_URL, thumbnailUrl);
+            MapUtil.addMapToJSONObject(customIdentityValues, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), object);
     	} catch (JSONException e) {
     		Log.e(TAG, "Unable to convert to JSON");
     	}
@@ -619,6 +670,7 @@ public class UserAccount {
 		object.putString(EMAIL, email);
         object.putString(PHOTO_URL, photoUrl);
         object.putString(THUMBNAIL_URL, thumbnailUrl);
+        MapUtil.addMapToBundle(customIdentityValues, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), object);
     	return object;
     }
 }

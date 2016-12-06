@@ -66,6 +66,7 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+import com.salesforce.androidsdk.util.MapUtil;
 import com.salesforce.androidsdk.util.UriFragmentParser;
 
 import org.json.JSONArray;
@@ -76,6 +77,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -506,7 +508,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             accountOptions = new AccountOptions(id.username, tr.refreshToken,
                     tr.authToken, tr.idUrl, tr.instanceUrl, tr.orgId, tr.userId,
                     tr.communityId, tr.communityUrl, id.firstName, id.lastName,
-                    id.displayName, id.email, id.pictureUrl, id.thumbnailUrl);
+                    id.displayName, id.email, id.pictureUrl, id.thumbnailUrl, id.customIdentityValues);
 
             // Sets additional admin prefs, if they exist.
             final UserAccount account = new UserAccount(accountOptions.authToken,
@@ -518,7 +520,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     accountOptions.communityId, accountOptions.communityUrl,
                     accountOptions.firstName, accountOptions.lastName, accountOptions.displayName,
                     accountOptions.email, accountOptions.photoUrl,
-                    accountOptions.thumbnailUrl);
+                    accountOptions.thumbnailUrl, accountOptions.customIdentityValues);
             if (id.customAttributes != null) {
                 mgr.getAdminSettingsManager().setPrefs(id.customAttributes, account);
             }
@@ -624,7 +626,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 accountOptions.displayName,
                 accountOptions.email,
                 accountOptions.photoUrl,
-                accountOptions.thumbnailUrl);
+                accountOptions.thumbnailUrl,
+                accountOptions.customIdentityValues);
 
     	/*
     	 * Registers for push notifications, if push notification client ID is present.
@@ -641,7 +644,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 loginOptions.clientSecret, accountOptions.communityId,
                 accountOptions.communityUrl, accountOptions.firstName,
                 accountOptions.lastName, accountOptions.displayName, accountOptions.email,
-                accountOptions.photoUrl, accountOptions.thumbnailUrl);
+                accountOptions.photoUrl, accountOptions.thumbnailUrl, accountOptions.customIdentityValues);
     	if (!TextUtils.isEmpty(pushNotificationId)) {
         	PushMessaging.register(appContext, account);
     	}
@@ -732,12 +735,14 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         public final String email;
         public final String photoUrl;
         public final String thumbnailUrl;
+        public final Map<String, String> customIdentityValues;
         private final Bundle bundle;
 
         public AccountOptions(String username, String refreshToken,
                 String authToken, String identityUrl, String instanceUrl,
                 String orgId, String userId, String communityId, String communityUrl,
-                String firstName, String lastName, String displayName, String email, String photoUrl, String thumbnailUrl) {
+                String firstName, String lastName, String displayName, String email,
+                String photoUrl, String thumbnailUrl, Map<String, String> customIdentityValues) {
             super();
             this.username = username;
             this.refreshToken = refreshToken;
@@ -754,6 +759,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             this.email = email;
             this.photoUrl = photoUrl;
             this.thumbnailUrl = thumbnailUrl;
+            this.customIdentityValues = customIdentityValues;
             bundle = new Bundle();
             bundle.putString(USERNAME, username);
             bundle.putString(REFRESH_TOKEN, refreshToken);
@@ -770,6 +776,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             bundle.putString(EMAIL, email);
             bundle.putString(PHOTO_URL, photoUrl);
             bundle.putString(THUMBNAIL_URL, thumbnailUrl);
+            MapUtil.addMapToBundle(customIdentityValues, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), bundle);
         }
 
         public Bundle asBundle() {
@@ -777,7 +784,9 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         }
 
         public static AccountOptions fromBundle(Bundle options) {
-            if (options == null) return null;
+            if (options == null) {
+                return null;
+            }
             return new AccountOptions(
                     options.getString(USERNAME),
                     options.getString(REFRESH_TOKEN),
@@ -793,8 +802,15 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     options.getString(DISPLAY_NAME),
                     options.getString(EMAIL),
                     options.getString(PHOTO_URL),
-                    options.getString(THUMBNAIL_URL)
+                    options.getString(THUMBNAIL_URL),
+                    getCustomIdentityValues(options)
                     );
+        }
+
+        private static Map<String, String> getCustomIdentityValues(Bundle options) {
+            final Map<String, String> map = new HashMap<>();
+            MapUtil.addBundleToMap(options, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), map);
+            return map;
         }
     }
 

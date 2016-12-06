@@ -135,6 +135,7 @@ public class SalesforceSDKManager {
     private String uid; // device id
     private volatile boolean loggedOut = false;
     private SortedSet<String> features;
+    private List<String> identityKeys;
 
     /**
      * PasscodeManager object lock.
@@ -578,6 +579,24 @@ public class SalesforceSDKManager {
      */
     public boolean hasNetwork() {
     	return HttpAccess.DEFAULT.hasNetwork();
+    }
+
+    /**
+     * Adds an additional set of custom keys to fetch and store from the identity endpoint.
+     *
+     * @param identityKeys List of custom identity keys.
+     */
+    public void addCustomIdentityKeys(List<String> identityKeys) {
+        this.identityKeys = identityKeys;
+    }
+
+    /**
+     * Returns the list of custom identity keys set for this application.
+     *
+     * @return
+     */
+    public List<String> getCustomIdentityKeys() {
+        return identityKeys;
     }
 
     /**
