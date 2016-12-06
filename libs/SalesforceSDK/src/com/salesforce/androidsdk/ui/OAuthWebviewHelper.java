@@ -808,9 +808,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         }
 
         private static Map<String, String> getCustomIdentityValues(Bundle options) {
-            final Map<String, String> map = MapUtil.addBundleToMap(options,
+            return MapUtil.addBundleToMap(options,
                     SalesforceSDKManager.getInstance().getCustomIdentityKeys(), null);
-            return map;
         }
     }
 

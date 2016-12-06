@@ -44,7 +44,6 @@ import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
-import com.salesforce.androidsdk.util.MapUtil;
 
 import java.io.IOException;
 import java.net.URI;
@@ -379,7 +378,16 @@ public class ClientManager {
         extras.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encryptWithPasscode(email, passcodeHash));
         extras.putString(AuthenticatorService.KEY_PHOTO_URL, SalesforceSDKManager.encryptWithPasscode(photoUrl, passcodeHash));
         extras.putString(AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, passcodeHash));
-        extras = MapUtil.addMapToBundle(customIdentityValues, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), extras);
+        final List<String> customIdKeys = SalesforceSDKManager.getInstance().getCustomIdentityKeys();
+        if (customIdentityValues != null && !customIdentityValues.isEmpty()) {
+            for (final String key : customIdKeys) {
+                final String value = customIdentityValues.get(key);
+                if (value != null) {
+                    final String encrValue = SalesforceSDKManager.encryptWithPasscode(value, passcodeHash);
+                    extras.putString(key, encrValue);
+                }
+            }
+        }
         Account acc = new Account(accountName, getAccountType());
         accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encryptWithPasscode(refreshToken, passcodeHash), new Bundle());
         // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
