@@ -26,11 +26,18 @@
  */
 package com.salesforce.androidsdk.accounts;
 
+import android.app.Application;
+import android.app.Instrumentation;
+import android.content.Context;
 import android.os.Bundle;
 import android.test.InstrumentationTestCase;
 
+import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ClientManagerTest;
+import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.MapUtil;
+import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -68,6 +75,32 @@ public class UserAccountTest extends InstrumentationTestCase {
     public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
     public static final String TEST_CUSTOM_KEY = "test_custom_key";
     public static final String TEST_CUSTOM_VALUE = "test_custom_value";
+
+    private EventsListenerQueue eq;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        final Context targetContext = getInstrumentation().getTargetContext();
+        final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
+        getInstrumentation().callApplicationOnCreate(app);
+        eq = new EventsListenerQueue();
+        if (!SalesforceSDKManager.hasInstance()) {
+            eq.waitForEvent(EventsObservable.EventType.AppCreateComplete, 5000);
+        }
+        SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
+        SalesforceSDKManager.getInstance().addCustomIdentityKeys(createCustomIdentityKeys());
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        if (eq != null) {
+            eq.tearDown();
+            eq = null;
+        }
+        SalesforceSDKManager.getInstance().addCustomIdentityKeys(null);
+        super.tearDown();
+    }
 
     /**
      * Tests bundle creation.
@@ -146,7 +179,7 @@ public class UserAccountTest extends InstrumentationTestCase {
      * @return {@link JSONObject}
      */
     private JSONObject createTestAccountJSON() throws JSONException{
-        final JSONObject object = new JSONObject();
+        JSONObject object = new JSONObject();
         object.put(UserAccount.AUTH_TOKEN, TEST_AUTH_TOKEN);
         object.put(UserAccount.REFRESH_TOKEN, TEST_REFRESH_TOKEN);
         object.put(UserAccount.LOGIN_SERVER, TEST_LOGIN_URL);
@@ -165,7 +198,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         object.put(UserAccount.EMAIL, TEST_EMAIL);
         object.put(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.put(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
-        MapUtil.addMapToJSONObject(createCustomIdentityMap(), createCustomIdentityKeys(), object);
+        object = MapUtil.addMapToJSONObject(createCustomIdentityMap(), createCustomIdentityKeys(), object);
         return object;
     }
 
@@ -175,7 +208,7 @@ public class UserAccountTest extends InstrumentationTestCase {
      * @return {@link Bundle}
      */
     private Bundle createTestAccountBundle() {
-        final Bundle object = new Bundle();
+        Bundle object = new Bundle();
         object.putString(UserAccount.AUTH_TOKEN, TEST_AUTH_TOKEN);
         object.putString(UserAccount.REFRESH_TOKEN, TEST_REFRESH_TOKEN);
         object.putString(UserAccount.LOGIN_SERVER, TEST_LOGIN_URL);
@@ -194,7 +227,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         object.putString(UserAccount.EMAIL, TEST_EMAIL);
         object.putString(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.putString(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
-        MapUtil.addMapToBundle(createCustomIdentityMap(), createCustomIdentityKeys(), object);
+        object = MapUtil.addMapToBundle(createCustomIdentityMap(), createCustomIdentityKeys(), object);
         return object;
     }
 

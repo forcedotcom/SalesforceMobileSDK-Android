@@ -232,7 +232,8 @@ public class UserAccount {
 			email = object.optString(EMAIL, null);
             photoUrl = object.optString(PHOTO_URL, null);
 			thumbnailUrl = object.optString(THUMBNAIL_URL, null);
-            MapUtil.addJSONObjectToMap(object, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), customIdentityValues);
+            customIdentityValues = MapUtil.addJSONObjectToMap(object,
+                    SalesforceSDKManager.getInstance().getCustomIdentityKeys(), customIdentityValues);
 		}
 	}
 
@@ -261,7 +262,8 @@ public class UserAccount {
 			email = bundle.getString(EMAIL);
             photoUrl = bundle.getString(PHOTO_URL);
             thumbnailUrl = bundle.getString(THUMBNAIL_URL);
-            MapUtil.addBundleToMap(bundle, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), customIdentityValues);
+            customIdentityValues = MapUtil.addBundleToMap(bundle,
+					SalesforceSDKManager.getInstance().getCustomIdentityKeys(), customIdentityValues);
 		}
 	}
 
@@ -619,7 +621,7 @@ public class UserAccount {
      * @return JSONObject instance.
      */
     public JSONObject toJson() {
-    	final JSONObject object = new JSONObject();
+    	JSONObject object = new JSONObject();
     	try {
         	object.put(AUTH_TOKEN, authToken);
         	object.put(REFRESH_TOKEN, refreshToken);
@@ -638,7 +640,8 @@ public class UserAccount {
 			object.put(EMAIL, email);
             object.put(PHOTO_URL, photoUrl);
             object.put(THUMBNAIL_URL, thumbnailUrl);
-            MapUtil.addMapToJSONObject(customIdentityValues, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), object);
+            object = MapUtil.addMapToJSONObject(customIdentityValues,
+                    SalesforceSDKManager.getInstance().getCustomIdentityKeys(), object);
     	} catch (JSONException e) {
     		Log.e(TAG, "Unable to convert to JSON");
     	}
@@ -651,7 +654,7 @@ public class UserAccount {
      * @return Bundle instance.
      */
     public Bundle toBundle() {
-    	final Bundle object = new Bundle();
+    	Bundle object = new Bundle();
         object.putString(AUTH_TOKEN, authToken);
         object.putString(REFRESH_TOKEN, refreshToken);
         object.putString(LOGIN_SERVER, loginServer);
@@ -670,7 +673,8 @@ public class UserAccount {
 		object.putString(EMAIL, email);
         object.putString(PHOTO_URL, photoUrl);
         object.putString(THUMBNAIL_URL, thumbnailUrl);
-        MapUtil.addMapToBundle(customIdentityValues, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), object);
+        object = MapUtil.addMapToBundle(customIdentityValues,
+                SalesforceSDKManager.getInstance().getCustomIdentityKeys(), object);
     	return object;
     }
 }

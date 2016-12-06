@@ -52,10 +52,12 @@ public class MapUtil {
      * @param bundle Bundle.
      * @param keys Keys.
      * @param map Map to be added to.
+     * @return Map with the additions.
      */
-    public static void addBundleToMap(Bundle bundle, List<String> keys, Map<String, String> map) {
+    public static Map<String, String> addBundleToMap(Bundle bundle, List<String> keys,
+                                                     Map<String, String> map) {
         if (bundle == null || keys == null || bundle.isEmpty() || keys.isEmpty()) {
-            return;
+            return null;
         }
         if (map == null) {
             map = new HashMap<>();
@@ -65,6 +67,7 @@ public class MapUtil {
                 map.put(key, bundle.getString(key));
             }
         }
+        return map;
     }
 
     /**
@@ -73,10 +76,11 @@ public class MapUtil {
      * @param map Map.
      * @param keys Keys.
      * @param bundle Bundle to be added to.
+     * @return Bundle with the additions.
      */
-    public static void addMapToBundle(Map<String, String> map, List<String> keys, Bundle bundle) {
+    public static Bundle addMapToBundle(Map<String, String> map, List<String> keys, Bundle bundle) {
         if (map == null || keys == null || map.isEmpty() || keys.isEmpty()) {
-            return;
+            return null;
         }
         if (bundle == null) {
             bundle = new Bundle();
@@ -86,6 +90,7 @@ public class MapUtil {
                 bundle.putString(key, map.get(key));
             }
         }
+        return bundle;
     }
 
     /**
@@ -94,10 +99,12 @@ public class MapUtil {
      * @param jsonObject JSONObject.
      * @param keys Keys.
      * @param map Map to be added to.
+     * @return Map with the additions.
      */
-    public static void addJSONObjectToMap(JSONObject jsonObject, List<String> keys, Map<String, String> map) {
+    public static Map<String, String> addJSONObjectToMap(JSONObject jsonObject, List<String> keys,
+                                                         Map<String, String> map) {
         if (jsonObject == null || keys == null || jsonObject.length() == 0 || keys.isEmpty()) {
-            return;
+            return null;
         }
         if (map == null) {
             map = new HashMap<>();
@@ -107,6 +114,7 @@ public class MapUtil {
                 map.put(key, jsonObject.optString(key));
             }
         }
+        return map;
     }
 
     /**
@@ -115,10 +123,12 @@ public class MapUtil {
      * @param map Map.
      * @param keys Keys.
      * @param jsonObject JSONObject to be added to.
+     * @return JSONObject with the additions.
      */
-    public static void addMapToJSONObject(Map<String, String> map, List<String> keys, JSONObject jsonObject) {
+    public static JSONObject addMapToJSONObject(Map<String, String> map, List<String> keys,
+                                                JSONObject jsonObject) {
         if (map == null || keys == null || map.isEmpty() || keys.isEmpty()) {
-            return;
+            return null;
         }
         if (jsonObject == null) {
             jsonObject = new JSONObject();
@@ -132,5 +142,6 @@ public class MapUtil {
                 }
             }
         }
+        return jsonObject;
     }
 }

@@ -77,7 +77,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -736,7 +735,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         public final String photoUrl;
         public final String thumbnailUrl;
         public final Map<String, String> customIdentityValues;
-        private final Bundle bundle;
+        private Bundle bundle;
 
         public AccountOptions(String username, String refreshToken,
                 String authToken, String identityUrl, String instanceUrl,
@@ -776,7 +775,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             bundle.putString(EMAIL, email);
             bundle.putString(PHOTO_URL, photoUrl);
             bundle.putString(THUMBNAIL_URL, thumbnailUrl);
-            MapUtil.addMapToBundle(customIdentityValues, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), bundle);
+            bundle = MapUtil.addMapToBundle(customIdentityValues,
+                    SalesforceSDKManager.getInstance().getCustomIdentityKeys(), bundle);
         }
 
         public Bundle asBundle() {
@@ -808,8 +808,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         }
 
         private static Map<String, String> getCustomIdentityValues(Bundle options) {
-            final Map<String, String> map = new HashMap<>();
-            MapUtil.addBundleToMap(options, SalesforceSDKManager.getInstance().getCustomIdentityKeys(), map);
+            final Map<String, String> map = MapUtil.addBundleToMap(options,
+                    SalesforceSDKManager.getInstance().getCustomIdentityKeys(), null);
             return map;
         }
     }

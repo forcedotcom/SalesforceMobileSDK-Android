@@ -457,7 +457,8 @@ public class OAuth2 {
                 }
                 final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
                 if (sdkManager != null) {
-                    MapUtil.addJSONObjectToMap(parsedResponse, sdkManager.getCustomIdentityKeys(), customIdentityValues);
+                    customIdentityValues = MapUtil.addJSONObjectToMap(parsedResponse,
+                            sdkManager.getCustomIdentityKeys(), customIdentityValues);
                 }
             } catch (Exception e) {
                 Log.w(TAG, e);
