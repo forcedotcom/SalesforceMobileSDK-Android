@@ -200,11 +200,11 @@ public class ClientManager {
         if (encThumbnailUrl != null) {
             thumbnailUrl = SalesforceSDKManager.decryptWithPasscode(encThumbnailUrl, passcodeHash);
         }
-        final List<String> customIdKeys = SalesforceSDKManager.getInstance().getCustomIdentityKeys();
+        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
         Map<String, String> values = null;
-        if (customIdKeys != null && !customIdKeys.isEmpty()) {
+        if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
             values = new HashMap<>();
-            for (final String key : customIdKeys) {
+            for (final String key : additionalOauthKeys) {
                 final String encValue = accountManager.getUserData(acc, key);
                 if (encValue != null) {
                     final String value = SalesforceSDKManager.decryptWithPasscode(encValue,
@@ -351,7 +351,7 @@ public class ClientManager {
     		String clientId, String orgId, String userId, String passcodeHash,
             String clientSecret, String communityId, String communityUrl,
             String firstName, String lastName, String displayName, String email, String photoUrl,
-            String thumbnailUrl, Map<String, String> customIdentityValues) {
+            String thumbnailUrl, Map<String, String> additionalOauthValues) {
         Bundle extras = new Bundle();
         extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
         extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
@@ -378,10 +378,10 @@ public class ClientManager {
         extras.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encryptWithPasscode(email, passcodeHash));
         extras.putString(AuthenticatorService.KEY_PHOTO_URL, SalesforceSDKManager.encryptWithPasscode(photoUrl, passcodeHash));
         extras.putString(AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, passcodeHash));
-        final List<String> customIdKeys = SalesforceSDKManager.getInstance().getCustomIdentityKeys();
-        if (customIdentityValues != null && !customIdentityValues.isEmpty()) {
-            for (final String key : customIdKeys) {
-                final String value = customIdentityValues.get(key);
+        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+        if (additionalOauthValues != null && !additionalOauthValues.isEmpty()) {
+            for (final String key : additionalOauthKeys) {
+                final String value = additionalOauthValues.get(key);
                 if (value != null) {
                     final String encrValue = SalesforceSDKManager.encryptWithPasscode(value, passcodeHash);
                     extras.putString(key, encrValue);
@@ -456,11 +456,11 @@ public class ClientManager {
                     if (encThumbnailUrl != null) {
                         thumbnailUrl = SalesforceSDKManager.decryptWithPasscode(encThumbnailUrl, oldPass);
                     }
-                    final List<String> customIdKeys = SalesforceSDKManager.getInstance().getCustomIdentityKeys();
+                    final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
                     Map<String, String> values = null;
-                    if (customIdKeys != null && !customIdKeys.isEmpty()) {
+                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
                         values = new HashMap<>();
-                        for (final String key : customIdKeys) {
+                        for (final String key : additionalOauthKeys) {
                             final String encValue = acctManager.getUserData(account, key);
                             if (encValue != null) {
                                 final String value = SalesforceSDKManager.decryptWithPasscode(encValue,
@@ -510,7 +510,7 @@ public class ClientManager {
                         acctManager.setUserData(account, AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, newPass));
                     }
                     if (values != null && !values.isEmpty()) {
-                        for (final String key : customIdKeys) {
+                        for (final String key : additionalOauthKeys) {
                             final String value = values.get(key);
                             if (value != null) {
                                 acctManager.setUserData(account, key, SalesforceSDKManager.encryptWithPasscode(value, newPass));

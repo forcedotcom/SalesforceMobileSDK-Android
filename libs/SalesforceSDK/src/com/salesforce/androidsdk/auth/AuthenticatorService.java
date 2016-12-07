@@ -210,11 +210,11 @@ public class AuthenticatorService extends Service {
             if (encClientSecret != null) {
                 clientSecret = SalesforceSDKManager.decryptWithPasscode(encClientSecret, passcodeHash);
             }
-            final List<String> customIdKeys = SalesforceSDKManager.getInstance().getCustomIdentityKeys();
+            final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
             Map<String, String> values = null;
-            if (customIdKeys != null && !customIdKeys.isEmpty()) {
+            if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
                 values = new HashMap<>();
-                for (final String key : customIdKeys) {
+                for (final String key : additionalOauthKeys) {
                     final String encValue = mgr.getUserData(account, key);
                     if (encValue != null) {
                         final String value = SalesforceSDKManager.decryptWithPasscode(encValue,
@@ -276,12 +276,26 @@ public class AuthenticatorService extends Service {
                 if (thumbnailUrl != null) {
                     encrThumbnailUrl = SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, passcodeHash);
                 }
-                if (values != null && !values.isEmpty()) {
-                    for (final String key : customIdKeys) {
-                        final String value = values.get(key);
-                        if (value != null) {
-                            final String encrValue = SalesforceSDKManager.encryptWithPasscode(value, passcodeHash);
-                            resBundle.putString(key, encrValue);
+
+                /*
+                 * Checks if the additional OAuth keys have new values returned after a token
+                 * refresh. If so, update the values stored with the new ones. If not, fall back
+                 * on the existing values stored.
+                 */
+                if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                    for (final String key : additionalOauthKeys) {
+                        if (tr.additionalOauthValues != null && tr.additionalOauthValues.containsKey(key)) {
+                            final String newValue = tr.additionalOauthValues.get(key);
+                            if (newValue != null) {
+                                final String encrNewValue = SalesforceSDKManager.encryptWithPasscode(newValue, passcodeHash);
+                                resBundle.putString(key, encrNewValue);
+                            }
+                        } else if (values != null && values.containsKey(key)) {
+                            final String value = values.get(key);
+                            if (value != null) {
+                                final String encrValue = SalesforceSDKManager.encryptWithPasscode(value, passcodeHash);
+                                resBundle.putString(key, encrValue);
+                            }
                         }
                     }
                 }

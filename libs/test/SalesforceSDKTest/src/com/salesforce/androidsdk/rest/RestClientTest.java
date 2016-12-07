@@ -74,8 +74,8 @@ public class RestClientTest extends InstrumentationTestCase {
     private RestClient restClient;
     private String authToken;
     private String instanceUrl;
-    private List<String> testIdentityKeys;
-    private Map<String, String> testIdentityValues;
+    private List<String> testOauthKeys;
+    private Map<String, String> testOauthValues;
 
     public static final String TEST_FIRST_NAME = "firstName";
     public static final String TEST_LAST_NAME = "lastName";
@@ -94,11 +94,11 @@ public class RestClientTest extends InstrumentationTestCase {
         TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
         authToken = refreshResponse.authToken;
         instanceUrl = refreshResponse.instanceUrl;
-        testIdentityKeys = new ArrayList<>();
-        testIdentityKeys.add(TEST_CUSTOM_KEY);
-        testIdentityValues = new HashMap<>();
-        testIdentityValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
-        SalesforceSDKManager.getInstance().addCustomIdentityKeys(testIdentityKeys);
+        testOauthKeys = new ArrayList<>();
+        testOauthKeys.add(TEST_CUSTOM_KEY);
+        testOauthValues = new HashMap<>();
+        testOauthValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
+        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
         clientInfo = new ClientInfo(TestCredentials.CLIENT_ID,
         		new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
@@ -106,16 +106,16 @@ public class RestClientTest extends InstrumentationTestCase {
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
                 TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL,
-                TEST_THUMBNAIL_URL, testIdentityValues);
+                TEST_THUMBNAIL_URL, testOauthValues);
         restClient = new RestClient(clientInfo, authToken, httpAccess, null);
     }
 
     @Override
     public void tearDown() throws Exception {
         cleanup();
-        testIdentityKeys = null;
-        testIdentityValues = null;
-        SalesforceSDKManager.getInstance().addCustomIdentityKeys(testIdentityKeys);
+        testOauthKeys = null;
+        testOauthValues = null;
+        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
     }
 
     /**
@@ -136,7 +136,7 @@ public class RestClientTest extends InstrumentationTestCase {
         assertEquals("Wrong email", TEST_EMAIL, restClient.getClientInfo().email);
         assertEquals("Wrong photoUrl", TEST_PHOTO_URL, restClient.getClientInfo().photoUrl);
         assertEquals("Wrong thumbnailUrl", TEST_THUMBNAIL_URL, restClient.getClientInfo().thumbnailUrl);
-        assertEquals("Wrong custom identity value", testIdentityValues, restClient.getClientInfo().customIdentityValues);
+        assertEquals("Wrong additional OAuth value", testOauthValues, restClient.getClientInfo().additionalOauthValues);
     }
 
     public void testClientInfoResolveUrl() {
@@ -158,7 +158,7 @@ public class RestClientTest extends InstrumentationTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
-        		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testIdentityValues);
+        		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testOauthValues);
     	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("a/b/").toString());
     	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("/a/b/").toString());
     }
@@ -170,7 +170,7 @@ public class RestClientTest extends InstrumentationTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
-        		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testIdentityValues);
+        		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testOauthValues);
         assertEquals("Wrong url", TestCredentials.COMMUNITY_URL, info.getInstanceUrlAsString());
     }
 

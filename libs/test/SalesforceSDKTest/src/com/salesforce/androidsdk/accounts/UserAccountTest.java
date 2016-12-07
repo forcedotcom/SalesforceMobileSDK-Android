@@ -89,7 +89,7 @@ public class UserAccountTest extends InstrumentationTestCase {
             eq.waitForEvent(EventsObservable.EventType.AppCreateComplete, 5000);
         }
         SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
-        SalesforceSDKManager.getInstance().addCustomIdentityKeys(createCustomIdentityKeys());
+        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(createAdditionalOauthKeys());
     }
 
     @Override
@@ -98,7 +98,7 @@ public class UserAccountTest extends InstrumentationTestCase {
             eq.tearDown();
             eq = null;
         }
-        SalesforceSDKManager.getInstance().addCustomIdentityKeys(null);
+        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(null);
         super.tearDown();
     }
 
@@ -111,7 +111,7 @@ public class UserAccountTest extends InstrumentationTestCase {
                 TEST_ORG_ID, TEST_USER_ID, TEST_USERNAME, TEST_ACCOUNT_NAME,
                 TEST_CLIENT_ID, TEST_COMMUNITY_ID, TEST_COMMUNITY_URL, TEST_FIRST_NAME,
                 TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL,
-                createCustomIdentityMap());
+                createAdditionalOauthValues());
         final Bundle bundle = account.toBundle();
         final Bundle expectedBundle = createTestAccountBundle();
         assertTrue(equalBundles(bundle, expectedBundle));
@@ -141,7 +141,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         assertEquals("Email should match", TEST_EMAIL, account.getEmail());
         assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
         assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
-        assertEquals("Custom identity values should match", createCustomIdentityMap(), account.getCustomIdentityValues());
+        assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
     }
 
     /**
@@ -167,7 +167,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         assertEquals("Email should match", TEST_EMAIL, account.getEmail());
         assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
         assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
-        assertEquals("Custom identity values should match", createCustomIdentityMap(), account.getCustomIdentityValues());
+        assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
         assertEquals("Account name should match",
                 String.format("%s (%s) (%s)", TEST_USERNAME, TEST_INSTANCE_URL, SalesforceSDKManager.getInstance().getApplicationName()),
                 account.getAccountName());
@@ -198,7 +198,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         object.put(UserAccount.EMAIL, TEST_EMAIL);
         object.put(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.put(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
-        object = MapUtil.addMapToJSONObject(createCustomIdentityMap(), createCustomIdentityKeys(), object);
+        object = MapUtil.addMapToJSONObject(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
 
@@ -227,7 +227,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         object.putString(UserAccount.EMAIL, TEST_EMAIL);
         object.putString(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.putString(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
-        object = MapUtil.addMapToBundle(createCustomIdentityMap(), createCustomIdentityKeys(), object);
+        object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
 
@@ -261,15 +261,15 @@ public class UserAccountTest extends InstrumentationTestCase {
         return true;
     }
 
-    private Map<String, String> createCustomIdentityMap() {
-        final Map<String, String> testIdentityValues = new HashMap<>();
-        testIdentityValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
-        return testIdentityValues;
+    private Map<String, String> createAdditionalOauthValues() {
+        final Map<String, String> testOauthValues = new HashMap<>();
+        testOauthValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
+        return testOauthValues;
     }
 
-    private List<String> createCustomIdentityKeys() {
-        final List<String> testIdentityKeys = new ArrayList<>();
-        testIdentityKeys.add(TEST_CUSTOM_KEY);
-        return testIdentityKeys;
+    private List<String> createAdditionalOauthKeys() {
+        final List<String> testOauthValues = new ArrayList<>();
+        testOauthValues.add(TEST_CUSTOM_KEY);
+        return testOauthValues;
     }
 }

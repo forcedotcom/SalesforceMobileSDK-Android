@@ -93,8 +93,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
     private AccountManager accountManager;
     private LoginOptions loginOptions;
     private EventsListenerQueue eq;
-    private List<String> testIdentityKeys;
-    private Map<String, String> testIdentityValues;
+    private List<String> testOauthKeys;
+    private Map<String, String> testOauthValues;
 
     @Override
     public void setUp() throws Exception {
@@ -113,11 +113,11 @@ public class ClientManagerTest extends InstrumentationTestCase {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
-        testIdentityKeys = new ArrayList<>();
-        testIdentityKeys.add(TEST_CUSTOM_KEY);
-        testIdentityValues = new HashMap<>();
-        testIdentityValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
-        SalesforceSDKManager.getInstance().addCustomIdentityKeys(testIdentityKeys);
+        testOauthKeys = new ArrayList<>();
+        testOauthKeys.add(TEST_CUSTOM_KEY);
+        testOauthValues = new HashMap<>();
+        testOauthValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
+        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
     }
 
     @Override
@@ -128,9 +128,9 @@ public class ClientManagerTest extends InstrumentationTestCase {
         }
         cleanupAccounts();
         assertNoAccounts();
-        testIdentityKeys = null;
-        testIdentityValues = null;
-        SalesforceSDKManager.getInstance().addCustomIdentityKeys(testIdentityKeys);
+        testOauthKeys = null;
+        testOauthValues = null;
+        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
         super.tearDown();
     }
 
@@ -191,7 +191,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         assertEquals("Wrong last name", TEST_LAST_NAME, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME), TEST_PASSCODE_HASH));
         assertEquals("Wrong display name", TEST_DISPLAY_NAME, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME), TEST_PASSCODE_HASH));
         assertEquals("Wrong email", TEST_EMAIL, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL), TEST_PASSCODE_HASH));
-        assertEquals("Wrong custom identity value", TEST_CUSTOM_VALUE, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, TEST_CUSTOM_KEY), TEST_PASSCODE_HASH));
+        assertEquals("Wrong additional OAuth value", TEST_CUSTOM_VALUE, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, TEST_CUSTOM_KEY), TEST_PASSCODE_HASH));
     }
 
     /**
@@ -474,7 +474,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
                 TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID,
                 TEST_ORG_ID, TEST_USER_ID, TEST_PASSCODE_HASH, null, null, null, TEST_FIRST_NAME,
-                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testIdentityValues);
+                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues);
     }
 
     /**
@@ -486,6 +486,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
                 TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL,
                 TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID_2, TEST_USER_ID_2, TEST_PASSCODE_HASH,
                 null, null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL,
-                TEST_THUMBNAIL_URL, testIdentityValues);
+                TEST_THUMBNAIL_URL, testOauthValues);
     }
 }

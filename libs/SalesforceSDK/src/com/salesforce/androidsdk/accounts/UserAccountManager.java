@@ -377,18 +377,18 @@ public class UserAccountManager {
 		if (encThumbnailUrl != null) {
 			thumbnailUrl = SalesforceSDKManager.decryptWithPasscode(encThumbnailUrl, passcodeHash);
 		}
-        Map<String, String> customIdentityValues = null;
-        final List<String> customIdentityKeys = SalesforceSDKManager.getInstance().getCustomIdentityKeys();
-        if (customIdentityKeys != null && !customIdentityKeys.isEmpty()) {
-            customIdentityValues = new HashMap<>();
-            for (final String key : customIdentityKeys) {
+        Map<String, String> additionalOauthValues = null;
+        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+        if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+            additionalOauthValues = new HashMap<>();
+            for (final String key : additionalOauthKeys) {
                 if (!TextUtils.isEmpty(key)) {
                     final String encValue = accountManager.getUserData(account, key);
                     String value = null;
                     if (encValue != null) {
                         value = SalesforceSDKManager.decryptWithPasscode(encValue, passcodeHash);
                     }
-                    customIdentityValues.put(key, value);
+                    additionalOauthValues.put(key, value);
                 }
             }
         }
@@ -410,7 +410,7 @@ public class UserAccountManager {
 		return new UserAccount(authToken, refreshToken, loginServer, idUrl,
 				instanceServer, orgId, userId, username, accountName, clientId,
 				communityId, communityUrl, firstName, lastName, displayName, email, photoUrl,
-				thumbnailUrl, customIdentityValues);
+				thumbnailUrl, additionalOauthValues);
 	}
 
 	/**

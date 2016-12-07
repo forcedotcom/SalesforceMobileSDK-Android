@@ -135,7 +135,7 @@ public class SalesforceSDKManager {
     private String uid; // device id
     private volatile boolean loggedOut = false;
     private SortedSet<String> features;
-    private List<String> identityKeys;
+    private List<String> additionalOauthKeys;
 
     /**
      * PasscodeManager object lock.
@@ -582,21 +582,21 @@ public class SalesforceSDKManager {
     }
 
     /**
-     * Adds an additional set of custom keys to fetch and store from the identity endpoint.
+     * Adds an additional set of OAuth keys to fetch and store from the token endpoint.
      *
-     * @param identityKeys List of custom identity keys.
+     * @param additionalOauthKeys List of additional OAuth keys.
      */
-    public void addCustomIdentityKeys(List<String> identityKeys) {
-        this.identityKeys = identityKeys;
+    public void setAdditionalOauthKeys(List<String> additionalOauthKeys) {
+        this.additionalOauthKeys = additionalOauthKeys;
     }
 
     /**
-     * Returns the list of custom identity keys set for this application.
+     * Returns the list of additional OAuth keys set for this application.
      *
-     * @return
+     * @return List of additional OAuth keys.
      */
-    public List<String> getCustomIdentityKeys() {
-        return identityKeys;
+    public List<String> getAdditionalOauthKeys() {
+        return additionalOauthKeys;
     }
 
     /**

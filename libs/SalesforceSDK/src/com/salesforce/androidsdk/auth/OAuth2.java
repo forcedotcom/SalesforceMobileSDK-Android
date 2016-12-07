@@ -32,7 +32,6 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.util.MapUtil;
 
 import org.json.JSONObject;
 
@@ -41,6 +40,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -434,7 +434,6 @@ public class OAuth2 {
         public int screenLockTimeout = -1;
         public JSONObject customAttributes;
         public JSONObject customPermissions;
-        public Map<String, String> customIdentityValues;
 
         public IdServiceResponse(Response response) {
             try {
@@ -455,11 +454,6 @@ public class OAuth2 {
                     pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
                     screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
                 }
-                final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
-                if (sdkManager != null) {
-                    customIdentityValues = MapUtil.addJSONObjectToMap(parsedResponse,
-                            sdkManager.getCustomIdentityKeys(), customIdentityValues);
-                }
             } catch (Exception e) {
                 Log.w(TAG, e);
             }
@@ -476,7 +470,7 @@ public class OAuth2 {
 
         public TokenErrorResponse(Response response) {
             try {
-                JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 error = parsedResponse.getString(ERROR);
                 errorDescription = parsedResponse
                         .getString(ERROR_DESCRIPTION);
@@ -506,6 +500,7 @@ public class OAuth2 {
         public String code;
         public String communityId;
         public String communityUrl;
+        public Map<String, String> additionalOauthValues;
 
         /**
          * Constructor used during login flow
@@ -521,6 +516,18 @@ public class OAuth2 {
                 computeOtherFields();
                 communityId = callbackUrlParams.get(SFDC_COMMUNITY_ID);
                 communityUrl = callbackUrlParams.get(SFDC_COMMUNITY_URL);
+                final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
+                if (sdkManager != null) {
+                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
+                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                        additionalOauthValues = new HashMap<>();
+                        for (final String key : additionalOauthKeys) {
+                            if (!TextUtils.isEmpty(key)) {
+                                additionalOauthValues.put(key, callbackUrlParams.get(key));
+                            }
+                        }
+                    }
+                }
             } catch (Exception e) {
                 Log.w(TAG, e);
             }
@@ -532,7 +539,7 @@ public class OAuth2 {
          */
         public TokenEndpointResponse(Response response) {
             try {
-                JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
                 idUrl  = parsedResponse.getString(ID);
@@ -545,6 +552,21 @@ public class OAuth2 {
                 }
                 if (parsedResponse.has(SFDC_COMMUNITY_URL)) {
                 	communityUrl = parsedResponse.getString(SFDC_COMMUNITY_URL);
+                }
+                final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
+                if (sdkManager != null) {
+                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
+                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                        additionalOauthValues = new HashMap<>();
+                        for (final String key : additionalOauthKeys) {
+                            if (!TextUtils.isEmpty(key)) {
+                                final String value = parsedResponse.optString(key, null);
+                                if (value != null) {
+                                    additionalOauthValues.put(key, value);
+                                }
+                            }
+                        }
+                    }
                 }
             } catch (Exception e) {
                 Log.w(TAG, e);

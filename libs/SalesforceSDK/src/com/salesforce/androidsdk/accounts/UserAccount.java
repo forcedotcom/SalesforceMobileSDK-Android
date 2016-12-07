@@ -91,7 +91,7 @@ public class UserAccount {
 	private String email;
     private String photoUrl;
     private String thumbnailUrl;
-    private Map<String, String> customIdentityValues;
+    private Map<String, String> additionalOauthValues;
 
 	/**
 	 * Parameterized constructor.
@@ -117,41 +117,8 @@ public class UserAccount {
                 loginServer, idUrl, instanceServer,
                 orgId, userId, username, accountName,
                 clientId, communityId, communityUrl,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, null);
     }
-
-    /**
-     * Parameterized constructor.
-     *
-     * @param authToken Auth token.
-     * @param refreshToken Refresh token.
-     * @param loginServer Login server.
-     * @param idUrl Identity URL.
-     * @param instanceServer Instance server.
-     * @param orgId Org ID.
-     * @param userId User ID.
-     * @param username Username.
-     * @param accountName Account name.
-     * @param clientId Client ID.
-     * @param communityId Community ID.
-     * @param communityUrl Community URL.
-     * @param firstName First Name.
-     * @param lastName Last Name.
-	 * @param displayName Display Name.
-	 * @param email Email.
-     * @param photoUrl Photo URL.
-     * @param thumbnailUrl Thumbnail URL.
-     */
-	public UserAccount(String authToken, String refreshToken,
-			String loginServer, String idUrl, String instanceServer,
-			String orgId, String userId, String username, String accountName,
-			String clientId, String communityId, String communityUrl,
-            String firstName, String lastName, String displayName, String email, String photoUrl,
-            String thumbnailUrl) {
-		this(authToken, refreshToken, loginServer, idUrl, instanceServer, orgId, userId, username,
-				accountName, clientId, communityId, communityUrl, firstName, lastName, displayName,
-				email, photoUrl, thumbnailUrl, null);
-	}
 
 	/**
 	 * Parameterized constructor.
@@ -174,14 +141,14 @@ public class UserAccount {
 	 * @param email Email.
 	 * @param photoUrl Photo URL.
 	 * @param thumbnailUrl Thumbnail URL.
-	 * @param customIdentityValues Custom identity values.
+	 * @param additionalOauthValues Additional OAuth values.
 	 */
 	public UserAccount(String authToken, String refreshToken,
 					   String loginServer, String idUrl, String instanceServer,
 					   String orgId, String userId, String username, String accountName,
 					   String clientId, String communityId, String communityUrl,
 					   String firstName, String lastName, String displayName, String email, String photoUrl,
-					   String thumbnailUrl, Map<String, String> customIdentityValues) {
+					   String thumbnailUrl, Map<String, String> additionalOauthValues) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
@@ -200,7 +167,7 @@ public class UserAccount {
 		this.email = email;
 		this.photoUrl = photoUrl;
 		this.thumbnailUrl = thumbnailUrl;
-		this.customIdentityValues = customIdentityValues;
+		this.additionalOauthValues = additionalOauthValues;
 		SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_USER_AUTH);
 	}
 
@@ -232,8 +199,8 @@ public class UserAccount {
 			email = object.optString(EMAIL, null);
             photoUrl = object.optString(PHOTO_URL, null);
 			thumbnailUrl = object.optString(THUMBNAIL_URL, null);
-            customIdentityValues = MapUtil.addJSONObjectToMap(object,
-                    SalesforceSDKManager.getInstance().getCustomIdentityKeys(), customIdentityValues);
+            additionalOauthValues = MapUtil.addJSONObjectToMap(object,
+                    SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
 	}
 
@@ -262,8 +229,8 @@ public class UserAccount {
 			email = bundle.getString(EMAIL);
             photoUrl = bundle.getString(PHOTO_URL);
             thumbnailUrl = bundle.getString(THUMBNAIL_URL);
-            customIdentityValues = MapUtil.addBundleToMap(bundle,
-					SalesforceSDKManager.getInstance().getCustomIdentityKeys(), customIdentityValues);
+            additionalOauthValues = MapUtil.addBundleToMap(bundle,
+					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
 	}
 
@@ -430,12 +397,12 @@ public class UserAccount {
     }
 
     /**
-     * Returns the custom identity values for this user.
+     * Returns the additional OAuth values for this user.
      *
-     * @return Custom identity values.
+     * @return Additional OAuth values.
      */
-    public Map<String, String> getCustomIdentityValues() {
-        return customIdentityValues;
+    public Map<String, String> getAdditionalOauthValues() {
+        return additionalOauthValues;
     }
 
 	/**
@@ -640,8 +607,8 @@ public class UserAccount {
 			object.put(EMAIL, email);
             object.put(PHOTO_URL, photoUrl);
             object.put(THUMBNAIL_URL, thumbnailUrl);
-            object = MapUtil.addMapToJSONObject(customIdentityValues,
-                    SalesforceSDKManager.getInstance().getCustomIdentityKeys(), object);
+            object = MapUtil.addMapToJSONObject(additionalOauthValues,
+                    SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
     	} catch (JSONException e) {
     		Log.e(TAG, "Unable to convert to JSON");
     	}
@@ -673,8 +640,8 @@ public class UserAccount {
 		object.putString(EMAIL, email);
         object.putString(PHOTO_URL, photoUrl);
         object.putString(THUMBNAIL_URL, thumbnailUrl);
-        object = MapUtil.addMapToBundle(customIdentityValues,
-                SalesforceSDKManager.getInstance().getCustomIdentityKeys(), object);
+        object = MapUtil.addMapToBundle(additionalOauthValues,
+                SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
     	return object;
     }
 }

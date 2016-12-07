@@ -348,7 +348,7 @@ public class RestClient {
 		public final String email;
 		public final String photoUrl;
 		public final String thumbnailUrl;
-		public final Map<String, String> customIdentityValues;
+		public final Map<String, String> additionalOauthValues;
 
 		/**
 		 * Parameterized constructor.
@@ -369,13 +369,13 @@ public class RestClient {
          * @param email Email.
          * @param photoUrl Photo URL.
          * @param thumbnailUrl Thumbnail URL.
-         * @param customIdentityValues Custom identity values.
+         * @param additionalOauthValues Additional OAuth values.
 		 */
 		public ClientInfo(String clientId, URI instanceUrl, URI loginUrl,
 				URI identityUrl, String accountName, String username,
 				String userId, String orgId, String communityId, String communityUrl,
 				String firstName, String lastName, String displayName, String email,
-				String photoUrl, String thumbnailUrl, Map<String, String> customIdentityValues) {
+				String photoUrl, String thumbnailUrl, Map<String, String> additionalOauthValues) {
 			this.clientId = clientId;
 			this.instanceUrl = instanceUrl;
 			this.loginUrl = loginUrl;
@@ -392,7 +392,7 @@ public class RestClient {
 			this.email = email;
 			this.photoUrl = photoUrl;
 			this.thumbnailUrl = thumbnailUrl;
-            this.customIdentityValues = customIdentityValues;
+            this.additionalOauthValues = additionalOauthValues;
 		}
 
         /**
@@ -421,7 +421,7 @@ public class RestClient {
               .append("     email: ").append(email).append("\n")
               .append("     photoUrl: ").append(photoUrl).append("\n")
               .append("     thumbnailUrl: ").append(thumbnailUrl).append("\n")
-              .append("     customIdentityValues: ").append(customIdentityValues).append("\n")
+              .append("     additionalOauthValues: ").append(additionalOauthValues).append("\n")
 			  .append("  }\n");
 			return sb.toString();
 		}
@@ -695,7 +695,7 @@ public class RestClient {
                                 clientInfo.userId, clientInfo.orgId, clientInfo.communityId,
                                 clientInfo.communityUrl, clientInfo.firstName, clientInfo.lastName,
                                 clientInfo.displayName, clientInfo.email, clientInfo.photoUrl,
-                                clientInfo.thumbnailUrl, clientInfo.customIdentityValues);
+                                clientInfo.thumbnailUrl, clientInfo.additionalOauthValues);
                     } catch (URISyntaxException ex) {
                         Log.w("RestClient", "Invalid server URL", ex);
                     }
