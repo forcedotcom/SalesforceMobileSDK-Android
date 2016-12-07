@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.accounts;
 
-import java.util.List;
-
 import android.accounts.AccountManager;
 import android.app.Application;
 import android.app.Instrumentation;
@@ -42,6 +40,8 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManagerTest;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
+
+import java.util.List;
 
 /**
  * Tests for UserAccountManager.

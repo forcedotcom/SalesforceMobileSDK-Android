@@ -30,6 +30,7 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestResponse;
 
 import org.json.JSONObject;
@@ -39,6 +40,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -420,6 +422,7 @@ public class OAuth2 {
      * Helper class to parse an identity service response.
      */
     public static class IdServiceResponse {
+
         public String username;
         public String email;
         public String firstName;
@@ -432,24 +435,21 @@ public class OAuth2 {
         public JSONObject customAttributes;
         public JSONObject customPermissions;
 
-
         public IdServiceResponse(Response response) {
             try {
-                JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 username = parsedResponse.getString(USERNAME);
                 email = parsedResponse.getString(EMAIL);
                 firstName = parsedResponse.getString(FIRST_NAME);
                 lastName = parsedResponse.getString(LAST_NAME);
                 displayName = parsedResponse.getString(DISPLAY_NAME);
-                JSONObject photos = parsedResponse.getJSONObject(PHOTOS);
+                final JSONObject photos = parsedResponse.getJSONObject(PHOTOS);
                 if (photos != null) {
                     pictureUrl = photos.getString(PICTURE);
                     thumbnailUrl = photos.getString(THUMBNAIL);
                 }
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
-
-                // With connected apps (pilot in Summer '12), the server can specify a policy.
                 if (parsedResponse.has(MOBILE_POLICY)) {
                     pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
                     screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
@@ -464,12 +464,13 @@ public class OAuth2 {
      * Helper class to parse a token refresh error response.
      */
     public static class TokenErrorResponse {
+
         public String error;
         public String errorDescription;
 
         public TokenErrorResponse(Response response) {
             try {
-                JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 error = parsedResponse.getString(ERROR);
                 errorDescription = parsedResponse
                         .getString(ERROR_DESCRIPTION);
@@ -499,6 +500,7 @@ public class OAuth2 {
         public String code;
         public String communityId;
         public String communityUrl;
+        public Map<String, String> additionalOauthValues;
 
         /**
          * Constructor used during login flow
@@ -514,6 +516,18 @@ public class OAuth2 {
                 computeOtherFields();
                 communityId = callbackUrlParams.get(SFDC_COMMUNITY_ID);
                 communityUrl = callbackUrlParams.get(SFDC_COMMUNITY_URL);
+                final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
+                if (sdkManager != null) {
+                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
+                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                        additionalOauthValues = new HashMap<>();
+                        for (final String key : additionalOauthKeys) {
+                            if (!TextUtils.isEmpty(key)) {
+                                additionalOauthValues.put(key, callbackUrlParams.get(key));
+                            }
+                        }
+                    }
+                }
             } catch (Exception e) {
                 Log.w(TAG, e);
             }
@@ -525,7 +539,7 @@ public class OAuth2 {
          */
         public TokenEndpointResponse(Response response) {
             try {
-                JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
                 idUrl  = parsedResponse.getString(ID);
@@ -538,6 +552,21 @@ public class OAuth2 {
                 }
                 if (parsedResponse.has(SFDC_COMMUNITY_URL)) {
                 	communityUrl = parsedResponse.getString(SFDC_COMMUNITY_URL);
+                }
+                final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
+                if (sdkManager != null) {
+                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
+                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                        additionalOauthValues = new HashMap<>();
+                        for (final String key : additionalOauthKeys) {
+                            if (!TextUtils.isEmpty(key)) {
+                                final String value = parsedResponse.optString(key, null);
+                                if (value != null) {
+                                    additionalOauthValues.put(key, value);
+                                }
+                            }
+                        }
+                    }
                 }
             } catch (Exception e) {
                 Log.w(TAG, e);
