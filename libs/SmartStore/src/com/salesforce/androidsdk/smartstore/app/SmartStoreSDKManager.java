@@ -388,7 +388,6 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
         UserAccount userAccount = getUserAccountManager().getCurrentUser();
         String communityId = userAccount!=null?userAccount.getCommunityId():null;
         List<String> globalDBNames = DBOpenHelper.getGlobalDatabasePrefixList(context,getUserAccountManager().getCurrentUser(),communityId);
-
         return globalDBNames;
     }
 
@@ -411,7 +410,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     public void removeAllGlobalStores() {
         List<String> globalDBNames = this.getGlobalStoresPrefixList();
         for(String storeName : globalDBNames) {
-            SmartStoreSDKManager.getInstance().removeGlobalSmartStore(storeName);
+            removeGlobalSmartStore(storeName);
         }
     }
 
@@ -422,7 +421,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
     public void removeAllUserStores() {
         List<String> globalDBNames = this.getUserStoresPrefixList();
         for(String storeName : globalDBNames) {
-            SmartStoreSDKManager.getInstance().removeSmartStore(storeName,
+            removeSmartStore(storeName,
                     UserAccountManager.getInstance().getCurrentUser(),
                     UserAccountManager.getInstance().getCurrentUser().getCommunityId());
         }
