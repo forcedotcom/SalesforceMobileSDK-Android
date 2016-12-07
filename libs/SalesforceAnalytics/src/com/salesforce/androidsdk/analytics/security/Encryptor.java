@@ -206,33 +206,11 @@ public class Encryptor {
             byte [] sig = sha.doFinal(dataBytes);
 
             // Encodes with Base64.
-            String hash = Base64.encodeToString(sig, Base64.DEFAULT);
-
-            /*
-             * Android 4.3 has a bug where a newline character is appended
-             * at the end of the base64 encoded string. We remove this newline
-             * character to prevent a mismatch between the stored hash
-             * and computed hash.
-             */
-            hash = removeNewLine(hash);
-            return hash;
+            return Base64.encodeToString(sig, Base64.NO_WRAP);
         } catch (Exception ex) {
             Log.w(TAG, "Error during hashing", ex);
             return null;
         }
-    }
-
-    /**
-     * Removes a trailing newline character from the hash.
-     *
-     * @param hash Hash.
-     * @return Hash with trailing newline character removed.
-     */
-    public static String removeNewLine(String hash) {
-        if (hash != null && hash.endsWith("\n")) {
-            return hash.substring(0, hash.lastIndexOf("\n"));
-        }
-        return hash;
     }
 
     private static byte[] generateInitVector() throws NoSuchAlgorithmException, NoSuchProviderException {
