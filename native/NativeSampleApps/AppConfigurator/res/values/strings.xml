@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_profile_message">This app is currently not a profile owner.</string>
+    <string name="set_up_profile">Set up profile</string>
+    <string name="status_not_installed">Target app is not installed.</string>
+    <string name="status_not_activated">Target app is installed, but not activated in this profile.</string>
+    <string name="status_need_reinstall">Target app needs reinstalling.</string>
+    <string name="profile_name">SDKProfile</string>
+    <string name="save">Save</string>
+    <string name="show_xml">Show XML Values</string>
+    <string name="saved">Configuration Saved</string>
+    <string name="only_allowed_servers">Show only authorized hosts?</string>
+</resources>

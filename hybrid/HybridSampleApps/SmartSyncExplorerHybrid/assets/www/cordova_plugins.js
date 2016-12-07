@@ -1,0 +1,1 @@
+../../../../../external/shared/gen/cordova_plugins.js

@@ -1,0 +1,11 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@+id/sf__menu_pick_server"
+        android:title="@string/sf__pick_server" />
+
+    <item android:id="@+id/sf__menu_clear_cookies"
+        android:title="@string/sf__clear_cookies" />
+
+    <item android:id="@+id/sf__menu_reload"
+        android:title="@string/sf__reload" />
+</menu>

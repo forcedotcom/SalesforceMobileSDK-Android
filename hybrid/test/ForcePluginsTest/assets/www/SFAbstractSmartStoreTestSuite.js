@@ -1,1 +1,0 @@
-../../../../../external/shared/PhoneGap/test/SFAbstractSmartStoreTestSuite.js

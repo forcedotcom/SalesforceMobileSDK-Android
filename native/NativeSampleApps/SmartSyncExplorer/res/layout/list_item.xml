@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
+
+    <TextView android:id="@+id/obj_image"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:layout_margin="4dp"
+        android:paddingLeft="16dp"
+        android:paddingRight="10dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:textColor="@android:color/white" />
+
+    <LinearLayout android:id="@+id/obj_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_toRightOf="@id/obj_image"
+        android:orientation="vertical"
+        android:layout_margin="6dp">
+
+        <TextView android:id="@+id/obj_name"
+            android:layout_height="wrap_content"
+            android:layout_width="230dp"
+            android:textSize="14sp"
+            android:textColor="@android:color/black"
+            android:singleLine="true"
+            android:ellipsize="end" />
+
+        <TextView android:id="@+id/obj_type"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            android:textSize="10sp"
+            android:textColor="@android:color/black"
+            android:singleLine="true"
+            android:ellipsize="end"
+            android:paddingBottom="10dp" />
+    </LinearLayout>
+
+    <ImageView android:id="@+id/sync_status_view"
+        android:layout_alignParentRight="true"
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:layout_margin="4dp"
+        android:src="@drawable/sync_success" />
+</RelativeLayout>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Focus on the layout itself to prevent the edit controls
+  from gaining on load. clearFocus() doesn't work.
+-->
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:id="@+id/sf__layout_root"
+	android:orientation="vertical"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:padding="@dimen/sf__server_layout_padding"
+	android:filterTouchesWhenObscured="true"
+	android:focusable="true"
+	android:focusableInTouchMode="true">
+
+	<EditText android:id="@+id/sf__picker_custom_label"
+	    style="@style/SalesforceSDK.ServerPicker.EditText"
+		android:imeOptions="actionNext" />
+
+	<EditText android:id="@+id/sf__picker_custom_url"
+	    style="@style/SalesforceSDK.ServerPicker.EditText"
+		android:imeOptions="actionDone" />
+
+	<LinearLayout style="@style/SalesforceSDK.ServerPicker.ButtonContainer">
+
+		<Button android:id="@+id/sf__apply_button"
+		    android:text="@string/sf__server_url_default_apply"
+		    style="@style/SalesforceSDK.ServerPicker.Button.OkCancel" />
+
+		<Button android:id="@+id/sf__cancel_button"
+		    android:text="@string/sf__server_url_default_cancel"
+		    style="@style/SalesforceSDK.ServerPicker.Button.OkCancel" />
+	</LinearLayout>
+</LinearLayout>

@@ -8,3 +8,12 @@ junit-reports/
 local.properties
 .DS_Store
 proguard-project.txt
+.settings/
+.gradle/
+*~
+build/
+.idea/
+*.iml
+bower_components/
+node_modules/
+.github/

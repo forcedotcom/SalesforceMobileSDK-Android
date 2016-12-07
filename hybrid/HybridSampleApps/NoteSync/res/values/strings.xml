@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="account_type">com.salesforce.samples.notesync.login</string>
+    <string name="app_name">NoteSync</string>
+    <string name="app_package">com.salesforce.samples.notesync</string>
+</resources>

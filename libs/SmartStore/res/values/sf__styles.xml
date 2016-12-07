@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <style name="SmartStore">
+    </style>
+
+    <style name="SmartStore.Inspector">
+    </style>
+    
+    <style name="SmartStore.Inspector.Button">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@color/sf__inspector_button_background_color</item>
+        <item name="android:layout_margin">@dimen/sf__inspector_margin</item>
+    </style>
+    
+    <style name="SmartStore.Inspector.EditText">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@color/sf__inspector_text_background_color</item>
+        <item name="android:layout_margin">@dimen/sf__inspector_margin</item>
+        <item name="android:textColor">@color/sf__inspector_text_color</item>
+        <item name="android:textSize">@dimen/sf__inspector_text_size</item>
+        <item name="android:typeface">monospace</item>
+        <item name="android:gravity">top</item>
+        <item name="android:inputType">textNoSuggestions</item>
+    </style>
+    
+    <style name="SmartStore.Inspector.EditText.Query">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">@dimen/sf__inspector_query_field_height</item>
+    </style>    
+    
+    <style name="SmartStore.Inspector.GridView">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_margin">@dimen/sf__inspector_margin</item>
+        <item name="android:horizontalSpacing">@dimen/sf__inspector_grid_cell_spacing</item>
+        <item name="android:verticalSpacing">@dimen/sf__inspector_grid_cell_spacing</item>
+        <item name="android:listSelector">@null</item>
+        <item name="android:stretchMode">columnWidth</item>
+    </style>
+    
+    <style name="SmartStore.Inspector.Cell">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:background">@color/sf__inspector_cell_background_color</item>
+        <item name="android:textColor">@color/sf__inspector_cell_text_color</item>
+        <item name="android:textSize">@dimen/sf__inspector_cell_text_size</item>
+        <item name="android:typeface">monospace</item>
+    </style>
+</resources>

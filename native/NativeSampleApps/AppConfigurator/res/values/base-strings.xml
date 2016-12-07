@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resources>
+    <string name="app_name">AppConfigurator</string>
+    <string name="intro_message">
+        <![CDATA[
+
+	    This sample demonstrates how to configure SDK apps as a profile owner.
+
+        ]]>
+    </string>
+</resources>
