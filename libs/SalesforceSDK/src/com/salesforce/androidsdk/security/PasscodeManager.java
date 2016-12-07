@@ -307,7 +307,7 @@ public class PasscodeManager  {
     public boolean check(Context ctx, String passcode) {
         SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         String hashedPasscode = sp.getString(KEY_PASSCODE, null);
-        hashedPasscode = Encryptor.removeNewLine(hashedPasscode);
+        hashedPasscode = removeNewLine(hashedPasscode);
         if (hashedPasscode != null) {
             return hashedPasscode.equals(hashForVerification(passcode));
         }
@@ -316,6 +316,20 @@ public class PasscodeManager  {
          * If the stored passcode hash is null, there is no passcode.
          */
         return true;
+    }
+
+    /**
+     * Removes a trailing newline character from the hash.
+     *
+     * @param hash Hash.
+     * @return Hash with trailing newline character removed.
+     */
+    private String removeNewLine(String hash) {
+        int length = hash == null ? 0 : hash.length();
+        if (length > 0 && hash.endsWith("\n")) {
+            return hash.substring(0, length - 1);
+        }
+        return hash;
     }
 
     /**
