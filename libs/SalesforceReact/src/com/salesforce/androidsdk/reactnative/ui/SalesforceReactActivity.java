@@ -27,7 +27,9 @@
 package com.salesforce.androidsdk.reactnative.ui;
 
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -92,6 +94,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
         // Let observers know
         EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
+
     }
 
     @Override
@@ -124,6 +127,8 @@ public abstract class SalesforceReactActivity extends ReactActivity {
             }
 
         }
+
+        loadReactAppOnceIfReady();
 
     }
 
@@ -231,8 +236,8 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
     protected void setRestClient(RestClient restClient) {
         client = restClient;
-        if(client != null && reactActivityDelegate != null){
-            reactActivityDelegate.loadReactAppOnceIfReady(getMainComponentName());
+        if(client != null ){
+            loadReactAppOnceIfReady();
         }
     }
 
@@ -268,6 +273,9 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     }
 
     protected boolean shouldReactBeRunning(){
+        if(shouldAskOverlayPermission()){
+            return false;
+        }
         if(shouldAuthenticate()){
             return client != null;
         }
@@ -276,6 +284,25 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
     protected void restartReactNativeApp(){
         SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().destroy();
-        SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().createReactContextInBackground();
+        if(shouldReactBeRunning()){
+            SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().createReactContextInBackground();
+        }
+    }
+
+    private boolean shouldAskOverlayPermission(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if(SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().getDevSupportManager().getDevSupportEnabled()){
+                if (!Settings.canDrawOverlays(this)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private void loadReactAppOnceIfReady() {
+        if(reactActivityDelegate != null ){
+            reactActivityDelegate.loadReactAppOnceIfReady(getMainComponentName());
+        }
     }
 }
