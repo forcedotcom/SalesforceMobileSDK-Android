@@ -21,16 +21,30 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 4.3
+### What's New in 5.0
+
+**OS Version Support**
+- Android Nougat (API 25) is fully supported in Mobile SDK 5.0.
 
 **SmartStore Enhancements**
-- To enhance performance in certain edge cases, SmartStore adds an option for serializing unusually large soup elements in external storage.
+- We have added new APIs that allow hybrid developers to create their own named databases.
+
+**SmartSync Enhancements**
+- We now allow sync down/refresh of data stored in local soups by specifying the fields to sync.
+
+**Hybrid Networking Enhancements**
+- We have replaced forcetk.mobilesdk.js with force.js. Networking in hybrid apps is now handled natively. As a result, session token refresh happens automatically.
 
 **Library Upgrades**
-- We've updated React Native to version 0.30.0.
-- We've updated SQLCipher to version 3.5.2.
+- We've updated React Native to version 0.35.0.
+- We've updated Cordova to version 6.1.0.
+- We've removed the dependency on Guava.
+
+**SalesforceAnalytics Library**
+- We've added a new library in Mobile SDK 5.0 called SalesforceAnalytics. This enables us to collect non-sensitive data on which features in Mobile SDK are being used. It is turned on by default, but can be turned off if required.
 
 **Other Technical Improvements**
+- We now support rich app templates (see [forcedroid](https://npmjs.org/package/forcedroid) for more details).
 - Improvements to sample apps.
 - Various bug fixes.
 
@@ -65,6 +79,7 @@ Documentation
 ==
 
 * [SalesforceSDK](http://forcedotcom.github.com/SalesforceMobileSDK-Android/index.html)
+* [Mobile SDK Development Guide](https://github.com/forcedotcom/SalesforceMobileSDK-Shared/blob/master/doc/mobile_sdk.pdf)
 
 Discussion
 ==
