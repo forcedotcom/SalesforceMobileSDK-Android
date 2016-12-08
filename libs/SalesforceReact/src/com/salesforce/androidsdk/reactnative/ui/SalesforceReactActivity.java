@@ -26,12 +26,16 @@
  */
 package com.salesforce.androidsdk.reactnative.ui;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 
 import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;
@@ -59,6 +63,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     private PasscodeManager passcodeManager;
     private LogoutCompleteReceiver logoutCompleteReceiver;
     private SalesforceReactActivityDelegate reactActivityDelegate;
+    AlertDialog overlayPermissionRequiredDialog;
 
     /**
      * @return true if you want login to happen as soon as activity is loaded
@@ -293,7 +298,11 @@ public abstract class SalesforceReactActivity extends ReactActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if(SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().getDevSupportManager().getDevSupportEnabled()){
                 if (!Settings.canDrawOverlays(this)) {
+                    showPermissionWarning();
                     return true;
+                }
+                else{
+                    hidePermissionWarning();
                 }
             }
         }
@@ -305,4 +314,29 @@ public abstract class SalesforceReactActivity extends ReactActivity {
             reactActivityDelegate.loadReactAppOnceIfReady(getMainComponentName());
         }
     }
+
+    private void showPermissionWarning(){
+        if(overlayPermissionRequiredDialog == null){
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Developer mode: Overlay permissions need to be granted");
+            builder.setCancelable(false);
+            builder.setPositiveButton("Continue",new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog,int id) {
+                    dialog.dismiss();
+                    SalesforceReactActivity.this.recreate();
+                }
+            });
+            overlayPermissionRequiredDialog = builder.create();
+        }
+        if(!overlayPermissionRequiredDialog.isShowing()){
+            overlayPermissionRequiredDialog.show();
+        }
+    }
+
+    private void hidePermissionWarning(){
+        if(overlayPermissionRequiredDialog != null){
+            overlayPermissionRequiredDialog.dismiss();
+        }
+    }
+
 }
