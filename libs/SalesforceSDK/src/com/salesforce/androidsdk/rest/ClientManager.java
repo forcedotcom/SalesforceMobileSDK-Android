@@ -49,7 +49,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * ClientManager is a factory class for RestClient which stores OAuth credentials in the AccountManager.
@@ -198,6 +200,19 @@ public class ClientManager {
         if (encThumbnailUrl != null) {
             thumbnailUrl = SalesforceSDKManager.decryptWithPasscode(encThumbnailUrl, passcodeHash);
         }
+        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+        Map<String, String> values = null;
+        if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+            values = new HashMap<>();
+            for (final String key : additionalOauthKeys) {
+                final String encValue = accountManager.getUserData(acc, key);
+                if (encValue != null) {
+                    final String value = SalesforceSDKManager.decryptWithPasscode(encValue,
+                            SalesforceSDKManager.getInstance().getPasscodeHash());
+                    values.put(key, value);
+                }
+            }
+        }
         final String encCommunityId = accountManager.getUserData(acc, AuthenticatorService.KEY_COMMUNITY_ID);
         String communityId = null;
         if (encCommunityId != null) {
@@ -222,7 +237,7 @@ public class ClientManager {
             ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer),
             		new URI(loginServer), new URI(idUrl), accountName, username,
             		userId, orgId, communityId, communityUrl,
-                    firstName, lastName, displayName, email, photoUrl, thumbnailUrl);
+                    firstName, lastName, displayName, email, photoUrl, thumbnailUrl, values);
             return new RestClient(clientInfo, authToken, HttpAccess.DEFAULT, authTokenProvider);
         } catch (URISyntaxException e) {
             Log.w(TAG, "Invalid server URL", e);
@@ -328,14 +343,15 @@ public class ClientManager {
                 authToken, instanceUrl, loginUrl, idUrl,
                 clientId, orgId, userId, passcodeHash,
                 clientSecret, communityId, communityUrl,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, null);
     }
 
     public Bundle createNewAccount(String accountName, String username, String refreshToken,
     		String authToken, String instanceUrl, String loginUrl, String idUrl,
     		String clientId, String orgId, String userId, String passcodeHash,
             String clientSecret, String communityId, String communityUrl,
-            String firstName, String lastName, String displayName, String email, String photoUrl, String thumbnailUrl) {
+            String firstName, String lastName, String displayName, String email, String photoUrl,
+            String thumbnailUrl, Map<String, String> additionalOauthValues) {
         Bundle extras = new Bundle();
         extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
         extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
@@ -362,6 +378,16 @@ public class ClientManager {
         extras.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encryptWithPasscode(email, passcodeHash));
         extras.putString(AuthenticatorService.KEY_PHOTO_URL, SalesforceSDKManager.encryptWithPasscode(photoUrl, passcodeHash));
         extras.putString(AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, passcodeHash));
+        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+        if (additionalOauthValues != null && !additionalOauthValues.isEmpty()) {
+            for (final String key : additionalOauthKeys) {
+                final String value = additionalOauthValues.get(key);
+                if (value != null) {
+                    final String encrValue = SalesforceSDKManager.encryptWithPasscode(value, passcodeHash);
+                    extras.putString(key, encrValue);
+                }
+            }
+        }
         Account acc = new Account(accountName, getAccountType());
         accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encryptWithPasscode(refreshToken, passcodeHash), new Bundle());
         // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
@@ -430,6 +456,19 @@ public class ClientManager {
                     if (encThumbnailUrl != null) {
                         thumbnailUrl = SalesforceSDKManager.decryptWithPasscode(encThumbnailUrl, oldPass);
                     }
+                    final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+                    Map<String, String> values = null;
+                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                        values = new HashMap<>();
+                        for (final String key : additionalOauthKeys) {
+                            final String encValue = acctManager.getUserData(account, key);
+                            if (encValue != null) {
+                                final String value = SalesforceSDKManager.decryptWithPasscode(encValue,
+                                        SalesforceSDKManager.getInstance().getPasscodeHash());
+                                values.put(key, value);
+                            }
+                        }
+                    }
                     final String encClientSecret = acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET);
                     String clientSecret = null;
                     if (encClientSecret != null) {
@@ -469,6 +508,14 @@ public class ClientManager {
                     }
                     if (thumbnailUrl != null) {
                         acctManager.setUserData(account, AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, newPass));
+                    }
+                    if (values != null && !values.isEmpty()) {
+                        for (final String key : additionalOauthKeys) {
+                            final String value = values.get(key);
+                            if (value != null) {
+                                acctManager.setUserData(account, key, SalesforceSDKManager.encryptWithPasscode(value, newPass));
+                            }
+                        }
                     }
                     if (clientSecret != null) {
                         acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_SECRET, SalesforceSDKManager.encryptWithPasscode(clientSecret, newPass));

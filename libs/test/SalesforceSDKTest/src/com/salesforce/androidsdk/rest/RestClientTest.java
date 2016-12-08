@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.rest;
 import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
@@ -48,6 +49,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -66,18 +68,23 @@ public class RestClientTest extends InstrumentationTestCase {
     private static final String ENTITY_NAME_PREFIX = "RestClientTest";
     private static final String SEARCH_ENTITY_NAME = "Acme";
     private static final String BAD_TOKEN = "bad-token";
+
     private ClientInfo clientInfo;
     private HttpAccess httpAccess;
     private RestClient restClient;
     private String authToken;
     private String instanceUrl;
+    private List<String> testOauthKeys;
+    private Map<String, String> testOauthValues;
+
     public static final String TEST_FIRST_NAME = "firstName";
     public static final String TEST_LAST_NAME = "lastName";
     public static final String TEST_DISPLAY_NAME = "displayName";
     public static final String TEST_EMAIL = "test@email.com";
     public static final String TEST_PHOTO_URL = "http://some.photo.url";
     public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
-
+    public static final String TEST_CUSTOM_KEY = "test_custom_key";
+    public static final String TEST_CUSTOM_VALUE = "test_custom_value";
 
     @Override
     public void setUp() throws Exception {
@@ -87,19 +94,28 @@ public class RestClientTest extends InstrumentationTestCase {
         TokenEndpointResponse refreshResponse = OAuth2.refreshAuthToken(httpAccess, new URI(TestCredentials.INSTANCE_URL), TestCredentials.CLIENT_ID, TestCredentials.REFRESH_TOKEN);
         authToken = refreshResponse.authToken;
         instanceUrl = refreshResponse.instanceUrl;
+        testOauthKeys = new ArrayList<>();
+        testOauthKeys.add(TEST_CUSTOM_KEY);
+        testOauthValues = new HashMap<>();
+        testOauthValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
+        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
         clientInfo = new ClientInfo(TestCredentials.CLIENT_ID,
         		new URI(TestCredentials.INSTANCE_URL),
         		new URI(TestCredentials.LOGIN_URL),
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
-                TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL);
+                TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL,
+                TEST_THUMBNAIL_URL, testOauthValues);
         restClient = new RestClient(clientInfo, authToken, httpAccess, null);
     }
 
     @Override
     public void tearDown() throws Exception {
         cleanup();
+        testOauthKeys = null;
+        testOauthValues = null;
+        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
     }
 
     /**
@@ -120,7 +136,7 @@ public class RestClientTest extends InstrumentationTestCase {
         assertEquals("Wrong email", TEST_EMAIL, restClient.getClientInfo().email);
         assertEquals("Wrong photoUrl", TEST_PHOTO_URL, restClient.getClientInfo().photoUrl);
         assertEquals("Wrong thumbnailUrl", TEST_THUMBNAIL_URL, restClient.getClientInfo().thumbnailUrl);
-
+        assertEquals("Wrong additional OAuth value", testOauthValues, restClient.getClientInfo().additionalOauthValues);
     }
 
     public void testClientInfoResolveUrl() {
@@ -142,7 +158,7 @@ public class RestClientTest extends InstrumentationTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
-        		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null);
+        		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testOauthValues);
     	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("a/b/").toString());
     	assertEquals("Wrong url", TestCredentials.COMMUNITY_URL + "/a/b/", info.resolveUrl("/a/b/").toString());
     }
@@ -154,7 +170,7 @@ public class RestClientTest extends InstrumentationTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null,
-        		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null);
+        		TestCredentials.COMMUNITY_URL, null, null, null, null, null, null, testOauthValues);
         assertEquals("Wrong url", TestCredentials.COMMUNITY_URL, info.getInstanceUrlAsString());
     }
 

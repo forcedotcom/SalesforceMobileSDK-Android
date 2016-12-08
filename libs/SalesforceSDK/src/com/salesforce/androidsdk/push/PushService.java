@@ -448,7 +448,7 @@ public class PushService extends IntentService {
     	        		account.getUserId(), account.getOrgId(),
     	        		account.getCommunityId(), account.getCommunityUrl(),
 						account.getFirstName(), account.getLastName(), account.getDisplayName(), account.getEmail(),
-						account.getPhotoUrl(), account.getThumbnailUrl());
+						account.getPhotoUrl(), account.getThumbnailUrl(), account.getAdditionalOauthValues());
                 client = new RestClient(clientInfo, account.getAuthToken(),
                 		HttpAccess.DEFAULT, authTokenProvider);
     		} catch (Exception e) {

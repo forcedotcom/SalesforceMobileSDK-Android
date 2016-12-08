@@ -26,9 +26,6 @@
  */
 package com.salesforce.androidsdk.accounts;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Activity;
@@ -37,10 +34,16 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
+import android.text.TextUtils;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.rest.ClientManager;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * This class acts as a manager that provides methods to access
@@ -374,6 +377,21 @@ public class UserAccountManager {
 		if (encThumbnailUrl != null) {
 			thumbnailUrl = SalesforceSDKManager.decryptWithPasscode(encThumbnailUrl, passcodeHash);
 		}
+        Map<String, String> additionalOauthValues = null;
+        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+        if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+            additionalOauthValues = new HashMap<>();
+            for (final String key : additionalOauthKeys) {
+                if (!TextUtils.isEmpty(key)) {
+                    final String encValue = accountManager.getUserData(account, key);
+                    String value = null;
+                    if (encValue != null) {
+                        value = SalesforceSDKManager.decryptWithPasscode(encValue, passcodeHash);
+                    }
+                    additionalOauthValues.put(key, value);
+                }
+            }
+        }
 		final String encCommunityId = accountManager.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
         String communityId = null;
         if (encCommunityId != null) {
@@ -391,7 +409,8 @@ public class UserAccountManager {
 		}
 		return new UserAccount(authToken, refreshToken, loginServer, idUrl,
 				instanceServer, orgId, userId, username, accountName, clientId,
-				communityId, communityUrl, firstName, lastName, displayName, email, photoUrl, thumbnailUrl);
+				communityId, communityUrl, firstName, lastName, displayName, email, photoUrl,
+				thumbnailUrl, additionalOauthValues);
 	}
 
 	/**

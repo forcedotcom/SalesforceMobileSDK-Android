@@ -26,12 +26,26 @@
  */
 package com.salesforce.androidsdk.accounts;
 
+import android.app.Application;
+import android.app.Instrumentation;
+import android.content.Context;
 import android.os.Bundle;
 import android.test.InstrumentationTestCase;
+
+import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.rest.ClientManagerTest;
+import com.salesforce.androidsdk.util.EventsObservable;
+import com.salesforce.androidsdk.util.MapUtil;
+import com.salesforce.androidsdk.util.test.EventsListenerQueue;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -59,22 +73,47 @@ public class UserAccountTest extends InstrumentationTestCase {
     public static final String TEST_EMAIL = "test@email.com";
     public static final String TEST_PHOTO_URL = "http://some.photo.url";
     public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
+    public static final String TEST_CUSTOM_KEY = "test_custom_key";
+    public static final String TEST_CUSTOM_VALUE = "test_custom_value";
 
+    private EventsListenerQueue eq;
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        final Context targetContext = getInstrumentation().getTargetContext();
+        final Application app = Instrumentation.newApplication(TestForceApp.class, targetContext);
+        getInstrumentation().callApplicationOnCreate(app);
+        eq = new EventsListenerQueue();
+        if (!SalesforceSDKManager.hasInstance()) {
+            eq.waitForEvent(EventsObservable.EventType.AppCreateComplete, 5000);
+        }
+        SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
+        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(createAdditionalOauthKeys());
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        if (eq != null) {
+            eq.tearDown();
+            eq = null;
+        }
+        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(null);
+        super.tearDown();
+    }
 
     /**
      * Tests bundle creation.
      */
     public void testConvertAccountToBundle() {
-        UserAccount account = new UserAccount(TEST_AUTH_TOKEN,
+        final UserAccount account = new UserAccount(TEST_AUTH_TOKEN,
                 TEST_REFRESH_TOKEN, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_INSTANCE_URL,
                 TEST_ORG_ID, TEST_USER_ID, TEST_USERNAME, TEST_ACCOUNT_NAME,
                 TEST_CLIENT_ID, TEST_COMMUNITY_ID, TEST_COMMUNITY_URL, TEST_FIRST_NAME,
-                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL);
-
-        Bundle bundle = account.toBundle();
-
-        Bundle expectedBundle = createTestAccountBundle();
-
+                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL,
+                createAdditionalOauthValues());
+        final Bundle bundle = account.toBundle();
+        final Bundle expectedBundle = createTestAccountBundle();
         assertTrue(equalBundles(bundle, expectedBundle));
     }
 
@@ -82,10 +121,8 @@ public class UserAccountTest extends InstrumentationTestCase {
      * Tests creating an account from a bundle.
      */
     public void testCreateAccountFromBundle() {
-        Bundle testBundle = createTestAccountBundle();
-
-        UserAccount account = new UserAccount(testBundle);
-
+        final Bundle testBundle = createTestAccountBundle();
+        final UserAccount account = new UserAccount(testBundle);
         assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
         assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
         assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
@@ -104,6 +141,7 @@ public class UserAccountTest extends InstrumentationTestCase {
         assertEquals("Email should match", TEST_EMAIL, account.getEmail());
         assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
         assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
+        assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
     }
 
     /**
@@ -111,9 +149,7 @@ public class UserAccountTest extends InstrumentationTestCase {
      */
     public void testCreateAccountFromJSON() throws JSONException {
         JSONObject testJSON = createTestAccountJSON();
-
         UserAccount account = new UserAccount(testJSON);
-
         assertEquals("Auth token should match", TEST_AUTH_TOKEN, account.getAuthToken());
         assertEquals("Refresh token should match", TEST_REFRESH_TOKEN, account.getRefreshToken());
         assertEquals("Login server URL should match", TEST_LOGIN_URL, account.getLoginServer());
@@ -131,14 +167,11 @@ public class UserAccountTest extends InstrumentationTestCase {
         assertEquals("Email should match", TEST_EMAIL, account.getEmail());
         assertEquals("Photo URL should match", TEST_PHOTO_URL, account.getPhotoUrl());
         assertEquals("Thumbnail URL should match", TEST_THUMBNAIL_URL, account.getThumbnailUrl());
-
+        assertEquals("Additional OAuth values should match", createAdditionalOauthValues(), account.getAdditionalOauthValues());
         assertEquals("Account name should match",
                 String.format("%s (%s) (%s)", TEST_USERNAME, TEST_INSTANCE_URL, SalesforceSDKManager.getInstance().getApplicationName()),
                 account.getAccountName());
     }
-
-
-
 
     /**
      * Creates a test {@link JSONObject} with all {@link UserAccount} fields populated
@@ -146,7 +179,7 @@ public class UserAccountTest extends InstrumentationTestCase {
      * @return {@link JSONObject}
      */
     private JSONObject createTestAccountJSON() throws JSONException{
-        final JSONObject object = new JSONObject();
+        JSONObject object = new JSONObject();
         object.put(UserAccount.AUTH_TOKEN, TEST_AUTH_TOKEN);
         object.put(UserAccount.REFRESH_TOKEN, TEST_REFRESH_TOKEN);
         object.put(UserAccount.LOGIN_SERVER, TEST_LOGIN_URL);
@@ -165,9 +198,9 @@ public class UserAccountTest extends InstrumentationTestCase {
         object.put(UserAccount.EMAIL, TEST_EMAIL);
         object.put(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.put(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
+        object = MapUtil.addMapToJSONObject(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
-
 
     /**
      * Creates a test {@link Bundle} with all {@link UserAccount} fields populated
@@ -175,7 +208,7 @@ public class UserAccountTest extends InstrumentationTestCase {
      * @return {@link Bundle}
      */
     private Bundle createTestAccountBundle() {
-        final Bundle object = new Bundle();
+        Bundle object = new Bundle();
         object.putString(UserAccount.AUTH_TOKEN, TEST_AUTH_TOKEN);
         object.putString(UserAccount.REFRESH_TOKEN, TEST_REFRESH_TOKEN);
         object.putString(UserAccount.LOGIN_SERVER, TEST_LOGIN_URL);
@@ -194,9 +227,9 @@ public class UserAccountTest extends InstrumentationTestCase {
         object.putString(UserAccount.EMAIL, TEST_EMAIL);
         object.putString(UserAccount.PHOTO_URL, TEST_PHOTO_URL);
         object.putString(UserAccount.THUMBNAIL_URL, TEST_THUMBNAIL_URL);
+        object = MapUtil.addMapToBundle(createAdditionalOauthValues(), createAdditionalOauthKeys(), object);
         return object;
     }
-
 
     /**
      * Check for equality of two bundles.
@@ -207,29 +240,36 @@ public class UserAccountTest extends InstrumentationTestCase {
      *         false otherwise
      */
     public boolean equalBundles(Bundle one, Bundle two) {
-        if(one.size() != two.size())
+        if (one.size() != two.size()) {
             return false;
-
+        }
         Set<String> setOne = one.keySet();
         Object valueOne;
         Object valueTwo;
-
-        for(String key : setOne) {
+        for (String key : setOne) {
             valueOne = one.get(key);
             valueTwo = two.get(key);
-            if(valueOne instanceof Bundle && valueTwo instanceof Bundle &&
+            if (valueOne instanceof Bundle && valueTwo instanceof Bundle &&
                     !equalBundles((Bundle) valueOne, (Bundle) valueTwo)) {
                 return false;
-            }
-            else if(valueOne == null) {
-                if(valueTwo != null || !two.containsKey(key))
+            } else if(valueOne == null) {
+                if (valueTwo != null || !two.containsKey(key))
                     return false;
-            }
-            else if(!valueOne.equals(valueTwo))
+            } else if (!valueOne.equals(valueTwo))
                 return false;
         }
-
         return true;
     }
 
+    private Map<String, String> createAdditionalOauthValues() {
+        final Map<String, String> testOauthValues = new HashMap<>();
+        testOauthValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
+        return testOauthValues;
+    }
+
+    private List<String> createAdditionalOauthKeys() {
+        final List<String> testOauthValues = new ArrayList<>();
+        testOauthValues.add(TEST_CUSTOM_KEY);
+        return testOauthValues;
+    }
 }
