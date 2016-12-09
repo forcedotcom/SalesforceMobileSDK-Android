@@ -26,10 +26,16 @@
  */
 package com.salesforce.androidsdk.reactnative.ui;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 
 import com.facebook.react.ReactActivity;
 import com.facebook.react.ReactActivityDelegate;
@@ -57,6 +63,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     private PasscodeManager passcodeManager;
     private LogoutCompleteReceiver logoutCompleteReceiver;
     private SalesforceReactActivityDelegate reactActivityDelegate;
+    AlertDialog overlayPermissionRequiredDialog;
 
     /**
      * @return true if you want login to happen as soon as activity is loaded
@@ -92,6 +99,7 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
         // Let observers know
         EventsObservable.get().notifyEvent(EventType.MainActivityCreateComplete, this);
+
     }
 
     @Override
@@ -124,6 +132,8 @@ public abstract class SalesforceReactActivity extends ReactActivity {
             }
 
         }
+
+        loadReactAppOnceIfReady();
 
     }
 
@@ -231,8 +241,8 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
     protected void setRestClient(RestClient restClient) {
         client = restClient;
-        if(client != null && reactActivityDelegate != null){
-            reactActivityDelegate.loadReactAppOnceIfReady(getMainComponentName());
+        if(client != null ){
+            loadReactAppOnceIfReady();
         }
     }
 
@@ -268,6 +278,9 @@ public abstract class SalesforceReactActivity extends ReactActivity {
     }
 
     protected boolean shouldReactBeRunning(){
+        if(shouldAskOverlayPermission()){
+            return false;
+        }
         if(shouldAuthenticate()){
             return client != null;
         }
@@ -276,6 +289,54 @@ public abstract class SalesforceReactActivity extends ReactActivity {
 
     protected void restartReactNativeApp(){
         SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().destroy();
-        SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().createReactContextInBackground();
+        if(shouldReactBeRunning()){
+            SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().createReactContextInBackground();
+        }
     }
+
+    private boolean shouldAskOverlayPermission(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if(SalesforceReactActivity.this.getReactNativeHost().getReactInstanceManager().getDevSupportManager().getDevSupportEnabled()){
+                if (!Settings.canDrawOverlays(this)) {
+                    showPermissionWarning();
+                    return true;
+                }
+                else{
+                    hidePermissionWarning();
+                }
+            }
+        }
+        return false;
+    }
+
+    private void loadReactAppOnceIfReady() {
+        if(reactActivityDelegate != null ){
+            reactActivityDelegate.loadReactAppOnceIfReady(getMainComponentName());
+        }
+    }
+
+    private void showPermissionWarning(){
+        if(overlayPermissionRequiredDialog == null){
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("Developer mode: Overlay permissions need to be granted");
+            builder.setCancelable(false);
+            builder.setPositiveButton("Continue",new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog,int id) {
+                    dialog.dismiss();
+                    SalesforceReactActivity.this.recreate();
+                }
+            });
+            overlayPermissionRequiredDialog = builder.create();
+        }
+        if(!overlayPermissionRequiredDialog.isShowing()){
+            overlayPermissionRequiredDialog.show();
+        }
+    }
+
+    private void hidePermissionWarning(){
+        if(overlayPermissionRequiredDialog != null){
+            overlayPermissionRequiredDialog.dismiss();
+        }
+    }
+
 }
