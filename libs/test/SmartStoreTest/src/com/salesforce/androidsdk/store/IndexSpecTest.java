@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,16 +26,16 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.test.InstrumentationTestCase;
-
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.Type;
+
+import junit.framework.TestCase;
 
 /**
  * Test class for IndexSpec
  *
  */
-public class IndexSpecTest extends InstrumentationTestCase {
+public class IndexSpecTest extends TestCase {
 
 	private static final IndexSpec keyStringSpec = new IndexSpec("key", Type.string);
 	private static final IndexSpec keyIntegerSpec = new IndexSpec("key", Type.integer);

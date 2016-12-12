@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -107,9 +107,8 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         return startFetch(syncManager, maxTimeStamp, query);
     }
 
-    @Override
-    public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
-        String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(queryRun, maxTimeStamp) : queryRun;
+    private JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
+        String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(queryRun, getModificationDateFieldName(), maxTimeStamp) : queryRun;
         RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, queryToRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONObject responseJson = response.asJSONObject();
@@ -149,8 +148,8 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         // Alters the SOQL query to get only IDs.
         final StringBuilder soql = new StringBuilder("SELECT ");
         soql.append(idFieldName);
-        soql.append(" FROM");
-        final String[] fromClause = query.split("([fF][rR][oO][mM])");
+        soql.append(" FROM ");
+        final String[] fromClause = query.split("([ ][fF][rR][oO][mM][ ])");
         soql.append(fromClause[1]);
 
         // Makes network request and parses the response.
@@ -171,9 +170,9 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         return remoteIds;
     }
 
-    public static String addFilterForReSync(String query, long maxTimeStamp) {
+    public static String addFilterForReSync(String query, String modificationFieldDatName, long maxTimeStamp) {
         if (maxTimeStamp > 0) {
-            String extraPredicate = Constants.LAST_MODIFIED_DATE + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp));
+            String extraPredicate = modificationFieldDatName + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp));
             query = query.toLowerCase().contains(" where ")
                     ? query.replaceFirst("( [wW][hH][eE][rR][eE] )", "$1" + extraPredicate + " and ")
                     : query.replaceFirst("( [fF][rR][oO][mM][ ]+[^ ]*)", "$1 where " + extraPredicate);

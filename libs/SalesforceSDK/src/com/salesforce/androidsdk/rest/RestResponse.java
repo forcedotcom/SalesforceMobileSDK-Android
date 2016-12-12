@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -28,8 +28,6 @@ package com.salesforce.androidsdk.rest;
 
 import android.util.Log;
 
-import com.google.common.base.Charsets;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -37,19 +35,22 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
-
 /**
  * RestResponse: Class to represent any REST response.
  * 
  */
 public class RestResponse {
-	
+
+    private static final String CONTENT_TYPE_HEADER_KEY = "Content-Type";
+    private static final String CONTENT_TYPE_HEADER_VALUE = "application/json";
+
 	private final Response response;
 
 	// Populated when "consume" is called
@@ -112,12 +113,12 @@ public class RestResponse {
 			ResponseBody body = response.body();
 			if (body != null) {
 				responseAsBytes = body.bytes();
-				responseCharSet = body.contentType() == null || body.contentType().charset() == null ? Charsets.UTF_8 : body.contentType().charset();
+				responseCharSet = body.contentType() == null || body.contentType().charset() == null ? StandardCharsets.UTF_8 : body.contentType().charset();
 				body.close();
 			}
 			else {
 				responseAsBytes = new byte[0];
-				responseCharSet = Charsets.UTF_8;
+				responseCharSet = StandardCharsets.UTF_8;
 			}
 
 			consumed = true;
@@ -145,6 +146,34 @@ public class RestResponse {
 			consume();
 		}
 		return responseAsBytes;
+	}
+
+    /**
+     * Checks if the response has a body.
+     *
+     * @return True - if response body is present, False - otherwise.
+     */
+	public boolean hasResponseBody() {
+
+        /*
+         * Parses the response headers to determine how to treat the response body,
+         * if it exists. Typically, there's no response body for a POST.
+         */
+        boolean hasResponseBody = false;
+        final Map<String, List<String>> responseHeaders = getAllHeaders();
+        if (responseHeaders != null) {
+            if (responseHeaders.containsKey(CONTENT_TYPE_HEADER_KEY)) {
+                final List<String> contentTypes = responseHeaders.get(CONTENT_TYPE_HEADER_KEY);
+                if (contentTypes != null) {
+                    for (final String contentType : contentTypes) {
+                        if (contentType != null && contentType.contains(CONTENT_TYPE_HEADER_VALUE)) {
+                            hasResponseBody = true;
+                        }
+                    }
+                }
+            }
+        }
+        return hasResponseBody;
 	}
 
 	/**
@@ -191,7 +220,7 @@ public class RestResponse {
 
 	/**
 	 * Streams the response content. This stream <strong>must</strong> be consumed either
-	 * by reading from it, calling a method like {@link com.google.common.io.Closeables#closeQuietly(InputStream)}
+	 * by reading from it and calling {@link InputStream#close()},
 	 * or calling {@link #consume()} to discard the contents.
 	 *
 	 * <p>>
@@ -209,7 +238,7 @@ public class RestResponse {
 		}
 		else {
 			responseAsBytes = new byte[0];
-			responseCharSet = Charsets.UTF_8;
+			responseCharSet = StandardCharsets.UTF_8;
 			InputStream stream = response.body().byteStream();
 			consumed = true;
 			return stream;

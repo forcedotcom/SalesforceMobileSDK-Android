@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -32,6 +32,7 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -42,6 +43,9 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +54,8 @@ import java.util.Map;
  * SDK Manager for all native applications that use SmartStore
  */
 public class SmartStoreSDKManager extends SalesforceSDKManager {
+    private static final String FEATURE_SMART_STORE_USER = "US";
+    private static final String FEATURE_SMART_STORE_GLOBAL = "GS";
 
     /**
      * Protected constructor.
@@ -193,6 +199,7 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      */
 
     public SmartStore getGlobalSmartStore(String dbName) {
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_STORE_GLOBAL);
         if (TextUtils.isEmpty(dbName)) {
             dbName = DBOpenHelper.DEFAULT_DB_NAME;
         }
@@ -246,6 +253,10 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return SmartStore instance.
      */
     public SmartStore getSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
+        if (TextUtils.isEmpty(dbNamePrefix)) {
+            dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
+        }
+        SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_SMART_STORE_USER);
         final String passcodeHash = getPasscodeHash();
         final String passcode = (passcodeHash == null ?
                 getEncryptionKeyForPasscode(null) : passcodeHash);
@@ -308,6 +319,9 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @return True - if the user has a smart store database, False - otherwise.
      */
     public boolean hasSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
+        if (TextUtils.isEmpty(dbNamePrefix)) {
+            dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
+        }
         return DBOpenHelper.smartStoreExists(context, dbNamePrefix, account, communityId);
     }
 
@@ -359,7 +373,58 @@ public class SmartStoreSDKManager extends SalesforceSDKManager {
      * @param communityId  Community ID.
      */
     public void removeSmartStore(String dbNamePrefix, UserAccount account, String communityId) {
+        if (TextUtils.isEmpty(dbNamePrefix)) {
+            dbNamePrefix = DBOpenHelper.DEFAULT_DB_NAME;
+        }
         DBOpenHelper.deleteDatabase(context, dbNamePrefix, account, communityId);
+    }
+
+    /**
+     * Returns a list of global store names.
+     * @return
+     * @throws JSONException
+     */
+    public List<String> getGlobalStoresPrefixList(){
+        UserAccount userAccount = getUserAccountManager().getCurrentUser();
+        String communityId = userAccount!=null?userAccount.getCommunityId():null;
+        List<String> globalDBNames = DBOpenHelper.getGlobalDatabasePrefixList(context,getUserAccountManager().getCurrentUser(),communityId);
+        return globalDBNames;
+    }
+
+    /**
+     * Returns a list of store names for current user.
+     * @return
+     * @throws JSONException
+     */
+    public List<String> getUserStoresPrefixList() {
+        UserAccount userAccount = getUserAccountManager().getCurrentUser();
+        String communityId = userAccount!=null?userAccount.getCommunityId():null;
+        List<String> userDBName = DBOpenHelper.getUserDatabasePrefixList(context,getUserAccountManager().getCurrentUser(),communityId);
+        return userDBName;
+    }
+
+    /**
+     * Removes all the global stores.
+     *
+     */
+    public void removeAllGlobalStores() {
+        List<String> globalDBNames = this.getGlobalStoresPrefixList();
+        for(String storeName : globalDBNames) {
+            removeGlobalSmartStore(storeName);
+        }
+    }
+
+    /**
+     * Removes all the stores for current user.
+     *
+     */
+    public void removeAllUserStores() {
+        List<String> globalDBNames = this.getUserStoresPrefixList();
+        for(String storeName : globalDBNames) {
+            removeSmartStore(storeName,
+                    UserAccountManager.getInstance().getCurrentUser(),
+                    UserAccountManager.getInstance().getCurrentUser().getCommunityId());
+        }
     }
 
 }

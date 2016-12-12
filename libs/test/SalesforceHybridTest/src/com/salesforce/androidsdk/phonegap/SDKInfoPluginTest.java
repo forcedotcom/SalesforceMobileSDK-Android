@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.phonegap;
 import android.content.Context;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.test.InstrumentationTestCase;
-import android.text.TextUtils;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -43,7 +42,6 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
-
 
 /**
  * Tests for SDKInfoPlugin
@@ -61,7 +59,8 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 		assertEquals("Wrong app name", "SalesforceHybridTest", sdkInfo.getString("appName"));
 		assertEquals("Wrong app version", "1.0", sdkInfo.getString("appVersion"));
 		List<String> sdkInfoPlugins = toList(sdkInfo.getJSONArray("forcePluginsAvailable"));
-		assertEquals("Wrong number of plugins", 6, sdkInfoPlugins.size());
+		assertEquals("Wrong number of plugins", 7, sdkInfoPlugins.size());
+        assertTrue("network plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.network"));
 		assertTrue("oauth plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.oauth"));
 		assertTrue("sdkinfo plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.sdkinfo"));
 		assertTrue("sfaccountmanager plugin should have been returned", sdkInfoPlugins.contains("com.salesforce.sfaccountmanager"));
@@ -95,7 +94,8 @@ public class SDKInfoPluginTest extends InstrumentationTestCase {
 	 */
 	public void testGetForcePluginsFromXML() {
 		List<String> plugins = SDKInfoPlugin.getForcePluginsFromXML(getInstrumentation().getTargetContext());
-		assertEquals("Wrong number of force plugins", 6, plugins.size());
+		assertEquals("Wrong number of force plugins", 7, plugins.size());
+		assertTrue("network plugin should have been returned", plugins.contains("com.salesforce.network"));
 		assertTrue("oauth plugin should have been returned", plugins.contains("com.salesforce.oauth"));
 		assertTrue("sdkinfo plugin should have been returned", plugins.contains("com.salesforce.sdkinfo"));
 		assertTrue("sfaccountmanager plugin should have been returned", plugins.contains("com.salesforce.sfaccountmanager"));

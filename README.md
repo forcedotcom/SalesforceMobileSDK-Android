@@ -1,4 +1,11 @@
-[![Build Status](https://travis-ci.org/forcedotcom/SalesforceMobileSDK-Android.svg?branch=unstable)](https://travis-ci.org/forcedotcom/SalesforceMobileSDK-Android)
+| Android API | Build Status |
+|-------------|--------------|
+| android-19  |[![Build Status](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-19/latest/buildstatus.svg)](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-19/latest/index.html)|
+| android-21  |[![Build Status](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-21/latest/buildstatus.svg)](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-21/latest/index.html)|
+| android-22  |[![Build Status](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-22/latest/buildstatus.svg)](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-22/latest/index.html)|
+| android-23  |[![Build Status](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-23/latest/buildstatus.svg)](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-23/latest/index.html)|
+| android-24  |[![Build Status](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-24/latest/buildstatus.svg)](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-24/latest/index.html)|
+| android-25  |[![Build Status](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-25/latest/buildstatus.svg)](https://forcedotcom.github.io/SalesforceMobileSDK-TestResults/Android-test-results/Android-25/latest/index.html)|
 
 # Salesforce.com Mobile SDK for Android
 
@@ -21,16 +28,31 @@ This pulls submodule dependencies from github.
 Introduction
 ==
 
-### What's New in 4.3
+### What's New in 5.0
+
+**OS Version Support**
+- Android Nougat (API 25) is fully supported in Mobile SDK 5.0.
 
 **SmartStore Enhancements**
-- To enhance performance in certain edge cases, SmartStore adds an option for serializing unusually large soup elements in external storage.
+- We have added new APIs that allow hybrid developers to create their own named databases.
+
+**SmartSync Enhancements**
+- We now allow sync down/refresh of data stored in soups by specifying the fields to sync.
+- smartsync.js now uses native promises instead of jQuery.
+
+**Hybrid Networking Enhancements**
+- We have replaced forcetk.mobilesdk.js with force.js. Networking in hybrid apps is now handled natively through a new plugin (com.salesforce.plugin.network). As a result, session token refresh happens automatically.
 
 **Library Upgrades**
-- We've updated React Native to version 0.30.0.
-- We've updated SQLCipher to version 3.5.2.
+- We've updated React Native to version 0.35.0.
+- We've updated Cordova to version 6.1.0.
+- We've removed the dependency on Guava.
+
+**SalesforceAnalytics Library**
+- We've added a new library in Mobile SDK 5.0 called SalesforceAnalytics. This enables us to collect non-sensitive data on which features in Mobile SDK are being used. It is turned on by default, but can be turned off if required.
 
 **Other Technical Improvements**
+- We now support rich app templates (see [forcedroid](https://npmjs.org/package/forcedroid) for more details).
 - Improvements to sample apps.
 - Various bug fixes.
 
@@ -50,7 +72,7 @@ Setting up your Development Environment
 
 The following steps will help you get started with your development environment, whether you choose to develop native apps or hybrid apps. See the `README` files in the `native/` and `hybrid/` folders for additional notes pertaining to development in those environments.
 
-1. Install the Android SDK (r23 or above) and Android Studio: http://developer.android.com/sdk/index.html
+1. Install the Android SDK and Android Studio: http://developer.android.com/sdk/index.html
 2. Get setup on github: http://help.github.com/
 
 Downloading the Salesforce SDK
@@ -65,6 +87,7 @@ Documentation
 ==
 
 * [SalesforceSDK](http://forcedotcom.github.com/SalesforceMobileSDK-Android/index.html)
+* [Mobile SDK Development Guide](https://github.com/forcedotcom/SalesforceMobileSDK-Shared/blob/master/doc/mobile_sdk.pdf)
 
 Discussion
 ==

@@ -30,6 +30,7 @@ import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.rest.RestResponse;
 
 import org.json.JSONObject;
@@ -39,6 +40,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -122,6 +124,7 @@ public class OAuth2 {
     private static final String BEARER = "Bearer ";
     private static final String ASSERTION = "assertion";
     private static final String JWT_BEARER = "urn:ietf:params:oauth:grant-type:jwt-bearer";
+    private static final String TAG = "OAuth2";
 
     // Login paths
     private static final String OAUTH_AUTH_PATH = "/services/oauth2/authorize?display=";
@@ -166,7 +169,6 @@ public class OAuth2 {
         sb.append(AND).append(REDIRECT_URI).append(EQUAL).append(callbackUrl);
         return URI.create(sb.toString());
     }
-
 
     public static URI getAuthorizationUrl(URI loginServer, String clientId,
                                           String callbackUrl, String[] scopes, String clientSecret,
@@ -242,16 +244,14 @@ public class OAuth2 {
         final StringBuilder sb = new StringBuilder(loginServer.toString());
         sb.append(OAUTH_REVOKE_PATH);
         sb.append(Uri.encode(refreshToken));
-
         Request request = new Request.Builder()
                 .url(sb.toString())
                 .get()
                 .build();
-
         try {
             httpAccessor.getOkHttpClient().newCall(request).execute();
         } catch (IOException e) {
-            Log.w("OAuth2:revokeRefreshToken", e);
+            Log.w(TAG, e);
         }
     }
 
@@ -312,16 +312,12 @@ public class OAuth2 {
     public static final IdServiceResponse callIdentityService(
             HttpAccess httpAccessor, String identityServiceIdUrl,
             String authToken) throws IOException, URISyntaxException {
-
         Request.Builder builder = new Request.Builder()
                 .url(identityServiceIdUrl)
                 .get();
         addAuthorizationHeader(builder, authToken);
-
         Request request = builder.build();
-
         Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
-
         return new IdServiceResponse(response);
     }
 
@@ -347,17 +343,14 @@ public class OAuth2 {
             throws OAuthFailedException, IOException {
         final String refreshPath = loginServer.toString() + OAUTH_TOKEN_PATH;
         final RequestBody body = formBodyBuilder.build();
-
         Request request = new Request.Builder()
                 .url(refreshPath)
                 .post(body)
                 .build();
-
         Response response = httpAccessor.getOkHttpClient().newCall(request).execute();
         if (response.isSuccessful()) {
             return new TokenEndpointResponse(response);
-        }
-        else {
+        } else {
             throw new OAuthFailedException(new TokenErrorResponse(response), response.code());
         }
     }
@@ -372,7 +365,6 @@ public class OAuth2 {
         FormBody.Builder builder = new FormBody.Builder()
                 .add(GRANT_TYPE, grantType)
                 .add(CLIENT_ID, clientId);
-
         if (clientSecret != null) {
             builder.add(CLIENT_SECRET, clientSecret);
         }
@@ -430,6 +422,7 @@ public class OAuth2 {
      * Helper class to parse an identity service response.
      */
     public static class IdServiceResponse {
+
         public String username;
         public String email;
         public String firstName;
@@ -442,30 +435,27 @@ public class OAuth2 {
         public JSONObject customAttributes;
         public JSONObject customPermissions;
 
-
         public IdServiceResponse(Response response) {
             try {
-                JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 username = parsedResponse.getString(USERNAME);
                 email = parsedResponse.getString(EMAIL);
                 firstName = parsedResponse.getString(FIRST_NAME);
                 lastName = parsedResponse.getString(LAST_NAME);
                 displayName = parsedResponse.getString(DISPLAY_NAME);
-                JSONObject photos = parsedResponse.getJSONObject(PHOTOS);
+                final JSONObject photos = parsedResponse.getJSONObject(PHOTOS);
                 if (photos != null) {
                     pictureUrl = photos.getString(PICTURE);
                     thumbnailUrl = photos.getString(THUMBNAIL);
                 }
                 customAttributes = parsedResponse.optJSONObject(CUSTOM_ATTRIBUTES);
                 customPermissions = parsedResponse.optJSONObject(CUSTOM_PERMISSIONS);
-
-                // With connected apps (pilot in Summer '12), the server can specify a policy.
                 if (parsedResponse.has(MOBILE_POLICY)) {
                     pinLength = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(PIN_LENGTH);
                     screenLockTimeout = parsedResponse.getJSONObject(MOBILE_POLICY).getInt(SCREEN_LOCK);
                 }
             } catch (Exception e) {
-                Log.w("IdServiceResponse:constructor", "", e);
+                Log.w(TAG, e);
             }
         }
     }
@@ -474,17 +464,18 @@ public class OAuth2 {
      * Helper class to parse a token refresh error response.
      */
     public static class TokenErrorResponse {
+
         public String error;
         public String errorDescription;
 
         public TokenErrorResponse(Response response) {
             try {
-                JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 error = parsedResponse.getString(ERROR);
                 errorDescription = parsedResponse
                         .getString(ERROR_DESCRIPTION);
             } catch (Exception e) {
-                Log.w("TokenErrorResponse:constructor", "", e);
+                Log.w(TAG, e);
             }
         }
 
@@ -509,6 +500,7 @@ public class OAuth2 {
         public String code;
         public String communityId;
         public String communityUrl;
+        public Map<String, String> additionalOauthValues;
 
         /**
          * Constructor used during login flow
@@ -524,8 +516,20 @@ public class OAuth2 {
                 computeOtherFields();
                 communityId = callbackUrlParams.get(SFDC_COMMUNITY_ID);
                 communityUrl = callbackUrlParams.get(SFDC_COMMUNITY_URL);
+                final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
+                if (sdkManager != null) {
+                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
+                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                        additionalOauthValues = new HashMap<>();
+                        for (final String key : additionalOauthKeys) {
+                            if (!TextUtils.isEmpty(key)) {
+                                additionalOauthValues.put(key, callbackUrlParams.get(key));
+                            }
+                        }
+                    }
+                }
             } catch (Exception e) {
-                Log.w("TokenEndpointResponse:constructor", "", e);
+                Log.w(TAG, e);
             }
         }
 
@@ -535,7 +539,7 @@ public class OAuth2 {
          */
         public TokenEndpointResponse(Response response) {
             try {
-                JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
+                final JSONObject parsedResponse = (new RestResponse(response)).asJSONObject();
                 authToken = parsedResponse.getString(ACCESS_TOKEN);
                 instanceUrl = parsedResponse.getString(INSTANCE_URL);
                 idUrl  = parsedResponse.getString(ID);
@@ -549,8 +553,23 @@ public class OAuth2 {
                 if (parsedResponse.has(SFDC_COMMUNITY_URL)) {
                 	communityUrl = parsedResponse.getString(SFDC_COMMUNITY_URL);
                 }
+                final SalesforceSDKManager sdkManager = SalesforceSDKManager.getInstance();
+                if (sdkManager != null) {
+                    final List<String> additionalOauthKeys = sdkManager.getAdditionalOauthKeys();
+                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                        additionalOauthValues = new HashMap<>();
+                        for (final String key : additionalOauthKeys) {
+                            if (!TextUtils.isEmpty(key)) {
+                                final String value = parsedResponse.optString(key, null);
+                                if (value != null) {
+                                    additionalOauthValues.put(key, value);
+                                }
+                            }
+                        }
+                    }
+                }
             } catch (Exception e) {
-                Log.w("TokenEndpointResponse:constructor", "", e);
+                Log.w(TAG, e);
             }
         }
 

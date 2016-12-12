@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -131,7 +131,7 @@ public class JavaScriptPluginVersionTest extends InstrumentationTestCase {
 	 * Create JavaScriptPluginVersion for future versions and make sure isCurrent/isOlder/isNewer returns the value expected
 	 */
 	public void testJavaScriptPluginVersionsWithNewVersion() {
-		for (String version : new String[] {"4.4.0", "4.5.0", "4.6.0"}) {
+		for (String version : new String[] {"5.1.0", "5.2.0", "5.3.0"}) {
 			assertFalse((new JavaScriptPluginVersion(version)).isOlder());
 			assertFalse((new JavaScriptPluginVersion(version)).isCurrent());
 			assertTrue((new JavaScriptPluginVersion(version)).isNewer());

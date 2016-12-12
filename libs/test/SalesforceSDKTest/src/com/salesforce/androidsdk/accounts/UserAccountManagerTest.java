@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.accounts;
 
-import java.util.List;
-
 import android.accounts.AccountManager;
 import android.app.Application;
 import android.app.Instrumentation;
@@ -42,6 +40,8 @@ import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManagerTest;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
+
+import java.util.List;
 
 /**
  * Tests for UserAccountManager.

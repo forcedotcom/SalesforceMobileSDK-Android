@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2015, salesforce.com, inc.
+ * Copyright (c) 2012-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -31,8 +31,10 @@ import android.database.Cursor;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
 import net.sqlcipher.database.SQLiteOpenHelper;
@@ -58,6 +60,7 @@ public class SmartStore  {
 
     // Default
     public static final int DEFAULT_PAGE_SIZE = 10;
+	private static final String TAG = "SmartStore";
 
 	/**
 	 * Table to keep track of soup names.
@@ -240,7 +243,6 @@ public class SmartStore  {
 		return DBHelper.getInstance(getDatabase()).getLastExplainQueryPlan();
 	}
 
-
 	/**
      * Get database size
      */
@@ -304,6 +306,23 @@ public class SmartStore  {
 			if (indexSpecs.length == 0) throw new SmartStoreException("No indexSpecs specified for soup: " + soupName);
 			if (IndexSpec.hasJSON1(indexSpecs) && soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE))  throw new SmartStoreException("Can't have JSON1 index specs in externally stored soup:" + soupName);
 			if (hasSoup(soupName)) return; // soup already exist - do nothing
+			final JSONArray features = new JSONArray();
+			if (IndexSpec.hasJSON1(indexSpecs)) {
+				features.put("JSON1");
+			}
+			if (IndexSpec.hasFTS(indexSpecs)) {
+				features.put("FTS");
+			}
+			if (soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
+				features.put("ExternalStorage");
+			}
+			final JSONObject attributes = new JSONObject();
+			try {
+				attributes.put("features", features);
+			} catch (JSONException e) {
+				Log.e(TAG, "Exception thrown while building page object", e);
+			}
+			EventBuilderHelper.createAndStoreEvent("registerSoup", null, TAG, attributes);
 
 			// First get a table name
 			String soupTableName = null;
@@ -329,21 +348,6 @@ public class SmartStore  {
 			}
 		}
 	}
-
-    /**
-     * Helper method for registerSoup
-	 * NB: caller is expected to wrap call in a transaction
-     * 
-	 * @param soupName
-	 * @param indexSpecs
-	 * @param soupTableName
-	 *
-	 * @deprecated Use {@link #registerSoupUsingTableName(SoupSpec, IndexSpec[], String)} instead.
-	 */
-    @Deprecated
-    protected void registerSoupUsingTableName(String soupName, IndexSpec[] indexSpecs, String soupTableName) {
-    	registerSoupUsingTableName(new SoupSpec(soupName), indexSpecs, soupTableName);
-    }
 
 	/**
 	 * Helper method for registerSoup using soup spec
@@ -583,7 +587,6 @@ public class SmartStore  {
 			        projection = new String[] {ID_COL, SOUP_COL};
 			    }
 			    cursor = DBHelper.getInstance(db).query(db, soupTableName, projection, null, null, null);
-	
 			    if (cursor.moveToFirst()) {
 			        do {
 			        	String soupEntryId = cursor.getString(0);
@@ -614,8 +617,7 @@ public class SmartStore  {
 			        }
 			        while (cursor.moveToNext());
 			    }
-			}
-			finally {
+			} finally {
 				if (handleTx) {
 					db.setTransactionSuccessful();
 					db.endTransaction();
@@ -1450,14 +1452,14 @@ public class SmartStore  {
 
 			if (jsonObj instanceof JSONObject) {
 				JSONObject jsonDict = (JSONObject) jsonObj;
-				Object dictVal = jsonDict.opt(pathElement);
+				Object dictVal = JSONObjectHelper.opt(jsonDict, pathElement);
 				result = project(dictVal, pathElements, index+1);
 			}
 			else if (jsonObj instanceof JSONArray) {
 				JSONArray jsonArr = (JSONArray) jsonObj;
 				result = new JSONArray();
 				for (int i=0; i<jsonArr.length(); i++) {
-					Object arrayElt = jsonArr.opt(i);
+					Object arrayElt = JSONObjectHelper.opt(jsonArr, i);
 					Object resultPart = project(arrayElt, pathElements, index);
 					if (resultPart != null) {
 						((JSONArray) result).put(resultPart);

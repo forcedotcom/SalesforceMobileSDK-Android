@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -96,7 +96,7 @@ public class ContentSoqlSyncDownTarget extends SoqlSyncDownTarget {
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(getQuery(), maxTimeStamp) : getQuery();
+        String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(getQuery(), getModificationDateFieldName(), maxTimeStamp) : getQuery();
         syncManager.getRestClient().sendSync(RestRequest.getRequestForResources(syncManager.apiVersion)); // cheap call to refresh session
         RestRequest request = buildQueryRequest(syncManager.getRestClient().getAuthToken(), queryToRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);

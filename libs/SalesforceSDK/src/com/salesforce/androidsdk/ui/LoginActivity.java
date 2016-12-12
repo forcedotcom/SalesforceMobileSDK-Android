@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, salesforce.com, inc.
+ * Copyright (c) 2011-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -41,7 +41,9 @@ import android.view.WindowManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.RuntimeConfig;
 import com.salesforce.androidsdk.config.RuntimeConfig.ConfigKey;
@@ -302,7 +304,14 @@ public class LoginActivity extends AccountAuthenticatorActivity
 
 	@Override
 	public void finish() {
+        initAnalyticsManager();
         SalesforceSDKManager.getInstance().getUserAccountManager().sendUserSwitchIntent();
         super.finish();
 	}
+
+    private void initAnalyticsManager() {
+        final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
+        final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(account);
+        analyticsManager.updateLoggingPrefs();
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,9 +26,6 @@
  */
 package com.salesforce.androidsdk.security;
 
-import java.io.File;
-import java.io.FilenameFilter;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -38,10 +35,15 @@ import android.os.Handler;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.app.UUIDManager;
 import com.salesforce.androidsdk.util.EventsObservable;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
+
+import java.io.File;
+import java.io.FilenameFilter;
 
 /**
  * This class manages the inactivity timeout, and keeps track of if the UI should locked etc.
@@ -58,6 +60,7 @@ public class PasscodeManager  {
 	private static final String EKEY = "ekey";
 	private static final String ESUFFIX = "esuffix";
 	private static final String EPREFIX = "eprefix";
+    private static final String TAG = "PasscodeManager";
 	
     // Default min passcode length
     public static final int MIN_PASSCODE_LENGTH = 4;
@@ -105,8 +108,6 @@ public class PasscodeManager  {
      * Parameterized constructor.
      *
      * @param ctx Context.
-     * @param verificationHashConfig Verification HashConfig.
-     * @param encryptionHashConfig Encryption HashConfig.
      */
    public PasscodeManager(Context ctx) {
 	   this(ctx,
@@ -306,7 +307,7 @@ public class PasscodeManager  {
     public boolean check(Context ctx, String passcode) {
         SharedPreferences sp = ctx.getSharedPreferences(PASSCODE_PREF_NAME, Context.MODE_PRIVATE);
         String hashedPasscode = sp.getString(KEY_PASSCODE, null);
-        hashedPasscode = Encryptor.removeNewLine(hashedPasscode);
+        hashedPasscode = removeNewLine(hashedPasscode);
         if (hashedPasscode != null) {
             return hashedPasscode.equals(hashForVerification(passcode));
         }
@@ -315,6 +316,20 @@ public class PasscodeManager  {
          * If the stored passcode hash is null, there is no passcode.
          */
         return true;
+    }
+
+    /**
+     * Removes a trailing newline character from the hash.
+     *
+     * @param hash Hash.
+     * @return Hash with trailing newline character removed.
+     */
+    private String removeNewLine(String hash) {
+        int length = hash == null ? 0 : hash.length();
+        if (length > 0 && hash.endsWith("\n")) {
+            return hash.substring(0, length - 1);
+        }
+        return hash;
     }
 
     /**
@@ -537,6 +552,7 @@ public class PasscodeManager  {
      * The passcode hash isn't updated as the authentication is verified by the OS.
      */
     public void unlock() {
+        EventBuilderHelper.createAndStoreEvent("passcodeUnlock", null, TAG, null);
         locked = false;
         setFailedPasscodeAttempts(0);
         updateLast();
@@ -565,8 +581,8 @@ public class PasscodeManager  {
 
     /**
      * Thread checking periodically to see how much has elapsed since the last recorded activity
-      * When that elapsed time exceed timeoutMs, it locks the app
-      */
+     * When that elapsed time exceed timeoutMs, it locks the app
+     */
     private class LockChecker implements Runnable {
         public void run() {
             try {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -38,19 +38,23 @@ import android.test.InstrumentationTestCase;
 
 import com.salesforce.androidsdk.TestCredentials;
 import com.salesforce.androidsdk.TestForceApp;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
-import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -81,12 +85,16 @@ public class ClientManagerTest extends InstrumentationTestCase {
     public static final String TEST_EMAIL = "test@email.com";
     public static final String TEST_PHOTO_URL = "http://some.photo.url";
     public static final String TEST_THUMBNAIL_URL = "http://some.thumbnail.url";
+    public static final String TEST_CUSTOM_KEY = "test_custom_key";
+    public static final String TEST_CUSTOM_VALUE = "test_custom_value";
 
     private Context targetContext;
     private ClientManager clientManager;
     private AccountManager accountManager;
     private LoginOptions loginOptions;
     private EventsListenerQueue eq;
+    private List<String> testOauthKeys;
+    private Map<String, String> testOauthValues;
 
     @Override
     public void setUp() throws Exception {
@@ -105,6 +113,11 @@ public class ClientManagerTest extends InstrumentationTestCase {
             eq.waitForEvent(EventType.AppCreateComplete, 5000);
         }
         SalesforceSDKManager.getInstance().getPasscodeManager().setPasscodeHash(ClientManagerTest.TEST_PASSCODE_HASH);
+        testOauthKeys = new ArrayList<>();
+        testOauthKeys.add(TEST_CUSTOM_KEY);
+        testOauthValues = new HashMap<>();
+        testOauthValues.put(TEST_CUSTOM_KEY, TEST_CUSTOM_VALUE);
+        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
     }
 
     @Override
@@ -115,6 +128,9 @@ public class ClientManagerTest extends InstrumentationTestCase {
         }
         cleanupAccounts();
         assertNoAccounts();
+        testOauthKeys = null;
+        testOauthValues = null;
+        SalesforceSDKManager.getInstance().setAdditionalOauthKeys(testOauthKeys);
         super.tearDown();
     }
 
@@ -130,6 +146,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test createNewAccount
      */
     public void testCreateAccount() {
+
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -147,6 +164,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test getAccount
      */
     public void testGetAccount() {
+
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -158,15 +176,12 @@ public class ClientManagerTest extends InstrumentationTestCase {
         assertNotNull("Account should have been returned", account);
         assertEquals("Wrong account name", TEST_ACCOUNT_NAME, account.name);
         assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, account.type);
-
         String encryptedAuthToken = accountManager.getUserData(account, AccountManager.KEY_AUTHTOKEN);
         String decryptedAuthToken = SalesforceSDKManager.decryptWithPasscode(encryptedAuthToken, TEST_PASSCODE_HASH);
         assertEquals("Wrong auth token", TEST_AUTH_TOKEN, decryptedAuthToken);
-
         String encryptedRefreshToken = accountManager.getPassword(account);
         String decryptedRefreshToken = SalesforceSDKManager.decryptWithPasscode(encryptedRefreshToken, TEST_PASSCODE_HASH);
         assertEquals("Wrong refresh token", TEST_REFRESH_TOKEN, decryptedRefreshToken);
-
         assertEquals("Wrong instance url", TEST_INSTANCE_URL, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_INSTANCE_URL), TEST_PASSCODE_HASH));
         assertEquals("Wrong login url", TEST_LOGIN_URL, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LOGIN_URL), TEST_PASSCODE_HASH));
         assertEquals("Wrong client id", TEST_CLIENT_ID, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_CLIENT_ID), TEST_PASSCODE_HASH));
@@ -176,12 +191,14 @@ public class ClientManagerTest extends InstrumentationTestCase {
         assertEquals("Wrong last name", TEST_LAST_NAME, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_LAST_NAME), TEST_PASSCODE_HASH));
         assertEquals("Wrong display name", TEST_DISPLAY_NAME, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_DISPLAY_NAME), TEST_PASSCODE_HASH));
         assertEquals("Wrong email", TEST_EMAIL, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, AuthenticatorService.KEY_EMAIL), TEST_PASSCODE_HASH));
+        assertEquals("Wrong additional OAuth value", TEST_CUSTOM_VALUE, SalesforceSDKManager.decryptWithPasscode(accountManager.getUserData(account, TEST_CUSTOM_KEY), TEST_PASSCODE_HASH));
     }
 
     /**
      * Test getAccounts - when there is only one
      */
     public void testGetAccountsWithSingleAccount() {
+
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -200,6 +217,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test getAccounts - when there are several accounts
      */
     public void testGetAccountsWithSeveralAccounts() {
+
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -226,6 +244,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test getAccountByName
      */
     public void testGetAccountByName() {
+
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -255,6 +274,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test removeAccounts when there is only one
      */
     public void testRemoveOnlyAccount() {
+
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -277,6 +297,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test removeAccounts - removing one account where there are several
      */
     public void testRemoveOneOfSeveralAccounts() {
+
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -301,6 +322,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test removeAccounts - removing two accounts
      */
     public void testRemoveSeveralAccounts() {
+
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -323,6 +345,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test peekRestClient - when there is no account
      */
     public void testPeekRestClientWhenNoAccounts() {
+
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -340,6 +363,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * @throws URISyntaxException
      */
     public void testPeekRestClientWithAccountSetup() throws URISyntaxException {
+
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -352,8 +376,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
             assertNotNull("RestClient expected", restClient);
             assertEquals("Wrong authToken", TEST_AUTH_TOKEN, restClient.getAuthToken());
             assertEquals("Wrong instance Url", new URI(TEST_INSTANCE_URL), restClient.getClientInfo().instanceUrl);
-        }
-        catch (AccountInfoNotFoundException e) {
+        } catch (AccountInfoNotFoundException e) {
             fail("Did not expect AccountInfoNotFoundException");
         }
     }
@@ -363,6 +386,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * @throws URISyntaxException
      */
     public void testGetRestClientWithAccountSetup() throws URISyntaxException {
+
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -393,6 +417,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
      * Test removeAccountAsync
      */
     public void testRemoveAccountAsync() throws Exception {
+
         // Make sure we have no accounts initially
         assertNoAccounts();
 
@@ -449,7 +474,7 @@ public class ClientManagerTest extends InstrumentationTestCase {
         return clientManager.createNewAccount(TEST_ACCOUNT_NAME, TEST_USERNAME, TEST_REFRESH_TOKEN,
                 TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL, TEST_IDENTITY_URL, TEST_CLIENT_ID,
                 TEST_ORG_ID, TEST_USER_ID, TEST_PASSCODE_HASH, null, null, null, TEST_FIRST_NAME,
-                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL);
+                TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL, TEST_THUMBNAIL_URL, testOauthValues);
     }
 
     /**
@@ -461,6 +486,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
                 TEST_REFRESH_TOKEN, TEST_AUTH_TOKEN, TEST_INSTANCE_URL, TEST_LOGIN_URL,
                 TEST_IDENTITY_URL, TEST_CLIENT_ID, TEST_ORG_ID_2, TEST_USER_ID_2, TEST_PASSCODE_HASH,
                 null, null, null, TEST_FIRST_NAME, TEST_LAST_NAME, TEST_DISPLAY_NAME, TEST_EMAIL, TEST_PHOTO_URL,
-                TEST_THUMBNAIL_URL);
+                TEST_THUMBNAIL_URL, testOauthValues);
     }
 }

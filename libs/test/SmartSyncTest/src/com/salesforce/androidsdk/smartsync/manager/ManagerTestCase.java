@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,22 +26,11 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import java.net.URI;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Formatter;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
@@ -59,6 +48,15 @@ import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
+
+import java.net.URI;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Abstract super class for manager test classes
@@ -141,7 +139,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         		new URI(TestCredentials.IDENTITY_URL),
         		TestCredentials.ACCOUNT_NAME, TestCredentials.USERNAME,
         		TestCredentials.USER_ID, TestCredentials.ORG_ID, null, null,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, null);
         return new RestClient(clientInfo, authToken, httpAccess, null);
     }
 

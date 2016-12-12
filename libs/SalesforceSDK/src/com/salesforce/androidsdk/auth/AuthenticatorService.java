@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011, salesforce.com, inc.
+ * Copyright (c) 2011-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -47,7 +47,9 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The service used for taking care of authentication for a Salesforce-based application.
@@ -172,7 +174,6 @@ public class AuthenticatorService extends Service {
                             String authTokenType,
                             Bundle options) throws NetworkErrorException {
             final String TAG = "Auth..Ser..:getAuthT..";
-
             final AccountManager mgr = AccountManager.get(context);
             final String passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
             final String refreshToken = SalesforceSDKManager.decryptWithPasscode(mgr.getPassword(account), passcodeHash);
@@ -208,6 +209,19 @@ public class AuthenticatorService extends Service {
             String clientSecret = null;
             if (encClientSecret != null) {
                 clientSecret = SalesforceSDKManager.decryptWithPasscode(encClientSecret, passcodeHash);
+            }
+            final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+            Map<String, String> values = null;
+            if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                values = new HashMap<>();
+                for (final String key : additionalOauthKeys) {
+                    final String encValue = mgr.getUserData(account, key);
+                    if (encValue != null) {
+                        final String value = SalesforceSDKManager.decryptWithPasscode(encValue,
+                                SalesforceSDKManager.getInstance().getPasscodeHash());
+                        values.put(key, value);
+                    }
+                }
             }
             final String encCommunityId = mgr.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
             String communityId = null;
@@ -261,6 +275,29 @@ public class AuthenticatorService extends Service {
                 String encrThumbnailUrl = null;
                 if (thumbnailUrl != null) {
                     encrThumbnailUrl = SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, passcodeHash);
+                }
+
+                /*
+                 * Checks if the additional OAuth keys have new values returned after a token
+                 * refresh. If so, update the values stored with the new ones. If not, fall back
+                 * on the existing values stored.
+                 */
+                if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                    for (final String key : additionalOauthKeys) {
+                        if (tr.additionalOauthValues != null && tr.additionalOauthValues.containsKey(key)) {
+                            final String newValue = tr.additionalOauthValues.get(key);
+                            if (newValue != null) {
+                                final String encrNewValue = SalesforceSDKManager.encryptWithPasscode(newValue, passcodeHash);
+                                resBundle.putString(key, encrNewValue);
+                            }
+                        } else if (values != null && values.containsKey(key)) {
+                            final String value = values.get(key);
+                            if (value != null) {
+                                final String encrValue = SalesforceSDKManager.encryptWithPasscode(value, passcodeHash);
+                                resBundle.putString(key, encrValue);
+                            }
+                        }
+                    }
                 }
                 resBundle.putString(AuthenticatorService.KEY_THUMBNAIL_URL, encrThumbnailUrl);
                 String encrClientSecret = null;

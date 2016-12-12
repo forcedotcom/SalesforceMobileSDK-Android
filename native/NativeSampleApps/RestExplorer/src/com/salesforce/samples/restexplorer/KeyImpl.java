@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2013-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -27,7 +27,7 @@
 package com.salesforce.samples.restexplorer;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
-import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 /**
  * This class provides an implementation of KeyInterface.
