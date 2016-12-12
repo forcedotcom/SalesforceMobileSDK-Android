@@ -91,7 +91,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "5.1.0.unstable";
+    public static final String SDK_VERSION = "5.1.0.dev";
 
     /**
      * Intent action that specifies that logout was completed.
