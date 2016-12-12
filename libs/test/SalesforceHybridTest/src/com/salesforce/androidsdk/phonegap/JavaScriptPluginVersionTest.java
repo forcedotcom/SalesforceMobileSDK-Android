@@ -56,21 +56,21 @@ public class JavaScriptPluginVersionTest extends InstrumentationTestCase {
 	}
 	
 	/**
-	 * Test for compare versions when the same versions are passed in and one is marked as unstable
-	 * Unstable version is assumed to be older
+	 * Test for compare versions when the same versions are passed in and one is marked as dev
+	 * dev version is assumed to be older
 	 */
-	public void testCompareVersionsSameVersionWithUnstable() {
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("1.unstable", "1"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("1", "1.unstable"));
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("1.2.unstable", "1.2"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("1.2", "1.2.unstable"));
-		assertEquals(-1, JavaScriptPluginVersion.compareVersions("2.2.3.unstable", "2.2.3"));
-		assertEquals(1, JavaScriptPluginVersion.compareVersions("2.2.3", "2.2.3.unstable"));
+	public void testCompareVersionsSameVersionWithDev() {
+		assertEquals(-1, JavaScriptPluginVersion.compareVersions("1.dev", "1"));
+		assertEquals(1, JavaScriptPluginVersion.compareVersions("1", "1.dev"));
+		assertEquals(-1, JavaScriptPluginVersion.compareVersions("1.2.dev", "1.2"));
+		assertEquals(1, JavaScriptPluginVersion.compareVersions("1.2", "1.2.dev"));
+		assertEquals(-1, JavaScriptPluginVersion.compareVersions("2.2.3.dev", "2.2.3"));
+		assertEquals(1, JavaScriptPluginVersion.compareVersions("2.2.3", "2.2.3.dev"));
 	}
 
 	/**
 	 * Test for compare versions when one version is a patch on the other
-	 * NB unstable is simply ignored
+	 * NB dev is simply ignored
 	 */
 	public void testCompareVersionsWithPatch() {
 		assertEquals(-1, JavaScriptPluginVersion.compareVersions("1", "1.1"));
@@ -85,7 +85,7 @@ public class JavaScriptPluginVersionTest extends InstrumentationTestCase {
 
 	/**
 	 * Test for compare versions with versions with two digits
-	 * NB unstable is simply ignored
+	 * NB dev is simply ignored
 	 */
 	public void testCompareVersionsWithTwoDigits() {
 		assertEquals(-1, JavaScriptPluginVersion.compareVersions("9", "14"));
