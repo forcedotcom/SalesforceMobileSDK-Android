@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2016, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -154,7 +154,7 @@ public class PushService extends IntentService {
 		final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
 		final List<UserAccount> accounts = userAccMgr.getAuthenticatedUsers();
 		try {
-            if (intent.getAction().equals(GCM_REGISTRATION_CALLBACK_INTENT)) {
+            if (GCM_REGISTRATION_CALLBACK_INTENT.equals(intent.getAction())) {
             	if (allAccounts) {
             		if (accounts != null) {
                 		for (final UserAccount userAcc : accounts) {
@@ -166,9 +166,9 @@ public class PushService extends IntentService {
             	} else {
             		handleRegistration(intent, userAccMgr.getCurrentUser());
             	}
-            } else if (intent.getAction().equals(GCM_RECEIVE_INTENT)) {
+            } else if (GCM_RECEIVE_INTENT.equals(intent.getAction())) {
                 onMessage(intent);
-            } else if (intent.getAction().equals(SFDC_REGISTRATION_RETRY_INTENT)) {
+            } else if (SFDC_REGISTRATION_RETRY_INTENT.equals(intent.getAction())) {
             	if (allAccounts) {
             		if (accounts != null) {
                 		for (final UserAccount userAcc : accounts) {
@@ -448,7 +448,7 @@ public class PushService extends IntentService {
     	        		account.getUserId(), account.getOrgId(),
     	        		account.getCommunityId(), account.getCommunityUrl(),
 						account.getFirstName(), account.getLastName(), account.getDisplayName(), account.getEmail(),
-						account.getPhotoUrl(), account.getThumbnailUrl());
+						account.getPhotoUrl(), account.getThumbnailUrl(), account.getAdditionalOauthValues());
                 client = new RestClient(clientInfo, account.getAuthToken(),
                 		HttpAccess.DEFAULT, authTokenProvider);
     		} catch (Exception e) {

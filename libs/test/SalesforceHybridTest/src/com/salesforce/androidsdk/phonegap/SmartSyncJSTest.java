@@ -42,7 +42,7 @@ public class SmartSyncJSTest extends JSTestCase {
 
     @Override
     protected int getMaxRuntimeInSecondsForTest(String testName) {
-        return 60;
+        return 30;
     }
 
     @Override
@@ -94,13 +94,16 @@ public class SmartSyncJSTest extends JSTestCase {
                 "testSyncDownToGlobalStore",
                 "testSyncDownWithNoOverwrite",
                 "testReSync",
+                "testRefreshSyncDown",
                 "testCleanResyncGhosts",
                 "testSyncUpLocallyUpdated",
                 "testSyncUpLocallyUpdatedWithGlobalStore",
                 "testSyncUpLocallyUpdatedWithNoOverwrite",
                 "testSyncUpLocallyDeleted",
                 "testSyncUpLocallyDeletedWithNoOverwrite",
-                "testSyncUpLocallyCreated"
+                "testSyncUpLocallyCreated",
+                "testStoreCacheWithGlobalStoreNamed",
+                "testSyncDownToGlobalStoreNamed"
             });
     }
 
@@ -288,6 +291,10 @@ public class SmartSyncJSTest extends JSTestCase {
         runTest("testReSync");
     }
 
+    public void testRefreshSyncDown() {
+        runTest("testRefreshSyncDown");
+    }
+
     public void testCleanResyncGhosts() {
         runTest("testCleanResyncGhosts");
     }
@@ -315,4 +322,13 @@ public class SmartSyncJSTest extends JSTestCase {
     public void testSyncUpLocallyCreated() {
         runTest("testSyncUpLocallyCreated");
     }
+
+    public void testStoreCacheWithGlobalStoreNamed() {
+        runTest("testStoreCacheWithGlobalStoreNamed");
+    }
+
+    public void testSyncDownToGlobalStoreNamed() {
+        runTest("testSyncDownToGlobalStoreNamed");
+    }
+
 }

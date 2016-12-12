@@ -69,7 +69,6 @@ public class RestClient {
 
 
     private static Map<String, OkHttpClient> OK_CLIENTS;
-	private ClientInfo clientInfo;
     private HttpAccess httpAccessor;
     private OAuthRefreshInterceptor oAuthRefreshInterceptor;
 	private OkHttpClient okHttpClient;
@@ -132,11 +131,10 @@ public class RestClient {
      * @param authTokenProvider
 	 */
 	public RestClient(ClientInfo clientInfo, String authToken, HttpAccess httpAccessor, AuthTokenProvider authTokenProvider) {
-		this(clientInfo, httpAccessor, new OAuthRefreshInterceptor(clientInfo, authToken, authTokenProvider));
+		this(httpAccessor, new OAuthRefreshInterceptor(clientInfo, authToken, authTokenProvider));
 	}
 
-	public RestClient(ClientInfo clientInfo, HttpAccess httpAccessor, OAuthRefreshInterceptor httpInterceptor) {
-		this.clientInfo = clientInfo;
+	public RestClient(HttpAccess httpAccessor, OAuthRefreshInterceptor httpInterceptor) {
         this.httpAccessor = httpAccessor;
         this.oAuthRefreshInterceptor = httpInterceptor;
 		setOkHttpClient();
@@ -158,7 +156,7 @@ public class RestClient {
 		if (OK_CLIENTS == null) {
 			OK_CLIENTS = new HashMap<>();
 		}
-		final String uniqueId = clientInfo.buildUniqueId();
+		final String uniqueId = this.oAuthRefreshInterceptor.clientInfo.buildUniqueId();
 		OkHttpClient okHttpClient = null;
 		if (uniqueId != null) {
 			okHttpClient = OK_CLIENTS.get(uniqueId);
@@ -181,6 +179,13 @@ public class RestClient {
 		this.okHttpClient = okHttpClient;
 	}
 
+	/**
+	 * Set the client info. Used by clients to implement Login As
+	 * @param clientInfo The new client info to set
+	 */
+	public void setClientInfo(final ClientInfo clientInfo) {
+		oAuthRefreshInterceptor.setClientInfo(clientInfo);
+	}
 
 	/**
 	 * @return credentials as JSONObject
@@ -206,7 +211,7 @@ public class RestClient {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("RestClient: {\n")
-		  .append(clientInfo.toString())
+		  .append(this.oAuthRefreshInterceptor.clientInfo.toString())
 		  // Un-comment if you must: tokens should not be printed to the log
 		  // .append("   authToken: ").append(getAuthToken()).append("\n")
 		  // .append("   refreshToken: ").append(getRefreshToken()).append("\n")
@@ -233,7 +238,7 @@ public class RestClient {
 	 * @return The client info.
 	 */
 	public ClientInfo getClientInfo() {
-		return clientInfo;
+		return oAuthRefreshInterceptor.clientInfo;
 	}
 
 	/**
@@ -250,7 +255,7 @@ public class RestClient {
      */
     public Request buildRequest(RestRequest restRequest) {
         Request.Builder builder =  new Request.Builder()
-                .url(HttpUrl.get(clientInfo.resolveUrl(restRequest.getPath())))
+                .url(HttpUrl.get(this.oAuthRefreshInterceptor.clientInfo.resolveUrl(restRequest.getPath())))
                 .method(restRequest.getMethod().toString(), restRequest.getRequestBody());
 
         // Adding addition headers
@@ -343,6 +348,7 @@ public class RestClient {
 		public final String email;
 		public final String photoUrl;
 		public final String thumbnailUrl;
+		public final Map<String, String> additionalOauthValues;
 
 		/**
 		 * Parameterized constructor.
@@ -363,12 +369,13 @@ public class RestClient {
          * @param email Email.
          * @param photoUrl Photo URL.
          * @param thumbnailUrl Thumbnail URL.
+         * @param additionalOauthValues Additional OAuth values.
 		 */
 		public ClientInfo(String clientId, URI instanceUrl, URI loginUrl,
 				URI identityUrl, String accountName, String username,
 				String userId, String orgId, String communityId, String communityUrl,
 				String firstName, String lastName, String displayName, String email,
-				String photoUrl, String thumbnailUrl ) {
+				String photoUrl, String thumbnailUrl, Map<String, String> additionalOauthValues) {
 			this.clientId = clientId;
 			this.instanceUrl = instanceUrl;
 			this.loginUrl = loginUrl;
@@ -385,6 +392,7 @@ public class RestClient {
 			this.email = email;
 			this.photoUrl = photoUrl;
 			this.thumbnailUrl = thumbnailUrl;
+            this.additionalOauthValues = additionalOauthValues;
 		}
 
         /**
@@ -413,6 +421,7 @@ public class RestClient {
               .append("     email: ").append(email).append("\n")
               .append("     photoUrl: ").append(photoUrl).append("\n")
               .append("     thumbnailUrl: ").append(thumbnailUrl).append("\n")
+              .append("     additionalOauthValues: ").append(additionalOauthValues).append("\n")
 			  .append("  }\n");
 			return sb.toString();
 		}
@@ -501,7 +510,7 @@ public class RestClient {
         public static final String NOUSER = "nouser";
 
         public UnauthenticatedClientInfo() {
-            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         @Override
@@ -685,12 +694,17 @@ public class RestClient {
                                 clientInfo.accountName, clientInfo.username,
                                 clientInfo.userId, clientInfo.orgId, clientInfo.communityId,
                                 clientInfo.communityUrl, clientInfo.firstName, clientInfo.lastName,
-                                clientInfo.displayName, clientInfo.email, clientInfo.photoUrl, clientInfo.thumbnailUrl);
+                                clientInfo.displayName, clientInfo.email, clientInfo.photoUrl,
+                                clientInfo.thumbnailUrl, clientInfo.additionalOauthValues);
                     } catch (URISyntaxException ex) {
                         Log.w("RestClient", "Invalid server URL", ex);
                     }
                 }
             }
+        }
+
+        public void setClientInfo(final ClientInfo clientInfo) {
+            this.clientInfo = clientInfo;
         }
     }
 }

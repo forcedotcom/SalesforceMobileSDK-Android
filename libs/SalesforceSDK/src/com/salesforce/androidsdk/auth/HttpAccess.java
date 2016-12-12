@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2015, salesforce.com, inc.
+ * Copyright (c) 2011-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,10 +26,7 @@
  */
 package com.salesforce.androidsdk.auth;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
@@ -40,8 +37,6 @@ import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
-
-import javax.net.ssl.SSLContext;
 
 import okhttp3.ConnectionSpec;
 import okhttp3.Interceptor;
@@ -54,17 +49,15 @@ import okhttp3.TlsVersion;
  * Generic HTTP Access layer - used internally by {@link com.salesforce.androidsdk.rest.RestClient}
  * and {@link OAuth2}. This class watches network changes as well.
  */
-public class HttpAccess extends BroadcastReceiver {
+public class HttpAccess {
 
-    // Timeouts
+    // Timeouts.
     public static final int CONNECT_TIMEOUT = 60;
     public static final int READ_TIMEOUT = 20;
 
-    // User agent header name
+    // User agent header name.
 	private static final String USER_AGENT = "User-Agent";
 
-    // Fields to keep track of network.
-    private boolean hasNetwork = true;
     private String userAgent;
     private OkHttpClient okHttpClient;
 
@@ -95,9 +88,6 @@ public class HttpAccess extends BroadcastReceiver {
         if (app == null) {
             conMgr = null;
         } else {
-
-            // Registers a receiver to handle network changes.
-            app.registerReceiver(this, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
 
             // Gets the connectivity manager and current network type.
             conMgr = (ConnectivityManager) app.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -136,7 +126,6 @@ public class HttpAccess extends BroadcastReceiver {
         return builder;
     }
 
-
     /**
      *
      * @return okHttpClient tied to this HttpAccess - builds one if needed
@@ -149,48 +138,21 @@ public class HttpAccess extends BroadcastReceiver {
     }
 
     /**
-     * Detects network changes and sets the network connectivity status.
-     *
-     * @param context The context of the request.
-     * @param intent Intent.
-     */
-    @Override
-    public void onReceive(Context context, Intent intent) {
-        if (conMgr == null) {
-            return;
-        }
-
-        // Checks if an active network is available.
-        final NetworkInfo activeInfo = conMgr.getActiveNetworkInfo();
-        if (activeInfo != null && activeInfo.isConnected()) {
-            setHasNetwork(true);
-            return;
-        }
-
-        // Tries WIFI data connection.
-        final NetworkInfo wifiInfo = conMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
-        if (wifiInfo != null && wifiInfo.isConnected()) {
-            setHasNetwork(true);
-            return;
-        }
-
-        // Tries mobile connection.
-        final NetworkInfo mobileInfo = conMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
-        if (mobileInfo == null) {
-            setHasNetwork(false);
-            return;
-        }
-    }
-
-    /**
      * Returns the status of network connectivity.
      *
      * @return True - if network connectivity is available, False - otherwise.
      */
     public synchronized boolean hasNetwork() {
-        return hasNetwork;
+        boolean isConnected = true;
+        if (conMgr != null) {
+            final NetworkInfo activeInfo = conMgr.getActiveNetworkInfo();
+            if (activeInfo == null || !activeInfo.isConnected()) {
+                isConnected = false;
+            }
+        }
+        return isConnected;
     }
-    
+
     /**
      * Returns the current user agent.
      *
@@ -199,16 +161,6 @@ public class HttpAccess extends BroadcastReceiver {
     public String getUserAgent() {
     	return userAgent;
     }
-
-    /**
-     * Sets the status of network connectivity.
-     *
-     * @param b True - if network connectivity is available, False - otherwise.
-     */
-    private synchronized void setHasNetwork(boolean b) {
-        hasNetwork = b;
-    }
-
 
     /**
      * Exception thrown if the device is offline, during an attempted HTTP call.

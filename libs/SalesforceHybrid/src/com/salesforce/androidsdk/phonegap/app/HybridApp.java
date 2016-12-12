@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -29,8 +29,7 @@ package com.salesforce.androidsdk.phonegap.app;
 import android.app.Application;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager.KeyInterface;
-import com.salesforce.androidsdk.security.Encryptor;
-import com.salesforce.androidsdk.phonegap.app.SalesforceHybridSDKManager;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 
 /**
  * Application class used by hybrid applications

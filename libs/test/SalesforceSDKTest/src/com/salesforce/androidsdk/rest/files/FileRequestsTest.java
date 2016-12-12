@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, salesforce.com, inc.
+ * Copyright (c) 2013-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -28,12 +28,12 @@ package com.salesforce.androidsdk.rest.files;
 
 import android.os.Environment;
 
-import com.google.common.collect.Lists;
 import com.salesforce.androidsdk.rest.RestRequest;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
+import java.util.Arrays;
 
 /**
  * 
@@ -42,16 +42,16 @@ import java.io.OutputStreamWriter;
 public class FileRequestsTest extends ApiRequestsBaseTest {
 
     public void testBatchFileInfo() {
-        RestRequest r = FileRequests.batchFileDetails(Lists.newArrayList("06930000001LkwtAAC", "06930000001LkwtAAD"));
+        RestRequest r = FileRequests.batchFileDetails(Arrays.asList("06930000001LkwtAAC", "06930000001LkwtAAD"));
         assertEquals(connectPath + "connect/files/batch/06930000001LkwtAAC,06930000001LkwtAAD", r.getPath());
         doAdditionalVerifications(r);
         try {
-            FileRequests.batchFileDetails(Lists.newArrayList("06930000001LkwtAAC", null));
+            FileRequests.batchFileDetails(Arrays.asList("06930000001LkwtAAC", null));
             fail("should of thrown an exception");
         } catch (IllegalArgumentException e) { /* expected */
         }
         try {
-            FileRequests.batchFileDetails(Lists.newArrayList("06930000001LkwtAAC", ""));
+            FileRequests.batchFileDetails(Arrays.asList("06930000001LkwtAAC", ""));
             fail("should of thrown an exception");
         } catch (IllegalArgumentException e) { /* expected */
         }

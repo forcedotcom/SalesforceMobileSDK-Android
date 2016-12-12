@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -25,13 +25,6 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 package com.salesforce.samples.smartsyncexplorer.loaders;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import org.json.JSONArray;
-import org.json.JSONException;
 
 import android.content.AsyncTaskLoader;
 import android.content.Context;
@@ -59,6 +52,13 @@ import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * A simple AsyncTaskLoader to load a list of Salesforce contacts.

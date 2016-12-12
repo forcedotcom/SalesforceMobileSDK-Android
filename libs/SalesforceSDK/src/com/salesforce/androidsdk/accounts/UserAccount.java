@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,14 +26,17 @@
  */
 package com.salesforce.androidsdk.accounts;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.util.MapUtil;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Map;
 
 /**
  * This class represents a single user account that is currently
@@ -68,6 +71,7 @@ public class UserAccount {
 	private static final String TAG = "UserAccount";
 	private static final String FORWARD_SLASH = "/";
 	private static final String UNDERSCORE = "_";
+	private static final String FEATURE_USER_AUTH = "UA";
 
 	private String authToken;
 	private String refreshToken;
@@ -87,6 +91,7 @@ public class UserAccount {
 	private String email;
     private String photoUrl;
     private String thumbnailUrl;
+    private Map<String, String> additionalOauthValues;
 
 	/**
 	 * Parameterized constructor.
@@ -112,37 +117,38 @@ public class UserAccount {
                 loginServer, idUrl, instanceServer,
                 orgId, userId, username, accountName,
                 clientId, communityId, communityUrl,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, null);
     }
 
-    /**
-     * Parameterized constructor.
-     *
-     * @param authToken Auth token.
-     * @param refreshToken Refresh token.
-     * @param loginServer Login server.
-     * @param idUrl Identity URL.
-     * @param instanceServer Instance server.
-     * @param orgId Org ID.
-     * @param userId User ID.
-     * @param username Username.
-     * @param accountName Account name.
-     * @param clientId Client ID.
-     * @param communityId Community ID.
-     * @param communityUrl Community URL.
-     * @param firstName First Name.
-     * @param lastName Last Name.
+	/**
+	 * Parameterized constructor.
+	 *
+	 * @param authToken Auth token.
+	 * @param refreshToken Refresh token.
+	 * @param loginServer Login server.
+	 * @param idUrl Identity URL.
+	 * @param instanceServer Instance server.
+	 * @param orgId Org ID.
+	 * @param userId User ID.
+	 * @param username Username.
+	 * @param accountName Account name.
+	 * @param clientId Client ID.
+	 * @param communityId Community ID.
+	 * @param communityUrl Community URL.
+	 * @param firstName First Name.
+	 * @param lastName Last Name.
 	 * @param displayName Display Name.
 	 * @param email Email.
-     * @param photoUrl Photo URL.
-     * @param thumbnailUrl Thumbnail URL.
-     */
+	 * @param photoUrl Photo URL.
+	 * @param thumbnailUrl Thumbnail URL.
+	 * @param additionalOauthValues Additional OAuth values.
+	 */
 	public UserAccount(String authToken, String refreshToken,
-			String loginServer, String idUrl, String instanceServer,
-			String orgId, String userId, String username, String accountName,
-			String clientId, String communityId, String communityUrl,
-            String firstName, String lastName, String displayName, String email, String photoUrl,
-            String thumbnailUrl ) {
+					   String loginServer, String idUrl, String instanceServer,
+					   String orgId, String userId, String username, String accountName,
+					   String clientId, String communityId, String communityUrl,
+					   String firstName, String lastName, String displayName, String email, String photoUrl,
+					   String thumbnailUrl, Map<String, String> additionalOauthValues) {
 		this.authToken = authToken;
 		this.refreshToken = refreshToken;
 		this.loginServer = loginServer;
@@ -155,12 +161,14 @@ public class UserAccount {
 		this.clientId = clientId;
 		this.communityId = communityId;
 		this.communityUrl = communityUrl;
-        this.firstName = firstName;
-        this.lastName = lastName;
+		this.firstName = firstName;
+		this.lastName = lastName;
 		this.displayName = displayName;
-        this.email = email;
-        this.photoUrl = photoUrl;
-        this.thumbnailUrl = thumbnailUrl;
+		this.email = email;
+		this.photoUrl = photoUrl;
+		this.thumbnailUrl = thumbnailUrl;
+		this.additionalOauthValues = additionalOauthValues;
+		SalesforceSDKManager.getInstance().registerUsedAppFeature(FEATURE_USER_AUTH);
 	}
 
 	/**
@@ -191,6 +199,8 @@ public class UserAccount {
 			email = object.optString(EMAIL, null);
             photoUrl = object.optString(PHOTO_URL, null);
 			thumbnailUrl = object.optString(THUMBNAIL_URL, null);
+            additionalOauthValues = MapUtil.addJSONObjectToMap(object,
+                    SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
 	}
 
@@ -219,6 +229,8 @@ public class UserAccount {
 			email = bundle.getString(EMAIL);
             photoUrl = bundle.getString(PHOTO_URL);
             thumbnailUrl = bundle.getString(THUMBNAIL_URL);
+            additionalOauthValues = MapUtil.addBundleToMap(bundle,
+					SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), additionalOauthValues);
 		}
 	}
 
@@ -382,6 +394,15 @@ public class UserAccount {
      */
     public String getThumbnailUrl() {
         return thumbnailUrl;
+    }
+
+    /**
+     * Returns the additional OAuth values for this user.
+     *
+     * @return Additional OAuth values.
+     */
+    public Map<String, String> getAdditionalOauthValues() {
+        return additionalOauthValues;
     }
 
 	/**
@@ -567,7 +588,7 @@ public class UserAccount {
      * @return JSONObject instance.
      */
     public JSONObject toJson() {
-    	final JSONObject object = new JSONObject();
+    	JSONObject object = new JSONObject();
     	try {
         	object.put(AUTH_TOKEN, authToken);
         	object.put(REFRESH_TOKEN, refreshToken);
@@ -586,6 +607,8 @@ public class UserAccount {
 			object.put(EMAIL, email);
             object.put(PHOTO_URL, photoUrl);
             object.put(THUMBNAIL_URL, thumbnailUrl);
+            object = MapUtil.addMapToJSONObject(additionalOauthValues,
+                    SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
     	} catch (JSONException e) {
     		Log.e(TAG, "Unable to convert to JSON");
     	}
@@ -598,7 +621,7 @@ public class UserAccount {
      * @return Bundle instance.
      */
     public Bundle toBundle() {
-    	final Bundle object = new Bundle();
+    	Bundle object = new Bundle();
         object.putString(AUTH_TOKEN, authToken);
         object.putString(REFRESH_TOKEN, refreshToken);
         object.putString(LOGIN_SERVER, loginServer);
@@ -617,6 +640,8 @@ public class UserAccount {
 		object.putString(EMAIL, email);
         object.putString(PHOTO_URL, photoUrl);
         object.putString(THUMBNAIL_URL, thumbnailUrl);
+        object = MapUtil.addMapToBundle(additionalOauthValues,
+                SalesforceSDKManager.getInstance().getAdditionalOauthKeys(), object);
     	return object;
     }
 }

@@ -29,8 +29,7 @@ package com.salesforce.androidsdk.store;
 
 import android.database.Cursor;
 
-import com.google.common.primitives.Longs;
-import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
@@ -150,6 +149,11 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
 	}
 
 	@Override
+	public void testSelectWithNullInJSON1IndexedField() throws JSONException {
+		// json1 is not compatible with external storage.
+	}
+
+	@Override
 	public void testDeleteAgainstChangedSoup() throws JSONException {
 		//create a new soup with multiple entries
 		JSONObject soupElt1 = new JSONObject("{'key':'ka1', 'value':'va1'}");
@@ -241,11 +245,25 @@ public class SmartStoreExternalStorageTest extends SmartStoreTest {
     public void testDeleteByQuery() throws JSONException {
         List<Long> idsDeleted = new ArrayList<>();
         List<Long> idsNotDeleted = new ArrayList<>();
-
         tryDeleteByQuery(idsDeleted, idsNotDeleted);
 
         // Check file system
-        checkFileSystem(TEST_SOUP, Longs.toArray(idsDeleted), false);
-        checkFileSystem(TEST_SOUP, Longs.toArray(idsNotDeleted), true);
+        checkFileSystem(TEST_SOUP, listToArray(idsDeleted), false);
+        checkFileSystem(TEST_SOUP, listToArray(idsNotDeleted), true);
     }
+
+	private long[] listToArray(List<Long> list) {
+        long[] primitiveArray = new long[0];
+        if (list == null) {
+            return primitiveArray;
+        }
+		final Object[] objArray = list.toArray();
+		primitiveArray = new long[objArray.length];
+		for (int i = 0; i < objArray.length; i++) {
+			if (objArray[i] != null) {
+				primitiveArray[i] = ((Long) objArray[i]).longValue();
+			}
+		}
+		return primitiveArray;
+	}
 }

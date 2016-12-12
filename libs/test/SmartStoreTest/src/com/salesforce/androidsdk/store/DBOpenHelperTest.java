@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2015, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -34,7 +34,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.security.Encryptor;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.smartstore.store.DBOpenHelper;
 
 import net.sqlcipher.database.SQLiteDatabase;
@@ -62,6 +63,7 @@ public class DBOpenHelperTest extends InstrumentationTestCase {
 	@Override
 	protected void setUp() throws Exception {
 		this.targetContext = getInstrumentation().getTargetContext();
+		EventBuilderHelper.enableDisable(false);
 
 		// Delete external blobs folder for test db and test soup
 		DBOpenHelper helper = DBOpenHelper.getOpenHelper(targetContext, TEST_DB, null, null);

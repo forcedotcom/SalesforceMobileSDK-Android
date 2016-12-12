@@ -10,9 +10,9 @@
     </application>
 
     <instrumentation android:targetPackage="com.salesforce.samples.restexplorer" 
-        android:name="com.salesforce.androidsdk.util.test.JUnitReportTestRunner"
+        android:name="com.salesforce.androidsdk.analytics.util.test.JUnitReportTestRunner"
     />
 
     <uses-sdk android:minSdkVersion="19"
-        android:targetSdkVersion="23" />
+        android:targetSdkVersion="25" />
 </manifest>

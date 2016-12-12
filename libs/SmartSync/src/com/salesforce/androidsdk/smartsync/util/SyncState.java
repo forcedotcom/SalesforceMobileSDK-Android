@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -80,7 +80,7 @@ public class SyncState {
 	 * @return
 	 * @throws JSONException 
 	 */
-	public static SyncState createSyncDown(SmartStore store, SyncDownTarget target, SyncOptions options, String soupName) throws JSONException {
+	public static SyncState  createSyncDown(SmartStore store, SyncDownTarget target, SyncOptions options, String soupName) throws JSONException {
     	JSONObject sync = new JSONObject();
     	sync.put(SYNC_TYPE, Type.syncDown);
     	sync.put(SYNC_TARGET, target.asJSON());

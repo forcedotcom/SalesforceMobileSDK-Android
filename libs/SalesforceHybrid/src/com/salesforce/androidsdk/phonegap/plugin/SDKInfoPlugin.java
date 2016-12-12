@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -42,6 +42,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.content.res.XmlResourceParser;
 import android.util.Log;
+import android.text.TextUtils;
 
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.config.BootConfig;
@@ -56,7 +57,7 @@ public class SDKInfoPlugin extends ForcePlugin {
     private static final String APP_VERSION = "appVersion";
 	private static final String FORCE_PLUGINS_AVAILABLE = "forcePluginsAvailable";
 	private static final String BOOT_CONFIG = "bootConfig";
-    	
+
 	// Cached 
 	private static List<String> forcePlugins;
     
@@ -64,7 +65,9 @@ public class SDKInfoPlugin extends ForcePlugin {
      * Supported plugin actions that the client can take.
      */
     enum Action {
-        getInfo
+        getInfo,
+        registerAppFeature,
+        unregisterAppFeature
     }
 
     @Override
@@ -75,6 +78,8 @@ public class SDKInfoPlugin extends ForcePlugin {
             action = Action.valueOf(actionStr);
             switch(action) {
                 case getInfo:  getInfo(args, callbackContext); return true;
+                case registerAppFeature: registerAppFeature(args, callbackContext); return true;
+                case unregisterAppFeature: unregisterAppFeature(args, callbackContext); return true;
                 default: return false;
             }
         }
@@ -96,6 +101,42 @@ public class SDKInfoPlugin extends ForcePlugin {
         catch (NameNotFoundException e) {
             callbackContext.error(e.getMessage());
         }
+    }
+
+    /**
+     * Native implementation for "registerAppFeature" action.
+     * @param callbackContext Used when calling back into Javascript.
+     * @throws JSONException
+     */
+    protected void registerAppFeature(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        Log.i("SDKInfoPlugin.registerAppFeature", "registerAppFeature called");
+        // Parse args.
+        JSONObject arg0 = args.getJSONObject(0);
+        if(arg0 != null){
+            String appFeatureCode = arg0.getString("feature");
+            if(!TextUtils.isEmpty(appFeatureCode)){
+                SalesforceSDKManager.getInstance().registerUsedAppFeature(appFeatureCode);
+            }
+        }
+        callbackContext.success();
+    }
+
+    /**
+     * Native implementation for "unregisterAppFeature" action.
+     * @param callbackContext Used when calling back into Javascript.
+     * @throws JSONException
+     */
+    protected void unregisterAppFeature(JSONArray args, final CallbackContext callbackContext) throws JSONException {
+        Log.i("SDKInfoPlugin.unregisterAppFeature", "unregisterAppFeature called");
+        // Parse args.
+        JSONObject arg0 = args.getJSONObject(0);
+        if(arg0 != null){
+            String appFeatureCode = arg0.getString("feature");
+            if(!TextUtils.isEmpty(appFeatureCode)){
+                SalesforceSDKManager.getInstance().unregisterUsedAppFeature(appFeatureCode);
+            }
+        }
+        callbackContext.success();
     }
 
     /**************************************************************************************************

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,18 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.auth.AuthenticatorService;
-import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
-
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
@@ -50,6 +38,21 @@ import android.os.Bundle;
 import android.os.Looper;
 import android.util.Log;
 
+import com.salesforce.androidsdk.accounts.UserAccount;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
+import com.salesforce.androidsdk.auth.AuthenticatorService;
+import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * ClientManager is a factory class for RestClient which stores OAuth credentials in the AccountManager.
  * If no account is found, it kicks off the login flow which creates a new account if successful.
@@ -60,23 +63,12 @@ public class ClientManager {
 	public static final String ACCESS_TOKEN_REVOKE_INTENT = "access_token_revoked";
     public static final String ACCESS_TOKEN_REFRESH_INTENT = "access_token_refeshed";
     public static final String INSTANCE_URL_UPDATE_INTENT = "instance_url_updated";
+    private static final String TAG = "ClientManager";
 
     private final AccountManager accountManager;
     private final String accountType;
     private final LoginOptions loginOptions;
     private final boolean revokedTokenShouldLogout;
-
-    /**
-     * Construct a ClientManager using a custom account type.
-     *
-     * @param ctx Context.
-     * @param accountType Account type.
-     * @param loginOptions Login options.
-     */
-    @Deprecated
-    public ClientManager(Context ctx, String accountType, LoginOptions loginOptions) {
-        this(ctx, accountType, loginOptions, true);
-    }
 
     /**
      * Construct a ClientManager using a custom account type.
@@ -113,7 +105,7 @@ public class ClientManager {
 
         // No account found - let's add one - the AuthenticatorService add account method will start the login activity
         if (acc == null) {
-            Log.i("ClientManager:getRestClient", "No account of type " + accountType + " found");
+            Log.i(TAG, "No account of type " + accountType + " found");
             accountManager.addAccount(getAccountType(),
                     AccountManager.KEY_AUTHTOKEN, null /*required features*/, options,
                     activityContext, new AccMgrCallback(restClientCallback),
@@ -122,7 +114,7 @@ public class ClientManager {
         }
         // Account found
         else {
-            Log.i("ClientManager:getRestClient", "Found account of type " + accountType);
+            Log.i(TAG, "Found account of type " + accountType);
             accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN,
                     options, activityContext, new AccMgrCallback(restClientCallback), null /* handler */);
 
@@ -165,12 +157,12 @@ public class ClientManager {
     public RestClient peekRestClient(Account acc) {
         if (acc == null) {
             AccountInfoNotFoundException e = new AccountInfoNotFoundException("No user account found");
-            Log.i("ClientManager:peekRestClient", "No user account found");
+            Log.i(TAG, "No user account found");
             throw e;
         }
         if (SalesforceSDKManager.getInstance().isLoggingOut()) {
         	AccountInfoNotFoundException e = new AccountInfoNotFoundException("User is logging out");
-            Log.i("ClientManager:peekRestClient", "User is logging out", e);
+            Log.i(TAG, "User is logging out", e);
             throw e;
         }
         String passcodeHash = (SalesforceSDKManager.getInstance().getIsTestRun() ? loginOptions.passcodeHash : SalesforceSDKManager.getInstance().getPasscodeHash());
@@ -208,6 +200,19 @@ public class ClientManager {
         if (encThumbnailUrl != null) {
             thumbnailUrl = SalesforceSDKManager.decryptWithPasscode(encThumbnailUrl, passcodeHash);
         }
+        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+        Map<String, String> values = null;
+        if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+            values = new HashMap<>();
+            for (final String key : additionalOauthKeys) {
+                final String encValue = accountManager.getUserData(acc, key);
+                if (encValue != null) {
+                    final String value = SalesforceSDKManager.decryptWithPasscode(encValue,
+                            SalesforceSDKManager.getInstance().getPasscodeHash());
+                    values.put(key, value);
+                }
+            }
+        }
         final String encCommunityId = accountManager.getUserData(acc, AuthenticatorService.KEY_COMMUNITY_ID);
         String communityId = null;
         if (encCommunityId != null) {
@@ -232,10 +237,10 @@ public class ClientManager {
             ClientInfo clientInfo = new ClientInfo(clientId, new URI(instanceServer),
             		new URI(loginServer), new URI(idUrl), accountName, username,
             		userId, orgId, communityId, communityUrl,
-                    firstName, lastName, displayName, email, photoUrl, thumbnailUrl);
+                    firstName, lastName, displayName, email, photoUrl, thumbnailUrl, values);
             return new RestClient(clientInfo, authToken, HttpAccess.DEFAULT, authTokenProvider);
         } catch (URISyntaxException e) {
-            Log.w("ClientManager:peekRestClient", "Invalid server URL", e);
+            Log.w(TAG, "Invalid server URL", e);
             throw new AccountInfoNotFoundException("invalid server url", e);
         }
     }
@@ -293,7 +298,7 @@ public class ClientManager {
             try {
                 f.getResult();
             } catch (Exception ex) {
-                Log.w("ClientManager:removeAccounts", "Exception removing old account", ex);
+                Log.w(TAG, "Exception removing old account", ex);
             }
         }
     }
@@ -338,14 +343,15 @@ public class ClientManager {
                 authToken, instanceUrl, loginUrl, idUrl,
                 clientId, orgId, userId, passcodeHash,
                 clientSecret, communityId, communityUrl,
-                null, null, null, null, null, null);
+                null, null, null, null, null, null, null);
     }
 
     public Bundle createNewAccount(String accountName, String username, String refreshToken,
     		String authToken, String instanceUrl, String loginUrl, String idUrl,
     		String clientId, String orgId, String userId, String passcodeHash,
             String clientSecret, String communityId, String communityUrl,
-            String firstName, String lastName, String displayName, String email, String photoUrl, String thumbnailUrl) {
+            String firstName, String lastName, String displayName, String email, String photoUrl,
+            String thumbnailUrl, Map<String, String> additionalOauthValues) {
         Bundle extras = new Bundle();
         extras.putString(AccountManager.KEY_ACCOUNT_NAME, accountName);
         extras.putString(AccountManager.KEY_ACCOUNT_TYPE, getAccountType());
@@ -372,6 +378,16 @@ public class ClientManager {
         extras.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encryptWithPasscode(email, passcodeHash));
         extras.putString(AuthenticatorService.KEY_PHOTO_URL, SalesforceSDKManager.encryptWithPasscode(photoUrl, passcodeHash));
         extras.putString(AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, passcodeHash));
+        final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+        if (additionalOauthValues != null && !additionalOauthValues.isEmpty()) {
+            for (final String key : additionalOauthKeys) {
+                final String value = additionalOauthValues.get(key);
+                if (value != null) {
+                    final String encrValue = SalesforceSDKManager.encryptWithPasscode(value, passcodeHash);
+                    extras.putString(key, encrValue);
+                }
+            }
+        }
         Account acc = new Account(accountName, getAccountType());
         accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encryptWithPasscode(refreshToken, passcodeHash), new Bundle());
         // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
@@ -440,6 +456,19 @@ public class ClientManager {
                     if (encThumbnailUrl != null) {
                         thumbnailUrl = SalesforceSDKManager.decryptWithPasscode(encThumbnailUrl, oldPass);
                     }
+                    final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
+                    Map<String, String> values = null;
+                    if (additionalOauthKeys != null && !additionalOauthKeys.isEmpty()) {
+                        values = new HashMap<>();
+                        for (final String key : additionalOauthKeys) {
+                            final String encValue = acctManager.getUserData(account, key);
+                            if (encValue != null) {
+                                final String value = SalesforceSDKManager.decryptWithPasscode(encValue,
+                                        SalesforceSDKManager.getInstance().getPasscodeHash());
+                                values.put(key, value);
+                            }
+                        }
+                    }
                     final String encClientSecret = acctManager.getUserData(account, AuthenticatorService.KEY_CLIENT_SECRET);
                     String clientSecret = null;
                     if (encClientSecret != null) {
@@ -479,6 +508,14 @@ public class ClientManager {
                     }
                     if (thumbnailUrl != null) {
                         acctManager.setUserData(account, AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, newPass));
+                    }
+                    if (values != null && !values.isEmpty()) {
+                        for (final String key : additionalOauthKeys) {
+                            final String value = values.get(key);
+                            if (value != null) {
+                                acctManager.setUserData(account, key, SalesforceSDKManager.encryptWithPasscode(value, newPass));
+                            }
+                        }
                     }
                     if (clientSecret != null) {
                         acctManager.setUserData(account, AuthenticatorService.KEY_CLIENT_SECRET, SalesforceSDKManager.encryptWithPasscode(clientSecret, newPass));
@@ -540,11 +577,11 @@ public class ClientManager {
                 f.getResult();
                 client = peekRestClient();
             } catch (AccountsException e) {
-                Log.w("AccMgrCallback:run", "", e);
+                Log.w(TAG, "", e);
             } catch (IOException e) {
-                Log.w("AccMgrCallback:run", "", e);
+                Log.w(TAG, "", e);
             } catch (AccountInfoNotFoundException e) {
-                Log.w("AccMgrCallback:run", "", e);
+                Log.w(TAG, "", e);
             }
 
             // response. if we failed, null
@@ -595,7 +632,7 @@ public class ClientManager {
          */
         @Override
         public String getNewAuthToken() {
-            Log.i("AccMgrAuthTokenProvider:getNewAuthToken", "Need new access token");
+            Log.i(TAG, "Need new access token");
             Account acc = clientManager.getAccount();
             if (acc == null)
                 return null;
@@ -606,7 +643,7 @@ public class ClientManager {
                     try {
                         lock.wait();
                     } catch (InterruptedException e) {
-                        Log.w("ClientManager:Callback:fetchNewAuthToken", "", e);
+                        Log.w(TAG, "", e);
                     }
                     return lastNewAuthToken;
                 }
@@ -621,7 +658,7 @@ public class ClientManager {
             try {
                 final Bundle bundle = clientManager.accountManager.getAuthToken(acc, AccountManager.KEY_AUTHTOKEN, null, false, null, null).getResult();
                 if (bundle == null) {
-                    Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken", "accountManager.getAuthToken returned null bundle");
+                    Log.w(TAG, "accountManager.getAuthToken returned null bundle");
                 } else {
                     final String encryptedAuthToken = bundle.getString(AccountManager.KEY_AUTHTOKEN);
                     if (encryptedAuthToken != null) {
@@ -652,13 +689,13 @@ public class ClientManager {
 
                         // Broadcasts an intent that the access token has been refreshed.
                         broadcastIntent = new Intent(ACCESS_TOKEN_REFRESH_INTENT);
+                        EventBuilderHelper.createAndStoreEvent("tokenRefresh", null, TAG, null);
                     }
                     broadcastIntent.setPackage(SalesforceSDKManager.getInstance().getAppContext().getPackageName());
                     SalesforceSDKManager.getInstance().getAppContext().sendBroadcast(broadcastIntent);
                 }
             } catch (Exception e) {
-                Log.w("AccMgrAuthTokenProvider:fetchNewAuthToken:getNewAuthToken",
-                        "Exception during getAuthToken call", e);
+                Log.w(TAG, "Exception during getAuthToken call", e);
             } finally {
                 synchronized (lock) {
                     gettingAuthToken = false;

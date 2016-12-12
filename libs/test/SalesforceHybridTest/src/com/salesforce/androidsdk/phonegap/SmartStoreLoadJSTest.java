@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, salesforce.com, inc.
+ * Copyright (c) 2012-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -53,8 +53,8 @@ public class SmartStoreLoadJSTest extends JSTestCase {
                 "testIncreasingFieldLength",
                 "testAddAndRetrieveManyEntries",
                 "testUpsertManyEntries",
-                "testUpsertAndQueryEntries"
-                // "testUpsertConcurrentEntries" // FIXME running out of memory
+                "testUpsertAndQueryEntries",
+                "testUpsertConcurrentEntries"
         });
     }
     
@@ -78,7 +78,7 @@ public class SmartStoreLoadJSTest extends JSTestCase {
     	runTest("testUpsertAndQueryEntries");
     }
     
-    /* public void testUpsertConcurrentEntries() {
+    public void testUpsertConcurrentEntries() {
     	runTest("testUpsertConcurrentEntries");
-    } */ // FIXME running out of memory
+    }
 }

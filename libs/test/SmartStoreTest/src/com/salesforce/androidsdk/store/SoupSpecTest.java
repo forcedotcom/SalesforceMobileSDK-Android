@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, salesforce.com, inc.
+ * Copyright (c) 2016-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,17 +26,17 @@
  */
 package com.salesforce.androidsdk.store;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import com.salesforce.androidsdk.smartstore.store.SoupSpec;
 
-import android.test.InstrumentationTestCase;
+import junit.framework.TestCase;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Tests for SoupSpec
  */
-public class SoupSpecTest extends InstrumentationTestCase {
+public class SoupSpecTest extends TestCase {
     private static final String TEST_SOUP_NAME = "testSoupName";
     private static final String TEST_FEATURE_1 = "testFeature1";
     private static final String TEST_FEATURE_2 = "testFeature2";

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, salesforce.com, inc.
+ * Copyright (c) 2015-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -84,8 +84,7 @@ public class SoslSyncDownTarget extends SyncDownTarget {
         return startFetch(syncManager, maxTimeStamp, query);
     }
 
-    @Override
-    public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
+    private JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
         RestRequest request = RestRequest.getRequestForSearch(syncManager.apiVersion, queryRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONArray records = response.asJSONArray();

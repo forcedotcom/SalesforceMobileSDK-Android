@@ -275,6 +275,10 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
         return bootconfig;
     }
 
+    public RestClient getRestClient() {
+        return client;
+    }
+
     public void logout(CallbackContext callbackContext) {
         Log.i(TAG, "logout called");
         SalesforceSDKManager.getInstance().logout(this);
@@ -394,7 +398,7 @@ public class SalesforceDroidGapActivity extends CordovaActivity {
 
                 // Only logout if we are NOT offline
                 if (!(exception instanceof NoNetworkException)) {
-                    SalesforceSDKManager.getInstance().logout(SalesforceDroidGapActivity.this);
+                    logout(null);
                 }
             }
         });

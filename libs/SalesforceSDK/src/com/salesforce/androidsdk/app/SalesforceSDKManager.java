@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -50,6 +50,9 @@ import android.webkit.CookieSyncManager;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
+import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -61,7 +64,6 @@ import com.salesforce.androidsdk.push.PushMessaging;
 import com.salesforce.androidsdk.push.PushNotificationInterface;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
-import com.salesforce.androidsdk.security.Encryptor;
 import com.salesforce.androidsdk.security.PasscodeManager;
 import com.salesforce.androidsdk.ui.AccountSwitcherActivity;
 import com.salesforce.androidsdk.ui.LoginActivity;
@@ -72,6 +74,8 @@ import com.salesforce.androidsdk.util.EventsObservable.EventType;
 
 import java.net.URI;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * This class serves as an interface to the various
@@ -87,7 +91,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "4.3.1";
+    public static final String SDK_VERSION = "5.0.0";
 
     /**
      * Intent action that specifies that logout was completed.
@@ -98,6 +102,7 @@ public class SalesforceSDKManager {
      * Default app name.
      */
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
+    private static final String TAG = "SalesforceSDKManager";
 
     /**
      * Instance of the SalesforceSDKManager to use for this process.
@@ -108,6 +113,8 @@ public class SalesforceSDKManager {
      * Timeout value for push un-registration.
      */
     private static final int PUSH_UNREGISTER_TIMEOUT_MILLIS = 30000;
+
+    private static final String FEATURE_PUSH_NOTIFICATIONS = "PN";
 
     protected Context context;
     protected KeyInterface keyImpl;
@@ -127,6 +134,8 @@ public class SalesforceSDKManager {
     private PushNotificationInterface pushNotificationInterface;
     private String uid; // device id
     private volatile boolean loggedOut = false;
+    private SortedSet<String> features;
+    private List<String> additionalOauthKeys;
 
     /**
      * PasscodeManager object lock.
@@ -170,6 +179,7 @@ public class SalesforceSDKManager {
     	if (loginActivity != null) {
             this.loginActivityClass = loginActivity;	
     	}
+        this.features  = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
     }
 
     /**
@@ -273,6 +283,15 @@ public class SalesforceSDKManager {
      */
     public Class<? extends Activity> getLoginActivityClass() {
     	return loginActivityClass;
+    }
+
+    /**
+     * Returns unique device ID.
+     *
+     * @return Device ID.
+     */
+    public String getDeviceId() {
+        return uid;
     }
 
 	/**
@@ -421,6 +440,7 @@ public class SalesforceSDKManager {
      * @param pnInterface Implementation of PushNotificationInterface.
      */
     public synchronized void setPushNotificationReceiver(PushNotificationInterface pnInterface) {
+        this.registerUsedAppFeature(FEATURE_PUSH_NOTIFICATIONS);
     	pushNotificationInterface = pnInterface;
     }
 
@@ -480,7 +500,6 @@ public class SalesforceSDKManager {
         return adminPermsManager;
     }
 
-
     /**
      * Changes the passcode to a new value.
      *
@@ -494,6 +513,7 @@ public class SalesforceSDKManager {
 
         // Resets the cached encryption key, since the passcode has changed.
         encryptionKey = null;
+        SalesforceAnalyticsManager.changePasscode(oldPass, newPass);
         ClientManager.changePasscode(oldPass, newPass);
     }
 
@@ -562,12 +582,32 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Adds an additional set of OAuth keys to fetch and store from the token endpoint.
+     *
+     * @param additionalOauthKeys List of additional OAuth keys.
+     */
+    public void setAdditionalOauthKeys(List<String> additionalOauthKeys) {
+        this.additionalOauthKeys = additionalOauthKeys;
+    }
+
+    /**
+     * Returns the list of additional OAuth keys set for this application.
+     *
+     * @return List of additional OAuth keys.
+     */
+    public List<String> getAdditionalOauthKeys() {
+        return additionalOauthKeys;
+    }
+
+    /**
      * Cleans up cached credentials and data.
      *
      * @param frontActivity Front activity.
      * @param account Account.
      */
     protected void cleanUp(Activity frontActivity, Account account) {
+        final UserAccount userAccount = UserAccountManager.getInstance().buildUserAccount(account);
+        SalesforceAnalyticsManager.reset(userAccount);
         final List<UserAccount> users = getUserAccountManager().getAuthenticatedUsers();
 
         // Finishes front activity if specified, and if this is the last account.
@@ -763,6 +803,7 @@ public class SalesforceSDKManager {
      * @param showLoginPage If true, displays the login page after removing the account.
      */
     public void logout(Account account, Activity frontActivity, final boolean showLoginPage) {
+        EventBuilderHelper.createAndStoreEvent("userLogout", null, TAG, null);
         final ClientManager clientMgr = new ClientManager(context, getAccountType(),
         		null, shouldLogoutWhenTokenRevoked());
         isLoggingOut = true;
@@ -893,8 +934,22 @@ public class SalesforceSDKManager {
             Log.w("SalesforceSDKManager", nfe);
         }
         String appTypeWithQualifier = getAppType() + qualifier;
-        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s",
-                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, appTypeWithQualifier, uid);
+        return String.format("SalesforceMobileSDK/%s android mobile/%s (%s) %s/%s %s uid_%s ftr_%s",
+                SDK_VERSION, Build.VERSION.RELEASE, Build.MODEL, appName, appVersion, appTypeWithQualifier, uid, TextUtils.join(".",features));
+    }
+
+    /**
+     * Adds AppFeature code to User Agent header for reporting.
+     */
+    public void registerUsedAppFeature(String appFeatureCode) {
+        features.add(appFeatureCode);
+    }
+
+    /**
+     * Removed AppFeature code to User Agent header for reporting.
+     */
+    public void unregisterUsedAppFeature(String appFeatureCode) {
+        features.remove(appFeatureCode);
     }
 
     /**

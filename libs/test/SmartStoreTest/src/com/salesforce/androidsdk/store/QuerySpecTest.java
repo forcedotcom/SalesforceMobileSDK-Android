@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, salesforce.com, inc.
+ * Copyright (c) 2016-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,15 +26,15 @@
  */
 package com.salesforce.androidsdk.store;
 
-import android.test.InstrumentationTestCase;
-
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+
+import junit.framework.TestCase;
 
 /**
  * Test class for QuerySpecTest
  *
  */
-public class QuerySpecTest extends InstrumentationTestCase {
+public class QuerySpecTest extends TestCase {
 
     public void testAllQuerySmartSql() {
         QuerySpec querySpec = QuerySpec.buildAllQuerySpec("employees", "lastName", QuerySpec.Order.descending, 1);

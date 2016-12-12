@@ -2,11 +2,11 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
 	package="com.salesforce.androidsdk" 
-	android:versionCode="53"
-	android:versionName="4.3.1">
+	android:versionCode="54"
+	android:versionName="5.0.0">
 
     <uses-sdk android:minSdkVersion="19"
-        android:targetSdkVersion="23" />
+        android:targetSdkVersion="25" />
 
     <application>
 
@@ -71,17 +71,18 @@
             android:exported="false" />
         <service android:name="com.salesforce.androidsdk.push.PushService"
             android:exported="false" />
+        <service android:name="com.salesforce.androidsdk.analytics.AnalyticsPublisherService"
+            android:exported="false" />
     </application>
 
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.AUTHENTICATE_ACCOUNTS" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
-    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.GET_TASKS" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+
     <!--TODO: Remove the -sdk-23 tag when the minsdk version is 23-->
     <uses-permission-sdk-23 android:name="android.permission.USE_FINGERPRINT" />
 </manifest>

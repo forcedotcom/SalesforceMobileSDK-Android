@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014, salesforce.com, inc.
+ * Copyright (c) 2014-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -749,22 +749,27 @@ public class CacheManager {
      * @return List of soup names.
      */
     private JSONArray getAllSoupNames() {
-    	final String smartSql = "SELECT {" + SOUP_OF_SOUPS + ":" +
-        		SOUP_NAMES_KEY + "} FROM {" + SOUP_OF_SOUPS + "}";
         JSONArray results = null;
-    	QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
-        try {
-            int count = smartStore.countQuery(querySpec);
-            querySpec = QuerySpec.buildSmartQuerySpec(smartSql, count);
-			results = smartStore.query(querySpec, 0);
-		} catch (JSONException e) {
-            Log.e(TAG, "JSONException occurred while attempting to read cached data", e);
-		} catch (SmartStoreException e) {
-            Log.e(TAG, "SmartStoreException occurred while attempting to read cached data", e);
+
+        if (smartStore.hasSoup(SOUP_OF_SOUPS)) {
+            final String smartSql = "SELECT {" + SOUP_OF_SOUPS + ":" +
+                    SOUP_NAMES_KEY + "} FROM {" + SOUP_OF_SOUPS + "}";
+            QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, 1);
+            try {
+                int count = smartStore.countQuery(querySpec);
+                querySpec = QuerySpec.buildSmartQuerySpec(smartSql, count);
+                results = smartStore.query(querySpec, 0);
+            } catch (JSONException e) {
+                Log.e(TAG, "JSONException occurred while attempting to read cached data", e);
+            } catch (SmartStoreException e) {
+                Log.e(TAG, "SmartStoreException occurred while attempting to read cached data", e);
+            }
         }
+
         if (results == null) {
     		results = new JSONArray();
     	}
+
 		return results;
     }
 

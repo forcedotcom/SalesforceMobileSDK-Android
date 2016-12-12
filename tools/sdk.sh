@@ -44,6 +44,7 @@ usage ()
     echo ""
     echo "    <build_target> can be "
     echo "        all"
+    echo "        SalesforceAnalytics"
     echo "        SalesforceSDK"
     echo "        SmartStore"
     echo "        SmartSync"
@@ -63,6 +64,7 @@ usage ()
     echo "    <test_target> can be "
     echo "        all"
     echo "        RestExplorerTest"
+    echo "        SalesforceAnalyticsTest"
     echo "        SalesforceSDKTest"
     echo "        SmartStoreTest"
     echo "        SmartSyncTest"
@@ -163,6 +165,7 @@ else
         ./gradlew assembleDebug  | grep "$TEST_OUTPUT_FILTER"
     else
         build_project_if_requested    "Cordova"                       :external:cordova:framework
+        build_project_if_requested    "SalesforceAnalytics"           :libs:SalesforceAnalytics
         build_project_if_requested    "SalesforceSDK"                 :libs:SalesforceSDK
         build_project_if_requested    "SmartStore"                    :libs:SmartStore
         build_project_if_requested    "SmartSync"                     :libs:SmartSync
@@ -184,11 +187,12 @@ else
         header "Testing all"
         ./gradlew connectedAndroidTest  | grep "$TEST_OUTPUT_FILTER"
     else
-        run_test_project_if_requested "SalesforceSDKTest"    :libs:SalesforceSDK
-        run_test_project_if_requested "SmartStoreTest"       :libs:SmartStore
-        run_test_project_if_requested "SmartSyncTest"        :libs:SmartSync
-        run_test_project_if_requested "SalesforceHybridTest" :libs:SalesforceHybrid
-        run_test_project_if_requested "TemplateAppTest"      :native:TemplateApp
-        run_test_project_if_requested "RestExplorerTest"     :native:NativeSampleApps:RestExplorer
+        run_test_project_if_requested "SalesforceAnalyticsTest" :libs:SalesforceAnalytics
+        run_test_project_if_requested "SalesforceSDKTest"       :libs:SalesforceSDK
+        run_test_project_if_requested "SmartStoreTest"          :libs:SmartStore
+        run_test_project_if_requested "SmartSyncTest"           :libs:SmartSync
+        run_test_project_if_requested "SalesforceHybridTest"    :libs:SalesforceHybrid
+        run_test_project_if_requested "TemplateAppTest"         :native:TemplateApp
+        run_test_project_if_requested "RestExplorerTest"        :native:NativeSampleApps:RestExplorer
     fi
 fi
