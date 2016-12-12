@@ -47,7 +47,7 @@ public class JavaScriptPluginVersion {
 	 * @param version1
 	 * @param version2
 	 * @return -1/0/1 if version1 is older/sane/newer than version2
-	 * unstable version is assumed to precede the corresponding version 2.0.unstable is older than 2.0
+	 * dev version is assumed to precede the corresponding version 2.0.dev is older than 2.0
 	 */
 	public static int compareVersions(String version1, String version2) {
 		// If same strings, we are done
@@ -67,11 +67,11 @@ public class JavaScriptPluginVersion {
 			}
 		}
 
-		// If one version is simply the unstable form of the other, it's the older one
-		if (version1parts.length == minLength + 1 && version1parts[minLength].equals("unstable")) {
+		// If one version is simply the dev form of the other, it's the older one
+		if (version1parts.length == minLength + 1 && version1parts[minLength].equals("dev")) {
 			return -1;
 		}
-		if (version2parts.length == minLength + 1 && version2parts[minLength].equals("unstable")) {
+		if (version2parts.length == minLength + 1 && version2parts[minLength].equals("dev")) {
 			return 1;
 		}
 		
