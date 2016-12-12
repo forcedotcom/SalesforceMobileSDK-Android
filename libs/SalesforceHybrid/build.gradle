@@ -10,6 +10,12 @@ android {
   compileSdkVersion 25
   buildToolsVersion '23.0.1'
 
+  buildTypes {
+    debug {
+      testCoverageEnabled = true
+    }
+  }
+
   sourceSets {
     main {
       manifest.srcFile 'AndroidManifest.xml'
