@@ -1,0 +1,72 @@
+system("cd .. && npm install shelljs@0.7.0")
+system("cd .. && ./install.sh")
+
+lane :All do
+gradle(
+task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SalesforceSDK:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :native:NativeSampleApps:RestExplorer:connectedAndroidTest",
+flags: "--continue --no-daemon --profile --stacktrace"
+)
+end
+
+lane :PR do
+gradle(
+task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest",
+flags: "--continue --no-daemon --profile --stacktrace"
+    )
+end
+
+lane :noSDK do
+gradle(
+task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :native:NativeSampleApps:RestExplorer:connectedAndroidTest",
+flags: "--continue --no-daemon --profile --stacktrace"
+)
+end
+
+lane :noSmartStore do
+gradle(
+task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SalesforceSDK:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :native:NativeSampleApps:RestExplorer:connectedAndroidTest",
+flags: "--continue --no-daemon --profile --stacktrace"
+)
+end
+
+lane :SalesforceAnalytics do
+gradle(
+task:":libs:SalesforceAnalytics:connectedAndroidTest",
+flags: "--continue --no-daemon --profile --stacktrace"
+)
+end
+
+lane :SalesforceSDK do
+gradle(
+task:":libs:SalesforceSDK:connectedAndroidTest",
+flags: "--continue --no-daemon --profile --stacktrace"
+)
+end
+
+lane :SmartStore do
+gradle(
+task:":libs:SmartStore:connectedAndroidTest",
+flags: "--continue --no-daemon --profile --stacktrace"
+)
+end
+
+lane :SmartSync do
+gradle(
+task:":libs:SmartSync:connectedAndroidTest",
+flags: "--continue --no-daemon --profile --stacktrace"
+)
+end
+
+lane :SalesforceHybrid do
+gradle(
+task:":libs:SalesforceHybrid:connectedAndroidTest",
+flags: "--continue --no-daemon --profile --stacktrace"
+)
+end
+
+lane :NativeSampleApps do
+gradle(
+task:":native:NativeSampleApps:RestExplorer:connectedAndroidTest",
+flags: "--continue --no-daemon --profile --stacktrace"
+)
+end
