@@ -3,28 +3,35 @@ system("cd .. && ./install.sh")
 
 lane :All do
 gradle(
-task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SalesforceSDK:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :native:NativeSampleApps:RestExplorer:connectedAndroidTest",
+task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SalesforceSDK:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :libs:SalesforceReact:assembleDebug :native:NativeSampleApps:RestExplorer:connectedAndroidTest",
 flags: "--continue --no-daemon --profile --stacktrace"
 )
 end
 
 lane :PR do
 gradle(
-task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest",
+task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :libs:SalesforceReact:assembleDebug",
 flags: "--continue --no-daemon --profile --stacktrace"
     )
 end
 
 lane :noSDK do
 gradle(
-task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :native:NativeSampleApps:RestExplorer:connectedAndroidTest",
+task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :libs:SalesforceReact:assembleDebug :native:NativeSampleApps:RestExplorer:connectedAndroidTest",
 flags: "--continue --no-daemon --profile --stacktrace"
 )
 end
 
 lane :noSmartStore do
 gradle(
-task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SalesforceSDK:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :native:NativeSampleApps:RestExplorer:connectedAndroidTest",
+task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SalesforceSDK:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :libs:SalesforceReact:assembleDebug :native:NativeSampleApps:RestExplorer:connectedAndroidTest",
+flags: "--continue --no-daemon --profile --stacktrace"
+)
+end
+
+lane :Unit do
+gradle(
+task:":libs:SalesforceAnalytics:connectedAndroidTest :libs:SalesforceSDK:connectedAndroidTest :libs:SmartStore:connectedAndroidTest :libs:SmartSync:connectedAndroidTest :libs:SalesforceHybrid:connectedAndroidTest :libs:SalesforceReact:assembleDebug",
 flags: "--continue --no-daemon --profile --stacktrace"
 )
 end
@@ -60,6 +67,13 @@ end
 lane :SalesforceHybrid do
 gradle(
 task:":libs:SalesforceHybrid:connectedAndroidTest",
+flags: "--continue --no-daemon --profile --stacktrace"
+)
+end
+
+lane :SalesforceReact do
+gradle(
+task:":libs:SalesforceReact:assembleDebug",
 flags: "--continue --no-daemon --profile --stacktrace"
 )
 end
