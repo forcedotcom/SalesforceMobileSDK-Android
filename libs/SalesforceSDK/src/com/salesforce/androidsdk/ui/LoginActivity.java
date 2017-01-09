@@ -312,6 +312,8 @@ public class LoginActivity extends AccountAuthenticatorActivity
     private void initAnalyticsManager() {
         final UserAccount account = SalesforceSDKManager.getInstance().getUserAccountManager().getCurrentUser();
         final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(account);
-        analyticsManager.updateLoggingPrefs();
+	if (analyticsManager != null) {
+            analyticsManager.updateLoggingPrefs();
+	}
     }
 }
