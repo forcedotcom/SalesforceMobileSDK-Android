@@ -74,9 +74,8 @@ public class AILTNPublisher implements AnalyticsPublisher {
         }
 
         // Builds the POST body of the request.
-        final JSONObject body = new JSONObject();
+        final JSONArray logLines = new JSONArray();
         try {
-            final JSONArray logLines = new JSONArray();
             for (int i = 0; i < events.length(); i++) {
                 final JSONObject event = events.optJSONObject(i);
                 if (event != null) {
@@ -91,11 +90,22 @@ public class AILTNPublisher implements AnalyticsPublisher {
                     logLines.put(trackingInfo);
                 }
             }
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception thrown while constructing event payload", e);
+            return false;
+        }
+        return publishLogLines(logLines);
+    }
+
+    public boolean publishLogLines(JSONArray logLines) {
+        final JSONObject body = new JSONObject();
+        try {
             body.put(LOG_LINES, logLines);
         } catch (JSONException e) {
             Log.e(TAG, "Exception thrown while constructing event payload", e);
             return false;
         }
+
         RestResponse restResponse = null;
         try {
             final String apiPath = String.format(API_PATH,
