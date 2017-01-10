@@ -223,13 +223,33 @@ public class OAuth2 {
     public static TokenEndpointResponse refreshAuthToken(
             HttpAccess httpAccessor, URI loginServer, String clientId,
             String refreshToken, String clientSecret) throws OAuthFailedException, IOException {
+        return  refreshAuthToken(httpAccessor, loginServer, clientId, refreshToken, clientSecret,null);
+    }
+
+    /**
+     * Get a new auth token using the refresh token.
+     *
+     * @param httpAccessor
+     * @param loginServer
+     * @param clientId
+     * @param refreshToken
+     * @param clientSecret
+     * @param addlParams
+     * @return
+     * @throws OAuthFailedException
+     * @throws IOException
+     */
+    public static TokenEndpointResponse refreshAuthToken(
+            HttpAccess httpAccessor, URI loginServer, String clientId,
+            String refreshToken, String clientSecret,Map<String,String> addlParams) throws OAuthFailedException, IOException {
         FormBody.Builder formBodyBuilder = makeTokenEndpointParams(REFRESH_TOKEN,
-                clientId, clientSecret);
+                clientId, clientSecret,addlParams);
         formBodyBuilder.add(REFRESH_TOKEN, refreshToken);
         formBodyBuilder.add(FORMAT, JSON);
         TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder);
         return tr;
     }
+
 
     /**
      * Revokes the existing refresh token.
@@ -331,6 +351,42 @@ public class OAuth2 {
     }
 
     /**
+     *
+     * @param params
+     * @return
+     */
+    public static String parameterMapToString(Map<String,String> params) {
+        String paramString = null;
+        if(params != null) {
+            StringBuilder val = new StringBuilder();
+            for(Map.Entry<String,String> param : params.entrySet()) {
+                val.append("&").append(param.getKey()).append("=").append(param.getValue());
+            }
+            paramString = val.toString();
+        }
+        return paramString;
+    }
+
+    /**
+     *
+     * @param paramString
+     * @return
+     */
+    public static Map<String,String> parameterStringToMap(String paramString) {
+        Map<String,String> params = new HashMap<String,String>();
+        if(paramString != null && paramString.length() > 0 ) {
+            String [] nvPairs = paramString.split("&");
+            for(String nvPairEnc : nvPairs) {
+                if(nvPairEnc.trim().length()> 0) {
+                    String[] nvPair = nvPairEnc.split("=");
+                    params.put(nvPair[0], nvPair[1]);
+                }
+            }
+        }
+        return params;
+    }
+
+    /**
      * @param httpAccessor
      * @param loginServer
      * @param formBodyBuilder
@@ -362,14 +418,33 @@ public class OAuth2 {
      */
     private static FormBody.Builder makeTokenEndpointParams(
             String grantType, String clientId, String clientSecret) {
+        return makeTokenEndpointParams(grantType, clientId, clientSecret, null);
+    }
+
+    /**
+     *
+     * @param grantType
+     * @param clientId
+     * @param clientSecret
+     * @param addlParams
+     * @return
+     */
+    private static FormBody.Builder makeTokenEndpointParams(
+            String grantType, String clientId, String clientSecret,Map<String,String> addlParams) {
         FormBody.Builder builder = new FormBody.Builder()
                 .add(GRANT_TYPE, grantType)
                 .add(CLIENT_ID, clientId);
         if (clientSecret != null) {
             builder.add(CLIENT_SECRET, clientSecret);
         }
+        if(addlParams != null ) {
+            for(Map.Entry<String,String> entry : addlParams.entrySet()) {
+                builder.add(entry.getKey(),entry.getValue());
+            }
+        }
         return builder;
     }
+
 
     /**
      * Exception thrown when refresh fails.

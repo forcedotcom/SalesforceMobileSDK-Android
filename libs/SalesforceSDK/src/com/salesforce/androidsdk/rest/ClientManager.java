@@ -46,6 +46,7 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -761,6 +762,8 @@ public class ClientManager {
         private final Bundle bundle;
         public String clientSecret;
         public String jwt;
+        public Map<String,String> additionalParameters;
+
 
         public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
                             String oauthClientId, String[] oauthScopes) {
@@ -790,6 +793,19 @@ public class ClientManager {
             this.setJwt(jwt);
         }
 
+        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
+                            String oauthClientId, String[] oauthScopes, String clientSecret, String jwt,
+                            HashMap<String,String> additionalParameters) {
+            this(loginUrl, passcodeHash, oauthCallbackUrl, oauthClientId, oauthScopes,clientSecret,jwt);
+            this.setAdditionalParameters(additionalParameters);
+        }
+
+        public void setAdditionalParameters(HashMap<String,String> additionalParameters) {
+            this.additionalParameters = additionalParameters;
+            bundle.putSerializable(AuthenticatorService.KEY_ADDL_PARAMS,additionalParameters);
+        }
+
+
         public void setJwt(String jwt) {
             this.jwt = jwt;
             bundle.putString(JWT, jwt);
@@ -805,13 +821,20 @@ public class ClientManager {
         }
 
         public static LoginOptions fromBundle(Bundle options) {
+            HashMap<String,String> additionalParameters = null;
+            Serializable serializable =  options.getSerializable(AuthenticatorService.KEY_ADDL_PARAMS);
+            if(serializable!=null) {
+                additionalParameters = (HashMap<String,String>) serializable;
+            }
+
             return new LoginOptions(options.getString(LOGIN_URL),
                                     options.getString(PASSCODE_HASH),
                                     options.getString(OAUTH_CALLBACK_URL),
                                     options.getString(OAUTH_CLIENT_ID),
                                     options.getStringArray(OAUTH_SCOPES),
                                     options.getString(CLIENT_SECRET),
-                                    options.getString(JWT));
+                                    options.getString(JWT),
+                                    additionalParameters);
         }
     }
 }

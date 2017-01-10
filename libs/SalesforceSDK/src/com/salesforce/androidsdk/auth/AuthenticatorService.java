@@ -76,6 +76,7 @@ public class AuthenticatorService extends Service {
     public static final String KEY_DISPLAY_NAME = "display_name";
     public static final String KEY_PHOTO_URL = "photoUrl";
     public static final String KEY_THUMBNAIL_URL = "thumbnailUrl";
+    public static final String KEY_ADDL_PARAMS = "addlParams";
 
     private Authenticator getAuthenticator() {
         if (authenticator == null)
@@ -223,6 +224,15 @@ public class AuthenticatorService extends Service {
                     }
                 }
             }
+
+            final String encAddlParams = mgr.getUserData(account, AuthenticatorService.KEY_ADDL_PARAMS);
+            Map<String,String> addlParamsMap = null;
+            if(encAddlParams != null) {
+                String addlParams = SalesforceSDKManager.decryptWithPasscode(encAddlParams,
+                        SalesforceSDKManager.getInstance().getPasscodeHash());
+                addlParamsMap = OAuth2.parameterStringToMap(addlParams);
+            }
+
             final String encCommunityId = mgr.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
             String communityId = null;
             if (encCommunityId != null) {
@@ -237,7 +247,7 @@ public class AuthenticatorService extends Service {
             }
             final Bundle resBundle = new Bundle();
             try {
-                final TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken, clientSecret);
+                final TokenEndpointResponse tr = OAuth2.refreshAuthToken(HttpAccess.DEFAULT, new URI(loginServer), clientId, refreshToken, clientSecret,addlParamsMap);
 
                 // Handle the case where the org has been migrated to a new instance, or has turned on my domains.
                 if (!instServer.equalsIgnoreCase(tr.instanceUrl)) {
