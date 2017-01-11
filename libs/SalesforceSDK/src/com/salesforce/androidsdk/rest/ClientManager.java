@@ -43,6 +43,7 @@ import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 
 import java.io.IOException;
@@ -379,6 +380,7 @@ public class ClientManager {
         extras.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encryptWithPasscode(email, passcodeHash));
         extras.putString(AuthenticatorService.KEY_PHOTO_URL, SalesforceSDKManager.encryptWithPasscode(photoUrl, passcodeHash));
         extras.putString(AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, passcodeHash));
+
         final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
         if (additionalOauthValues != null && !additionalOauthValues.isEmpty()) {
             for (final String key : additionalOauthKeys) {
@@ -390,6 +392,12 @@ public class ClientManager {
             }
         }
         Account acc = new Account(accountName, getAccountType());
+
+        String encodedAdlParams = OAuth2.parameterMapToString(loginOptions.additionalParameters);
+        if(encodedAdlParams != null && encodedAdlParams.trim().length() > 0) {
+            extras.putString(AuthenticatorService.KEY_ADDL_PARAMS, SalesforceSDKManager.encryptWithPasscode(encodedAdlParams, passcodeHash));
+            accountManager.setUserData(acc,AuthenticatorService.KEY_ADDL_PARAMS,extras.getString(AuthenticatorService.KEY_ADDL_PARAMS));
+        }
         accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encryptWithPasscode(refreshToken, passcodeHash), new Bundle());
         // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
         // saved when the user data is passed in through that method. The work-around is to call setUserData()

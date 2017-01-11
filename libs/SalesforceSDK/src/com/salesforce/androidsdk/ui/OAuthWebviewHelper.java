@@ -313,7 +313,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     loginOptions.oauthCallbackUrl,
                     loginOptions.oauthScopes,
                     null,
-                    getAuthorizationDisplayType(), loginOptions.jwt, loginOptions.loginUrl);
+                    getAuthorizationDisplayType(), loginOptions.jwt, loginOptions.loginUrl,loginOptions.additionalParameters);
         }
         return OAuth2.getAuthorizationUrl(
                 new URI(loginOptions.loginUrl),
@@ -321,7 +321,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 loginOptions.oauthCallbackUrl,
                 loginOptions.oauthScopes,
                 null,
-                getAuthorizationDisplayType());
+                getAuthorizationDisplayType(),loginOptions.additionalParameters);
     }
 
     protected URI getAuthorizationUrl() throws URISyntaxException {
