@@ -409,8 +409,6 @@ public class SyncManager {
 		final String soupName = sync.getSoupName();
         final SyncUpTarget target = (SyncUpTarget) sync.getTarget();
 		final SyncOptions options = sync.getOptions();
-		final List<String> fieldlist = options.getFieldlist();
-		final MergeMode mergeMode = options.getMergeMode();
         final Set<String> dirtyRecordIds = target.getIdsOfRecordsToSyncUp(this, soupName);
 		int totalSize = dirtyRecordIds.size();
         sync.setTotalSize(totalSize);
@@ -418,7 +416,7 @@ public class SyncManager {
         int i = 0;
         for (final String id : dirtyRecordIds) {
             JSONObject record = smartStore.retrieve(soupName, Long.valueOf(id)).getJSONObject(0);
-            syncUpOneRecord(target, soupName, fieldlist, record, mergeMode);
+            syncUpOneRecord(target, soupName, record, options);
 
             // Updating status
             int progress = (i + 1) * 100 / totalSize;
@@ -451,8 +449,8 @@ public class SyncManager {
         }
     }
 
-    private void syncUpOneRecord(SyncUpTarget target, String soupName, List<String> fieldlist,
-                                    JSONObject record, MergeMode mergeMode) throws JSONException, IOException {
+    private void syncUpOneRecord(SyncUpTarget target, String soupName,
+                                 JSONObject record, SyncOptions options) throws JSONException, IOException {
 
         // Do we need to do a create, update or delete
         boolean locallyDeleted = record.getBoolean(LOCALLY_DELETED);
@@ -484,6 +482,7 @@ public class SyncManager {
          * passed in tells us to leave the record alone under these
          * circumstances, we will do nothing and return here.
          */
+        final MergeMode mergeMode = options.getMergeMode();
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED &&
         		!locallyCreated &&
         		!isNewerThanServer(target, objectType, objectId, lastModStr)) {
@@ -496,6 +495,19 @@ public class SyncManager {
         // Fields to save (in the case of create or update)
         Map<String, Object> fields = new HashMap<String, Object>();
         if (action == Action.create || action == Action.update) {
+            List<String> fieldlist;
+            // During create use options.reateFieldlist if specified
+            if (action == Action.create && options.getCreateFieldlist() != null) {
+                fieldlist = options.getCreateFieldlist();
+            }
+            // During update use options.updateFieldlist if specified
+            else if (action == Action.update && options.getUpdateFieldlist() != null) {
+                fieldlist = options.getUpdateFieldlist();
+            }
+            // Otherwise use options.fieldlist
+            else {
+                fieldlist = options.getFieldlist();
+            }
             for (String fieldName : fieldlist) {
                 if (!fieldName.equals(target.getIdFieldName()) && !fieldName.equals(SyncUpTarget.MODIFICATION_DATE_FIELD_NAME)) {
                     fields.put(fieldName, SmartStore.project(record, fieldName));
