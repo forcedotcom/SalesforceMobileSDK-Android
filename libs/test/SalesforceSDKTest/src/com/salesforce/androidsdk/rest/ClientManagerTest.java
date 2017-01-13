@@ -250,9 +250,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
         assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, accounts[0].type);
     }
 
-
-
-
     /**
      * Test getAccounts - when there are several accounts
      */
