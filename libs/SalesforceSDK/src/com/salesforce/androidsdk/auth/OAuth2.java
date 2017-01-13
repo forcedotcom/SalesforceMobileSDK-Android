@@ -336,7 +336,6 @@ public class OAuth2 {
         return tr;
     }
 
-
     /**
      * Revokes the existing refresh token.
      *

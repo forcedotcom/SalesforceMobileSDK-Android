@@ -379,7 +379,6 @@ public class ClientManager {
         extras.putString(AuthenticatorService.KEY_EMAIL, SalesforceSDKManager.encryptWithPasscode(email, passcodeHash));
         extras.putString(AuthenticatorService.KEY_PHOTO_URL, SalesforceSDKManager.encryptWithPasscode(photoUrl, passcodeHash));
         extras.putString(AuthenticatorService.KEY_THUMBNAIL_URL, SalesforceSDKManager.encryptWithPasscode(thumbnailUrl, passcodeHash));
-
         final List<String> additionalOauthKeys = SalesforceSDKManager.getInstance().getAdditionalOauthKeys();
         if (additionalOauthValues != null && !additionalOauthValues.isEmpty()) {
             for (final String key : additionalOauthKeys) {
@@ -764,7 +763,6 @@ public class ClientManager {
         public String clientSecret;
         public String jwt;
         public Map<String,String> additionalParameters;
-
 
         public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
                             String oauthClientId, String[] oauthScopes) {

@@ -76,7 +76,6 @@ public class OAuth2Test extends InstrumentationTestCase {
 		assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
 	}
 
-
 	/**
 	 * Testing getAuthorizationUrl
 	 * @throws URISyntaxException
