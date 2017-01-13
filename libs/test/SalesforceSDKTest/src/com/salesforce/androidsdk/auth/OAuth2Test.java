@@ -38,6 +38,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 
 import okhttp3.HttpUrl;
 import okhttp3.Request;
@@ -72,6 +74,26 @@ public class OAuth2Test extends InstrumentationTestCase {
 		authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID, callbackUrl, null, null, "touch");
 		expectedAuthorizationUrl = new URI(TestCredentials.LOGIN_URL + "/services/oauth2/authorize?display=touch&response_type=token&client_id=" + TestCredentials.CLIENT_ID + "&redirect_uri=" + callbackUrl);
 		assertEquals("Wrong authorization url", expectedAuthorizationUrl, authorizationUrl);
+	}
+
+
+	/**
+	 * Testing getAuthorizationUrl
+	 * @throws URISyntaxException
+	 *
+	 */
+	public void testGetAuthorizationUrlWithParams() throws URISyntaxException {
+		String callbackUrl = "sfdc://callback";
+		Map<String,String> params = new HashMap<>();
+		params.put("param1","val1");
+		params.put("param2","val2");
+		params.put("param3",null);
+
+		URI authorizationUrl = OAuth2.getAuthorizationUrl(new URI(TestCredentials.LOGIN_URL), TestCredentials.CLIENT_ID, callbackUrl, null,null,null,params);
+		assertTrue("Wrong authorization url", authorizationUrl.getRawQuery().indexOf("&param1=val1")>0);
+		assertTrue("Wrong authorization url", authorizationUrl.getRawQuery().indexOf("&param2=val2")>0);
+		assertTrue("Wrong authorization url", authorizationUrl.getRawQuery().indexOf("&param3=")>0);
+
 	}
 
     private void tryScopes(String[] scopes, String expectedScopeParamValue) throws URISyntaxException {

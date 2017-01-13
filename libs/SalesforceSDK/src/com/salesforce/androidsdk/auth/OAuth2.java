@@ -264,7 +264,7 @@ public class OAuth2 {
         if(addlParams !=null && addlParams.size() > 0) {
             for(Map.Entry<String,String> entry : addlParams.entrySet()) {
                 String value = entry.getValue()==null? EMPTY_STRING :entry.getValue();
-                sb.append(AND).append(entry.getKey()).append(EQUAL).append(Uri.encode(entry.getValue()));
+                sb.append(AND).append(entry.getKey()).append(EQUAL).append(Uri.encode(value));
             }
         }
         return URI.create(sb.toString());
@@ -434,43 +434,6 @@ public class OAuth2 {
      */
     public static final Request.Builder addAuthorizationHeader(Request.Builder builder, String authToken) {
         return builder.header(AUTHORIZATION, BEARER + authToken);
-    }
-
-    /**
-     *
-     * @param params
-     * @return
-     */
-    public static String parameterMapToString(Map<String,String> params) {
-        String paramString = null;
-        if(params != null) {
-            StringBuilder val = new StringBuilder();
-            for(Map.Entry<String,String> param : params.entrySet()) {
-                String value = param.getValue()==null? EMPTY_STRING :param.getValue();
-                val.append(AND).append(param.getKey()).append(EQUAL).append(value);
-            }
-            paramString = val.toString();
-        }
-        return paramString;
-    }
-
-    /**
-     *
-     * @param paramString
-     * @return
-     */
-    public static Map<String,String> parameterStringToMap(String paramString) {
-        Map<String,String> params = new HashMap<String,String>();
-        if(paramString != null && paramString.length() > 0 ) {
-            String [] nvPairs = paramString.split(AND);
-            for(String nvPairEnc : nvPairs) {
-                if(nvPairEnc.trim().length()> 0) {
-                    String[] nvPair = nvPairEnc.split(EQUAL);
-                    params.put(nvPair[0], nvPair[1]==null? EMPTY_STRING :nvPair[1]);
-                }
-            }
-        }
-        return params;
     }
 
     /**

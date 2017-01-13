@@ -41,6 +41,7 @@ import com.salesforce.androidsdk.TestForceApp;
 import com.salesforce.androidsdk.analytics.security.Encryptor;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
+import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.rest.ClientManager.AccountInfoNotFoundException;
 import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
 import com.salesforce.androidsdk.rest.ClientManager.RestClientCallback;
@@ -143,8 +144,50 @@ public class ClientManagerTest extends InstrumentationTestCase {
     }
 
     /**
-     * Test createNewAccount
+     * Test setting/get of Login Optionsas a bundle
      */
+    public void testLoginOptionsWithAddlParams() {
+
+       Map<String,String> additionalParams = new HashMap<String,String>();
+       additionalParams.put("p1","v1");
+       additionalParams.put("p2","v2");
+       additionalParams.put("p3",null);
+
+       LoginOptions loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_PASSCODE_HASH,
+                TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES,null,null,additionalParams);
+
+       assertTrue("LoginOptions must not be null",loginOptions!=null);
+       assertTrue("LoginOptions must not be null",loginOptions.additionalParameters!=null);
+       assertTrue("# of LoginOptions must be correct",loginOptions.additionalParameters.size()==additionalParams.size());
+       assertTrue("LoginOptions must be correct",loginOptions.additionalParameters.get("p1").equals(additionalParams.get("p1")));
+
+        additionalParams = new HashMap<String,String>();
+        additionalParams.put("p4","v1");
+        additionalParams.put("p5","v2");
+
+        loginOptions.setAdditionalParameters(additionalParams);
+        assertTrue("# of LoginOptions must be correct",loginOptions.additionalParameters.size()==additionalParams.size());
+
+        Bundle bundle = loginOptions.asBundle();
+
+        assertTrue("LoginOptions Bundle must not be null",bundle!=null);
+
+        assertNotNull("LoginOptions Bundle must have parameter map",bundle.getSerializable("addlParams"));
+
+        loginOptions = LoginOptions.fromBundle(bundle);
+        assertNotNull("LoginOptions from bundle should not be null",loginOptions);
+        assertNotNull("LoginOptions.additionalParameters from bundle should not be null",loginOptions.additionalParameters);
+        assertTrue("LoginOptions.additionalParameters from bundle should not be null",loginOptions.additionalParameters.size()==additionalParams.size());
+
+        assertTrue("LoginOptions.additionalParameters must have parameter",loginOptions.additionalParameters.get("p4").equals(additionalParams.get("p4")));
+
+    }
+
+
+
+        /**
+         * Test createNewAccount
+         */
     public void testCreateAccount() {
 
         // Make sure we have no accounts initially
@@ -211,6 +254,8 @@ public class ClientManagerTest extends InstrumentationTestCase {
         assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
         assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, accounts[0].type);
     }
+
+
 
 
     /**

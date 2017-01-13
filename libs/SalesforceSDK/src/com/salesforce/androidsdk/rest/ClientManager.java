@@ -43,7 +43,6 @@ import com.salesforce.androidsdk.analytics.EventBuilderHelper;
 import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.auth.AuthenticatorService;
 import com.salesforce.androidsdk.auth.HttpAccess;
-import com.salesforce.androidsdk.auth.OAuth2;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 
 import java.io.IOException;
@@ -392,12 +391,12 @@ public class ClientManager {
             }
         }
         Account acc = new Account(accountName, getAccountType());
-
-        String encodedAdlParams = OAuth2.parameterMapToString(loginOptions.additionalParameters);
-        if(encodedAdlParams != null && encodedAdlParams.trim().length() > 0) {
-            extras.putString(AuthenticatorService.KEY_ADDL_PARAMS, SalesforceSDKManager.encryptWithPasscode(encodedAdlParams, passcodeHash));
-            accountManager.setUserData(acc,AuthenticatorService.KEY_ADDL_PARAMS,extras.getString(AuthenticatorService.KEY_ADDL_PARAMS));
-        }
+// --REMOVE--
+//        String encodedAdlParams = OAuth2.parameterMapToString(loginOptions.additionalParameters);
+//        if(encodedAdlParams != null && encodedAdlParams.trim().length() > 0) {
+//            extras.putString(AuthenticatorService.KEY_ADDL_PARAMS, SalesforceSDKManager.encryptWithPasscode(encodedAdlParams, passcodeHash));
+//            accountManager.setUserData(acc,AuthenticatorService.KEY_ADDL_PARAMS,extras.getString(AuthenticatorService.KEY_ADDL_PARAMS));
+//        }
         accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encryptWithPasscode(refreshToken, passcodeHash), new Bundle());
         // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
         // saved when the user data is passed in through that method. The work-around is to call setUserData()
@@ -761,13 +760,13 @@ public class ClientManager {
         private static final String OAUTH_CALLBACK_URL = "oauthCallbackUrl";
         private static final String PASSCODE_HASH = "passcodeHash";
         private static final String CLIENT_SECRET = "clientSecret";
+        private static final String KEY_ADDL_PARAMS ="addlParams";
 
         public String loginUrl;
         public String passcodeHash;
         public final String oauthCallbackUrl;
         public final String oauthClientId;
         public final String[] oauthScopes;
-        private final Bundle bundle;
         public String clientSecret;
         public String jwt;
         public Map<String,String> additionalParameters;
@@ -780,19 +779,12 @@ public class ClientManager {
             this.oauthCallbackUrl = oauthCallbackUrl;
             this.oauthClientId = oauthClientId;
             this.oauthScopes = oauthScopes;
-            bundle = new Bundle();
-            bundle.putString(LOGIN_URL, loginUrl);
-            bundle.putString(PASSCODE_HASH, passcodeHash);
-            bundle.putString(OAUTH_CALLBACK_URL, oauthCallbackUrl);
-            bundle.putString(OAUTH_CLIENT_ID, oauthClientId);
-            bundle.putStringArray(OAUTH_SCOPES, oauthScopes);
         }
 
         public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
                             String oauthClientId, String[] oauthScopes, String clientSecret) {
             this(loginUrl, passcodeHash, oauthCallbackUrl, oauthClientId, oauthScopes);
             this.clientSecret = clientSecret;
-            bundle.putString(CLIENT_SECRET, clientSecret);
         }
 
         public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
@@ -803,34 +795,43 @@ public class ClientManager {
 
         public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
                             String oauthClientId, String[] oauthScopes, String clientSecret, String jwt,
-                            HashMap<String,String> additionalParameters) {
+                            Map<String,String> additionalParameters) {
             this(loginUrl, passcodeHash, oauthCallbackUrl, oauthClientId, oauthScopes,clientSecret,jwt);
-            this.setAdditionalParameters(additionalParameters);
-        }
-
-        public void setAdditionalParameters(HashMap<String,String> additionalParameters) {
             this.additionalParameters = additionalParameters;
-            bundle.putSerializable(AuthenticatorService.KEY_ADDL_PARAMS,additionalParameters);
         }
 
+        public void setAdditionalParameters(Map<String,String> additionalParameters) {
+            this.additionalParameters = additionalParameters;
+        }
 
         public void setJwt(String jwt) {
             this.jwt = jwt;
-            bundle.putString(JWT, jwt);
         }
 
         public void setUrl(String url) {
             this.loginUrl = url;
-            bundle.putString(LOGIN_URL, url);
         }
 
         public Bundle asBundle() {
+            Bundle bundle = new Bundle();
+            bundle.putString(LOGIN_URL, loginUrl);
+            bundle.putString(PASSCODE_HASH, passcodeHash);
+            bundle.putString(OAUTH_CALLBACK_URL, oauthCallbackUrl);
+            bundle.putString(OAUTH_CLIENT_ID, oauthClientId);
+            bundle.putStringArray(OAUTH_SCOPES, oauthScopes);
+            bundle.putString(CLIENT_SECRET, clientSecret);
+            bundle.putString(JWT, jwt);
+            if(additionalParameters!=null && additionalParameters.size()>0) {
+                HashMap<String, String> serializableMap = new HashMap<>();
+                serializableMap.putAll(additionalParameters);
+                bundle.putSerializable(KEY_ADDL_PARAMS,serializableMap);
+            }
             return bundle;
         }
 
         public static LoginOptions fromBundle(Bundle options) {
-            HashMap<String,String> additionalParameters = null;
-            Serializable serializable =  options.getSerializable(AuthenticatorService.KEY_ADDL_PARAMS);
+            Map<String,String> additionalParameters = null;
+            Serializable serializable =  options.getSerializable(KEY_ADDL_PARAMS);
             if(serializable!=null) {
                 additionalParameters = (HashMap<String,String>) serializable;
             }

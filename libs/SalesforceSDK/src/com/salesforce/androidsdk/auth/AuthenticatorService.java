@@ -76,7 +76,7 @@ public class AuthenticatorService extends Service {
     public static final String KEY_DISPLAY_NAME = "display_name";
     public static final String KEY_PHOTO_URL = "photoUrl";
     public static final String KEY_THUMBNAIL_URL = "thumbnailUrl";
-    public static final String KEY_ADDL_PARAMS = "addlParams";
+   // public static final String KEY_ADDL_PARAMS = "addlParams";
 
     private Authenticator getAuthenticator() {
         if (authenticator == null)
@@ -224,14 +224,15 @@ public class AuthenticatorService extends Service {
                     }
                 }
             }
-
-            final String encAddlParams = mgr.getUserData(account, AuthenticatorService.KEY_ADDL_PARAMS);
-            Map<String,String> addlParamsMap = null;
-            if(encAddlParams != null) {
-                String addlParams = SalesforceSDKManager.decryptWithPasscode(encAddlParams,
-                        SalesforceSDKManager.getInstance().getPasscodeHash());
-                addlParamsMap = OAuth2.parameterStringToMap(addlParams);
-            }
+//--REMOVE--
+//            final String encAddlParams = mgr.getUserData(account, AuthenticatorService.KEY_ADDL_PARAMS);
+//            Map<String,String> addlParamsMap = null;
+//            if(encAddlParams != null) {
+//                String addlParams = SalesforceSDKManager.decryptWithPasscode(encAddlParams,
+//                        SalesforceSDKManager.getInstance().getPasscodeHash());
+//                addlParamsMap = OAuth2.parameterStringToMap(addlParams);
+//            }
+            Map<String,String> addlParamsMap = SalesforceSDKManager.getInstance().getLoginOptions().additionalParameters;
 
             final String encCommunityId = mgr.getUserData(account, AuthenticatorService.KEY_COMMUNITY_ID);
             String communityId = null;
