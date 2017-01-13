@@ -46,6 +46,7 @@ import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -745,22 +746,23 @@ public class ClientManager {
      */
     public static class LoginOptions {
 
-        public static final String JWT = "jwt";
-        public static final String LOGIN_URL = "loginUrl";
+        private static final String JWT = "jwt";
+        private static final String LOGIN_URL = "loginUrl";
         private static final String OAUTH_SCOPES = "oauthScopes";
         private static final String OAUTH_CLIENT_ID = "oauthClientId";
         private static final String OAUTH_CALLBACK_URL = "oauthCallbackUrl";
         private static final String PASSCODE_HASH = "passcodeHash";
         private static final String CLIENT_SECRET = "clientSecret";
+        private static final String KEY_ADDL_PARAMS ="addlParams";
 
-        public String loginUrl;
-        public String passcodeHash;
-        public final String oauthCallbackUrl;
-        public final String oauthClientId;
-        public final String[] oauthScopes;
-        private final Bundle bundle;
-        public String clientSecret;
-        public String jwt;
+        private String loginUrl;
+        private String passcodeHash;
+        private final String oauthCallbackUrl;
+        private final String oauthClientId;
+        private final String[] oauthScopes;
+        private String clientSecret;
+        private String jwt;
+        private Map<String,String> additionalParameters;
 
         public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
                             String oauthClientId, String[] oauthScopes) {
@@ -769,19 +771,12 @@ public class ClientManager {
             this.oauthCallbackUrl = oauthCallbackUrl;
             this.oauthClientId = oauthClientId;
             this.oauthScopes = oauthScopes;
-            bundle = new Bundle();
-            bundle.putString(LOGIN_URL, loginUrl);
-            bundle.putString(PASSCODE_HASH, passcodeHash);
-            bundle.putString(OAUTH_CALLBACK_URL, oauthCallbackUrl);
-            bundle.putString(OAUTH_CLIENT_ID, oauthClientId);
-            bundle.putStringArray(OAUTH_SCOPES, oauthScopes);
         }
 
         public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
                             String oauthClientId, String[] oauthScopes, String clientSecret) {
             this(loginUrl, passcodeHash, oauthCallbackUrl, oauthClientId, oauthScopes);
             this.clientSecret = clientSecret;
-            bundle.putString(CLIENT_SECRET, clientSecret);
         }
 
         public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
@@ -790,28 +785,101 @@ public class ClientManager {
             this.setJwt(jwt);
         }
 
+        public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
+                            String oauthClientId, String[] oauthScopes, String clientSecret, String jwt,
+                            Map<String,String> additionalParameters) {
+            this(loginUrl, passcodeHash, oauthCallbackUrl, oauthClientId, oauthScopes,clientSecret,jwt);
+            this.additionalParameters = additionalParameters;
+        }
+
+        public void setAdditionalParameters(Map<String,String> additionalParameters) {
+            this.additionalParameters = additionalParameters;
+        }
+
         public void setJwt(String jwt) {
             this.jwt = jwt;
-            bundle.putString(JWT, jwt);
         }
 
         public void setUrl(String url) {
             this.loginUrl = url;
-            bundle.putString(LOGIN_URL, url);
+        }
+
+        public String getLoginUrl() {
+            return loginUrl;
+        }
+
+        public void setLoginUrl(String loginUrl) {
+            this.loginUrl = loginUrl;
+        }
+
+        public String getPasscodeHash() {
+            return passcodeHash;
+        }
+
+        public void setPasscodeHash(String passcodeHash) {
+            this.passcodeHash = passcodeHash;
+        }
+
+        public String getOauthCallbackUrl() {
+            return oauthCallbackUrl;
+        }
+
+        public String getOauthClientId() {
+            return oauthClientId;
+        }
+
+        public String[] getOauthScopes() {
+            return oauthScopes;
+        }
+
+        public String getClientSecret() {
+            return clientSecret;
+        }
+
+        public void setClientSecret(String clientSecret) {
+            this.clientSecret = clientSecret;
+        }
+
+        public String getJwt() {
+            return jwt;
+        }
+
+        public Map<String, String> getAdditionalParameters() {
+            return additionalParameters;
         }
 
         public Bundle asBundle() {
+            Bundle bundle = new Bundle();
+            bundle.putString(LOGIN_URL, loginUrl);
+            bundle.putString(PASSCODE_HASH, passcodeHash);
+            bundle.putString(OAUTH_CALLBACK_URL, oauthCallbackUrl);
+            bundle.putString(OAUTH_CLIENT_ID, oauthClientId);
+            bundle.putStringArray(OAUTH_SCOPES, oauthScopes);
+            bundle.putString(CLIENT_SECRET, clientSecret);
+            bundle.putString(JWT, jwt);
+            if(additionalParameters!=null && additionalParameters.size()>0) {
+                HashMap<String, String> serializableMap = new HashMap<>();
+                serializableMap.putAll(additionalParameters);
+                bundle.putSerializable(KEY_ADDL_PARAMS,serializableMap);
+            }
             return bundle;
         }
 
         public static LoginOptions fromBundle(Bundle options) {
+            Map<String,String> additionalParameters = null;
+            Serializable serializable =  options.getSerializable(KEY_ADDL_PARAMS);
+            if(serializable!=null) {
+                additionalParameters = (HashMap<String,String>) serializable;
+            }
+
             return new LoginOptions(options.getString(LOGIN_URL),
                                     options.getString(PASSCODE_HASH),
                                     options.getString(OAUTH_CALLBACK_URL),
                                     options.getString(OAUTH_CLIENT_ID),
                                     options.getStringArray(OAUTH_SCOPES),
                                     options.getString(CLIENT_SECRET),
-                                    options.getString(JWT));
+                                    options.getString(JWT),
+                                    additionalParameters);
         }
     }
 }

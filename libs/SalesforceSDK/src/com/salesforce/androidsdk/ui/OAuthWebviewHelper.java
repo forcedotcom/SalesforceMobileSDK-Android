@@ -202,7 +202,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	 * care of in the 'Confirm Passcode' step in PasscodeActivity.
     	 */
         if (accountOptions != null) {
-            loginOptions.passcodeHash = SalesforceSDKManager.getInstance().getPasscodeHash();
+            loginOptions.setPasscodeHash(SalesforceSDKManager.getInstance().getPasscodeHash());
             addAccount();
             callback.finish();
         }
@@ -283,8 +283,8 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
      * see which system you're logging in to
      */
     public void loadLoginPage() {
-        if (TextUtils.isEmpty(loginOptions.jwt)) {
-            loginOptions.loginUrl = getLoginUrl();
+        if (TextUtils.isEmpty(loginOptions.getJwt())) {
+            loginOptions.setLoginUrl(getLoginUrl());
             doLoadPage(false);
         } else {
             new SwapJWTForAccessTokenTask().execute(loginOptions);
@@ -294,7 +294,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     private void doLoadPage(boolean jwtFlow) {
         try {
             URI uri = getAuthorizationUrl(jwtFlow);
-            callback.loadingLoginPage(loginOptions.loginUrl);
+            callback.loadingLoginPage(loginOptions.getLoginUrl());
             webview.loadUrl(uri.toString());
         } catch (URISyntaxException ex) {
             showError(ex);
@@ -302,26 +302,26 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     }
 
     protected String getOAuthClientId() {
-    	return loginOptions.oauthClientId;
+    	return loginOptions.getOauthClientId();
     }
     
     protected URI getAuthorizationUrl(Boolean jwtFlow) throws URISyntaxException {
         if (jwtFlow) {
             return OAuth2.getAuthorizationUrl(
-                    new URI(loginOptions.loginUrl),
+                    new URI(loginOptions.getLoginUrl()),
                     getOAuthClientId(),
-                    loginOptions.oauthCallbackUrl,
-                    loginOptions.oauthScopes,
+                    loginOptions.getOauthCallbackUrl(),
+                    loginOptions.getOauthScopes(),
                     null,
-                    getAuthorizationDisplayType(), loginOptions.jwt, loginOptions.loginUrl);
+                    getAuthorizationDisplayType(), loginOptions.getJwt(), loginOptions.getLoginUrl(),loginOptions.getAdditionalParameters());
         }
         return OAuth2.getAuthorizationUrl(
-                new URI(loginOptions.loginUrl),
+                new URI(loginOptions.getLoginUrl()),
                 getOAuthClientId(),
-                loginOptions.oauthCallbackUrl,
-                loginOptions.oauthScopes,
+                loginOptions.getOauthCallbackUrl(),
+                loginOptions.getOauthScopes(),
                 null,
-                getAuthorizationDisplayType());
+                getAuthorizationDisplayType(),loginOptions.getAdditionalParameters());
     }
 
     protected URI getAuthorizationUrl() throws URISyntaxException {
@@ -363,7 +363,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
 		@Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-			boolean isDone = url.replace("///", "/").toLowerCase(Locale.US).startsWith(loginOptions.oauthCallbackUrl.replace("///", "/").toLowerCase(Locale.US));
+			boolean isDone = url.replace("///", "/").toLowerCase(Locale.US).startsWith(loginOptions.getOauthCallbackUrl().replace("///", "/").toLowerCase(Locale.US));
             if (isDone) {
                 Uri callbackUri = Uri.parse(url);
                 Map<String, String> params = UriFragmentParser.parse(callbackUri);
@@ -425,7 +425,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
         @Override
         protected TokenEndpointResponse performRequest(LoginOptions options) {
             try {
-                return OAuth2.swapJWTForTokens(HttpAccess.DEFAULT, new URI(options.loginUrl), options.jwt);
+                return OAuth2.swapJWTForTokens(HttpAccess.DEFAULT, new URI(options.getLoginUrl()), options.getJwt());
             } catch (Exception e) {
                 backgroundException = e;
             }
@@ -511,11 +511,11 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
             // Sets additional admin prefs, if they exist.
             final UserAccount account = new UserAccount(accountOptions.authToken,
-                    accountOptions.refreshToken, loginOptions.loginUrl,
+                    accountOptions.refreshToken, loginOptions.getLoginUrl(),
                     accountOptions.identityUrl, accountOptions.instanceUrl,
                     accountOptions.orgId, accountOptions.userId,
                     accountOptions.username, buildAccountName(accountOptions.username,
-                    accountOptions.instanceUrl), loginOptions.clientSecret,
+                    accountOptions.instanceUrl), loginOptions.getClientSecret(),
                     accountOptions.communityId, accountOptions.communityUrl,
                     accountOptions.firstName, accountOptions.lastName, accountOptions.displayName,
                     accountOptions.email, accountOptions.photoUrl,
@@ -550,7 +550,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                     mgr.getPasscodeManager().setEnabled(true);
                     mgr.getPasscodeManager().lockIfNeeded((Activity) getContext(), true);
                 } else {
-                    loginOptions.passcodeHash = mgr.getPasscodeHash();
+                    loginOptions.setPasscodeHash(mgr.getPasscodeHash());
                     addAccount();
                     callback.finish();
                 }
@@ -559,7 +559,7 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
             else {
                 final PasscodeManager passcodeManager = mgr.getPasscodeManager();
                 passcodeManager.storeMobilePolicyForOrg(account, 0, PasscodeManager.MIN_PASSCODE_LENGTH);
-                loginOptions.passcodeHash = mgr.getPasscodeHash();
+                loginOptions.setPasscodeHash(mgr.getPasscodeHash());
                 addAccount();
                 callback.finish();
             }
@@ -611,13 +611,13 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
                 accountOptions.refreshToken,
                 accountOptions.authToken,
                 accountOptions.instanceUrl,
-                loginOptions.loginUrl,
+                loginOptions.getLoginUrl(),
                 accountOptions.identityUrl,
                 getOAuthClientId(),
                 accountOptions.orgId,
                 accountOptions.userId,
-                loginOptions.passcodeHash,
-                loginOptions.clientSecret,
+                loginOptions.getPasscodeHash(),
+                loginOptions.getClientSecret(),
                 accountOptions.communityId,
                 accountOptions.communityUrl,
                 accountOptions.firstName,
@@ -636,11 +636,11 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
     	final Context appContext = SalesforceSDKManager.getInstance().getAppContext();
     	final String pushNotificationId = BootConfig.getBootConfig(appContext).getPushNotificationClientId();
         final UserAccount account = new UserAccount(accountOptions.authToken,
-                accountOptions.refreshToken, loginOptions.loginUrl,
+                accountOptions.refreshToken, loginOptions.getLoginUrl(),
                 accountOptions.identityUrl, accountOptions.instanceUrl,
                 accountOptions.orgId, accountOptions.userId,
                 accountOptions.username, accountName,
-                loginOptions.clientSecret, accountOptions.communityId,
+                loginOptions.getClientSecret(), accountOptions.communityId,
                 accountOptions.communityUrl, accountOptions.firstName,
                 accountOptions.lastName, accountOptions.displayName, accountOptions.email,
                 accountOptions.photoUrl, accountOptions.thumbnailUrl, accountOptions.additionalOauthValues);
