@@ -391,12 +391,6 @@ public class ClientManager {
             }
         }
         Account acc = new Account(accountName, getAccountType());
-// --REMOVE--
-//        String encodedAdlParams = OAuth2.parameterMapToString(loginOptions.additionalParameters);
-//        if(encodedAdlParams != null && encodedAdlParams.trim().length() > 0) {
-//            extras.putString(AuthenticatorService.KEY_ADDL_PARAMS, SalesforceSDKManager.encryptWithPasscode(encodedAdlParams, passcodeHash));
-//            accountManager.setUserData(acc,AuthenticatorService.KEY_ADDL_PARAMS,extras.getString(AuthenticatorService.KEY_ADDL_PARAMS));
-//        }
         accountManager.addAccountExplicitly(acc, SalesforceSDKManager.encryptWithPasscode(refreshToken, passcodeHash), new Bundle());
         // There is a bug in AccountManager::addAccountExplicitly() that sometimes causes user data to not be
         // saved when the user data is passed in through that method. The work-around is to call setUserData()

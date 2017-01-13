@@ -155,28 +155,28 @@ public class ClientManagerTest extends InstrumentationTestCase {
         LoginOptions loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_PASSCODE_HASH,
                 TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES,null,null,additionalParams);
 
-        assertTrue("LoginOptions must not be null",loginOptions!=null);
-        assertTrue("LoginOptions must not be null",loginOptions.additionalParameters!=null);
-        assertTrue("# of LoginOptions must be correct",loginOptions.additionalParameters.size()==additionalParams.size());
-        assertTrue("LoginOptions must be correct",loginOptions.additionalParameters.get("p1").equals(additionalParams.get("p1")));
+        assertNotNull("LoginOptions must not be null",loginOptions);
+        assertNotNull("LoginOptions must not be null",loginOptions.additionalParameters);
+        assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.additionalParameters.size());
+        assertEquals("LoginOptions must be correct",additionalParams.get("p1"),loginOptions.additionalParameters.get("p1"));
 
         additionalParams = new HashMap<String,String>();
         additionalParams.put("p4","v1");
         additionalParams.put("p5","v2");
 
         loginOptions.setAdditionalParameters(additionalParams);
-        assertTrue("# of LoginOptions must be correct",loginOptions.additionalParameters.size()==additionalParams.size());
+        assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.additionalParameters.size());
 
         Bundle bundle = loginOptions.asBundle();
 
-        assertTrue("LoginOptions Bundle must not be null",bundle!=null);
+        assertNotNull("LoginOptions Bundle must not be null",bundle);
         assertNotNull("LoginOptions Bundle must have parameter map",bundle.getSerializable("addlParams"));
 
         loginOptions = LoginOptions.fromBundle(bundle);
         assertNotNull("LoginOptions from bundle should not be null",loginOptions);
         assertNotNull("LoginOptions.additionalParameters from bundle should not be null",loginOptions.additionalParameters);
-        assertTrue("LoginOptions.additionalParameters from bundle should not be null",loginOptions.additionalParameters.size()==additionalParams.size());
-        assertTrue("LoginOptions.additionalParameters must have parameter",loginOptions.additionalParameters.get("p4").equals(additionalParams.get("p4")));
+        assertEquals("LoginOptions.additionalParameters from bundle should not be null",additionalParams.size(),loginOptions.additionalParameters.size());
+        assertEquals("LoginOptions.additionalParameters must have parameter",additionalParams.get("p4"),loginOptions.additionalParameters.get("p4"));
 
     }
 
