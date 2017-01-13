@@ -746,8 +746,8 @@ public class ClientManager {
      */
     public static class LoginOptions {
 
-        public static final String JWT = "jwt";
-        public static final String LOGIN_URL = "loginUrl";
+        private static final String JWT = "jwt";
+        private static final String LOGIN_URL = "loginUrl";
         private static final String OAUTH_SCOPES = "oauthScopes";
         private static final String OAUTH_CLIENT_ID = "oauthClientId";
         private static final String OAUTH_CALLBACK_URL = "oauthCallbackUrl";
@@ -755,14 +755,14 @@ public class ClientManager {
         private static final String CLIENT_SECRET = "clientSecret";
         private static final String KEY_ADDL_PARAMS ="addlParams";
 
-        public String loginUrl;
-        public String passcodeHash;
-        public final String oauthCallbackUrl;
-        public final String oauthClientId;
-        public final String[] oauthScopes;
-        public String clientSecret;
-        public String jwt;
-        public Map<String,String> additionalParameters;
+        private String loginUrl;
+        private String passcodeHash;
+        private final String oauthCallbackUrl;
+        private final String oauthClientId;
+        private final String[] oauthScopes;
+        private String clientSecret;
+        private String jwt;
+        private Map<String,String> additionalParameters;
 
         public LoginOptions(String loginUrl, String passcodeHash, String oauthCallbackUrl,
                             String oauthClientId, String[] oauthScopes) {
@@ -802,6 +802,50 @@ public class ClientManager {
 
         public void setUrl(String url) {
             this.loginUrl = url;
+        }
+
+        public String getLoginUrl() {
+            return loginUrl;
+        }
+
+        public void setLoginUrl(String loginUrl) {
+            this.loginUrl = loginUrl;
+        }
+
+        public String getPasscodeHash() {
+            return passcodeHash;
+        }
+
+        public void setPasscodeHash(String passcodeHash) {
+            this.passcodeHash = passcodeHash;
+        }
+
+        public String getOauthCallbackUrl() {
+            return oauthCallbackUrl;
+        }
+
+        public String getOauthClientId() {
+            return oauthClientId;
+        }
+
+        public String[] getOauthScopes() {
+            return oauthScopes;
+        }
+
+        public String getClientSecret() {
+            return clientSecret;
+        }
+
+        public void setClientSecret(String clientSecret) {
+            this.clientSecret = clientSecret;
+        }
+
+        public String getJwt() {
+            return jwt;
+        }
+
+        public Map<String, String> getAdditionalParameters() {
+            return additionalParameters;
         }
 
         public Bundle asBundle() {

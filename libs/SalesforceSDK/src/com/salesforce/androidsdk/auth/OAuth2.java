@@ -253,7 +253,7 @@ public class OAuth2 {
                                           String displayType, String accessToken, String instanceURL,
                                           Map<String,String> addlParams) {
         if(accessToken == null || instanceURL == null) {
-            return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret, displayType,addlParams);
+            return getAuthorizationUrl(loginServer, clientId, callbackUrl, scopes, clientSecret, displayType, addlParams);
         }
         final StringBuilder sb = new StringBuilder(instanceURL);
         sb.append(FRONTDOOR);
@@ -261,7 +261,7 @@ public class OAuth2 {
         sb.append(AND).append(RETURL).append(EQUAL).append(Uri.encode(getAuthorizationUrl(loginServer,clientId,callbackUrl,
                 scopes, clientSecret, displayType).toString()));
 
-        if(addlParams !=null && addlParams.size() > 0) {
+        if(addlParams != null && addlParams.size() > 0) {
             for(Map.Entry<String,String> entry : addlParams.entrySet()) {
                 String value = entry.getValue()==null? EMPTY_STRING :entry.getValue();
                 sb.append(AND).append(entry.getKey()).append(EQUAL).append(Uri.encode(value));
@@ -329,7 +329,7 @@ public class OAuth2 {
             HttpAccess httpAccessor, URI loginServer, String clientId,
             String refreshToken, String clientSecret,Map<String,String> addlParams) throws OAuthFailedException, IOException {
         FormBody.Builder formBodyBuilder = makeTokenEndpointParams(REFRESH_TOKEN,
-                clientId, clientSecret,addlParams);
+                clientId, clientSecret, addlParams);
         formBodyBuilder.add(REFRESH_TOKEN, refreshToken);
         formBodyBuilder.add(FORMAT, JSON);
         TokenEndpointResponse tr = makeTokenEndpointRequest(httpAccessor, loginServer, formBodyBuilder);
@@ -479,7 +479,7 @@ public class OAuth2 {
      * @return
      */
     private static FormBody.Builder makeTokenEndpointParams(
-            String grantType, String clientId, String clientSecret,Map<String,String> addlParams) {
+            String grantType, String clientId, String clientSecret, Map<String,String> addlParams) {
         FormBody.Builder builder = new FormBody.Builder()
                 .add(GRANT_TYPE, grantType)
                 .add(CLIENT_ID, clientId);
