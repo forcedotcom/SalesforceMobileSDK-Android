@@ -4,6 +4,10 @@ apply plugin: 'com.android.library'
 dependencies {
 }
 
+plugins {
+    id "com.jfrog.bintray" version "1.7.3"
+}
+
 android {
   compileSdkVersion 25
   buildToolsVersion '23.0.1'
@@ -51,4 +55,26 @@ afterEvaluate {
   // Find all connected Android tests and ensure they log all passed tests. This keeps the Travis
   // from timing out since executing tests are printed to the console.
   tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.INFO)
+}
+
+bintray {
+    user = System.getenv('BINTRAY_USER')
+    key = System.getenv('BINTRAY_KEY')
+    configurations = ['archives']
+    pkg {
+        repo = 'android'
+        name = 'com.salesforce.androidsdk.SalesforceAnalytics'
+        userOrg = 'forcedotcom'
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android.git'
+        websiteUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android'
+        issueTrackerUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android/issues'
+        licenses = ['Apache-2.0']
+        labels = ['aar', 'android', 'salesforce']
+        version {
+            name = '5.0.0'
+            released  = new Date()
+            vcsTag = 'v5.0.0'
+        }
+    }
 }
