@@ -1,3 +1,6 @@
+plugins {
+    id "com.jfrog.bintray" version "1.7.3"
+}
 
 apply plugin: 'com.android.library'
 
@@ -5,10 +8,6 @@ dependencies {
   compile project(':libs:SmartSync')
   compile 'com.android.support:appcompat-v7:23.0.1'
   compile 'com.facebook.react:react-native:0.35.0'
-}
-
-plugins {
-    id "com.jfrog.bintray" version "1.7.3"
 }
 
 android {

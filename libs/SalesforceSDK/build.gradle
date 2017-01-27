@@ -1,13 +1,12 @@
+plugins {
+    id "com.jfrog.bintray" version "1.7.3"
+}
 
 apply plugin: 'com.android.library'
 
 dependencies {
   compile project(':libs:SalesforceAnalytics')
   compile 'com.squareup.okhttp3:okhttp:3.2.0'
-}
-
-plugins {
-    id "com.jfrog.bintray" version "1.7.3"
 }
 
 android {

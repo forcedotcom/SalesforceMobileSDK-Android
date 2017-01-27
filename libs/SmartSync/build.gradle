@@ -1,12 +1,11 @@
+plugins {
+    id "com.jfrog.bintray" version "1.7.3"
+}
 
 apply plugin: 'com.android.library'
 
 dependencies {
   compile project(':libs:SmartStore')
-}
-
-plugins {
-    id "com.jfrog.bintray" version "1.7.3"
 }
 
 android {

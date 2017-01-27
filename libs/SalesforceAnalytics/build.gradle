@@ -1,11 +1,10 @@
+plugins {
+    id "com.jfrog.bintray" version "1.7.3"
+}
 
 apply plugin: 'com.android.library'
 
 dependencies {
-}
-
-plugins {
-    id "com.jfrog.bintray" version "1.7.3"
 }
 
 android {
