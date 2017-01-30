@@ -63,13 +63,16 @@ bintray {
     key = System.getenv('BINTRAY_KEY')
     configurations = ['archives']
     pkg {
-        repo = 'android'
-        name = 'com.salesforce.androidsdk.SmartSync'
+        repo = 'salesforcemobilesdk'
+        name = 'SmartSync'
         userOrg = 'forcedotcom'
         licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android.git'
         websiteUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android'
         issueTrackerUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android/issues'
+        publicDownloadNumbers = true
+        githubRepo = 'forcedotcom/SalesforceMobileSDK-Android'
+        githubReleaseNotesFile = 'README.md'
         licenses = ['Apache-2.0']
         labels = ['aar', 'android', 'salesforce']
         version {
