@@ -62,7 +62,7 @@ bintray {
     configurations = ['archives']
     pkg {
         repo = 'salesforcemobilesdk'
-        name = 'SalesforceAnalytics'
+        name = 'salesforce-analytics'
         userOrg = 'forcedotcom'
         licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android.git'
@@ -72,7 +72,7 @@ bintray {
         githubRepo = 'forcedotcom/SalesforceMobileSDK-Android'
         githubReleaseNotesFile = 'README.md'
         licenses = ['Apache-2.0']
-        labels = ['aar', 'android', 'salesforce']
+        labels = ['android', 'salesforce', 'mobilesdk']
         version {
             name = '5.0.0'
             released  = new Date()
