@@ -180,6 +180,16 @@ public abstract class SyncDownTarget extends SyncTarget {
     }
 
     /**
+     * Return ids of records that should not be written over
+     * during a sync down with merge mode leave-if-changed
+     * @return set of ids 
+     * @throws JSONException
+     */
+    public Set<String> getIdsToSkip(SyncManager syncManager, String soupName) throws JSONException {
+        return syncManager.getDirtyRecordIds(soupName, getIdFieldName());
+    }
+
+    /**
      * Enum for query type
      */
     public enum QueryType {

@@ -575,10 +575,18 @@ public class SyncManager {
         sync.setTotalSize(totalSize);
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         final String idField = sync.getTarget().getIdFieldName();
+
+        // Get ids of records to leave alone
+        Set<String> idsToSkip = null;
+        if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
+            idsToSkip = target.getIdsToSkip(this, soupName);
+        }
         while (records != null) {
+            // Figure out records to save
+            JSONArray recordsToSave = idsToSkip == null ? records : removeWithIds(records, idsToSkip, idField);
 
             // Save to smartstore.
-            saveRecordsToSmartStore(soupName, records, mergeMode, idField);
+            saveRecordsToSmartStore(soupName, recordsToSave, idField);
             countSaved += records.length();
             maxTimeStamp = Math.max(maxTimeStamp, target.getLatestModificationTimeStamp(records));
 
@@ -593,6 +601,20 @@ public class SyncManager {
         sync.setMaxTimeStamp(maxTimeStamp);
 	}
 
+    private JSONArray removeWithIds(JSONArray records, Set<String> idsToSkip, String idField) throws JSONException {
+        JSONArray arr = new JSONArray();
+        for (int i = 0; i < records.length(); i++) {
+            JSONObject record = records.getJSONObject(i);
+
+            // Keep ?
+            String id = JSONObjectHelper.optString(record, idField);
+            if (id == null || !idsToSkip.contains(id)) {
+                arr.put(record);
+            }
+        }
+        return arr;
+    }
+
     private SortedSet<String> toSortedSet(JSONArray jsonArray) throws JSONException {
         SortedSet<String> set = new TreeSet<String>();
         for (int i=0; i<jsonArray.length(); i++) {
@@ -601,27 +623,14 @@ public class SyncManager {
         return set;
     }
 
-	private void saveRecordsToSmartStore(String soupName, JSONArray records, MergeMode mergeMode, String idField)
+	private void saveRecordsToSmartStore(String soupName, JSONArray records, String idField)
 			throws JSONException {
-        // Gather ids of dirty records
-        Set<String> idsToSkip = null;
-        if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
-            idsToSkip = getDirtyRecordIds(soupName, idField);
-        }
 
         synchronized(smartStore.getDatabase()) {
             try {
                 smartStore.beginTransaction();
                 for (int i = 0; i < records.length(); i++) {
                     JSONObject record = records.getJSONObject(i);
-
-                    // Skip?
-                    if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
-                        String id = JSONObjectHelper.optString(record, idField);
-                        if (id != null && idsToSkip.contains(id)) {
-                            continue; // don't write over dirty record
-                        }
-                    }
 
                     // Save
                     record.put(LOCAL, false);
