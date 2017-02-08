@@ -43,13 +43,13 @@ import java.util.TreeSet;
 /**
  * Abstract super class for SyncUpTarget and SyncDownTarget
  *
- * Targets handle interactions with local store and with remote server
+ * Targets handle interactions with local store and with remote server.
  *
- * Default target use SmartStore for local store and __local_*__ fields to flag dirty (i.e. locally created/updated/deleted) records
- * Custom targets can use a different local store and/or different fields to flag dirty records
+ * Default targets use SmartStore for local store and __local_*__ fields to flag dirty (i.e. locally created/updated/deleted) records.
+ * Custom targets can use a different local store and/or different fields to flag dirty records.
  *
- * Default target use SObject Rest API to read/write records to the server
- * Custom targets can use different end points to read/write records to the server
+ * Default targets use SObject Rest API to read/write records to the server.
+ * Custom targets can use different end points to read/write records to the server.
  */
 public abstract class SyncTarget {
 
