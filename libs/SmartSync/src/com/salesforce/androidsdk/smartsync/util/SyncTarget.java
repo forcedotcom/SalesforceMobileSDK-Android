@@ -42,6 +42,14 @@ import java.util.TreeSet;
 
 /**
  * Abstract super class for SyncUpTarget and SyncDownTarget
+ *
+ * Targets handle interactions with local store and with remote server
+ *
+ * Default target use SmartStore for local store and __local_*__ fields to flag dirty (i.e. locally created/updated/deleted) records
+ * Custom targets can use a different local store and/or different fields to flag dirty records
+ *
+ * Default target use SObject Rest API to read/write records to the server
+ * Custom targets can use different end points to read/write records to the server
  */
 public abstract class SyncTarget {
 
@@ -51,6 +59,7 @@ public abstract class SyncTarget {
     public static final String LOCALLY_DELETED = "__locally_deleted__";
     public static final String LOCAL = "__local__";
 
+    // Page size used when reading from smartstore
     private static final int PAGE_SIZE = 2000;
 
     public static final String ANDROID_IMPL = "androidImpl";
@@ -90,7 +99,7 @@ public abstract class SyncTarget {
     }
 
     /**
-     * @return The fintield name of the modification date field of the record.  Defaults to "LastModifiedDate".
+     * @return The field name of the modification date field of the record.  Defaults to "LastModifiedDate".
      */
     public String getModificationDateFieldName() {
         return modificationDateFieldName;
@@ -205,16 +214,6 @@ public abstract class SyncTarget {
     }
 
     /**
-     * Delete record from local store
-     * @param syncManager
-     * @param soupName
-     * @param record
-     */
-    public void deleteInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
-        syncManager.getSmartStore().delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
-    }
-
-    /**
      * Save records to local store
      * @param syncManager
      * @param soupName
@@ -235,6 +234,16 @@ public abstract class SyncTarget {
                 smartStore.endTransaction();
             }
         }
+    }
+
+    /**
+     * Delete record from local store
+     * @param syncManager
+     * @param soupName
+     * @param record
+     */
+    public void deleteFromLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
+        syncManager.getSmartStore().delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
     }
 
     /**

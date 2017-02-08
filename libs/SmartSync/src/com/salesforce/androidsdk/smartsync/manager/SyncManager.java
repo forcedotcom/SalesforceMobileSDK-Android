@@ -504,7 +504,7 @@ public class SyncManager {
                         ? HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
                         : target.deleteOnServer(this, objectType, objectId));
                 if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                    target.deleteInLocalStore(this, soupName, record);
+                    target.deleteFromLocalStore(this, soupName, record);
                 }
                 break;
             case update:
