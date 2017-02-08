@@ -319,7 +319,7 @@ public class SmartStorePlugin extends ForcePlugin {
 		String soupName = arg0.getString(SOUP_NAME);
         final SmartStore smartStore = getSmartStore(arg0);
 
-		// Run upsert
+		// Run hasSoup
 		boolean exists = smartStore.hasSoup(soupName);
 		PluginResult pluginResult = new PluginResult(PluginResult.Status.OK, exists);
 		callbackContext.sendPluginResult(pluginResult);
