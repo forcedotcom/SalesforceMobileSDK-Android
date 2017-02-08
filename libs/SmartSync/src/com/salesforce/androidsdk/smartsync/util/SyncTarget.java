@@ -186,11 +186,22 @@ public abstract class SyncTarget {
      * @param record
      */
     public void cleanAndSaveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
+        cleanAndSaveInLocalStore(syncManager, soupName, record, true);
+    }
+
+    private void cleanAndSaveInLocalStore(SyncManager syncManager, String soupName, JSONObject record, boolean handleTx) throws JSONException {
         record.put(LOCAL, false);
         record.put(LOCALLY_CREATED, false);
         record.put(LOCALLY_UPDATED, false);
         record.put(LOCALLY_DELETED, false);
-        syncManager.getSmartStore().update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID));
+        if (record.has(SmartStore.SOUP_ENTRY_ID)) {
+            // Record came from smartstore
+            syncManager.getSmartStore().update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID), handleTx);
+        }
+        else {
+            // Record came from server
+            syncManager.getSmartStore().upsert(soupName, record, getIdFieldName(), handleTx);
+        }
     }
 
     /**
@@ -216,15 +227,7 @@ public abstract class SyncTarget {
             try {
                 smartStore.beginTransaction();
                 for (int i = 0; i < records.length(); i++) {
-                    JSONObject record = records.getJSONObject(i);
-
-                    // Save
-                    record.put(LOCAL, false);
-                    record.put(LOCALLY_CREATED, false);
-                    record.put(LOCALLY_UPDATED, false);
-                    record.put(LOCALLY_DELETED, false);
-
-                    smartStore.upsert(soupName, records.getJSONObject(i), getIdFieldName(), false);
+                    cleanAndSaveInLocalStore(syncManager, soupName, records.getJSONObject(i), false);
                 }
                 smartStore.setTransactionSuccessful();
             }
