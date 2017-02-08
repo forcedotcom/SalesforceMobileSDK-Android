@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.accounts.UserAccount;
@@ -38,7 +37,6 @@ import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
@@ -61,8 +59,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -80,13 +76,6 @@ public class SyncManager {
     private static final String SMART_SYNC = "SmartSync";
 
     private static final String FEATURE_SMART_SYNC = "SY";
-
-
-    // Local fields
-    public static final String LOCALLY_CREATED = "__locally_created__";
-    public static final String LOCALLY_UPDATED = "__locally_updated__";
-    public static final String LOCALLY_DELETED = "__locally_deleted__";
-    public static final String LOCAL = "__local__";
 
     // Static member
     private static Map<String, SyncManager> INSTANCES = new HashMap<String, SyncManager>();
@@ -308,30 +297,18 @@ public class SyncManager {
         }
         final String soupName = sync.getSoupName();
         final String idFieldName = sync.getTarget().getIdFieldName();
+        final SyncDownTarget target = (SyncDownTarget) sync.getTarget();
 
         /*
          * Fetches list of IDs present in local soup that have not been modified locally.
          */
-        final Set<String> localIds = new HashSet<String>();
-        QuerySpec querySpec = QuerySpec.buildAllQuerySpec(soupName, idFieldName, QuerySpec.Order.ascending, 10);
-        int count = smartStore.countQuery(querySpec);
-        querySpec = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":" + idFieldName
-                + "} FROM {" + soupName + "} WHERE {" + soupName + ":" + LOCAL + "}='false'", count);
-        final JSONArray localIdArray = smartStore.query(querySpec, 0);
-        if (localIdArray != null && localIdArray.length() > 0) {
-            for (int i = 0; i < localIdArray.length(); i++) {
-                final JSONArray idJson = localIdArray.optJSONArray(i);
-                if (idJson != null) {
-                    localIds.add(idJson.optString(0));
-                }
-            }
-        }
+        final Set<String> localIds = target.getNonDirtyRecordIds(this, soupName, idFieldName);
 
         /*
          * Fetches list of IDs still present on the server from the list of local IDs
          * and removes the list of IDs that are still present on the server.
          */
-        final Set<String> remoteIds = ((SyncDownTarget) sync.getTarget()).getListOfRemoteIds(this, localIds);
+        final Set<String> remoteIds = target.getListOfRemoteIds(this, localIds);
         if (remoteIds != null) {
             localIds.removeAll(remoteIds);
         }
@@ -344,17 +321,13 @@ public class SyncManager {
                 attributes.put("numRecords", localIdSize);
             }
             attributes.put("syncId", sync.getId());
-            attributes.put("syncTarget", sync.getTarget().getClass().getName());
+            attributes.put("syncTarget", target.getClass().getName());
         } catch (JSONException e) {
             Log.e(TAG, "Exception thrown while building attributes", e);
         }
         EventBuilderHelper.createAndStoreEvent("cleanResyncGhosts", null, TAG, attributes);
         if (localIdSize > 0) {
-            String smartSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} IN (%s)",
-                    soupName, SmartStore.SOUP_ENTRY_ID, soupName, soupName, idFieldName,
-                    "'" + TextUtils.join("', '", localIds) + "'");
-            querySpec = QuerySpec.buildSmartQuerySpec(smartSql, localIdSize);
-            smartStore.deleteByQuery(soupName, querySpec);
+            target.deleteRecordsFromLocalStore(this, soupName, localIds);
         }
     }
 
@@ -453,9 +426,9 @@ public class SyncManager {
                                  JSONObject record, SyncOptions options) throws JSONException, IOException {
 
         // Do we need to do a create, update or delete
-        boolean locallyDeleted = record.getBoolean(LOCALLY_DELETED);
-        boolean locallyCreated = record.getBoolean(LOCALLY_CREATED);
-        boolean locallyUpdated = record.getBoolean(LOCALLY_UPDATED);
+        boolean locallyDeleted = target.isLocallyDeleted(record);
+        boolean locallyCreated = target.isLocallyCreated(record);
+        boolean locallyUpdated = target.isLocallyUpdated(record);
 
         Action action = null;
         if (locallyDeleted)
@@ -523,7 +496,7 @@ public class SyncManager {
                 recordServerId = target.createOnServer(this, objectType, fields);
                 if (recordServerId != null) {
                     record.put(target.getIdFieldName(), recordServerId);
-                    cleanAndSaveRecord(soupName, record);
+                    target.cleanAndSaveInLocalStore(this, soupName, record);
                 }
                 break;
             case delete:
@@ -531,13 +504,13 @@ public class SyncManager {
                         ? HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
                         : target.deleteOnServer(this, objectType, objectId));
                 if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                    smartStore.delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
+                    target.deleteInLocalStore(this, soupName, record);
                 }
                 break;
             case update:
                 statusCode = target.updateOnServer(this, objectType, objectId, fields);
                 if (RestResponse.isSuccess(statusCode)) {
-                    cleanAndSaveRecord(soupName, record);
+                    target.cleanAndSaveInLocalStore(this, soupName, record);
                 }
                 // Handling remotely deleted records
                 else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
@@ -545,7 +518,7 @@ public class SyncManager {
                         recordServerId = target.createOnServer(this, objectType, fields);
                         if (recordServerId != null) {
                             record.put(target.getIdFieldName(), recordServerId);
-                            cleanAndSaveRecord(soupName, record);
+                            target.cleanAndSaveInLocalStore(this, soupName, record);
                         }
                     }
                     else {
@@ -554,14 +527,6 @@ public class SyncManager {
                 }
                 break;
         }
-    }
-
-    private void cleanAndSaveRecord(String soupName, JSONObject record) throws JSONException {
-        record.put(LOCAL, false);
-        record.put(LOCALLY_CREATED, false);
-        record.put(LOCALLY_UPDATED, false);
-        record.put(LOCALLY_DELETED, false);
-        smartStore.update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID));
     }
 
     private void syncDown(SyncState sync, SyncUpdateCallback callback) throws Exception {
@@ -586,7 +551,7 @@ public class SyncManager {
             JSONArray recordsToSave = idsToSkip == null ? records : removeWithIds(records, idsToSkip, idField);
 
             // Save to smartstore.
-            saveRecordsToSmartStore(soupName, recordsToSave, idField);
+            target.saveRecordsToLocalStore(this, soupName, recordsToSave);
             countSaved += records.length();
             maxTimeStamp = Math.max(maxTimeStamp, target.getLatestModificationTimeStamp(records));
 
@@ -613,51 +578,6 @@ public class SyncManager {
             }
         }
         return arr;
-    }
-
-    private SortedSet<String> toSortedSet(JSONArray jsonArray) throws JSONException {
-        SortedSet<String> set = new TreeSet<String>();
-        for (int i=0; i<jsonArray.length(); i++) {
-            set.add(jsonArray.getJSONArray(i).getString(0));
-        }
-        return set;
-    }
-
-	private void saveRecordsToSmartStore(String soupName, JSONArray records, String idField)
-			throws JSONException {
-
-        synchronized(smartStore.getDatabase()) {
-            try {
-                smartStore.beginTransaction();
-                for (int i = 0; i < records.length(); i++) {
-                    JSONObject record = records.getJSONObject(i);
-
-                    // Save
-                    record.put(LOCAL, false);
-                    record.put(LOCALLY_CREATED, false);
-                    record.put(LOCALLY_UPDATED, false);
-                    record.put(LOCALLY_DELETED, false);
-                    smartStore.upsert(soupName, records.getJSONObject(i), idField, false);
-                }
-                smartStore.setTransactionSuccessful();
-            }
-            finally {
-                smartStore.endTransaction();
-            }
-        }
-	}
-
-    public SortedSet<String> getDirtyRecordIds(String soupName, String idField) throws JSONException {
-        SortedSet<String> ids = new TreeSet<String>();
-        String dirtyRecordsSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true' ORDER BY {%s:%s} ASC", soupName, idField, soupName, soupName, LOCAL, soupName, idField);
-        final QuerySpec smartQuerySpec = QuerySpec.buildSmartQuerySpec(dirtyRecordsSql, PAGE_SIZE);
-        boolean hasMore = true;
-        for (int pageIndex = 0; hasMore; pageIndex++) {
-            JSONArray results = smartStore.query(smartQuerySpec, pageIndex);
-            hasMore = (results.length() == PAGE_SIZE);
-            ids.addAll(toSortedSet(results));
-        }
-        return ids;
     }
 
     /**

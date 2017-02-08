@@ -30,9 +30,9 @@ import org.json.JSONObject;
 
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 
 /**
  * A simple representation of a Contact object.
@@ -80,9 +80,9 @@ public class ContactObject extends SalesforceObject {
 		objectType = Constants.CONTACT;
 		objectId = data.optString(Constants.ID);
 		name = data.optString(FIRST_NAME) + " " + data.optString(LAST_NAME);
-		isLocallyModified = data.optBoolean(SyncManager.LOCALLY_UPDATED) ||
-				data.optBoolean(SyncManager.LOCALLY_CREATED) ||
-				data.optBoolean(SyncManager.LOCALLY_DELETED);
+		isLocallyModified = data.optBoolean(SyncTarget.LOCALLY_UPDATED) ||
+				data.optBoolean(SyncTarget.LOCALLY_CREATED) ||
+				data.optBoolean(SyncTarget.LOCALLY_DELETED);
 	}
 
 	/**

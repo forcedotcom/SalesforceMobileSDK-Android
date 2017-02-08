@@ -26,8 +26,11 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
+import android.text.TextUtils;
 import android.util.Log;
 
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
@@ -37,9 +40,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -186,7 +187,7 @@ public abstract class SyncDownTarget extends SyncTarget {
      * @throws JSONException
      */
     public Set<String> getIdsToSkip(SyncManager syncManager, String soupName) throws JSONException {
-        return syncManager.getDirtyRecordIds(soupName, getIdFieldName());
+        return getDirtyRecordIds(syncManager, soupName, getIdFieldName());
     }
 
     /**
