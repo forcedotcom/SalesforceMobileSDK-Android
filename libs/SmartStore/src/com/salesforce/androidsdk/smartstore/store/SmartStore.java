@@ -1084,6 +1084,7 @@ public class SmartStore  {
      * @param soupName
      * @param soupElt
      * @param soupEntryId
+	 * @param handleTx
      * @return
      * @throws JSONException
      */

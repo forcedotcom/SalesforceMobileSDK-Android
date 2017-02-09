@@ -169,6 +169,6 @@ public class SyncUpTarget extends SyncTarget {
      * @return
      */
     public Set<String> getIdsOfRecordsToSyncUp(SyncManager syncManager, String soupName) throws JSONException {
-        return syncManager.getDirtyRecordIds(soupName, SmartStore.SOUP_ENTRY_ID);
+        return getDirtyRecordIds(syncManager, soupName, SmartStore.SOUP_ENTRY_ID);
     }
 }

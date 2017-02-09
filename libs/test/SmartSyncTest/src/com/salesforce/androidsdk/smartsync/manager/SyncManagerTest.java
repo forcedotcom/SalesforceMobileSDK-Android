@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.smartsync.manager;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -50,7 +49,6 @@ import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
-import com.salesforce.androidsdk.util.JSONObjectHelper;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import org.json.JSONArray;
@@ -1314,7 +1312,7 @@ public class SyncManagerTest extends ManagerTestCase {
                 new IndexSpec(Constants.ID, SmartStore.Type.string),
                 new IndexSpec(Constants.NAME, SmartStore.Type.string),
                 new IndexSpec(Constants.DESCRIPTION, SmartStore.Type.string),
-                new IndexSpec(SyncManager.LOCAL, SmartStore.Type.string)
+                new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string)
         };
         smartStore.registerSoup(soupName, indexSpecs);
     }
@@ -1352,10 +1350,10 @@ public class SyncManagerTest extends ManagerTestCase {
 			account.put(Constants.NAME, name);
             account.put(Constants.DESCRIPTION, "Description_" + name);
 			account.put(Constants.ATTRIBUTES, attributes);
-			account.put(SyncManager.LOCAL, true);
-			account.put(SyncManager.LOCALLY_CREATED, true);
-			account.put(SyncManager.LOCALLY_DELETED, false);
-			account.put(SyncManager.LOCALLY_UPDATED, false);
+			account.put(SyncTarget.LOCAL, true);
+			account.put(SyncTarget.LOCALLY_CREATED, true);
+			account.put(SyncTarget.LOCALLY_DELETED, false);
+			account.put(SyncTarget.LOCALLY_UPDATED, false);
 			smartStore.create(ACCOUNTS_SOUP, account);
 		}
 	}
@@ -1372,10 +1370,10 @@ public class SyncManagerTest extends ManagerTestCase {
             for (String fieldName : updatedFields.keySet()) {
                 account.put(fieldName, updatedFields.get(fieldName));
             }
-			account.put(SyncManager.LOCAL, true);
-			account.put(SyncManager.LOCALLY_CREATED, false);
-			account.put(SyncManager.LOCALLY_DELETED, false);
-			account.put(SyncManager.LOCALLY_UPDATED, true);
+			account.put(SyncTarget.LOCAL, true);
+			account.put(SyncTarget.LOCALLY_CREATED, false);
+			account.put(SyncTarget.LOCALLY_DELETED, false);
+			account.put(SyncTarget.LOCALLY_UPDATED, true);
 			smartStore.upsert(ACCOUNTS_SOUP, account);
 		}
 	}
@@ -1402,10 +1400,10 @@ public class SyncManagerTest extends ManagerTestCase {
 	private void deleteAccountsLocally(String[] idsLocallyDeleted) throws JSONException {
 		for (String id : idsLocallyDeleted) {
 			JSONObject account = smartStore.retrieve(ACCOUNTS_SOUP, smartStore.lookupSoupEntryId(ACCOUNTS_SOUP, Constants.ID, id)).getJSONObject(0);
-			account.put(SyncManager.LOCAL, true);
-			account.put(SyncManager.LOCALLY_CREATED, false);
-			account.put(SyncManager.LOCALLY_DELETED, true);
-			account.put(SyncManager.LOCALLY_UPDATED, false);
+			account.put(SyncTarget.LOCAL, true);
+			account.put(SyncTarget.LOCALLY_CREATED, false);
+			account.put(SyncTarget.LOCALLY_DELETED, true);
+			account.put(SyncTarget.LOCALLY_UPDATED, false);
 			smartStore.upsert(ACCOUNTS_SOUP, account);
 		}
 	}
@@ -1444,11 +1442,11 @@ public class SyncManagerTest extends ManagerTestCase {
             JSONArray row = accountsFromDb.getJSONArray(i);
             JSONObject soupElt = row.getJSONObject(0);
             String id = soupElt.getString(Constants.ID);
-            assertEquals("Wrong local flag", expectLocallyCreated || expectLocallyUpdated || expectLocallyDeleted, soupElt.getBoolean(SyncManager.LOCAL));
-            assertEquals("Wrong local flag", expectLocallyCreated, soupElt.getBoolean(SyncManager.LOCALLY_CREATED));
+            assertEquals("Wrong local flag", expectLocallyCreated || expectLocallyUpdated || expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCAL));
+            assertEquals("Wrong local flag", expectLocallyCreated, soupElt.getBoolean(SyncTarget.LOCALLY_CREATED));
             assertEquals("Id was not updated", expectLocallyCreated, id.startsWith(LOCAL_ID_PREFIX));
-            assertEquals("Wrong local flag", expectLocallyUpdated, soupElt.getBoolean(SyncManager.LOCALLY_UPDATED));
-            assertEquals("Wrong local flag", expectLocallyDeleted, soupElt.getBoolean(SyncManager.LOCALLY_DELETED));
+            assertEquals("Wrong local flag", expectLocallyUpdated, soupElt.getBoolean(SyncTarget.LOCALLY_UPDATED));
+            assertEquals("Wrong local flag", expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCALLY_DELETED));
         }
     }
 

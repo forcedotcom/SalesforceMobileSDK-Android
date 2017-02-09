@@ -46,8 +46,8 @@ import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.rest.RestClient;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
-import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.androidsdk.ui.SalesforceActivity;
 import com.salesforce.samples.smartsyncexplorer.R;
 import com.salesforce.samples.smartsyncexplorer.loaders.ContactDetailLoader;
@@ -166,8 +166,8 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 			contact = smartStore.retrieve(ContactListLoader.CONTACT_SOUP,
 					smartStore.lookupSoupEntryId(ContactListLoader.CONTACT_SOUP,
 					Constants.ID, objectId)).getJSONObject(0);
-			contact.put(SyncManager.LOCAL, true);
-			contact.put(SyncManager.LOCALLY_DELETED, true);
+			contact.put(SyncTarget.LOCAL, true);
+			contact.put(SyncTarget.LOCALLY_DELETED, true);
 			smartStore.upsert(ContactListLoader.CONTACT_SOUP, contact);
 			Toast.makeText(this, "Delete successful!", Toast.LENGTH_LONG).show();
 			finish();
@@ -236,10 +236,10 @@ public class DetailActivity extends SalesforceActivity implements LoaderManager.
 			contact.put(ContactObject.EMAIL, email);
 			contact.put(ContactObject.DEPARTMENT, department);
 			contact.put(ContactObject.HOME_PHONE, homePhone);
-			contact.put(SyncManager.LOCAL, true);
-			contact.put(SyncManager.LOCALLY_UPDATED, !isCreate);
-			contact.put(SyncManager.LOCALLY_CREATED, isCreate);
-			contact.put(SyncManager.LOCALLY_DELETED, false);
+			contact.put(SyncTarget.LOCAL, true);
+			contact.put(SyncTarget.LOCALLY_UPDATED, !isCreate);
+			contact.put(SyncTarget.LOCALLY_CREATED, isCreate);
+			contact.put(SyncTarget.LOCALLY_DELETED, false);
 			if (isCreate) {
 				smartStore.create(ContactListLoader.CONTACT_SOUP, contact);
 			} else {

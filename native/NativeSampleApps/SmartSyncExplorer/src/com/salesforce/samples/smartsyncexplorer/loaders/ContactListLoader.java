@@ -50,6 +50,7 @@ import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
+import com.salesforce.androidsdk.smartsync.util.SyncTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
@@ -75,10 +76,10 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 		new IndexSpec("Id", Type.string),
 		new IndexSpec("FirstName", Type.string),
 		new IndexSpec("LastName", Type.string),
-		new IndexSpec(SyncManager.LOCALLY_CREATED, Type.string),
-		new IndexSpec(SyncManager.LOCALLY_UPDATED, Type.string),
-		new IndexSpec(SyncManager.LOCALLY_DELETED, Type.string),
-		new IndexSpec(SyncManager.LOCAL, Type.string)
+		new IndexSpec(SyncTarget.LOCALLY_CREATED, Type.string),
+		new IndexSpec(SyncTarget.LOCALLY_UPDATED, Type.string),
+		new IndexSpec(SyncTarget.LOCALLY_DELETED, Type.string),
+		new IndexSpec(SyncTarget.LOCAL, Type.string)
 	};
 
     private SmartStore smartStore;
