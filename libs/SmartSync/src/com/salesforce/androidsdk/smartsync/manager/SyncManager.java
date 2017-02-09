@@ -402,13 +402,15 @@ public class SyncManager {
         }
 	}
 
-    private boolean isNewerThanServer(SyncUpTarget target, String objectType, String objectId, String lastModStr) throws JSONException, IOException {
+    private boolean isNewerThanServer(SyncUpTarget target, JSONObject record) throws JSONException, IOException {
+        final String lastModStr = record.optString(target.getModificationDateFieldName());
+
         if (lastModStr == null) {
             // We didn't capture the last modified date so we can't really enforce merge mode, returning true so that we will behave like an "overwrite" merge mode
             return true;
         }
         try {
-            String serverLastModStr = target.fetchLastModifiedDate(this, objectType, objectId);
+            String serverLastModStr = target.fetchLastModifiedDate(this, record);
             if (serverLastModStr == null) {
                 // We were unable to get the last modified date from the server
                 return true;
@@ -444,11 +446,6 @@ public class SyncManager {
             return;
         }
 
-        // Getting type and id
-        final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
-        final String objectId = record.getString(target.getIdFieldName());
-        final String lastModStr = record.optString(target.getModificationDateFieldName());
-
         /*
          * Checks if we are attempting to update a record that has been updated
          * on the server AFTER the client's last sync down. If the merge mode
@@ -458,34 +455,11 @@ public class SyncManager {
         final MergeMode mergeMode = options.getMergeMode();
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED &&
         		!locallyCreated &&
-        		!isNewerThanServer(target, objectType, objectId, lastModStr)) {
+        		!isNewerThanServer(target, record)) {
 
         	// Nothing to do for this record
     		Log.i(TAG, "Record not synced since client does not have the latest from server");
         	return;
-        }
-
-        // Fields to save (in the case of create or update)
-        Map<String, Object> fields = new HashMap<String, Object>();
-        if (action == Action.create || action == Action.update) {
-            List<String> fieldlist;
-            // During create use options.reateFieldlist if specified
-            if (action == Action.create && options.getCreateFieldlist() != null) {
-                fieldlist = options.getCreateFieldlist();
-            }
-            // During update use options.updateFieldlist if specified
-            else if (action == Action.update && options.getUpdateFieldlist() != null) {
-                fieldlist = options.getUpdateFieldlist();
-            }
-            // Otherwise use options.fieldlist
-            else {
-                fieldlist = options.getFieldlist();
-            }
-            for (String fieldName : fieldlist) {
-                if (!fieldName.equals(target.getIdFieldName()) && !fieldName.equals(SyncUpTarget.MODIFICATION_DATE_FIELD_NAME)) {
-                    fields.put(fieldName, SmartStore.project(record, fieldName));
-                }
-            }
         }
 
         // Create/update/delete record on server and update smartstore
@@ -493,7 +467,7 @@ public class SyncManager {
         int statusCode;
         switch (action) {
             case create:
-                recordServerId = target.createOnServer(this, objectType, fields);
+                recordServerId = target.createOnServer(this, record, options.getFieldlist());
                 if (recordServerId != null) {
                     record.put(target.getIdFieldName(), recordServerId);
                     target.cleanAndSaveInLocalStore(this, soupName, record);
@@ -502,20 +476,20 @@ public class SyncManager {
             case delete:
                 statusCode = (locallyCreated
                         ? HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
-                        : target.deleteOnServer(this, objectType, objectId));
+                        : target.deleteOnServer(this, record));
                 if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                     target.deleteFromLocalStore(this, soupName, record);
                 }
                 break;
             case update:
-                statusCode = target.updateOnServer(this, objectType, objectId, fields);
+                statusCode = target.updateOnServer(this, record, options.getFieldlist());
                 if (RestResponse.isSuccess(statusCode)) {
                     target.cleanAndSaveInLocalStore(this, soupName, record);
                 }
                 // Handling remotely deleted records
                 else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                     if (mergeMode == MergeMode.OVERWRITE) {
-                        recordServerId = target.createOnServer(this, objectType, fields);
+                        recordServerId = target.createOnServer(this, record, options.getFieldlist());
                         if (recordServerId != null) {
                             record.put(target.getIdFieldName(), recordServerId);
                             target.cleanAndSaveInLocalStore(this, soupName, record);

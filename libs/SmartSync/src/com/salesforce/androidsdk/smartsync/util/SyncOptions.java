@@ -33,7 +33,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -42,14 +41,12 @@ import java.util.List;
 public class SyncOptions {
 
     public static final String MERGEMODE = "mergeMode";
+
+	// Fieldlist really belongs in sync up/down target - keeping it here for backwards compatiblity
 	public static final String FIELDLIST = "fieldlist";
-	public static final String CREATE_FIELDLIST = "createFieldlist";
-	public static final String UPDATE_FIELDLIST = "updateFieldlist";
 
     private MergeMode mergeMode;
 	private List<String> fieldlist;
-	private List<String> createFieldlist;
-	private List<String> updateFieldlist;
 
 	/**
 	 * Build SyncOptions from json
@@ -63,11 +60,8 @@ public class SyncOptions {
 
         String mergeModeStr = JSONObjectHelper.optString(options, MERGEMODE);
         MergeMode mergeMode = mergeModeStr == null ? null : MergeMode.valueOf(mergeModeStr);
-		List<String> fieldlist = toList(options.optJSONArray(FIELDLIST));
-		List<String> createFieldlist = toList(options.optJSONArray(CREATE_FIELDLIST));
-		List<String> updateFieldlist = toList(options.optJSONArray(UPDATE_FIELDLIST));
-
-		return new SyncOptions(fieldlist, createFieldlist, updateFieldlist, mergeMode);
+		List<String> fieldlist = JSONObjectHelper.toList(options.optJSONArray(FIELDLIST));
+		return new SyncOptions(fieldlist, mergeMode);
 	}
 
 	/**
@@ -75,7 +69,7 @@ public class SyncOptions {
 	 * @return
 	 */
 	public static SyncOptions optionsForSyncUp(List<String> fieldlist) {
-		return new SyncOptions(fieldlist, null, null, MergeMode.OVERWRITE);
+		return new SyncOptions(fieldlist, MergeMode.OVERWRITE);
 	}
 
     /**
@@ -84,26 +78,15 @@ public class SyncOptions {
      * @return
      */
     public static SyncOptions optionsForSyncUp(List<String> fieldlist, MergeMode mergeMode) {
-        return new SyncOptions(fieldlist, null, null, mergeMode);
+        return new SyncOptions(fieldlist, mergeMode);
     }
-
-	/**
-	 * @param fieldlist
-	 * @param createFieldlist
-	 * @param updateFieldlist
-	 * @param mergeMode
-	 * @return
-	 */
-	public static SyncOptions optionsForSyncUp(List<String> fieldlist, List<String> createFieldlist, List<String> updateFieldlist, MergeMode mergeMode) {
-		return new SyncOptions(fieldlist, createFieldlist, updateFieldlist, mergeMode);
-	}
 
     /**
      * @param mergeMode
      * @return
      */
     public static SyncOptions optionsForSyncDown(MergeMode mergeMode) {
-        return new SyncOptions(null, null, null, mergeMode);
+        return new SyncOptions(null, mergeMode);
     }
 
 	/**
@@ -111,10 +94,8 @@ public class SyncOptions {
 	 * @param fieldlist
      * @param mergeMode
 	 */
-	private SyncOptions(List<String> fieldlist, List<String> createFieldlist, List<String> updateFieldlist, MergeMode mergeMode) {
+	private SyncOptions(List<String> fieldlist, MergeMode mergeMode) {
 		this.fieldlist = fieldlist;
-		this.createFieldlist = createFieldlist;
-		this.updateFieldlist = updateFieldlist;
         this.mergeMode = mergeMode;
 	}
 	
@@ -126,8 +107,6 @@ public class SyncOptions {
 		JSONObject options = new JSONObject();
         if (mergeMode != null) options.put(MERGEMODE, mergeMode.name());
 		if (fieldlist != null) options.put(FIELDLIST, new JSONArray(fieldlist));
-		if (createFieldlist != null) options.put(CREATE_FIELDLIST, new JSONArray(createFieldlist));
-		if (updateFieldlist != null) options.put(UPDATE_FIELDLIST, new JSONArray(updateFieldlist));
 		return options;
 	}
 
@@ -135,27 +114,8 @@ public class SyncOptions {
 		return fieldlist;
 	}
 
-	public List<String> getCreateFieldlist() {
-		return createFieldlist;
-	}
-
-	public List<String> getUpdateFieldlist() {
-		return updateFieldlist;
-	}
-
     public MergeMode getMergeMode() {
         return mergeMode;
     }
-	
-	@SuppressWarnings("unchecked")
-	private static <T> List<T> toList(JSONArray jsonArray) throws JSONException {
-		if (jsonArray == null) {
-			return null;
-		}
-		List<T> arr = new ArrayList<T>();
-		for (int i=0; i<jsonArray.length(); i++) {
-			arr.add((T) jsonArray.get(i));
-		}
-		return arr;
-	}
+
 }

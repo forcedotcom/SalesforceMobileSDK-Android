@@ -30,6 +30,7 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -37,6 +38,8 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,6 +49,14 @@ import java.util.Set;
  * - how to upload those records
  */
 public class SyncUpTarget extends SyncTarget {
+
+    // Constants
+    public static final String CREATE_FIELDLIST = "createFieldlist";
+    public static final String UPDATE_FIELDLIST = "updateFieldlist";
+
+    // Fields
+    private List<String> createFieldlist;
+    private List<String> updateFieldlist;
 
     /**
      * Build SyncUpTarget from json
@@ -72,10 +83,19 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
-     * Construct SyncDownTarget
+     * Construct SyncUpTarget
      */
     public SyncUpTarget() {
+        this(null, null);
+    }
+
+    /**
+     * Construct SyncUpTarget
+     */
+    public SyncUpTarget(List<String> createFieldlist, List<String> updateFieldlist) {
         super();
+        this.createFieldlist = createFieldlist;
+        this.updateFieldlist = updateFieldlist;
     }
 
     /**
@@ -85,18 +105,43 @@ public class SyncUpTarget extends SyncTarget {
      */
     public SyncUpTarget(JSONObject target) throws JSONException {
         super(target);
+        List<String> createFieldlist = JSONObjectHelper.toList(target.optJSONArray(CREATE_FIELDLIST));
+        List<String> updateFieldlist = JSONObjectHelper.toList(target.optJSONArray(UPDATE_FIELDLIST));
     }
+
+    /**
+     * @return json representation of target
+     * @throws JSONException
+     */
+    public JSONObject asJSON() throws JSONException {
+        JSONObject target = super.asJSON();
+        if (createFieldlist != null) target.put(CREATE_FIELDLIST, new JSONArray(createFieldlist));
+        if (updateFieldlist != null) target.put(UPDATE_FIELDLIST, new JSONArray(updateFieldlist));
+        return target;
+    }
+
 
     /**
      * Save locally created record back to server
      * @param syncManager
-     * @param objectType
-     * @param fields
+     * @param record
+     * @param fieldlist fields to sync up (this.createFieldlist will be used instead if provided)
      * @return server record id or null if creation failed
      * @throws JSONException
      * @throws IOException
      */
-    public String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws JSONException, IOException {
+    public String createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
+        fieldlist = this.createFieldlist != null ? this.createFieldlist : fieldlist;
+        final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
+
+        // Get values
+        Map<String,Object> fields = new HashMap<>();
+        for (String fieldName : fieldlist) {
+            if (!fieldName.equals(getIdFieldName()) && !fieldName.equals(SyncUpTarget.MODIFICATION_DATE_FIELD_NAME)) {
+                fields.put(fieldName, SmartStore.project(record, fieldName));
+            }
+        }
+
         RestRequest request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
@@ -108,13 +153,15 @@ public class SyncUpTarget extends SyncTarget {
     /**
      * Delete locally deleted record from server
      * @param syncManager
-     * @param objectType
-     * @param objectId
+     * @param record
      * @return true if successful
      * @throws JSONException
      * @throws IOException
      */
-    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws JSONException, IOException {
+    public int deleteOnServer(SyncManager syncManager, JSONObject record) throws JSONException, IOException {
+        final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
+        final String objectId = record.getString(getIdFieldName());
+
         RestRequest request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
@@ -124,14 +171,25 @@ public class SyncUpTarget extends SyncTarget {
     /**
      * Save locally updated record back to server
      * @param syncManager
-     * @param objectType
-     * @param objectId
-     * @param fields
+     * @param record
+     * @param fieldlist fields to sync up (this.updateFieldlist will be used instead if provided)
      * @return true if successful
      * @throws JSONException
      * @throws IOException
      */
-    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws JSONException, IOException {
+    public int updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
+        fieldlist = this.createFieldlist != null ? this.updateFieldlist : fieldlist;
+        final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
+        final String objectId = record.getString(getIdFieldName());
+
+        // Get values
+        Map<String,Object> fields = new HashMap<>();
+        for (String fieldName : fieldlist) {
+            if (!fieldName.equals(getIdFieldName()) && !fieldName.equals(SyncUpTarget.MODIFICATION_DATE_FIELD_NAME)) {
+                fields.put(fieldName, SmartStore.project(record, fieldName));
+            }
+        }
+
         RestRequest request = RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
@@ -141,12 +199,14 @@ public class SyncUpTarget extends SyncTarget {
     /**
      * Fetch last modified date for a given record
      * @param syncManager
-     * @param objectType
-     * @param objectId
+     * @param record
      * @return
      */
-    public String fetchLastModifiedDate(SyncManager syncManager, String objectType, String objectId) {
+    public String fetchLastModifiedDate(SyncManager syncManager, JSONObject record) {
         try {
+            final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
+            final String objectId = record.getString(getIdFieldName());
+
             final String query = SOQLBuilder.getInstanceWithFields(getModificationDateFieldName())
                     .from(objectType)
                     .where(getIdFieldName() + " = '" + objectId + "'")
