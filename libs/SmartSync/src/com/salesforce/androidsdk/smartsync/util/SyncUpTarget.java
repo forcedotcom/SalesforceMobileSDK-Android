@@ -151,7 +151,7 @@ public class SyncUpTarget extends SyncTarget {
      * @param syncManager
      * @param objectType
      * @param fields
-     * @return
+     * @return server record id or null if creation failed
      * @throws IOException
      * @throws JSONException
      */
@@ -168,7 +168,7 @@ public class SyncUpTarget extends SyncTarget {
      * Delete locally deleted record from server
      * @param syncManager
      * @param record
-     * @return true if successful
+     * @return server response status code
      * @throws JSONException
      * @throws IOException
      */
@@ -185,7 +185,7 @@ public class SyncUpTarget extends SyncTarget {
      * @param syncManager
      * @param objectType
      * @param objectId
-     * @return
+     * @return server response status code
      * @throws IOException
      */
     public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
@@ -227,7 +227,7 @@ public class SyncUpTarget extends SyncTarget {
      * @param objectType
      * @param objectId
      * @param fields
-     * @return
+     * @return true if successful
      * @throws IOException
      */
     public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
