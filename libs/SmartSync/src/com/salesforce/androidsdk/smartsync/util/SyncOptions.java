@@ -42,7 +42,7 @@ public class SyncOptions {
 
     public static final String MERGEMODE = "mergeMode";
 
-	// Fieldlist really belongs in sync up/down target - keeping it here for backwards compatiblity
+	// Fieldlist really belongs in sync up/down target - keeping it here for backwards compatibility
 	public static final String FIELDLIST = "fieldlist";
 
     private MergeMode mergeMode;

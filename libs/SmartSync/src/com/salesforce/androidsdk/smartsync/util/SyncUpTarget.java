@@ -105,8 +105,8 @@ public class SyncUpTarget extends SyncTarget {
      */
     public SyncUpTarget(JSONObject target) throws JSONException {
         super(target);
-        List<String> createFieldlist = JSONObjectHelper.toList(target.optJSONArray(CREATE_FIELDLIST));
-        List<String> updateFieldlist = JSONObjectHelper.toList(target.optJSONArray(UPDATE_FIELDLIST));
+        this.createFieldlist = JSONObjectHelper.toList(target.optJSONArray(CREATE_FIELDLIST));
+        this.updateFieldlist = JSONObjectHelper.toList(target.optJSONArray(UPDATE_FIELDLIST));
     }
 
     /**
@@ -142,6 +142,20 @@ public class SyncUpTarget extends SyncTarget {
             }
         }
 
+        return createOnServer(syncManager, objectType, fields);
+    }
+
+    /**
+     * Save locally created record back to server (original method)
+     * Called by createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist)
+     * @param syncManager
+     * @param objectType
+     * @param fields
+     * @return
+     * @throws IOException
+     * @throws JSONException
+     */
+    public String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws IOException, JSONException {
         RestRequest request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
@@ -162,6 +176,19 @@ public class SyncUpTarget extends SyncTarget {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(getIdFieldName());
 
+        return deleteOnServer(syncManager, objectType, objectId);
+    }
+
+    /**
+     * Delete locally deleted record from server (original method)
+     * Called by deleteOnServer(SyncManager syncManager, JSONObject record)
+     * @param syncManager
+     * @param objectType
+     * @param objectId
+     * @return
+     * @throws IOException
+     */
+    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
         RestRequest request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
@@ -178,7 +205,7 @@ public class SyncUpTarget extends SyncTarget {
      * @throws IOException
      */
     public int updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
-        fieldlist = this.createFieldlist != null ? this.updateFieldlist : fieldlist;
+        fieldlist = this.updateFieldlist != null ? this.updateFieldlist : fieldlist;
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(getIdFieldName());
 
@@ -190,6 +217,20 @@ public class SyncUpTarget extends SyncTarget {
             }
         }
 
+        return updateOnServer(syncManager, objectType, objectId, fields);
+    }
+
+    /**
+     * Save locally updated record back to server - original signature
+     * Called by updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist)
+     * @param syncManager
+     * @param objectType
+     * @param objectId
+     * @param fields
+     * @return
+     * @throws IOException
+     */
+    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
         RestRequest request = RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 

@@ -92,7 +92,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws JSONException, IOException {
+    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
                 return HttpURLConnection.HTTP_BAD_REQUEST;
@@ -108,7 +108,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws JSONException, IOException {
+    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
                 return HttpURLConnection.HTTP_BAD_REQUEST;
