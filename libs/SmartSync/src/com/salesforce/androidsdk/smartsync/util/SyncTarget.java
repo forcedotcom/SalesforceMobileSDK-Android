@@ -31,6 +31,7 @@ import android.text.TextUtils;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -70,13 +71,19 @@ public abstract class SyncTarget {
     private String modificationDateFieldName;
 
     public SyncTarget() {
-        idFieldName = Constants.ID;
-        modificationDateFieldName = Constants.LAST_MODIFIED_DATE;
+        this(null, null);
     }
 
     public SyncTarget(JSONObject target) throws JSONException {
-        idFieldName = target != null && target.has(ID_FIELD_NAME) ? target.getString(ID_FIELD_NAME) : Constants.ID;
-        modificationDateFieldName = target != null && target.has(MODIFICATION_DATE_FIELD_NAME) ? target.getString(MODIFICATION_DATE_FIELD_NAME) : Constants.LAST_MODIFIED_DATE;
+        this(
+                target != null ? JSONObjectHelper.optString(target, ID_FIELD_NAME) : null,
+                target != null ? JSONObjectHelper.optString(target, MODIFICATION_DATE_FIELD_NAME) : null
+        );
+    }
+
+    public SyncTarget(String idFieldName, String modificationDateFieldName) {
+        this.idFieldName = idFieldName != null ? idFieldName : Constants.ID;
+        this.modificationDateFieldName = modificationDateFieldName != null ? modificationDateFieldName : Constants.LAST_MODIFIED_DATE;
     }
 
     /**

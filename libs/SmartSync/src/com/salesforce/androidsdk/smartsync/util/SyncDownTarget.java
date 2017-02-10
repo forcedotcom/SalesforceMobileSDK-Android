@@ -91,6 +91,12 @@ public abstract class SyncDownTarget extends SyncTarget {
         super();
     }
 
+
+    public SyncDownTarget(String idFieldName, String modificationDateFieldName) {
+        super(idFieldName, modificationDateFieldName);
+    }
+
+
     /**
      * Construct SyncDownTarget from json
      * @param target

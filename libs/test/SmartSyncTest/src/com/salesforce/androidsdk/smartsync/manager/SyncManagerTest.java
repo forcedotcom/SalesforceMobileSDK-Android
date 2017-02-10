@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.MruSyncDownTarget;
+import com.salesforce.androidsdk.smartsync.util.ParentChildrenSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.RefreshSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SOSLBuilder;
@@ -1129,6 +1130,85 @@ public class SyncManagerTest extends ManagerTestCase {
             expectedFields.put(Constants.DESCRIPTION, idToFields.get(id).get(Constants.DESCRIPTION));
             idToFieldsExpectedOnServer.put(id, expectedFields);
         }
+    }
+
+    /**
+     * Test getSoqlForRemoteIds for SoqlSyncDownTarget
+     */
+    public void testGetSoqlForRemoteIdsForSoqlSyncDownTarget() {
+        SoqlSyncDownTarget target = new SoqlSyncDownTarget("SELECT Name FROM Account WHERE Name = 'James Bond'");
+        assertEquals("SELECT Id FROM Account WHERE Name = 'James Bond'", target.getSoqlForRemoteIds());
+
+        // TODO add more tests
+    }
+
+    /**
+     * Test getQuery for ParentChildrenSyncDownTarget
+     */
+    public void testGetQueryForParentChildrenSyncDownTarget() {
+        ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
+                "Parent",
+                Arrays.asList("ParentName", "Title"),
+                "ParentId",
+                "ParentModifiedDate",
+                "School = 'MIT'",
+                "Child",
+                "Children",
+                Arrays.asList("ChildName", "School"),
+                "ChildId",
+                "ChildLastModifiedDate",
+                "childrenSoup");
+
+        assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
+
+        // With default id and modification date fields
+        target = new ParentChildrenSyncDownTarget(
+                "Parent",
+                Arrays.asList("ParentName", "Title"),
+                "School = 'MIT'",
+                "Child",
+                "Children",
+                Arrays.asList("ChildName", "School"),
+                "childrenSoup");
+
+        assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
+
+        // TODO add more tests
+    }
+
+    /**
+     * Test getSoqlForRemoteIds for ParentChildrenSyncDownTarget
+     */
+    public void testGetSoqlForRemoteIdsForParentChildrenSyncDownTarget() {
+        ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
+                "Parent",
+                Arrays.asList("ParentName", "Title"),
+                "ParentId",
+                "ParentModifiedDate",
+                "School = 'MIT'",
+                "Child",
+                "Children",
+                Arrays.asList("ChildName", "School"),
+                "ChildId",
+                "ChildLastModifiedDate",
+                "childrenSoup");
+
+        assertEquals("select ParentId, (select ChildId from Children) from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
+
+        // With default id and modification date fields
+        target = new ParentChildrenSyncDownTarget(
+                "Parent",
+                Arrays.asList("ParentName", "Title"),
+                "School = 'MIT'",
+                "Child",
+                "Children",
+                Arrays.asList("ChildName", "School"),
+                "childrenSoup");
+
+        assertEquals("select Id, (select Id from Children) from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
+
+
+        // TODO add more tests
     }
 
     /**

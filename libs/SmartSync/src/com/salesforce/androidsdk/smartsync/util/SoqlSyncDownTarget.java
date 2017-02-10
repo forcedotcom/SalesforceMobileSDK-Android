@@ -68,10 +68,18 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 	 * @param query
 	 */
 	public SoqlSyncDownTarget(String query) {
-        super();
+        this(null, null, query);
+	}
+
+    /**
+     * Construct SoqlSyncDownTarget from soql query
+     * @param query
+     */
+    public SoqlSyncDownTarget(String idFieldName, String modificationDateFieldName, String query) {
+        super(idFieldName, modificationDateFieldName);
         this.queryType = QueryType.soql;
         this.query = addSpecialFieldsIfRequired(query);
-	}
+    }
 
     private String addSpecialFieldsIfRequired(String query) {
         if (!TextUtils.isEmpty(query)) {
@@ -143,11 +151,11 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         }
 
         final Set<String> remoteIds = new HashSet<String>();
-        final StringBuilder soql = getSoqlForRemoteIds();
+        final String soql = getSoqlForRemoteIds();
 
         // Makes network request and parses the response.
         try {
-            JSONArray records = startFetch(syncManager, 0, soql.toString());
+            JSONArray records = startFetch(syncManager, 0, soql);
             remoteIds.addAll(parseIdsFromResponse(records));
             while (records != null) {
 
@@ -163,14 +171,14 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         return remoteIds;
     }
 
-    protected StringBuilder getSoqlForRemoteIds() {
+    public String getSoqlForRemoteIds() {
         // Alters the SOQL query to get only IDs.
         final StringBuilder soql = new StringBuilder("SELECT ");
         soql.append(getIdFieldName());
         soql.append(" FROM ");
         final String[] fromClause = getQuery().split("([ ][fF][rR][oO][mM][ ])");
         soql.append(fromClause[1]);
-        return soql;
+        return soql.toString();
     }
 
     public static String addFilterForReSync(String query, String modificationFieldDatName, long maxTimeStamp) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015-present, salesforce.com, inc.
+ * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -33,6 +33,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
@@ -45,16 +46,27 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     private static final String TAG = "ParentChildrenSyncDownTarget";
 
     public static final String PARENT_TYPE = "parentType";
+    public static final String PARENT_FIELDLIST = "parentFieldlist";
+    public static final String PARENT_SOQL_FILTER = "parentSoqlFilter";
+
     public static final String CHILDREN_TYPE = "childrenType";
-    public static final String SOQL_FILTER = "soqlFilter";
+    public static final String CHILDREN_TYPE_PLURAL = "childrenTypePlural";
     public static final String CHILDREN_FIELDLIST = "childrenFieldlist";
+    public static final String CHILDREN_ID_FIELD_NAME = "childrenIdFieldName";
+    public static final String CHILDREN_MODIFICATION_DATE_FIELD_NAME = "childrenModificationDateFieldName";
     public static final String CHILDREN_SOUP_NAME = "childrenSoupName";
 
     private String parentType;
+    private List<String> parentFieldlist;
+    private String parentSoqlFilter;
+
     private String childrenType;
-    private String soqlFilter;
+    private String childrenTypePlural;
     private List<String> childrenFieldlist;
+    private String childrenIdFieldName;
+    private String childrenModificationDateFieldName;
     private String childrenSoupName;
+
 
     /**
      * Construct ParentChildrenSyncDownTarget from json
@@ -62,30 +74,60 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
      * @throws JSONException
      */
     public ParentChildrenSyncDownTarget(JSONObject target) throws JSONException {
-        super(target);
-        this.parentType = target.getString(PARENT_TYPE);
-        this.childrenType = target.getString(CHILDREN_TYPE);
-        this.soqlFilter = target.getString(SOQL_FILTER);
-        this.childrenFieldlist = JSONObjectHelper.toList(target.optJSONArray(CHILDREN_FIELDLIST));
-        this.childrenSoupName = target.getString(CHILDREN_SOUP_NAME);
+        this(
+                target.getString(PARENT_TYPE),
+                JSONObjectHelper.<String>toList(target.optJSONArray(PARENT_FIELDLIST)),
+                JSONObjectHelper.optString(target, ID_FIELD_NAME),
+                JSONObjectHelper.optString(target, MODIFICATION_DATE_FIELD_NAME),
+                target.getString(PARENT_SOQL_FILTER),
+                target.getString(CHILDREN_TYPE),
+                target.getString(CHILDREN_TYPE_PLURAL),
+                JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_FIELDLIST)),
+                JSONObjectHelper.optString(target, CHILDREN_ID_FIELD_NAME),
+                JSONObjectHelper.optString(target, CHILDREN_MODIFICATION_DATE_FIELD_NAME),
+                target.getString(CHILDREN_SOUP_NAME)
+        );
     }
 
     /**
      * Construct ParentChildrenSyncDownTarget from parentType, childrenType etc
      * @param parentType
+     * @param parentFieldlist
      * @param childrenType
-     * @param soqlFilter
+     * @param childrenTypePlural
      * @param childrenFieldlist
      * @param childrenSoupName
      */
-    public ParentChildrenSyncDownTarget(String parentType, String childrenType, String soqlFilter, List<String> childrenFieldlist, String childrenSoupName) {
-        super("");
+    public ParentChildrenSyncDownTarget(String parentType, List<String> parentFieldlist, String parentSoqlFilter, String childrenType, String childrenTypePlural, List<String> childrenFieldlist, String childrenSoupName) {
+        this(parentType, parentFieldlist, null, null, parentSoqlFilter, childrenType, childrenTypePlural, childrenFieldlist, null, null, childrenSoupName);
+    }
+
+    /**
+     * Construct ParentChildrenSyncDownTarget from parentType, childrenType etc
+     * @param parentType
+     * @param parentFieldlist
+     * @param idFieldName
+     * @param modificationDateFieldName
+     * @param parentSoqlFilter
+     * @param childrenType
+     * @param childrenTypePlural
+     * @param childrenFieldlist
+     * @param childrenIdFieldName
+     * @param childrenModificationDateFieldName
+     * @param childrenSoupName
+     */
+    public ParentChildrenSyncDownTarget(String parentType, List<String> parentFieldlist, String idFieldName, String modificationDateFieldName, String parentSoqlFilter, String childrenType, String childrenTypePlural, List<String> childrenFieldlist, String childrenIdFieldName, String childrenModificationDateFieldName, String childrenSoupName) {
+        super(idFieldName, modificationDateFieldName, null);
         this.queryType = QueryType.parent_children;
         this.parentType = parentType;
+        this.parentFieldlist = parentFieldlist;
         this.childrenType = childrenType;
-        this.soqlFilter = soqlFilter;
+        this.childrenTypePlural = childrenTypePlural;
+        this.parentSoqlFilter = parentSoqlFilter;
         this.childrenFieldlist = childrenFieldlist;
         this.childrenSoupName = childrenSoupName;
+        this.childrenIdFieldName = childrenIdFieldName != null ? childrenIdFieldName : Constants.ID;
+        this.childrenModificationDateFieldName = childrenModificationDateFieldName != null ? childrenModificationDateFieldName : Constants.LAST_MODIFIED_DATE;
     }
 
     /**
@@ -103,21 +145,50 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     public JSONObject asJSON() throws JSONException {
         JSONObject target = super.asJSON();
         target.put(PARENT_TYPE, parentType);
+        target.put(PARENT_FIELDLIST, new JSONArray(parentFieldlist));
+        target.put(PARENT_SOQL_FILTER, parentSoqlFilter);
         target.put(CHILDREN_TYPE, childrenType);
-        target.put(SOQL_FILTER, soqlFilter);
+        target.put(CHILDREN_TYPE_PLURAL, childrenTypePlural);
         target.put(CHILDREN_FIELDLIST, new JSONArray(childrenFieldlist));
+        target.put(CHILDREN_ID_FIELD_NAME, childrenIdFieldName);
+        target.put(CHILDREN_MODIFICATION_DATE_FIELD_NAME, childrenModificationDateFieldName);
         target.put(CHILDREN_SOUP_NAME, childrenSoupName);
         return target;
     }
 
     @Override
-    protected StringBuilder getSoqlForRemoteIds() {
-        return super.getSoqlForRemoteIds();
+    public String getSoqlForRemoteIds() {
+        SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(childrenIdFieldName);
+        builderNested.from(childrenTypePlural);
+
+        List<String> fields = new ArrayList<>();
+        fields.add(getIdFieldName());
+        fields.add("(" + builderNested.build() + ")");
+        SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(fields);
+        builder.from(parentType);
+        builder.where(parentSoqlFilter);
+
+        return builder.build();
     }
 
     @Override
     public String getQuery() {
-        return super.getQuery();
+        List<String> nestedFields = new ArrayList<>(childrenFieldlist);
+        nestedFields.add(childrenIdFieldName);
+        nestedFields.add(childrenModificationDateFieldName);
+        SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(nestedFields);
+        builderNested.from(childrenTypePlural);
+
+        List<String> fields = new ArrayList<>(parentFieldlist);
+        fields.add(getIdFieldName());
+        fields.add(getModificationDateFieldName());
+        fields.add("(" + builderNested.build() + ")");
+
+        SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(fields);
+        builder.from(parentType);
+        builder.where(parentSoqlFilter);
+
+        return builder.build();
     }
 
     @Override
