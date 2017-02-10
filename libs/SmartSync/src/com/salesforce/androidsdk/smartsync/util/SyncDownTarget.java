@@ -26,11 +26,8 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
-import android.text.TextUtils;
 import android.util.Log;
 
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 

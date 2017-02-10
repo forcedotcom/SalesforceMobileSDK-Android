@@ -1032,9 +1032,8 @@ public class SyncManagerTest extends ManagerTestCase {
         Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeSomeLocalChanges();
 
         // Sync up with update field list including only name
-        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME, Constants.DESCRIPTION }),
-                null, Arrays.asList(new String[] { Constants.NAME }), MergeMode.OVERWRITE);
-        trySyncUp(idToFieldsLocallyUpdated.size(), options);
+        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME, Constants.DESCRIPTION }), MergeMode.OVERWRITE);
+        trySyncUp(new SyncUpTarget(null, Arrays.asList(new String[] { Constants.NAME })), idToFieldsLocallyUpdated.size(), options, false);
 
         // Check that db doesn't show entries as locally modified anymore
         Set<String> ids = idToFieldsLocallyUpdated.keySet();
@@ -1063,9 +1062,8 @@ public class SyncManagerTest extends ManagerTestCase {
         createAccountsLocally(names);
 
         // Sync up with create field list including only name
-        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME, Constants.DESCRIPTION }),
-                Arrays.asList(new String[] { Constants.NAME }), null,  MergeMode.OVERWRITE);
-        trySyncUp(3, options);
+        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME, Constants.DESCRIPTION }), MergeMode.OVERWRITE);
+        trySyncUp(new SyncUpTarget(Arrays.asList(new String[] { Constants.NAME }), null), 3, options, false);
 
         // Check that db doesn't show entries as locally created anymore and that they use sfdc id
         Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(names);
@@ -1103,11 +1101,10 @@ public class SyncManagerTest extends ManagerTestCase {
 
         // Sync up with different create and update field lists
         SyncOptions options = SyncOptions.optionsForSyncUp(
-                Arrays.asList(new String[] { Constants.NAME, Constants.DESCRIPTION }),
-                Arrays.asList(new String[] { Constants.NAME }),
-                Arrays.asList(new String[] { Constants.DESCRIPTION }),
+                Arrays.asList(new String[]{Constants.NAME, Constants.DESCRIPTION}),
                 MergeMode.OVERWRITE);
-        trySyncUp(namesOfCreated.length + namesOfUpdated.length, options);
+        trySyncUp(new SyncUpTarget(Arrays.asList(new String[]{Constants.NAME}), Arrays.asList(new String[]{Constants.DESCRIPTION})),
+                namesOfCreated.length + namesOfUpdated.length, options, false);
 
         // Check that db doesn't show created entries as locally created anymore and that they use sfdc id
         Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(namesOfCreated);
