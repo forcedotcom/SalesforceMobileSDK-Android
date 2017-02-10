@@ -195,6 +195,7 @@ public abstract class SyncDownTarget extends SyncTarget {
     	sosl,
     	soql,
         refresh,
+        parent_children,
         custom
     }
 

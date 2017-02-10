@@ -60,8 +60,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
      */
     public SoqlSyncDownTarget(JSONObject target) throws JSONException {
         super(target);
-        this.query = target.getString(QUERY);
-        addSpecialFieldsIfRequired();
+        this.query = addSpecialFieldsIfRequired(JSONObjectHelper.optString(target, QUERY));
     }
 
 	/**
@@ -71,11 +70,10 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 	public SoqlSyncDownTarget(String query) {
         super();
         this.queryType = QueryType.soql;
-        this.query = query;
-        addSpecialFieldsIfRequired();
+        this.query = addSpecialFieldsIfRequired(query);
 	}
 
-    private void addSpecialFieldsIfRequired() {
+    private String addSpecialFieldsIfRequired(String query) {
         if (!TextUtils.isEmpty(query)) {
 
             // Inserts the mandatory 'LastModifiedDate' field if it doesn't exist.
@@ -90,6 +88,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
                 query = query.replaceFirst("([sS][eE][lL][eE][cC][tT] )", "select " + idFieldName + ", ");
             }
         }
+        return query;
     }
 
 	/**
@@ -98,13 +97,13 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 	 */
 	public JSONObject asJSON() throws JSONException {
 		JSONObject target = super.asJSON();
-        target.put(QUERY, query);
+        if (query != null) target.put(QUERY, query);
 		return target;
 	}
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        return startFetch(syncManager, maxTimeStamp, query);
+        return startFetch(syncManager, maxTimeStamp, getQuery());
     }
 
     private JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
@@ -142,15 +141,9 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         if (localIds == null) {
             return null;
         }
-        final String idFieldName = getIdFieldName();
-        final Set<String> remoteIds = new HashSet<String>();
 
-        // Alters the SOQL query to get only IDs.
-        final StringBuilder soql = new StringBuilder("SELECT ");
-        soql.append(idFieldName);
-        soql.append(" FROM ");
-        final String[] fromClause = query.split("([ ][fF][rR][oO][mM][ ])");
-        soql.append(fromClause[1]);
+        final Set<String> remoteIds = new HashSet<String>();
+        final StringBuilder soql = getSoqlForRemoteIds();
 
         // Makes network request and parses the response.
         try {
@@ -168,6 +161,16 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
             Log.e(TAG, "JSONException thrown while fetching records", e);
         }
         return remoteIds;
+    }
+
+    protected StringBuilder getSoqlForRemoteIds() {
+        // Alters the SOQL query to get only IDs.
+        final StringBuilder soql = new StringBuilder("SELECT ");
+        soql.append(getIdFieldName());
+        soql.append(" FROM ");
+        final String[] fromClause = getQuery().split("([ ][fF][rR][oO][mM][ ])");
+        soql.append(fromClause[1]);
+        return soql;
     }
 
     public static String addFilterForReSync(String query, String modificationFieldDatName, long maxTimeStamp) {
