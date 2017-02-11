@@ -55,6 +55,8 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     public static final String CHILDREN_ID_FIELD_NAME = "childrenIdFieldName";
     public static final String CHILDREN_MODIFICATION_DATE_FIELD_NAME = "childrenModificationDateFieldName";
     public static final String CHILDREN_SOUP_NAME = "childrenSoupName";
+    public static final String CHILDREN_PARENT_ID_FIELD_NAME = "childrenParentIdFieldName"; // name of field on children holding parent server id
+    public static final String CHILDREN_PARENT_LOCAL_ID_FIELD_NAME = "childrenParentLocalIdFieldName"; // name of field on children holding parent local id
 
     private String parentType;
     private List<String> parentFieldlist;
@@ -66,7 +68,8 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     private String childrenIdFieldName;
     private String childrenModificationDateFieldName;
     private String childrenSoupName;
-
+    private String childrenParentIdFieldName;
+    private String childrenParentLocalIdFieldName;
 
     /**
      * Construct ParentChildrenSyncDownTarget from json
@@ -85,7 +88,9 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
                 JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_FIELDLIST)),
                 JSONObjectHelper.optString(target, CHILDREN_ID_FIELD_NAME),
                 JSONObjectHelper.optString(target, CHILDREN_MODIFICATION_DATE_FIELD_NAME),
-                target.getString(CHILDREN_SOUP_NAME)
+                target.getString(CHILDREN_SOUP_NAME),
+                target.getString(CHILDREN_PARENT_ID_FIELD_NAME),
+                target.getString(CHILDREN_PARENT_LOCAL_ID_FIELD_NAME)
         );
     }
 
@@ -97,9 +102,11 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
      * @param childrenTypePlural
      * @param childrenFieldlist
      * @param childrenSoupName
+     * @param childrenParentIdFieldName
+     * @param childrenParentLocalIdFieldName
      */
-    public ParentChildrenSyncDownTarget(String parentType, List<String> parentFieldlist, String parentSoqlFilter, String childrenType, String childrenTypePlural, List<String> childrenFieldlist, String childrenSoupName) {
-        this(parentType, parentFieldlist, null, null, parentSoqlFilter, childrenType, childrenTypePlural, childrenFieldlist, null, null, childrenSoupName);
+    public ParentChildrenSyncDownTarget(String parentType, List<String> parentFieldlist, String parentSoqlFilter, String childrenType, String childrenTypePlural, List<String> childrenFieldlist, String childrenSoupName, String childrenParentIdFieldName, String childrenParentLocalIdFieldName) {
+        this(parentType, parentFieldlist, null, null, parentSoqlFilter, childrenType, childrenTypePlural, childrenFieldlist, null, null, childrenSoupName, childrenParentIdFieldName, childrenParentLocalIdFieldName);
     }
 
     /**
@@ -115,19 +122,23 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
      * @param childrenIdFieldName
      * @param childrenModificationDateFieldName
      * @param childrenSoupName
+     * @param childrenParentIdFieldName
+     * @param childrenParentLocalIdFieldName
      */
-    public ParentChildrenSyncDownTarget(String parentType, List<String> parentFieldlist, String idFieldName, String modificationDateFieldName, String parentSoqlFilter, String childrenType, String childrenTypePlural, List<String> childrenFieldlist, String childrenIdFieldName, String childrenModificationDateFieldName, String childrenSoupName) {
+    public ParentChildrenSyncDownTarget(String parentType, List<String> parentFieldlist, String idFieldName, String modificationDateFieldName, String parentSoqlFilter, String childrenType, String childrenTypePlural, List<String> childrenFieldlist, String childrenIdFieldName, String childrenModificationDateFieldName, String childrenSoupName, String childrenParentIdFieldName, String childrenParentLocalIdFieldName) {
         super(idFieldName, modificationDateFieldName, null);
         this.queryType = QueryType.parent_children;
         this.parentType = parentType;
         this.parentFieldlist = parentFieldlist;
+        this.parentSoqlFilter = parentSoqlFilter;
         this.childrenType = childrenType;
         this.childrenTypePlural = childrenTypePlural;
-        this.parentSoqlFilter = parentSoqlFilter;
         this.childrenFieldlist = childrenFieldlist;
-        this.childrenSoupName = childrenSoupName;
         this.childrenIdFieldName = childrenIdFieldName != null ? childrenIdFieldName : Constants.ID;
         this.childrenModificationDateFieldName = childrenModificationDateFieldName != null ? childrenModificationDateFieldName : Constants.LAST_MODIFIED_DATE;
+        this.childrenSoupName = childrenSoupName;
+        this.childrenParentIdFieldName = childrenParentIdFieldName;
+        this.childrenParentLocalIdFieldName = childrenParentLocalIdFieldName;
     }
 
     /**
@@ -193,46 +204,31 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     @Override
     public long getLatestModificationTimeStamp(JSONArray records) throws JSONException {
+        // FIXME compute max time stamp of parents + children
         return super.getLatestModificationTimeStamp(records);
     }
 
     @Override
-    public Set<String> getIdsToSkip(SyncManager syncManager, String soupName) throws JSONException {
-        return super.getIdsToSkip(syncManager, soupName);
-    }
-
-    @Override
     public SortedSet<String> getDirtyRecordIds(SyncManager syncManager, String soupName, String idField) throws JSONException {
+        // FIXME return record ids that are dirty or have a dirty child
         return super.getDirtyRecordIds(syncManager, soupName, idField);
     }
 
     @Override
     public SortedSet<String> getNonDirtyRecordIds(SyncManager syncManager, String soupName, String idField) throws JSONException {
+        // FIXME is there something special to do in the cast of parent-chidlren ?
         return super.getNonDirtyRecordIds(syncManager, soupName, idField);
     }
 
     @Override
-    public boolean isLocallyCreated(JSONObject record) throws JSONException {
-        return super.isLocallyCreated(record);
-    }
-
-    @Override
-    public boolean isLocallyUpdated(JSONObject record) throws JSONException {
-        return super.isLocallyUpdated(record);
-    }
-
-    @Override
-    public boolean isLocallyDeleted(JSONObject record) throws JSONException {
-        return super.isLocallyDeleted(record);
-    }
-
-    @Override
     public void saveRecordsToLocalStore(SyncManager syncManager, String soupName, JSONArray records) throws JSONException {
+        // FIXME records contain parents  + children, we need to separate them and save them to both parent and child soup
         super.saveRecordsToLocalStore(syncManager, soupName, records);
     }
 
     @Override
     public void deleteRecordsFromLocalStore(SyncManager syncManager, String soupName, Set<String> ids) {
+        // FIXME for master-detail relationships, we need to delete children as well
         super.deleteRecordsFromLocalStore(syncManager, soupName, ids);
     }
 }

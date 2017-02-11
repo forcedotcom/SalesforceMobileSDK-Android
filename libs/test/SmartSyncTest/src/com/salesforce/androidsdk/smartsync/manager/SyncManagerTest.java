@@ -1157,7 +1157,9 @@ public class SyncManagerTest extends ManagerTestCase {
                 Arrays.asList("ChildName", "School"),
                 "ChildId",
                 "ChildLastModifiedDate",
-                "childrenSoup");
+                "childrenSoup",
+                "parentId",
+                "parentLocalId");
 
         assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
 
@@ -1169,7 +1171,10 @@ public class SyncManagerTest extends ManagerTestCase {
                 "Child",
                 "Children",
                 Arrays.asList("ChildName", "School"),
-                "childrenSoup");
+                "childrenSoup",
+                "parentId",
+                "parentLocalId");
+
 
         assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
 
@@ -1191,7 +1196,10 @@ public class SyncManagerTest extends ManagerTestCase {
                 Arrays.asList("ChildName", "School"),
                 "ChildId",
                 "ChildLastModifiedDate",
-                "childrenSoup");
+                "childrenSoup",
+                "parentId",
+                "parentLocalId");
+
 
         assertEquals("select ParentId, (select ChildId from Children) from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
 
@@ -1203,7 +1211,9 @@ public class SyncManagerTest extends ManagerTestCase {
                 "Child",
                 "Children",
                 Arrays.asList("ChildName", "School"),
-                "childrenSoup");
+                "childrenSoup",
+                "parentId",
+                "parentLocalId");
 
         assertEquals("select Id, (select Id from Children) from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
 
