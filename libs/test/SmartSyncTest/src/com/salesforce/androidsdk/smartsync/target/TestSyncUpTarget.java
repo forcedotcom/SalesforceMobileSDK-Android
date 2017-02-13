@@ -24,8 +24,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync.manager;
+package com.salesforce.androidsdk.smartsync.target;
 
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 
 import org.json.JSONException;
@@ -131,7 +132,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
         actionCollector = collector;
     }
 
-    static class ActionCollector {
+    public static class ActionCollector {
         public List<String> createdRecordIds = new ArrayList<String>();
         public List<String> updatedRecordIds = new ArrayList<String>();
         public List<String> deletedRecordIds = new ArrayList<String>();

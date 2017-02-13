@@ -124,7 +124,7 @@ public abstract class SyncTarget {
      */
     public SortedSet<String> getDirtyRecordIds(SyncManager syncManager, String soupName, String idField) throws JSONException {
         SortedSet<String> ids = new TreeSet<String>();
-        String dirtyRecordsSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true' ORDER BY {%s:%s} ASC", soupName, idField, soupName, soupName, LOCAL, soupName, idField);
+        String dirtyRecordsSql = getDirtyRecordIdsSql(soupName, idField);
         final QuerySpec smartQuerySpec = QuerySpec.buildSmartQuerySpec(dirtyRecordsSql, PAGE_SIZE);
         boolean hasMore = true;
         for (int pageIndex = 0; hasMore; pageIndex++) {
@@ -133,6 +133,16 @@ public abstract class SyncTarget {
             ids.addAll(toSortedSet(results));
         }
         return ids;
+    }
+
+    /**
+     * Return SmartSQL to identify dirty records
+     * @param soupName
+     * @param idField
+     * @return
+     */
+    protected String getDirtyRecordIdsSql(String soupName, String idField) {
+        return String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true' ORDER BY {%s:%s} ASC", soupName, idField, soupName, soupName, LOCAL, soupName, idField);
     }
 
     /**
@@ -145,7 +155,7 @@ public abstract class SyncTarget {
      */
     public SortedSet<String> getNonDirtyRecordIds(SyncManager syncManager, String soupName, String idField) throws JSONException {
         SortedSet<String> ids = new TreeSet<String>();
-        String nonDirtyRecordsSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' ORDER BY {%s:%s} ASC", soupName, getIdFieldName(), soupName, soupName, LOCAL, soupName, idField);
+        String nonDirtyRecordsSql = getNonDirtyRecordIdsSql(soupName, idField);
         final QuerySpec smartQuerySpec = QuerySpec.buildSmartQuerySpec(nonDirtyRecordsSql, PAGE_SIZE);
         boolean hasMore = true;
         for (int pageIndex = 0; hasMore; pageIndex++) {
@@ -154,6 +164,16 @@ public abstract class SyncTarget {
             ids.addAll(toSortedSet(results));
         }
         return ids;
+    }
+
+    /**
+     * Return SmartSQL to identify non-dirty records
+     * @param soupName
+     * @param idField
+     * @return
+     */
+    protected String getNonDirtyRecordIdsSql(String soupName, String idField) {
+        return String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' ORDER BY {%s:%s} ASC", soupName, idField, soupName, soupName, LOCAL, soupName, idField);
     }
 
     /**

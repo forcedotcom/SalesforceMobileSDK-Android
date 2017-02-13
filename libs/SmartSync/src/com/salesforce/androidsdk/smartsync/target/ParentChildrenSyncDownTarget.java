@@ -26,6 +26,10 @@
  */
 package com.salesforce.androidsdk.smartsync.target;
 
+import android.text.TextUtils;
+
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
@@ -168,15 +172,27 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     }
 
     @Override
-    public SortedSet<String> getDirtyRecordIds(SyncManager syncManager, String soupName, String idField) throws JSONException {
-        // FIXME return record ids that are dirty or have a dirty child
-        return super.getDirtyRecordIds(syncManager, soupName, idField);
+    protected String getDirtyRecordIdsSql(String soupName, String idField) {
+        return String.format(
+                "SELECT DISTINCT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND ({%s:%s} = 'true' OR {%s:%s} = 'true')",
+                soupName, idField,
+                childrenInfo.soupName, soupName,
+                childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
+                soupName, SmartStore.SOUP_ENTRY_ID,
+                soupName, LOCAL,
+                childrenInfo.soupName, LOCAL);
     }
 
     @Override
-    public SortedSet<String> getNonDirtyRecordIds(SyncManager syncManager, String soupName, String idField) throws JSONException {
-        // FIXME is there something special to do in the cast of parent-chidlren ?
-        return super.getNonDirtyRecordIds(syncManager, soupName, idField);
+    protected String getNonDirtyRecordIdsSql(String soupName, String idField) {
+        return String.format(
+                "SELECT DISTINCT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND ({%s:%s} = 'false' OR {%s:%s} = 'false')",
+                soupName, idField,
+                childrenInfo.soupName, soupName,
+                childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
+                soupName, SmartStore.SOUP_ENTRY_ID,
+                soupName, LOCAL,
+                childrenInfo.soupName, LOCAL);
     }
 
     @Override
@@ -187,7 +203,20 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     @Override
     public void deleteRecordsFromLocalStore(SyncManager syncManager, String soupName, Set<String> ids) {
-        // FIXME for master-detail relationships, we need to delete children as well
+        if (relationshipType == RelationshipType.MASTER_DETAIL) {
+            // We need to delete children too
+            String smartSql = String.format(
+                    "SELECT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} IN (%s)",
+                    childrenInfo.soupName, SmartStore.SOUP_ENTRY_ID,
+                    childrenInfo.soupName, soupName,
+                    childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
+                    soupName, SmartStore.SOUP_ENTRY_ID,
+                    soupName, SmartStore.SOUP_ENTRY_ID,
+                    TextUtils.join("', '", ids));
+
+            syncManager.getSmartStore().deleteByQuery(childrenInfo.soupName, QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE));
+
+        }
         super.deleteRecordsFromLocalStore(syncManager, soupName, ids);
     }
 }
