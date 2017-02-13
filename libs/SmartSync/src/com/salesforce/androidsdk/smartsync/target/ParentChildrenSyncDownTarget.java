@@ -27,7 +27,9 @@
 package com.salesforce.androidsdk.smartsync.target;
 
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.ParentInfo;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
@@ -47,31 +49,28 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     private static final String TAG = "ParentChildrenSyncDownTarget";
 
-    public static final String PARENT_TYPE = "parentType";
+    public static final String PARENT = "parent";
+    public static final String CHILDREN = "children";
+    public static final String RELATIONSHIP_TYPE = "relationshipType";
+
     public static final String PARENT_FIELDLIST = "parentFieldlist";
     public static final String PARENT_SOQL_FILTER = "parentSoqlFilter";
-
-    public static final String CHILDREN_TYPE = "childrenType";
-    public static final String CHILDREN_TYPE_PLURAL = "childrenTypePlural";
     public static final String CHILDREN_FIELDLIST = "childrenFieldlist";
-    public static final String CHILDREN_ID_FIELD_NAME = "childrenIdFieldName";
-    public static final String CHILDREN_MODIFICATION_DATE_FIELD_NAME = "childrenModificationDateFieldName";
-    public static final String CHILDREN_SOUP_NAME = "childrenSoupName";
-    public static final String CHILDREN_PARENT_ID_FIELD_NAME = "childrenParentIdFieldName"; // name of field on children holding parent server id
-    public static final String CHILDREN_PARENT_LOCAL_ID_FIELD_NAME = "childrenParentLocalIdFieldName"; // name of field on children holding parent local id
 
-    private String parentType;
+    private ParentInfo parentInfo;
     private List<String> parentFieldlist;
     private String parentSoqlFilter;
-
-    private String childrenType;
-    private String childrenTypePlural;
+    private ChildrenInfo childrenInfo;
     private List<String> childrenFieldlist;
-    private String childrenIdFieldName;
-    private String childrenModificationDateFieldName;
-    private String childrenSoupName;
-    private String childrenParentIdFieldName;
-    private String childrenParentLocalIdFieldName;
+    private RelationshipType relationshipType;
+
+    /**
+     * Enum for relationship types
+     */
+    public enum RelationshipType {
+        MASTER_DETAIL,
+        LOOKUP;
+    }
 
     /**
      * Construct ParentChildrenSyncDownTarget from json
@@ -80,67 +79,28 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
      */
     public ParentChildrenSyncDownTarget(JSONObject target) throws JSONException {
         this(
-                target.getString(PARENT_TYPE),
+                new ParentInfo(target.getJSONObject(PARENT)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(PARENT_FIELDLIST)),
-                JSONObjectHelper.optString(target, ID_FIELD_NAME),
-                JSONObjectHelper.optString(target, MODIFICATION_DATE_FIELD_NAME),
                 target.getString(PARENT_SOQL_FILTER),
-                target.getString(CHILDREN_TYPE),
-                target.getString(CHILDREN_TYPE_PLURAL),
+
+                new ChildrenInfo(target.getJSONObject(CHILDREN)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_FIELDLIST)),
-                JSONObjectHelper.optString(target, CHILDREN_ID_FIELD_NAME),
-                JSONObjectHelper.optString(target, CHILDREN_MODIFICATION_DATE_FIELD_NAME),
-                target.getString(CHILDREN_SOUP_NAME),
-                target.getString(CHILDREN_PARENT_ID_FIELD_NAME),
-                target.getString(CHILDREN_PARENT_LOCAL_ID_FIELD_NAME)
+
+                RelationshipType.valueOf(target.getString(RELATIONSHIP_TYPE))
         );
     }
 
     /**
      * Construct ParentChildrenSyncDownTarget from parentType, childrenType etc
-     * @param parentType
-     * @param parentFieldlist
-     * @param childrenType
-     * @param childrenTypePlural
-     * @param childrenFieldlist
-     * @param childrenSoupName
-     * @param childrenParentIdFieldName
-     * @param childrenParentLocalIdFieldName
      */
-    public ParentChildrenSyncDownTarget(String parentType, List<String> parentFieldlist, String parentSoqlFilter, String childrenType, String childrenTypePlural, List<String> childrenFieldlist, String childrenSoupName, String childrenParentIdFieldName, String childrenParentLocalIdFieldName) {
-        this(parentType, parentFieldlist, null, null, parentSoqlFilter, childrenType, childrenTypePlural, childrenFieldlist, null, null, childrenSoupName, childrenParentIdFieldName, childrenParentLocalIdFieldName);
-    }
-
-    /**
-     * Construct ParentChildrenSyncDownTarget from parentType, childrenType etc
-     * @param parentType
-     * @param parentFieldlist
-     * @param idFieldName
-     * @param modificationDateFieldName
-     * @param parentSoqlFilter
-     * @param childrenType
-     * @param childrenTypePlural
-     * @param childrenFieldlist
-     * @param childrenIdFieldName
-     * @param childrenModificationDateFieldName
-     * @param childrenSoupName
-     * @param childrenParentIdFieldName
-     * @param childrenParentLocalIdFieldName
-     */
-    public ParentChildrenSyncDownTarget(String parentType, List<String> parentFieldlist, String idFieldName, String modificationDateFieldName, String parentSoqlFilter, String childrenType, String childrenTypePlural, List<String> childrenFieldlist, String childrenIdFieldName, String childrenModificationDateFieldName, String childrenSoupName, String childrenParentIdFieldName, String childrenParentLocalIdFieldName) {
-        super(idFieldName, modificationDateFieldName, null);
-        this.queryType = QueryType.parent_children;
-        this.parentType = parentType;
+    public ParentChildrenSyncDownTarget(ParentInfo parentInfo, List<String> parentFieldlist, String parentSoqlFilter, ChildrenInfo childrenInfo, List<String> childrenFieldlist, RelationshipType relationshipType) {
+        super(parentInfo.idFieldName, parentInfo.modificationDateFieldName, null);
+        this.parentInfo = parentInfo;
         this.parentFieldlist = parentFieldlist;
         this.parentSoqlFilter = parentSoqlFilter;
-        this.childrenType = childrenType;
-        this.childrenTypePlural = childrenTypePlural;
+        this.childrenInfo = childrenInfo;
         this.childrenFieldlist = childrenFieldlist;
-        this.childrenIdFieldName = childrenIdFieldName != null ? childrenIdFieldName : Constants.ID;
-        this.childrenModificationDateFieldName = childrenModificationDateFieldName != null ? childrenModificationDateFieldName : Constants.LAST_MODIFIED_DATE;
-        this.childrenSoupName = childrenSoupName;
-        this.childrenParentIdFieldName = childrenParentIdFieldName;
-        this.childrenParentLocalIdFieldName = childrenParentLocalIdFieldName;
+        this.relationshipType = relationshipType;
     }
 
     /**
@@ -157,28 +117,25 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
      */
     public JSONObject asJSON() throws JSONException {
         JSONObject target = super.asJSON();
-        target.put(PARENT_TYPE, parentType);
+        target.put(PARENT, parentInfo.asJSON());
         target.put(PARENT_FIELDLIST, new JSONArray(parentFieldlist));
         target.put(PARENT_SOQL_FILTER, parentSoqlFilter);
-        target.put(CHILDREN_TYPE, childrenType);
-        target.put(CHILDREN_TYPE_PLURAL, childrenTypePlural);
+        target.put(CHILDREN, childrenInfo.asJSON());
         target.put(CHILDREN_FIELDLIST, new JSONArray(childrenFieldlist));
-        target.put(CHILDREN_ID_FIELD_NAME, childrenIdFieldName);
-        target.put(CHILDREN_MODIFICATION_DATE_FIELD_NAME, childrenModificationDateFieldName);
-        target.put(CHILDREN_SOUP_NAME, childrenSoupName);
+        target.put(RELATIONSHIP_TYPE, relationshipType.name());
         return target;
     }
 
     @Override
     public String getSoqlForRemoteIds() {
-        SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(childrenIdFieldName);
-        builderNested.from(childrenTypePlural);
+        SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(childrenInfo.idFieldName);
+        builderNested.from(childrenInfo.sobjectTypePlural);
 
         List<String> fields = new ArrayList<>();
         fields.add(getIdFieldName());
         fields.add("(" + builderNested.build() + ")");
         SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(fields);
-        builder.from(parentType);
+        builder.from(parentInfo.sobjectType);
         builder.where(parentSoqlFilter);
 
         return builder.build();
@@ -187,10 +144,10 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     @Override
     public String getQuery() {
         List<String> nestedFields = new ArrayList<>(childrenFieldlist);
-        nestedFields.add(childrenIdFieldName);
-        nestedFields.add(childrenModificationDateFieldName);
+        nestedFields.add(childrenInfo.idFieldName);
+        nestedFields.add(childrenInfo.modificationDateFieldName);
         SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(nestedFields);
-        builderNested.from(childrenTypePlural);
+        builderNested.from(childrenInfo.sobjectTypePlural);
 
         List<String> fields = new ArrayList<>(parentFieldlist);
         fields.add(getIdFieldName());
@@ -198,7 +155,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
         fields.add("(" + builderNested.build() + ")");
 
         SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(fields);
-        builder.from(parentType);
+        builder.from(parentInfo.sobjectType);
         builder.where(parentSoqlFilter);
 
         return builder.build();

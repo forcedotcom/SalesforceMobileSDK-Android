@@ -34,10 +34,12 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.target.MruSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.RefreshSyncDownTarget;
+import com.salesforce.androidsdk.smartsync.util.ParentInfo;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SOSLBuilder;
 import com.salesforce.androidsdk.smartsync.util.SOSLReturningBuilder;
@@ -1147,33 +1149,23 @@ public class SyncManagerTest extends ManagerTestCase {
      */
     public void testGetQueryForParentChildrenSyncDownTarget() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
-                "Parent",
+                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
-                "ParentId",
-                "ParentModifiedDate",
                 "School = 'MIT'",
-                "Child",
-                "Children",
+                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
                 Arrays.asList("ChildName", "School"),
-                "ChildId",
-                "ChildLastModifiedDate",
-                "childrenSoup",
-                "parentId",
-                "parentLocalId");
+                ParentChildrenSyncDownTarget.RelationshipType.LOOKUP);
 
         assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
-                "Parent",
+                new ParentInfo("Parent"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                "Child",
-                "Children",
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId"),
                 Arrays.asList("ChildName", "School"),
-                "childrenSoup",
-                "parentId",
-                "parentLocalId");
+                ParentChildrenSyncDownTarget.RelationshipType.LOOKUP);
 
 
         assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
@@ -1186,34 +1178,23 @@ public class SyncManagerTest extends ManagerTestCase {
      */
     public void testGetSoqlForRemoteIdsForParentChildrenSyncDownTarget() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
-                "Parent",
+                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
-                "ParentId",
-                "ParentModifiedDate",
                 "School = 'MIT'",
-                "Child",
-                "Children",
+                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
                 Arrays.asList("ChildName", "School"),
-                "ChildId",
-                "ChildLastModifiedDate",
-                "childrenSoup",
-                "parentId",
-                "parentLocalId");
-
+                ParentChildrenSyncDownTarget.RelationshipType.LOOKUP);
 
         assertEquals("select ParentId, (select ChildId from Children) from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
-                "Parent",
+                new ParentInfo("Parent"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                "Child",
-                "Children",
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId"),
                 Arrays.asList("ChildName", "School"),
-                "childrenSoup",
-                "parentId",
-                "parentLocalId");
+                ParentChildrenSyncDownTarget.RelationshipType.LOOKUP);
 
         assertEquals("select Id, (select Id from Children) from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
 
