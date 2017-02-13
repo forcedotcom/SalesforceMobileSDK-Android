@@ -49,6 +49,7 @@ import java.util.Set;
 public abstract class SyncDownTarget extends SyncTarget {
 
     // Constants
+    private static final String TAG = "SyncDownTarget";
 	public static final String QUERY_TYPE = "type";
 
     // Fields
@@ -165,9 +166,20 @@ public abstract class SyncDownTarget extends SyncTarget {
      * @throws JSONException
      */
     public long getLatestModificationTimeStamp(JSONArray records) throws JSONException {
+        return getLatestModificationTimeStamp(records, getModificationDateFieldName());
+    }
+
+    /**
+     * Gets the latest modification timestamp from the array of records.
+     * @param records
+     * @param modifiedDateFieldName
+     * @return
+     * @throws JSONException
+     */
+    protected long getLatestModificationTimeStamp(JSONArray records, String modifiedDateFieldName) throws JSONException {
         long maxTimeStamp = -1;
         for (int i = 0; i < records.length(); i++) {
-            String timeStampStr = JSONObjectHelper.optString(records.getJSONObject(i), getModificationDateFieldName());
+            String timeStampStr = JSONObjectHelper.optString(records.getJSONObject(i), modifiedDateFieldName);
             if (timeStampStr == null) {
                 maxTimeStamp = -1;
                 break; // field not present
@@ -176,7 +188,7 @@ public abstract class SyncDownTarget extends SyncTarget {
                 long timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr).getTime();
                 maxTimeStamp = Math.max(timeStamp, maxTimeStamp);
             } catch (Exception e) {
-                Log.w("SyncDownTarget.getLatestModificationTimeStamp", "Could not parse modification date field " + getModificationDateFieldName(), e);
+                Log.w(TAG, "getLatestModificationTimeStamp: Could not parse modification date field " + modifiedDateFieldName, e);
                 maxTimeStamp = -1;
                 break;
             }

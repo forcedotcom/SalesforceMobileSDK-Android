@@ -226,7 +226,7 @@ public abstract class SyncTarget {
         cleanAndSaveInLocalStore(syncManager, soupName, record, true);
     }
 
-    private void cleanAndSaveInLocalStore(SyncManager syncManager, String soupName, JSONObject record, boolean handleTx) throws JSONException {
+    protected void cleanAndSaveInLocalStore(SyncManager syncManager, String soupName, JSONObject record, boolean handleTx) throws JSONException {
         record.put(LOCAL, false);
         record.put(LOCALLY_CREATED, false);
         record.put(LOCALLY_UPDATED, false);

@@ -32,7 +32,6 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
-import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
@@ -44,7 +43,6 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.SortedSet;
 
 /**
  * Target for sync that downloads parent with children records
@@ -167,9 +165,21 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     @Override
     public long getLatestModificationTimeStamp(JSONArray records) throws JSONException {
-        // FIXME compute max time stamp of parents + children
-        return super.getLatestModificationTimeStamp(records);
+        // NB: method is called during sync down so for this target records contain parent and children
+
+        // Compute max time stamp of parents
+        long maxTimeStamp = super.getLatestModificationTimeStamp(records);
+
+        // Compute max time stamp of parents and children
+        for (int i=0; i<records.length(); i++) {
+            JSONObject record = records.getJSONObject(i);
+            JSONArray children = record.getJSONArray(childrenInfo.sobjectTypePlural);
+            maxTimeStamp = Math.max(maxTimeStamp, getLatestModificationTimeStamp(children, childrenInfo.modificationDateFieldName));
+        }
+
+        return maxTimeStamp;
     }
+
 
     @Override
     protected String getDirtyRecordIdsSql(String soupName, String idField) {
@@ -197,8 +207,39 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     @Override
     public void saveRecordsToLocalStore(SyncManager syncManager, String soupName, JSONArray records) throws JSONException {
-        // FIXME records contain parents  + children, we need to separate them and save them to both parent and child soup
-        super.saveRecordsToLocalStore(syncManager, soupName, records);
+        // NB: method is called during sync down so for this target records contain parent and children
+        SmartStore smartStore = syncManager.getSmartStore();
+        synchronized(smartStore.getDatabase()) {
+            try {
+                smartStore.beginTransaction();
+
+                for (int i=0; i<records.length(); i++) {
+                    JSONObject record = records.getJSONObject(i);
+                    JSONObject parent = new JSONObject(record.toString());
+
+                    // Separating parent from children
+                    JSONArray children = (JSONArray) record.remove(childrenInfo.sobjectTypePlural);
+
+                    // Saving parent
+                    cleanAndSaveInLocalStore(syncManager, soupName, parent, false);
+
+                    // Put local id of parent in children
+                    for (int j = 0; j < records.length(); j++) {
+                        JSONObject child = children.getJSONObject(j);
+                        child.put(childrenInfo.parentLocalIdFieldName, parent.get(SmartStore.SOUP_ENTRY_ID));
+
+                        // Saving child
+                        cleanAndSaveInLocalStore(syncManager, childrenInfo.soupName, child, false);
+                    }
+                }
+
+                smartStore.setTransactionSuccessful();
+
+            }
+            finally {
+                smartStore.endTransaction();
+            }
+        }
     }
 
     @Override
