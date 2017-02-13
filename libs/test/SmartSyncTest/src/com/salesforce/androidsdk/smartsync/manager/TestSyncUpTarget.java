@@ -26,7 +26,7 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 
 import org.json.JSONException;
 import org.json.JSONObject;

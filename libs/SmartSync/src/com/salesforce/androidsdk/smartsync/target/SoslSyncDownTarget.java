@@ -24,58 +24,49 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync.util;
+package com.salesforce.androidsdk.smartsync.target;
 
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
-import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
- * Target for sync that downloads most recently used records
+ * Target for sync defined by a SOSL query
  */
-public class MruSyncDownTarget extends SyncDownTarget {
+public class SoslSyncDownTarget extends SyncDownTarget {
 	
-	public static final String FIELDLIST = "fieldlist";
-	public static final String SOBJECT_TYPE = "sobjectType";
-    private static final String TAG = "MruSyncDownTarget";
-	private List<String> fieldlist;
-	private String objectType;
+	public static final String QUERY = "query";
+    private static final String TAG = "SoslSyncDownTarget";
+	private String query;
 
     /**
-     * Construct MruSyncDownTarget from json
+     * Construct SoslSyncDownTarget from json
      * @param target
      * @throws JSONException
      */
-	public MruSyncDownTarget(JSONObject target) throws JSONException {
+    public SoslSyncDownTarget(JSONObject target) throws JSONException {
         super(target);
-        this.fieldlist = JSONObjectHelper.toList(target.getJSONArray(FIELDLIST));
-        this.objectType = target.getString(SOBJECT_TYPE);
-	}
+        this.query = target.getString(QUERY);
+    }
 
 	/**
-	 * Constructor
-	 * @param fieldlist
-	 * @param objectType
+     * Construct SoslSyncDownTarget from sosl query
+	 * @param query
 	 */
-	public MruSyncDownTarget(List<String> fieldlist, String objectType) throws JSONException {
+	public SoslSyncDownTarget(String query) {
         super();
-        this.queryType = QueryType.mru;
-        this.fieldlist = fieldlist;
-        this.objectType = objectType;
+        this.queryType = QueryType.sosl;
+        this.query = query;
 	}
 
     /**
@@ -84,28 +75,19 @@ public class MruSyncDownTarget extends SyncDownTarget {
      */
     public JSONObject asJSON() throws JSONException {
         JSONObject target = super.asJSON();
-		target.put(FIELDLIST, new JSONArray(fieldlist));
-		target.put(SOBJECT_TYPE, objectType);
-		return target;
-	}
+        target.put(QUERY, query);
+        return target;
+    }
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        final RestRequest request = RestRequest.getRequestForMetadata(syncManager.apiVersion, objectType);
-        final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-        final List<String> recentItems = JSONObjectHelper.pluck(response.asJSONObject().getJSONArray(Constants.RECENT_ITEMS), Constants.ID);
-
-        // Building SOQL query to get requested at.
-        final String soql = SOQLBuilder.getInstanceWithFields(fieldlist).from(objectType).where(getIdFieldName()
-                + " IN ('" + TextUtils.join("', '", recentItems) + "')").build();
-        return startFetch(syncManager, maxTimeStamp, soql);
+        return startFetch(syncManager, maxTimeStamp, query);
     }
 
     private JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
-        final RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, queryRun);
-        final RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-        final JSONObject responseJson = response.asJSONObject();
-        final JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
+        RestRequest request = RestRequest.getRequestForSearch(syncManager.apiVersion, queryRun);
+        RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+        JSONArray records = response.asJSONArray();
 
         // Recording total size
         totalSize = records.length();
@@ -122,16 +104,11 @@ public class MruSyncDownTarget extends SyncDownTarget {
         if (localIds == null) {
             return null;
         }
-        final String idFieldName = getIdFieldName();
         final Set<String> remoteIds = new HashSet<String>();
-
-        // Alters the SOQL query to get only IDs.
-        final String soql = SOQLBuilder.getInstanceWithFields(idFieldName).from(objectType).where(idFieldName
-                + " IN ('" + TextUtils.join("', '", localIds) + "')").build();
 
         // Makes network request and parses the response.
         try {
-            final JSONArray records = startFetch(syncManager, 0, soql);
+            final JSONArray records = startFetch(syncManager, 0, query);
             remoteIds.addAll(parseIdsFromResponse(records));
         } catch (IOException e) {
             Log.e(TAG, "IOException thrown while fetching records", e);
@@ -142,17 +119,9 @@ public class MruSyncDownTarget extends SyncDownTarget {
     }
 
     /**
-     * @return field list for this target
+     * @return sosl query for this target
      */
-	public List<String> getFieldlist() {
-		return fieldlist;
+	public String getQuery() {
+		return query;
 	}
-	
-    /**
-     * @return object type for this target
-     */
-	public String getObjectType() {
-		return objectType;
-	}
-
 }

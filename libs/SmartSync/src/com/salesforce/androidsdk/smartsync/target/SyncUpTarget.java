@@ -24,12 +24,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync.util;
+package com.salesforce.androidsdk.smartsync.target;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -137,7 +139,7 @@ public class SyncUpTarget extends SyncTarget {
         // Get values
         Map<String,Object> fields = new HashMap<>();
         for (String fieldName : fieldlist) {
-            if (!fieldName.equals(getIdFieldName()) && !fieldName.equals(SyncUpTarget.MODIFICATION_DATE_FIELD_NAME)) {
+            if (!fieldName.equals(getIdFieldName()) && !fieldName.equals(MODIFICATION_DATE_FIELD_NAME)) {
                 fields.put(fieldName, SmartStore.project(record, fieldName));
             }
         }
@@ -212,7 +214,7 @@ public class SyncUpTarget extends SyncTarget {
         // Get values
         Map<String,Object> fields = new HashMap<>();
         for (String fieldName : fieldlist) {
-            if (!fieldName.equals(getIdFieldName()) && !fieldName.equals(SyncUpTarget.MODIFICATION_DATE_FIELD_NAME)) {
+            if (!fieldName.equals(getIdFieldName()) && !fieldName.equals(MODIFICATION_DATE_FIELD_NAME)) {
                 fields.put(fieldName, SmartStore.project(record, fieldName));
             }
         }

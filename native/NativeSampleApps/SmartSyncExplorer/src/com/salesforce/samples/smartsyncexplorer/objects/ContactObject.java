@@ -32,7 +32,7 @@ import android.text.TextUtils;
 
 import com.salesforce.androidsdk.smartsync.model.SalesforceObject;
 import com.salesforce.androidsdk.smartsync.util.Constants;
-import com.salesforce.androidsdk.smartsync.util.SyncTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncTarget;
 
 /**
  * A simple representation of a Contact object.
