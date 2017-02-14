@@ -196,13 +196,12 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     @Override
     protected String getNonDirtyRecordIdsSql(String soupName, String idField) {
         return String.format(
-                "SELECT DISTINCT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND ({%s:%s} = 'false' OR {%s:%s} = 'false')",
+                "SELECT {%s:%s} FROM {%s} WHERE {%s:%s} NOT IN (%s)",
                 soupName, idField,
-                childrenInfo.soupName, soupName,
-                childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
+                soupName,
                 soupName, SmartStore.SOUP_ENTRY_ID,
-                soupName, LOCAL,
-                childrenInfo.soupName, LOCAL);
+                getDirtyRecordIdsSql(soupName, SmartStore.SOUP_ENTRY_ID)
+        );
     }
 
     @Override

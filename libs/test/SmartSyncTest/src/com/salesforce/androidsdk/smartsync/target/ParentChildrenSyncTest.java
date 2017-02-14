@@ -38,6 +38,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.SortedSet;
 
 /**
  * Test class for ParentChildrenSyncDownTarget
@@ -66,7 +69,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Test getQuery for ParentChildrenSyncDownTarget
      */
-    public void testGetQueryForParentChildrenSyncDownTarget() {
+    public void testGetQuery() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
                 new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
@@ -93,7 +96,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Test getSoqlForRemoteIds for ParentChildrenSyncDownTarget
      */
-    public void testGetSoqlForRemoteIdsForParentChildrenSyncDownTarget() {
+    public void testGetSoqlForRemoteIds() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
                 new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
@@ -119,7 +122,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Test getDirtyRecordIdsSql for ParentChildrenSyncDownTarget
      */
-    public void testGetDirtyRecordIdsSqlForParentChildrenSyncDownTarget() {
+    public void testGetDirtyRecordIdsSql() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
                 new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
@@ -135,7 +138,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Test getNonDirtyRecordIdsSql for ParentChildrenSyncDownTarget
      */
-    public void testGetNonDirtyRecordIdsSqlForParentChildrenSyncDownTarget() {
+    public void testGetNonDirtyRecordIdsSql() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
                 new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
@@ -144,10 +147,117 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 Arrays.asList("ChildName", "School"),
                 ParentChildrenSyncDownTarget.RelationshipType.LOOKUP);
 
-        assertEquals("SELECT DISTINCT {ParentSoup:IdForQuery} FROM {childrenSoup},{ParentSoup} WHERE {childrenSoup:parentLocalId} = {ParentSoup:_soupEntryId} AND ({ParentSoup:__local__} = 'false' OR {childrenSoup:__local__} = 'false')", target.getNonDirtyRecordIdsSql("ParentSoup", "IdForQuery"));
+        assertEquals("SELECT {ParentSoup:IdForQuery} FROM {ParentSoup} WHERE {ParentSoup:_soupEntryId} NOT IN (SELECT DISTINCT {ParentSoup:_soupEntryId} FROM {childrenSoup},{ParentSoup} WHERE {childrenSoup:parentLocalId} = {ParentSoup:_soupEntryId} AND ({ParentSoup:__local__} = 'true' OR {childrenSoup:__local__} = 'true'))", target.getNonDirtyRecordIdsSql("ParentSoup", "IdForQuery"));
 
     }
 
+    /**
+     * Test getDirtyRecordIds for ParentChildrenSyncDownTarget when parent and/or all and/or some children are dirty
+     */
+    public void testGetDirtyRecordIds() throws JSONException {
+        String[] accountNames = new String[] {
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT)
+        };
+        Map<JSONObject, JSONObject[]> mapAccountToContacts = createAccountsAndContacts(accountNames, 3);
+        JSONObject[] accounts = mapAccountToContacts.keySet().toArray(new JSONObject[]{});
+
+        // All Accounts should be returned
+        tryGetDirtyRecordIds(accounts);
+
+        // Cleaning up:
+        // accounts[0]: dirty account and dirty contacts
+        // accounts[1]: clean account and dirty contacts
+        // accounts[2]: dirty account and clean contacts
+        // accounts[3]: clean account and clean contacts
+        // accounts[4]: dirty account and some dirty contacts
+        // accounts[5]: clean account and some dirty contacts
+
+        cleanRecord(ACCOUNTS_SOUP, accounts[1]);
+        cleanRecords(CONTACTS_SOUP, mapAccountToContacts.get(accounts[2]));
+        cleanRecord(ACCOUNTS_SOUP, accounts[3]);
+        cleanRecords(CONTACTS_SOUP, mapAccountToContacts.get(accounts[3]));
+        cleanRecord(CONTACTS_SOUP, mapAccountToContacts.get(accounts[4])[0]);
+        cleanRecord(ACCOUNTS_SOUP, accounts[5]);
+        cleanRecord(CONTACTS_SOUP, mapAccountToContacts.get(accounts[5])[0]);
+
+        // Only clean account with clean contacts should not be returned
+        tryGetDirtyRecordIds(new JSONObject[] { accounts[0], accounts[1], accounts[2], accounts[4], accounts[5]});
+    }
+
+    /**
+     * Test getDNonirtyRecordIds for ParentChildrenSyncDownTarget when parent and/or all and/or some children are dirty
+     */
+    public void testGetNonDirtyRecordIds() throws JSONException {
+        String[] accountNames = new String[] {
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT)
+        };
+        Map<JSONObject, JSONObject[]> mapAccountToContacts = createAccountsAndContacts(accountNames, 3);
+        JSONObject[] accounts = mapAccountToContacts.keySet().toArray(new JSONObject[] {});
+
+        // All Accounts should be returned
+        tryGetNonDirtyRecordIds(new JSONObject[]{});
+
+        // Cleaning up:
+        // accounts[0]: dirty account and dirty contacts
+        // accounts[1]: clean account and dirty contacts
+        // accounts[2]: dirty account and clean contacts
+        // accounts[3]: clean account and clean contacts
+        // accounts[4]: dirty account and some dirty contacts
+        // accounts[5]: clean account and some dirty contacts
+
+        cleanRecord(ACCOUNTS_SOUP, accounts[1]);
+        cleanRecords(CONTACTS_SOUP, mapAccountToContacts.get(accounts[2]));
+        cleanRecord(ACCOUNTS_SOUP, accounts[3]);
+        cleanRecords(CONTACTS_SOUP, mapAccountToContacts.get(accounts[3]));
+        cleanRecord(CONTACTS_SOUP, mapAccountToContacts.get(accounts[4])[0]);
+        cleanRecord(ACCOUNTS_SOUP, accounts[5]);
+        cleanRecord(CONTACTS_SOUP, mapAccountToContacts.get(accounts[5])[0]);
+
+        // Only clean account with clean contacts should be returned
+        tryGetNonDirtyRecordIds(new JSONObject[] { accounts[3] });
+    }
+
+    private void tryGetDirtyRecordIds(JSONObject[] expectedRecords) throws JSONException {
+        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget();
+        SortedSet<String> dirtyRecordIds = target.getDirtyRecordIds(syncManager, ACCOUNTS_SOUP, Constants.ID);
+        assertEquals("Wrong number of dirty records", expectedRecords.length, dirtyRecordIds.size());
+        for (JSONObject expectedRecord : expectedRecords) {
+            assertTrue(dirtyRecordIds.contains(expectedRecord.getString(Constants.ID)));
+        }
+    }
+
+    private void tryGetNonDirtyRecordIds(JSONObject[] expectedRecords) throws JSONException {
+        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget();
+        SortedSet<String> nonDirtyRecordIds = target.getNonDirtyRecordIds(syncManager, ACCOUNTS_SOUP, Constants.ID);
+        assertEquals("Wrong number of non-dirty records", expectedRecords.length, nonDirtyRecordIds.size());
+        for (JSONObject expectedRecord : expectedRecords) {
+            assertTrue(nonDirtyRecordIds.contains(expectedRecord.getString(Constants.ID)));
+        }
+    }
+
+    private void cleanRecords(String soupName, JSONObject[] records) throws JSONException {
+        for (JSONObject record : records) {
+            cleanRecord(soupName, record);
+        }
+    }
+
+    private void cleanRecord(String soupName, JSONObject record) throws JSONException {
+        record.put(SyncTarget.LOCAL, false);
+        record.put(SyncTarget.LOCALLY_CREATED, false);
+        record.put(SyncTarget.LOCALLY_UPDATED, false);
+        record.put(SyncTarget.LOCALLY_DELETED, false);
+        syncManager.getSmartStore().upsert(soupName, record);
+    }
 
     private void createContactsSoup() {
         final IndexSpec[] contactsIndexSpecs = {
@@ -174,13 +284,15 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 ParentChildrenSyncDownTarget.RelationshipType.MASTER_DETAIL);
     }
 
-    private void createAccountsAndContacts(String[] names, int numberOfContactsPerAccount) throws JSONException {
+    private Map<JSONObject, JSONObject[]> createAccountsAndContacts(String[] names, int numberOfContactsPerAccount) throws JSONException {
+        Map<JSONObject, JSONObject[]> mapAccountContacts = new HashMap<>();
         JSONObject[] accounts = createAccountsLocally(names);
 
         JSONObject attributes = new JSONObject();
         attributes.put(TYPE, Constants.CONTACT);
 
         for (JSONObject account : accounts) {
+            JSONObject[] contacts = new JSONObject[numberOfContactsPerAccount];
             for (int i=0; i<numberOfContactsPerAccount; i++) {
                 JSONObject contact = new JSONObject();
                 contact.put(Constants.ID, createLocalId());
@@ -192,8 +304,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 contact.put(SyncTarget.LOCALLY_UPDATED, false);
                 contact.put(ACCOUNT_ID, account.get(Constants.ID));
                 contact.put(ACCOUNT_LOCAL_ID, account.get(SmartStore.SOUP_ENTRY_ID));
-                smartStore.create(CONTACTS_SOUP, contact);
+                contacts[i] = smartStore.create(CONTACTS_SOUP, contact);
             }
+            mapAccountContacts.put(account, contacts);
         }
+        return mapAccountContacts;
     }
 }
