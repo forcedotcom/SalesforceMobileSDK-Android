@@ -34,6 +34,9 @@ import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.util.Arrays;
 
 /**
@@ -171,4 +174,26 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 ParentChildrenSyncDownTarget.RelationshipType.MASTER_DETAIL);
     }
 
+    private void createAccountsAndContacts(String[] names, int numberOfContactsPerAccount) throws JSONException {
+        JSONObject[] accounts = createAccountsLocally(names);
+
+        JSONObject attributes = new JSONObject();
+        attributes.put(TYPE, Constants.CONTACT);
+
+        for (JSONObject account : accounts) {
+            for (int i=0; i<numberOfContactsPerAccount; i++) {
+                JSONObject contact = new JSONObject();
+                contact.put(Constants.ID, createLocalId());
+                contact.put(Constants.NAME, "Contact_" + account.get(Constants.NAME) + "_" + i);
+                contact.put(Constants.ATTRIBUTES, attributes);
+                contact.put(SyncTarget.LOCAL, true);
+                contact.put(SyncTarget.LOCALLY_CREATED, true);
+                contact.put(SyncTarget.LOCALLY_DELETED, false);
+                contact.put(SyncTarget.LOCALLY_UPDATED, false);
+                contact.put(ACCOUNT_ID, account.get(Constants.ID));
+                contact.put(ACCOUNT_LOCAL_ID, account.get(SmartStore.SOUP_ENTRY_ID));
+                smartStore.create(CONTACTS_SOUP, contact);
+            }
+        }
+    }
 }

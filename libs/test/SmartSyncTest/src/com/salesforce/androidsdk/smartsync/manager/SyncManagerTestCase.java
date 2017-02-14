@@ -32,6 +32,11 @@ import com.salesforce.androidsdk.smartsync.target.SyncTarget;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Formatter;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -82,4 +87,43 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         smartStore.clearSoup(SyncState.SYNCS_SOUP);
     }
 
+    /**
+     * @return local id of the form local_<random number left-padded to be 8 digits long>
+     */
+    @SuppressWarnings("resource")
+    protected String createLocalId() {
+        StringBuilder sb = new StringBuilder();
+        Formatter formatter = new Formatter(sb, Locale.US);
+        formatter.format(LOCAL_ID_PREFIX + "%08d", (int) (Math.random()*10000000));
+        String name = sb.toString();
+        return name;
+    }
+
+    /**
+     * Create accounts locally
+     * @param names
+     * @throws JSONException
+     * @return created accounts records
+     */
+    protected JSONObject[] createAccountsLocally(String[] names) throws JSONException {
+        JSONObject[] createdAccounts = new JSONObject[names.length];
+        JSONObject attributes = new JSONObject();
+        attributes.put(TYPE, Constants.ACCOUNT);
+
+        for (int i=0; i<names.length; i++) {
+            String name = names[i];
+            JSONObject account = new JSONObject();
+            account.put(Constants.ID, createLocalId());
+            account.put(Constants.NAME, name);
+            account.put(Constants.DESCRIPTION, "Description_" + name);
+            account.put(Constants.ATTRIBUTES, attributes);
+            account.put(SyncTarget.LOCAL, true);
+            account.put(SyncTarget.LOCALLY_CREATED, true);
+            account.put(SyncTarget.LOCALLY_DELETED, false);
+            account.put(SyncTarget.LOCALLY_UPDATED, false);
+            createdAccounts[i] = smartStore.create(ACCOUNTS_SOUP, account);
+        }
+
+        return createdAccounts;
+    }
 }
