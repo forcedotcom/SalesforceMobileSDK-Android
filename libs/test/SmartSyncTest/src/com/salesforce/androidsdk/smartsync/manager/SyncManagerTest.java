@@ -31,9 +31,7 @@ import android.text.TextUtils;
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
-import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.target.MruSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.RefreshSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SoqlSyncDownTarget;
@@ -72,22 +70,14 @@ import java.util.Set;
 /**
  * Test class for SyncState.
  */
-public class SyncManagerTest extends ManagerTestCase {
+public class SyncManagerTest extends SyncManagerTestCase {
 
-    private static final String TYPE = "type";
-	private static final String RECORDS = "records";
-	private static final String LID = "id"; // lower case id in create response
-
-	// Local
-	private static final String LOCAL_ID_PREFIX = "local_";
-	private static final String ACCOUNTS_SOUP = "accounts";
-	
-	// Misc
-	private static final int COUNT_TEST_ACCOUNTS = 10;
-    private static final int TOTAL_SIZE_UNKNOWN = -2;
+    // Misc
+    protected static final int COUNT_TEST_ACCOUNTS = 10;
+    protected static final int TOTAL_SIZE_UNKNOWN = -2;
     public static final List<String> REFRESH_FIELDLIST = Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION, Constants.LAST_MODIFIED_DATE);
 
-    private Map<String, Map<String, Object>> idToFields;
+    protected Map<String, Map<String, Object>> idToFields;
 
 	@Override
     public void setUp() throws Exception {
@@ -1306,41 +1296,6 @@ public class SyncManagerTest extends ManagerTestCase {
 		return name;
 	}
 	
-	/**
-	 * Create soup for accounts
-	 */
-	private void createAccountsSoup() {
-        createAccountsSoup(ACCOUNTS_SOUP);
-	}
-
-    private void createAccountsSoup(String soupName) {
-        final IndexSpec[] indexSpecs = {
-                new IndexSpec(Constants.ID, SmartStore.Type.string),
-                new IndexSpec(Constants.NAME, SmartStore.Type.string),
-                new IndexSpec(Constants.DESCRIPTION, SmartStore.Type.string),
-                new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string)
-        };
-        smartStore.registerSoup(soupName, indexSpecs);
-    }
-
-	/**
-	 * Drop soup for accounts
-	 */
-	private void dropAccountsSoup() {
-        dropAccountsSoup(ACCOUNTS_SOUP);
-	}
-
-    private void dropAccountsSoup(String soupName) {
-        smartStore.dropSoup(soupName);
-    }
-
-	/**
-	 * Delete all syncs in syncs_soup
-	 */
-	private void deleteSyncs() {
-		smartStore.clearSoup(SyncState.SYNCS_SOUP);
-	}
-
 	/**
 	 * Create accounts locally
 	 * @param names

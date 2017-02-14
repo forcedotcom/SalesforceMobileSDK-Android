@@ -68,14 +68,14 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
 	private static final String TEST_AUTH_TOKEN = "test_auth_token";
     private static final String LID = "id"; // lower case id in create response
 
-    Context targetContext;
-    EventsListenerQueue eq;
-    MetadataManager metadataManager;
-    CacheManager cacheManager;
-    SyncManager syncManager;
-    RestClient restClient;
-    HttpAccess httpAccess;
-    SmartStore smartStore;
+    protected Context targetContext;
+    protected EventsListenerQueue eq;
+    protected MetadataManager metadataManager;
+    protected CacheManager cacheManager;
+    protected SyncManager syncManager;
+    protected RestClient restClient;
+    protected HttpAccess httpAccess;
+    protected SmartStore smartStore;
 
     @Override
     public void setUp() throws Exception {

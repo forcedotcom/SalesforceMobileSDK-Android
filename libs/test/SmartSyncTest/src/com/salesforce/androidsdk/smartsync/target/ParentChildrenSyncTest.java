@@ -27,10 +27,12 @@ package com.salesforce.androidsdk.smartsync.target;
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
-
-import junit.framework.TestCase;
 
 import java.util.Arrays;
 
@@ -38,7 +40,26 @@ import java.util.Arrays;
  * Test class for ParentChildrenSyncDownTarget
  *
  */
-public class ParentChildrenSyncDownTargetTest extends TestCase {
+public class ParentChildrenSyncTest extends SyncManagerTestCase {
+
+    private static final String CONTACTS_SOUP = "contacts";
+    private static final String ACCOUNT_ID = "AccountId";
+    private static final String ACCOUNT_LOCAL_ID = "AccountLocalId";
+
+    @Override
+    public void setUp() throws Exception {
+        super.setUp();
+        createAccountsSoup();
+        createContactsSoup();
+    }
+
+    @Override
+    public void tearDown() throws Exception {
+        super.tearDown();
+        dropContactsSoup();
+        dropAccountsSoup();
+    }
+
     /**
      * Test getQuery for ParentChildrenSyncDownTarget
      */
@@ -124,5 +145,30 @@ public class ParentChildrenSyncDownTargetTest extends TestCase {
 
     }
 
+
+    private void createContactsSoup() {
+        final IndexSpec[] contactsIndexSpecs = {
+                new IndexSpec(Constants.ID, SmartStore.Type.string),
+                new IndexSpec(Constants.NAME, SmartStore.Type.string),
+                new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string),
+                new IndexSpec(ACCOUNT_ID, SmartStore.Type.string),
+                new IndexSpec(ACCOUNT_LOCAL_ID, SmartStore.Type.integer)
+        };
+        smartStore.registerSoup(CONTACTS_SOUP, contactsIndexSpecs);
+    }
+
+    private void dropContactsSoup() {
+        smartStore.dropSoup(CONTACTS_SOUP);
+    }
+
+    private ParentChildrenSyncDownTarget getAccountContactsSyncDownTarget() {
+        return new ParentChildrenSyncDownTarget(
+                new ParentInfo(Constants.ACCOUNT),
+                Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION),
+                "",
+                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID),
+                Arrays.asList(Constants.NAME),
+                ParentChildrenSyncDownTarget.RelationshipType.MASTER_DETAIL);
+    }
 
 }
