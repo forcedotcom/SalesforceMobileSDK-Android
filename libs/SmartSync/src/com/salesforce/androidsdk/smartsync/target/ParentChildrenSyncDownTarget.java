@@ -242,21 +242,30 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     }
 
     @Override
-    public void deleteRecordsFromLocalStore(SyncManager syncManager, String soupName, Set<String> ids) {
+    public void deleteFromLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
         if (relationshipType == RelationshipType.MASTER_DETAIL) {
-            // We need to delete children too
-            String smartSql = String.format(
-                    "SELECT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} IN (%s)",
-                    childrenInfo.soupName, SmartStore.SOUP_ENTRY_ID,
-                    childrenInfo.soupName, soupName,
-                    childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
-                    soupName, SmartStore.SOUP_ENTRY_ID,
-                    soupName, SmartStore.SOUP_ENTRY_ID,
-                    TextUtils.join("', '", ids));
-
-            syncManager.getSmartStore().deleteByQuery(childrenInfo.soupName, QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE));
-
+            deleteChildrenFromLocalStore(syncManager, soupName, new String[]{record.getString(SmartStore.SOUP_ENTRY_ID)}, SmartStore.SOUP_ENTRY_ID);
         }
-        super.deleteRecordsFromLocalStore(syncManager, soupName, ids);
+        super.deleteFromLocalStore(syncManager, soupName, record);
+    }
+
+    @Override
+    public void deleteRecordsFromLocalStore(SyncManager syncManager, String soupName, Set<String> ids, String idField) {
+        if (relationshipType == RelationshipType.MASTER_DETAIL) {
+            deleteChildrenFromLocalStore(syncManager, soupName, ids.toArray(new String[0]), idField);
+        }
+        super.deleteRecordsFromLocalStore(syncManager, soupName, ids, idField);
+    }
+
+    protected void deleteChildrenFromLocalStore(SyncManager syncManager, String soupName, String[] ids, String idField) {
+        String smartSql = String.format(
+                "SELECT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} IN (%s)",
+                childrenInfo.soupName, SmartStore.SOUP_ENTRY_ID,
+                childrenInfo.soupName, soupName,
+                childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
+                soupName, SmartStore.SOUP_ENTRY_ID,
+                soupName, idField,
+                "'" + TextUtils.join("', '", ids) + "'");
+        syncManager.getSmartStore().deleteByQuery(childrenInfo.soupName, QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE));
     }
 }

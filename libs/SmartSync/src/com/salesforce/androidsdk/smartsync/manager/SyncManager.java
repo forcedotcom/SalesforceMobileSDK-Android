@@ -326,7 +326,7 @@ public class SyncManager {
         }
         EventBuilderHelper.createAndStoreEvent("cleanResyncGhosts", null, TAG, attributes);
         if (localIdSize > 0) {
-            target.deleteRecordsFromLocalStore(this, soupName, localIds);
+            target.deleteRecordsFromLocalStore(this, soupName, localIds, idFieldName);
         }
     }
 

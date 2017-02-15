@@ -275,15 +275,16 @@ public abstract class SyncTarget {
     }
 
     /**
-     * Delete the records with the given soup entry ids
+     * Delete the records with the given ids
      * @param syncManager
      * @param soupName
      * @param ids
+     * @param idField
      */
-    public void deleteRecordsFromLocalStore(SyncManager syncManager, String soupName, Set<String> ids) {
+    public void deleteRecordsFromLocalStore(SyncManager syncManager, String soupName, Set<String> ids, String idField) {
         if (ids.size() > 0) {
             String smartSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} IN (%s)",
-                    soupName, SmartStore.SOUP_ENTRY_ID, soupName, soupName, getIdFieldName(),
+                    soupName, SmartStore.SOUP_ENTRY_ID, soupName, soupName, idField,
                     "'" + TextUtils.join("', '", ids) + "'");
             QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, ids.size());
             syncManager.getSmartStore().deleteByQuery(soupName, querySpec);

@@ -26,15 +26,22 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
+import android.text.TextUtils;
+import android.util.Log;
+
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.target.SyncTarget;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.Map;
@@ -125,5 +132,42 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         }
 
         return createdAccounts;
+    }
+
+    /**
+     * Check that records were deleted from db
+     *
+     * @param soupName
+     * @param ids
+     * @param idField
+     * @throws JSONException
+     */
+    protected void checkDbDeleted(String soupName, String[] ids, String idField) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idField + "} IN " + makeInClause(ids), ids.length);
+        JSONArray records = smartStore.query(smartStoreQuery, 0);
+        assertEquals("No records should have been returned from smartstore",0, records.length());
+    }
+
+    /**
+     * Check that records exist in db
+     *
+     * @param soupName
+     * @param ids
+     * @param idField
+     * @throws JSONException
+     */
+    protected void checkDbExist(String soupName, String[] ids, String idField) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idField + "} IN " + makeInClause(ids), ids.length);
+        JSONArray records = smartStore.query(smartStoreQuery, 0);
+        assertEquals("All records should have been returned from smartstore", ids.length, records.length());
+    }
+
+
+    protected String makeInClause(String[] values) {
+        return makeInClause(Arrays.asList(values));
+    }
+
+    protected String makeInClause(Collection<String> values) {
+        return "('" + TextUtils.join("', '", values) + "')";
     }
 }

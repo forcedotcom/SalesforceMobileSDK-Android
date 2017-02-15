@@ -33,12 +33,14 @@ import com.salesforce.androidsdk.smartsync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.SortedSet;
 
@@ -227,8 +229,104 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         tryGetNonDirtyRecordIds(new JSONObject[] { accounts[3] });
     }
 
+    /**
+     * Test deleteRecordsFromLocalStore with a master-detail relationship (children should be deleted too)
+     */
+    public void testDeleteRecordsFromLocalStoreWithMasterDetail() throws JSONException {
+        tryDeleteFromLocalStore(ParentChildrenSyncDownTarget.RelationshipType.MASTER_DETAIL, false /* multiple records */ );
+    }
+
+    /**
+     * Test deleteRecordsFromLocalStore with a lookup relationship (children should NOT be deleted)
+     */
+    public void testDeleteRecordsFromLocalStoreWithLookup() throws JSONException {
+        tryDeleteFromLocalStore(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, false /* multiple records */ );
+    }
+
+    /**
+     * Test deleteFromLocalStore with a master-detail relationship (children should be deleted too)
+     */
+    public void testDeleteFromLocalStoreWithMasterDetail() throws JSONException {
+        tryDeleteFromLocalStore(ParentChildrenSyncDownTarget.RelationshipType.MASTER_DETAIL, true /* single record */ );
+    }
+
+    /**
+     * Test deleteFromLocalStore with a lookup relationship (children should be deleted too)
+     */
+    public void testDeleteFromLocalStoreWithLookup() throws JSONException {
+        tryDeleteFromLocalStore(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, true /* single record */ );
+    }
+
+    /**
+     * Helper method for the testDelete*
+     * @param relationshipType
+     * @param singleDelete
+     * @throws JSONException
+     */
+    protected void tryDeleteFromLocalStore(ParentChildrenSyncDownTarget.RelationshipType relationshipType, boolean singleDelete) throws JSONException {
+        String[] accountNames = new String[] {
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT)
+        };
+        Map<JSONObject, JSONObject[]> mapAccountToContacts = createAccountsAndContacts(accountNames, 3);
+        JSONObject[] accounts = mapAccountToContacts.keySet().toArray(new JSONObject[] {});
+
+        String[] contactIdsOfFirstAccount = JSONObjectHelper.pluck(mapAccountToContacts.get(accounts[0]), Constants.ID).toArray(new String[0]);
+        String[] contactIdsOfSecondAccount = JSONObjectHelper.pluck(mapAccountToContacts.get(accounts[1]), Constants.ID).toArray(new String[0]);
+        String[] contactIdsOfThirdAccount = JSONObjectHelper.pluck(mapAccountToContacts.get(accounts[2]), Constants.ID).toArray(new String[0]);
+
+        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(relationshipType);
+
+        // Delete one account with deleteFromLocalStore
+        if (singleDelete) {
+            target.deleteFromLocalStore(syncManager, ACCOUNTS_SOUP, accounts[1]);
+
+            // Check that account was indeed deleted but none others
+            checkDbDeleted(ACCOUNTS_SOUP, new String[] {accounts[1].getString(Constants.ID)}, Constants.ID);
+            checkDbExist(ACCOUNTS_SOUP, new String[] {accounts[0].getString(Constants.ID), accounts[2].getString(Constants.ID)}, Constants.ID);
+
+            // Checking contacts
+            checkDbExist(CONTACTS_SOUP, contactIdsOfFirstAccount, Constants.ID);
+            checkDbExist(CONTACTS_SOUP, contactIdsOfThirdAccount, Constants.ID);
+            switch (relationshipType) {
+                case MASTER_DETAIL:
+                    checkDbDeleted(CONTACTS_SOUP, contactIdsOfSecondAccount, Constants.ID);
+                    break;
+
+                case LOOKUP:
+                    checkDbExist(CONTACTS_SOUP, contactIdsOfSecondAccount, Constants.ID);
+                    break;
+            }
+        }
+        // Delete multiple accounts with deleteRecordsFromLocalStore
+        else {
+            String[] accountIdsToDelete = {accounts[0].getString(Constants.ID), accounts[2].getString(Constants.ID)};
+            target.deleteRecordsFromLocalStore(syncManager, ACCOUNTS_SOUP, new HashSet(Arrays.asList(accountIdsToDelete)), Constants.ID);
+
+            // Check that the accounts were indeed deleted but none others
+            checkDbExist(ACCOUNTS_SOUP, new String[] {accounts[1].getString(Constants.ID)}, Constants.ID);
+            checkDbDeleted(ACCOUNTS_SOUP, new String[] {accounts[0].getString(Constants.ID), accounts[2].getString(Constants.ID)}, Constants.ID);
+
+            // Checking contacts
+            checkDbExist(CONTACTS_SOUP, contactIdsOfSecondAccount, Constants.ID);
+            switch (relationshipType) {
+                case MASTER_DETAIL:
+                    checkDbDeleted(CONTACTS_SOUP, contactIdsOfFirstAccount, Constants.ID);
+                    checkDbDeleted(CONTACTS_SOUP, contactIdsOfThirdAccount, Constants.ID);
+                    break;
+
+                case LOOKUP:
+                    checkDbExist(CONTACTS_SOUP, contactIdsOfFirstAccount, Constants.ID);
+                    checkDbExist(CONTACTS_SOUP, contactIdsOfThirdAccount, Constants.ID);
+                    break;
+            }
+        }
+
+    }
+
     private void tryGetDirtyRecordIds(JSONObject[] expectedRecords) throws JSONException {
-        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget();
+        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.MASTER_DETAIL);
         SortedSet<String> dirtyRecordIds = target.getDirtyRecordIds(syncManager, ACCOUNTS_SOUP, Constants.ID);
         assertEquals("Wrong number of dirty records", expectedRecords.length, dirtyRecordIds.size());
         for (JSONObject expectedRecord : expectedRecords) {
@@ -237,7 +335,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     private void tryGetNonDirtyRecordIds(JSONObject[] expectedRecords) throws JSONException {
-        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget();
+        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.MASTER_DETAIL);
         SortedSet<String> nonDirtyRecordIds = target.getNonDirtyRecordIds(syncManager, ACCOUNTS_SOUP, Constants.ID);
         assertEquals("Wrong number of non-dirty records", expectedRecords.length, nonDirtyRecordIds.size());
         for (JSONObject expectedRecord : expectedRecords) {
@@ -274,14 +372,14 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         smartStore.dropSoup(CONTACTS_SOUP);
     }
 
-    private ParentChildrenSyncDownTarget getAccountContactsSyncDownTarget() {
+    private ParentChildrenSyncDownTarget getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType relationshipType) {
         return new ParentChildrenSyncDownTarget(
                 new ParentInfo(Constants.ACCOUNT),
                 Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION),
                 "",
                 new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID),
                 Arrays.asList(Constants.NAME),
-                ParentChildrenSyncDownTarget.RelationshipType.MASTER_DETAIL);
+                relationshipType);
     }
 
     private Map<JSONObject, JSONObject[]> createAccountsAndContacts(String[] names, int numberOfContactsPerAccount) throws JSONException {

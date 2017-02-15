@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import android.text.TextUtils;
-
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -59,11 +57,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
-import java.util.Formatter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -279,7 +275,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		trySyncUp(3, MergeMode.OVERWRITE);
 		
 		// Check that db doesn't contain those entries anymore
-        checkDbDeleted(idsLocallyDeleted);
+        checkDbDeleted(ACCOUNTS_SOUP, idsLocallyDeleted, Constants.ID);
 
 		// Check server
         checkServerDeleted(idsLocallyDeleted);
@@ -307,7 +303,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
 
         // Check that db doesn't contain those entries anymore
-        checkDbDeleted(idsLocallyDeleted);
+        checkDbDeleted(ACCOUNTS_SOUP, idsLocallyDeleted, Constants.ID);
     }
 
 	/**
@@ -418,7 +414,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
         // Check that db doesn't contain those entries anymore
-        checkDbDeleted(idsLocallyDeleted);
+        checkDbDeleted(ACCOUNTS_SOUP, idsLocallyDeleted, Constants.ID);
 
         // Check what got synched up
         List<String> idsDeletedByTarget = collector.deletedRecordIds;
@@ -601,7 +597,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncUp(3, MergeMode.OVERWRITE);
 
         // Check that db doesn't contain those entries anymore
-        checkDbDeleted(idsLocallyDeleted);
+        checkDbDeleted(ACCOUNTS_SOUP, idsLocallyDeleted, Constants.ID);
 
         // Check server
         checkServerDeleted(idsLocallyDeleted);
@@ -1377,17 +1373,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
     }
 
     /**
-     * Check that records were deleted from db
-     * @param ids
-     * @throws JSONException
-     */
-    private void checkDbDeleted(String[] ids) throws JSONException {
-        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup} FROM {accounts} WHERE {accounts:Id} IN " + makeInClause(ids), ids.length);
-        JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
-        assertEquals("No accounts should have been returned from smartstore",0, accountsFromDb.length());
-    }
-
-    /**
      * Check records on server
      * @param idToFields
      * @throws IOException
@@ -1497,14 +1482,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
             idToFields.put(id, fields);
         }
         return idToFields;
-    }
-
-    private String makeInClause(String[] values) {
-        return makeInClause(Arrays.asList(values));
-    }
-
-    private String makeInClause(Collection<String> values) {
-        return "('" + TextUtils.join("', '", values) + "')";
     }
 
     /**
