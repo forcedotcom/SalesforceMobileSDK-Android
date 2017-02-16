@@ -386,13 +386,13 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // Get max time stamps based on fields AccountTimeStamp1 / ContactTimeStamp1
         assertEquals(
-                timeStamps[numberAccounts % timeStampStrs.length],
+                timeStamps[3],
                 getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp1", "ContactTimeStamp1").getLatestModificationTimeStamp(records)
         );
 
         // Get max time stamps based on fields AccountTimeStamp1 / ContactTimeStamp2
         assertEquals(
-                timeStamps[numberAccounts % timeStampStrs.length],
+                timeStamps[3],
                 getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp1", "ContactTimeStamp2").getLatestModificationTimeStamp(records)
         );
 
@@ -404,7 +404,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // Get max time stamps based on fields AccountTimeStamp2 / ContactTimeStamp2
         assertEquals(
-                timeStamps[numberContactsPerAccount % timeStampStrs.length],
+                timeStamps[2],
                 getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp2", "ContactTimeStamp2").getLatestModificationTimeStamp(records)
         );
     }
