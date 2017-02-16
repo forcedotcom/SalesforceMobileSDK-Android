@@ -15,7 +15,7 @@ plugins {
 
 allprojects {
   group = 'com.salesforce.mobilesdk'
-  version = '5.0.0'
+  version = '5.0.1'
   repositories {
     maven {
       // All of React Native (JS, Android binaries) is installed from npm
