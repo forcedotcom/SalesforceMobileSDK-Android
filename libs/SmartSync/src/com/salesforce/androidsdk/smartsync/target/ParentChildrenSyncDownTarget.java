@@ -110,7 +110,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
      */
     public ParentChildrenSyncDownTarget(String query) {
         super(query);
-        throw new RuntimeException("Cannot construct ParentChildrenSyncDownTarget from SOQL query");
+        throw new UnsupportedOperationException("Cannot construct ParentChildrenSyncDownTarget from SOQL query");
     }
 
     /**
@@ -217,13 +217,13 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
                     JSONObject parent = new JSONObject(record.toString());
 
                     // Separating parent from children
-                    JSONArray children = (JSONArray) record.remove(childrenInfo.sobjectTypePlural);
+                    JSONArray children = (JSONArray) parent.remove(childrenInfo.sobjectTypePlural);
 
                     // Saving parent
                     cleanAndSaveInLocalStore(syncManager, soupName, parent, false);
 
                     // Put local id of parent in children
-                    for (int j = 0; j < records.length(); j++) {
+                    for (int j = 0; j < children.length(); j++) {
                         JSONObject child = children.getJSONObject(j);
                         child.put(childrenInfo.parentLocalIdFieldName, parent.get(SmartStore.SOUP_ENTRY_ID));
 

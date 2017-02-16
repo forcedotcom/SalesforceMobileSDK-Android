@@ -95,13 +95,13 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     }
 
     /**
-     * @return local id of the form local_<random number left-padded to be 8 digits long>
+     * @return local id of the form local_number where number is different every time and increasing
      */
     @SuppressWarnings("resource")
     protected String createLocalId() {
         StringBuilder sb = new StringBuilder();
         Formatter formatter = new Formatter(sb, Locale.US);
-        formatter.format(LOCAL_ID_PREFIX + "%08d", (int) (Math.random()*10000000));
+        formatter.format(LOCAL_ID_PREFIX + System.nanoTime());
         String name = sb.toString();
         return name;
     }

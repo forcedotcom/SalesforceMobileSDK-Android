@@ -27,7 +27,11 @@ package com.salesforce.androidsdk.smartsync.target;
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+import android.util.Log;
+
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
+import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
@@ -35,10 +39,12 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -154,9 +160,9 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     /**
-     * Test getDirtyRecordIds for ParentChildrenSyncDownTarget when parent and/or all and/or some children are dirty
+     * Test getDirtyRecordIds and getNonDirtyRecordIds for ParentChildrenSyncDownTarget when parent and/or all and/or some children are dirty
      */
-    public void testGetDirtyRecordIds() throws JSONException {
+    public void testGetDirtyAndNonDirtyRecordIds() throws JSONException {
         String[] accountNames = new String[] {
                 createRecordName(Constants.ACCOUNT),
                 createRecordName(Constants.ACCOUNT),
@@ -165,11 +171,15 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 createRecordName(Constants.ACCOUNT),
                 createRecordName(Constants.ACCOUNT)
         };
-        Map<JSONObject, JSONObject[]> mapAccountToContacts = createAccountsAndContacts(accountNames, 3);
+        Map<JSONObject, JSONObject[]> mapAccountToContacts = createAccountsAndContactsLocally(accountNames, 3);
         JSONObject[] accounts = mapAccountToContacts.keySet().toArray(new JSONObject[]{});
 
         // All Accounts should be returned
         tryGetDirtyRecordIds(accounts);
+
+        // No accounts should be returned
+        tryGetNonDirtyRecordIds(new JSONObject[]{});
+
 
         // Cleaning up:
         // accounts[0]: dirty account and dirty contacts
@@ -189,41 +199,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // Only clean account with clean contacts should not be returned
         tryGetDirtyRecordIds(new JSONObject[] { accounts[0], accounts[1], accounts[2], accounts[4], accounts[5]});
-    }
-
-    /**
-     * Test getDNonirtyRecordIds for ParentChildrenSyncDownTarget when parent and/or all and/or some children are dirty
-     */
-    public void testGetNonDirtyRecordIds() throws JSONException {
-        String[] accountNames = new String[] {
-                createRecordName(Constants.ACCOUNT),
-                createRecordName(Constants.ACCOUNT),
-                createRecordName(Constants.ACCOUNT),
-                createRecordName(Constants.ACCOUNT),
-                createRecordName(Constants.ACCOUNT),
-                createRecordName(Constants.ACCOUNT)
-        };
-        Map<JSONObject, JSONObject[]> mapAccountToContacts = createAccountsAndContacts(accountNames, 3);
-        JSONObject[] accounts = mapAccountToContacts.keySet().toArray(new JSONObject[] {});
-
-        // All Accounts should be returned
-        tryGetNonDirtyRecordIds(new JSONObject[]{});
-
-        // Cleaning up:
-        // accounts[0]: dirty account and dirty contacts
-        // accounts[1]: clean account and dirty contacts
-        // accounts[2]: dirty account and clean contacts
-        // accounts[3]: clean account and clean contacts
-        // accounts[4]: dirty account and some dirty contacts
-        // accounts[5]: clean account and some dirty contacts
-
-        cleanRecord(ACCOUNTS_SOUP, accounts[1]);
-        cleanRecords(CONTACTS_SOUP, mapAccountToContacts.get(accounts[2]));
-        cleanRecord(ACCOUNTS_SOUP, accounts[3]);
-        cleanRecords(CONTACTS_SOUP, mapAccountToContacts.get(accounts[3]));
-        cleanRecord(CONTACTS_SOUP, mapAccountToContacts.get(accounts[4])[0]);
-        cleanRecord(ACCOUNTS_SOUP, accounts[5]);
-        cleanRecord(CONTACTS_SOUP, mapAccountToContacts.get(accounts[5])[0]);
 
         // Only clean account with clean contacts should be returned
         tryGetNonDirtyRecordIds(new JSONObject[] { accounts[3] });
@@ -258,18 +233,209 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     /**
+     * Test saveRecordsToLocalStore
+     */
+    public void testSaveRecordsToLocalStore() throws JSONException {
+        // Putting together a JSONArray of accounts with contacts looking like what we would get back from the server:
+        // - not having local fields
+        // - not have _soupEntryId field
+        final int numberAccounts = 4;
+        final int numberContactsPerAccount = 3;
+
+        JSONObject accountAttributes = new JSONObject();
+        accountAttributes.put(TYPE, Constants.ACCOUNT);
+
+        JSONObject contactAttributes = new JSONObject();
+        contactAttributes.put(TYPE, Constants.CONTACT);
+
+        JSONObject[] accounts = new JSONObject[numberAccounts];
+        Map<JSONObject, JSONObject[]> mapAccountContacts = new HashMap<>();
+
+        for (int i = 0; i < numberAccounts; i++) {
+            JSONObject account = new JSONObject();
+            account.put(Constants.ID, createLocalId());
+            account.put(Constants.ATTRIBUTES, accountAttributes);
+
+            JSONObject[] contacts = new JSONObject[numberContactsPerAccount];
+            for (int j = 0; j < numberContactsPerAccount; j++) {
+                JSONObject contact = new JSONObject();
+                contact.put(Constants.ID, createLocalId());
+                contact.put(Constants.ATTRIBUTES, contactAttributes);
+                contact.put(ACCOUNT_ID, account.get(Constants.ID));
+                contacts[j] = contact;
+            }
+            mapAccountContacts.put(account, contacts);
+            accounts[i] = account;
+        }
+
+        JSONArray records = new JSONArray();
+        for (JSONObject account : accounts) {
+            JSONObject record = new JSONObject(account.toString());
+            JSONArray contacts = new JSONArray();
+            for (JSONObject contact : mapAccountContacts.get(account)) {
+                contacts.put(contact);
+            }
+            record.put("Contacts", contacts);
+            records.put(record);
+        }
+
+        // Now calling saveRecordsToLocalStore
+        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.MASTER_DETAIL);
+        target.saveRecordsToLocalStore(syncManager, ACCOUNTS_SOUP, records);
+
+        // Checking accounts and contacts soup
+        // Making sure local fields are populated
+        // Making sure accountId and accountLocalId fields are populated on contacts
+
+        JSONObject[] accountsFromDb = queryWithInClause(ACCOUNTS_SOUP, Constants.ID, JSONObjectHelper.pluck(accounts, Constants.ID).toArray(new String[0]), null);
+        assertEquals("Wrong number of accounts in db", accounts.length, accountsFromDb.length);
+        for (int i = 0; i < accountsFromDb.length; i++) {
+            JSONObject account = accounts[i];
+            JSONObject accountFromDb = accountsFromDb[i];
+
+            assertEquals(account.getString(Constants.ID), accountFromDb.getString(Constants.ID));
+            assertEquals(Constants.ACCOUNT, accountFromDb.getJSONObject(Constants.ATTRIBUTES).getString(TYPE));
+            assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCAL));
+            assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCALLY_CREATED));
+            assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCALLY_DELETED));
+            assertEquals(false, accountFromDb.getBoolean(SyncTarget.LOCALLY_UPDATED));
+
+            JSONObject[] contactsFromDb = queryWithInClause(CONTACTS_SOUP, ACCOUNT_ID, new String[]{account.getString(Constants.ID)}, SmartStore.SOUP_ENTRY_ID);
+            JSONObject[] contacts = mapAccountContacts.get(account);
+            assertEquals("Wrong number of contacts in db", contacts.length, contactsFromDb.length);
+            for (int j = 0; j < contactsFromDb.length; j++) {
+                JSONObject contact = contacts[j];
+                JSONObject contactFromDb = contactsFromDb[j];
+
+                assertEquals(contact.getString(Constants.ID), contactFromDb.getString(Constants.ID));
+                assertEquals(Constants.CONTACT, contactFromDb.getJSONObject(Constants.ATTRIBUTES).getString(TYPE));
+                assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCAL));
+                assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_CREATED));
+                assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_DELETED));
+                assertEquals(false, contactFromDb.getBoolean(SyncTarget.LOCALLY_UPDATED));
+                assertEquals(accountFromDb.getString(Constants.ID), contactFromDb.getString(ACCOUNT_ID));
+                assertEquals(accountFromDb.getString(SmartStore.SOUP_ENTRY_ID), contactFromDb.getString(ACCOUNT_LOCAL_ID));
+            }
+
+        }
+    }
+
+    /**
+     * Test getLatestModificationTimeStamp
+     */
+    public void testGetLatestModificationTimeStamp() throws JSONException {
+        // Putting together a JSONArray of accounts with contacts looking like what we would get back from the server with different fields for last modified time
+        final int numberAccounts = 4;
+        final int numberContactsPerAccount = 3;
+
+        final long[] timeStamps = new long[]{
+                100000000,
+                200000000,
+                300000000,
+                400000000
+        };
+
+
+        final String[] timeStampStrs = new String[]{
+                Constants.TIMESTAMP_FORMAT.format(new Date(timeStamps[0])),
+                Constants.TIMESTAMP_FORMAT.format(new Date(timeStamps[1])),
+                Constants.TIMESTAMP_FORMAT.format(new Date(timeStamps[2])),
+                Constants.TIMESTAMP_FORMAT.format(new Date(timeStamps[3])),
+        };
+
+        JSONObject accountAttributes = new JSONObject();
+        accountAttributes.put(TYPE, Constants.ACCOUNT);
+
+        JSONObject contactAttributes = new JSONObject();
+        contactAttributes.put(TYPE, Constants.CONTACT);
+
+        JSONObject[] accounts = new JSONObject[numberAccounts];
+        Map<JSONObject, JSONObject[]> mapAccountContacts = new HashMap<>();
+
+        for (int i = 0; i < numberAccounts; i++) {
+            JSONObject account = new JSONObject();
+            account.put(Constants.ID, createLocalId());
+            account.put("AccountTimeStamp1", timeStampStrs[i % timeStampStrs.length]);
+            account.put("AccountTimeStamp2", timeStampStrs[0]);
+
+            JSONObject[] contacts = new JSONObject[numberContactsPerAccount];
+            for (int j = 0; j < numberContactsPerAccount; j++) {
+                JSONObject contact = new JSONObject();
+                contact.put(Constants.ID, createLocalId());
+                contact.put(ACCOUNT_ID, account.get(Constants.ID));
+                contact.put("ContactTimeStamp1", timeStampStrs[1]);
+                contact.put("ContactTimeStamp2", timeStampStrs[j % timeStampStrs.length]);
+                contacts[j] = contact;
+            }
+            mapAccountContacts.put(account, contacts);
+            accounts[i] = account;
+        }
+
+        JSONArray records = new JSONArray();
+        for (JSONObject account : accounts) {
+            JSONObject record = new JSONObject(account.toString());
+            JSONArray contacts = new JSONArray();
+            for (JSONObject contact : mapAccountContacts.get(account)) {
+                contacts.put(contact);
+            }
+            record.put("Contacts", contacts);
+            records.put(record);
+        }
+
+        // Maximums
+
+        // Get max time stamps based on fields AccountTimeStamp1 / ContactTimeStamp1
+        assertEquals(
+                timeStamps[numberAccounts % timeStampStrs.length],
+                getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp1", "ContactTimeStamp1").getLatestModificationTimeStamp(records)
+        );
+
+        // Get max time stamps based on fields AccountTimeStamp1 / ContactTimeStamp2
+        assertEquals(
+                timeStamps[numberAccounts % timeStampStrs.length],
+                getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp1", "ContactTimeStamp2").getLatestModificationTimeStamp(records)
+        );
+
+        // Get max time stamps based on fields AccountTimeStamp2 / ContactTimeStamp1
+        assertEquals(
+                timeStamps[1],
+                getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp2", "ContactTimeStamp1").getLatestModificationTimeStamp(records)
+        );
+
+        // Get max time stamps based on fields AccountTimeStamp2 / ContactTimeStamp2
+        assertEquals(
+                timeStamps[numberContactsPerAccount % timeStampStrs.length],
+                getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp2", "ContactTimeStamp2").getLatestModificationTimeStamp(records)
+        );
+    }
+
+    /**
+     * Test ParentChildrenSyncDownTarget's constructor that takes only a SOQL query
+     * An exception is expected
+     */
+    public void testConstructorWithQuery() {
+        try {
+            new ParentChildrenSyncDownTarget("SELECT Name FROM Account");
+            fail("Exception should have been thrown");
+        }
+        catch (UnsupportedOperationException e) {
+        }
+    }
+
+
+    /**
      * Helper method for the testDelete*
      * @param relationshipType
      * @param singleDelete
      * @throws JSONException
      */
     protected void tryDeleteFromLocalStore(ParentChildrenSyncDownTarget.RelationshipType relationshipType, boolean singleDelete) throws JSONException {
-        String[] accountNames = new String[] {
+        String[] accountNames = {
                 createRecordName(Constants.ACCOUNT),
                 createRecordName(Constants.ACCOUNT),
                 createRecordName(Constants.ACCOUNT)
         };
-        Map<JSONObject, JSONObject[]> mapAccountToContacts = createAccountsAndContacts(accountNames, 3);
+        Map<JSONObject, JSONObject[]> mapAccountToContacts = createAccountsAndContactsLocally(accountNames, 3);
         JSONObject[] accounts = mapAccountToContacts.keySet().toArray(new JSONObject[] {});
 
         String[] contactIdsOfFirstAccount = JSONObjectHelper.pluck(mapAccountToContacts.get(accounts[0]), Constants.ID).toArray(new String[0]);
@@ -373,16 +539,21 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     private ParentChildrenSyncDownTarget getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType relationshipType) {
+        return getAccountContactsSyncDownTarget(relationshipType, Constants.LAST_MODIFIED_DATE, Constants.LAST_MODIFIED_DATE);
+    }
+
+    private ParentChildrenSyncDownTarget getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType relationshipType, String accountModificationDateFieldName, String contactModificationDateFieldName) {
         return new ParentChildrenSyncDownTarget(
-                new ParentInfo(Constants.ACCOUNT),
+                new ParentInfo(Constants.ACCOUNT, Constants.ID, accountModificationDateFieldName),
                 Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION),
                 "",
-                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID),
+                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", Constants.ID, contactModificationDateFieldName, CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID),
                 Arrays.asList(Constants.NAME),
                 relationshipType);
     }
 
-    private Map<JSONObject, JSONObject[]> createAccountsAndContacts(String[] names, int numberOfContactsPerAccount) throws JSONException {
+
+    private Map<JSONObject, JSONObject[]> createAccountsAndContactsLocally(String[] names, int numberOfContactsPerAccount) throws JSONException {
         Map<JSONObject, JSONObject[]> mapAccountContacts = new HashMap<>();
         JSONObject[] accounts = createAccountsLocally(names);
 
@@ -408,4 +579,21 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         }
         return mapAccountContacts;
     }
+
+    private JSONObject[] queryWithInClause(String soupName, String fieldName, String[] values, String orderBy) throws JSONException {
+        final String sql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} IN %s %s",
+                soupName, SmartSqlHelper.SOUP, soupName, soupName, fieldName,
+                makeInClause(values),
+                orderBy == null ? "" : String.format(" ORDER BY {%s:%s} ASC", soupName, orderBy)
+        );
+
+        QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(sql, Integer.MAX_VALUE);
+        JSONArray rows = smartStore.query(querySpec, 0);
+        JSONObject[] arr = new JSONObject[rows.length()];
+        for (int i=0; i<rows.length(); i++) {
+            arr[i] = rows.getJSONArray(i).getJSONObject(0);
+        }
+        return arr;
+    }
+
 }
