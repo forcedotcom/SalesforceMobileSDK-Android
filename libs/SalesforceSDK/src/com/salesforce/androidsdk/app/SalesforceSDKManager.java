@@ -333,6 +333,7 @@ public class SalesforceSDKManager {
     		INSTANCE = new SalesforceSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
     	initInternal(context);
+        EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
 
 	/**
@@ -351,7 +352,6 @@ public class SalesforceSDKManager {
 
         // Upgrades to the latest version.
         SalesforceSDKUpgradeManager.getInstance().upgrade();
-        EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
 
     /**
