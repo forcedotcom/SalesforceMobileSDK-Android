@@ -119,8 +119,8 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(queryRun, getModificationDateFieldName(), maxTimeStamp) : queryRun;
         RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, queryToRun);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-        JSONObject responseJson = response.asJSONObject();
-        JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
+        JSONObject responseJson = getResponseJson(response);
+        JSONArray records = getRecordsFromResponseJson(responseJson);
 
         // Records total size.
         totalSize = responseJson.getInt(Constants.TOTAL_SIZE);
@@ -130,6 +130,22 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         return records;
     }
 
+    private JSONObject getResponseJson(RestResponse response) throws IOException {
+        JSONObject responseJson;
+        try {
+            responseJson = response.asJSONObject();
+        }
+        catch (JSONException e) {
+            // Rest API errors are returned as JSON array
+            throw new SyncManager.SmartSyncException(response.asString());
+        }
+        return responseJson;
+    }
+
+    protected JSONArray getRecordsFromResponseJson(JSONObject responseJson) throws JSONException {
+        return responseJson.getJSONArray(Constants.RECORDS);
+    }
+
     @Override
     public JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException {
         if (nextRecordsUrl == null) {
@@ -137,8 +153,8 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         }
         RestRequest request = new RestRequest(RestRequest.RestMethod.GET, nextRecordsUrl, null);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-        JSONObject responseJson = response.asJSONObject();
-        JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
+        JSONObject responseJson = getResponseJson(response);
+        JSONArray records = getRecordsFromResponseJson(responseJson);
 
         // Captures next records URL.
         nextRecordsUrl = JSONObjectHelper.optString(responseJson, Constants.NEXT_RECORDS_URL);

@@ -32,9 +32,13 @@ import android.util.Log;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncTarget;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
+import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -58,6 +62,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     // Local
     protected static final String LOCAL_ID_PREFIX = "local_";
     protected static final String ACCOUNTS_SOUP = "accounts";
+    protected static final int TOTAL_SIZE_UNKNOWN = -2;
 
     /**
      * Create soup for accounts
@@ -108,16 +113,17 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 
     /**
      * Create accounts locally
+     *
      * @param names
-     * @throws JSONException
      * @return created accounts records
+     * @throws JSONException
      */
     protected JSONObject[] createAccountsLocally(String[] names) throws JSONException {
         JSONObject[] createdAccounts = new JSONObject[names.length];
         JSONObject attributes = new JSONObject();
         attributes.put(TYPE, Constants.ACCOUNT);
 
-        for (int i=0; i<names.length; i++) {
+        for (int i = 0; i < names.length; i++) {
             String name = names[i];
             JSONObject account = new JSONObject();
             account.put(Constants.ID, createLocalId());
@@ -145,7 +151,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     protected void checkDbDeleted(String soupName, String[] ids, String idField) throws JSONException {
         QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idField + "} IN " + makeInClause(ids), ids.length);
         JSONArray records = smartStore.query(smartStoreQuery, 0);
-        assertEquals("No records should have been returned from smartstore",0, records.length());
+        assertEquals("No records should have been returned from smartstore", 0, records.length());
     }
 
     /**
@@ -169,5 +175,93 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 
     protected String makeInClause(Collection<String> values) {
         return "('" + TextUtils.join("', '", values) + "')";
+    }
+
+    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName) throws JSONException {
+        return trySyncDown(mergeMode, target, soupName, TOTAL_SIZE_UNKNOWN, 1);
+    }
+
+    /**
+     * Sync down helper.
+     *
+     * @param mergeMode     Merge mode.
+     * @param target        Sync down target.
+     * @param soupName      Soup name.
+     * @param totalSize     Expected total size
+     * @param numberFetches Expected number of fetches
+     * @return Sync ID.
+     */
+    protected long trySyncDown(SyncState.MergeMode mergeMode, SyncDownTarget target, String soupName, int totalSize, int numberFetches) throws JSONException {
+        final SyncOptions options = SyncOptions.optionsForSyncDown(mergeMode);
+        final SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
+        long syncId = sync.getId();
+        checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
+
+        // Runs sync.
+        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        syncManager.runSync(sync, queue);
+
+        // Checks status updates.
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
+        if (totalSize != TOTAL_SIZE_UNKNOWN) {
+            for (int i = 0; i < numberFetches; i++) {
+                checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, i * 100 / numberFetches, totalSize);
+            }
+            checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, totalSize);
+        } else {
+            checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0);
+            checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100);
+        }
+        return syncId;
+    }
+
+    /**
+     * Helper method to check sync state
+     *
+     * @param sync
+     * @param expectedType
+     * @param expectedId
+     * @param expectedTarget
+     * @param expectedOptions
+     * @param expectedStatus
+     * @param expectedProgress
+     * @throws JSONException
+     */
+    protected void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress, int expectedTotalSize) throws JSONException {
+        assertEquals("Wrong type", expectedType, sync.getType());
+        assertEquals("Wrong id", expectedId, sync.getId());
+        JSONTestHelper.assertSameJSON("Wrong target", (expectedTarget == null ? null : expectedTarget.asJSON()), (sync.getTarget() == null ? null : sync.getTarget().asJSON()));
+        JSONTestHelper.assertSameJSON("Wrong options", (expectedOptions == null ? null : expectedOptions.asJSON()), (sync.getOptions() == null ? null : sync.getOptions().asJSON()));
+        assertEquals("Wrong status", expectedStatus, sync.getStatus());
+        assertEquals("Wrong progress", expectedProgress, sync.getProgress());
+        if (expectedTotalSize != TOTAL_SIZE_UNKNOWN) {
+            assertEquals("Wrong total size", expectedTotalSize, sync.getTotalSize());
+        }
+    }
+
+    private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress) throws JSONException {
+        checkStatus(sync, expectedType, expectedId, expectedTarget, expectedOptions, expectedStatus, expectedProgress, TOTAL_SIZE_UNKNOWN);
+    }
+
+    /**
+     * Check records in db
+     * @throws JSONException
+     * @param expectedIdToFields
+     * @param soupName
+     */
+    protected void checkDb(Map<String, Map<String, Object>> expectedIdToFields, String soupName) throws JSONException {
+        String sql = String.format("SELECT {%s:_soup} FROM {%s} WHERE {%s:Id} IN %s",
+                soupName, soupName, soupName, makeInClause(expectedIdToFields.keySet()));
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec(sql, Integer.MAX_VALUE);
+        JSONArray rows = smartStore.query(smartStoreQuery, 0);
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject recordFromDb = rows.getJSONArray(i).getJSONObject(0);
+            String recordId = recordFromDb.getString("Id");
+            Map<String, Object> expectedFields = expectedIdToFields.get(recordId);
+            for (String fieldName : expectedFields.keySet()) {
+                assertEquals(String.format("Wrong data in db for field %s on record %s", fieldName, recordId),
+                        expectedFields.get(fieldName).toString(), recordFromDb.get(fieldName).toString());
+            }
+        }
     }
 }

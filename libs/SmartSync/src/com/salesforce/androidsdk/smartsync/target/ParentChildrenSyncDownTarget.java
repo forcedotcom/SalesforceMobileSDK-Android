@@ -32,6 +32,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
@@ -97,6 +98,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
      */
     public ParentChildrenSyncDownTarget(ParentInfo parentInfo, List<String> parentFieldlist, String parentSoqlFilter, ChildrenInfo childrenInfo, List<String> childrenFieldlist, RelationshipType relationshipType) {
         super(parentInfo.idFieldName, parentInfo.modificationDateFieldName, null);
+        this.queryType = QueryType.parent_children;
         this.parentInfo = parentInfo;
         this.parentFieldlist = parentFieldlist;
         this.parentSoqlFilter = parentSoqlFilter;
@@ -146,14 +148,14 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     @Override
     public String getQuery() {
         List<String> nestedFields = new ArrayList<>(childrenFieldlist);
-        nestedFields.add(childrenInfo.idFieldName);
-        nestedFields.add(childrenInfo.modificationDateFieldName);
+        if (!nestedFields.contains(childrenInfo.idFieldName)) nestedFields.add(childrenInfo.idFieldName);
+        if (!nestedFields.contains(childrenInfo.modificationDateFieldName)) nestedFields.add(childrenInfo.modificationDateFieldName);
         SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(nestedFields);
         builderNested.from(childrenInfo.sobjectTypePlural);
 
         List<String> fields = new ArrayList<>(parentFieldlist);
-        fields.add(getIdFieldName());
-        fields.add(getModificationDateFieldName());
+        if (!fields.contains(getIdFieldName())) fields.add(getIdFieldName());
+        if (!fields.contains(getModificationDateFieldName())) fields.add(getModificationDateFieldName());
         fields.add("(" + builderNested.build() + ")");
 
         SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(fields);
@@ -161,6 +163,20 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
         builder.where(parentSoqlFilter);
 
         return builder.build();
+    }
+
+    @Override
+    protected JSONArray getRecordsFromResponseJson(JSONObject responseJson) throws JSONException {
+        JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
+        for (int i=0; i<records.length(); i++) {
+            JSONObject record = records.getJSONObject(i);
+            JSONArray childrenRecords = record.getJSONObject(childrenInfo.sobjectTypePlural).getJSONArray(Constants.RECORDS);
+            // Cleaning up record
+            record.put(childrenInfo.sobjectTypePlural, childrenRecords);
+
+            // TODO deal with the case where not all the children were fetched at once
+        }
+        return records;
     }
 
     @Override
@@ -222,10 +238,11 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
                     // Saving parent
                     cleanAndSaveInLocalStore(syncManager, soupName, parent, false);
 
-                    // Put local id of parent in children
+                    // Put server id / local id of parent in children
                     for (int j = 0; j < children.length(); j++) {
                         JSONObject child = children.getJSONObject(j);
                         child.put(childrenInfo.parentLocalIdFieldName, parent.get(SmartStore.SOUP_ENTRY_ID));
+                        child.put(childrenInfo.parentIdFieldName, parent.get(getIdFieldName()));
 
                         // Saving child
                         cleanAndSaveInLocalStore(syncManager, childrenInfo.soupName, child, false);

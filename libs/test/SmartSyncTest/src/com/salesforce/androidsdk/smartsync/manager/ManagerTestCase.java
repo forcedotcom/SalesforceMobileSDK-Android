@@ -151,7 +151,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
      * @throws Exception
      */
     protected Map<String, String> createRecordsOnServer(int count, String objectType) throws Exception {
-        Map<String, Map <String, Object>> idToFields = createRecordsOnServerReturnFields(count, objectType);
+        Map<String, Map <String, Object>> idToFields = createRecordsOnServerReturnFields(count, objectType, null);
         Map<String, String> idToNames = new HashMap<>();
         for (String id : idToFields.keySet()) {
             idToNames.put(id, (String) idToFields.get(id).get(Constants.NAME));
@@ -162,22 +162,32 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
     /**
      * Helper methods to create "count" of test records
      * @param count
+     * @param additionalFields
      * @return map of id to map of field name to field value for the created records
      * @throws Exception
      */
-    protected Map<String, Map<String, Object>> createRecordsOnServerReturnFields(int count, String objectType) throws Exception {
+    protected Map<String, Map<String, Object>> createRecordsOnServerReturnFields(int count, String objectType, Map<String, Object> additionalFields) throws Exception {
         Map<String, Map <String, Object>> idToFields = new HashMap<>();
         for (int i = 0; i < count; i++) {
 
             // Request.
             String name = createRecordName(objectType);
             Map<String, Object> fields = new HashMap<String, Object>();
+
+            // Add additional fields if any
+            if (additionalFields != null) {
+                fields.putAll(additionalFields);
+            }
+
             //add more object type if need to support to use this API
             //to create a new record on server
             switch (objectType) {
                 case Constants.ACCOUNT:
                     fields.put(Constants.NAME, name);
                     fields.put(Constants.DESCRIPTION, "Description_" + name);
+                    break;
+                case Constants.CONTACT:
+                    fields.put(Constants.LAST_NAME, name);
                     break;
                 case Constants.OPPORTUNITY:
                     fields.put(Constants.NAME, name);

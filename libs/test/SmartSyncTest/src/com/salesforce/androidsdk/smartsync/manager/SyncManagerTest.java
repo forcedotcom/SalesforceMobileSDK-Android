@@ -70,7 +70,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
     // Misc
     protected static final int COUNT_TEST_ACCOUNTS = 10;
-    protected static final int TOTAL_SIZE_UNKNOWN = -2;
     public static final List<String> REFRESH_FIELDLIST = Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION, Constants.LAST_MODIFIED_DATE);
 
     protected Map<String, Map<String, Object>> idToFields;
@@ -79,7 +78,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
     public void setUp() throws Exception {
     	super.setUp();
     	createAccountsSoup();
-    	idToFields = createRecordsOnServerReturnFields(COUNT_TEST_ACCOUNTS, Constants.ACCOUNT);
+    	idToFields = createRecordsOnServerReturnFields(COUNT_TEST_ACCOUNTS, Constants.ACCOUNT, null);
     }
     
     @Override 
@@ -107,7 +106,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		trySyncDown(MergeMode.OVERWRITE);
 
 		// Check that db was correctly populated
-        checkDb(idToFields);
+        checkDb(idToFields, ACCOUNTS_SOUP);
 	}
 
     /**
@@ -126,13 +125,13 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Check db
         Map<String, Map<String, Object>> idToFieldsExpected = new HashMap<>(idToFields);
         idToFieldsExpected.putAll(idToFieldsLocallyUpdated);
-        checkDb(idToFieldsExpected);
+        checkDb(idToFieldsExpected, ACCOUNTS_SOUP);
 
         // sync down again with MergeMode.OVERWRITE
         trySyncDown(MergeMode.OVERWRITE);
 
         // Check db
-        checkDb(idToFields);
+        checkDb(idToFields, ACCOUNTS_SOUP);
     }
 
     /**
@@ -162,7 +161,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, idToFieldsUpdated.size());
 
         // Check db
-        checkDb(idToFieldsUpdated);
+        checkDb(idToFieldsUpdated, ACCOUNTS_SOUP);
 
         // Check sync time stamp
         assertTrue("Wrong time stamp", syncManager.getSyncStatus(syncId).getMaxTimeStamp() > maxTimeStamp);
@@ -627,7 +626,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         Map<String, Map<String, Object>> idToFieldsUpdated = getIdsForNames(getNamesFromIdToFields(idToFieldsLocallyUpdated));
 
         // Check db
-        checkDb(idToFieldsUpdated);
+        checkDb(idToFieldsUpdated, ACCOUNTS_SOUP);
 
         // Expect 3 records
         assertEquals(3, idToFieldsUpdated.size());
@@ -686,7 +685,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check the other 2 records in db
         idToFieldsUpdated.remove(remotelyDeletedId);
-        checkDb(idToFieldsUpdated);
+        checkDb(idToFieldsUpdated, ACCOUNTS_SOUP);
 
         // Check server
         checkServer(idToFieldsUpdated);
@@ -892,7 +891,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         final SyncDownTarget target = new RefreshSyncDownTarget(REFRESH_FIELDLIST, Constants.ACCOUNT, ACCOUNTS_SOUP);
         trySyncDown(MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, idToFields.size(), 1);
         // Make sure the soup has the records with id and names
-        checkDb(idToFields);
+        checkDb(idToFields, ACCOUNTS_SOUP);
     }
 
     /**
@@ -914,7 +913,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncDown(MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, idToFields.size(), idToFields.size() / 2);
 
         // Make sure the soup has the records with id and names
-        checkDb(idToFields);
+        checkDb(idToFields, ACCOUNTS_SOUP);
     }
 
     /**
@@ -942,7 +941,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         assertTrue("Wrong time stamp", maxTimeStamp > 0);
 
         // Make sure the soup has the records with id and names
-        checkDb(idToFields);
+        checkDb(idToFields, ACCOUNTS_SOUP);
 
         // Make some remote change
         Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges();
@@ -967,7 +966,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, idToFields.size());
 
         // Check db
-        checkDb(idToFieldsUpdated);
+        checkDb(idToFieldsUpdated, ACCOUNTS_SOUP);
 
         // Check sync time stamp
         assertTrue("Wrong time stamp", syncManager.getSyncStatus(syncId).getMaxTimeStamp() > maxTimeStamp);
@@ -990,7 +989,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         long syncId = trySyncDown(MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, idToFields.size(), 1);
 
         // Make sure the soup has the records with id and names
-        checkDb(idToFields);
+        checkDb(idToFields, ACCOUNTS_SOUP);
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         String[] ids = idToFields.keySet().toArray(new String[0]);
@@ -1003,7 +1002,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         idToFieldsLeft.remove(idDeleted);
 
         // Make sure the soup doesn't contain the record deleted on the server anymore
-        checkDb(idToFieldsLeft);
+        checkDb(idToFieldsLeft, ACCOUNTS_SOUP);
         int numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(ACCOUNTS_SOUP, "Id", QuerySpec.Order.ascending, 10));
         assertEquals("Wrong number of accounts found in soup", numRecords, idToFieldsLeft.size());
     }
@@ -1137,44 +1136,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
 	}
 
-    private long trySyncDown(MergeMode mergeMode, SyncDownTarget target, String soupName) throws JSONException {
-        return trySyncDown(mergeMode, target, soupName, TOTAL_SIZE_UNKNOWN, 1);
-    }
-
-    /**
-     * Sync down helper.
-     *
-     * @param mergeMode Merge mode.
-     * @param target Sync down target.
-     * @param soupName Soup name.
-     * @param totalSize Expected total size
-     * @param numberFetches Expected number of fetches
-     * @return Sync ID.
-     */
-    private long trySyncDown(MergeMode mergeMode, SyncDownTarget target, String soupName, int totalSize, int numberFetches) throws JSONException {
-        final SyncOptions options = SyncOptions.optionsForSyncDown(mergeMode);
-        final SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
-        long syncId = sync.getId();
-        checkStatus(sync, SyncState.Type.syncDown, syncId, target, options, SyncState.Status.NEW, 0, -1);
-
-        // Runs sync.
-        final SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
-        syncManager.runSync(sync, queue);
-
-        // Checks status updates.
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
-        if (totalSize != TOTAL_SIZE_UNKNOWN) {
-            for (int i = 0; i < numberFetches; i++) {
-                checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, i * 100 / numberFetches, totalSize);
-            }
-            checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, totalSize);
-        } else {
-            checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0);
-            checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100);
-        }
-        return syncId;
-    }
-
     /**
      * Sync up helper
      * @param numberChanges
@@ -1253,33 +1214,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
         }
 	}
 
-	/**
-	 * Helper method to check sync state
-	 * @param sync
-	 * @param expectedType
-	 * @param expectedId
-	 * @param expectedTarget
-	 * @param expectedOptions
-	 * @param expectedStatus
-	 * @param expectedProgress
-	 * @throws JSONException
-	 */
-	private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress, int expectedTotalSize) throws JSONException {
-		assertEquals("Wrong type", expectedType, sync.getType());
-		assertEquals("Wrong id", expectedId, sync.getId());
-		JSONTestHelper.assertSameJSON("Wrong target", (expectedTarget == null ? null : expectedTarget.asJSON()), (sync.getTarget() == null ? null : sync.getTarget().asJSON()));
-		JSONTestHelper.assertSameJSON("Wrong options", (expectedOptions == null ? null : expectedOptions.asJSON()), (sync.getOptions() == null ? null : sync.getOptions().asJSON()));
-		assertEquals("Wrong status", expectedStatus, sync.getStatus());
-		assertEquals("Wrong progress", expectedProgress, sync.getProgress());
-        if (expectedTotalSize != TOTAL_SIZE_UNKNOWN) {
-            assertEquals("Wrong total size", expectedTotalSize, sync.getTotalSize());
-        }
-	}
-
-    private void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress) throws JSONException {
-        checkStatus(sync, expectedType, expectedId, expectedTarget, expectedOptions, expectedStatus, expectedProgress, TOTAL_SIZE_UNKNOWN);
-    }
-
     /**
 	 * Update accounts locally
 	 * @param idToFieldsLocallyUpdated
@@ -1329,25 +1263,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
 			smartStore.upsert(ACCOUNTS_SOUP, account);
 		}
 	}
-
-    /**
-     * Check records in db
-     * @throws JSONException
-     * @param expectedIdToFields
-     */
-    private void checkDb(Map<String, Map<String, Object>> expectedIdToFields) throws JSONException {
-        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:Id}, {accounts:Name}, {accounts:Description} FROM {accounts} WHERE {accounts:Id} IN " + makeInClause(expectedIdToFields.keySet()), COUNT_TEST_ACCOUNTS);
-        JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
-        JSONObject idToFieldsFromDb = new JSONObject();
-        for (int i=0; i<accountsFromDb.length(); i++) {
-            JSONArray row = accountsFromDb.getJSONArray(i);
-            JSONObject fields = new JSONObject();
-            fields.put(Constants.NAME, row.optString(1, null));
-            fields.put(Constants.DESCRIPTION, row.optString(2, null));
-            idToFieldsFromDb.put(row.getString(0), fields);
-        }
-        JSONTestHelper.assertSameJSONObject("Wrong data in db", new JSONObject(expectedIdToFields), idToFieldsFromDb);
-    }
 
     /**
      * Check records state in db

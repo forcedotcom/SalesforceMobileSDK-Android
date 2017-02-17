@@ -42,6 +42,7 @@ public class Constants {
 
     public static final String ID = "Id";
     public static final String NAME = "Name";
+    public static final String LAST_NAME = "LastName";
     public static final String DESCRIPTION = "Description";
     public static final String TYPE = "Type";
     public static final String ATTRIBUTES = "attributes";

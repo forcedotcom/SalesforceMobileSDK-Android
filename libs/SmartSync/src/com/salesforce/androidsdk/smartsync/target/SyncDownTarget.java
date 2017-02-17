@@ -74,6 +74,7 @@ public abstract class SyncDownTarget extends SyncTarget {
         case sosl:    return new SoslSyncDownTarget(target);
         case soql:    return new SoqlSyncDownTarget(target);
         case refresh: return new RefreshSyncDownTarget(target);
+            case parent_children: return new ParentChildrenSyncDownTarget(target);
         case custom:
         default:
             try {

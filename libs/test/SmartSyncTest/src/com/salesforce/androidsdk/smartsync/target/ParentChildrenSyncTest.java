@@ -27,8 +27,6 @@ package com.salesforce.androidsdk.smartsync.target;
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-import android.util.Log;
-
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
@@ -37,6 +35,7 @@ import com.salesforce.androidsdk.smartsync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -236,7 +235,8 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      * Test saveRecordsToLocalStore
      */
     public void testSaveRecordsToLocalStore() throws JSONException {
-        // Putting together a JSONArray of accounts with contacts looking like what we would get back from the server:
+        // Putting together a JSONArray of accounts with contacts
+        // looking like what we would get back from startFetch/continueFetch
         // - not having local fields
         // - not have _soupEntryId field
         final int numberAccounts = 4;
@@ -324,7 +324,9 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      * Test getLatestModificationTimeStamp
      */
     public void testGetLatestModificationTimeStamp() throws JSONException {
-        // Putting together a JSONArray of accounts with contacts looking like what we would get back from the server with different fields for last modified time
+        // Putting together a JSONArray of accounts with contacts
+        // looking like what we would get back from startFetch/continueFetch
+        // with different fields for last modified time
         final int numberAccounts = 4;
         final int numberContactsPerAccount = 3;
 
@@ -387,25 +389,25 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // Get max time stamps based on fields AccountTimeStamp1 / ContactTimeStamp1
         assertEquals(
                 timeStamps[3],
-                getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp1", "ContactTimeStamp1").getLatestModificationTimeStamp(records)
+                getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp1", "ContactTimeStamp1", null).getLatestModificationTimeStamp(records)
         );
 
         // Get max time stamps based on fields AccountTimeStamp1 / ContactTimeStamp2
         assertEquals(
                 timeStamps[3],
-                getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp1", "ContactTimeStamp2").getLatestModificationTimeStamp(records)
+                getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp1", "ContactTimeStamp2", null).getLatestModificationTimeStamp(records)
         );
 
         // Get max time stamps based on fields AccountTimeStamp2 / ContactTimeStamp1
         assertEquals(
                 timeStamps[1],
-                getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp2", "ContactTimeStamp1").getLatestModificationTimeStamp(records)
+                getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp2", "ContactTimeStamp1", null).getLatestModificationTimeStamp(records)
         );
 
         // Get max time stamps based on fields AccountTimeStamp2 / ContactTimeStamp2
         assertEquals(
                 timeStamps[2],
-                getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp2", "ContactTimeStamp2").getLatestModificationTimeStamp(records)
+                getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP, "AccountTimeStamp2", "ContactTimeStamp2", null).getLatestModificationTimeStamp(records)
         );
     }
 
@@ -421,6 +423,59 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         catch (UnsupportedOperationException e) {
         }
     }
+
+    /**
+     * Sync down the test accounts, check smart store, check status during sync
+     */
+    public void testSyncDown() throws Exception {
+        final int numberAccounts = 4;
+        final int numberContactsPerAccount = 3;
+
+        Map<String, Map<String, Object>> accountIdToFields = new HashMap<>();
+        Map<String, Map<String, Map<String, Object>> > accountIdContactIdToFields = new HashMap<>();
+
+        try {
+            // Create accounts and contacts on server
+
+            accountIdToFields = createRecordsOnServerReturnFields(numberAccounts, Constants.ACCOUNT, null);
+
+            for (String accountId : accountIdToFields.keySet()) {
+                Map<String, Object> additionalFields = new HashMap<>();
+                additionalFields.put(ACCOUNT_ID, accountId);
+                Map<String, Map<String, Object>> contactIdToFields = createRecordsOnServerReturnFields(numberContactsPerAccount, Constants.CONTACT, additionalFields);
+                accountIdContactIdToFields.put(accountId, contactIdToFields);
+            }
+
+            // Target
+            ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP,
+                    String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
+
+            // Sync down
+            trySyncDown(SyncState.MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, numberAccounts, 1);
+
+            // Check that db was correctly populated
+            checkDb(accountIdToFields, ACCOUNTS_SOUP);
+            for (String accountId : accountIdToFields.keySet()) {
+                long accountLocalId = syncManager.getSmartStore().lookupSoupEntryId(ACCOUNTS_SOUP, Constants.ID, accountId);
+                Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
+                for (String contactId : contactIdToFields.keySet()) {
+                    Map<String, Object> fields = contactIdToFields.get(contactId);
+                    // we expect to find the accountLocalId populated
+                    fields.put(ACCOUNT_LOCAL_ID, "" + accountLocalId);
+                }
+                checkDb(contactIdToFields, CONTACTS_SOUP);
+            }
+        }
+        finally {
+            // Cleanup
+            deleteRecordsOnServer(accountIdContactIdToFields.keySet(), Constants.ACCOUNT);
+            for (String accountId : accountIdToFields.keySet()) {
+                Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
+                deleteRecordsOnServer(contactIdToFields.keySet(), Constants.CONTACT);
+            }
+        }
+    }
+
 
 
     /**
@@ -526,7 +581,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     private void createContactsSoup() {
         final IndexSpec[] contactsIndexSpecs = {
                 new IndexSpec(Constants.ID, SmartStore.Type.string),
-                new IndexSpec(Constants.NAME, SmartStore.Type.string),
+                new IndexSpec(Constants.LAST_NAME, SmartStore.Type.string),
                 new IndexSpec(SyncTarget.LOCAL, SmartStore.Type.string),
                 new IndexSpec(ACCOUNT_ID, SmartStore.Type.string),
                 new IndexSpec(ACCOUNT_LOCAL_ID, SmartStore.Type.integer)
@@ -539,16 +594,20 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     private ParentChildrenSyncDownTarget getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType relationshipType) {
-        return getAccountContactsSyncDownTarget(relationshipType, Constants.LAST_MODIFIED_DATE, Constants.LAST_MODIFIED_DATE);
+        return getAccountContactsSyncDownTarget(relationshipType, "");
     }
 
-    private ParentChildrenSyncDownTarget getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType relationshipType, String accountModificationDateFieldName, String contactModificationDateFieldName) {
+    private ParentChildrenSyncDownTarget getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType relationshipType, String parentSoqlFilter) {
+        return getAccountContactsSyncDownTarget(relationshipType, Constants.LAST_MODIFIED_DATE, Constants.LAST_MODIFIED_DATE, parentSoqlFilter);
+    }
+
+    private ParentChildrenSyncDownTarget getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType relationshipType, String accountModificationDateFieldName, String contactModificationDateFieldName, String parentSoqlFilter) {
         return new ParentChildrenSyncDownTarget(
                 new ParentInfo(Constants.ACCOUNT, Constants.ID, accountModificationDateFieldName),
                 Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION),
-                "",
+                parentSoqlFilter,
                 new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", Constants.ID, contactModificationDateFieldName, CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID),
-                Arrays.asList(Constants.NAME),
+                Arrays.asList(Constants.LAST_NAME),
                 relationshipType);
     }
 
