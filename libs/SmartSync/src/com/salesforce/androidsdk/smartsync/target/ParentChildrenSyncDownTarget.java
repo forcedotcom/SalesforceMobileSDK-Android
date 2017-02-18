@@ -42,6 +42,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -146,7 +147,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     }
 
     @Override
-    public String getQuery() {
+    public String getQuery(long maxTimeStamp) {
         List<String> nestedFields = new ArrayList<>(childrenFieldlist);
         if (!nestedFields.contains(childrenInfo.idFieldName)) nestedFields.add(childrenInfo.idFieldName);
         if (!nestedFields.contains(childrenInfo.modificationDateFieldName)) nestedFields.add(childrenInfo.modificationDateFieldName);
@@ -160,7 +161,26 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
         SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(fields);
         builder.from(parentInfo.sobjectType);
-        builder.where(parentSoqlFilter);
+
+        StringBuilder soqlFilter = new StringBuilder();
+        if (maxTimeStamp > 0) {
+            soqlFilter.append(getModificationDateFieldName())
+                    .append(" > ")
+                    .append(Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp)))
+                    .append(TextUtils.isEmpty(parentSoqlFilter) ? "" : " and ");
+
+
+            // XXX
+            // We should be doing
+            // select fields, (select childrenFields from children) from parent where lastModifiedDate > xxx or Id in (select parent-id from children where lastModifiedDate > xxx)
+            // but SOQL does not allow: Semi join sub-selects are not allowed with the 'OR' operator
+            //
+            // If we do
+            // select fields, (select childrenFields from children) from parent where Id in (select parent-id from children where lastModifiedDate > xxx or parent.lastModifiedDate > xxx)
+            // we will miss parents without children
+        }
+        soqlFilter.append(parentSoqlFilter);
+        builder.where(soqlFilter.toString());
 
         return builder.build();
     }
@@ -173,8 +193,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
             JSONArray childrenRecords = record.getJSONObject(childrenInfo.sobjectTypePlural).getJSONArray(Constants.RECORDS);
             // Cleaning up record
             record.put(childrenInfo.sobjectTypePlural, childrenRecords);
-
-            // TODO deal with the case where not all the children were fetched at once
+            // XXX what if not all children were fetched
         }
         return records;
     }

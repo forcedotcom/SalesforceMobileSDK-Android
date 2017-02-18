@@ -112,12 +112,11 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 
     @Override
     public JSONArray startFetch(SyncManager syncManager, long maxTimeStamp) throws IOException, JSONException {
-        return startFetch(syncManager, maxTimeStamp, getQuery());
+        return startFetch(syncManager, getQuery(maxTimeStamp));
     }
 
-    private JSONArray startFetch(SyncManager syncManager, long maxTimeStamp, String queryRun) throws IOException, JSONException {
-        String queryToRun = maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(queryRun, getModificationDateFieldName(), maxTimeStamp) : queryRun;
-        RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, queryToRun);
+    private JSONArray startFetch(SyncManager syncManager, String query) throws IOException, JSONException {
+        RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, query);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONObject responseJson = getResponseJson(response);
         JSONArray records = getRecordsFromResponseJson(responseJson);
@@ -172,7 +171,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
 
         // Makes network request and parses the response.
         try {
-            JSONArray records = startFetch(syncManager, 0, soql);
+            JSONArray records = startFetch(syncManager, soql);
             remoteIds.addAll(parseIdsFromResponse(records));
             while (records != null) {
 
@@ -193,7 +192,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         final StringBuilder soql = new StringBuilder("SELECT ");
         soql.append(getIdFieldName());
         soql.append(" FROM ");
-        final String[] fromClause = getQuery().split("([ ][fF][rR][oO][mM][ ])");
+        final String[] fromClause = getQuery(0).split("([ ][fF][rR][oO][mM][ ])");
         soql.append(fromClause[1]);
         return soql.toString();
     }
@@ -211,7 +210,15 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     /**
      * @return soql query for this target
      */
-	public String getQuery() {
-        return query;
+    public String getQuery() {
+        return getQuery(0);
+    }
+
+    /**
+     * @return soql query for this target
+     * @param maxTimeStamp
+     */
+	public String getQuery(long maxTimeStamp) {
+        return maxTimeStamp > 0 ? SoqlSyncDownTarget.addFilterForReSync(query, getModificationDateFieldName(), maxTimeStamp) : query;
 	}
 }

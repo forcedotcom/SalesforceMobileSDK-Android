@@ -27,8 +27,10 @@
 package com.salesforce.androidsdk.smartsync.manager;
 
 import android.text.TextUtils;
-import android.util.Log;
 
+import com.salesforce.androidsdk.rest.ApiVersionStrings;
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -47,8 +49,11 @@ import org.json.JSONObject;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Formatter;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Abstract super class for all SyncManager test classes
@@ -263,5 +268,58 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
                         expectedFields.get(fieldName).toString(), recordFromDb.get(fieldName).toString());
             }
         }
+    }
+
+    /**
+     * Update records on server
+     * @param idToFieldsUpdated
+     * @param sObjectType
+     * @throws Exception
+     */
+    protected void updateRecordsOnServer(Map<String, Map<String, Object>> idToFieldsUpdated, String sObjectType) throws Exception {
+        for (String id : idToFieldsUpdated.keySet()) {
+            RestRequest request = RestRequest.getRequestForUpdate(ApiVersionStrings.getVersionNumber(targetContext), sObjectType, id, idToFieldsUpdated.get(id));
+            // Response
+            RestResponse response = restClient.sendSync(request);
+            assertTrue("Updated failed", response.isSuccess());
+        }
+    }
+
+    /**
+     * Make remote changes
+     * @throws JSONException
+     * @param idToFields
+     * @param sObjectType
+     */
+    protected Map<String, Map<String, Object>> makeRemoteChanges(Map<String, Map<String, Object>> idToFields, String sObjectType) throws Exception {
+        final int[] indicesRecordsToUpdate = {0, 2};
+        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, indicesRecordsToUpdate);
+        Thread.sleep(1000); // time stamp precision is in seconds
+        updateRecordsOnServer(idToFieldsUpdated, sObjectType);
+        return idToFieldsUpdated;
+    }
+
+    protected Map<String, Map<String, Object>> prepareSomeChanges(Map<String, Map<String, Object>> idToFields, int[] indicesRecordsToUpdate) {
+        Map<String, Map<String, Object>> idToFieldsUpdated = new HashMap<>();
+        String[] allIds = idToFields.keySet().toArray(new String[0]);
+        Arrays.sort(allIds); // to make the status updates sequence deterministic
+
+        for (int i = 0; i < indicesRecordsToUpdate.length; i++) {
+            String id = allIds[indicesRecordsToUpdate[i]];
+            idToFieldsUpdated.put(id, updatedFields(idToFields.get(id)));
+        }
+        return idToFieldsUpdated;
+    }
+
+    protected Map<String, Object> updatedFields(Map<String, Object> fields) {
+        Set<String> fieldNamesUpdatable = new HashSet<>(Arrays.asList(new String[] {Constants.NAME, Constants.DESCRIPTION, Constants.LAST_NAME}));
+
+        Map<String, Object> updatedFields = new HashMap<>();
+        for (String fieldName : fields.keySet()) {
+            if (fieldNamesUpdatable.contains(fieldName)) {
+                updatedFields.put(fieldName, fields.get(fieldName) + "_updated");
+            }
+        }
+        return updatedFields;
     }
 }

@@ -35,7 +35,9 @@ import com.salesforce.androidsdk.smartsync.manager.SyncManagerTestCase;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
+import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
+import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -59,6 +61,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     private static final String ACCOUNT_ID = "AccountId";
     private static final String ACCOUNT_LOCAL_ID = "AccountLocalId";
 
+    protected Map<String, Map<String, Object>> accountIdToFields;
+    protected Map<String, Map<String, Map<String, Object>> > accountIdContactIdToFields;
+
+
     @Override
     public void setUp() throws Exception {
         super.setUp();
@@ -71,6 +77,18 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         super.tearDown();
         dropContactsSoup();
         dropAccountsSoup();
+
+        // accountIdToFields and accountIdContactIdToFields are not used by all tests
+        if (accountIdToFields != null) {
+            deleteRecordsOnServer(accountIdToFields.keySet(), Constants.ACCOUNT);
+        }
+
+        if (accountIdContactIdToFields != null) {
+            for (String accountId : accountIdContactIdToFields.keySet()) {
+                Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
+                deleteRecordsOnServer(contactIdToFields.keySet(), Constants.CONTACT);
+            }
+        }
     }
 
     /**
@@ -99,6 +117,39 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children) from Parent where School = 'MIT'", target.getQuery());
     }
+
+
+    /**
+     * Test query for reSync by calling getQuery with maxTimeStamp for ParentChildrenSyncDownTarget
+     */
+    public void testGetQueryWithMaxTimeStamp() {
+        Date date = new Date();
+        String dateStr = Constants.TIMESTAMP_FORMAT.format(date);
+        long dateLong = date.getTime();
+
+        ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
+                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
+                Arrays.asList("ParentName", "Title"),
+                "School = 'MIT'",
+                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
+                Arrays.asList("ChildName", "School"),
+                ParentChildrenSyncDownTarget.RelationshipType.LOOKUP);
+
+        assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children) from Parent where ParentModifiedDate > " + dateStr + " and School = 'MIT'", target.getQuery(dateLong));
+
+        // With default id and modification date fields
+        target = new ParentChildrenSyncDownTarget(
+                new ParentInfo("Parent"),
+                Arrays.asList("ParentName", "Title"),
+                "School = 'MIT'",
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId"),
+                Arrays.asList("ChildName", "School"),
+                ParentChildrenSyncDownTarget.RelationshipType.LOOKUP);
+
+
+        assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children) from Parent where LastModifiedDate > " + dateStr + " and School = 'MIT'", target.getQuery(dateLong));
+    }
+
 
     /**
      * Test getSoqlForRemoteIds for ParentChildrenSyncDownTarget
@@ -425,57 +476,115 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     /**
-     * Sync down the test accounts, check smart store, check status during sync
+     * Sync down the test accounts and contacts, check smart store, check status during sync
      */
     public void testSyncDown() throws Exception {
         final int numberAccounts = 4;
         final int numberContactsPerAccount = 3;
 
-        Map<String, Map<String, Object>> accountIdToFields = new HashMap<>();
-        Map<String, Map<String, Map<String, Object>> > accountIdContactIdToFields = new HashMap<>();
+        // Creating test accounts and contacts on server
+        createAccountsAndContactsOnServer(numberAccounts, numberContactsPerAccount);
 
-        try {
-            // Create accounts and contacts on server
+        // Sync down
+        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP,
+                String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
+        trySyncDown(SyncState.MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, numberAccounts, 1);
 
-            accountIdToFields = createRecordsOnServerReturnFields(numberAccounts, Constants.ACCOUNT, null);
-
-            for (String accountId : accountIdToFields.keySet()) {
-                Map<String, Object> additionalFields = new HashMap<>();
-                additionalFields.put(ACCOUNT_ID, accountId);
-                Map<String, Map<String, Object>> contactIdToFields = createRecordsOnServerReturnFields(numberContactsPerAccount, Constants.CONTACT, additionalFields);
-                accountIdContactIdToFields.put(accountId, contactIdToFields);
+        // Check that db was correctly populated
+        checkDb(accountIdToFields, ACCOUNTS_SOUP);
+        for (String accountId : accountIdToFields.keySet()) {
+            long accountLocalId = syncManager.getSmartStore().lookupSoupEntryId(ACCOUNTS_SOUP, Constants.ID, accountId);
+            Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
+            for (String contactId : contactIdToFields.keySet()) {
+                Map<String, Object> fields = contactIdToFields.get(contactId);
+                // we expect to find the accountLocalId populated
+                fields.put(ACCOUNT_LOCAL_ID, "" + accountLocalId);
             }
-
-            // Target
-            ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP,
-                    String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
-
-            // Sync down
-            trySyncDown(SyncState.MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, numberAccounts, 1);
-
-            // Check that db was correctly populated
-            checkDb(accountIdToFields, ACCOUNTS_SOUP);
-            for (String accountId : accountIdToFields.keySet()) {
-                long accountLocalId = syncManager.getSmartStore().lookupSoupEntryId(ACCOUNTS_SOUP, Constants.ID, accountId);
-                Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
-                for (String contactId : contactIdToFields.keySet()) {
-                    Map<String, Object> fields = contactIdToFields.get(contactId);
-                    // we expect to find the accountLocalId populated
-                    fields.put(ACCOUNT_LOCAL_ID, "" + accountLocalId);
-                }
-                checkDb(contactIdToFields, CONTACTS_SOUP);
-            }
-        }
-        finally {
-            // Cleanup
-            deleteRecordsOnServer(accountIdContactIdToFields.keySet(), Constants.ACCOUNT);
-            for (String accountId : accountIdToFields.keySet()) {
-                Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
-                deleteRecordsOnServer(contactIdToFields.keySet(), Constants.CONTACT);
-            }
+            checkDb(contactIdToFields, CONTACTS_SOUP);
         }
     }
 
+
+    /**
+     * Sync down the test accounts and contacts, modify accounts, re-sync, make sure only the updated ones are downloaded
+     */
+    public void testReSyncWithUpdatedParents() throws Exception {
+        final int numberAccounts = 4;
+        final int numberContactsPerAccount = 3;
+
+        // Creating up test accounts and contacts on server
+        createAccountsAndContactsOnServer(numberAccounts, numberContactsPerAccount);
+
+        // Sync down
+        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP,
+                String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
+        long syncId = trySyncDown(SyncState.MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, numberAccounts, 1);
+
+        // Check sync time stamp
+        SyncState sync = syncManager.getSyncStatus(syncId);
+        SyncOptions options = sync.getOptions();
+        long maxTimeStamp = sync.getMaxTimeStamp();
+        assertTrue("Wrong time stamp", maxTimeStamp > 0);
+
+        // Make some remote change to accounts
+        Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges(accountIdToFields, Constants.ACCOUNT);
+
+        // Call reSync
+        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        syncManager.reSync(syncId, queue);
+
+        // Check status updates
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, idToFieldsUpdated.size());
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, idToFieldsUpdated.size());
+
+        // Check db
+        checkDb(idToFieldsUpdated, ACCOUNTS_SOUP);
+
+        // Check sync time stamp
+        assertTrue("Wrong time stamp", syncManager.getSyncStatus(syncId).getMaxTimeStamp() > maxTimeStamp);
+    }
+
+    /**
+     * Sync down the test accounts and contacts, modify contacts, re-sync, make sure only the updated ones are downloaded
+     */
+    public void testReSyncWithUpdatedChildren() throws Exception {
+        final int numberAccounts = 4;
+        final int numberContactsPerAccount = 3;
+
+        // Creating up test accounts and contacts on server
+        createAccountsAndContactsOnServer(numberAccounts, numberContactsPerAccount);
+
+        // Sync down
+        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP,
+                String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
+        long syncId = trySyncDown(SyncState.MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, numberAccounts, 1);
+
+        // Check sync time stamp
+        SyncState sync = syncManager.getSyncStatus(syncId);
+        SyncOptions options = sync.getOptions();
+        long maxTimeStamp = sync.getMaxTimeStamp();
+        assertTrue("Wrong time stamp", maxTimeStamp > 0);
+
+        // Make some remote change to contacts of an account
+        String accountId = accountIdToFields.keySet().toArray(new String[0])[0];
+        Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges(accountIdContactIdToFields.get(accountId), Constants.CONTACT);
+
+        // Call reSync
+        SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+        syncManager.reSync(syncId, queue);
+
+        // Check status updates
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, -1);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.RUNNING, 0, 1);
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, 1);
+
+        // Check db
+        checkDb(idToFieldsUpdated, CONTACTS_SOUP);
+
+        // Check sync time stamp
+        assertTrue("Wrong time stamp", syncManager.getSyncStatus(syncId).getMaxTimeStamp() > maxTimeStamp);
+    }
 
 
     /**
@@ -653,6 +762,21 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             arr[i] = rows.getJSONArray(i).getJSONObject(0);
         }
         return arr;
+    }
+
+    protected void createAccountsAndContactsOnServer(int numberAccounts, int numberContactsPerAccount) throws Exception {
+        accountIdToFields = new HashMap<>();
+        accountIdContactIdToFields = new HashMap<>();
+
+        // Create accounts and contacts on server
+        accountIdToFields = createRecordsOnServerReturnFields(numberAccounts, Constants.ACCOUNT, null);
+
+        for (String accountId : accountIdToFields.keySet()) {
+            Map<String, Object> additionalFields = new HashMap<>();
+            additionalFields.put(ACCOUNT_ID, accountId);
+            Map<String, Map<String, Object>> contactIdToFields = createRecordsOnServerReturnFields(numberContactsPerAccount, Constants.CONTACT, additionalFields);
+            accountIdContactIdToFields.put(accountId, contactIdToFields);
+        }
     }
 
 }

@@ -149,7 +149,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         assertTrue("Wrong time stamp", maxTimeStamp > 0);
 
         // Make some remote change
-        Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges();
+        Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges(idToFields, Constants.ACCOUNT);
 
         // Call reSync
         SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
@@ -211,7 +211,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
             }
 			idToFieldsRemotelyUpdated.put(id, updatedFields);
         }
-        updateAccountsOnServer(idToFieldsRemotelyUpdated);
+        updateRecordsOnServer(idToFieldsRemotelyUpdated, Constants.ACCOUNT);
 
 		// Sync up
 		trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
@@ -322,10 +322,10 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		final Map<String, Map<String, Object>> idToFieldsRemotelyUpdated = new HashMap<>();
         for (int i = 0; i < idsLocallyDeleted.length; i++) {
             String id = idsLocallyDeleted[i];
-            Map<String, Object> updatedFields = updatedFields(id);
+            Map<String, Object> updatedFields = updatedFields(idToFields.get(id));
             idToFieldsRemotelyUpdated.put(id, updatedFields);
         }
-        updateAccountsOnServer(idToFieldsRemotelyUpdated);
+        updateRecordsOnServer(idToFieldsRemotelyUpdated, Constants.ACCOUNT);
 
 		// Sync up
 		trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
@@ -944,7 +944,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDb(idToFields, ACCOUNTS_SOUP);
 
         // Make some remote change
-        Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges();
+        Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges(idToFields, Constants.ACCOUNT);
 
         // Call reSync
         SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
@@ -1235,20 +1235,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
 	}
 
     /**
-     * Update accounts on server
-     * @param idToFieldsUpdated
-     * @throws Exception
-     */
-    private void updateAccountsOnServer(Map<String, Map <String, Object>> idToFieldsUpdated) throws Exception {
-        for (String id : idToFieldsUpdated.keySet()) {
-            RestRequest request = RestRequest.getRequestForUpdate(ApiVersionStrings.getVersionNumber(targetContext), Constants.ACCOUNT, id, idToFieldsUpdated.get(id));
-            // Response
-            RestResponse response = restClient.sendSync(request);
-            assertTrue("Updated failed", response.isSuccess());
-        }
-    }
-
-	/**
 	 * Delete accounts locally
 	 * @param idsLocallyDeleted
 	 * @throws JSONException 
@@ -1327,41 +1313,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
      * @throws JSONException
      */
     private Map<String, Map<String, Object>> makeSomeLocalChanges() throws JSONException {
-        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(new int[] {0, 1, 2});
+        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, new int[] {0, 1, 2});
         updateAccountsLocally(idToFieldsUpdated);
         return idToFieldsUpdated;
-    }
-
-    /**
-     * Make remote changes
-     * @throws JSONException
-     */
-    private Map<String, Map<String, Object>> makeRemoteChanges() throws Exception {
-        Thread.sleep(1000); // time stamp precision is in seconds
-        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(new int[] {0, 2});
-        updateAccountsOnServer(idToFieldsUpdated);
-        return idToFieldsUpdated;
-    }
-
-    private Map<String, Map<String, Object>> prepareSomeChanges(int[] indices) {
-        Map<String, Map<String, Object>> idToFieldsUpdated = new HashMap<>();
-        String[] allIds = idToFields.keySet().toArray(new String[0]);
-        Arrays.sort(allIds); // to make the status updates sequence deterministic
-
-        for (int i = 0; i < indices.length; i++) {
-            String id = allIds[indices[i]];
-            idToFieldsUpdated.put(id, updatedFields(id));
-        }
-        return idToFieldsUpdated;
-    }
-
-    private Map<String, Object> updatedFields(String id) {
-        Map<String, Object> fields = idToFields.get(id);
-        Map<String, Object> updatedFields = new HashMap<>();
-        for (String fieldName : fields.keySet()) {
-            updatedFields.put(fieldName, fields.get(fieldName) + "_updated");
-        }
-        return updatedFields;
     }
 
     /**
