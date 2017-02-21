@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -123,16 +124,8 @@ public abstract class SyncTarget {
      * @throws JSONException
      */
     public SortedSet<String> getDirtyRecordIds(SyncManager syncManager, String soupName, String idField) throws JSONException {
-        SortedSet<String> ids = new TreeSet<String>();
         String dirtyRecordsSql = getDirtyRecordIdsSql(soupName, idField);
-        final QuerySpec smartQuerySpec = QuerySpec.buildSmartQuerySpec(dirtyRecordsSql, PAGE_SIZE);
-        boolean hasMore = true;
-        for (int pageIndex = 0; hasMore; pageIndex++) {
-            JSONArray results = syncManager.getSmartStore().query(smartQuerySpec, pageIndex);
-            hasMore = (results.length() == PAGE_SIZE);
-            ids.addAll(toSortedSet(results));
-        }
-        return ids;
+        return getIdsWithQuery(syncManager, dirtyRecordsSql);
     }
 
     /**
@@ -154,16 +147,8 @@ public abstract class SyncTarget {
      * @throws JSONException
      */
     public SortedSet<String> getNonDirtyRecordIds(SyncManager syncManager, String soupName, String idField) throws JSONException {
-        SortedSet<String> ids = new TreeSet<String>();
         String nonDirtyRecordsSql = getNonDirtyRecordIdsSql(soupName, idField);
-        final QuerySpec smartQuerySpec = QuerySpec.buildSmartQuerySpec(nonDirtyRecordsSql, PAGE_SIZE);
-        boolean hasMore = true;
-        for (int pageIndex = 0; hasMore; pageIndex++) {
-            JSONArray results = syncManager.getSmartStore().query(smartQuerySpec, pageIndex);
-            hasMore = (results.length() == PAGE_SIZE);
-            ids.addAll(toSortedSet(results));
-        }
-        return ids;
+        return getIdsWithQuery(syncManager, nonDirtyRecordsSql);
     }
 
     /**
@@ -174,6 +159,18 @@ public abstract class SyncTarget {
      */
     protected String getNonDirtyRecordIdsSql(String soupName, String idField) {
         return String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' ORDER BY {%s:%s} ASC", soupName, idField, soupName, soupName, LOCAL, soupName, idField);
+    }
+
+    protected SortedSet<String> getIdsWithQuery(SyncManager syncManager, String idsSql) throws JSONException {
+        final SortedSet<String> ids = new TreeSet<String>();
+        final QuerySpec smartQuerySpec = QuerySpec.buildSmartQuerySpec(idsSql, PAGE_SIZE);
+        boolean hasMore = true;
+        for (int pageIndex = 0; hasMore; pageIndex++) {
+            JSONArray results = syncManager.getSmartStore().query(smartQuerySpec, pageIndex);
+            hasMore = (results.length() == PAGE_SIZE);
+            ids.addAll(toSortedSet(results));
+        }
+        return ids;
     }
 
     /**
@@ -286,7 +283,9 @@ public abstract class SyncTarget {
             String smartSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} IN (%s)",
                     soupName, SmartStore.SOUP_ENTRY_ID, soupName, soupName, idField,
                     "'" + TextUtils.join("', '", ids) + "'");
-            QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, ids.size());
+
+            Log.i("--query-for-delete-->", smartSql);
+            QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE /* delete all */);
             syncManager.getSmartStore().deleteByQuery(soupName, querySpec);
         }
     }

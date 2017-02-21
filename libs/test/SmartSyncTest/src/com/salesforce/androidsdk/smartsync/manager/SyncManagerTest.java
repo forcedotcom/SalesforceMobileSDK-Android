@@ -781,7 +781,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Creates 3 accounts on the server.
         final Map<String, String> accounts = createRecordsOnServer(3, Constants.ACCOUNT);
-        assertEquals("3 accounts should have been created", accounts.size(), 3);
+        assertEquals("3 accounts should have been created", 3, accounts.size());
         final Set<String> keySet = accounts.keySet();
         final String[] accountIds = new String[3];
         keySet.toArray(accountIds);
@@ -792,13 +792,13 @@ public class SyncManagerTest extends SyncManagerTestCase {
         final String soql = "SELECT Id, Name FROM Account WHERE Id IN ('" + accountIds[0] + "', '" + accountIds[1] + "', '" + accountIds[2] + "')";
         long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new SoqlSyncDownTarget(soql), soupName, accounts.size(), 1);
         int numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
-        assertEquals("3 accounts should be stored in the soup", numRecords, 3);
+        assertEquals("3 accounts should be stored in the soup", 3, numRecords);
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
         syncManager.cleanResyncGhosts(syncId);
         numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
-        assertEquals("2 accounts should be stored in the soup", numRecords, 2);
+        assertEquals("2 accounts should be stored in the soup", 2, numRecords);
 
         // Deletes the remaining accounts on the server.
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[1], accountIds[2])), Constants.ACCOUNT);
@@ -813,7 +813,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Creates 3 accounts on the server.
         final Map<String, String> accounts = createRecordsOnServer(3, Constants.ACCOUNT);
-        assertEquals("3 accounts should have been created", accounts.size(), 3);
+        assertEquals("3 accounts should have been created", 3, accounts.size());
         final Set<String> keySet = accounts.keySet();
         final String[] accountIds = new String[3];
         keySet.toArray(accountIds);
@@ -831,8 +831,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
         syncManager.cleanResyncGhosts(syncId);
-        int postNumRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
-        assertEquals("1 less account should be stored in the soup", postNumRecords, preNumRecords - 1);
+        checkDbDeleted(ACCOUNTS_SOUP, new String[] {accountIds[0]}, Constants.ID);
 
         // Deletes the remaining accounts on the server.
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[1], accountIds[2])), Constants.ACCOUNT);
@@ -847,7 +846,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Creates 1 account on the server.
         final Map<String, String> accounts = createRecordsOnServer(1, Constants.ACCOUNT);
-        assertEquals("1 account should have been created", accounts.size(), 1);
+        assertEquals("1 account should have been created", 1, accounts.size());
         final Set<String> keySet = accounts.keySet();
         final String[] accountIds = new String[1];
         keySet.toArray(accountIds);
@@ -861,13 +860,12 @@ public class SyncManagerTest extends SyncManagerTestCase {
         final String sosl = soslBuilder.returning(returningBuilder).searchGroup("NAME FIELDS").build();
         long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new SoslSyncDownTarget(sosl), soupName);
         int numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
-        assertEquals("1 account should be stored in the soup", numRecords, 1);
+        assertEquals("1 account should be stored in the soup", 1, numRecords);
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
         syncManager.cleanResyncGhosts(syncId);
-        numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
-        assertEquals("No accounts should be stored in the soup", numRecords, 0);
+        checkDbDeleted(ACCOUNTS_SOUP, new String[] {accountIds[0]}, Constants.ID);
 
         // Deletes the remaining accounts on the server.
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
@@ -1003,8 +1001,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Make sure the soup doesn't contain the record deleted on the server anymore
         checkDb(idToFieldsLeft, ACCOUNTS_SOUP);
-        int numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(ACCOUNTS_SOUP, "Id", QuerySpec.Order.ascending, 10));
-        assertEquals("Wrong number of accounts found in soup", numRecords, idToFieldsLeft.size());
+        checkDbDeleted(ACCOUNTS_SOUP, new String[] {idDeleted}, Constants.ID);
     }
 
     /**

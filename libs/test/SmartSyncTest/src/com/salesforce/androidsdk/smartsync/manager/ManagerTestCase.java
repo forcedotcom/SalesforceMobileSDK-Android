@@ -212,7 +212,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
     }
 
     /**
-     * Delete records specified in idToNames
+     * Delete records with given ids from server
      * @param ids
      * @throws Exception
      */
