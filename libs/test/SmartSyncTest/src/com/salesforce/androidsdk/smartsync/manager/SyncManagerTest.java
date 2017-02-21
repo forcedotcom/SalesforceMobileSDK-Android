@@ -802,8 +802,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Deletes the remaining accounts on the server.
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[1], accountIds[2])), Constants.ACCOUNT);
-        dropAccountsSoup(soupName);
-        deleteSyncs();
     }
 
     /**
@@ -835,8 +833,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Deletes the remaining accounts on the server.
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[1], accountIds[2])), Constants.ACCOUNT);
-        dropAccountsSoup(soupName);
-        deleteSyncs();
     }
 
     /**
@@ -869,8 +865,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Deletes the remaining accounts on the server.
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
-        dropAccountsSoup(soupName);
-        deleteSyncs();
     }
 
     /**

@@ -597,6 +597,46 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
 
     /**
+     * Sync down the test accounts and contacts
+     * Delete account from server - run cleanResyncGhosts
+     * Make sure the deleted account is no longer present locally
+     * Make sure the children of the deleted account are no longer present locally -- TBD
+     */
+    public void testCleanResyncGhostsForParentChildrenTarget() throws Exception {
+        final int numberAccounts = 4;
+        final int numberContactsPerAccount = 3;
+
+        // Creating up test accounts and contacts on server
+        createAccountsAndContactsOnServer(numberAccounts, numberContactsPerAccount);
+
+        // Sync down
+        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP,
+                String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
+        long syncId = trySyncDown(SyncState.MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, numberAccounts, 1);
+
+        // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
+        String accountIdDeleted = accountIdToFields.keySet().toArray(new String[0])[0];
+        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIdDeleted)), Constants.ACCOUNT);
+        syncManager.cleanResyncGhosts(syncId);
+
+        // Accounts and contacts expected to still be in db
+        Map<String, Map<String, Object>> accountIdToFieldsLeft = new HashMap<>(accountIdToFields);
+        accountIdToFieldsLeft.remove(accountIdDeleted);
+        HashMap<String, Map<String, Map<String, Object>>> accountIdContactIdToFieldsLeft = new HashMap<>(accountIdContactIdToFields);
+        accountIdContactIdToFieldsLeft.remove(accountIdDeleted);
+
+        // Checking db
+        checkDb(accountIdToFieldsLeft, ACCOUNTS_SOUP);
+        for (String accountId : accountIdContactIdToFieldsLeft.keySet()) {
+            checkDb(accountIdContactIdToFieldsLeft.get(accountId), CONTACTS_SOUP);
+        }
+        checkDbDeleted(ACCOUNTS_SOUP, new String[] {accountIdDeleted}, Constants.ID);
+
+        // TBD check children of deleted parent -- should they be there ??
+    }
+
+
+    /**
      * Helper method for the testDelete*
      * @param relationshipType
      * @param singleDelete
