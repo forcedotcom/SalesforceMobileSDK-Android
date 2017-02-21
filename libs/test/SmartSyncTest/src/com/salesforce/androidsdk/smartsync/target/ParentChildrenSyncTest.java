@@ -135,7 +135,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 Arrays.asList("ChildName", "School"),
                 ParentChildrenSyncDownTarget.RelationshipType.LOOKUP);
 
-        assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children) from Parent where ParentModifiedDate > " + dateStr + " and School = 'MIT'", target.getQuery(dateLong));
+        assertEquals("select ParentName, Title, ParentId, ParentModifiedDate, (select ChildName, School, ChildId, ChildLastModifiedDate from Children where ChildLastModifiedDate > " + dateStr + ") from Parent where ParentModifiedDate > " + dateStr + " and School = 'MIT'", target.getQuery(dateLong));
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
@@ -147,7 +147,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 ParentChildrenSyncDownTarget.RelationshipType.LOOKUP);
 
 
-        assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children) from Parent where LastModifiedDate > " + dateStr + " and School = 'MIT'", target.getQuery(dateLong));
+        assertEquals("select ParentName, Title, Id, LastModifiedDate, (select ChildName, School, Id, LastModifiedDate from Children where LastModifiedDate > " + dateStr + ") from Parent where LastModifiedDate > " + dateStr + " and School = 'MIT'", target.getQuery(dateLong));
     }
 
 
@@ -546,7 +546,9 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     /**
-     * Sync down the test accounts and contacts, modify contacts, re-sync, make sure only the updated ones are downloaded
+     * Sync down the test accounts and contacts
+     * Modify an account and some of its contacts and modify other contacts (without changing parent account)
+     * Make sure only the modified account and its modified contacts are re-synced
      */
     public void testReSyncWithUpdatedChildren() throws Exception {
         final int numberAccounts = 4;
@@ -566,9 +568,14 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         long maxTimeStamp = sync.getMaxTimeStamp();
         assertTrue("Wrong time stamp", maxTimeStamp > 0);
 
-        // Make some remote change to contacts of an account
-        String accountId = accountIdToFields.keySet().toArray(new String[0])[0];
-        Map<String, Map<String, Object>> idToFieldsUpdated = makeRemoteChanges(accountIdContactIdToFields.get(accountId), Constants.CONTACT);
+        // Make some remote change
+        String[] accountIds = accountIdToFields.keySet().toArray(new String[0]);
+        String accountId = accountIds[0]; // account that will updated along with some of the children
+        Map<String, Map<String, Object>> accountIdToFieldsUpdated = makeRemoteChanges(accountIdToFields, Constants.ACCOUNT, new String[] {accountId});
+        Map<String, Map<String, Object>> contactIdToFieldsUpdated = makeRemoteChanges(accountIdContactIdToFields.get(accountId), Constants.CONTACT);
+
+        String otherAccountId = accountIds[1]; // account that will not be updated but will have updated children
+        Map<String, Map<String, Object>> otherContactIdToFieldsUpdated = makeRemoteChanges(accountIdContactIdToFields.get(otherAccountId), Constants.CONTACT);
 
         // Call reSync
         SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
@@ -580,7 +587,9 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncDown, syncId, target, options, SyncState.Status.DONE, 100, 1);
 
         // Check db
-        checkDb(idToFieldsUpdated, CONTACTS_SOUP);
+        checkDb(accountIdToFieldsUpdated, ACCOUNTS_SOUP); // updated account should be updated in db
+        checkDb(contactIdToFieldsUpdated, CONTACTS_SOUP); // updated contacts of updated account should be updated in db
+        checkDb(accountIdContactIdToFields.get(otherAccountId), CONTACTS_SOUP); // updated contacts of non-updated account should not be updated in db
 
         // Check sync time stamp
         assertTrue("Wrong time stamp", syncManager.getSyncStatus(syncId).getMaxTimeStamp() > maxTimeStamp);

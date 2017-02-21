@@ -148,41 +148,62 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     @Override
     public String getQuery(long maxTimeStamp) {
+        StringBuilder childrenWhere = new StringBuilder();
+        StringBuilder parentWhere = new StringBuilder();
+        if (maxTimeStamp > 0) {
+            // This is for re-sync
+            //
+            // Ideally we should target parent-children 'groups' where the parent changed or a child changed
+            //
+            // But that is not possible with SOQL:
+            //   select fields, (select childrenFields from children where lastModifiedDate > xxx)
+            //   from parent
+            //   where lastModifiedDate > xxx
+            //   or Id in (select parent-id from children where lastModifiedDate > xxx)
+            // Gives the following error: semi join sub-selects are not allowed with the 'OR' operator
+            //
+            // Also if we do:
+            //   select fields, (select childrenFields from children where lastModifiedDate > xxx)
+            //   from parent
+            //   where Id in (select parent-id from children where lastModifiedDate > xxx or parent.lastModifiedDate > xxx)
+            // Then we miss parents without children
+            //
+            // So we target parent-children 'goups' where the parent changed
+            // And we only download the changed children
+
+            childrenWhere.append(buildModificationDateFilter(childrenInfo.modificationDateFieldName, maxTimeStamp));
+
+            parentWhere.append(buildModificationDateFilter(getModificationDateFieldName(), maxTimeStamp))
+                    .append(TextUtils.isEmpty(parentSoqlFilter) ? "" : " and ");
+        }
+        parentWhere.append(parentSoqlFilter);
+
+        // Nested query
         List<String> nestedFields = new ArrayList<>(childrenFieldlist);
         if (!nestedFields.contains(childrenInfo.idFieldName)) nestedFields.add(childrenInfo.idFieldName);
         if (!nestedFields.contains(childrenInfo.modificationDateFieldName)) nestedFields.add(childrenInfo.modificationDateFieldName);
         SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(nestedFields);
         builderNested.from(childrenInfo.sobjectTypePlural);
+        builderNested.where(childrenWhere.toString());
 
+        // Parent query
         List<String> fields = new ArrayList<>(parentFieldlist);
         if (!fields.contains(getIdFieldName())) fields.add(getIdFieldName());
         if (!fields.contains(getModificationDateFieldName())) fields.add(getModificationDateFieldName());
         fields.add("(" + builderNested.build() + ")");
-
         SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(fields);
         builder.from(parentInfo.sobjectType);
-
-        StringBuilder soqlFilter = new StringBuilder();
-        if (maxTimeStamp > 0) {
-            soqlFilter.append(getModificationDateFieldName())
-                    .append(" > ")
-                    .append(Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp)))
-                    .append(TextUtils.isEmpty(parentSoqlFilter) ? "" : " and ");
-
-
-            // XXX
-            // We should be doing
-            // select fields, (select childrenFields from children) from parent where lastModifiedDate > xxx or Id in (select parent-id from children where lastModifiedDate > xxx)
-            // but SOQL does not allow: Semi join sub-selects are not allowed with the 'OR' operator
-            //
-            // If we do
-            // select fields, (select childrenFields from children) from parent where Id in (select parent-id from children where lastModifiedDate > xxx or parent.lastModifiedDate > xxx)
-            // we will miss parents without children
-        }
-        soqlFilter.append(parentSoqlFilter);
-        builder.where(soqlFilter.toString());
+        builder.where(parentWhere.toString());
 
         return builder.build();
+    }
+
+    private StringBuilder buildModificationDateFilter(String modificationDateFieldName, long maxTimeStamp) {
+        StringBuilder filter = new StringBuilder();
+        filter.append(modificationDateFieldName)
+                .append(" > ")
+                .append(Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp)));
+        return filter;
     }
 
     @Override
@@ -190,7 +211,9 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
         JSONArray records = responseJson.getJSONArray(Constants.RECORDS);
         for (int i=0; i<records.length(); i++) {
             JSONObject record = records.getJSONObject(i);
-            JSONArray childrenRecords = record.getJSONObject(childrenInfo.sobjectTypePlural).getJSONArray(Constants.RECORDS);
+            JSONArray childrenRecords = (record.has(childrenInfo.sobjectTypePlural) && !record.isNull(childrenInfo.sobjectTypePlural)
+                    ? record.getJSONObject(childrenInfo.sobjectTypePlural).getJSONArray(Constants.RECORDS)
+                    : new JSONArray());
             // Cleaning up record
             record.put(childrenInfo.sobjectTypePlural, childrenRecords);
             // XXX what if not all children were fetched

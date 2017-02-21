@@ -1313,7 +1313,10 @@ public class SyncManagerTest extends SyncManagerTestCase {
      * @throws JSONException
      */
     private Map<String, Map<String, Object>> makeSomeLocalChanges() throws JSONException {
-        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, new int[] {0, 1, 2});
+        String[] allIds = idToFields.keySet().toArray(new String[0]);
+        Arrays.sort(allIds);
+        String[] idsToUpdate = new String[] {allIds[0], allIds[1], allIds[2]};
+        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, idsToUpdate);
         updateAccountsLocally(idToFieldsUpdated);
         return idToFieldsUpdated;
     }

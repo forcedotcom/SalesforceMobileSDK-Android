@@ -292,21 +292,25 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      * @param sObjectType
      */
     protected Map<String, Map<String, Object>> makeRemoteChanges(Map<String, Map<String, Object>> idToFields, String sObjectType) throws Exception {
-        final int[] indicesRecordsToUpdate = {0, 2};
-        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, indicesRecordsToUpdate);
+        String[] allIds = idToFields.keySet().toArray(new String[0]);
+        Arrays.sort(allIds); // to make the status updates sequence deterministic
+        String[] idsToUpdate = new String[] {allIds[0], allIds[2]};
+        return makeRemoteChanges(idToFields, sObjectType, idsToUpdate);
+    }
+
+    protected Map<String, Map<String, Object>> makeRemoteChanges(Map<String, Map<String, Object>> idToFields, String sObjectType, String[] idsToUpdate) throws Exception {
+        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, idsToUpdate);
         Thread.sleep(1000); // time stamp precision is in seconds
         updateRecordsOnServer(idToFieldsUpdated, sObjectType);
         return idToFieldsUpdated;
     }
 
-    protected Map<String, Map<String, Object>> prepareSomeChanges(Map<String, Map<String, Object>> idToFields, int[] indicesRecordsToUpdate) {
-        Map<String, Map<String, Object>> idToFieldsUpdated = new HashMap<>();
-        String[] allIds = idToFields.keySet().toArray(new String[0]);
-        Arrays.sort(allIds); // to make the status updates sequence deterministic
 
-        for (int i = 0; i < indicesRecordsToUpdate.length; i++) {
-            String id = allIds[indicesRecordsToUpdate[i]];
-            idToFieldsUpdated.put(id, updatedFields(idToFields.get(id)));
+    protected Map<String, Map<String, Object>> prepareSomeChanges(Map<String, Map<String, Object>> idToFields, String[] idsToUpdate) {
+        Map<String, Map<String, Object>> idToFieldsUpdated = new HashMap<>();
+
+        for (String idToUpdate : idsToUpdate) {
+            idToFieldsUpdated.put(idToUpdate, updatedFields(idToFields.get(idToUpdate)));
         }
         return idToFieldsUpdated;
     }
