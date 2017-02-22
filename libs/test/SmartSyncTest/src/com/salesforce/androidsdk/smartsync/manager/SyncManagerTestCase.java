@@ -298,6 +298,14 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         return makeRemoteChanges(idToFields, sObjectType, idsToUpdate);
     }
 
+    /**
+     * Make remote changes
+     * @param idToFields
+     * @param sObjectType
+     * @param idsToUpdate
+     * @return
+     * @throws Exception
+     */
     protected Map<String, Map<String, Object>> makeRemoteChanges(Map<String, Map<String, Object>> idToFields, String sObjectType, String[] idsToUpdate) throws Exception {
         Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, idsToUpdate);
         Thread.sleep(1000); // time stamp precision is in seconds
@@ -306,6 +314,12 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     }
 
 
+    /**
+     * Helper method to prepare updated maps of field name to field value
+     * @param idToFields
+     * @param idsToUpdate
+     * @return
+     */
     protected Map<String, Map<String, Object>> prepareSomeChanges(Map<String, Map<String, Object>> idToFields, String[] idsToUpdate) {
         Map<String, Map<String, Object>> idToFieldsUpdated = new HashMap<>();
 
@@ -315,6 +329,11 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         return idToFieldsUpdated;
     }
 
+    /**
+     * Helper method to update fields in a map of field name to field value
+     * @param fields
+     * @return
+     */
     protected Map<String, Object> updatedFields(Map<String, Object> fields) {
         Set<String> fieldNamesUpdatable = new HashSet<>(Arrays.asList(new String[] {Constants.NAME, Constants.DESCRIPTION, Constants.LAST_NAME}));
 
@@ -326,4 +345,53 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         }
         return updatedFields;
     }
+
+    /**
+	 * Update records locally
+	 * @param idToFieldsLocallyUpdated
+	 * @param soupName
+     * @throws JSONException
+	 */
+    protected void updateRecordsLocally(Map<String, Map<String, Object>> idToFieldsLocallyUpdated, String soupName) throws JSONException {
+		for (String id : idToFieldsLocallyUpdated.keySet()) {
+            Map<String, Object> updatedFields = idToFieldsLocallyUpdated.get(id);
+			JSONObject record = smartStore.retrieve(soupName, smartStore.lookupSoupEntryId(soupName, Constants.ID, id)).getJSONObject(0);
+            for (String fieldName : updatedFields.keySet()) {
+                record.put(fieldName, updatedFields.get(fieldName));
+            }
+			record.put(SyncTarget.LOCAL, true);
+			record.put(SyncTarget.LOCALLY_CREATED, false);
+			record.put(SyncTarget.LOCALLY_DELETED, false);
+			record.put(SyncTarget.LOCALLY_UPDATED, true);
+			smartStore.upsert(soupName, record);
+		}
+	}
+
+    /**
+     * Make local changes
+     * @throws JSONException
+     * @param idToFields
+     * @param soupName
+     */
+    protected Map<String, Map<String, Object>> makeLocalChanges(Map<String, Map<String, Object>> idToFields, String soupName) throws JSONException {
+        String[] allIds = idToFields.keySet().toArray(new String[0]);
+        Arrays.sort(allIds);
+        String[] idsToUpdate = new String[] {allIds[0], allIds[1], allIds[2]};
+        return makeLocalChanges(idToFields, soupName, idsToUpdate);
+    }
+
+    /**
+     * Make local changes
+     * @param idToFields
+     * @param soupName
+     * @param idsToUpdate
+     * @return
+     * @throws JSONException
+     */
+    protected Map<String, Map<String, Object>> makeLocalChanges(Map<String, Map<String, Object>> idToFields, String soupName, String[] idsToUpdate) throws JSONException {
+        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, idsToUpdate);
+        updateRecordsLocally(idToFieldsUpdated, soupName);
+        return idToFieldsUpdated;
+    }
+
 }

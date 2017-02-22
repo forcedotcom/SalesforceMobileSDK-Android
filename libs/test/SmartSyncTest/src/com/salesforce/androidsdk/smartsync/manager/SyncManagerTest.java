@@ -117,7 +117,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncDown(MergeMode.OVERWRITE);
 
         // Make some local change
-        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeSomeLocalChanges();
+        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeLocalChanges(idToFields, ACCOUNTS_SOUP);
 
         // sync down again with MergeMode.LEAVE_IF_CHANGED
         trySyncDown(MergeMode.LEAVE_IF_CHANGED);
@@ -175,7 +175,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncDown(MergeMode.OVERWRITE);
 		
 		// Update a few entries locally
-		Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeSomeLocalChanges();
+		Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeLocalChanges(idToFields, ACCOUNTS_SOUP);
 
 		// Sync up
 		trySyncUp(3, MergeMode.OVERWRITE);
@@ -196,7 +196,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncDown(MergeMode.LEAVE_IF_CHANGED);
 		
 		// Update a few entries locally
-		Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeSomeLocalChanges();
+		Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeLocalChanges(idToFields, ACCOUNTS_SOUP);
 
 		// Update entries on server
         Thread.sleep(1000); // time stamp precision is in seconds
@@ -346,7 +346,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncDown(MergeMode.OVERWRITE);
 
         // Update a few entries locally
-        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeSomeLocalChanges();
+        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeLocalChanges(idToFields, ACCOUNTS_SOUP);
 
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
@@ -431,7 +431,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncDown(MergeMode.OVERWRITE);
 
         // Update a few entries locally
-        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeSomeLocalChanges();
+        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeLocalChanges(idToFields, ACCOUNTS_SOUP);
 
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
@@ -456,7 +456,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncDown(MergeMode.OVERWRITE);
 
         // Update a few entries locally
-        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeSomeLocalChanges();
+        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeLocalChanges(idToFields, ACCOUNTS_SOUP);
 
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
@@ -610,7 +610,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncDown(MergeMode.OVERWRITE);
 
         // Update a few entries locally
-        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeSomeLocalChanges();
+        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeLocalChanges(idToFields, ACCOUNTS_SOUP);
 
         // Delete record on server
         String remotelyDeletedId = idToFieldsLocallyUpdated.keySet().toArray(new String[0])[0];
@@ -662,7 +662,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncDown(MergeMode.OVERWRITE);
 
         // Update a few entries locally
-        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeSomeLocalChanges();
+        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeLocalChanges(idToFields, ACCOUNTS_SOUP);
 
         // Delete record on server
         String remotelyDeletedId = idToFieldsLocallyUpdated.keySet().toArray(new String[0])[0];
@@ -1006,7 +1006,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncDown(MergeMode.OVERWRITE);
 
         // Update a few entries locally
-        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeSomeLocalChanges();
+        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeLocalChanges(idToFields, ACCOUNTS_SOUP);
 
         // Sync up with update field list including only name
         SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME, Constants.DESCRIPTION }), MergeMode.OVERWRITE);
@@ -1067,7 +1067,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncDown(MergeMode.OVERWRITE);
 
         // Update a few entries locally
-        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeSomeLocalChanges();
+        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeLocalChanges(idToFields, ACCOUNTS_SOUP);
         String[] namesOfUpdated = getNamesFromIdToFields(idToFieldsLocallyUpdated);
 
         // Create a few entries locally
@@ -1206,26 +1206,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
 	}
 
     /**
-	 * Update accounts locally
-	 * @param idToFieldsLocallyUpdated
-	 * @throws JSONException
-	 */
-	private void updateAccountsLocally(Map<String, Map<String, Object>> idToFieldsLocallyUpdated) throws JSONException {
-		for (String id : idToFieldsLocallyUpdated.keySet()) {
-            Map<String, Object> updatedFields = idToFieldsLocallyUpdated.get(id);
-			JSONObject account = smartStore.retrieve(ACCOUNTS_SOUP, smartStore.lookupSoupEntryId(ACCOUNTS_SOUP, Constants.ID, id)).getJSONObject(0);
-            for (String fieldName : updatedFields.keySet()) {
-                account.put(fieldName, updatedFields.get(fieldName));
-            }
-			account.put(SyncTarget.LOCAL, true);
-			account.put(SyncTarget.LOCALLY_CREATED, false);
-			account.put(SyncTarget.LOCALLY_DELETED, false);
-			account.put(SyncTarget.LOCALLY_UPDATED, true);
-			smartStore.upsert(ACCOUNTS_SOUP, account);
-		}
-	}
-
-    /**
 	 * Delete accounts locally
 	 * @param idsLocallyDeleted
 	 * @throws JSONException 
@@ -1297,19 +1277,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
         RestResponse response = restClient.sendSync(request);
         JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
         assertEquals("No accounts should have been returned from server", 0, records.length());
-    }
-
-    /**
-     * Make local changes
-     * @throws JSONException
-     */
-    private Map<String, Map<String, Object>> makeSomeLocalChanges() throws JSONException {
-        String[] allIds = idToFields.keySet().toArray(new String[0]);
-        Arrays.sort(allIds);
-        String[] idsToUpdate = new String[] {allIds[0], allIds[1], allIds[2]};
-        Map<String, Map<String, Object>> idToFieldsUpdated = prepareSomeChanges(idToFields, idsToUpdate);
-        updateAccountsLocally(idToFieldsUpdated);
-        return idToFieldsUpdated;
     }
 
     /**

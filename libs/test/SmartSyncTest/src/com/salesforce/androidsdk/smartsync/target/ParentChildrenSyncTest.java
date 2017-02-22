@@ -504,6 +504,56 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         }
     }
 
+    /**
+     * Sync down the test accounts and contacts, make some local changes,
+     * then sync down again with merge mode LEAVE_IF_CHANGED then sync down with merge mode OVERWRITE
+     */
+    public void testSyncDownWithoutOverwrite() throws Exception {
+        final int numberAccounts = 4;
+        final int numberContactsPerAccount = 3;
+
+        // Creating test accounts and contacts on server
+        createAccountsAndContactsOnServer(numberAccounts, numberContactsPerAccount);
+
+        // Sync down
+        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP,
+                String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
+        trySyncDown(SyncState.MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, numberAccounts, 1);
+
+        // Make some local changes
+        String[] accountIds = accountIdToFields.keySet().toArray(new String[0]);
+        String accountId = accountIds[0]; // account that will updated along with some of the children
+        Map<String, Map<String, Object>> accountIdToFieldsUpdated = makeLocalChanges(accountIdToFields, ACCOUNTS_SOUP, new String[] {accountId});
+        Map<String, Map<String, Object>> contactIdToFieldsUpdated = makeLocalChanges(accountIdContactIdToFields.get(accountId), CONTACTS_SOUP);
+        String otherAccountId = accountIds[1]; // account that will not be updated but will have updated children
+        Map<String, Map<String, Object>> otherContactIdToFieldsUpdated = makeLocalChanges(accountIdContactIdToFields.get(otherAccountId), CONTACTS_SOUP);
+
+        // sync down again with MergeMode.LEAVE_IF_CHANGED
+        trySyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED, target, ACCOUNTS_SOUP, numberAccounts, 1);
+
+        // Check db
+        Map<String, Map<String, Object>> accountIdToFieldsExpected = new HashMap<>(accountIdToFields);
+        accountIdToFieldsExpected.putAll(accountIdToFieldsUpdated);
+        checkDb(accountIdToFieldsExpected, ACCOUNTS_SOUP);
+
+        // sync down again with MergeMode.OVERWRITE
+        trySyncDown(SyncState.MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, numberAccounts, 1);
+
+        // Check that db was correctly populated
+        /*
+        checkDb(accountIdToFields, ACCOUNTS_SOUP);
+        for (String accountId : accountIdToFields.keySet()) {
+            long accountLocalId = syncManager.getSmartStore().lookupSoupEntryId(ACCOUNTS_SOUP, Constants.ID, accountId);
+            Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
+            for (String contactId : contactIdToFields.keySet()) {
+                Map<String, Object> fields = contactIdToFields.get(contactId);
+                // we expect to find the accountLocalId populated
+                fields.put(ACCOUNT_LOCAL_ID, "" + accountLocalId);
+            }
+            checkDb(contactIdToFields, CONTACTS_SOUP);
+        }
+        */
+    }
 
     /**
      * Sync down the test accounts and contacts, modify accounts, re-sync, make sure only the updated ones are downloaded
@@ -568,12 +618,11 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         long maxTimeStamp = sync.getMaxTimeStamp();
         assertTrue("Wrong time stamp", maxTimeStamp > 0);
 
-        // Make some remote change
+        // Make some remote changes
         String[] accountIds = accountIdToFields.keySet().toArray(new String[0]);
         String accountId = accountIds[0]; // account that will updated along with some of the children
         Map<String, Map<String, Object>> accountIdToFieldsUpdated = makeRemoteChanges(accountIdToFields, Constants.ACCOUNT, new String[] {accountId});
         Map<String, Map<String, Object>> contactIdToFieldsUpdated = makeRemoteChanges(accountIdContactIdToFields.get(accountId), Constants.CONTACT);
-
         String otherAccountId = accountIds[1]; // account that will not be updated but will have updated children
         Map<String, Map<String, Object>> otherContactIdToFieldsUpdated = makeRemoteChanges(accountIdContactIdToFields.get(otherAccountId), Constants.CONTACT);
 
