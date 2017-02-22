@@ -133,12 +133,14 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     @Override
     public String getSoqlForRemoteIds() {
-        SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(childrenInfo.idFieldName);
-        builderNested.from(childrenInfo.sobjectTypePlural);
+        // This is for clean re-sync ghosts
+        //
+        // XXX For now only getting parent ids
+        // Leaving children alone - so there will be "ghost children" i.e. children records pointing
+        // back to parent records in the database but not connected the same way on the server
 
         List<String> fields = new ArrayList<>();
         fields.add(getIdFieldName());
-        fields.add("(" + builderNested.build() + ")");
         SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(fields);
         builder.from(parentInfo.sobjectType);
         builder.where(parentSoqlFilter);

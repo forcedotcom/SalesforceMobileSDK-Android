@@ -163,7 +163,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 Arrays.asList("ChildName", "School"),
                 ParentChildrenSyncDownTarget.RelationshipType.LOOKUP);
 
-        assertEquals("select ParentId, (select ChildId from Children) from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
+        assertEquals("select ParentId from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
@@ -174,7 +174,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 Arrays.asList("ChildName", "School"),
                 ParentChildrenSyncDownTarget.RelationshipType.LOOKUP);
 
-        assertEquals("select Id, (select Id from Children) from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
+        assertEquals("select Id from Parent where School = 'MIT'", target.getSoqlForRemoteIds());
     }
 
     /**
@@ -600,7 +600,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      * Sync down the test accounts and contacts
      * Delete account from server - run cleanResyncGhosts
      * Make sure the deleted account is no longer present locally
-     * Make sure the children of the deleted account are no longer present locally -- TBD
+     * Make sure the children of the deleted account are still present locally
      */
     public void testCleanResyncGhostsForParentChildrenTarget() throws Exception {
         final int numberAccounts = 4;
@@ -622,17 +622,14 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // Accounts and contacts expected to still be in db
         Map<String, Map<String, Object>> accountIdToFieldsLeft = new HashMap<>(accountIdToFields);
         accountIdToFieldsLeft.remove(accountIdDeleted);
-        HashMap<String, Map<String, Map<String, Object>>> accountIdContactIdToFieldsLeft = new HashMap<>(accountIdContactIdToFields);
-        accountIdContactIdToFieldsLeft.remove(accountIdDeleted);
 
         // Checking db
         checkDb(accountIdToFieldsLeft, ACCOUNTS_SOUP);
-        for (String accountId : accountIdContactIdToFieldsLeft.keySet()) {
-            checkDb(accountIdContactIdToFieldsLeft.get(accountId), CONTACTS_SOUP);
-        }
         checkDbDeleted(ACCOUNTS_SOUP, new String[] {accountIdDeleted}, Constants.ID);
-
-        // TBD check children of deleted parent -- should they be there ??
+        // Clean resync ghosts currently only deal with parents
+        for (String accountId : accountIdContactIdToFields.keySet()) {
+            checkDb(accountIdContactIdToFields.get(accountId), CONTACTS_SOUP);
+        }
     }
 
 
