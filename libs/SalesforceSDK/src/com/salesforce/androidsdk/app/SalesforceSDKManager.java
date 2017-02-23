@@ -103,6 +103,7 @@ public class SalesforceSDKManager {
      */
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
     private static final String TAG = "SalesforceSDKManager";
+    private static String AILTN_APP_NAME;
 
     /**
      * Instance of the SalesforceSDKManager to use for this process.
@@ -164,6 +165,26 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Sets the app name to be used by the analytics framework.
+     *
+     * @param appName App name.
+     */
+    public static void setAiltnAppName(String appName) {
+        if (!TextUtils.isEmpty(appName)) {
+            AILTN_APP_NAME = appName;
+        }
+    }
+
+    /**
+     * Returns the app name being used by the analytics framework.
+     *
+     * @return App name.
+     */
+    public static String getAiltnAppName() {
+        return AILTN_APP_NAME;
+    }
+
+    /**
      * Protected constructor.
      * @param context Application context.
      * @param keyImpl Implementation for KeyInterface.
@@ -180,6 +201,23 @@ public class SalesforceSDKManager {
             this.loginActivityClass = loginActivity;	
     	}
         this.features  = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
+
+        /*
+         * Checks if an analytics app name has already been set by the app. If not, fetches the
+         * default app name to be used and sets it.
+         */
+        if (!TextUtils.isEmpty(getAiltnAppName())) {
+            String ailtnAppName = null;
+            try {
+                final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
+                ailtnAppName = context.getString(packageInfo.applicationInfo.labelRes);
+            } catch (NameNotFoundException e) {
+                Log.e(TAG, "Package not found", e);
+            }
+            if (!TextUtils.isEmpty(ailtnAppName)) {
+                setAiltnAppName(ailtnAppName);
+            }
+        }
     }
 
     /**
