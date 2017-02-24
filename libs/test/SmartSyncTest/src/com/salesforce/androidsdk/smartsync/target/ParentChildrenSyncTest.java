@@ -505,6 +505,22 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     /**
+     * Sync down the test accounts that do not have children contacts, check smart store, check status during sync
+     */
+    public void testSyncDownNoChildren() throws Exception {
+        // Creating test accounts on server
+        final int numberAccounts = 4;
+        accountIdToFields = createRecordsOnServerReturnFields(numberAccounts, Constants.ACCOUNT, null);
+
+        // Sync down
+        ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(ParentChildrenSyncDownTarget.RelationshipType.LOOKUP,
+                String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
+        trySyncDown(SyncState.MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, numberAccounts, 1);
+
+        // Check that db was correctly populated
+        checkDb(accountIdToFields, ACCOUNTS_SOUP);
+    }
+    /**
      * Sync down the test accounts and contacts, make some local changes,
      * then sync down again with merge mode LEAVE_IF_CHANGED then sync down with merge mode OVERWRITE
      */
