@@ -522,37 +522,50 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // Make some local changes
         String[] accountIds = accountIdToFields.keySet().toArray(new String[0]);
-        String accountId = accountIds[0]; // account that will updated along with some of the children
-        Map<String, Map<String, Object>> accountIdToFieldsUpdated = makeLocalChanges(accountIdToFields, ACCOUNTS_SOUP, new String[] {accountId});
-        Map<String, Map<String, Object>> contactIdToFieldsUpdated = makeLocalChanges(accountIdContactIdToFields.get(accountId), CONTACTS_SOUP);
+        String accountIdUpdated = accountIds[0]; // account that will updated along with some of the children
+        Map<String, Map<String, Object>> accountIdToFieldsUpdated = makeLocalChanges(accountIdToFields, ACCOUNTS_SOUP, new String[] {accountIdUpdated});
+        Map<String, Map<String, Object>> contactIdToFieldsUpdated = makeLocalChanges(accountIdContactIdToFields.get(accountIdUpdated), CONTACTS_SOUP);
         String otherAccountId = accountIds[1]; // account that will not be updated but will have updated children
         Map<String, Map<String, Object>> otherContactIdToFieldsUpdated = makeLocalChanges(accountIdContactIdToFields.get(otherAccountId), CONTACTS_SOUP);
 
-        // sync down again with MergeMode.LEAVE_IF_CHANGED
+        // Sync down again with MergeMode.LEAVE_IF_CHANGED
         trySyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED, target, ACCOUNTS_SOUP, numberAccounts, 1);
 
-        // Check db
+        // Check db - locally changed records should have been left alone
         Map<String, Map<String, Object>> accountIdToFieldsExpected = new HashMap<>(accountIdToFields);
         accountIdToFieldsExpected.putAll(accountIdToFieldsUpdated);
         checkDb(accountIdToFieldsExpected, ACCOUNTS_SOUP);
 
-        // sync down again with MergeMode.OVERWRITE
+        for (String accountId : accountIdToFields.keySet()) {
+            if (accountId.equals(accountIdUpdated)) {
+                checkDbStateFlags(Arrays.asList(new String[] {accountId}), false, true, false, ACCOUNTS_SOUP);
+                checkDb(contactIdToFieldsUpdated, CONTACTS_SOUP);
+                checkDbStateFlags(contactIdToFieldsUpdated.keySet(), false, true, false, CONTACTS_SOUP);
+            }
+            else if (accountId.equals(otherAccountId)) {
+                checkDbStateFlags(Arrays.asList(new String[] {accountId}), false, false, false, ACCOUNTS_SOUP);
+                checkDb(otherContactIdToFieldsUpdated, CONTACTS_SOUP);
+                checkDbStateFlags(otherContactIdToFieldsUpdated.keySet(), false, true, false, CONTACTS_SOUP);
+            }
+            else {
+                checkDbStateFlags(Arrays.asList(new String[] {accountId}), false, false, false, ACCOUNTS_SOUP);
+                checkDb(accountIdContactIdToFields.get(accountId), CONTACTS_SOUP);
+                checkDbStateFlags(accountIdContactIdToFields.get(accountId).keySet(), false, false, false, CONTACTS_SOUP);
+            }
+        }
+
+
+        // Sync down again with MergeMode.OVERWRITE
         trySyncDown(SyncState.MergeMode.OVERWRITE, target, ACCOUNTS_SOUP, numberAccounts, 1);
 
-        // Check that db was correctly populated
-        /*
+        // Check db - all local changes should have been written over
         checkDb(accountIdToFields, ACCOUNTS_SOUP);
+        checkDbStateFlags(accountIdToFields.keySet(), false, false, false, ACCOUNTS_SOUP);
+
         for (String accountId : accountIdToFields.keySet()) {
-            long accountLocalId = syncManager.getSmartStore().lookupSoupEntryId(ACCOUNTS_SOUP, Constants.ID, accountId);
-            Map<String, Map<String, Object>> contactIdToFields = accountIdContactIdToFields.get(accountId);
-            for (String contactId : contactIdToFields.keySet()) {
-                Map<String, Object> fields = contactIdToFields.get(contactId);
-                // we expect to find the accountLocalId populated
-                fields.put(ACCOUNT_LOCAL_ID, "" + accountLocalId);
-            }
-            checkDb(contactIdToFields, CONTACTS_SOUP);
+            checkDb(accountIdContactIdToFields.get(accountId), CONTACTS_SOUP);
+            checkDbStateFlags(accountIdContactIdToFields.get(accountId).keySet(), false, false, false, CONTACTS_SOUP);
         }
-        */
     }
 
     /**

@@ -182,7 +182,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		
 		// Check that db doesn't show entries as locally modified anymore
         Set<String> ids = idToFieldsLocallyUpdated.keySet();
-        checkDbStateFlags(ids, false, false, false);
+        checkDbStateFlags(ids, false, false, false, ACCOUNTS_SOUP);
 
 		// Check server
         checkServer(idToFieldsLocallyUpdated);
@@ -217,7 +217,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
 
 		// Check that db shows entries as locally modified
-        checkDbStateFlags(ids, false, true, false);
+        checkDbStateFlags(ids, false, true, false, ACCOUNTS_SOUP);
 
 		// Check server
         checkServer(idToFieldsRemotelyUpdated);
@@ -249,7 +249,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		
 		// Check that db doesn't show entries as locally created anymore and that they use sfdc id
         Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(names);
-        checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false);
+        checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
 		
 		// Check server
         checkServer(idToFieldsCreated);
@@ -331,7 +331,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
 		
 		// Check that db still contains those entries
-        checkDbStateFlags(Arrays.asList(idsLocallyDeleted), false, false, true);
+        checkDbStateFlags(Arrays.asList(idsLocallyDeleted), false, false, true, ACCOUNTS_SOUP);
 
 		// Check server
         checkServer(idToFieldsRemotelyUpdated);
@@ -356,7 +356,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check that db doesn't show entries as locally modified anymore
         Set<String> ids = idToFieldsLocallyUpdated.keySet();
-        checkDbStateFlags(ids, false, false, false);
+        checkDbStateFlags(ids, false, false, false, ACCOUNTS_SOUP);
 
         // Check what got synched up
         List<String> idsUpdatedByTarget = collector.updatedRecordIds;
@@ -384,7 +384,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check that db doesn't show entries as locally created anymore and that they use sfdc id
         Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(names);
-        checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false);
+        checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
 
         // Check what got synched up
         List<String> idsCreatedByTarget = collector.createdRecordIds;
@@ -441,7 +441,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check that db still shows entries as locally modified anymore
         Set<String> ids = idToFieldsLocallyUpdated.keySet();
-        checkDbStateFlags(ids, false, true, false);
+        checkDbStateFlags(ids, false, true, false, ACCOUNTS_SOUP);
 
         // Check what got synched up
         List<String> idsUpdatedByTarget = collector.updatedRecordIds;
@@ -466,7 +466,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check that db still shows entries as locally modified anymore
         Set<String> ids = idToFieldsLocallyUpdated.keySet();
-        checkDbStateFlags(ids, false, true, false);
+        checkDbStateFlags(ids, false, true, false, ACCOUNTS_SOUP);
 
         // Check what got synched up
         List<String> idsUpdatedByTarget = collector.updatedRecordIds;
@@ -491,7 +491,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check that db still show show entries as locally created anymore and that they use sfdc id
         Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(names);
-        checkDbStateFlags(idToFieldsCreated.keySet(), true, false, false);
+        checkDbStateFlags(idToFieldsCreated.keySet(), true, false, false, ACCOUNTS_SOUP);
 
         // Check what got synched up
         List<String> idsCreatedByTarget = collector.createdRecordIds;
@@ -516,7 +516,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check that db still show show entries as locally created anymore and that they use sfdc id
         Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(names);
-        checkDbStateFlags(idToFieldsCreated.keySet(), true, false, false);
+        checkDbStateFlags(idToFieldsCreated.keySet(), true, false, false, ACCOUNTS_SOUP);
 
         // Check what got synched up
         List<String> idsCreatedByTarget = collector.createdRecordIds;
@@ -543,7 +543,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check that db still contains those entries
         Collection<String> ids = Arrays.asList(idsLocallyDeleted);
-        checkDbStateFlags(ids, false, false, true);
+        checkDbStateFlags(ids, false, false, true, ACCOUNTS_SOUP);
 
         // Check what got synched up
         List<String> idsDeletedByTarget = collector.deletedRecordIds;
@@ -570,7 +570,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check that db still contains those entries
         Collection<String> ids = Arrays.asList(idsLocallyDeleted);
-        checkDbStateFlags(ids, false, false, true);
+        checkDbStateFlags(ids, false, false, true, ACCOUNTS_SOUP);
 
         // Check what got synched up
         List<String> idsDeletedByTarget = collector.deletedRecordIds;
@@ -681,7 +681,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         assertTrue(idToFieldsUpdated.containsKey(remotelyDeletedId));
 
         // Checking the remotely deleted record locally
-        checkDbStateFlags(Arrays.asList(new String[]{remotelyDeletedId}), false, true, false);
+        checkDbStateFlags(Arrays.asList(new String[]{remotelyDeletedId}), false, true, false, ACCOUNTS_SOUP);
 
         // Check the other 2 records in db
         idToFieldsUpdated.remove(remotelyDeletedId);
@@ -1014,7 +1014,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check that db doesn't show entries as locally modified anymore
         Set<String> ids = idToFieldsLocallyUpdated.keySet();
-        checkDbStateFlags(ids, false, false, false);
+        checkDbStateFlags(ids, false, false, false, ACCOUNTS_SOUP);
 
         // Check server - make sure only name was updated
         Map<String, Map<String, Object>> idToFieldsExpectedOnServer = new HashMap<>();
@@ -1044,7 +1044,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check that db doesn't show entries as locally created anymore and that they use sfdc id
         Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(names);
-        checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false);
+        checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
 
         // Check server - make sure only name was set
         Map<String, Map<String, Object>> idToFieldsExpectedOnServer = new HashMap<>();
@@ -1085,10 +1085,10 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         // Check that db doesn't show created entries as locally created anymore and that they use sfdc id
         Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(namesOfCreated);
-        checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false);
+        checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
 
         // Check that db doesn't show updated entries as locally modified anymore
-        checkDbStateFlags(idToFieldsLocallyUpdated.keySet(), false, false, false);
+        checkDbStateFlags(idToFieldsLocallyUpdated.keySet(), false, false, false, ACCOUNTS_SOUP);
 
         // Check server - make updated records only have updated description - make sure created records only have name
         Map<String, Map<String, Object>> idToFieldsExpectedOnServer = new HashMap<>();
@@ -1220,29 +1220,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
 			smartStore.upsert(ACCOUNTS_SOUP, account);
 		}
 	}
-
-    /**
-     * Check records state in db
-     * @param ids
-     * @param expectLocallyCreated true if records are expected to be marked as locally created
-     * @param expectLocallyUpdated true if records are expected to be marked as locally updated
-     * @param expectLocallyDeleted true if records are expected to be marked as locally deleted
-     * @throws JSONException
-     */
-    private void checkDbStateFlags(Collection<String> ids, boolean expectLocallyCreated, boolean expectLocallyUpdated, boolean expectLocallyDeleted) throws JSONException {
-        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup} FROM {accounts} WHERE {accounts:Id} IN " + makeInClause(ids), ids.size());
-        JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
-        for (int i=0; i<accountsFromDb.length(); i++) {
-            JSONArray row = accountsFromDb.getJSONArray(i);
-            JSONObject soupElt = row.getJSONObject(0);
-            String id = soupElt.getString(Constants.ID);
-            assertEquals("Wrong local flag", expectLocallyCreated || expectLocallyUpdated || expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCAL));
-            assertEquals("Wrong local flag", expectLocallyCreated, soupElt.getBoolean(SyncTarget.LOCALLY_CREATED));
-            assertEquals("Id was not updated", expectLocallyCreated, id.startsWith(LOCAL_ID_PREFIX));
-            assertEquals("Wrong local flag", expectLocallyUpdated, soupElt.getBoolean(SyncTarget.LOCALLY_UPDATED));
-            assertEquals("Wrong local flag", expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCALLY_DELETED));
-        }
-    }
 
     /**
      * Check records on server

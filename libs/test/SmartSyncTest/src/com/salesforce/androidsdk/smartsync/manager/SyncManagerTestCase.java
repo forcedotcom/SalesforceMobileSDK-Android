@@ -394,4 +394,27 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         return idToFieldsUpdated;
     }
 
+    /**
+     * Check records state in db
+     * @param ids
+     * @param expectLocallyCreated true if records are expected to be marked as locally created
+     * @param expectLocallyUpdated true if records are expected to be marked as locally updated
+     * @param expectLocallyDeleted true if records are expected to be marked as locally deleted
+     * @param soupName
+     * @throws JSONException
+     */
+    protected void checkDbStateFlags(Collection<String> ids, boolean expectLocallyCreated, boolean expectLocallyUpdated, boolean expectLocallyDeleted, String soupName) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec(String.format("SELECT {%s:_soup} FROM {%s} WHERE {%s:Id} IN %s", soupName, soupName, soupName, makeInClause(ids)), ids.size());
+        JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
+        for (int i=0; i<accountsFromDb.length(); i++) {
+            JSONArray row = accountsFromDb.getJSONArray(i);
+            JSONObject soupElt = row.getJSONObject(0);
+            String id = soupElt.getString(Constants.ID);
+            assertEquals("Wrong local flag", expectLocallyCreated || expectLocallyUpdated || expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCAL));
+            assertEquals("Wrong local flag", expectLocallyCreated, soupElt.getBoolean(SyncTarget.LOCALLY_CREATED));
+            assertEquals("Id was not updated", expectLocallyCreated, id.startsWith(LOCAL_ID_PREFIX));
+            assertEquals("Wrong local flag", expectLocallyUpdated, soupElt.getBoolean(SyncTarget.LOCALLY_UPDATED));
+            assertEquals("Wrong local flag", expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCALLY_DELETED));
+        }
+    }
 }
