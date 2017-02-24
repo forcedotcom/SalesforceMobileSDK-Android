@@ -282,8 +282,10 @@ public class SyncManager {
      * or do not match the query results on the server anymore.
      *
      * @param syncId Sync ID.
+     * @throws JSONException
+     * @throws IOException
      */
-    public void cleanResyncGhosts(long syncId) throws JSONException {
+    public void cleanResyncGhosts(long syncId) throws JSONException, IOException {
         if (runningSyncIds.contains(syncId)) {
             throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": still running");
         }
@@ -295,39 +297,17 @@ public class SyncManager {
             throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": wrong type:" + sync.getType());
         }
         final String soupName = sync.getSoupName();
-        final String idFieldName = sync.getTarget().getIdFieldName();
         final SyncDownTarget target = (SyncDownTarget) sync.getTarget();
 
-        /*
-         * Fetches list of IDs present in local soup that have not been modified locally.
-         */
-        final Set<String> localIds = target.getNonDirtyRecordIds(this, soupName, idFieldName);
-
-        /*
-         * Fetches list of IDs still present on the server from the list of local IDs
-         * and removes the list of IDs that are still present on the server.
-         */
-        final Set<String> remoteIds = target.getListOfRemoteIds(this, localIds);
-        if (remoteIds != null) {
-            localIds.removeAll(remoteIds);
-        }
-
-        // Deletes extra IDs from SmartStore.
-        int localIdSize = localIds.size();
+        // Ask target to clean up ghosts
+        int localIdSize = target.cleanGhosts(this, soupName);
         final JSONObject attributes = new JSONObject();
-        try {
-            if (localIdSize > 0) {
-                attributes.put("numRecords", localIdSize);
-            }
-            attributes.put("syncId", sync.getId());
-            attributes.put("syncTarget", target.getClass().getName());
-        } catch (JSONException e) {
-            Log.e(TAG, "Exception thrown while building attributes", e);
-        }
-        EventBuilderHelper.createAndStoreEvent("cleanResyncGhosts", null, TAG, attributes);
         if (localIdSize > 0) {
-            target.deleteRecordsFromLocalStore(this, soupName, localIds, idFieldName);
+            attributes.put("numRecords", localIdSize);
         }
+        attributes.put("syncId", sync.getId());
+        attributes.put("syncTarget", target.getClass().getName());
+        EventBuilderHelper.createAndStoreEvent("cleanResyncGhosts", null, TAG, attributes);
     }
 
 	/**

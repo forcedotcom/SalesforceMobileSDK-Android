@@ -100,21 +100,16 @@ public class SoslSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
-    public Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds) {
+    protected Set<String> getRemoteIds(SyncManager syncManager, Set<String> localIds) throws IOException, JSONException {
         if (localIds == null) {
             return null;
         }
         final Set<String> remoteIds = new HashSet<String>();
 
         // Makes network request and parses the response.
-        try {
-            final JSONArray records = startFetch(syncManager, 0, query);
-            remoteIds.addAll(parseIdsFromResponse(records));
-        } catch (IOException e) {
-            Log.e(TAG, "IOException thrown while fetching records", e);
-        } catch (JSONException e) {
-            Log.e(TAG, "JSONException thrown while fetching records", e);
-        }
+        final JSONArray records = startFetch(syncManager, 0, query);
+        remoteIds.addAll(parseIdsFromResponse(records));
+
         return remoteIds;
     }
 

@@ -56,12 +56,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static java.util.Collections.singletonList;
 
 /**
  * Test class for SyncState.
@@ -693,24 +694,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
     }
 
     /**
-     * Test addFilterForReSync with various queries
-     */
-    public void testAddFilterForResync() {
-        Date date = new Date();
-        long dateLong = date.getTime();
-        String dateStr = Constants.TIMESTAMP_FORMAT.format(date);
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr, SoqlSyncDownTarget.addFilterForReSync("select Id from Account", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where otherDate > " + dateStr, SoqlSyncDownTarget.addFilterForReSync("select Id from Account", "otherDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " limit 100", SoqlSyncDownTarget.addFilterForReSync("select Id from Account limit 100", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " and Name = 'John'", SoqlSyncDownTarget.addFilterForReSync("select Id from Account where Name = 'John'", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "select Id from Account where LastModifiedDate > " + dateStr + " and Name = 'John' limit 100", SoqlSyncDownTarget.addFilterForReSync("select Id from Account where Name = 'John' limit 100", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr, SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account where LastModifiedDate > " + dateStr + " LIMIT 100", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account LIMIT 100", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John'", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John'", "LastModifiedDate", dateLong));
-        assertEquals("Wrong result for addFilterForReSync", "SELECT Id FROM Account WHERE LastModifiedDate > " + dateStr + " and Name = 'John' LIMIT 100", SoqlSyncDownTarget.addFilterForReSync("SELECT Id FROM Account WHERE Name = 'John' LIMIT 100", "LastModifiedDate", dateLong));
-    }
-
-    /**
      * Test reSync while sync is running
      */
     public void testReSyncRunningSync() throws JSONException {
@@ -751,17 +734,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
     }
 
     /**
-     * Test query with "From_customer__c" field
-     */
-    public void testQueryWithFromFieldtoSOQLTarget() throws Exception {
-        final String soqlQueryWithFromField = SOQLBuilder.getInstanceWithFields("From_customer__c, Id")
-                .from(Constants.ACCOUNT).limit(10).build();
-        final SoqlSyncDownTarget target = new SoqlSyncDownTarget(soqlQueryWithFromField);
-        Set<String> result = target.getListOfRemoteIds(syncManager, new HashSet<String>());
-        assertTrue("Wrong query was generate", result.size()>0);
-    }
-
-    /**
      * Tests if missing fields are added to a SOQL target.
      */
     public void testAddMissingFieldsToSOQLTarget() throws Exception {
@@ -780,28 +752,24 @@ public class SyncManagerTest extends SyncManagerTestCase {
     public void testCleanResyncGhostsForSOQLTarget() throws Exception {
 
         // Creates 3 accounts on the server.
-        final Map<String, String> accounts = createRecordsOnServer(3, Constants.ACCOUNT);
-        assertEquals("3 accounts should have been created", 3, accounts.size());
-        final Set<String> keySet = accounts.keySet();
-        final String[] accountIds = new String[3];
-        keySet.toArray(accountIds);
-        final String soupName = "Accounts";
-        createAccountsSoup(soupName);
+        final int numberAccounts = 3;
+        final Map<String, String> accounts = createRecordsOnServer(numberAccounts, Constants.ACCOUNT);
+        assertEquals("Wrong number of accounts created", numberAccounts, accounts.size());
+        final String[] accountIds = accounts.keySet().toArray(new String[0]);
 
         // Builds SOQL sync down target and performs initial sync.
-        final String soql = "SELECT Id, Name FROM Account WHERE Id IN ('" + accountIds[0] + "', '" + accountIds[1] + "', '" + accountIds[2] + "')";
-        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new SoqlSyncDownTarget(soql), soupName, accounts.size(), 1);
-        int numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
-        assertEquals("3 accounts should be stored in the soup", 3, numRecords);
+        final String soql = "SELECT Id, Name FROM Account WHERE Id IN " + makeInClause(accountIds);
+        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new SoqlSyncDownTarget(soql), ACCOUNTS_SOUP, accounts.size(), 1);
+        checkDbExist(ACCOUNTS_SOUP, accountIds, Constants.ID);
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
-        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
+        deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
         syncManager.cleanResyncGhosts(syncId);
-        numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
-        assertEquals("2 accounts should be stored in the soup", 2, numRecords);
+        checkDbExist(ACCOUNTS_SOUP, new String[] { accountIds[1], accountIds[2]}, Constants.ID);
+        checkDbDeleted(ACCOUNTS_SOUP, new String[] { accountIds[0]}, Constants.ID);
 
         // Deletes the remaining accounts on the server.
-        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[1], accountIds[2])), Constants.ACCOUNT);
+        deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountIds[1], accountIds[2])), Constants.ACCOUNT);
     }
 
     /**
@@ -810,29 +778,25 @@ public class SyncManagerTest extends SyncManagerTestCase {
     public void testCleanResyncGhostsForMRUTarget() throws Exception {
 
         // Creates 3 accounts on the server.
-        final Map<String, String> accounts = createRecordsOnServer(3, Constants.ACCOUNT);
-        assertEquals("3 accounts should have been created", 3, accounts.size());
-        final Set<String> keySet = accounts.keySet();
-        final String[] accountIds = new String[3];
-        keySet.toArray(accountIds);
-        final String soupName = "Accounts";
-        createAccountsSoup(soupName);
+        final int numberAccounts = 3;
+        final Map<String, String> accounts = createRecordsOnServer(numberAccounts, Constants.ACCOUNT);
+        assertEquals("Wrong number of accounts created", numberAccounts, accounts.size());
+        final String[] accountIds = accounts.keySet().toArray(new String[0]);
 
         // Builds MRU sync down target and performs initial sync.
-        final List<String> fieldList = new ArrayList<String>();
-        fieldList.add("Id");
-        fieldList.add("Name");
-        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new MruSyncDownTarget(fieldList, Constants.ACCOUNT), soupName);
-        int preNumRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
-        assertTrue("At least 1 account should be stored in the soup", preNumRecords > 0);
+        final List<String> fieldList = new ArrayList<>();
+        fieldList.add(Constants.ID);
+        fieldList.add(Constants.NAME);
+        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new MruSyncDownTarget(fieldList, Constants.ACCOUNT), ACCOUNTS_SOUP);
+        checkDbExist(ACCOUNTS_SOUP, accountIds, Constants.ID);
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
-        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
+        deleteRecordsOnServer(new HashSet<>(singletonList(accountIds[0])), Constants.ACCOUNT);
         syncManager.cleanResyncGhosts(syncId);
         checkDbDeleted(ACCOUNTS_SOUP, new String[] {accountIds[0]}, Constants.ID);
 
         // Deletes the remaining accounts on the server.
-        deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[1], accountIds[2])), Constants.ACCOUNT);
+        deleteRecordsOnServer(new HashSet<>(Arrays.asList(accountIds[1], accountIds[2])), Constants.ACCOUNT);
     }
 
     /**
@@ -843,20 +807,15 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Creates 1 account on the server.
         final Map<String, String> accounts = createRecordsOnServer(1, Constants.ACCOUNT);
         assertEquals("1 account should have been created", 1, accounts.size());
-        final Set<String> keySet = accounts.keySet();
-        final String[] accountIds = new String[1];
-        keySet.toArray(accountIds);
-        final String soupName = "Accounts";
-        createAccountsSoup(soupName);
+        final String[] accountIds = accounts.keySet().toArray(new String[0]);
 
         // Builds SOSL sync down target and performs initial sync.
         final SOSLBuilder soslBuilder = SOSLBuilder.getInstanceWithSearchTerm(accounts.get(accountIds[0]));
         final SOSLReturningBuilder returningBuilder = SOSLReturningBuilder.getInstanceWithObjectName(Constants.ACCOUNT);
         returningBuilder.fields("Id, Name");
         final String sosl = soslBuilder.returning(returningBuilder).searchGroup("NAME FIELDS").build();
-        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new SoslSyncDownTarget(sosl), soupName);
-        int numRecords = smartStore.countQuery(QuerySpec.buildAllQuerySpec(soupName, "Id", QuerySpec.Order.ascending, 10));
-        assertEquals("1 account should be stored in the soup", 1, numRecords);
+        long syncId = trySyncDown(MergeMode.LEAVE_IF_CHANGED, new SoslSyncDownTarget(sosl), ACCOUNTS_SOUP);
+        checkDbExist(ACCOUNTS_SOUP, accountIds, Constants.ID);
 
         // Deletes 1 account on the server and verifies the ghost record is cleared from the soup.
         deleteRecordsOnServer(new HashSet<String>(Arrays.asList(accountIds[0])), Constants.ACCOUNT);
@@ -1106,14 +1065,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
             expectedFields.put(Constants.DESCRIPTION, idToFields.get(id).get(Constants.DESCRIPTION));
             idToFieldsExpectedOnServer.put(id, expectedFields);
         }
-    }
-
-    /**
-     * Test getSoqlForRemoteIds for SoqlSyncDownTarget
-     */
-    public void testGetSoqlForRemoteIdsForSoqlSyncDownTarget() {
-        SoqlSyncDownTarget target = new SoqlSyncDownTarget("SELECT Name FROM Account WHERE Name = 'James Bond'");
-        assertEquals("SELECT Id FROM Account WHERE Name = 'James Bond'", target.getSoqlForRemoteIds());
     }
 
     /**

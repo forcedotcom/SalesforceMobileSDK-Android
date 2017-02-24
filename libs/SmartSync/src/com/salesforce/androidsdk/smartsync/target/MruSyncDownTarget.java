@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -119,7 +118,7 @@ public class MruSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
-    public Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds) {
+    protected Set<String> getRemoteIds(SyncManager syncManager, Set<String> localIds) throws IOException, JSONException {
         if (localIds == null) {
             return null;
         }
@@ -131,14 +130,9 @@ public class MruSyncDownTarget extends SyncDownTarget {
                 + " IN ('" + TextUtils.join("', '", localIds) + "')").build();
 
         // Makes network request and parses the response.
-        try {
-            final JSONArray records = startFetch(syncManager, 0, soql);
-            remoteIds.addAll(parseIdsFromResponse(records));
-        } catch (IOException e) {
-            Log.e(TAG, "IOException thrown while fetching records", e);
-        } catch (JSONException e) {
-            Log.e(TAG, "JSONException thrown while fetching records", e);
-        }
+        final JSONArray records = startFetch(syncManager, 0, soql);
+        remoteIds.addAll(parseIdsFromResponse(records));
+
         return remoteIds;
     }
 

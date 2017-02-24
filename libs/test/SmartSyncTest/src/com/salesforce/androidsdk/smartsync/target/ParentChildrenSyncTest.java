@@ -547,7 +547,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // Sync down again with MergeMode.LEAVE_IF_CHANGED
         trySyncDown(SyncState.MergeMode.LEAVE_IF_CHANGED, target, ACCOUNTS_SOUP, numberAccounts, 1);
 
-        // Check db - locally changed records should have been left alone
+        // Check db - if an account and/or its children was locally modified then that account and all its children should be left alone
         Map<String, Map<String, Object>> accountIdToFieldsExpected = new HashMap<>(accountIdToFields);
         accountIdToFieldsExpected.putAll(accountIdToFieldsUpdated);
         checkDb(accountIdToFieldsExpected, ACCOUNTS_SOUP);
@@ -677,8 +677,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     /**
      * Sync down the test accounts and contacts
      * Delete account from server - run cleanResyncGhosts
-     * Make sure the deleted account is no longer present locally
-     * Make sure the children of the deleted account are still present locally
      */
     public void testCleanResyncGhostsForParentChildrenTarget() throws Exception {
         final int numberAccounts = 4;
@@ -704,9 +702,14 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // Checking db
         checkDb(accountIdToFieldsLeft, ACCOUNTS_SOUP);
         checkDbDeleted(ACCOUNTS_SOUP, new String[] {accountIdDeleted}, Constants.ID);
-        // Clean resync ghosts currently only deal with parents
         for (String accountId : accountIdContactIdToFields.keySet()) {
-            checkDb(accountIdContactIdToFields.get(accountId), CONTACTS_SOUP);
+            if (accountId.equals(accountIdDeleted)) {
+                checkDbDeleted(CONTACTS_SOUP, accountIdContactIdToFields.get(accountId).keySet().toArray(new String[0]), Constants.ID);
+            }
+            else {
+                checkDb(accountIdContactIdToFields.get(accountId), CONTACTS_SOUP);
+
+            }
         }
     }
 

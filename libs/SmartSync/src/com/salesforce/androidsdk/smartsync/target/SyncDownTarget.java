@@ -137,14 +137,41 @@ public abstract class SyncDownTarget extends SyncTarget {
      */
     public abstract JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException;
 
+
     /**
-     * Fetches list of IDs still present on the server from the list of local IDs.
+     * Delete from local store records that a full sync down would no longer download
+     * @param syncManager
+     * @param soupName
+     * @return
+     * @throws JSONException, IOException
+     */
+    public int cleanGhosts(SyncManager syncManager, String soupName) throws JSONException, IOException {
+         // Fetches list of IDs present in local soup that have not been modified locally.
+        final Set<String> localIds = getNonDirtyRecordIds(syncManager, soupName, getIdFieldName());
+
+         // Fetches list of IDs still present on the server from the list of local IDs
+         // and removes the list of IDs that are still present on the server.
+        final Set<String> remoteIds = getRemoteIds(syncManager, localIds);
+        if (remoteIds != null) {
+            localIds.removeAll(remoteIds);
+        }
+
+        // Deletes extra IDs from SmartStore.
+        int localIdSize = localIds.size();
+        if (localIdSize > 0) {
+            deleteRecordsFromLocalStore(syncManager, soupName, localIds, getIdFieldName());
+        }
+
+        return localIdSize;
+    }
+
+    /**
+     * Fetches remote IDs still present on the server from the list of local IDs.
      *
      * @param syncManager SyncManager instance.
-     * @param localIds Local IDs from SmartStore.
      * @return List of IDs still present on the server.
      */
-    public abstract Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds);
+    protected abstract Set<String> getRemoteIds(SyncManager syncManager, Set<String> localIds) throws IOException, JSONException;
 
     /**
      * @return number of records expected to be fetched - is set when startFetch() is called

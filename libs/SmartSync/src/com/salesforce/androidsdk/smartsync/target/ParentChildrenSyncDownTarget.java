@@ -41,8 +41,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -132,12 +134,10 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     }
 
     @Override
-    public String getSoqlForRemoteIds() {
+    protected String getSoqlForRemoteIds() {
         // This is for clean re-sync ghosts
         //
-        // XXX For now only getting parent ids
-        // Leaving children alone - so there will be "ghost children" i.e. children records pointing
-        // back to parent records in the database but not connected the same way on the server
+        // This is the soql to identify parents
 
         List<String> fields = new ArrayList<>();
         fields.add(getIdFieldName());
@@ -147,6 +147,86 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
         return builder.build();
     }
+
+    protected String getSoqlForRemoteChildrenIds() {
+        // This is for clean re-sync ghosts
+        //
+        // This is the soql to identify children
+
+        // We are doing
+        //  select Id, (select Id from children) from Parents where soqlParentFilter
+        // It could be better to do
+        //  select Id from child where qualified-soqlParentFilter (e.g. if filter is Name = 'A' then we would use Parent.Name = 'A')
+        // But "qualifying" parentSoqlFilter without parsing it could prove tricky
+
+        // Nested query
+        List<String> nestedFields = new ArrayList<>();
+        nestedFields.add(childrenInfo.idFieldName);
+        SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(nestedFields);
+        builderNested.from(childrenInfo.sobjectTypePlural);
+
+        // Parent query
+        List<String> fields = new ArrayList<>();
+        fields.add(getIdFieldName());
+        fields.add("(" + builderNested.build() + ")");
+        SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(fields);
+        builder.from(parentInfo.sobjectType);
+        builder.where(parentSoqlFilter);
+
+        return builder.build();
+    }
+
+
+    @Override
+    public int cleanGhosts(SyncManager syncManager, String soupName) throws JSONException, IOException {
+        // Taking care of ghost parents
+        int localIdsSize = super.cleanGhosts(syncManager, soupName);
+
+        // Taking care of ghost children
+
+        // NB: ParentChildrenSyncDownTarget's getNonDirtyRecordIdsSql does a join between parent and children soups
+        // We only want to look at the children soup, so using SoqlSyncDownTarget's getNonDirtyRecordIdsSql
+
+        final Set<String> localChildrenIds = getIdsWithQuery(syncManager, super.getNonDirtyRecordIdsSql(childrenInfo.soupName, childrenInfo.idFieldName));
+        final Set<String> remoteChildrenIds = getChildrenRemoteIdsWithSoql(syncManager, getSoqlForRemoteChildrenIds());
+        if (remoteChildrenIds != null) {
+            localChildrenIds.removeAll(remoteChildrenIds);
+        }
+        if (localChildrenIds.size() > 0) {
+            deleteRecordsFromLocalStore(syncManager, childrenInfo.soupName, localChildrenIds, childrenInfo.idFieldName);
+        }
+        return localIdsSize;
+    }
+
+    protected Set<String> getChildrenRemoteIdsWithSoql(SyncManager syncManager, String soqlForChildrenRemoteIds) throws IOException, JSONException {
+        final Set<String> remoteChildrenIds = new HashSet<String>();
+
+        // Makes network request and parses the response.
+        JSONArray records = startFetch(syncManager, soqlForChildrenRemoteIds);
+        remoteChildrenIds.addAll(parseChildrenIdsFromResponse(records));
+        while (records != null) {
+
+            // Fetch next records, if any.
+            records = continueFetch(syncManager);
+            remoteChildrenIds.addAll(parseIdsFromResponse(records));
+        }
+        return remoteChildrenIds;
+    }
+
+    protected Set<String> parseChildrenIdsFromResponse(JSONArray records) {
+        final Set<String> remoteChildrenIds = new HashSet<String>();
+        if (records != null) {
+            for (int i = 0; i < records.length(); i++) {
+                final JSONObject record = records.optJSONObject(i);
+                if (record != null) {
+                    JSONArray childrenRecords = record.optJSONArray(childrenInfo.sobjectTypePlural);
+                    remoteChildrenIds.addAll(parseIdsFromResponse(childrenRecords));
+                }
+            }
+        }
+        return remoteChildrenIds;
+    }
+
 
     @Override
     public String getQuery(long maxTimeStamp) {

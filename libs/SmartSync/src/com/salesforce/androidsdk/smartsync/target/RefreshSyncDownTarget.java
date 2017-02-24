@@ -213,26 +213,20 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
-    public Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds) {
+    protected Set<String> getRemoteIds(SyncManager syncManager, Set<String> localIds) throws IOException, JSONException {
         if (localIds == null) {
             return null;
         }
 
         Set<String> remoteIds = new HashSet<>();
 
-        try {
-            List<String> localIdsList = new ArrayList<>(localIds);
-            int sliceSize = getCountIdsPerSoql();
-            int countSlices = (int) Math.ceil((double) localIds.size() / sliceSize);
-            for (int slice=0; slice<countSlices; slice++) {
-                List<String> idsToFetch = localIdsList.subList(slice*sliceSize, Math.min(localIdsList.size(), (slice+1)*sliceSize));
-                JSONArray records = fetchFromServer(syncManager, idsToFetch, Arrays.asList(getIdFieldName()), 0 /* get all */);
-                remoteIds.addAll(parseIdsFromResponse(records));
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "IOException thrown while fetching records", e);
-        } catch (JSONException e) {
-            Log.e(TAG, "JSONException thrown while fetching records", e);
+        List<String> localIdsList = new ArrayList<>(localIds);
+        int sliceSize = getCountIdsPerSoql();
+        int countSlices = (int) Math.ceil((double) localIds.size() / sliceSize);
+        for (int slice = 0; slice < countSlices; slice++) {
+            List<String> idsToFetch = localIdsList.subList(slice * sliceSize, Math.min(localIdsList.size(), (slice + 1) * sliceSize));
+            JSONArray records = fetchFromServer(syncManager, idsToFetch, Arrays.asList(getIdFieldName()), 0 /* get all */);
+            remoteIds.addAll(parseIdsFromResponse(records));
         }
 
         return remoteIds;

@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -115,7 +114,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         return startFetch(syncManager, getQuery(maxTimeStamp));
     }
 
-    private JSONArray startFetch(SyncManager syncManager, String query) throws IOException, JSONException {
+    protected JSONArray startFetch(SyncManager syncManager, String query) throws IOException, JSONException {
         RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, query);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONObject responseJson = getResponseJson(response);
@@ -129,7 +128,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         return records;
     }
 
-    private JSONObject getResponseJson(RestResponse response) throws IOException {
+    protected JSONObject getResponseJson(RestResponse response) throws IOException {
         JSONObject responseJson;
         try {
             responseJson = response.asJSONObject();
@@ -161,33 +160,26 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
-    public Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds) {
-        if (localIds == null) {
-            return null;
-        }
+    protected Set<String> getRemoteIds(SyncManager syncManager, Set<String> localIds) throws IOException, JSONException {
+        return getRemoteIdsWithSoql(syncManager, getSoqlForRemoteIds());
+    }
 
+    protected Set<String> getRemoteIdsWithSoql(SyncManager syncManager, String soqlForRemoteIds) throws IOException, JSONException {
         final Set<String> remoteIds = new HashSet<String>();
-        final String soql = getSoqlForRemoteIds();
 
         // Makes network request and parses the response.
-        try {
-            JSONArray records = startFetch(syncManager, soql);
-            remoteIds.addAll(parseIdsFromResponse(records));
-            while (records != null) {
+        JSONArray records = startFetch(syncManager, soqlForRemoteIds);
+        remoteIds.addAll(parseIdsFromResponse(records));
+        while (records != null) {
 
-                // Fetch next records, if any.
-                records = continueFetch(syncManager);
-                remoteIds.addAll(parseIdsFromResponse(records));
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "IOException thrown while fetching records", e);
-        } catch (JSONException e) {
-            Log.e(TAG, "JSONException thrown while fetching records", e);
+            // Fetch next records, if any.
+            records = continueFetch(syncManager);
+            remoteIds.addAll(parseIdsFromResponse(records));
         }
         return remoteIds;
     }
 
-    public String getSoqlForRemoteIds() {
+    protected String getSoqlForRemoteIds() {
         // Alters the SOQL query to get only IDs.
         final StringBuilder soql = new StringBuilder("SELECT ");
         soql.append(getIdFieldName());
@@ -197,7 +189,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         return soql.toString();
     }
 
-    public static String addFilterForReSync(String query, String modificationFieldDatName, long maxTimeStamp) {
+    protected static String addFilterForReSync(String query, String modificationFieldDatName, long maxTimeStamp) {
         if (maxTimeStamp > 0) {
             String extraPredicate = modificationFieldDatName + " > " + Constants.TIMESTAMP_FORMAT.format(new Date(maxTimeStamp));
             query = query.toLowerCase().contains(" where ")
