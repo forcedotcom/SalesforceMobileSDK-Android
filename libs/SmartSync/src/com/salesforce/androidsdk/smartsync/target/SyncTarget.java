@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -278,13 +277,12 @@ public abstract class SyncTarget {
      * @param ids
      * @param idField
      */
-    public void deleteRecordsFromLocalStore(SyncManager syncManager, String soupName, Set<String> ids, String idField) {
+    protected void deleteRecordsFromLocalStore(SyncManager syncManager, String soupName, Set<String> ids, String idField) {
         if (ids.size() > 0) {
             String smartSql = String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} IN (%s)",
                     soupName, SmartStore.SOUP_ENTRY_ID, soupName, soupName, idField,
                     "'" + TextUtils.join("', '", ids) + "'");
 
-            Log.i("--query-for-delete-->", smartSql);
             QuerySpec querySpec = QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE /* delete all */);
             syncManager.getSmartStore().deleteByQuery(soupName, querySpec);
         }

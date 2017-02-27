@@ -157,7 +157,7 @@ public class SyncUpTarget extends SyncTarget {
      * @throws IOException
      * @throws JSONException
      */
-    public String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws IOException, JSONException {
+    protected String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws IOException, JSONException {
         RestRequest request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
@@ -190,7 +190,7 @@ public class SyncUpTarget extends SyncTarget {
      * @return server response status code
      * @throws IOException
      */
-    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
+    protected int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
         RestRequest request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
@@ -232,7 +232,7 @@ public class SyncUpTarget extends SyncTarget {
      * @return true if successful
      * @throws IOException
      */
-    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
+    protected int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
         RestRequest request = RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 

@@ -31,6 +31,7 @@ import android.text.TextUtils;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
@@ -55,10 +56,6 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     private static final String TAG = "ParentChildrenSyncDownTarget";
 
-    public static final String PARENT = "parent";
-    public static final String CHILDREN = "children";
-    public static final String RELATIONSHIP_TYPE = "relationshipType";
-
     public static final String PARENT_FIELDLIST = "parentFieldlist";
     public static final String PARENT_SOQL_FILTER = "parentSoqlFilter";
     public static final String CHILDREN_FIELDLIST = "childrenFieldlist";
@@ -71,28 +68,20 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     private RelationshipType relationshipType;
 
     /**
-     * Enum for relationship types
-     */
-    public enum RelationshipType {
-        MASTER_DETAIL,
-        LOOKUP;
-    }
-
-    /**
      * Construct ParentChildrenSyncDownTarget from json
      * @param target
      * @throws JSONException
      */
     public ParentChildrenSyncDownTarget(JSONObject target) throws JSONException {
         this(
-                new ParentInfo(target.getJSONObject(PARENT)),
+                new ParentInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.PARENT)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(PARENT_FIELDLIST)),
                 target.getString(PARENT_SOQL_FILTER),
 
-                new ChildrenInfo(target.getJSONObject(CHILDREN)),
+                new ChildrenInfo(target.getJSONObject(ParentChildrenSyncTargetHelper.CHILDREN)),
                 JSONObjectHelper.<String>toList(target.optJSONArray(CHILDREN_FIELDLIST)),
 
-                RelationshipType.valueOf(target.getString(RELATIONSHIP_TYPE))
+                RelationshipType.valueOf(target.getString(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE))
         );
     }
 
@@ -124,12 +113,12 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
      */
     public JSONObject asJSON() throws JSONException {
         JSONObject target = super.asJSON();
-        target.put(PARENT, parentInfo.asJSON());
+        target.put(ParentChildrenSyncTargetHelper.PARENT, parentInfo.asJSON());
         target.put(PARENT_FIELDLIST, new JSONArray(parentFieldlist));
         target.put(PARENT_SOQL_FILTER, parentSoqlFilter);
-        target.put(CHILDREN, childrenInfo.asJSON());
+        target.put(ParentChildrenSyncTargetHelper.CHILDREN, childrenInfo.asJSON());
         target.put(CHILDREN_FIELDLIST, new JSONArray(childrenFieldlist));
-        target.put(RELATIONSHIP_TYPE, relationshipType.name());
+        target.put(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE, relationshipType.name());
         return target;
     }
 

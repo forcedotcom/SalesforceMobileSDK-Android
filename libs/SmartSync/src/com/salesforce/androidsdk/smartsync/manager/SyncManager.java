@@ -367,7 +367,7 @@ public class SyncManager {
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         int i = 0;
         for (final String id : dirtyRecordIds) {
-            JSONObject record = smartStore.retrieve(soupName, Long.valueOf(id)).getJSONObject(0);
+            JSONObject record = target.getFromLocalStore(this, soupName, id);
             syncUpOneRecord(target, soupName, record, options);
 
             // Updating status
