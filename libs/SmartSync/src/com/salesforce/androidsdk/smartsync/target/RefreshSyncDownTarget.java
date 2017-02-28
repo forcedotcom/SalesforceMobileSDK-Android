@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync.util;
+package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
 import android.util.Log;
@@ -33,6 +33,8 @@ import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -211,26 +213,20 @@ public class RefreshSyncDownTarget extends SyncDownTarget {
     }
 
     @Override
-    public Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds) {
+    protected Set<String> getRemoteIds(SyncManager syncManager, Set<String> localIds) throws IOException, JSONException {
         if (localIds == null) {
             return null;
         }
 
         Set<String> remoteIds = new HashSet<>();
 
-        try {
-            List<String> localIdsList = new ArrayList<>(localIds);
-            int sliceSize = getCountIdsPerSoql();
-            int countSlices = (int) Math.ceil((double) localIds.size() / sliceSize);
-            for (int slice=0; slice<countSlices; slice++) {
-                List<String> idsToFetch = localIdsList.subList(slice*sliceSize, Math.min(localIdsList.size(), (slice+1)*sliceSize));
-                JSONArray records = fetchFromServer(syncManager, idsToFetch, Arrays.asList(getIdFieldName()), 0 /* get all */);
-                remoteIds.addAll(parseIdsFromResponse(records));
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "IOException thrown while fetching records", e);
-        } catch (JSONException e) {
-            Log.e(TAG, "JSONException thrown while fetching records", e);
+        List<String> localIdsList = new ArrayList<>(localIds);
+        int sliceSize = getCountIdsPerSoql();
+        int countSlices = (int) Math.ceil((double) localIds.size() / sliceSize);
+        for (int slice = 0; slice < countSlices; slice++) {
+            List<String> idsToFetch = localIdsList.subList(slice * sliceSize, Math.min(localIdsList.size(), (slice + 1) * sliceSize));
+            JSONArray records = fetchFromServer(syncManager, idsToFetch, Arrays.asList(getIdFieldName()), 0 /* get all */);
+            remoteIds.addAll(parseIdsFromResponse(records));
         }
 
         return remoteIds;

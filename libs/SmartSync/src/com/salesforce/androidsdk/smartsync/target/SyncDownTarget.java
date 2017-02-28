@@ -24,11 +24,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package com.salesforce.androidsdk.smartsync.util;
+package com.salesforce.androidsdk.smartsync.target;
 
 import android.util.Log;
 
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -48,6 +49,7 @@ import java.util.Set;
 public abstract class SyncDownTarget extends SyncTarget {
 
     // Constants
+    private static final String TAG = "SyncDownTarget";
 	public static final String QUERY_TYPE = "type";
 
     // Fields
@@ -72,6 +74,7 @@ public abstract class SyncDownTarget extends SyncTarget {
         case sosl:    return new SoslSyncDownTarget(target);
         case soql:    return new SoqlSyncDownTarget(target);
         case refresh: return new RefreshSyncDownTarget(target);
+            case parent_children: return new ParentChildrenSyncDownTarget(target);
         case custom:
         default:
             try {
@@ -90,6 +93,12 @@ public abstract class SyncDownTarget extends SyncTarget {
     public SyncDownTarget() {
         super();
     }
+
+
+    public SyncDownTarget(String idFieldName, String modificationDateFieldName) {
+        super(idFieldName, modificationDateFieldName);
+    }
+
 
     /**
      * Construct SyncDownTarget from json
@@ -128,14 +137,41 @@ public abstract class SyncDownTarget extends SyncTarget {
      */
     public abstract JSONArray continueFetch(SyncManager syncManager) throws IOException, JSONException;
 
+
     /**
-     * Fetches list of IDs still present on the server from the list of local IDs.
+     * Delete from local store records that a full sync down would no longer download
+     * @param syncManager
+     * @param soupName
+     * @return
+     * @throws JSONException, IOException
+     */
+    public int cleanGhosts(SyncManager syncManager, String soupName) throws JSONException, IOException {
+         // Fetches list of IDs present in local soup that have not been modified locally.
+        final Set<String> localIds = getNonDirtyRecordIds(syncManager, soupName, getIdFieldName());
+
+         // Fetches list of IDs still present on the server from the list of local IDs
+         // and removes the list of IDs that are still present on the server.
+        final Set<String> remoteIds = getRemoteIds(syncManager, localIds);
+        if (remoteIds != null) {
+            localIds.removeAll(remoteIds);
+        }
+
+        // Deletes extra IDs from SmartStore.
+        int localIdSize = localIds.size();
+        if (localIdSize > 0) {
+            deleteRecordsFromLocalStore(syncManager, soupName, localIds, getIdFieldName());
+        }
+
+        return localIdSize;
+    }
+
+    /**
+     * Fetches remote IDs still present on the server from the list of local IDs.
      *
      * @param syncManager SyncManager instance.
-     * @param localIds Local IDs from SmartStore.
      * @return List of IDs still present on the server.
      */
-    public abstract Set<String> getListOfRemoteIds(SyncManager syncManager, Set<String> localIds);
+    protected abstract Set<String> getRemoteIds(SyncManager syncManager, Set<String> localIds) throws IOException, JSONException;
 
     /**
      * @return number of records expected to be fetched - is set when startFetch() is called
@@ -158,9 +194,20 @@ public abstract class SyncDownTarget extends SyncTarget {
      * @throws JSONException
      */
     public long getLatestModificationTimeStamp(JSONArray records) throws JSONException {
+        return getLatestModificationTimeStamp(records, getModificationDateFieldName());
+    }
+
+    /**
+     * Gets the latest modification timestamp from the array of records.
+     * @param records
+     * @param modifiedDateFieldName
+     * @return
+     * @throws JSONException
+     */
+    protected long getLatestModificationTimeStamp(JSONArray records, String modifiedDateFieldName) throws JSONException {
         long maxTimeStamp = -1;
         for (int i = 0; i < records.length(); i++) {
-            String timeStampStr = JSONObjectHelper.optString(records.getJSONObject(i), getModificationDateFieldName());
+            String timeStampStr = JSONObjectHelper.optString(records.getJSONObject(i), modifiedDateFieldName);
             if (timeStampStr == null) {
                 maxTimeStamp = -1;
                 break; // field not present
@@ -169,7 +216,7 @@ public abstract class SyncDownTarget extends SyncTarget {
                 long timeStamp = Constants.TIMESTAMP_FORMAT.parse(timeStampStr).getTime();
                 maxTimeStamp = Math.max(timeStamp, maxTimeStamp);
             } catch (Exception e) {
-                Log.w("SyncDownTarget.getLatestModificationTimeStamp", "Could not parse modification date field " + getModificationDateFieldName(), e);
+                Log.w(TAG, "getLatestModificationTimeStamp: Could not parse modification date field " + modifiedDateFieldName, e);
                 maxTimeStamp = -1;
                 break;
             }
@@ -195,6 +242,7 @@ public abstract class SyncDownTarget extends SyncTarget {
     	sosl,
     	soql,
         refresh,
+        parent_children,
         custom
     }
 
