@@ -4,7 +4,7 @@ apply plugin: 'com.jfrog.bintray'
 
 dependencies {
   compile project(':libs:SmartSync')
-  compile project(':external:cordova:framework')
+  compile 'org.apache.cordova:framework:6.1.2:release@aar'
 }
 
 android {

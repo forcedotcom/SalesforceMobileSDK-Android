@@ -1,5 +1,3 @@
-package com.salesforce.androidsdk.smartsync.target;
-
 /*
  * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
@@ -26,6 +24,8 @@ package com.salesforce.androidsdk.smartsync.target;
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
+package com.salesforce.androidsdk.smartsync.target;
 
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
