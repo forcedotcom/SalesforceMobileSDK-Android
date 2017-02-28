@@ -53,7 +53,7 @@ import java.util.Map;
 import java.util.SortedSet;
 
 /**
- * Test class for ParentChildrenSyncDownTarget
+ * Test class for ParentChildrenSyncDownTarget and ParentChildrenSyncUpTarget
  *
  */
 public class ParentChildrenSyncTest extends SyncManagerTestCase {
@@ -259,28 +259,28 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      * Test deleteRecordsFromLocalStore with a master-detail relationship (children should be deleted too)
      */
     public void testDeleteRecordsFromLocalStoreWithMasterDetail() throws JSONException {
-        tryDeleteFromLocalStore(RelationshipType.MASTER_DETAIL, false /* multiple records */ );
+        tryDeleteRecordsFromLocalStore(RelationshipType.MASTER_DETAIL);
     }
 
     /**
      * Test deleteRecordsFromLocalStore with a lookup relationship (children should NOT be deleted)
      */
     public void testDeleteRecordsFromLocalStoreWithLookup() throws JSONException {
-        tryDeleteFromLocalStore(RelationshipType.LOOKUP, false /* multiple records */ );
+        tryDeleteRecordsFromLocalStore(RelationshipType.LOOKUP);
     }
 
     /**
      * Test deleteFromLocalStore with a master-detail relationship (children should be deleted too)
      */
     public void testDeleteFromLocalStoreWithMasterDetail() throws JSONException {
-        tryDeleteFromLocalStore(RelationshipType.MASTER_DETAIL, true /* single record */ );
+        tryDeleteFromLocalStore(RelationshipType.MASTER_DETAIL);
     }
 
     /**
      * Test deleteFromLocalStore with a lookup relationship (children should be deleted too)
      */
     public void testDeleteFromLocalStoreWithLookup() throws JSONException {
-        tryDeleteFromLocalStore(RelationshipType.LOOKUP, true /* single record */ );
+        tryDeleteFromLocalStore(RelationshipType.LOOKUP);
     }
 
     /**
@@ -716,12 +716,51 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
 
     /**
-     * Helper method for the testDelete*
+     * Helper method for the testDeleteFromLocalStore*
      * @param relationshipType
-     * @param singleDelete
      * @throws JSONException
      */
-    protected void tryDeleteFromLocalStore(RelationshipType relationshipType, boolean singleDelete) throws JSONException {
+    protected void tryDeleteFromLocalStore(RelationshipType relationshipType) throws JSONException {
+        String[] accountNames = {
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT)
+        };
+        Map<JSONObject, JSONObject[]> mapAccountToContacts = createAccountsAndContactsLocally(accountNames, 3);
+        JSONObject[] accounts = mapAccountToContacts.keySet().toArray(new JSONObject[]{});
+
+        String[] contactIdsOfFirstAccount = JSONObjectHelper.pluck(mapAccountToContacts.get(accounts[0]), Constants.ID).toArray(new String[0]);
+        String[] contactIdsOfSecondAccount = JSONObjectHelper.pluck(mapAccountToContacts.get(accounts[1]), Constants.ID).toArray(new String[0]);
+        String[] contactIdsOfThirdAccount = JSONObjectHelper.pluck(mapAccountToContacts.get(accounts[2]), Constants.ID).toArray(new String[0]);
+
+        ParentChildrenSyncUpTarget target = getAccountContactsSyncUpTarget(relationshipType);
+
+        target.deleteFromLocalStore(syncManager, ACCOUNTS_SOUP, accounts[1]);
+
+        // Check that account was indeed deleted but none others
+        checkDbDeleted(ACCOUNTS_SOUP, new String[]{accounts[1].getString(Constants.ID)}, Constants.ID);
+        checkDbExist(ACCOUNTS_SOUP, new String[]{accounts[0].getString(Constants.ID), accounts[2].getString(Constants.ID)}, Constants.ID);
+
+        // Checking contacts
+        checkDbExist(CONTACTS_SOUP, contactIdsOfFirstAccount, Constants.ID);
+        checkDbExist(CONTACTS_SOUP, contactIdsOfThirdAccount, Constants.ID);
+        switch (relationshipType) {
+            case MASTER_DETAIL:
+                checkDbDeleted(CONTACTS_SOUP, contactIdsOfSecondAccount, Constants.ID);
+                break;
+
+            case LOOKUP:
+                checkDbExist(CONTACTS_SOUP, contactIdsOfSecondAccount, Constants.ID);
+                break;
+        }
+    }
+
+    /**
+     * Helper method for the testDeleteRecordsFromLocalStore*
+     * @param relationshipType
+     * @throws JSONException
+     */
+    protected void tryDeleteRecordsFromLocalStore(RelationshipType relationshipType) throws JSONException {
         String[] accountNames = {
                 createRecordName(Constants.ACCOUNT),
                 createRecordName(Constants.ACCOUNT),
@@ -736,51 +775,26 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         ParentChildrenSyncDownTarget target = getAccountContactsSyncDownTarget(relationshipType);
 
-        // Delete one account with deleteFromLocalStore
-        if (singleDelete) {
-            target.deleteFromLocalStore(syncManager, ACCOUNTS_SOUP, accounts[1]);
+        String[] accountIdsToDelete = {accounts[0].getString(Constants.ID), accounts[2].getString(Constants.ID)};
+        target.deleteRecordsFromLocalStore(syncManager, ACCOUNTS_SOUP, new HashSet(Arrays.asList(accountIdsToDelete)), Constants.ID);
 
-            // Check that account was indeed deleted but none others
-            checkDbDeleted(ACCOUNTS_SOUP, new String[] {accounts[1].getString(Constants.ID)}, Constants.ID);
-            checkDbExist(ACCOUNTS_SOUP, new String[] {accounts[0].getString(Constants.ID), accounts[2].getString(Constants.ID)}, Constants.ID);
+        // Check that the accounts were indeed deleted but none others
+        checkDbExist(ACCOUNTS_SOUP, new String[]{accounts[1].getString(Constants.ID)}, Constants.ID);
+        checkDbDeleted(ACCOUNTS_SOUP, new String[]{accounts[0].getString(Constants.ID), accounts[2].getString(Constants.ID)}, Constants.ID);
 
-            // Checking contacts
-            checkDbExist(CONTACTS_SOUP, contactIdsOfFirstAccount, Constants.ID);
-            checkDbExist(CONTACTS_SOUP, contactIdsOfThirdAccount, Constants.ID);
-            switch (relationshipType) {
-                case MASTER_DETAIL:
-                    checkDbDeleted(CONTACTS_SOUP, contactIdsOfSecondAccount, Constants.ID);
-                    break;
+        // Checking contacts
+        checkDbExist(CONTACTS_SOUP, contactIdsOfSecondAccount, Constants.ID);
+        switch (relationshipType) {
+            case MASTER_DETAIL:
+                checkDbDeleted(CONTACTS_SOUP, contactIdsOfFirstAccount, Constants.ID);
+                checkDbDeleted(CONTACTS_SOUP, contactIdsOfThirdAccount, Constants.ID);
+                break;
 
-                case LOOKUP:
-                    checkDbExist(CONTACTS_SOUP, contactIdsOfSecondAccount, Constants.ID);
-                    break;
-            }
+            case LOOKUP:
+                checkDbExist(CONTACTS_SOUP, contactIdsOfFirstAccount, Constants.ID);
+                checkDbExist(CONTACTS_SOUP, contactIdsOfThirdAccount, Constants.ID);
+                break;
         }
-        // Delete multiple accounts with deleteRecordsFromLocalStore
-        else {
-            String[] accountIdsToDelete = {accounts[0].getString(Constants.ID), accounts[2].getString(Constants.ID)};
-            target.deleteRecordsFromLocalStore(syncManager, ACCOUNTS_SOUP, new HashSet(Arrays.asList(accountIdsToDelete)), Constants.ID);
-
-            // Check that the accounts were indeed deleted but none others
-            checkDbExist(ACCOUNTS_SOUP, new String[] {accounts[1].getString(Constants.ID)}, Constants.ID);
-            checkDbDeleted(ACCOUNTS_SOUP, new String[] {accounts[0].getString(Constants.ID), accounts[2].getString(Constants.ID)}, Constants.ID);
-
-            // Checking contacts
-            checkDbExist(CONTACTS_SOUP, contactIdsOfSecondAccount, Constants.ID);
-            switch (relationshipType) {
-                case MASTER_DETAIL:
-                    checkDbDeleted(CONTACTS_SOUP, contactIdsOfFirstAccount, Constants.ID);
-                    checkDbDeleted(CONTACTS_SOUP, contactIdsOfThirdAccount, Constants.ID);
-                    break;
-
-                case LOOKUP:
-                    checkDbExist(CONTACTS_SOUP, contactIdsOfFirstAccount, Constants.ID);
-                    checkDbExist(CONTACTS_SOUP, contactIdsOfThirdAccount, Constants.ID);
-                    break;
-            }
-        }
-
     }
 
     private void tryGetDirtyRecordIds(JSONObject[] expectedRecords) throws JSONException {
@@ -848,6 +862,24 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 relationshipType);
     }
 
+    private ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget(RelationshipType relationshipType) {
+        return getAccountContactsSyncUpTarget(relationshipType, "");
+    }
+
+    private ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget(RelationshipType relationshipType, String parentSoqlFilter) {
+        return getAccountContactsSyncUpTarget(relationshipType, Constants.LAST_MODIFIED_DATE, Constants.LAST_MODIFIED_DATE, parentSoqlFilter);
+    }
+
+    private ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget(RelationshipType relationshipType, String accountModificationDateFieldName, String contactModificationDateFieldName, String parentSoqlFilter) {
+        return new ParentChildrenSyncUpTarget(
+                new ParentInfo(Constants.ACCOUNT, Constants.ID, accountModificationDateFieldName),
+                Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION),
+                Arrays.asList(Constants.NAME, Constants.DESCRIPTION),
+                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", Constants.ID, contactModificationDateFieldName, CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID),
+                Arrays.asList(Constants.LAST_NAME),
+                Arrays.asList(Constants.LAST_NAME),
+                relationshipType);
+    }
 
     private Map<JSONObject, JSONObject[]> createAccountsAndContactsLocally(String[] names, int numberOfContactsPerAccount) throws JSONException {
         Map<JSONObject, JSONObject[]> mapAccountContacts = new HashMap<>();

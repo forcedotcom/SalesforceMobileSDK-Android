@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.SortedSet;
 
 /**
  * Target for sync down:
@@ -164,6 +165,31 @@ public abstract class SyncDownTarget extends SyncTarget {
 
         return localIdSize;
     }
+
+    /**
+     * Return ids of non-dirty records (records NOT locally created/updated or deleted)
+     * @param syncManager
+     * @param soupName
+     * @param idField
+     * @return
+     * @throws JSONException
+     */
+    protected SortedSet<String> getNonDirtyRecordIds(SyncManager syncManager, String soupName, String idField) throws JSONException {
+        String nonDirtyRecordsSql = getNonDirtyRecordIdsSql(soupName, idField);
+        return getIdsWithQuery(syncManager, nonDirtyRecordsSql);
+    }
+
+    /**
+     * Return SmartSQL to identify non-dirty records
+     * @param soupName
+     * @param idField
+     * @return
+     */
+    protected String getNonDirtyRecordIdsSql(String soupName, String idField) {
+        return String.format("SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' ORDER BY {%s:%s} ASC", soupName, idField, soupName, soupName, LOCAL, soupName, idField);
+    }
+
+
 
     /**
      * Fetches remote IDs still present on the server from the list of local IDs.

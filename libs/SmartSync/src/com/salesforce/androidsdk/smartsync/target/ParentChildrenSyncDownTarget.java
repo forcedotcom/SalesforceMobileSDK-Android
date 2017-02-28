@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
@@ -312,25 +311,12 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
 
     @Override
     protected String getDirtyRecordIdsSql(String soupName, String idField) {
-        return String.format(
-                "SELECT DISTINCT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND ({%s:%s} = 'true' OR {%s:%s} = 'true')",
-                soupName, idField,
-                childrenInfo.soupName, soupName,
-                childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
-                soupName, SmartStore.SOUP_ENTRY_ID,
-                soupName, LOCAL,
-                childrenInfo.soupName, LOCAL);
+        return ParentChildrenSyncTargetHelper.getDirtyRecordIdsSql(soupName, idField, childrenInfo);
     }
 
     @Override
     protected String getNonDirtyRecordIdsSql(String soupName, String idField) {
-        return String.format(
-                "SELECT {%s:%s} FROM {%s} WHERE {%s:%s} NOT IN (%s)",
-                soupName, idField,
-                soupName,
-                soupName, SmartStore.SOUP_ENTRY_ID,
-                getDirtyRecordIdsSql(soupName, SmartStore.SOUP_ENTRY_ID)
-        );
+        return ParentChildrenSyncTargetHelper.getNonDirtyRecordIdsSql(soupName, idField, childrenInfo);
     }
 
     @Override
@@ -372,30 +358,12 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     }
 
     @Override
-    public void deleteFromLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
-        if (relationshipType == RelationshipType.MASTER_DETAIL) {
-            deleteChildrenFromLocalStore(syncManager, soupName, new String[]{record.getString(SmartStore.SOUP_ENTRY_ID)}, SmartStore.SOUP_ENTRY_ID);
-        }
-        super.deleteFromLocalStore(syncManager, soupName, record);
-    }
-
-    @Override
     public void deleteRecordsFromLocalStore(SyncManager syncManager, String soupName, Set<String> ids, String idField) {
         if (relationshipType == RelationshipType.MASTER_DETAIL) {
-            deleteChildrenFromLocalStore(syncManager, soupName, ids.toArray(new String[0]), idField);
+            String[] ids1 = ids.toArray(new String[0]);
+            ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(syncManager.getSmartStore(), soupName, ids1, idField, childrenInfo);
         }
         super.deleteRecordsFromLocalStore(syncManager, soupName, ids, idField);
     }
 
-    protected void deleteChildrenFromLocalStore(SyncManager syncManager, String soupName, String[] ids, String idField) {
-        String smartSql = String.format(
-                "SELECT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} IN (%s)",
-                childrenInfo.soupName, SmartStore.SOUP_ENTRY_ID,
-                childrenInfo.soupName, soupName,
-                childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
-                soupName, SmartStore.SOUP_ENTRY_ID,
-                soupName, idField,
-                "'" + TextUtils.join("', '", ids) + "'");
-        syncManager.getSmartStore().deleteByQuery(childrenInfo.soupName, QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE));
-    }
 }

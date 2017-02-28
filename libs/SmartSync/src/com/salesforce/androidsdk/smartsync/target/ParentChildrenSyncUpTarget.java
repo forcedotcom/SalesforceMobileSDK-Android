@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.smartsync.target;
 
+import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
@@ -86,6 +87,11 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
+    public JSONObject getFromLocalStore(SyncManager syncManager, String soupName, String storeId) throws JSONException {
+        return super.getFromLocalStore(syncManager, soupName, storeId);
+    }
+
+    @Override
     public JSONObject asJSON() throws JSONException {
         JSONObject target = super.asJSON();
         target.put(ParentChildrenSyncTargetHelper.PARENT, parentInfo.asJSON());
@@ -97,27 +103,40 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
+    protected String getDirtyRecordIdsSql(String soupName, String idField) {
+        return ParentChildrenSyncTargetHelper.getDirtyRecordIdsSql(soupName, idField, childrenInfo);
+    }
+
+    @Override
     public String createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
+        // TBD
         return super.createOnServer(syncManager, record, fieldlist);
     }
 
     @Override
     public int deleteOnServer(SyncManager syncManager, JSONObject record) throws JSONException, IOException {
+        // TBD
         return super.deleteOnServer(syncManager, record);
     }
 
     @Override
     public int updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
+        // TBD
         return super.updateOnServer(syncManager, record, fieldlist);
     }
 
     @Override
     public String fetchLastModifiedDate(SyncManager syncManager, JSONObject record) {
+        // TBD
         return super.fetchLastModifiedDate(syncManager, record);
     }
 
     @Override
-    public Set<String> getIdsOfRecordsToSyncUp(SyncManager syncManager, String soupName) throws JSONException {
-        return super.getIdsOfRecordsToSyncUp(syncManager, soupName);
+    public void deleteFromLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
+        if (relationshipType == RelationshipType.MASTER_DETAIL) {
+            ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(syncManager.getSmartStore(),
+                    soupName, new String[]{record.getString(SmartStore.SOUP_ENTRY_ID)}, SmartStore.SOUP_ENTRY_ID, childrenInfo);
+        }
+        super.deleteFromLocalStore(syncManager, soupName, record);
     }
 }
