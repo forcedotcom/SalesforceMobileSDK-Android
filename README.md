@@ -45,7 +45,7 @@ Introduction
 
 **Library Upgrades**
 - We've updated React Native to version 0.35.0.
-- We've updated Cordova to version 6.1.0.
+- We've updated Cordova to version 6.1.2.
 - We've removed the dependency on Guava.
 
 **SalesforceAnalytics Library**
