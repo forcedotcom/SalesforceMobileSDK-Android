@@ -35,8 +35,10 @@ import android.util.Log;
 
 import com.salesforce.androidsdk.KeyImpl;
 import com.salesforce.androidsdk.MainActivity;
+import com.salesforce.androidsdk.accounts.UserAccount;
 import com.salesforce.androidsdk.accounts.UserAccountManager;
 import com.salesforce.androidsdk.analytics.SalesforceAnalyticsManager;
+import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManagerTest;
@@ -97,20 +99,31 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
         compareAiltnAppNames(getDefaultAppName());
     }
 
-    private String compareAiltnAppNames(String expectedAppName) {
+    private void compareAiltnAppNames(String expectedAppName) {
         final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
-        final ClientManager.LoginOptions loginOptions = new ClientManager.LoginOptions(ClientManagerTest.TEST_LOGIN_URL,
-                ClientManagerTest.TEST_PASSCODE_HASH, ClientManagerTest.TEST_CALLBACK_URL,
-                ClientManagerTest.TEST_CLIENT_ID, ClientManagerTest.TEST_SCOPES);
-        final ClientManager clientManager = new ClientManager(getInstrumentation().getTargetContext(),
-                ClientManagerTest.TEST_ACCOUNT_TYPE, loginOptions, true);
-        final AccountManager accMgr = clientManager.getAccountManager();
+        final Context targetContext = getInstrumentation().getTargetContext();
+        final ClientManager clientManager = new ClientManager(targetContext,
+                ClientManagerTest.TEST_ACCOUNT_TYPE, null, true);
+        clientManager.createNewAccount(ClientManagerTest.TEST_ACCOUNT_NAME, ClientManagerTest.TEST_USERNAME,
+                ClientManagerTest.TEST_REFRESH_TOKEN, ClientManagerTest.TEST_AUTH_TOKEN,
+                ClientManagerTest.TEST_INSTANCE_URL, ClientManagerTest.TEST_LOGIN_URL,
+                ClientManagerTest.TEST_IDENTITY_URL, ClientManagerTest.TEST_CLIENT_ID,
+                ClientManagerTest.TEST_ORG_ID, ClientManagerTest.TEST_USER_ID, null);
+        final AccountManager accMgr = AccountManager.get(targetContext);
+        final UserAccount curUser = userAccMgr.getCurrentUser();
+        assertNotNull("Current user should NOT be null", curUser);
         final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(userAccMgr.getCurrentUser());
+        assertNotNull("SalesforceAnalyticsManager instance should NOT be null", analyticsManager);
+        final AnalyticsManager manager = analyticsManager.getAnalyticsManager();
+        assertNotNull("AnalyticsManager instance should NOT be null", manager);
         final DeviceAppAttributes deviceAppAttributes = analyticsManager.getAnalyticsManager().getDeviceAppAttributes();
+        assertNotNull("Device attributes should NOT be null", deviceAppAttributes);
         final String ailtnAppName = deviceAppAttributes.getAppName();
-        assertEquals("DeviceAppAttributes - App names do not match", expectedAppName, ailtnAppName);
-        assertEquals("SalesforceSDKManager - App names do not match", expectedAppName, SalesforceSDKManager.getAiltnAppName());
+        assertEquals("DeviceAppAttributes - App names do NOT match", expectedAppName, ailtnAppName);
+        assertEquals("SalesforceSDKManager - App names do NOT match", expectedAppName, SalesforceSDKManager.getAiltnAppName());
+        SalesforceAnalyticsManager.reset(curUser);
         clientManager.removeAccounts(accMgr.getAccountsByType(ClientManagerTest.TEST_ACCOUNT_TYPE));
+        SalesforceSDKManager.resetAiltnAppName();
     }
 
     private String getDefaultAppName() {

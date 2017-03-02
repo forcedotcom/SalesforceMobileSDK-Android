@@ -185,6 +185,14 @@ public class SalesforceSDKManager {
     }
 
     /**
+     * Resets the app name to be used by the analytics framework.
+     * This is meant to be used ONLY by tests.
+     */
+    public static void resetAiltnAppName() {
+        AILTN_APP_NAME = null;
+    }
+
+    /**
      * Protected constructor.
      * @param context Application context.
      * @param keyImpl Implementation for KeyInterface.
@@ -203,10 +211,11 @@ public class SalesforceSDKManager {
         this.features  = new TreeSet<String>(String.CASE_INSENSITIVE_ORDER);
 
         /*
-         * Checks if an analytics app name has already been set by the app. If not, fetches the
-         * default app name to be used and sets it.
+         * Checks if an analytics app name has already been set by the app.
+         * If not, fetches the default app name to be used and sets it.
          */
-        if (!TextUtils.isEmpty(getAiltnAppName())) {
+        final String currentAiltnAppName = getAiltnAppName();
+        if (TextUtils.isEmpty(currentAiltnAppName)) {
             String ailtnAppName = null;
             try {
                 final PackageInfo packageInfo = context.getPackageManager().getPackageInfo(context.getPackageName(), 0);
