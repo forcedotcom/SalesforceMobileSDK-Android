@@ -96,7 +96,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         target.put(ParentChildrenSyncTargetHelper.PARENT, parentInfo.asJSON());
         target.put(ParentChildrenSyncTargetHelper.CHILDREN, childrenInfo.asJSON());
         target.put(CHILDREN_CREATE_FIELDLIST, new JSONArray(childrenCreateFieldlist));
-        target.put(CHILDREN_CREATE_FIELDLIST, new JSONArray(childrenUpdateFieldlist));
+        target.put(CHILDREN_UPDATE_FIELDLIST, new JSONArray(childrenUpdateFieldlist));
         target.put(ParentChildrenSyncTargetHelper.RELATIONSHIP_TYPE, relationshipType.name());
         return target;
     }

@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
@@ -454,5 +455,87 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         RestResponse response = restClient.sendSync(request);
         JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
         assertEquals("No accounts should have been returned from server", 0, records.length());
+    }
+
+    /**
+     * Sync up helper
+     * @oaram target
+     * @param numberChanges
+     * @param mergeMode
+     * @throws JSONException
+     */
+    protected void trySyncUp(SyncUpTarget target, int numberChanges, SyncState.MergeMode mergeMode) throws JSONException {
+        trySyncUp(target, numberChanges, mergeMode, false);
+    }
+
+    /**
+     * Sync up helper
+     * @param target
+     * @param numberChanges
+     * @param mergeMode
+     * @param expectSyncFailure - if true, we expect the sync to end up in the FAILED state
+     * @throws JSONException
+     */
+    protected void trySyncUp(SyncUpTarget target, int numberChanges, SyncState.MergeMode mergeMode, boolean expectSyncFailure) throws JSONException {
+        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME, Constants.DESCRIPTION }), mergeMode);
+        trySyncUp(target, numberChanges, options, expectSyncFailure);
+    }
+
+    /**
+     * Sync up helper
+     * @param target
+     * @param numberChanges
+     * @param options
+     * @param expectSyncFailure - if true, we expect the sync to end up in the FAILED state
+     * @throws JSONException
+     */
+    protected void trySyncUp(SyncUpTarget target, int numberChanges, SyncOptions options, boolean expectSyncFailure) throws JSONException {
+        // Create sync
+		SyncState sync = SyncState.createSyncUp(smartStore, target, options, ACCOUNTS_SOUP);
+		long syncId = sync.getId();
+		checkStatus(sync, SyncState.Type.syncUp, syncId, target, options, SyncState.Status.NEW, 0, -1);
+
+		// Run sync
+		SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
+		syncManager.runSync(sync, queue);
+
+		// Check status updates
+		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
+        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, 0, numberChanges);
+
+        if (expectSyncFailure) {
+            checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.FAILED, 0, numberChanges);
+        }
+        else {
+            for (int i = 1; i < numberChanges; i++) {
+                checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, i * 100 / numberChanges, numberChanges);
+            }
+            checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.DONE, 100, numberChanges);
+        }
+	}
+
+    /**
+     * Return map of id to fields given records names
+     * @param soupName
+     * @param fieldNames
+     * @param nameField
+     * @param names
+     * @throws JSONException
+     */
+    protected Map<String, Map<String, Object>> getIdToFieldsByName(String soupName, String[] fieldNames, String nameField, String[] names) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec(String.format("SELECT {%s:_soup} FROM {%s} WHERE {%s:%s} IN %s", soupName, soupName, soupName, nameField, makeInClause(names)), names.length);
+        JSONArray recordsFromDb = smartStore.query(smartStoreQuery, 0);
+        Map<String, Map<String, Object>> idToFields = new HashMap<>();
+        for (int i=0; i<recordsFromDb.length(); i++) {
+            JSONArray row = recordsFromDb.getJSONArray(i);
+            JSONObject soupElt = row.getJSONObject(0);
+            String id = soupElt.getString(Constants.ID);
+            Map<String, Object> fields = new HashMap<>();
+            for (String fieldName : fieldNames) {
+                fields.put(fieldName, soupElt.get(fieldName));
+            }
+            idToFields.put(id, fields);
+        }
+        return idToFields;
     }
 }
