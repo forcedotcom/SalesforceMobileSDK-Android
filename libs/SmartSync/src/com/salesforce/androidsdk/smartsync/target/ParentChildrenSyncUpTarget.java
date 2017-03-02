@@ -39,7 +39,6 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Target for sync that uploads parent with children records
