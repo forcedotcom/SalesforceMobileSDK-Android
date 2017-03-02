@@ -26,9 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import com.salesforce.androidsdk.rest.ApiVersionStrings;
-import com.salesforce.androidsdk.rest.RestRequest;
-import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartsync.target.MruSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.RefreshSyncDownTarget;
@@ -46,7 +43,6 @@ import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
-import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -186,7 +182,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDbStateFlags(ids, false, false, false, ACCOUNTS_SOUP);
 
 		// Check server
-        checkServer(idToFieldsLocallyUpdated);
+        checkServer(idToFieldsLocallyUpdated, Constants.ACCOUNT);
 	}
 
     /**
@@ -221,7 +217,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDbStateFlags(ids, false, true, false, ACCOUNTS_SOUP);
 
 		// Check server
-        checkServer(idToFieldsRemotelyUpdated);
+        checkServer(idToFieldsRemotelyUpdated, Constants.ACCOUNT);
 	}
 
     /**
@@ -253,7 +249,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
 		
 		// Check server
-        checkServer(idToFieldsCreated);
+        checkServer(idToFieldsCreated, Constants.ACCOUNT);
 
 		// Adding to idToFields so that they get deleted in tearDown
 		idToFields.putAll(idToFieldsCreated);
@@ -278,7 +274,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDbDeleted(ACCOUNTS_SOUP, idsLocallyDeleted, Constants.ID);
 
 		// Check server
-        checkServerDeleted(idsLocallyDeleted);
+        checkServerDeleted(idsLocallyDeleted, Constants.ACCOUNT);
 	}
 
     /**
@@ -335,7 +331,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDbStateFlags(Arrays.asList(idsLocallyDeleted), false, false, true, ACCOUNTS_SOUP);
 
 		// Check server
-        checkServer(idToFieldsRemotelyUpdated);
+        checkServer(idToFieldsRemotelyUpdated, Constants.ACCOUNT);
 	}
 
 
@@ -600,7 +596,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDbDeleted(ACCOUNTS_SOUP, idsLocallyDeleted, Constants.ID);
 
         // Check server
-        checkServerDeleted(idsLocallyDeleted);
+        checkServerDeleted(idsLocallyDeleted, Constants.ACCOUNT);
     }
 
     /**
@@ -652,7 +648,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         }
 
         // Check server
-        checkServer(idToFieldsUpdated);
+        checkServer(idToFieldsUpdated, Constants.ACCOUNT);
     }
 
     /**
@@ -689,8 +685,8 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDb(idToFieldsUpdated, ACCOUNTS_SOUP);
 
         // Check server
-        checkServer(idToFieldsUpdated);
-        checkServerDeleted(new String[]{remotelyDeletedId});
+        checkServer(idToFieldsUpdated, Constants.ACCOUNT);
+        checkServerDeleted(new String[]{remotelyDeletedId}, Constants.ACCOUNT);
     }
 
     /**
@@ -984,7 +980,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
             expectedFields.put(Constants.DESCRIPTION, idToFields.get(id).get(Constants.DESCRIPTION));
             idToFieldsExpectedOnServer.put(id, expectedFields);
         }
-        checkServer(idToFieldsExpectedOnServer);
+        checkServer(idToFieldsExpectedOnServer, Constants.ACCOUNT);
     }
 
     /**
@@ -1014,7 +1010,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
             expectedFields.put(Constants.DESCRIPTION, null);
             idToFieldsExpectedOnServer.put(id, expectedFields);
         }
-        checkServer(idToFieldsExpectedOnServer);
+        checkServer(idToFieldsExpectedOnServer, Constants.ACCOUNT);
     }
 
     /**
@@ -1171,41 +1167,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
 			smartStore.upsert(ACCOUNTS_SOUP, account);
 		}
 	}
-
-    /**
-     * Check records on server
-     * @param idToFields
-     * @throws IOException
-     * @throws JSONException
-     */
-    private void checkServer(Map<String, Map<String, Object>> idToFields) throws IOException, JSONException {
-        String soql = "SELECT Id, Name, Description FROM Account WHERE Id IN " + makeInClause(idToFields.keySet());
-        RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(targetContext), soql);
-        JSONObject idToFieldsFromServer = new JSONObject();
-        RestResponse response = restClient.sendSync(request);
-        JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
-        for (int i=0; i<records.length(); i++) {
-            JSONObject row = records.getJSONObject(i);
-            JSONObject fieldsFromServer = new JSONObject();
-            fieldsFromServer.put(Constants.NAME, row.get(Constants.NAME));
-            fieldsFromServer.put(Constants.DESCRIPTION, row.get(Constants.DESCRIPTION));
-            idToFieldsFromServer.put(row.getString(Constants.ID), fieldsFromServer);
-        }
-        JSONTestHelper.assertSameJSONObject("Wrong data on server", new JSONObject(idToFields), idToFieldsFromServer);
-    }
-
-    /**
-     * Check that records were deleted from server
-     * @param ids
-     * @throws IOException
-     */
-    private void checkServerDeleted(String[] ids) throws IOException, JSONException {
-        String soql = "SELECT Id, Name FROM Account WHERE Id IN " + makeInClause(ids);
-        RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(targetContext), soql);
-        RestResponse response = restClient.sendSync(request);
-        JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
-        assertEquals("No accounts should have been returned from server", 0, records.length());
-    }
 
     /**
      * Return array of names

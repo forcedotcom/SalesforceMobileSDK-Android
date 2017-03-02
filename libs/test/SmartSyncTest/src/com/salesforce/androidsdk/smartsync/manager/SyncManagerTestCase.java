@@ -40,12 +40,14 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncUpdateCallbackQueue;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Formatter;
@@ -416,5 +418,41 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             assertEquals("Wrong local flag", expectLocallyUpdated, soupElt.getBoolean(SyncTarget.LOCALLY_UPDATED));
             assertEquals("Wrong local flag", expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCALLY_DELETED));
         }
+    }
+
+    /**
+     * Check records on server
+     * @param idToFields
+     * @param sObjectType
+     * @throws IOException
+     * @throws JSONException
+     */
+    protected void checkServer(Map<String, Map<String, Object>> idToFields, String sObjectType) throws IOException, JSONException {
+        String[] fieldNames = idToFields.get(idToFields.keySet().toArray(new String[0])[0]).keySet().toArray(new String[0]);
+        String soql = String.format("SELECT %s, %s FROM %s WHERE %s IN %s", Constants.ID, TextUtils.join(",", fieldNames), sObjectType, Constants.ID, makeInClause(idToFields.keySet()));
+        RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(targetContext), soql);
+        RestResponse response = restClient.sendSync(request);
+        JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
+        for (int i=0; i<records.length(); i++) {
+            JSONObject row = records.getJSONObject(i);
+            Map<String, Object> expectedFields = idToFields.get(row.get(Constants.ID));
+            for (String fieldName : fieldNames) {
+                assertEquals("Wrong value for field: " + fieldName, expectedFields.get(fieldName), JSONObjectHelper.opt(row, fieldName));
+            }
+        }
+    }
+
+    /**
+     * Check that records were deleted from server
+     * @param ids
+     * @param sObjectType
+     * @throws IOException
+     */
+    protected void checkServerDeleted(String[] ids, String sObjectType) throws IOException, JSONException {
+        String soql = String.format("SELECT %s FROM %s WHERE %s IN %s", Constants.ID, sObjectType, Constants.ID, makeInClause(ids));
+        RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(targetContext), soql);
+        RestResponse response = restClient.sendSync(request);
+        JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
+        assertEquals("No accounts should have been returned from server", 0, records.length());
     }
 }
