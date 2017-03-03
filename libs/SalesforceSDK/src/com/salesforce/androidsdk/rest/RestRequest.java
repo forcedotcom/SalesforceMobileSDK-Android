@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -71,8 +73,9 @@ public class RestRequest {
 	 * utf_8 charset
 	 */
 	public static final String UTF_8 = StandardCharsets.UTF_8.name();
+    public static final String RECORDS = "records";
 
-	/**
+    /**
 	 * Enumeration for all HTTP methods.
 	 *
 	 */
@@ -97,7 +100,8 @@ public class RestRequest {
 		QUERY("/services/data/%s/query"), 
 		SEARCH("/services/data/%s/search"),
 		SEARCH_SCOPE_AND_ORDER("/services/data/%s/search/scopeOrder"),
-		SEARCH_RESULT_LAYOUT("/services/data/%s/search/layout");
+		SEARCH_RESULT_LAYOUT("/services/data/%s/search/layout"),
+		SOBJECT_TREE("/services/data/%s/composite/tree/%s");
 
 		private final String pathTemplate;
 
@@ -379,7 +383,24 @@ public class RestRequest {
 		path.append("?q=");
 		path.append(URLEncoder.encode(toCsv(objectList).toString(), UTF_8));
 		return new RestRequest(RestMethod.GET, path.toString(), null);	
-	}	
+	}
+
+    /**
+     * Request to create one or more sObject trees with root records of the specified type
+     * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_sobject_tree.htm
+     *
+     * @param apiVersion
+     * @param objectType
+     * @param recordTrees
+     * @return a RestRequest
+     * @throws JSONException
+     */
+	public static RestRequest getRequestForSObjectTree(String apiVersion, String objectType, JSONArray recordTrees) throws JSONException {
+        JSONObject json = new JSONObject();
+        json.put(RECORDS, recordTrees);
+        RequestBody body = RequestBody.create(MEDIA_TYPE_JSON, json.toString());
+        return new RestRequest(RestMethod.POST, RestAction.SOBJECT_TREE.getPath(apiVersion, objectType), body);
+	}
 	
 	/**
 	 * Jsonize map and create a RequestBody out of it
