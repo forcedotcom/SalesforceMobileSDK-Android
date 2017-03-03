@@ -360,8 +360,8 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     @Override
     public void deleteRecordsFromLocalStore(SyncManager syncManager, String soupName, Set<String> ids, String idField) {
         if (relationshipType == RelationshipType.MASTER_DETAIL) {
-            String[] ids1 = ids.toArray(new String[0]);
-            ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(syncManager.getSmartStore(), soupName, ids1, idField, childrenInfo);
+            String[] idsArr = ids.toArray(new String[0]);
+            ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(syncManager.getSmartStore(), soupName, idsArr, idField, childrenInfo);
         }
         super.deleteRecordsFromLocalStore(syncManager, soupName, ids, idField);
     }

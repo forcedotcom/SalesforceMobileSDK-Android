@@ -97,10 +97,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      */
     public void testGetQuery() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
+                new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -108,7 +108,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent"),
+                new ParentInfo("Parent", "parentsSoup"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId"),
@@ -129,10 +129,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         long dateLong = date.getTime();
 
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
+                new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -140,7 +140,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent"),
+                new ParentInfo("Parent", "parentsSoup"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId"),
@@ -157,10 +157,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      */
     public void testGetSoqlForRemoteIds() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
+                new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -168,7 +168,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent"),
+                new ParentInfo("Parent", "parentsSoup"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId"),
@@ -183,10 +183,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      */
     public void testGetDirtyRecordIdsSql() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
+                new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -199,10 +199,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      */
     public void testGetNonDirtyRecordIdsSql() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
+                new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -916,10 +916,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
     private ParentChildrenSyncDownTarget getAccountContactsSyncDownTarget(RelationshipType relationshipType, String accountModificationDateFieldName, String contactModificationDateFieldName, String parentSoqlFilter) {
         return new ParentChildrenSyncDownTarget(
-                new ParentInfo(Constants.ACCOUNT, Constants.ID, accountModificationDateFieldName),
+                new ParentInfo(Constants.ACCOUNT, ACCOUNTS_SOUP, Constants.ID, accountModificationDateFieldName),
                 Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION),
                 parentSoqlFilter,
-                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", Constants.ID, contactModificationDateFieldName, CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID),
+                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID, Constants.ID, contactModificationDateFieldName),
                 Arrays.asList(Constants.LAST_NAME),
                 relationshipType);
     }
@@ -934,10 +934,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
     private ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget(RelationshipType relationshipType, String accountModificationDateFieldName, String contactModificationDateFieldName, String parentSoqlFilter) {
         return new ParentChildrenSyncUpTarget(
-                new ParentInfo(Constants.ACCOUNT, Constants.ID, accountModificationDateFieldName),
+                new ParentInfo(Constants.ACCOUNT, ACCOUNTS_SOUP, Constants.ID, accountModificationDateFieldName),
                 Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION),
                 Arrays.asList(Constants.NAME, Constants.DESCRIPTION),
-                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", Constants.ID, contactModificationDateFieldName, CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID),
+                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID, Constants.ID, contactModificationDateFieldName),
                 Arrays.asList(Constants.LAST_NAME),
                 Arrays.asList(Constants.LAST_NAME),
                 relationshipType);

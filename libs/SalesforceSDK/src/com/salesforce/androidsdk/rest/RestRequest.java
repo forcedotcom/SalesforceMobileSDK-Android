@@ -396,10 +396,14 @@ public class RestRequest {
      * @throws JSONException
      */
 	public static RestRequest getRequestForSObjectTree(String apiVersion, String objectType, JSONArray recordTrees) throws JSONException {
-        JSONObject json = new JSONObject();
-        json.put(RECORDS, recordTrees);
-        RequestBody body = RequestBody.create(MEDIA_TYPE_JSON, json.toString());
+        RequestBody body = RequestBody.create(MEDIA_TYPE_JSON, getRecordsJson(recordTrees).toString());
         return new RestRequest(RestMethod.POST, RestAction.SOBJECT_TREE.getPath(apiVersion, objectType), body);
+	}
+
+	public static JSONObject getRecordsJson(JSONArray records) throws JSONException {
+		JSONObject json = new JSONObject();
+		json.put(RECORDS, records);
+		return json;
 	}
 	
 	/**

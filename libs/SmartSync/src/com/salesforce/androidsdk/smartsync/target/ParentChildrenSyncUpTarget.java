@@ -26,10 +26,15 @@
  */
 package com.salesforce.androidsdk.smartsync.target;
 
+import android.util.Log;
+
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
@@ -38,7 +43,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Target for sync that uploads parent with children records
@@ -48,6 +55,8 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
 
     public static final String CHILDREN_CREATE_FIELDLIST = "childrenCreateFieldlist";
     public static final String CHILDREN_UPDATE_FIELDLIST = "childrenUpdateFieldlist";
+    public static final String RESULTS = "results";
+    public static final String REFERENCE_ID = "referenceId";
 
     private ParentInfo parentInfo;
     private ChildrenInfo childrenInfo;
@@ -86,11 +95,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public JSONObject getFromLocalStore(SyncManager syncManager, String soupName, String storeId) throws JSONException {
-        return super.getFromLocalStore(syncManager, soupName, storeId);
-    }
-
-    @Override
     public JSONObject asJSON() throws JSONException {
         JSONObject target = super.asJSON();
         target.put(ParentChildrenSyncTargetHelper.PARENT, parentInfo.asJSON());
@@ -108,8 +112,51 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
 
     @Override
     public String createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
-        // TBD
-        return super.createOnServer(syncManager, record, fieldlist);
+        // Getting children
+        JSONArray children = ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
+                syncManager.getSmartStore(),
+                parentInfo.soupName,
+                record,
+                childrenInfo);
+
+        // Prepare record tree
+        fieldlist = createFieldlist != null ? createFieldlist : fieldlist;
+        JSONObject recordTree = new JSONObject(buildFieldsMap(record, fieldlist));
+        JSONObject attributes = new JSONObject(record.get(Constants.ATTRIBUTES).toString());
+        attributes.put(REFERENCE_ID, "ref1");
+        recordTree.put(Constants.ATTRIBUTES, attributes);
+
+
+        // Adding children to record tree
+        JSONArray childrenForServer = new JSONArray();
+        for (int i=0; i<children.length(); i++) {
+            JSONObject child = children.getJSONObject(i);
+            JSONObject childForServer = new JSONObject(buildFieldsMap(child, childrenCreateFieldlist));
+            JSONObject childAttributes = new JSONObject(child.get(Constants.ATTRIBUTES).toString());
+            childAttributes.put(REFERENCE_ID, "ref" + (i+2) /* first child should be ref2 */);
+            childForServer.put(Constants.ATTRIBUTES, childAttributes);
+            childrenForServer.put(childForServer);
+        }
+        recordTree.put(childrenInfo.sobjectTypePlural, RestRequest.getRecordsJson(childrenForServer));
+
+        // API expects array of record trees
+        JSONArray recordTrees = new JSONArray();
+        recordTrees.put(recordTree);
+
+        // Building request
+        RestRequest request = RestRequest.getRequestForSObjectTree(syncManager.apiVersion, parentInfo.sobjectType, recordTrees);
+
+        // Sending request
+        RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+
+        // Parse response
+
+        Log.i("--recordTrees-->", recordTrees.toString(2));
+        Log.i("--response-->", response.asString());
+
+        return response.isSuccess()
+                ? response.asJSONObject().getJSONArray(RESULTS).getJSONObject(0).getString(Constants.LID) // XXX should we check that it is for ref1
+                : null; // XXX where is the error going?
     }
 
     @Override
