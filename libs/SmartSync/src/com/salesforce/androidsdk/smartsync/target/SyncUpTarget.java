@@ -57,8 +57,8 @@ public class SyncUpTarget extends SyncTarget {
     public static final String UPDATE_FIELDLIST = "updateFieldlist";
 
     // Fields
-    private List<String> createFieldlist;
-    private List<String> updateFieldlist;
+    protected List<String> createFieldlist;
+    protected List<String> updateFieldlist;
 
     /**
      * Build SyncUpTarget from json
@@ -136,14 +136,25 @@ public class SyncUpTarget extends SyncTarget {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
 
         // Get values
+        Map<String, Object> fields = buildFieldsMap(record, fieldlist);
+
+        return createOnServer(syncManager, objectType, fields);
+    }
+
+    /**
+     * Build map with the values for the fields in fieldlist from record
+     * @param record
+     * @param fieldlist
+     * @return
+     */
+    protected Map<String, Object> buildFieldsMap(JSONObject record, List<String> fieldlist) {
         Map<String,Object> fields = new HashMap<>();
         for (String fieldName : fieldlist) {
-            if (!fieldName.equals(getIdFieldName()) && !fieldName.equals(MODIFICATION_DATE_FIELD_NAME)) {
+            if (!fieldName.equals(getIdFieldName()) && !fieldName.equals(getModificationDateFieldName())) {
                 fields.put(fieldName, SmartStore.project(record, fieldName));
             }
         }
-
-        return createOnServer(syncManager, objectType, fields);
+        return fields;
     }
 
     /**

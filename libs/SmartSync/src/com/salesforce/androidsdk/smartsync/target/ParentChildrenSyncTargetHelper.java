@@ -28,10 +28,16 @@
 package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
+import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Shared code for ParentChildrenSyncDownTarget and ParentChildrenSyncUpTarget
@@ -73,14 +79,33 @@ public class ParentChildrenSyncTargetHelper {
     }
 
     public static void deleteChildrenFromLocalStore(SmartStore smartStore, String soupName, String[] ids, String idField, ChildrenInfo childrenInfo) {
+        QuerySpec querySpec = getQueryForChildren(soupName, SmartStore.SOUP_ENTRY_ID, ids, idField, childrenInfo);
+        smartStore.deleteByQuery(childrenInfo.soupName, querySpec);
+    }
+
+    public static JSONArray getChildrenFromLocalStore(SmartStore smartStore, String soupName, JSONObject parent, ChildrenInfo childrenInfo) throws JSONException {
+        QuerySpec  querySpec = getQueryForChildren(soupName, SmartSqlHelper.SOUP, new String[] {parent.getString(SmartStore.SOUP_ENTRY_ID)}, SmartStore.SOUP_ENTRY_ID, childrenInfo);
+        JSONArray rows = smartStore.query(querySpec, 0);
+        JSONArray children = new JSONArray();
+        for (int i=0; i<rows.length(); i++) {
+            JSONArray row = rows.getJSONArray(i);
+            children.put(row.getJSONObject(0));
+        }
+        return children;
+    }
+
+    protected static QuerySpec getQueryForChildren(String soupName, String fieldToSelect, String[] ids, String idField, ChildrenInfo childrenInfo) {
         String smartSql = String.format(
                 "SELECT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} IN (%s)",
-                childrenInfo.soupName, SmartStore.SOUP_ENTRY_ID,
+                childrenInfo.soupName, fieldToSelect,
                 childrenInfo.soupName, soupName,
                 childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
                 soupName, SmartStore.SOUP_ENTRY_ID,
                 soupName, idField,
                 "'" + TextUtils.join("', '", ids) + "'");
-        smartStore.deleteByQuery(childrenInfo.soupName, QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE));
+
+        return QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE);
     }
+
+
 }

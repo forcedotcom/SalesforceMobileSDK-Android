@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;

@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
-import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartsync.target.MruSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.RefreshSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SoqlSyncDownTarget;
@@ -245,7 +244,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		trySyncUp(3, syncUpMergeMode);
 		
 		// Check that db doesn't show entries as locally created anymore and that they use sfdc id
-        Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(names);
+        Map<String, Map<String, Object>> idToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, names);
         checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
 		
 		// Check server
@@ -289,7 +288,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Create a few entries locally
         String[] names = new String[] { createRecordName(Constants.ACCOUNT), createRecordName(Constants.ACCOUNT), createRecordName(Constants.ACCOUNT)};
         createAccountsLocally(names);
-        Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(names);
+        Map<String, Map<String, Object>> idToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, names);
 
         String[] allIds = idToFieldsCreated.keySet().toArray(new String[0]);
         String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
@@ -380,7 +379,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
         // Check that db doesn't show entries as locally created anymore and that they use sfdc id
-        Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(names);
+        Map<String, Map<String, Object>> idToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, names);
         checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
 
         // Check what got synched up
@@ -487,7 +486,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncUp(target, 3, MergeMode.OVERWRITE);
 
         // Check that db still show show entries as locally created anymore and that they use sfdc id
-        Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(names);
+        Map<String, Map<String, Object>> idToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, names);
         checkDbStateFlags(idToFieldsCreated.keySet(), true, false, false, ACCOUNTS_SOUP);
 
         // Check what got synched up
@@ -512,7 +511,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncUp(target, 3, MergeMode.OVERWRITE, true /* expect failure */);
 
         // Check that db still show show entries as locally created anymore and that they use sfdc id
-        Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(names);
+        Map<String, Map<String, Object>> idToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, names);
         checkDbStateFlags(idToFieldsCreated.keySet(), true, false, false, ACCOUNTS_SOUP);
 
         // Check what got synched up
@@ -620,7 +619,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncUp(3, MergeMode.OVERWRITE);
 
         // Getting id / fields of updated records looking up by name
-        Map<String, Map<String, Object>> idToFieldsUpdated = getIdsForNames(getNamesFromIdToFields(idToFieldsLocallyUpdated));
+        Map<String, Map<String, Object>> idToFieldsUpdated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, getNamesFromIdToFields(idToFieldsLocallyUpdated));
 
         // Check db
         checkDb(idToFieldsUpdated, ACCOUNTS_SOUP);
@@ -669,7 +668,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
 
         // Getting id / fields of updated records looking up by name
-        Map<String, Map<String, Object>> idToFieldsUpdated = getIdsForNames(getNamesFromIdToFields(idToFieldsLocallyUpdated));
+        Map<String, Map<String, Object>> idToFieldsUpdated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, getNamesFromIdToFields(idToFieldsLocallyUpdated));
 
         // Expect 3 records
         assertEquals(3, idToFieldsUpdated.size());
@@ -964,8 +963,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         Map<String, Map<String, Object>> idToFieldsLocallyUpdated = makeLocalChanges(idToFields, ACCOUNTS_SOUP);
 
         // Sync up with update field list including only name
-        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME, Constants.DESCRIPTION }), MergeMode.OVERWRITE);
-        trySyncUp(new SyncUpTarget(null, Arrays.asList(new String[] { Constants.NAME })), idToFieldsLocallyUpdated.size(), options, false);
+        trySyncUp(new SyncUpTarget(null, Arrays.asList(new String[] { Constants.NAME })), idToFieldsLocallyUpdated.size(), MergeMode.OVERWRITE, false);
 
         // Check that db doesn't show entries as locally modified anymore
         Set<String> ids = idToFieldsLocallyUpdated.keySet();
@@ -994,11 +992,10 @@ public class SyncManagerTest extends SyncManagerTestCase {
         createAccountsLocally(names);
 
         // Sync up with create field list including only name
-        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME, Constants.DESCRIPTION }), MergeMode.OVERWRITE);
-        trySyncUp(new SyncUpTarget(Arrays.asList(new String[] { Constants.NAME }), null), 3, options, false);
+        trySyncUp(new SyncUpTarget(Arrays.asList(new String[] { Constants.NAME }), null), 3, MergeMode.OVERWRITE, false);
 
         // Check that db doesn't show entries as locally created anymore and that they use sfdc id
-        Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(names);
+        Map<String, Map<String, Object>> idToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, names);
         checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
 
         // Check server - make sure only name was set
@@ -1032,14 +1029,10 @@ public class SyncManagerTest extends SyncManagerTestCase {
         createAccountsLocally(namesOfCreated);
 
         // Sync up with different create and update field lists
-        SyncOptions options = SyncOptions.optionsForSyncUp(
-                Arrays.asList(new String[]{Constants.NAME, Constants.DESCRIPTION}),
-                MergeMode.OVERWRITE);
-        trySyncUp(new SyncUpTarget(Arrays.asList(new String[]{Constants.NAME}), Arrays.asList(new String[]{Constants.DESCRIPTION})),
-                namesOfCreated.length + namesOfUpdated.length, options, false);
+        trySyncUp(new SyncUpTarget(Arrays.asList(new String[]{Constants.NAME}), Arrays.asList(new String[]{Constants.DESCRIPTION})), namesOfCreated.length + namesOfUpdated.length, MergeMode.OVERWRITE, false);
 
         // Check that db doesn't show created entries as locally created anymore and that they use sfdc id
-        Map<String, Map<String, Object>> idToFieldsCreated = getIdsForNames(namesOfCreated);
+        Map<String, Map<String, Object>> idToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[]{Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, namesOfCreated);
         checkDbStateFlags(idToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
 
         // Check that db doesn't show updated entries as locally modified anymore
@@ -1096,63 +1089,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
 
     /**
-     * Sync up helper
-     * @oaram target
-     * @param numberChanges
-     * @param mergeMode
-     * @throws JSONException
-     */
-    private void trySyncUp(SyncUpTarget target, int numberChanges, MergeMode mergeMode) throws JSONException {
-        trySyncUp(target, numberChanges, mergeMode, false);
-    }
-
-    /**
-     * Sync up helper
-     * @param target
-     * @param numberChanges
-     * @param mergeMode
-     * @param expectSyncFailure - if true, we expect the sync to end up in the FAILED state
-     * @throws JSONException
-     */
-    private void trySyncUp(SyncUpTarget target, int numberChanges, MergeMode mergeMode, boolean expectSyncFailure) throws JSONException {
-        SyncOptions options = SyncOptions.optionsForSyncUp(Arrays.asList(new String[] { Constants.NAME, Constants.DESCRIPTION }), mergeMode);
-        trySyncUp(target, numberChanges, options, expectSyncFailure);
-    }
-
-    /**
-     * Sync up helper
-     * @param target
-     * @param numberChanges
-     * @param options
-     * @param expectSyncFailure - if true, we expect the sync to end up in the FAILED state
-     * @throws JSONException
-     */
-    private void trySyncUp(SyncUpTarget target, int numberChanges, SyncOptions options, boolean expectSyncFailure) throws JSONException {
-        // Create sync
-		SyncState sync = SyncState.createSyncUp(smartStore, target, options, ACCOUNTS_SOUP);
-		long syncId = sync.getId();
-		checkStatus(sync, SyncState.Type.syncUp, syncId, target, options, SyncState.Status.NEW, 0, -1);
-		
-		// Run sync
-		SyncUpdateCallbackQueue queue = new SyncUpdateCallbackQueue();
-		syncManager.runSync(sync, queue);
-		
-		// Check status updates
-		checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, 0, -1); // we get an update right away before getting records to sync
-        checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, 0, numberChanges);
-
-        if (expectSyncFailure) {
-            checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.FAILED, 0, numberChanges);
-        }
-        else {
-            for (int i = 1; i < numberChanges; i++) {
-                checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.RUNNING, i * 100 / numberChanges, numberChanges);
-            }
-            checkStatus(queue.getNextSyncUpdate(), SyncState.Type.syncUp, syncId, target, options, SyncState.Status.DONE, 100, numberChanges);
-        }
-	}
-
-    /**
 	 * Delete accounts locally
 	 * @param idsLocallyDeleted
 	 * @throws JSONException 
@@ -1180,27 +1116,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
             i++;
         }
         return names;
-    }
-
-    /**
-     * Return map of id to fields given records names
-     * @param names
-     * @throws JSONException
-     */
-    private Map<String, Map<String, Object>> getIdsForNames(String[] names) throws JSONException {
-        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {accounts:_soup} FROM {accounts} WHERE {accounts:Name} IN " + makeInClause(names), names.length);
-        JSONArray accountsFromDb = smartStore.query(smartStoreQuery, 0);
-        Map<String, Map<String, Object>> idToFields = new HashMap<>();
-        for (int i=0; i<accountsFromDb.length(); i++) {
-            JSONArray row = accountsFromDb.getJSONArray(i);
-            JSONObject soupElt = row.getJSONObject(0);
-            String id = soupElt.getString(Constants.ID);
-            Map<String, Object> fields = new HashMap<>();
-            fields.put(Constants.NAME, soupElt.get(Constants.NAME));
-            fields.put(Constants.DESCRIPTION, soupElt.get(Constants.DESCRIPTION));
-            idToFields.put(id, fields);
-        }
-        return idToFields;
     }
 
     /**

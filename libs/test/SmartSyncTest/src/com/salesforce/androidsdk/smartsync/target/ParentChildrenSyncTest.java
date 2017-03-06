@@ -97,10 +97,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      */
     public void testGetQuery() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
+                new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -108,7 +108,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent"),
+                new ParentInfo("Parent", "parentsSoup"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId"),
@@ -129,10 +129,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         long dateLong = date.getTime();
 
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
+                new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -140,7 +140,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent"),
+                new ParentInfo("Parent", "parentsSoup"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId"),
@@ -157,10 +157,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      */
     public void testGetSoqlForRemoteIds() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
+                new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -168,7 +168,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // With default id and modification date fields
         target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent"),
+                new ParentInfo("Parent", "parentsSoup"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
                 new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId"),
@@ -183,10 +183,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      */
     public void testGetDirtyRecordIdsSql() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
+                new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -199,10 +199,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
      */
     public void testGetNonDirtyRecordIdsSql() {
         ParentChildrenSyncDownTarget target = new ParentChildrenSyncDownTarget(
-                new ParentInfo("Parent", "ParentId", "ParentModifiedDate"),
+                new ParentInfo("Parent", "parentsSoup", "ParentId", "ParentModifiedDate"),
                 Arrays.asList("ParentName", "Title"),
                 "School = 'MIT'",
-                new ChildrenInfo("Child", "Children", "ChildId", "ChildLastModifiedDate", "childrenSoup", "parentId", "parentLocalId"),
+                new ChildrenInfo("Child", "Children", "childrenSoup", "parentId", "parentLocalId", "ChildId", "ChildLastModifiedDate"),
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
@@ -714,6 +714,68 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         }
     }
 
+    /**
+     * Create accounts and contacts locally, sync up with merge mode OVERWRITE, check smartstore and server afterwards
+     */
+    public void testSyncUpWithLocallyCreatedRecords() throws Exception {
+        trySyncUpWithLocallyCreatedRecords(SyncState.MergeMode.OVERWRITE);
+    }
+
+    /**
+     * Create accounts and contacts locally, sync up with mege mode LEAVE_IF_CHANGED, check smartstore and server afterwards
+     */
+    public void testSyncUpWithLocallyCreatedRecordsWithoutOverwrite() throws Exception {
+        trySyncUpWithLocallyCreatedRecords(SyncState.MergeMode.LEAVE_IF_CHANGED);
+    }
+
+    /**
+     * Helper method for testSyncUpWithLocallyCreatedRecords*
+     * @param syncUpMergeMode
+     * @throws Exception
+     */
+    private void trySyncUpWithLocallyCreatedRecords(SyncState.MergeMode syncUpMergeMode) throws Exception {
+        final int numberContactsPerAccount = 3;
+
+        // Create a few entries locally
+        String[] accountNames = new String[] {
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT),
+                createRecordName(Constants.ACCOUNT)
+        };
+        Map<JSONObject, JSONObject[]> mapAccountToContacts = createAccountsAndContactsLocally(accountNames, numberContactsPerAccount);
+        String[] contactNames = new String[numberContactsPerAccount*accountNames.length];
+        int i=0;
+        for (JSONObject[] contacts : mapAccountToContacts.values()) {
+            for (JSONObject contact : contacts) {
+                contactNames[i] = contact.getString(Constants.LAST_NAME);
+            }
+        }
+
+        // Sync up
+        ParentChildrenSyncUpTarget target = getAccountContactsSyncUpTarget(RelationshipType.LOOKUP);
+        trySyncUp(target, accountNames.length, syncUpMergeMode);
+
+        // Check that db doesn't show account entries as locally created anymore and that they use sfdc id
+        Map<String, Map<String, Object>> accountIdToFieldsCreated = getIdToFieldsByName(ACCOUNTS_SOUP, new String[] { Constants.NAME, Constants.DESCRIPTION}, Constants.NAME, accountNames);
+        checkDbStateFlags(accountIdToFieldsCreated.keySet(), false, false, false, ACCOUNTS_SOUP);
+
+        // Check accounts on server
+        checkServer(accountIdToFieldsCreated, Constants.ACCOUNT);
+
+        // Check that db doesn't show contact entries as locally created anymore and that they use sfc id
+        Map<String, Map<String, Object>> contactIdToFieldsCreated = getIdToFieldsByName(CONTACTS_SOUP, new String[] { Constants.LAST_NAME, ACCOUNT_ID}, Constants.LAST_NAME, contactNames);
+        checkDbStateFlags(contactIdToFieldsCreated.keySet(), false, false, false, CONTACTS_SOUP);
+
+        // Check accounts on server
+        checkServer(contactIdToFieldsCreated, Constants.CONTACT);
+
+        // Cleanup
+        deleteRecordsOnServer(accountIdToFieldsCreated.keySet(), Constants.ACCOUNT);
+        deleteRecordsOnServer(contactIdToFieldsCreated.keySet(), Constants.CONTACT);
+    }
 
     /**
      * Helper method for the testDeleteFromLocalStore*
@@ -854,10 +916,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
     private ParentChildrenSyncDownTarget getAccountContactsSyncDownTarget(RelationshipType relationshipType, String accountModificationDateFieldName, String contactModificationDateFieldName, String parentSoqlFilter) {
         return new ParentChildrenSyncDownTarget(
-                new ParentInfo(Constants.ACCOUNT, Constants.ID, accountModificationDateFieldName),
+                new ParentInfo(Constants.ACCOUNT, ACCOUNTS_SOUP, Constants.ID, accountModificationDateFieldName),
                 Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION),
                 parentSoqlFilter,
-                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", Constants.ID, contactModificationDateFieldName, CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID),
+                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID, Constants.ID, contactModificationDateFieldName),
                 Arrays.asList(Constants.LAST_NAME),
                 relationshipType);
     }
@@ -872,10 +934,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
     private ParentChildrenSyncUpTarget getAccountContactsSyncUpTarget(RelationshipType relationshipType, String accountModificationDateFieldName, String contactModificationDateFieldName, String parentSoqlFilter) {
         return new ParentChildrenSyncUpTarget(
-                new ParentInfo(Constants.ACCOUNT, Constants.ID, accountModificationDateFieldName),
+                new ParentInfo(Constants.ACCOUNT, ACCOUNTS_SOUP, Constants.ID, accountModificationDateFieldName),
                 Arrays.asList(Constants.ID, Constants.NAME, Constants.DESCRIPTION),
                 Arrays.asList(Constants.NAME, Constants.DESCRIPTION),
-                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", Constants.ID, contactModificationDateFieldName, CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID),
+                new ChildrenInfo(Constants.CONTACT, Constants.CONTACT + "s", CONTACTS_SOUP, ACCOUNT_ID, ACCOUNT_LOCAL_ID, Constants.ID, contactModificationDateFieldName),
                 Arrays.asList(Constants.LAST_NAME),
                 Arrays.asList(Constants.LAST_NAME),
                 relationshipType);
@@ -893,7 +955,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             for (int i=0; i<numberOfContactsPerAccount; i++) {
                 JSONObject contact = new JSONObject();
                 contact.put(Constants.ID, createLocalId());
-                contact.put(Constants.NAME, "Contact_" + account.get(Constants.NAME) + "_" + i);
+                contact.put(Constants.LAST_NAME, "Contact_" + account.get(Constants.NAME) + "_" + i);
                 contact.put(Constants.ATTRIBUTES, attributes);
                 contact.put(SyncTarget.LOCAL, true);
                 contact.put(SyncTarget.LOCALLY_CREATED, true);
