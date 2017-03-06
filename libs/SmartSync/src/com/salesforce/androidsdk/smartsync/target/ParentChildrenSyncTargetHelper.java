@@ -28,12 +28,13 @@
 package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
+import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
+import com.salesforce.androidsdk.smartsync.util.ParentInfo;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,6 +56,46 @@ public class ParentChildrenSyncTargetHelper {
     public enum RelationshipType {
         MASTER_DETAIL,
         LOOKUP;
+    }
+
+    public static void saveRecordTreesToLocalStore(SyncManager syncManager, SyncTarget target, ParentInfo parentInfo, ChildrenInfo childrenInfo, JSONArray recordTrees) throws JSONException {
+        SmartStore smartStore = syncManager.getSmartStore();
+        synchronized(smartStore.getDatabase()) {
+            try {
+                smartStore.beginTransaction();
+
+                for (int i=0; i<recordTrees.length(); i++) {
+                    JSONObject record = recordTrees.getJSONObject(i);
+                    JSONObject parent = new JSONObject(record.toString());
+
+                    // Separating parent from children
+                    JSONArray children = (JSONArray) parent.remove(childrenInfo.sobjectTypePlural);
+
+                    // Saving parent
+                    target.cleanRecord(parent);
+                    target.saveInSmartStore(smartStore, parentInfo.soupName, parent, false);
+
+                    // Put server id / local id of parent in children
+                    if (children != null) {
+                        for (int j = 0; j < children.length(); j++) {
+                            JSONObject child = children.getJSONObject(j);
+                            child.put(childrenInfo.parentLocalIdFieldName, parent.get(SmartStore.SOUP_ENTRY_ID));
+                            child.put(childrenInfo.parentIdFieldName, parent.get(parentInfo.idFieldName));
+
+                            // Saving child
+                            target.cleanRecord(child);
+                            target.saveInSmartStore(smartStore, childrenInfo.soupName, child, false);
+                        }
+                    }
+                }
+
+                smartStore.setTransactionSuccessful();
+
+            }
+            finally {
+                smartStore.endTransaction();
+            }
+        }
     }
 
     public static String getDirtyRecordIdsSql(String soupName, String idField, ChildrenInfo childrenInfo) {

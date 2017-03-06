@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.smartsync.target;
 
+import android.util.Log;
+
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -53,6 +55,7 @@ import java.util.Set;
 public class SyncUpTarget extends SyncTarget {
 
     // Constants
+    public static final String TAG = "SyncUpTarget";
     public static final String CREATE_FIELDLIST = "createFieldlist";
     public static final String UPDATE_FIELDLIST = "updateFieldlist";
 
@@ -127,18 +130,30 @@ public class SyncUpTarget extends SyncTarget {
      * @param syncManager
      * @param record
      * @param fieldlist fields to sync up (this.createFieldlist will be used instead if provided)
-     * @return server record id or null if creation failed
+     * @return updated record (with server id) or null if creation failed
      * @throws JSONException
      * @throws IOException
      */
-    public String createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
+    public JSONObject createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
         fieldlist = this.createFieldlist != null ? this.createFieldlist : fieldlist;
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
 
         // Get values
         Map<String, Object> fields = buildFieldsMap(record, fieldlist);
 
-        return createOnServer(syncManager, objectType, fields);
+        // Create on server
+        String serverId = createOnServer(syncManager, objectType, fields);
+
+        // Updated record
+        if (serverId == null) {
+            return null;
+        }
+        else {
+            JSONObject updatedRecord = new JSONObject(record.toString());
+            cleanRecord(updatedRecord);
+            updatedRecord.put(getIdFieldName(), serverId);
+            return updatedRecord;
+        }
     }
 
     /**
@@ -171,9 +186,13 @@ public class SyncUpTarget extends SyncTarget {
         RestRequest request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
-        return response.isSuccess()
-                ? response.asJSONObject().getString(Constants.LID)
-                : null;
+        if (response.isSuccess()) {
+            return response.asJSONObject().getString(Constants.LID);
+        }
+        else {
+            Log.e(TAG, "createOnServer failed:" + response.asString());
+            return null;
+        }
     }
 
     /**

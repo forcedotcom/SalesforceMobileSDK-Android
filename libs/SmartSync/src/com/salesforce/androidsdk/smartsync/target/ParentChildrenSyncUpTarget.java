@@ -51,12 +51,13 @@ import java.util.Map;
  * Target for sync that uploads parent with children records
  */
 public class ParentChildrenSyncUpTarget extends SyncUpTarget {
-    private static final String TAG = "ParentChildrenSyncUpTarget";
+    private static final String TAG = "Parent..SyncUpTarget";
 
     public static final String CHILDREN_CREATE_FIELDLIST = "childrenCreateFieldlist";
     public static final String CHILDREN_UPDATE_FIELDLIST = "childrenUpdateFieldlist";
     public static final String RESULTS = "results";
     public static final String REFERENCE_ID = "referenceId";
+    public static final String REF_1 = "ref1";
 
     private ParentInfo parentInfo;
     private ChildrenInfo childrenInfo;
@@ -111,7 +112,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public String createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
+    public JSONObject createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
         // Getting children
         JSONArray children = ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
                 syncManager.getSmartStore(),
@@ -123,7 +124,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         fieldlist = createFieldlist != null ? createFieldlist : fieldlist;
         JSONObject recordTree = new JSONObject(buildFieldsMap(record, fieldlist));
         JSONObject attributes = new JSONObject(record.get(Constants.ATTRIBUTES).toString());
-        attributes.put(REFERENCE_ID, "ref1");
+        attributes.put(REFERENCE_ID, REF_1);
         recordTree.put(Constants.ATTRIBUTES, attributes);
 
 
@@ -133,7 +134,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
             JSONObject child = children.getJSONObject(i);
             JSONObject childForServer = new JSONObject(buildFieldsMap(child, childrenCreateFieldlist));
             JSONObject childAttributes = new JSONObject(child.get(Constants.ATTRIBUTES).toString());
-            childAttributes.put(REFERENCE_ID, "ref" + (i+2) /* first child should be ref2 */);
+            childAttributes.put(REFERENCE_ID, getRefForChild(i));
             childForServer.put(Constants.ATTRIBUTES, childAttributes);
             childrenForServer.put(childForServer);
         }
@@ -149,14 +150,49 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         // Sending request
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
-        // Parse response
+        // Updated record
+        Map<String, String> refIdToId = parseIdsFromResponse(response);
+        if (refIdToId == null) {
+            return null;
+        }
+        else {
+            JSONObject updatedRecord = new JSONObject(record.toString());
+            updatedRecord.put(getIdFieldName(), refIdToId.get(REF_1));
+            JSONArray updatedChildren = new JSONArray();
+            for (int i=0; i<children.length(); i++) {
+                JSONObject updatedChild = children.getJSONObject(i);
+                updatedChild.put(childrenInfo.idFieldName, refIdToId.get(getRefForChild(i)));
+                updatedChildren.put(updatedChild);
+            }
+            updatedRecord.put(childrenInfo.sobjectTypePlural, updatedChildren);
 
-        Log.i("--recordTrees-->", recordTrees.toString(2));
-        Log.i("--response-->", response.asString());
+            return updatedRecord;
+        }
+    }
 
-        return response.isSuccess()
-                ? response.asJSONObject().getJSONArray(RESULTS).getJSONObject(0).getString(Constants.LID) // XXX should we check that it is for ref1
-                : null; // XXX where is the error going?
+    protected String getRefForChild(int childIndex) {
+        return  "ref" + (childIndex+2); // first child should be ref2, parent if ref1
+    }
+
+    /**
+     * Return ref id to server id if successful or null otherwise
+     */
+    protected Map<String, String> parseIdsFromResponse(RestResponse response) throws JSONException, IOException {
+        if (response.isSuccess()) {
+            Map<String, String> refIdtoId = new HashMap<>();
+            JSONArray results = response.asJSONObject().getJSONArray(RESULTS);
+            for (int i=0; i<results.length(); i++) {
+                JSONObject result = results.getJSONObject(i);
+                String refId = result.getString(REFERENCE_ID);
+                String serverId = result.getString(Constants.LID);
+                refIdtoId.put(refId, serverId);
+            }
+            return refIdtoId;
+        }
+        else {
+            Log.e(TAG, "createOnServer failed:" + response.asString());
+            return null;
+        }
     }
 
     @Override
@@ -175,6 +211,14 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     public String fetchLastModifiedDate(SyncManager syncManager, JSONObject record) {
         // TBD
         return super.fetchLastModifiedDate(syncManager, record);
+    }
+
+    @Override
+    public void saveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
+        // NB: method is called during sync up so for this target records contain parent and children
+        JSONArray recordTrees = new JSONArray();
+        recordTrees.put(record);
+        ParentChildrenSyncTargetHelper.saveRecordTreesToLocalStore(syncManager, this, parentInfo, childrenInfo, recordTrees);
     }
 
     @Override

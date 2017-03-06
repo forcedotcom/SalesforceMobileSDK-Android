@@ -442,14 +442,13 @@ public class SyncManager {
         }
 
         // Create/update/delete record on server and update smartstore
-        String recordServerId;
+        JSONObject updatedRecord;
         int statusCode;
         switch (action) {
             case create:
-                recordServerId = target.createOnServer(this, record, options.getFieldlist());
-                if (recordServerId != null) {
-                    record.put(target.getIdFieldName(), recordServerId);
-                    target.cleanAndSaveInLocalStore(this, soupName, record);
+                updatedRecord = target.createOnServer(this, record, options.getFieldlist());
+                if (updatedRecord != null) {
+                    target.saveInLocalStore(this, soupName, updatedRecord);
                 }
                 break;
             case delete:
@@ -463,15 +462,14 @@ public class SyncManager {
             case update:
                 statusCode = target.updateOnServer(this, record, options.getFieldlist());
                 if (RestResponse.isSuccess(statusCode)) {
-                    target.cleanAndSaveInLocalStore(this, soupName, record);
+                    target.saveInLocalStore(this, soupName, record);
                 }
                 // Handling remotely deleted records
                 else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                     if (mergeMode == MergeMode.OVERWRITE) {
-                        recordServerId = target.createOnServer(this, record, options.getFieldlist());
-                        if (recordServerId != null) {
-                            record.put(target.getIdFieldName(), recordServerId);
-                            target.cleanAndSaveInLocalStore(this, soupName, record);
+                        updatedRecord = target.createOnServer(this, record, options.getFieldlist());
+                        if (updatedRecord != null) {
+                            target.saveInLocalStore(this, soupName, updatedRecord);
                         }
                     }
                     else {

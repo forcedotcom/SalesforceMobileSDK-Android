@@ -322,39 +322,7 @@ public class ParentChildrenSyncDownTarget extends SoqlSyncDownTarget {
     @Override
     public void saveRecordsToLocalStore(SyncManager syncManager, String soupName, JSONArray records) throws JSONException {
         // NB: method is called during sync down so for this target records contain parent and children
-        SmartStore smartStore = syncManager.getSmartStore();
-        synchronized(smartStore.getDatabase()) {
-            try {
-                smartStore.beginTransaction();
-
-                for (int i=0; i<records.length(); i++) {
-                    JSONObject record = records.getJSONObject(i);
-                    JSONObject parent = new JSONObject(record.toString());
-
-                    // Separating parent from children
-                    JSONArray children = (JSONArray) parent.remove(childrenInfo.sobjectTypePlural);
-
-                    // Saving parent
-                    cleanAndSaveInLocalStore(syncManager, soupName, parent, false);
-
-                    // Put server id / local id of parent in children
-                    for (int j = 0; j < children.length(); j++) {
-                        JSONObject child = children.getJSONObject(j);
-                        child.put(childrenInfo.parentLocalIdFieldName, parent.get(SmartStore.SOUP_ENTRY_ID));
-                        child.put(childrenInfo.parentIdFieldName, parent.get(getIdFieldName()));
-
-                        // Saving child
-                        cleanAndSaveInLocalStore(syncManager, childrenInfo.soupName, child, false);
-                    }
-                }
-
-                smartStore.setTransactionSuccessful();
-
-            }
-            finally {
-                smartStore.endTransaction();
-            }
-        }
+        ParentChildrenSyncTargetHelper.saveRecordTreesToLocalStore(syncManager, this, parentInfo, childrenInfo, records);
     }
 
     @Override

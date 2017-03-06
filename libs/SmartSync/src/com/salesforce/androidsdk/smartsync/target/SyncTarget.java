@@ -150,28 +150,32 @@ public abstract class SyncTarget {
     }
 
     /**
-     * Clean (i.e. no longer flag as "dirty") and save record in local store
+     * Save record in local store
      * @param syncManager
      * @param soupName
      * @param record
      */
-    public void cleanAndSaveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
-        cleanAndSaveInLocalStore(syncManager, soupName, record, true);
+    public void saveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
+        saveInSmartStore(syncManager.getSmartStore(), soupName, record, true);
     }
 
-    protected void cleanAndSaveInLocalStore(SyncManager syncManager, String soupName, JSONObject record, boolean handleTx) throws JSONException {
+    protected void saveInSmartStore(SmartStore smartStore, String soupName, JSONObject record, boolean handleTx) throws JSONException {
+        cleanRecord(record);
+        if (record.has(SmartStore.SOUP_ENTRY_ID)) {
+            // Record came from smartstore
+            smartStore.update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID), handleTx);
+        }
+        else {
+            // Record came from server
+            smartStore.upsert(soupName, record, getIdFieldName(), handleTx);
+        }
+    }
+
+    protected void cleanRecord(JSONObject record) throws JSONException {
         record.put(LOCAL, false);
         record.put(LOCALLY_CREATED, false);
         record.put(LOCALLY_UPDATED, false);
         record.put(LOCALLY_DELETED, false);
-        if (record.has(SmartStore.SOUP_ENTRY_ID)) {
-            // Record came from smartstore
-            syncManager.getSmartStore().update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID), handleTx);
-        }
-        else {
-            // Record came from server
-            syncManager.getSmartStore().upsert(soupName, record, getIdFieldName(), handleTx);
-        }
     }
 
 
@@ -188,7 +192,9 @@ public abstract class SyncTarget {
             try {
                 smartStore.beginTransaction();
                 for (int i = 0; i < records.length(); i++) {
-                    cleanAndSaveInLocalStore(syncManager, soupName, records.getJSONObject(i), false);
+                    JSONObject record = new JSONObject(records.getJSONObject(i).toString());
+                    cleanRecord(record);
+                    saveInSmartStore(syncManager.getSmartStore(), soupName, record, false);
                 }
                 smartStore.setTransactionSuccessful();
             }
