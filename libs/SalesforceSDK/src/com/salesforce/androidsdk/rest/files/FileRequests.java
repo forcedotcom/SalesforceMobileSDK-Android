@@ -217,7 +217,7 @@ public class FileRequests extends ApiRequests {
      */
     public static RestRequest deleteFileShare(String shareId) {
         validateSfdcId(shareId);
-        return new RestRequest(RestMethod.DELETE, getContentDocumentLinkPath() + "/" + shareId, null);
+        return new RestRequest(RestMethod.DELETE, getContentDocumentLinkPath() + "/" + shareId);
     }
 
     /**

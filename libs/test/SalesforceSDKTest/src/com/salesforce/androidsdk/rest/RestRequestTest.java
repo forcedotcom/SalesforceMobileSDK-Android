@@ -241,7 +241,7 @@ public class RestRequestTest extends TestCase {
 	public void testAdditionalHeaders() {
 		Map<String, String> headers = new HashMap<String, String>();
 		headers.put("X-Foo", getName());
-		RestRequest req = new RestRequest(RestMethod.GET, "/my/foo/", null, headers);
+		RestRequest req = new RestRequest(RestMethod.GET, "/my/foo/", headers);
 		assertEquals("Wrong method", RestMethod.GET, req.getMethod());
 		assertEquals("Wrong path", "/my/foo/", req.getPath());
 		assertNull("Wrong entity", req.getRequestBody());
