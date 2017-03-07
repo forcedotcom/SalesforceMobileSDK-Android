@@ -31,6 +31,7 @@ import com.salesforce.androidsdk.util.test.JSONTestHelper;
 
 import junit.framework.TestCase;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -41,6 +42,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import okio.Buffer;
 
@@ -248,7 +251,46 @@ public class RestRequestTest extends TestCase {
 		assertEquals("Wrong headers", headers, req.getAdditionalHttpHeaders());
 	}
 
-	private static String bodyToString(final RestRequest request) throws IOException {
+    /**
+     * Test for getCompositeRequest
+     * @throws JSONException
+     */
+    public void testGetCompositeRequest() throws JSONException, IOException {
+        SortedMap<String, RestRequest> requests = new TreeMap<>();
+        RestRequest request = RestRequest.getCompositeRequest(TEST_API_VERSION, true, requests);
+        assertEquals("Wrong method", RestMethod.POST, request.getMethod());
+        assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite", request.getPath());
+        JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject("{\"compositeRequest\":[], \"allOrNone\":true}"), new JSONObject(bodyToString(request)));
+        assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+    }
+
+    /**
+     * Test for getBatchRequest
+     * @throws JSONException
+     */
+    public void testGetBatchRequest() throws JSONException, IOException {
+        RestRequest[] requests = new RestRequest[0];
+        RestRequest request = RestRequest.getBatchRequest(TEST_API_VERSION, true, requests);
+        assertEquals("Wrong method", RestMethod.POST, request.getMethod());
+        assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite/batch", request.getPath());
+        JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject("{\"batchRequests\":[], \"haltOnError\":true}"), new JSONObject(bodyToString(request)));
+        assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+    }
+
+    /**
+     * Test for getRequestForSObjectTree
+     * @throws JSONException
+     */
+    public void testGetRequestForSObjectTree() throws JSONException, IOException {
+        JSONArray recordTrees = new JSONArray();
+        RestRequest request = RestRequest.getRequestForSObjectTree(TEST_API_VERSION, TEST_OBJECT_TYPE, recordTrees);
+        assertEquals("Wrong method", RestMethod.POST, request.getMethod());
+        assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite/tree/" + TEST_OBJECT_TYPE, request.getPath());
+        JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject("{\"records\":[]}"), new JSONObject(bodyToString(request)));
+        assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+    }
+
+    private static String bodyToString(final RestRequest request) throws IOException {
 		final Buffer buffer = new Buffer();
 		request.getRequestBody().writeTo(buffer);
 		return buffer.readUtf8();

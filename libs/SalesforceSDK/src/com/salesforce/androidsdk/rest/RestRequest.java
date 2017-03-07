@@ -196,6 +196,8 @@ public class RestRequest {
      * @param path					the URI path, this will automatically be resolved against the users current instance host.
      * @param requestBody			the request body if there is one, can be null.
      * @param additionalHttpHeaders additional headers.
+     *
+     * Note: do not use this constructor if requestBody is not null and you want to build a batch or composite request.
      */
     public RestRequest(RestMethod method, String path, RequestBody requestBody, Map<String, String> additionalHttpHeaders) {
         this.method = method;
@@ -213,6 +215,8 @@ public class RestRequest {
      * @param path					the URI path, this will automatically be resolved against the users current instance host.
      * @param requestBodyAsJson     the request body as JSON if there is one, can be null.
      * @param additionalHttpHeaders additional headers.
+     *
+     * Note: use this constructor if requestBody is not null and you want to build a batch or composite request.
      */
 	public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson,  Map<String, String> additionalHttpHeaders) {
         this.method = method;
