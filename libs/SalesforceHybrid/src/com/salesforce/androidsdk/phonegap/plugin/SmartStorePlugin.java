@@ -138,7 +138,7 @@ public class SmartStorePlugin extends ForcePlugin {
 			public void run() {
 
 				// All smart store action need to be serialized
-				synchronized (SmartStorePlugin.class) {
+				synchronized (this) {
 					try {
 						switch (action) {
 		        		  case pgAlterSoup:             alterSoup(args, callbackContext); break;
