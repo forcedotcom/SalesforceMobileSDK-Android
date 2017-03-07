@@ -333,8 +333,7 @@ public class RestRequestTest extends TestCase {
      * @throws JSONException
      */
     public void testGetRequestForSObjectTree() throws JSONException, IOException {
-        JSONArray recordTrees = new JSONArray();
-        RestRequest request = RestRequest.getRequestForSObjectTree(TEST_API_VERSION, TEST_OBJECT_TYPE, recordTrees);
+        RestRequest request = RestRequest.getRequestForSObjectTree(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_FIELDS, new HashMap<String, Map<String, List<Map<String, Object>>>>(), new HashMap<String, String>());
         assertEquals("Wrong method", RestMethod.POST, request.getMethod());
         assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite/tree/" + TEST_OBJECT_TYPE, request.getPath());
         JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject("{\"records\":[]}"), new JSONObject(bodyToString(request)));
