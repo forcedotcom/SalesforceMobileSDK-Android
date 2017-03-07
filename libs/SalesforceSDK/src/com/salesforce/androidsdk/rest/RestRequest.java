@@ -36,6 +36,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -57,6 +58,7 @@ import okhttp3.RequestBody;
  * <li> delete</li>
  * <li> searchScopeAndOrder</li>
  * <li> searchResultLayout</li>
+ * <li> tree</li>
  * </ul>
  * 
  * It also has constructors to build any arbitrary request.
@@ -73,7 +75,22 @@ public class RestRequest {
 	 * utf_8 charset
 	 */
 	public static final String UTF_8 = StandardCharsets.UTF_8.name();
+
+    /**
+     * Misc keys appearing in requests
+     */
     public static final String RECORDS = "records";
+    public static final String METHOD = "method";
+    public static final String URL = "url";
+    public static final String BODY = "body";
+    public static final String HTTP_HEADERS = "httpHeaders";
+    public static final String COMPOSITE_REQUEST = "compositeRequest";
+    public static final String BATCH_REQUESTS = "batchRequests";
+    public static final String ALL_OR_NONE = "allOrNone";
+    public static final String HALT_ON_ERROR = "haltOnError";
+    public static final String RICH_INPUT = "richInput";
+    public static final String SERVICES_DATA = "/services/data/";
+    public static final String REFERENCE_ID = "referenceId";
 
     /**
 	 * Enumeration for all HTTP methods.
@@ -101,7 +118,9 @@ public class RestRequest {
 		SEARCH("/services/data/%s/search"),
 		SEARCH_SCOPE_AND_ORDER("/services/data/%s/search/scopeOrder"),
 		SEARCH_RESULT_LAYOUT("/services/data/%s/search/layout"),
-		SOBJECT_TREE("/services/data/%s/composite/tree/%s");
+		COMPOSITE("/services/data/%s/composite"),
+        BATCH("/services/data/%s/composite/batch"),
+        SOBJECT_TREE("/services/data/%s/composite/tree/%s");
 
 		private final String pathTemplate;
 
@@ -118,26 +137,92 @@ public class RestRequest {
 	private final String path;
 	private final RequestBody requestBody;
 	private final Map<String, String> additionalHttpHeaders;
-	
+	private final JSONObject requestBodyAsJson; // needed for composite and batch requests
+
+
+    /**
+     * Generic constructor for arbitrary requests without a body.
+     *
+     * @param method				the HTTP method for the request (GET/POST/DELETE etc).
+     * @param path					the URI path, this will automatically be resolved against the users current instance host.
+     */
+    public RestRequest(RestMethod method, String path) {
+        this(method, path, (RequestBody) null, null);
+    }
+
+    /**
+     * Generic constructor for arbitrary requests without a body.
+     *
+     * @param method				the HTTP method for the request (GET/POST/DELETE etc).
+     * @param path					the URI path, this will automatically be resolved against the users current instance host.
+     * @param additionalHttpHeaders additional headers.
+     *
+     */
+    public RestRequest(RestMethod method, String path,  Map<String, String> additionalHttpHeaders) {
+        this(method, path, (RequestBody) null, additionalHttpHeaders);
+    }
+
 	/**
 	 * Generic constructor for arbitrary requests.
 	 * 
-	 * @param method				the HTTP method for the request (GET/POST/DELETE etc)
+	 * @param method				the HTTP method for the request (GET/POST/DELETE etc).
 	 * @param path					the URI path, this will automatically be resolved against the users current instance host.
 	 * @param requestBody			the request body if there is one, can be null.
+     *
+     * Note: do not use this constructor if requestBody is not null and you want to build a batch or composite request.
 	 */
 	public RestRequest(RestMethod method, String path, RequestBody requestBody) {
-		this(method, path, requestBody, null);
+        this(method, path, requestBody, null);
 	}
 
-	public RestRequest(RestMethod method, String path, RequestBody requestBody, Map<String, String> additionalHttpHeaders) {
-		this.method = method;
-		this.path = path;
-		this.requestBody = requestBody;
-		this.additionalHttpHeaders = additionalHttpHeaders;
-	}
-	
-	/**
+    /**
+     * Generic constructor for arbitrary requests.
+     *
+     * @param method				the HTTP method for the request (GET/POST/DELETE etc).
+     * @param path					the URI path, this will automatically be resolved against the users current instance host.
+     * @param requestBodyAsJson		the request body as JSON if there is one, can be null.
+     *
+     * Note: use this constructor if requestBody is not null and you want to build a batch or composite request.
+     */
+    public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson) {
+        this(method, path, requestBodyAsJson, null);
+    }
+
+
+    /**
+     * Generic constructor for arbitrary requests.
+     *
+     * @param method				the HTTP method for the request (GET/POST/DELETE etc).
+     * @param path					the URI path, this will automatically be resolved against the users current instance host.
+     * @param requestBody			the request body if there is one, can be null.
+     * @param additionalHttpHeaders additional headers.
+     */
+    public RestRequest(RestMethod method, String path, RequestBody requestBody, Map<String, String> additionalHttpHeaders) {
+        this.method = method;
+        this.path = path;
+        this.requestBody = requestBody;
+        this.additionalHttpHeaders = additionalHttpHeaders;
+        this.requestBodyAsJson = null;
+    }
+
+
+    /**
+     * Generic constructor for arbitrary requests.
+     *
+     * @param method				the HTTP method for the request (GET/POST/DELETE etc).
+     * @param path					the URI path, this will automatically be resolved against the users current instance host.
+     * @param requestBodyAsJson     the request body as JSON if there is one, can be null.
+     * @param additionalHttpHeaders additional headers.
+     */
+	public RestRequest(RestMethod method, String path, JSONObject requestBodyAsJson,  Map<String, String> additionalHttpHeaders) {
+        this.method = method;
+        this.path = path;
+        this.requestBody = requestBodyAsJson == null ? null : RequestBody.create(MEDIA_TYPE_JSON, requestBodyAsJson.toString());
+        this.additionalHttpHeaders = additionalHttpHeaders;
+        this.requestBodyAsJson = requestBodyAsJson;
+    }
+
+    /**
 	 * @return HTTP method of the request.
 	 */
 	public RestMethod getMethod() {
@@ -158,20 +243,20 @@ public class RestRequest {
 		return requestBody;
 	}
 
-	/**
+    /**
+     * @return request body as json
+     */
+    public JSONObject getRequestBodyAsJson() {
+        return requestBodyAsJson;
+    }
+
+    /**
 	 * @return addition http headers
 	 */
 	public Map<String, String> getAdditionalHttpHeaders() {
 		return additionalHttpHeaders;
 	}
 
-	@Override
-	public String toString() {
-		StringBuffer sb = new StringBuffer();
-		sb.append(method).append(" ").append(path);
-		return sb.toString();
-	}
-	
 	/**
 	 * Request to get summary information about each Salesforce.com version currently available.
 	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_versions.htm
@@ -179,7 +264,7 @@ public class RestRequest {
 	 * @return a JsonNode
      */
     public static RestRequest getRequestForVersions() {
-        return new RestRequest(RestMethod.GET, RestAction.VERSIONS.getPath(), null);
+        return new RestRequest(RestMethod.GET, RestAction.VERSIONS.getPath());
     }
 	
 	/**
@@ -190,7 +275,7 @@ public class RestRequest {
 	 * @return a RestRequest
 	 */
 	public static RestRequest getRequestForResources(String apiVersion) {
-		return new RestRequest(RestMethod.GET, RestAction.RESOURCES.getPath(apiVersion), null);
+		return new RestRequest(RestMethod.GET, RestAction.RESOURCES.getPath(apiVersion));
 	}
 
 	/**
@@ -201,7 +286,7 @@ public class RestRequest {
 	 * @return a RestRequest
 	 */
 	public static RestRequest getRequestForDescribeGlobal(String apiVersion) {
-		return new RestRequest(RestMethod.GET, RestAction.DESCRIBE_GLOBAL.getPath(apiVersion), null);
+		return new RestRequest(RestMethod.GET, RestAction.DESCRIBE_GLOBAL.getPath(apiVersion));
 	}
 
 	/**
@@ -214,7 +299,7 @@ public class RestRequest {
 	 * @throws IOException
 	 */
 	public static RestRequest getRequestForMetadata(String apiVersion, String objectType) {
-        return new RestRequest(RestMethod.GET, RestAction.METADATA.getPath(apiVersion, objectType), null);
+        return new RestRequest(RestMethod.GET, RestAction.METADATA.getPath(apiVersion, objectType));
 	}
 
 	/**
@@ -226,7 +311,7 @@ public class RestRequest {
 	 * @return a RestRequest
 	 */
 	public static RestRequest getRequestForDescribe(String apiVersion, String objectType)  {
-        return new RestRequest(RestMethod.GET, RestAction.DESCRIBE.getPath(apiVersion, objectType), null);
+        return new RestRequest(RestMethod.GET, RestAction.DESCRIBE.getPath(apiVersion, objectType));
 	}
 	
 	/**
@@ -241,8 +326,7 @@ public class RestRequest {
 	 * @throws UnsupportedEncodingException 
 	 */
 	public static RestRequest getRequestForCreate(String apiVersion, String objectType, Map<String, Object> fields) throws IOException  {
-		RequestBody fieldsData = prepareFieldsData(fields);
-		return new RestRequest(RestMethod.POST, RestAction.CREATE.getPath(apiVersion, objectType), fieldsData);	
+		return new RestRequest(RestMethod.POST, RestAction.CREATE.getPath(apiVersion, objectType), fields == null ? null : new JSONObject(fields));
 	}
 
 	/**
@@ -263,7 +347,7 @@ public class RestRequest {
 			path.append(URLEncoder.encode(toCsv(fieldList).toString(), UTF_8));
 		}
 
-		return new RestRequest(RestMethod.GET, path.toString(), null);
+		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
 	private static StringBuilder toCsv(List<String> fieldList) {
@@ -289,8 +373,7 @@ public class RestRequest {
 	 * @throws IOException 
 	 */
 	public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields) throws IOException  {
-		RequestBody fieldsData = prepareFieldsData(fields);
-		return new RestRequest(RestMethod.PATCH, RestAction.UPDATE.getPath(apiVersion, objectType, objectId), fieldsData);	
+		return new RestRequest(RestMethod.PATCH, RestAction.UPDATE.getPath(apiVersion, objectType, objectId), fields == null ? null : new JSONObject(fields));
 	}
 	
 	
@@ -307,8 +390,7 @@ public class RestRequest {
 	 * @throws IOException 
 	 */
 	public static RestRequest getRequestForUpsert(String apiVersion, String objectType, String externalIdField, String externalId, Map<String, Object> fields) throws IOException  {
-		RequestBody fieldsData = prepareFieldsData(fields);
-		return new RestRequest(RestMethod.PATCH, RestAction.UPSERT.getPath(apiVersion, objectType, externalIdField, externalId), fieldsData);	
+    	return new RestRequest(RestMethod.PATCH, RestAction.UPSERT.getPath(apiVersion, objectType, externalIdField, externalId), fields == null ? null : new JSONObject(fields));
 	}
 	
 	/**
@@ -321,7 +403,7 @@ public class RestRequest {
 	 * @return a RestRequest
 	 */
 	public static RestRequest getRequestForDelete(String apiVersion, String objectType, String objectId)  {
-		return new RestRequest(RestMethod.DELETE, RestAction.DELETE.getPath(apiVersion, objectType, objectId), null);	
+		return new RestRequest(RestMethod.DELETE, RestAction.DELETE.getPath(apiVersion, objectType, objectId));
 	}
 
 	/**
@@ -337,7 +419,7 @@ public class RestRequest {
 		StringBuilder path = new StringBuilder(RestAction.SEARCH.getPath(apiVersion));
 		path.append("?q=");
 		path.append(URLEncoder.encode(q, UTF_8));
-		return new RestRequest(RestMethod.GET, path.toString(), null);	
+		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
 	/**
@@ -353,7 +435,7 @@ public class RestRequest {
 		StringBuilder path = new StringBuilder(RestAction.QUERY.getPath(apiVersion));
 		path.append("?q=");
 		path.append(URLEncoder.encode(q, UTF_8));
-		return new RestRequest(RestMethod.GET, path.toString(), null);	
+		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
 	/**
@@ -365,8 +447,7 @@ public class RestRequest {
 	 * @throws UnsupportedEncodingException 
 	 */
 	public static RestRequest getRequestForSearchScopeAndOrder(String apiVersion) throws UnsupportedEncodingException  {
-		StringBuilder path = new StringBuilder(RestAction.SEARCH_SCOPE_AND_ORDER.getPath(apiVersion));
-		return new RestRequest(RestMethod.GET, path.toString(), null);	
+        return new RestRequest(RestMethod.GET, new StringBuilder(RestAction.SEARCH_SCOPE_AND_ORDER.getPath(apiVersion)).toString());
 	}	
 	
 	/**
@@ -382,7 +463,7 @@ public class RestRequest {
 		StringBuilder path = new StringBuilder(RestAction.SEARCH_RESULT_LAYOUT.getPath(apiVersion));
 		path.append("?q=");
 		path.append(URLEncoder.encode(toCsv(objectList).toString(), UTF_8));
-		return new RestRequest(RestMethod.GET, path.toString(), null);	
+		return new RestRequest(RestMethod.GET, path.toString());
 	}
 
     /**
@@ -400,26 +481,73 @@ public class RestRequest {
         return new RestRequest(RestMethod.POST, RestAction.SOBJECT_TREE.getPath(apiVersion, objectType), body);
 	}
 
+	/**
+	 * Composite request
+	 * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_composite.htm
+	 *
+     * @param apiVersion
+     * @param allOrNone
+	 * @param requests    Sorted map of reference id to requests
+	 * @return
+	 */
+	public static RestRequest getCompositeRequest(String apiVersion, boolean allOrNone, SortedMap<String, RestRequest> requests) throws JSONException {
+		JSONArray requestsArrayJson = new JSONArray();
+        for(Map.Entry<String,RestRequest> entry : requests.entrySet()) {
+            String referenceId = entry.getKey();
+            RestRequest request = entry.getValue();
+			JSONObject requestJson = new JSONObject();
+            requestJson.put(METHOD, request.getMethod().toString());
+            requestJson.put(URL, request.getPath());
+            requestJson.put(BODY, request.getRequestBodyAsJson());
+            requestJson.put(HTTP_HEADERS, new JSONObject(request.getAdditionalHttpHeaders()));
+            requestJson.put(REFERENCE_ID, referenceId);
+			requestsArrayJson.put(requestJson);
+		}
+		JSONObject compositeRequestJson =  new JSONObject();
+		compositeRequestJson.put(COMPOSITE_REQUEST, requestsArrayJson);
+        compositeRequestJson.put(ALL_OR_NONE, allOrNone);
+
+		return new RestRequest(RestMethod.POST, RestAction.COMPOSITE.getPath(apiVersion), compositeRequestJson);
+	}
+
+    /**
+     * Batch request
+     * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_batch.htm
+     *
+     * @param apiVersion
+     * @param haltOnError
+     *@param requests  @return
+     */
+    public static RestRequest getBatchRequest(String apiVersion, boolean haltOnError, RestRequest[] requests) throws JSONException {
+        JSONArray requestsArrayJson = new JSONArray();
+        for (RestRequest request : requests) {
+            // Note: unfortunately batch sub request and composite sub request differ
+            if (!request.getPath().startsWith(SERVICES_DATA)) {
+                throw new RuntimeException("Request not supported in batch: " + request.toString());
+            }
+            JSONObject requestJson = new JSONObject();
+            requestJson.put(METHOD, request.getMethod().toString());
+            requestJson.put(URL, request.getPath().substring(SERVICES_DATA.length()));
+            requestJson.put(RICH_INPUT, request.getRequestBodyAsJson());
+            requestsArrayJson.put(requestJson);
+        }
+        JSONObject batchRequestJson =  new JSONObject();
+        batchRequestJson.put(BATCH_REQUESTS, requestsArrayJson);
+        batchRequestJson.put(HALT_ON_ERROR, haltOnError);
+
+        return new RestRequest(RestMethod.POST, RestAction.BATCH.getPath(apiVersion), batchRequestJson);
+    }
+
+
+	/**
+	 * @param records
+	 * @return
+	 * @throws JSONException
+	 */
 	public static JSONObject getRecordsJson(JSONArray records) throws JSONException {
 		JSONObject json = new JSONObject();
 		json.put(RECORDS, records);
 		return json;
 	}
-	
-	/**
-	 * Jsonize map and create a RequestBody out of it
-	 * @param fields
-	 * @return
-	 * @throws UnsupportedEncodingException
-	 */
-	private static RequestBody prepareFieldsData(Map<String, Object> fields)
-			throws UnsupportedEncodingException {
-		if (fields == null) {
-			return null;
-		}
-		else {
-			return RequestBody.create(MEDIA_TYPE_JSON, new JSONObject(fields).toString());
-		}
-	}
-	
+
 }

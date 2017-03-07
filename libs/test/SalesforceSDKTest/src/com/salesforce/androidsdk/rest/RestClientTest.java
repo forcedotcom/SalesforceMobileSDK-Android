@@ -477,7 +477,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testRestClientUnauthenticatedlientInfo() throws Exception {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
-        RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist", null);
+        RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist");
         RestResponse response = unauthenticatedRestClient.sendSync(request);
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
@@ -492,7 +492,7 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     public void testRestClientUnauthenticatedlientInfoAsync() throws Exception {
         RestClient unauthenticatedRestClient = new RestClient(new RestClient.UnauthenticatedClientInfo(), null, HttpAccess.DEFAULT, null);
-        RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist", null);
+        RestRequest request = new RestRequest(RestMethod.GET, "https://api.spotify.com/v1/search?q=James%20Brown&type=artist");
         RestResponse response = sendAsync(unauthenticatedRestClient, request);
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
         JSONObject jsonResponse = response.asJSONObject();
