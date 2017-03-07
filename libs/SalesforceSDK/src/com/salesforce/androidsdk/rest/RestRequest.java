@@ -499,11 +499,12 @@ public class RestRequest {
         for(Map.Entry<String,RestRequest> entry : requests.entrySet()) {
             String referenceId = entry.getKey();
             RestRequest request = entry.getValue();
+            Map<String, String> headers = request.getAdditionalHttpHeaders();
 			JSONObject requestJson = new JSONObject();
             requestJson.put(METHOD, request.getMethod().toString());
             requestJson.put(URL, request.getPath());
             requestJson.put(BODY, request.getRequestBodyAsJson());
-            requestJson.put(HTTP_HEADERS, new JSONObject(request.getAdditionalHttpHeaders()));
+            if (headers != null) requestJson.put(HTTP_HEADERS, new JSONObject(headers));
             requestJson.put(REFERENCE_ID, referenceId);
 			requestsArrayJson.put(requestJson);
 		}

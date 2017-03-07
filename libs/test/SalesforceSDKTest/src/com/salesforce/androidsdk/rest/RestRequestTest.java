@@ -160,7 +160,7 @@ public class RestRequestTest extends TestCase {
 	 * @throws UnsupportedEncodingException 
 	 * @throws JSONException 
 	 */
-	public void testGetRequestForUpdate() throws UnsupportedEncodingException, IOException, JSONException {
+	public void testGetRequestForUpdate() throws IOException, JSONException {
 		RestRequest request = RestRequest.getRequestForUpdate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID, TEST_FIELDS);
 		assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
 		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_OBJECT_ID, request.getPath());
@@ -174,7 +174,7 @@ public class RestRequestTest extends TestCase {
 	 * @throws UnsupportedEncodingException 
 	 * @throws JSONException 
 	 */
-	public void testGetRequestForUpsert() throws UnsupportedEncodingException, IOException, JSONException {
+	public void testGetRequestForUpsert() throws IOException, JSONException {
 		RestRequest request = RestRequest.getRequestForUpsert(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_EXTERNAL_ID_FIELD, TEST_EXTERNAL_ID, TEST_FIELDS);
 		assertEquals("Wrong method", RestMethod.PATCH, request.getMethod());
 		assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/sobjects/" + TEST_OBJECT_TYPE + "/" + TEST_EXTERNAL_ID_FIELD + "/" + TEST_EXTERNAL_ID, request.getPath());
@@ -257,11 +257,37 @@ public class RestRequestTest extends TestCase {
      */
     public void testGetCompositeRequest() throws JSONException, IOException {
         SortedMap<String, RestRequest> requests = new TreeMap<>();
+        requests.put("ref1", RestRequest.getRequestForUpdate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID, TEST_FIELDS));
+        requests.put("ref2", RestRequest.getRequestForDelete(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID));
+
         RestRequest request = RestRequest.getCompositeRequest(TEST_API_VERSION, true, requests);
         assertEquals("Wrong method", RestMethod.POST, request.getMethod());
         assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite", request.getPath());
-        JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject("{\"compositeRequest\":[], \"allOrNone\":true}"), new JSONObject(bodyToString(request)));
         assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+
+        JSONObject expectedBodyJson = new JSONObject();
+        expectedBodyJson.put("allOrNone", true);
+        expectedBodyJson.put("compositeRequest",
+                new JSONArray(String.format(""
+                                + "["
+                                + "  {"
+                                + "    \"method\": \"PATCH\","
+                                + "    \"url\": \"/services/data/v99.0/sobjects/%s/%s\","
+                                + "    \"body\": %s,"
+                                + "    \"referenceId\": \"ref1\""
+                                + "  },"
+                                + "  {"
+                                + "    \"method\": \"DELETE\","
+                                + "    \"url\": \"/services/data/v99.0/sobjects/%s/%s\","
+                                + "    \"referenceId\": \"ref2\""
+                                + "  }"
+                                + "]",
+                        TEST_OBJECT_TYPE, TEST_OBJECT_ID, new JSONObject(TEST_FIELDS),
+                        TEST_OBJECT_TYPE, TEST_OBJECT_ID)));
+
+        JSONObject actualBodyJson = new JSONObject(bodyToString(request));
+
+        JSONTestHelper.assertSameJSON("Wrong request entity", expectedBodyJson, actualBodyJson);
     }
 
     /**
@@ -269,12 +295,37 @@ public class RestRequestTest extends TestCase {
      * @throws JSONException
      */
     public void testGetBatchRequest() throws JSONException, IOException {
-        RestRequest[] requests = new RestRequest[0];
+        RestRequest[] requests = new RestRequest[]{
+                RestRequest.getRequestForUpdate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID, TEST_FIELDS),
+                RestRequest.getRequestForDelete(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID)
+        };
+
         RestRequest request = RestRequest.getBatchRequest(TEST_API_VERSION, true, requests);
         assertEquals("Wrong method", RestMethod.POST, request.getMethod());
         assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite/batch", request.getPath());
-        JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject("{\"batchRequests\":[], \"haltOnError\":true}"), new JSONObject(bodyToString(request)));
         assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+
+        JSONObject expectedBodyJson = new JSONObject();
+        expectedBodyJson.put("haltOnError", true);
+        expectedBodyJson.put("batchRequests",
+                new JSONArray(String.format(""
+                        + "["
+                        + "  {"
+                        + "    \"method\": \"PATCH\","
+                        + "    \"url\": \"v99.0/sobjects/%s/%s\","
+                        + "    \"richInput\": %s"
+                        + "  },"
+                        + "  {"
+                        + "    \"method\": \"DELETE\","
+                        + "    \"url\": \"v99.0/sobjects/%s/%s\""
+                        + "  }"
+                        + "]",
+                TEST_OBJECT_TYPE, TEST_OBJECT_ID, new JSONObject(TEST_FIELDS),
+                TEST_OBJECT_TYPE, TEST_OBJECT_ID)));
+
+        JSONObject actualBodyJson = new JSONObject(bodyToString(request));
+
+        JSONTestHelper.assertSameJSON("Wrong request entity", expectedBodyJson, actualBodyJson);
     }
 
     /**
