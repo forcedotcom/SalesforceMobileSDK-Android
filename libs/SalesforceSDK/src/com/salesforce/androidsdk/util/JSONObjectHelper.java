@@ -156,4 +156,16 @@ public class JSONObjectHelper {
 		return arr;
 	}
 
+	/**
+	 *
+	 * @param key
+	 * @param value
+	 * @return JSONObject with value for key
+	 */
+	public static JSONObject makeJSONObject(String key, Object value) throws JSONException {
+		JSONObject result = new JSONObject();
+		result.put(key, value);
+		return result;
+	}
+
 }

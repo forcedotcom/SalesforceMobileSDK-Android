@@ -43,6 +43,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -113,6 +114,12 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
 
     @Override
     public JSONObject createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
+        // Fields for parent
+        fieldlist = createFieldlist != null ? createFieldlist : fieldlist;
+        Map<String, Object> parentFields = buildFieldsMap(record, fieldlist);
+        parentFields.put(RestRequest.REFERENCE_ID, REF_1);
+
+
         // Getting children
         JSONArray children = ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
                 syncManager.getSmartStore(),
@@ -120,35 +127,30 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                 record,
                 childrenInfo);
 
-        // Prepare record tree
-        fieldlist = createFieldlist != null ? createFieldlist : fieldlist;
-        JSONObject recordTree = new JSONObject(buildFieldsMap(record, fieldlist));
-        JSONObject attributes = new JSONObject(record.get(Constants.ATTRIBUTES).toString());
-        attributes.put(REFERENCE_ID, REF_1);
-        recordTree.put(Constants.ATTRIBUTES, attributes);
-
-
-        // Adding children to record tree
-        JSONArray childrenForServer = new JSONArray();
+        // Prepare tree
+        List<Map<String, Object>> childrenFields = new ArrayList<>();
         for (int i=0; i<children.length(); i++) {
             JSONObject child = children.getJSONObject(i);
-            JSONObject childForServer = new JSONObject(buildFieldsMap(child, childrenCreateFieldlist));
-            JSONObject childAttributes = new JSONObject(child.get(Constants.ATTRIBUTES).toString());
-            childAttributes.put(REFERENCE_ID, getRefForChild(i));
-            childForServer.put(Constants.ATTRIBUTES, childAttributes);
-            childrenForServer.put(childForServer);
+            Map<String, Object> childFields = buildFieldsMap(child, childrenCreateFieldlist);
+            childFields.put(RestRequest.REFERENCE_ID, getRefForChild(i));
+            childrenFields.add(childFields);
         }
-        recordTree.put(childrenInfo.sobjectTypePlural, RestRequest.getRecordsJson(childrenForServer));
+        Map<String, List<Map<String, Object>>> objectTypeToListChildrenFields = new HashMap<>();
+        objectTypeToListChildrenFields.put(childrenInfo.sobjectType, childrenFields);
 
-        // API expects array of record trees
-        JSONArray recordTrees = new JSONArray();
-        recordTrees.put(recordTree);
+        Map<String, Map<String, List<Map<String, Object>>>> refIdToObjectTypeToListChildrenFields = new HashMap<>();
+        refIdToObjectTypeToListChildrenFields.put(REF_1, objectTypeToListChildrenFields);
+
+        Map<String, String> objectTypeToObjectTypePlural = new HashMap<>();
+        objectTypeToObjectTypePlural.put(childrenInfo.sobjectType, childrenInfo.sobjectTypePlural);
 
         // Building request
-        RestRequest request = RestRequest.getRequestForSObjectTree(syncManager.apiVersion, parentInfo.sobjectType, recordTrees);
+        RestRequest request = RestRequest.getRequestForSObjectTree(syncManager.apiVersion, parentInfo.sobjectType, parentFields, refIdToObjectTypeToListChildrenFields, objectTypeToObjectTypePlural);
 
         // Sending request
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+
+        Log.i("--response-->", response.asString());
 
         // Updated record
         Map<String, String> refIdToId = parseIdsFromResponse(response);

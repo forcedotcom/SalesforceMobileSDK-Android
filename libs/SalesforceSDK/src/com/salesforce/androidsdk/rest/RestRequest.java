@@ -26,6 +26,10 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import android.util.Log;
+
+import com.salesforce.androidsdk.util.JSONObjectHelper;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,6 +38,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -91,6 +96,8 @@ public class RestRequest {
     public static final String RICH_INPUT = "richInput";
     public static final String SERVICES_DATA = "/services/data/";
     public static final String REFERENCE_ID = "referenceId";
+    public static final String TYPE = "type";
+    public static final String ATTRIBUTES = "attributes";
 
     /**
 	 * Enumeration for all HTTP methods.
@@ -104,23 +111,23 @@ public class RestRequest {
 	 * Enumeration for all REST API actions.
 	 */
 	private enum RestAction {
-		VERSIONS("/services/data/"), 
-		RESOURCES("/services/data/%s/"), 
-		DESCRIBE_GLOBAL("/services/data/%s/sobjects/"), 
-		METADATA("/services/data/%s/sobjects/%s/"), 
-		DESCRIBE("/services/data/%s/sobjects/%s/describe/"), 
-		CREATE("/services/data/%s/sobjects/%s"), 
-		RETRIEVE("/services/data/%s/sobjects/%s/%s"), 
-		UPSERT("/services/data/%s/sobjects/%s/%s/%s"), 
-		UPDATE("/services/data/%s/sobjects/%s/%s"), 
-		DELETE("/services/data/%s/sobjects/%s/%s"), 
-		QUERY("/services/data/%s/query"), 
-		SEARCH("/services/data/%s/search"),
-		SEARCH_SCOPE_AND_ORDER("/services/data/%s/search/scopeOrder"),
-		SEARCH_RESULT_LAYOUT("/services/data/%s/search/layout"),
-		COMPOSITE("/services/data/%s/composite"),
-        BATCH("/services/data/%s/composite/batch"),
-        SOBJECT_TREE("/services/data/%s/composite/tree/%s");
+		VERSIONS(SERVICES_DATA),
+		RESOURCES(SERVICES_DATA + "%s/"),
+		DESCRIBE_GLOBAL(SERVICES_DATA + "%s/sobjects/"),
+		METADATA(SERVICES_DATA + "%s/sobjects/%s/"),
+		DESCRIBE(SERVICES_DATA + "%s/sobjects/%s/describe/"),
+		CREATE(SERVICES_DATA + "%s/sobjects/%s"),
+		RETRIEVE(SERVICES_DATA + "%s/sobjects/%s/%s"),
+		UPSERT(SERVICES_DATA + "%s/sobjects/%s/%s/%s"),
+		UPDATE(SERVICES_DATA + "%s/sobjects/%s/%s"),
+		DELETE(SERVICES_DATA + "%s/sobjects/%s/%s"),
+		QUERY(SERVICES_DATA + "%s/query"),
+		SEARCH(SERVICES_DATA + "%s/search"),
+		SEARCH_SCOPE_AND_ORDER(SERVICES_DATA + "%s/search/scopeOrder"),
+		SEARCH_RESULT_LAYOUT(SERVICES_DATA + "%s/search/layout"),
+		COMPOSITE(SERVICES_DATA + "%s/composite"),
+        BATCH(SERVICES_DATA + "%s/composite/batch"),
+        SOBJECT_TREE(SERVICES_DATA + "%s/composite/tree/%s");
 
 		private final String pathTemplate;
 
@@ -475,28 +482,90 @@ public class RestRequest {
      * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_sobject_tree.htm
      *
      * @param apiVersion
-     * @param objectType
-     * @param recordTrees
-     * @return a RestRequest
+     * @param objectType                            object type of root record
+     * @param fields                                fields for root record (must include referenceId)
+     * @param refIdToObjectTypeToListChildrenFields ref id of parent to map of sobject type of children to list of children fields with that sobject type
+     * @param objectTypeToObjectTypePlural          Map of object type to object type plural
+     * @return
      * @throws JSONException
      */
-	public static RestRequest getRequestForSObjectTree(String apiVersion, String objectType, JSONArray recordTrees) throws JSONException {
-        RequestBody body = RequestBody.create(MEDIA_TYPE_JSON, getRecordsJson(recordTrees).toString());
-        return new RestRequest(RestMethod.POST, RestAction.SOBJECT_TREE.getPath(apiVersion, objectType), body);
-	}
+    public static RestRequest getRequestForSObjectTree(String apiVersion, String objectType, Map<String, Object> fields,
+                                                       Map<String, Map<String, List<Map<String, Object>>>> refIdToObjectTypeToListChildrenFields,
+                                                       Map<String, String> objectTypeToObjectTypePlural) throws JSONException {
+        JSONObject recordTree = buildJsonForRecordTree(objectType, fields, refIdToObjectTypeToListChildrenFields, objectTypeToObjectTypePlural);
+        JSONArray recordTrees = new JSONArray();
+        recordTrees.put(recordTree);
 
-	/**
+        RequestBody body = RequestBody.create(MEDIA_TYPE_JSON, JSONObjectHelper.makeJSONObject(RECORDS, recordTrees).toString());
+        return new RestRequest(RestMethod.POST, RestAction.SOBJECT_TREE.getPath(apiVersion, objectType), body);
+    }
+
+    /**
+     * Helper method to build JSONObject for record tree
+     *
+     * @param objectType                            Object type of root record
+     * @param fields                                Fields of root record (must include referenceId)
+     * @param refIdToObjectTypeToListChildrenFields Complete tree (map of reference id of parent to children fields grouped by their object type)
+     * @param objectTypeToObjectTypePlural          Map of object type to object type plural
+     * @return
+     * @throws JSONException
+     */
+    private static JSONObject buildJsonForRecordTree(String objectType, Map<String, Object> fields,
+                                                     Map<String, Map<String, List<Map<String, Object>>>> refIdToObjectTypeToListChildrenFields,
+                                                     Map<String, String> objectTypeToObjectTypePlural) throws JSONException {
+        JSONObject parentJson = buildJsonForRecord(objectType, fields);
+
+        Map<String, List<Map<String, Object>>> objectTypeToChildrenFields = refIdToObjectTypeToListChildrenFields.get(fields.get(REFERENCE_ID));
+
+        if (objectTypeToChildrenFields != null) {
+            for (Map.Entry<String, List<Map<String, Object>>> entry : objectTypeToChildrenFields.entrySet()) {
+                String childrenObjectType = entry.getKey();
+                List<Map<String, Object>> childrenFields = entry.getValue();
+                JSONArray childrenJsonArray = new JSONArray();
+
+                for (Map<String, Object> childFields : childrenFields) {
+                    JSONObject childJson = buildJsonForRecord(childrenObjectType, childFields);
+                    childrenJsonArray.put(childJson);
+                }
+
+                parentJson.put(objectTypeToObjectTypePlural.get(childrenObjectType), JSONObjectHelper.makeJSONObject(RECORDS, childrenJsonArray));
+            }
+        }
+
+        return parentJson;
+    }
+
+    /**
+     *
+     * @param objectType    Object type of record
+     * @param fields        Map of field name to field value (must include referenceId)
+     * @return
+     * @throws JSONException
+     */
+    private static JSONObject buildJsonForRecord(String objectType, Map<String, Object> fields) throws JSONException {
+        JSONObject jsonForAttributes = new JSONObject();
+        jsonForAttributes.put(REFERENCE_ID, fields.get(REFERENCE_ID));
+        jsonForAttributes.put(TYPE, objectType);
+
+        JSONObject jsonForRecord = new JSONObject(fields);
+        jsonForRecord.put(ATTRIBUTES, jsonForAttributes);
+        jsonForRecord.remove(REFERENCE_ID);
+
+        return jsonForRecord;
+    }
+
+    /**
 	 * Composite request
 	 * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_composite.htm
 	 *
      * @param apiVersion
      * @param allOrNone
-	 * @param requests    Sorted map of reference id to requests
+	 * @param refIdToRequests    Sorted map of reference id to refIdToRequests
 	 * @return
 	 */
-	public static RestRequest getCompositeRequest(String apiVersion, boolean allOrNone, SortedMap<String, RestRequest> requests) throws JSONException {
+	public static RestRequest getCompositeRequest(String apiVersion, boolean allOrNone, SortedMap<String, RestRequest> refIdToRequests) throws JSONException {
 		JSONArray requestsArrayJson = new JSONArray();
-        for(Map.Entry<String,RestRequest> entry : requests.entrySet()) {
+        for(Map.Entry<String,RestRequest> entry : refIdToRequests.entrySet()) {
             String referenceId = entry.getKey();
             RestRequest request = entry.getValue();
             Map<String, String> headers = request.getAdditionalHttpHeaders();
@@ -542,17 +611,5 @@ public class RestRequest {
 
         return new RestRequest(RestMethod.POST, RestAction.BATCH.getPath(apiVersion), batchRequestJson);
     }
-
-
-	/**
-	 * @param records
-	 * @return
-	 * @throws JSONException
-	 */
-	public static JSONObject getRecordsJson(JSONArray records) throws JSONException {
-		JSONObject json = new JSONObject();
-		json.put(RECORDS, records);
-		return json;
-	}
 
 }
