@@ -68,14 +68,14 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
 	private static final String TEST_AUTH_TOKEN = "test_auth_token";
     private static final String LID = "id"; // lower case id in create response
 
-    Context targetContext;
-    EventsListenerQueue eq;
-    MetadataManager metadataManager;
-    CacheManager cacheManager;
-    SyncManager syncManager;
-    RestClient restClient;
-    HttpAccess httpAccess;
-    SmartStore smartStore;
+    protected Context targetContext;
+    protected EventsListenerQueue eq;
+    protected MetadataManager metadataManager;
+    protected CacheManager cacheManager;
+    protected SyncManager syncManager;
+    protected RestClient restClient;
+    protected HttpAccess httpAccess;
+    protected SmartStore smartStore;
 
     @Override
     public void setUp() throws Exception {
@@ -143,27 +143,54 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         return new RestClient(clientInfo, authToken, httpAccess, null);
     }
 
+
     /**
      * Helper methods to create "count" of test records
      * @param count
-     * @return map of id to name for the created accounts
+     * @return map of id to name for the created records
      * @throws Exception
      */
     protected Map<String, String> createRecordsOnServer(int count, String objectType) throws Exception {
-        Map<String, String> idToValues = new HashMap<String, String>();
+        Map<String, Map <String, Object>> idToFields = createRecordsOnServerReturnFields(count, objectType, null);
+        Map<String, String> idToNames = new HashMap<>();
+        for (String id : idToFields.keySet()) {
+            idToNames.put(id, (String) idToFields.get(id).get(Constants.NAME));
+        }
+        return idToNames;
+    }
+
+    /**
+     * Helper methods to create "count" of test records
+     * @param count
+     * @param additionalFields
+     * @return map of id to map of field name to field value for the created records
+     * @throws Exception
+     */
+    protected Map<String, Map<String, Object>> createRecordsOnServerReturnFields(int count, String objectType, Map<String, Object> additionalFields) throws Exception {
+        Map<String, Map <String, Object>> idToFields = new HashMap<>();
         for (int i = 0; i < count; i++) {
 
             // Request.
-            String fieldValue = createRecordName(objectType);
+            String name = createRecordName(objectType);
             Map<String, Object> fields = new HashMap<String, Object>();
+
+            // Add additional fields if any
+            if (additionalFields != null) {
+                fields.putAll(additionalFields);
+            }
+
             //add more object type if need to support to use this API
             //to create a new record on server
             switch (objectType) {
                 case Constants.ACCOUNT:
-                    fields.put(Constants.NAME, fieldValue);
+                    fields.put(Constants.NAME, name);
+                    fields.put(Constants.DESCRIPTION, "Description_" + name);
+                    break;
+                case Constants.CONTACT:
+                    fields.put(Constants.LAST_NAME, name);
                     break;
                 case Constants.OPPORTUNITY:
-                    fields.put(Constants.NAME, fieldValue);
+                    fields.put(Constants.NAME, name);
                     fields.put("StageName", "Prospecting");
                     DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
                     fields.put("CloseDate", formatter.format(new Date()));
@@ -179,13 +206,13 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
             assertNotNull("Response should not be null", response);
             assertTrue("Response status should be success", response.isSuccess());
             String id = response.asJSONObject().getString(LID);
-            idToValues.put(id, fieldValue);
+            idToFields.put(id, fields);
         }
-        return idToValues;
+        return idToFields;
     }
 
     /**
-     * Delete records specified in idToNames
+     * Delete records with given ids from server
      * @param ids
      * @throws Exception
      */

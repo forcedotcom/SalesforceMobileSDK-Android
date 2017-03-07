@@ -143,6 +143,44 @@ public class ClientManagerTest extends InstrumentationTestCase {
     }
 
     /**
+     * Test setting/get of Login Optionsas a bundle
+     */
+    public void testLoginOptionsWithAddlParams() {
+
+        Map<String,String> additionalParams = new HashMap<String,String>();
+        additionalParams.put("p1","v1");
+        additionalParams.put("p2","v2");
+        additionalParams.put("p3",null);
+
+        LoginOptions loginOptions = new LoginOptions(TEST_LOGIN_URL, TEST_PASSCODE_HASH,
+                TEST_CALLBACK_URL, TEST_CLIENT_ID, TEST_SCOPES,null,null,additionalParams);
+
+        assertNotNull("LoginOptions must not be null",loginOptions);
+        assertNotNull("LoginOptions must not be null",loginOptions.getAdditionalParameters());
+        assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.getAdditionalParameters().size());
+        assertEquals("LoginOptions must be correct",additionalParams.get("p1"),loginOptions.getAdditionalParameters().get("p1"));
+
+        additionalParams = new HashMap<String,String>();
+        additionalParams.put("p4","v1");
+        additionalParams.put("p5","v2");
+
+        loginOptions.setAdditionalParameters(additionalParams);
+        assertEquals("# of LoginOptions must be correct",additionalParams.size(),loginOptions.getAdditionalParameters().size());
+
+        Bundle bundle = loginOptions.asBundle();
+
+        assertNotNull("LoginOptions Bundle must not be null",bundle);
+        assertNotNull("LoginOptions Bundle must have parameter map",bundle.getSerializable("addlParams"));
+
+        loginOptions = LoginOptions.fromBundle(bundle);
+        assertNotNull("LoginOptions from bundle should not be null",loginOptions);
+        assertNotNull("LoginOptions.additionalParameters from bundle should not be null",loginOptions.getAdditionalParameters());
+        assertEquals("LoginOptions.additionalParameters from bundle should not be null",additionalParams.size(),loginOptions.getAdditionalParameters().size());
+        assertEquals("LoginOptions.additionalParameters must have parameter",additionalParams.get("p4"),loginOptions.getAdditionalParameters().get("p4"));
+
+    }
+
+    /**
      * Test createNewAccount
      */
     public void testCreateAccount() {
@@ -211,7 +249,6 @@ public class ClientManagerTest extends InstrumentationTestCase {
         assertEquals("Wrong account name", TEST_ACCOUNT_NAME, accounts[0].name);
         assertEquals("Wrong account type", TEST_ACCOUNT_TYPE, accounts[0].type);
     }
-
 
     /**
      * Test getAccounts - when there are several accounts

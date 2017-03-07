@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-present, salesforce.com, inc.
+ * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,26 +26,30 @@
  */
 package com.salesforce.androidsdk.push;
 
-import android.app.Activity;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
+import com.google.android.gms.gcm.GcmListenerService;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 
-/**
- * This class receives GCM messages. The actual processing of the messages
- * occurs in a service, to avoid blocking the UI thread.
- *
- * @author bhariharan
- * @author ktanna
- */
-public class PushBroadcastReceiver extends BroadcastReceiver {
+import android.os.Bundle;
 
+public class SFDCGcmListenerService extends GcmListenerService {
+    public static final String KEY_FROM = "from";
+
+    /**
+     * Called when message is received.
+     *
+     * @param from
+     *         SenderID of the sender.
+     * @param data
+     *         Data bundle containing message data as key/value pairs.
+     *         For Set of keys use data.keySet().
+     */
     @Override
-    public final void onReceive(Context context, Intent intent) {
-        if (intent.getAction().equals(PushService.GCM_REGISTRATION_CALLBACK_INTENT)
-                || intent.getAction().equals(PushService.GCM_RECEIVE_INTENT)) {
-            PushService.runIntentInService(intent);
-            setResult(Activity.RESULT_OK, null, null);
+    public void onMessageReceived(String from, Bundle data) {
+        final PushNotificationInterface pnInterface = SalesforceSDKManager.getInstance().getPushNotificationReceiver();
+        if (pnInterface != null && data != null) {
+            // Add 'from' to the Bundle directly before passing it back
+            data.putString(KEY_FROM, from);
+            pnInterface.onPushMessageReceived(data);
         }
     }
 }

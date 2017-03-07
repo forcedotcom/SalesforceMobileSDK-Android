@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-present, salesforce.com, inc.
+ * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -26,54 +26,49 @@
  */
 package com.salesforce.androidsdk.smartsync.util;
 
+import com.salesforce.androidsdk.util.JSONObjectHelper;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * Abstract super class for SyncUpTarget and SyncDownTarget
+ * Simple object to capture details of parent in parent-child relationship
  */
-public abstract class SyncTarget {
+public class ParentInfo {
 
-    public static final String ANDROID_IMPL = "androidImpl";
+    // Constants
+    public static final String SOBJECT_TYPE = "sobjectType";
     public static final String ID_FIELD_NAME = "idFieldName";
     public static final String MODIFICATION_DATE_FIELD_NAME = "modificationDateFieldName";
 
-    private String idFieldName;
-    private String modificationDateFieldName;
+    // Fields
+    public final String sobjectType;
+    public final String idFieldName;
+    public final String modificationDateFieldName;
 
-    public SyncTarget() {
-        idFieldName = Constants.ID;
-        modificationDateFieldName = Constants.LAST_MODIFIED_DATE;
+    public ParentInfo(JSONObject json) throws JSONException {
+        this(
+                json.getString(SOBJECT_TYPE),
+                JSONObjectHelper.optString(json, ID_FIELD_NAME),
+                JSONObjectHelper.optString(json, MODIFICATION_DATE_FIELD_NAME)
+        );
     }
 
-    public SyncTarget(JSONObject target) throws JSONException {
-        idFieldName = target != null && target.has(ID_FIELD_NAME) ? target.getString(ID_FIELD_NAME) : Constants.ID;
-        modificationDateFieldName = target != null && target.has(MODIFICATION_DATE_FIELD_NAME) ? target.getString(MODIFICATION_DATE_FIELD_NAME) : Constants.LAST_MODIFIED_DATE;
+    public ParentInfo(String sobjectType) {
+        this(sobjectType, null, null);
     }
 
-    /**
-     * @return json representation of target
-     * @throws JSONException
-     */
+    public ParentInfo(String sobjectType, String idFieldName, String modificationDateFieldName) {
+        this.sobjectType = sobjectType;
+        this.idFieldName = idFieldName != null ? idFieldName : Constants.ID;
+        this.modificationDateFieldName = modificationDateFieldName != null ? modificationDateFieldName : Constants.LAST_MODIFIED_DATE;
+    }
+
     public JSONObject asJSON() throws JSONException {
-        JSONObject target = new JSONObject();
-        target.put(ANDROID_IMPL, getClass().getName());
-        target.put(ID_FIELD_NAME, idFieldName);
-        target.put(MODIFICATION_DATE_FIELD_NAME, modificationDateFieldName);
-        return target;
-    }
-
-    /**
-     * @return The field name of the ID field of the record.  Defaults to "Id".
-     */
-    public String getIdFieldName() {
-        return idFieldName;
-    }
-
-    /**
-     * @return The field name of the modification date field of the record.  Defaults to "LastModifiedDate".
-     */
-    public String getModificationDateFieldName() {
-        return modificationDateFieldName;
+        JSONObject json = new JSONObject();
+        json.put(SOBJECT_TYPE, sobjectType);
+        json.put(ID_FIELD_NAME, idFieldName);
+        json.put(modificationDateFieldName, modificationDateFieldName);
+        return json;
     }
 }

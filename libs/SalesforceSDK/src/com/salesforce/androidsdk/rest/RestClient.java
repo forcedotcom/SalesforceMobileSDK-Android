@@ -497,7 +497,6 @@ public class RestClient {
 			}
 			return uri;
 		}
-
 	}
 
     /**
@@ -565,19 +564,22 @@ public class RestClient {
             this.authTokenProvider = authTokenProvider;
         }
 
-
         @Override
         public Response intercept(Chain chain) throws IOException {
             Request request = chain.request();
             request = buildAuthenticatedRequest(request);
             Response response = chain.proceed(request);
+			int responseCode = response.code();
 
-
-            if (response.code() == HttpURLConnection.HTTP_UNAUTHORIZED) { // if unauthorized
+			/*
+			 * Standard access token expiry returns 401 as the error code. However, some APIs
+			 * return 403 as the error code when an instance split or migration occurs.
+			 */
+            if (responseCode == HttpURLConnection.HTTP_UNAUTHORIZED
+					|| responseCode == HttpURLConnection.HTTP_FORBIDDEN) {
                 refreshAccessToken();
                 if (getAuthToken() != null) {
                     request = buildAuthenticatedRequest(request);
-
 					HttpUrl currentInstanceUrl = HttpUrl.get(clientInfo.getInstanceUrl());
 					if (currentInstanceUrl != null && currentInstanceUrl.host() != null) {
 
@@ -590,7 +592,6 @@ public class RestClient {
                     response = chain.proceed(request);
                 }
             }
-
             return response;
         }
 
@@ -606,7 +607,6 @@ public class RestClient {
 
 			// Only replace the host
 			urlBuilder.host(host);
-
 			Request.Builder builder = request.newBuilder();
 			builder.url(urlBuilder.build());
 			return builder.build();

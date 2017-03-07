@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-present, salesforce.com, inc.
+ * Copyright (c) 2017-present, salesforce.com, inc.
  * All rights reserved.
  * Redistribution and use of this software in source and binary forms, with or
  * without modification, are permitted provided that the following conditions
@@ -24,41 +24,22 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+package com.salesforce.androidsdk.push;
 
-package com.salesforce.androidsdk.phonegap.ui;
+import com.google.android.gms.iid.InstanceIDListenerService;
 
-import com.salesforce.androidsdk.app.SalesforceSDKManager;
-import com.salesforce.androidsdk.rest.ClientManager;
-import com.salesforce.androidsdk.rest.ClientManager.LoginOptions;
+import android.content.Intent;
 
-/**
- * Sub-class of SalesforceDroidGapActivity that authenticates using hard-coded credentials
- *
- */
-public class SalesforceHybridTestActivity extends SalesforceDroidGapActivity {
-
-	static String username = "ut2@cs1.mobilesdk.org";
-	static String accountName = username + " (SalesforceHybridTest)";
-	static String refreshToken = "5Aep861KIwKdekr90IDidO4EhfJiYo3fzEvTvsEgM9sfDpGX0qFFeQzHG2mZeUH_.XNSBE0Iz38fnWsyYYkUgTz";
-	static String authToken = "--will-be-set-through-refresh--";
-	static String identityUrl = "https://test.salesforce.com";
-	static String instanceUrl = "https://cs1.salesforce.com";
-	static String loginUrl = "https://test.salesforce.com";
-	static String orgId = "00DS0000003E98jMAC";
-	static String userId = "005S0000004s2iyIAA";
-	
-	@Override
-	protected ClientManager buildClientManager() {
-		final ClientManager clientManager = super.buildClientManager();
-		final LoginOptions loginOptions = SalesforceSDKManager.getInstance().getLoginOptions();
-
-		clientManager.createNewAccount(accountName,
-        		username, refreshToken,
-        		authToken, instanceUrl,
-        		loginUrl, identityUrl,
-        		loginOptions.getOauthClientId(), orgId,
-        		userId, null);
-	
-		return clientManager;
-	}
+public class SFDCInstanceIDListenerService extends InstanceIDListenerService {
+    /**
+     * Called if InstanceID token is updated. This may occur if the security of
+     * the previous token had been compromised. This call is initiated by the
+     * InstanceID provider.
+     */
+    @Override
+    public void onTokenRefresh() {
+        // Fetch updated Instance ID token and notify our app's server of any changes (if applicable).
+        Intent intent = new Intent(this, SFDCRegistrationIntentService.class);
+        startService(intent);
+    }
 }

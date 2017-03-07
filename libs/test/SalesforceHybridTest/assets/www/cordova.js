@@ -1,1 +1,1 @@
-../../../../../external/cordova/bin/templates/project/assets/www/cordova.js
+../../../../../external/cordova/cordova.js

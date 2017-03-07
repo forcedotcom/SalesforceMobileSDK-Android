@@ -44,13 +44,14 @@ import com.salesforce.androidsdk.smartsync.manager.SyncManager.SmartSyncExceptio
 import com.salesforce.androidsdk.smartsync.manager.SyncManager.SyncUpdateCallback;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
-import com.salesforce.androidsdk.smartsync.util.SoqlSyncDownTarget;
-import com.salesforce.androidsdk.smartsync.util.SyncDownTarget;
+import com.salesforce.androidsdk.smartsync.target.SoqlSyncDownTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
 import com.salesforce.androidsdk.smartsync.util.SyncState.Status;
-import com.salesforce.androidsdk.smartsync.util.SyncUpTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncTarget;
+import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.samples.smartsyncexplorer.objects.ContactObject;
 
 import org.json.JSONArray;
@@ -75,10 +76,10 @@ public class ContactListLoader extends AsyncTaskLoader<List<ContactObject>> {
 		new IndexSpec("Id", Type.string),
 		new IndexSpec("FirstName", Type.string),
 		new IndexSpec("LastName", Type.string),
-		new IndexSpec(SyncManager.LOCALLY_CREATED, Type.string),
-		new IndexSpec(SyncManager.LOCALLY_UPDATED, Type.string),
-		new IndexSpec(SyncManager.LOCALLY_DELETED, Type.string),
-		new IndexSpec(SyncManager.LOCAL, Type.string)
+		new IndexSpec(SyncTarget.LOCALLY_CREATED, Type.string),
+		new IndexSpec(SyncTarget.LOCALLY_UPDATED, Type.string),
+		new IndexSpec(SyncTarget.LOCALLY_DELETED, Type.string),
+		new IndexSpec(SyncTarget.LOCAL, Type.string)
 	};
 
     private SmartStore smartStore;

@@ -26,8 +26,13 @@
  */
 package com.salesforce.androidsdk.push;
 
-import android.app.PendingIntent;
-import android.content.ComponentName;
+import java.io.IOException;
+
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GoogleApiAvailability;
+import com.google.android.gms.iid.InstanceID;
+import com.salesforce.androidsdk.accounts.UserAccount;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -36,9 +41,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.os.Bundle;
-
-import com.salesforce.androidsdk.accounts.UserAccount;
-import com.salesforce.androidsdk.config.BootConfig;
+import android.util.Log;
 
 /**
  * This class provides utility functions related to push notifications,
@@ -51,6 +54,8 @@ import com.salesforce.androidsdk.config.BootConfig;
  */
 public class PushMessaging {
 
+    private static final String TAG = "PushMessaging";
+
 	// Public constants.
     public static final String UNREGISTERED_ATTEMPT_COMPLETE_EVENT = "com.salesfore.mobilesdk.c2dm.UNREGISTERED";
     public static final String UNREGISTERED_EVENT = "com.salesfore.mobilesdk.c2dm.ACTUAL_UNREGISTERED";
@@ -59,10 +64,6 @@ public class PushMessaging {
     public static final String GCM_PREFS = "gcm_prefs";
 
     // Private constants.
-    private static final String SENDER = "sender";
-    private static final String EXTRA_APPLICATION_PENDING_INTENT = "app";
-    private static final String REQUEST_UNREGISTRATION_INTENT = "com.google.android.c2dm.intent.UNREGISTER";
-    private static final String REQUEST_REGISTRATION_INTENT = "com.google.android.c2dm.intent.REGISTER";
     private static final String LAST_SFDC_REGISTRATION_TIME = "last_registration_change";
     private static final String REGISTRATION_ID = "c2dm_registration_id";
     private static final String BACKOFF = "backoff";
@@ -88,20 +89,36 @@ public class PushMessaging {
     	 */
         if (account != null && !isRegistered(context, account)) {
             setInProgress(context, true, account);
-            final Intent registrationIntent = new Intent(REQUEST_REGISTRATION_INTENT);
-            registrationIntent.putExtra(EXTRA_APPLICATION_PENDING_INTENT,
-                    PendingIntent.getBroadcast(context, 0, new Intent(), 0));
-            registrationIntent.putExtra(SENDER,
-            		BootConfig.getBootConfig(context).getPushNotificationClientId());
-            registrationIntent.putExtra(ACCOUNT_BUNDLE_KEY, account.toBundle());
-            final ServiceInfo si = getServiceInfo(context, registrationIntent);
-            if (si != null) {
-        		final ComponentName component = new ComponentName(si.packageName, si.name);
-                registrationIntent.setComponent(component);
-                context.startService(registrationIntent);
-    		}
+            if (checkPlayServices(context)) {
+                // Start IntentService to register this application with GCM.
+                Intent intent = new Intent(context, SFDCRegistrationIntentService.class);
+                context.startService(intent);
+            }
         } else {
             registerSFDCPush(context, account);
+        }
+    }
+
+    /**
+     * Performs GCM and SFDC un-registration from push notifications for the
+     * specified user account.
+     *
+     * @param context
+     *         Context.
+     * @param account
+     *         User account.
+     */
+    public static void unregister(Context context, UserAccount account) {
+        if (isRegistered(context, account)) {
+            setInProgress(context, true, account);
+            InstanceID instanceID = InstanceID.getInstance(context);
+            try {
+                instanceID.deleteInstanceID();
+            } catch (IOException e) {
+                Log.e(TAG, "Error deleting InstanceID", e);
+            }
+
+            unregisterSFDCPush(context, account);
         }
     }
 
@@ -113,37 +130,29 @@ public class PushMessaging {
      */
     public static void registerSFDCPush(Context context, UserAccount account) {
         final Intent registrationIntent = new Intent(PushService.SFDC_REGISTRATION_RETRY_INTENT);
-    	if (account == null) {
-    		final Bundle bundle = new Bundle();
-            bundle.putString(ACCOUNT_BUNDLE_KEY, ALL_ACCOUNTS_BUNDLE_VALUE);
-            registrationIntent.putExtra(ACCOUNT_BUNDLE_KEY, bundle);
-            PushService.runIntentInService(registrationIntent);
-    	} else if (isRegistered(context, account)) {
-            registrationIntent.putExtra(ACCOUNT_BUNDLE_KEY, account.toBundle());
-            PushService.runIntentInService(registrationIntent);
-        }
+        runPushService(context, account, registrationIntent);
     }
 
     /**
-     * Performs GCM and SFDC un-registration from push notifications for the
-     * specified user account.
+     * Initiates push unregistration against the SFDC endpoint.
      *
      * @param context Context.
      * @param account User account.
      */
-    public static void unregister(Context context, UserAccount account) {
-        if (isRegistered(context, account)) {
-            setInProgress(context, true, account);
-            final Intent unregIntent = new Intent(REQUEST_UNREGISTRATION_INTENT);
-            unregIntent.putExtra(EXTRA_APPLICATION_PENDING_INTENT,
-                    PendingIntent.getBroadcast(context, 0, new Intent(), 0));
-            unregIntent.putExtra(ACCOUNT_BUNDLE_KEY, account.toBundle());
-            final ServiceInfo si = getServiceInfo(context, unregIntent);
-            if (si != null) {
-        		final ComponentName component = new ComponentName(si.packageName, si.name);
-                unregIntent.setComponent(component);
-                context.startService(unregIntent);
-    		}
+    public static void unregisterSFDCPush(Context context, UserAccount account) {
+        final Intent unregistrationIntent = new Intent(PushService.SFDC_UNREGISTRATION_INTENT);
+        runPushService(context, account, unregistrationIntent);
+    }
+
+    private static void runPushService(Context context, UserAccount account, Intent intent) {
+        if (account == null) {
+            final Bundle bundle = new Bundle();
+            bundle.putString(ACCOUNT_BUNDLE_KEY, ALL_ACCOUNTS_BUNDLE_VALUE);
+            intent.putExtra(ACCOUNT_BUNDLE_KEY, bundle);
+            PushService.runIntentInService(intent);
+        } else if (isRegistered(context, account)) {
+            intent.putExtra(ACCOUNT_BUNDLE_KEY, account.toBundle());
+            PushService.runIntentInService(intent);
         }
     }
 
@@ -372,5 +381,11 @@ public class PushMessaging {
         	}
         }
         return si;
+    }
+
+    private static boolean checkPlayServices(Context context) {
+        GoogleApiAvailability apiAvailability = GoogleApiAvailability.getInstance();
+        int resultCode = apiAvailability.isGooglePlayServicesAvailable(context);
+        return resultCode == ConnectionResult.SUCCESS;
     }
 }

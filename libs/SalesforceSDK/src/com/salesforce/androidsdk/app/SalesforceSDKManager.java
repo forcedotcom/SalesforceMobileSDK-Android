@@ -91,7 +91,7 @@ public class SalesforceSDKManager {
     /**
      * Current version of this SDK.
      */
-    public static final String SDK_VERSION = "5.0.1";
+    public static final String SDK_VERSION = "5.1.0.dev";
 
     /**
      * Intent action that specifies that logout was completed.
@@ -333,6 +333,7 @@ public class SalesforceSDKManager {
     		INSTANCE = new SalesforceSDKManager(context, keyImpl, mainActivity, loginActivity);
     	}
     	initInternal(context);
+        EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
 
 	/**
@@ -351,7 +352,6 @@ public class SalesforceSDKManager {
 
         // Upgrades to the latest version.
         SalesforceSDKUpgradeManager.getInstance().upgrade();
-        EventsObservable.get().notifyEvent(EventType.AppCreateComplete);
     }
 
     /**
