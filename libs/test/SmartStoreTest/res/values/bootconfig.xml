@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <string name="remoteAccessConsumerKey">3MVG9Iu66FKeHhINkB1l7xt7kR8czFcCTUhgoA8Ol2Ltf1eYHOU4SqQRSEitYFDUpqRWcoQ2.dBv_a1Dyu5xa</string>
+    <string name="oauthRedirectURI">testsfdc:///mobilesdk/detect/oauth/done</string>
+    <string-array name="oauthScopes">
+        <item>api</item>
+    </string-array>
+    <string name="androidPushNotificationClientId"></string>
+    <string name="account_name">ut2@cs1.mobilesdk.org (https://mobilesdk.cs1.my.salesforce.com) (test)</string>
+    <string name="account_type">com.salesforce.androidsdk.smartstoretest.login</string>
+    <string name="encoding">UTF-8</string>
+    <string name="instance_url">https://cs1.salesforce.com</string>
+    <string name="identity_url">https://test.salesforce.com</string>
+    <string name="login_url">https://test.salesforce.com</string>
+    <string name="oauth_refresh_token">5Aep861KIwKdekr90IDidO4EhfJiYo3fzEvTvsEgM9sfDpGX0ptVxMkgBojxioezvvsSgAMRWjhSzO_r.CIH59f</string>
+    <string name="org_id">00DS0000003E98jMAC</string>
+    <string name="user_id">005S0000004s2iyIAA</string>
+    <string name="username">ut2@cs1.mobilesdk.org</string>
+</resources>

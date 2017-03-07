@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="match_parent"
+	android:layout_height="match_parent">
+
+	<TextView android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textColor="#000000" android:gravity="top" android:text="@string/metadata_title" />
+
+	<Button android:id="@+id/metadata_button" android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:onClick="onGetMetadataClick" android:text="@string/metadata_button" />
+
+	<EditText android:id="@+id/metadata_object_type_text"
+		android:layout_width="match_parent" android:layout_height="wrap_content"
+		android:textColor="#000000" android:hint="@string/object_type_hint"
+		android:maxLines="1" android:imeOptions="actionDone" />
+
+</LinearLayout>
+
+

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/SalesforceSDK.Passcode.Background"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".ui.PasscodeActivity">
+
+    <LinearLayout style="@style/SalesforceSDK.Passcode.Box"
+        android:orientation="vertical">
+
+        <TextView android:id="@+id/sf__passcode_title"
+            style="@style/SalesforceSDK.Passcode.Text.Title" />
+
+        <EditText android:id="@+id/sf__passcode_text"
+            style="@style/SalesforceSDK.Passcode.Text.Entry"
+            android:inputType="textPassword" />
+
+        <TextView android:id="@+id/sf__passcode_forgot"
+            style="@style/SalesforceSDK.Passcode.Text.ForgotPassword" />
+
+        <TextView android:id="@+id/sf__passcode_error"
+            style="@style/SalesforceSDK.Passcode.Text.Error" />
+
+        <TextView android:id="@+id/sf__passcode_instructions"
+            style="@style/SalesforceSDK.Passcode.Text.Instructions" />
+    </LinearLayout>
+</RelativeLayout>

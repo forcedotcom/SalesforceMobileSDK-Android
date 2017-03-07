@@ -1,1 +1,0 @@
-../../../../../external/shared/PhoneGap/sfdcaccounts/sfdcsmartstore.js

@@ -1,0 +1,1 @@
+../../../../../../external/shared/test/SFAbstractSmartStoreTestSuite.js

@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <style name="SalesforceSDK">
+    </style>
+
+    <style name="SalesforceSDK.ActionBarTheme"
+        parent="@android:style/Theme.Holo.Light.DarkActionBar">
+        <item name="android:actionBarStyle">@style/SalesforceSDKActionBar</item>
+    </style>
+
+    <style name="SalesforceSDKActionBar"
+        parent="@android:style/Widget.Holo.Light.ActionBar.Solid.Inverse">
+        <item name="android:background">@drawable/sf__header_bg</item>
+    </style>
+
+    <style name="SalesforceSDK.ServerPicker">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+
+    <style name="SalesforceSDK.ServerPicker.List">
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <style name="SalesforceSDK.ServerPicker.Button">
+        <item name="android:layout_marginTop">@dimen/sf__custom_url_margin_top</item>
+    </style>
+
+    <style name="SalesforceSDK.ServerPicker.ButtonContainer">
+        <item name="android:padding">@dimen/sf__custom_url_layout_padding</item>
+    </style>
+
+    <style name="SalesforceSDK.ServerPicker.Button.OkCancel">
+        <item name="android:layout_margin">@dimen/sf__button_margin</item>
+        <item name="android:layout_weight">1</item>
+    </style>
+    
+    <style name="SalesforceSDK.ServerPicker.EditText">
+        <item name="android:layout_marginTop">@dimen/sf__server_picker_margin_top</item>
+		<item name="android:layout_marginLeft">@dimen/sf__server_picker_margin_left</item>
+		<item name="android:layout_marginRight">@dimen/sf__server_picker_margin_right</item>
+		<item name="android:layout_marginBottom">@dimen/sf__server_picker_margin_bottom</item> 
+		<item name="android:inputType">text</item>
+    </style>
+    
+    <style name="SalesforceSDK.Passcode">
+    </style>
+    
+    <!-- the overall background of the passcode layout -->
+    <style name="SalesforceSDK.Passcode.Background">
+    	<item name="android:background">@color/sf__passcode_layout_bg</item>    
+    </style>
+    
+    <!-- the box that frames the passcode entry/labels -->
+    <style name="SalesforceSDK.Passcode.Box">
+        <item name="android:padding">@dimen/sf__passcode_layout_padding</item>
+        <item name="android:layout_width">@dimen/sf__passcode_layout_width</item>
+        <item name="android:layout_centerHorizontal">true</item>
+        <item name="android:layout_marginTop">@dimen/sf__passcode_layout_margin_top</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:background">@color/sf__passcode_bg</item>
+    </style>
+    
+    <style name="SalesforceSDK.Passcode.Text">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:gravity">center</item>
+        <item name="android:layout_gravity">center_horizontal</item>
+        </style>
+    
+    <style name="SalesforceSDK.Passcode.Text.Title">
+        <item name="android:layout_marginTop">@dimen/sf__passcode_title_margin_top</item>
+        <item name="android:layout_marginBottom">@dimen/sf__passcode_title_margin_bottom</item>
+    </style>
+    
+    <style name="SalesforceSDK.Passcode.Text.Entry">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:lines">1</item>
+        <item name="android:maxLength">10</item>
+        <item name="android:minWidth">@dimen/sf__passcode_text_min_width</item>
+        <item name="android:imeOptions">actionGo</item>
+    </style>
+    
+    <style name="SalesforceSDK.Passcode.Text.ForgotPassword">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_marginTop">@dimen/sf__passcode_forgot_margin_top</item>
+        <item name="android:textColor">@color/sf__forgot_passcode_text</item>
+        <item name="android:clickable">true</item>
+    </style>
+    
+    <style name="SalesforceSDK.Passcode.Text.Error">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_marginTop">@dimen/sf__passcode_error_margin_top</item>
+        <item name="android:textColor">@color/sf__passcode_error_text</item>
+    </style>
+    
+    <style name="SalesforceSDK.Passcode.Text.Instructions">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_marginTop">@dimen/sf__passcode_instr_margin_top</item>
+        <item name="android:layout_marginLeft">@dimen/sf__passcode_instr_margin_left</item>
+        <item name="android:layout_marginRight">@dimen/sf__passcode_instr_margin_right</item>
+    </style>
+
+    <style name="SalesforceSDK.AccountSwitcher">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+    </style>
+
+    <style name="SalesforceSDK.AccountSwitcher.List">
+        <item name="android:orientation">vertical</item>
+    </style>
+
+    <style name="SalesforceSDK.AccountSwitcher.Button">
+        <item name="android:layout_marginTop">@dimen/sf__custom_url_margin_top</item>
+    </style>
+
+    <style name="SalesforceSDK.AccountSwitcher.Button.AddAccount">
+        <item name="android:textSize">@dimen/sf__button_font_size</item>
+        <item name="android:layout_margin">@dimen/sf__button_margin</item>
+    </style>
+
+    <style name="SalesforceSDK.AccountSwitcher.Button.Apply">
+        <item name="android:textSize">@dimen/sf__button_font_size</item>
+        <item name="android:layout_margin">@dimen/sf__button_margin</item>
+    </style>
+</resources>

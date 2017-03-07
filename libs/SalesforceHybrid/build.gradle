@@ -1,0 +1,122 @@
+apply plugin: 'com.android.library'
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'com.jfrog.bintray'
+
+dependencies {
+  compile project(':libs:SmartSync')
+  compile project(':external:cordova:framework')
+}
+
+android {
+  compileSdkVersion 25
+  buildToolsVersion '23.0.1'
+
+  buildTypes {
+    debug {
+      testCoverageEnabled = true
+    }
+  }
+
+  sourceSets {
+    main {
+      manifest.srcFile 'AndroidManifest.xml'
+      java.srcDirs = ['src']
+      resources.srcDirs = ['src']
+      aidl.srcDirs = ['src']
+      renderscript.srcDirs = ['src']
+      res.srcDirs = ['res']
+      assets.srcDirs = ['assets']
+    }
+    androidTest.setRoot('../test/SalesforceHybridTest')
+    androidTest {
+      java.srcDirs = ['../test/SalesforceHybridTest/src']
+      resources.srcDirs = ['../test/SalesforceHybridTest/src']
+      res.srcDirs = ['../test/SalesforceHybridTest/res']
+    }
+  }
+  defaultConfig {
+    testApplicationId "com.salesforce.androidsdk.salesforcehybrid.tests"
+    testInstrumentationRunner "com.salesforce.androidsdk.analytics.util.test.JUnitReportTestRunner"
+  }
+  packagingOptions {
+    exclude 'META-INF/LICENSE'
+    exclude 'META-INF/LICENSE.txt'
+    exclude 'META-INF/DEPENDENCIES'
+    exclude 'META-INF/NOTICE'
+  }
+  
+  lintOptions {
+    abortOnError false
+  }
+}
+
+afterEvaluate {
+  // Find all connected Android tests and ensure they log all passed tests. This keeps the Travis
+  // from timing out since executing tests are printed to the console.
+  tasks.matching { it.name ==~ /^connected.*AndroidTest$/ }*.logging*.setLevel(LogLevel.INFO)
+}
+
+install {
+    repositories.mavenInstaller {
+        pom {
+            project {
+                packaging 'aar'
+                name 'SalesforceHybrid'
+                url 'https://github.com/forcedotcom/SalesforceMobileSDK-Android'
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'bhariharan'
+                        name 'Bharath Hariharan'
+                        email 'bhariharan@salesforce.com'
+                    }
+                }
+                scm {
+                    connection 'https://github.com/forcedotcom/SalesforceMobileSDK-Android.git'
+                    developerConnection 'https://github.com/forcedotcom/SalesforceMobileSDK-Android.git'
+                    url 'https://github.com/forcedotcom/SalesforceMobileSDK-Android'
+
+                }
+            }
+        }
+    }
+}
+
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+bintray {
+    user = System.getenv('BINTRAY_USER')
+    key = System.getenv('BINTRAY_KEY')
+    configurations = ['archives']
+    pkg {
+        repo = 'salesforcemobilesdk'
+        name = 'salesforce-hybrid'
+        userOrg = 'forcedotcom'
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android.git'
+        websiteUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android'
+        issueTrackerUrl = 'https://github.com/forcedotcom/SalesforceMobileSDK-Android/issues'
+        publicDownloadNumbers = true
+        githubRepo = 'forcedotcom/SalesforceMobileSDK-Android'
+        githubReleaseNotesFile = 'README.md'
+        licenses = ['Apache-2.0']
+        labels = ['android', 'salesforce', 'mobilesdk']
+        version {
+            name = '5.0.1'
+            released  = new Date()
+            vcsTag = 'v5.0.1'
+        }
+    }
+}

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+    <!-- Dimensions used in sf__custom_server_url.xml -->
+    <dimen name="sf__server_layout_padding">0dp</dimen>
+    <dimen name="sf__server_picker_margin_top">7dp</dimen>
+    <dimen name="sf__server_picker_margin_left">3dp</dimen>
+    <dimen name="sf__server_picker_margin_right">3dp</dimen>
+    <dimen name="sf__server_picker_margin_bottom">3dp</dimen>
+    <dimen name="sf__server_button_margin">2dp</dimen>
+
+    <!-- Dimensions used in sf__passcode.xml -->
+    <dimen name="sf__passcode_layout_padding">20dp</dimen>
+    <dimen name="sf__passcode_layout_margin_top">100dp</dimen>
+    <dimen name="sf__passcode_layout_width">300dp</dimen>
+    <dimen name="sf__passcode_title_margin_top">10dp</dimen>
+    <dimen name="sf__passcode_title_margin_bottom">10dp</dimen>
+    <dimen name="sf__passcode_text_min_width">160dp</dimen>
+    <dimen name="sf__passcode_forgot_margin_top">21dp</dimen>
+    <dimen name="sf__passcode_error_margin_top">21dp</dimen>
+    <dimen name="sf__passcode_instr_margin_top">10dp</dimen>
+    <dimen name="sf__passcode_instr_margin_left">30dp</dimen>
+    <dimen name="sf__passcode_instr_margin_right">30dp</dimen>
+
+    <!-- Dimensions used in sf__server_picker.xml -->
+    <dimen name="sf__custom_url_margin_top">7dp</dimen>
+    <dimen name="sf__custom_url_layout_padding">0dp</dimen>
+    <dimen name="sf__button_margin">2dp</dimen>
+
+    <!-- Dimensions used in sf__account_switcher.xml -->
+    <dimen name="sf__button_font_size">24dp</dimen>
+</resources>

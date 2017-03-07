@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:orientation="vertical" android:layout_width="match_parent"
+	android:layout_height="match_parent">
+
+	<TextView android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:textColor="#000000" android:gravity="top" android:text="@string/update_title" />
+
+	<Button android:id="@+id/update_button" android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:onClick="onUpdateClick" android:text="@string/update_button" />
+
+	<EditText android:id="@+id/update_object_type_text"
+		android:layout_width="match_parent" android:layout_height="wrap_content"
+		android:textColor="#000000" android:hint="@string/object_type_hint"
+		android:maxLines="1" android:imeOptions="actionNext" />
+
+	<AutoCompleteTextView android:id="@+id/update_object_id_text"
+		android:layout_width="match_parent" android:layout_height="wrap_content"
+		android:textColor="#000000" android:hint="@string/object_id_hint"
+		android:maxLines="1" android:imeOptions="actionNext"
+		android:completionThreshold="1" />
+
+	<EditText android:id="@+id/update_fields_text"
+		android:layout_width="match_parent" android:layout_height="match_parent"
+		android:textColor="#000000" android:hint="@string/fields_hint"
+		android:gravity="top" android:imeOptions="actionDone" />
+
+</LinearLayout>
+
+

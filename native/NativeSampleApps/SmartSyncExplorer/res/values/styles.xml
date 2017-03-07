@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <style name="ContactDetail">
+    </style>
+
+    <style name="ContactDetail.ParentView">
+        <item name="android:textColor">@android:color/black</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:layout_marginBottom">4dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+    </style>
+
+    <style name="ContactDetail.ParentView.TextView">
+        <item name="android:layout_marginLeft">8dp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <style name="ContactDetail.ParentView.EditText">
+        <item name="android:layout_marginRight">8dp</item>
+        <item name="android:inputType">text</item>
+        <item name="android:typeface">monospace</item>
+    </style>
+</resources>

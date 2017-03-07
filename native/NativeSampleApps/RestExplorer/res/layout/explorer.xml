@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent" android:background="#454545"
+	android:id="@+id/root"
+	android:orientation="vertical">
+
+	<include layout="@layout/explorer_header" />
+
+	<TabHost android:id="@android:id/tabhost" android:layout_width="match_parent"
+		android:layout_height="match_parent" android:padding="10dp">
+
+		<LinearLayout android:orientation="vertical"
+			android:layout_width="match_parent" android:layout_height="match_parent">
+
+			<HorizontalScrollView
+				android:id="@+id/horizontalScrollView1"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content"
+				android:fillViewport="true">
+				<TabWidget android:id="@android:id/tabs"
+					android:layout_width="match_parent" android:layout_height="wrap_content" />
+			</HorizontalScrollView>
+
+			<LinearLayout android:orientation="horizontal"
+				android:layout_width="match_parent" android:layout_height="match_parent"
+				android:background="#858585" android:padding="10dp">
+
+				<FrameLayout android:id="@android:id/tabcontent"
+					android:layout_width="match_parent" android:layout_height="match_parent"
+					android:layout_weight="2">
+
+					<include android:id="@+id/versions_tab" layout="@layout/action_versions_tile" />
+					<include android:id="@+id/resources_tab" layout="@layout/action_resources_tile" />
+					<include android:id="@+id/describe_global_tab" layout="@layout/action_describe_global_tile" />
+					<include android:id="@+id/metadata_tab" layout="@layout/action_metadata_tile" />
+					<include android:id="@+id/describe_tab" layout="@layout/action_describe_tile" />
+					<include android:id="@+id/create_tab" layout="@layout/action_create_tile" />
+					<include android:id="@+id/retrieve_tab" layout="@layout/action_retrieve_tile" />
+					<include android:id="@+id/update_tab" layout="@layout/action_update_tile" />
+					<include android:id="@+id/upsert_tab" layout="@layout/action_upsert_tile" />
+					<include android:id="@+id/delete_tab" layout="@layout/action_delete_tile" />
+					<include android:id="@+id/query_tab" layout="@layout/action_query_tile" />
+					<include android:id="@+id/search_tab" layout="@layout/action_search_tile" />
+					<include android:id="@+id/manual_request_tab" layout="@layout/action_manual_request_tile" />
+					<include android:id="@+id/search_scope_and_order_tab" layout="@layout/action_search_scope_and_order_tile" />
+					<include android:id="@+id/search_result_layout_tab" layout="@layout/action_search_result_layout_tile" />
+					<include android:id="@+id/owned_files_list_tab" layout="@layout/action_owned_files_list_tile" />
+					<include android:id="@+id/files_in_users_groups_tab" layout="@layout/action_files_in_users_groups_tile" />
+					<include android:id="@+id/files_shared_with_user_tab" layout="@layout/action_files_shared_with_user_tile" />
+					<include android:id="@+id/file_details_tab" layout="@layout/action_file_details_tile" />
+					<include android:id="@+id/batch_file_details_tab" layout="@layout/action_batch_file_details_tile" />
+					<include android:id="@+id/file_shares_tab" layout="@layout/action_file_shares_tile" />
+					<include android:id="@+id/add_file_share_tab" layout="@layout/action_add_file_share_tile" />
+					<include android:id="@+id/delete_file_share_tab" layout="@layout/action_delete_file_share_tile" />
+
+				</FrameLayout>
+
+				<FrameLayout android:layout_width="match_parent"
+					android:layout_height="match_parent" android:layout_weight="1"
+					android:paddingLeft="10dp">
+
+					<TextView android:id="@+id/result_text"
+						android:layout_width="match_parent" android:layout_height="match_parent"
+						android:textColor="#00aa00" android:typeface="monospace"
+						android:background="#000000" android:maxLines="10000"
+						android:textSize="14sp"
+						android:scrollbars="vertical" android:padding="5dp" />
+				</FrameLayout>
+
+			</LinearLayout>
+
+		</LinearLayout>
+	</TabHost>
+
+</LinearLayout>

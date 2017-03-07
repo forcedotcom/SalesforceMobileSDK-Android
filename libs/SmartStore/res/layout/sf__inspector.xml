@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <MultiAutoCompleteTextView
+        android:id="@+id/sf__inspector_query_text"
+        style="@style/SmartStore.Inspector.EditText.Query"
+        android:hint="@string/sf__inspector_querytext_hint" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal" >
+
+        <EditText
+            android:id="@+id/sf__inspector_pagesize_text"
+            style="@style/SmartStore.Inspector.EditText"
+            android:hint="@string/sf__inspector_pagesize_hint"
+            android:layout_weight="1"
+            android:inputType="number" />
+
+        <EditText
+            android:id="@+id/sf__inspector_pageindex_text"
+            style="@style/SmartStore.Inspector.EditText"
+            android:hint="@string/sf__inspector_pageindex_hint"
+            android:layout_weight="1"
+            android:inputType="number" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/sf__inspector_run_button"
+            style="@style/SmartStore.Inspector.Button"
+            android:layout_weight="1"
+            android:onClick="onRunClick"
+            android:text="@string/sf__inspector_run_button" />
+
+        <Button
+            android:id="@+id/sf__inspector_clear_button"
+            style="@style/SmartStore.Inspector.Button"
+            android:layout_weight="1"
+            android:onClick="onClearClick"
+            android:text="@string/sf__inspector_clear_button" />
+
+        <Button
+            android:id="@+id/sf__inspector_soups_button"
+            style="@style/SmartStore.Inspector.Button"
+            android:layout_weight="1"
+            android:onClick="onSoupsClick"
+            android:text="@string/sf__inspector_soups_button" />
+
+        <Button
+            android:id="@+id/sf__inspector_indices_button"
+            style="@style/SmartStore.Inspector.Button"
+            android:layout_weight="1"
+            android:onClick="onIndicesClick"
+            android:text="@string/sf__inspector_indices_button" />
+    </LinearLayout>
+
+    <GridView
+        android:id="@+id/sf__inspector_result_grid"
+        style="@style/SmartStore.Inspector.GridView" />
+
+</LinearLayout>

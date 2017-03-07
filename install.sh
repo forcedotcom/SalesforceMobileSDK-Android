@@ -5,3 +5,6 @@
 git submodule init
 git submodule sync
 git submodule update
+
+# for react-native
+npm install react-native@0.35.0 react@15.3.1 --silent

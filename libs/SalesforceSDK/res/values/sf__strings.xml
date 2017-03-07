@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+	<!-- Errors -->
+	<string name="sf__generic_authentication_error_title">Error</string>
+	<string name="sf__generic_authentication_error">Authentication error. Please try again.</string>
+	<string name="sf__generic_error">An error has occurred %s\nPlease try again</string>
+	<string name="sf__invalid_server_url">Please type in a valid URL starting with https://</string>
+	<string name="sf__access_token_revoked">Your access token has been revoked by the administrator. You will now be logged out.</string>
+    <string name="sf__managed_app_error">Authentication only allowed from managed device.</string>
+	<string name="sf__jwt_authentication_error">JWT authentication error. Please try again.</string>
+
+    <!-- SSL Errors -->
+    <string name="sf__ssl_error">SSL Error: %s.</string>
+    <string name="sf__ssl_expired">Expired Certificate</string>
+    <string name="sf__ssl_id_mismatch">Hostname Mismatch</string>
+    <string name="sf__ssl_not_yet_valid">Certificate Not Yet Valid</string>
+    <string name="sf__ssl_untrusted">Untrusted Certificate Authority</string>
+    <string name="sf__ssl_unknown_error">Unknown Error</string>
+
+	<!-- Login -->
+	<string name="sf__login_title">Login</string>
+	<string name="sf__pick_server">Change Server</string>
+	<string name="sf__clear_cookies">Clear Cookies</string>
+	<string name="sf__reload">Reload</string>
+
+	<!-- Server picker -->
+	<string name="sf__server_picker_title">Pick Login Server</string>
+	<string name="sf__auth_login_production">Production</string>
+	<string name="sf__auth_login_sandbox">Sandbox</string>
+	<string name="sf__custom_url_button">Add Connection</string>
+	<string name="sf__server_url_edit_title">Edit Connection</string>
+	<string name="sf__server_url_add_title">Add Connection</string>
+	<string name="sf__server_url_default_custom_label">Name</string>
+	<string name="sf__server_url_default_custom_url">URL</string>
+	<string name="sf__server_url_default_cancel">Cancel</string>
+	<string name="sf__server_url_default_apply">Apply</string>
+	<string name="sf__server_url_reset">Reset</string>
+	
+	<!-- Passcode entry screen -->
+	<string name="sf__passcode_create_title">Create %s passcode</string>
+	<string name="sf__passcode_create_instructions">For increased security, please create a passcode that you will use to access %s when the session has timed out due to inactivity.</string>
+	<string name="sf__passcode_change_instructions">For increased security, your admininstrator requires you to change your passcode.</string>
+	<string name="sf__passcode_confirm_title">Re-enter your %s passcode</string>
+	<string name="sf__passcode_confirm_instructions">Confirm your mobile passcode for %s</string>
+	<string name="sf__passcode_enter_title">Enter %s Passcode</string>
+	<string name="sf__passcode_enter_instructions">Enter your mobile passcode for %s</string>
+	<string name="sf__passcodes_dont_match">Passcodes don\'t match!</string>
+	<string name="sf__passcode_try_again">The passcode you entered is incorrect. Please try again. You have %d attempts remaining.</string>
+	<string name="sf__passcode_final">Final passcode attempt</string>
+	<string name="sf__passcode_min_length">The passcode must be at least %d characters long</string>
+	<string name="sf__passcode_forgot_string">&lt;u>Forgot Passcode?&lt;/u></string>
+	<string name="sf__passcode_logout_confirmation">Are you sure you want to logout?</string>
+	<string name="sf__passcode_logout_yes">Yes</string>
+	<string name="sf__passcode_logout_no">No</string>
+
+	<!-- Manage space activity -->
+	<string name="sf__manage_space_confirmation">Clearing user data will log the current user out. Are you sure you want to perform this action?</string>
+
+	<!-- Account switcher screen -->
+	<string name="sf__add_new_account">Add New Account</string>
+	<string name="sf__switch_account">Switch Account</string>
+
+    <!-- Managed app restrictions -->
+    <string name="sf__app_service_hosts_description">Used to specify login hosts for the application.</string>
+    <string name="sf__app_service_host_labels_description">Used to specify login host labels for the application.</string>
+    <string name="sf__managed_app_oauth_id_description">Used to specify OAuth consumer key for the application.</string>
+    <string name="sf__managed_app_callback_url_description">Used to specify OAuth callback URL for the application.</string>
+    <string name="sf__require_cert_auth_description">Used to specify if certificate based authentication is required for the application.</string>
+    <string name="sf__managed_app_cert_alias_description">Used to specify the certificate alias required for the application.</string>
+	<string name="sf__only_show_authorized_hosts_description">Used to specify that only authorized hosts can be shown.</string>
+
+	<!-- Fingerprint Auth Resources-->
+	<string name="sf__fingerprint_description">Confirm fingerprint to continue</string>
+	<string name="sf__fingerprint_hint">Touch sensor</string>
+	<string name="sf__fingerprint_cancel">Use Passcode</string>
+	<string name="sf__fingerprint_success">Success</string>
+	<string name="sf__fingerprint_failed">Fingerprint Authentication Failed</string>
+</resources>
