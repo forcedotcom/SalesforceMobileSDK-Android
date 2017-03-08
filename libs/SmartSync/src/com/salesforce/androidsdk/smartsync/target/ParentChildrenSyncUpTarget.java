@@ -126,15 +126,13 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         for (int i=0; i<children.length(); i++) {
             JSONObject child = children.getJSONObject(i);
             Map<String, Object> childFields = buildFieldsMap(child, childrenCreateFieldlist);
-            childFields.put(RestRequest.REFERENCE_ID, getRefForChild(i));
-            childrenTrees.add(new RestRequest.SObjectTree(childrenInfo.sobjectType, childrenInfo.sobjectTypePlural, childFields, null));
+            childrenTrees.add(new RestRequest.SObjectTree(childrenInfo.sobjectType, childrenInfo.sobjectTypePlural, getRefForChild(i), childFields, null));
         }
 
         // Preparing SObjectTree for parent
         fieldlist = createFieldlist != null ? createFieldlist : fieldlist;
         Map<String, Object> parentFields = buildFieldsMap(record, fieldlist);
-        parentFields.put(RestRequest.REFERENCE_ID, REF_1);
-        RestRequest.SObjectTree parentTree = new RestRequest.SObjectTree(parentInfo.sobjectType, null, parentFields, childrenTrees);
+        RestRequest.SObjectTree parentTree = new RestRequest.SObjectTree(parentInfo.sobjectType, null, REF_1, parentFields, childrenTrees);
 
         List<RestRequest.SObjectTree> parentTrees = new ArrayList<>();
         parentTrees.add(parentTree);
