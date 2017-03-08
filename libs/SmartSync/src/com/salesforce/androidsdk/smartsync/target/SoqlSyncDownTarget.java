@@ -149,7 +149,7 @@ public class SoqlSyncDownTarget extends SyncDownTarget {
         if (nextRecordsUrl == null) {
             return null;
         }
-        RestRequest request = new RestRequest(RestRequest.RestMethod.GET, nextRecordsUrl, null);
+        RestRequest request = new RestRequest(RestRequest.RestMethod.GET, nextRecordsUrl);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
         JSONObject responseJson = getResponseJson(response);
         JSONArray records = getRecordsFromResponseJson(responseJson);
