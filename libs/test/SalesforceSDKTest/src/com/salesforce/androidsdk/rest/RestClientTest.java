@@ -56,6 +56,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -68,7 +70,6 @@ import java.util.concurrent.TimeUnit;
 public class RestClientTest extends InstrumentationTestCase {
 
     private static final String ENTITY_NAME_PREFIX = "RestClientTest";
-    private static final String SEARCH_ENTITY_NAME = "Acme";
     private static final String BAD_TOKEN = "bad-token";
 
     private ClientInfo clientInfo;
@@ -447,13 +448,16 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws Exception
      */
     public void testSearch() throws Exception {
-        //TODO: add a test base class to supply helpers for test record creation and delete
-        RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + SEARCH_ENTITY_NAME + "}"));
-        checkResponse(response, HttpURLConnection.HTTP_OK, true);
-        JSONArray matchingRows = response.asJSONArray();
-        assertTrue("Expected at least one row returned", matchingRows.length()>0);
-        JSONObject matchingRow = matchingRows.getJSONObject(0);
-        checkKeys(matchingRow, "attributes", "Id");
+        IdName idNameFirstAccount = createAccount();
+        IdName idNameSecondAccount = createAccount();
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
+
+        JSONArray jsonResults = response.asJSONObject().getJSONArray("searchRecords");
+        assertEquals("Two results expected", 2, jsonResults.length());
+        HashSet<Object> idsFromSearch = new HashSet<>(JSONObjectHelper.pluck(jsonResults, "Id"));
+        assertEquals("wrong number of results for search request", 2, idsFromSearch.size());
+        assertTrue("Account id not returned by search", idsFromSearch.contains(idNameFirstAccount.id));
+        assertTrue("Contact id not returned by search", idsFromSearch.contains(idNameSecondAccount.id));
     }
 
     /**
@@ -638,24 +642,35 @@ public class RestClientTest extends InstrumentationTestCase {
     /**
      * Test for batch request
      *
+     * Run a batch request that:
+     * - creates an account,
+     * - creates a contact,
+     * - run a query that should return newly created account
+     * - run a query that should return newly created contact
+     *
      * @throws IOException
      * @throws JSONException
      */
     public void testBatchRequest() throws IOException, JSONException {
-        Map<String, Object> fields = new HashMap<String, Object>();
-        String newAccountName = ENTITY_NAME_PREFIX + System.nanoTime();
-        fields.put("name", newAccountName);
-        RestRequest firstRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields);
+        Map<String, Object> accountFields = new HashMap<String, Object>();
+        String accountName = ENTITY_NAME_PREFIX + System.nanoTime();
+        accountFields.put("Name", accountName);
+        RestRequest firstRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", accountFields);
 
-        Map<String, Object> fields2 = new HashMap<String, Object>();
-        String newAccountName2 = ENTITY_NAME_PREFIX + System.nanoTime();
-        fields2.put("name", newAccountName2);
-        RestRequest secondRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields2);
+        Map<String, Object> contactFields = new HashMap<String, Object>();
+        String contactName = ENTITY_NAME_PREFIX + System.nanoTime();
+        contactFields.put("LastName", contactName);
+        RestRequest secondRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "contact", contactFields);
 
-        RestRequest thirdRequest = RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}");
+        RestRequest thirdRequest = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select Id from Account where Name = '" + accountName + "'");
+        RestRequest fourthRequest = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select Id from Contact where Name = '" + contactName + "'");
 
-        // Send batch
-        RestResponse response = restClient.sendSync(RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, new RestRequest[] {firstRequest, secondRequest, thirdRequest}));
+
+        // Build batch request
+        RestRequest batchRequest = RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, new RestRequest[]{firstRequest, secondRequest, thirdRequest, fourthRequest});
+
+        // Send batch request
+        RestResponse response = restClient.sendSync(batchRequest);
 
         // Checking response
         JSONObject jsonResponse = response.asJSONObject();
@@ -663,18 +678,143 @@ public class RestClientTest extends InstrumentationTestCase {
         checkKeys(jsonResponse, "hasErrors", "results");
         assertFalse("Batch had errors", jsonResponse.getBoolean("hasErrors"));
         JSONArray jsonResults = jsonResponse.getJSONArray("results");
-        assertEquals("Wrong number of results", 3, jsonResults.length());
+        assertEquals("Wrong number of results", 4, jsonResults.length());
         assertEquals("Wrong status for first request", 201, jsonResults.getJSONObject(0).getInt("statusCode"));
         assertEquals("Wrong status for second request", 201, jsonResults.getJSONObject(1).getInt("statusCode"));
         assertEquals("Wrong status for third request", 200, jsonResults.getJSONObject(2).getInt("statusCode"));
+        assertEquals("Wrong status for fourth request", 200, jsonResults.getJSONObject(3).getInt("statusCode"));
 
-        // Search should have returned id created by request 1 and 2
-        String firstAccountId =  jsonResults.getJSONObject(0).getJSONObject("result").getString("id");
-        String secondAccountId =  jsonResults.getJSONObject(1).getJSONObject("result").getString("id");
-        HashSet<Object> idsFromSearch = new HashSet<>(JSONObjectHelper.pluck(jsonResults.getJSONObject(2).getJSONArray("result"), "Id"));
-        assertEquals("wrong number of results for search request", 2, idsFromSearch.size());
-        assertTrue("First id not returned by search", idsFromSearch.contains(firstAccountId));
-        assertTrue("Second id not returned by search", idsFromSearch.contains(secondAccountId));
+        // Queries should have returned ids of newly created account and contact
+        String accountId =  jsonResults.getJSONObject(0).getJSONObject("result").getString("id");
+        String contactId =  jsonResults.getJSONObject(1).getJSONObject("result").getString("id");
+        String idFromFirstQuery = jsonResults.getJSONObject(2).getJSONObject("result").getJSONArray("records").getJSONObject(0).getString("Id");
+        String idFromSecondQuery = jsonResults.getJSONObject(3).getJSONObject("result").getJSONArray("records").getJSONObject(0).getString("Id");
+        assertEquals("Account id not returned by query", accountId, idFromFirstQuery);
+        assertEquals("Contact id not returned by query", contactId, idFromSecondQuery);
+    }
+
+    /**
+     * Test for composite request
+     *
+     * Run a composite request that:
+     * - creates an account,
+     * - creates a contact (with newly created account as parent),
+     * - run a query that should return newly created account and contact
+     *
+     * @throws IOException
+     * @throws JSONException
+     */
+    public void testCompositeRequest() throws IOException, JSONException {
+        Map<String, Object> accountFields = new HashMap<String, Object>();
+        String accountName = ENTITY_NAME_PREFIX + System.nanoTime();
+        accountFields.put("Name", accountName);
+        RestRequest firstRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", accountFields);
+
+        Map<String, Object> contactFields = new HashMap<String, Object>();
+        String contactName = ENTITY_NAME_PREFIX + System.nanoTime();
+        contactFields.put("LastName", contactName);
+        contactFields.put("AccountId", "@{refAccount.id}");
+        RestRequest secondRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "contact", contactFields);
+
+        RestRequest thirdRequest = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select Id, AccountId from Contact where LastName = '" + contactName + "'");
+
+        SortedMap<String, RestRequest> refIdToRequests = new TreeMap<>();
+        refIdToRequests.put("refAccount", firstRequest);
+        refIdToRequests.put("refContact", secondRequest);
+        refIdToRequests.put("refSearch", thirdRequest);
+
+        // Build composite request
+        RestRequest compositeRequest = RestRequest.getCompositeRequest(TestCredentials.API_VERSION, false, refIdToRequests);
+
+        // Send composite request
+        RestResponse response = restClient.sendSync(compositeRequest);
+
+        // Checking response
+        JSONObject jsonResponse = response.asJSONObject();
+
+        JSONArray jsonResults = jsonResponse.getJSONArray("compositeResponse");
+        assertEquals("Wrong number of results", 3, jsonResults.length());
+        assertEquals("Wrong status for first request", 201, jsonResults.getJSONObject(0).getInt("httpStatusCode"));
+        assertEquals("Wrong status for second request", 201, jsonResults.getJSONObject(1).getInt("httpStatusCode"));
+        assertEquals("Wrong status for third request", 200, jsonResults.getJSONObject(2).getInt("httpStatusCode"));
+
+        // Query should have returned ids of newly created account and contact
+        String accountId =  jsonResults.getJSONObject(0).getJSONObject("body").getString("id");
+        String contactId =  jsonResults.getJSONObject(1).getJSONObject("body").getString("id");
+        JSONArray queryRecords = jsonResults.getJSONObject(2).getJSONObject("body").getJSONArray("records");
+        assertEquals("wrong number of results for query request", 1, queryRecords.length());
+        assertEquals("Account id not returned by query", accountId, queryRecords.getJSONObject(0).getString("AccountId"));
+        assertEquals("Contact id not returned by query", contactId, queryRecords.getJSONObject(0).getString("Id"));
+    }
+
+    /**
+     * Test for sobject tree request
+     *
+     * Run a sobject tree request that:
+     * - creates an account,
+     * - creates two children contacts
+     *
+     * Then queries that should return newly created account and contacts
+     *
+     * @throws IOException
+     * @throws JSONException
+     */
+    public void testSObjectTreeRequest() throws IOException, JSONException {
+        Map<String, Object> accountFields = new HashMap<String, Object>();
+        String accountName = ENTITY_NAME_PREFIX + System.nanoTime();
+        accountFields.put("Name", accountName);
+        accountFields.put("referenceId", "refAccount");
+
+        Map<String, Object> contactFields = new HashMap<String, Object>();
+        String contactName = ENTITY_NAME_PREFIX + System.nanoTime();
+        contactFields.put("LastName", contactName);
+        contactFields.put("referenceId", "refContact");
+
+        Map<String, Object> otherContactFields = new HashMap<String, Object>();
+        String otherContactName = ENTITY_NAME_PREFIX + System.nanoTime();
+        otherContactFields.put("LastName", otherContactName);
+        otherContactFields.put("referenceId", "refOtherContact");
+
+        List<RestRequest.SObjectTree> childrenTrees = new ArrayList<>();
+        childrenTrees.add(new RestRequest.SObjectTree("contact", "Contacts", contactFields, null));
+        childrenTrees.add(new RestRequest.SObjectTree("contact", "Contacts", otherContactFields, null));
+
+        List<RestRequest.SObjectTree> recordTrees = new ArrayList<>();
+        recordTrees.add(new RestRequest.SObjectTree("account", null, accountFields, childrenTrees));
+
+        // Build sobject tree request
+        RestRequest sobjectTreeRequest = RestRequest.getRequestForSObjectTree(TestCredentials.API_VERSION, "account", recordTrees);
+
+        // Send sobject tree request
+        RestResponse response = restClient.sendSync(sobjectTreeRequest);
+
+        // Checking response
+        JSONObject jsonResponse = response.asJSONObject();
+
+        checkKeys(jsonResponse, "hasErrors", "results");
+        assertFalse("SObject tree request had errors", jsonResponse.getBoolean("hasErrors"));
+
+        JSONArray jsonResults = jsonResponse.getJSONArray("results");
+        assertEquals("Wrong number of results", 3, jsonResults.length());
+        String accountId =  jsonResults.getJSONObject(0).getString("id");
+        String contactId =  jsonResults.getJSONObject(1).getString("id");
+        String otherContactId =  jsonResults.getJSONObject(2).getString("id");
+
+        // Running query that should match first contact and its parent
+        RestRequest queryRequest = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select Id, AccountId from Contact where LastName = '" + contactName + "'");
+        RestResponse queryResponse = restClient.sendSync(queryRequest);
+        JSONArray queryRecords = queryResponse.asJSONObject().getJSONArray("records");
+        assertEquals("wrong number of results for query request", 1, queryRecords.length());
+        assertEquals("Account id not returned by query", accountId, queryRecords.getJSONObject(0).getString("AccountId"));
+        assertEquals("Contact id not returned by query", contactId, queryRecords.getJSONObject(0).getString("Id"));
+
+        // Running other query that should match first contact and its parent
+        RestRequest otherQueryRequest = RestRequest.getRequestForQuery(TestCredentials.API_VERSION, "select Id, AccountId from Contact where LastName = '" + otherContactName + "'");
+        RestResponse otherQueryResponse = restClient.sendSync(otherQueryRequest);
+        JSONArray otherQueryRecords = otherQueryResponse.asJSONObject().getJSONArray("records");
+        assertEquals("wrong number of results for query request", 1, otherQueryRecords.length());
+        assertEquals("Account id not returned by query", accountId, otherQueryRecords.getJSONObject(0).getString("AccountId"));
+        assertEquals("Contact id not returned by query", otherContactId, otherQueryRecords.getJSONObject(0).getString("Id"));
     }
 
     //
@@ -757,13 +897,13 @@ public class RestClientTest extends InstrumentationTestCase {
      */
     private void cleanup() {
         try {
-            RestResponse searchResponse = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
-            JSONArray matchingRows = searchResponse.asJSONArray();
-            for (int i = 0; i < matchingRows.length(); i++) {
-                JSONObject matchingRow = matchingRows.getJSONObject(i);
-                String matchingRowType = matchingRow.getJSONObject("attributes").getString("type");
-                String matchingRowId = matchingRow.getString("Id");
-                restClient.sendSync(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, matchingRowType, matchingRowId));
+            RestResponse response = restClient.sendSync(RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}"));
+            JSONArray jsonResults = response.asJSONObject().getJSONArray("searchRecords");
+            for (int i = 0; i < jsonResults.length(); i++) {
+                JSONObject jsonResult = jsonResults.getJSONObject(i);
+                String objectType = jsonResult.getJSONObject("attributes").getString("type");
+                String id = jsonResult.getString("Id");
+                restClient.sendSync(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, objectType, id));
             }
         }
         catch(Exception e) {
