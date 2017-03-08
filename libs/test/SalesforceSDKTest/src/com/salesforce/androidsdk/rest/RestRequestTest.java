@@ -37,6 +37,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,6 +52,7 @@ public class RestRequestTest extends TestCase {
 	
 	private static final String TEST_API_VERSION = "v99.0";
 	private static final String TEST_OBJECT_TYPE = "testObjectType";
+    private static final String TEST_OTHER_OBJECT_TYPE = "testOtherObjectType";
 	private static final String TEST_OBJECT_ID = "testObjectId";
 	private static final String TEST_EXTERNAL_ID_FIELD = "testExternalIdField";
 	private static final String TEST_EXTERNAL_ID = "testExternalId";
@@ -61,15 +63,25 @@ public class RestRequestTest extends TestCase {
 	private static final String TEST_FIELDS_LIST_STRING = "name%2CfieldX";
 	private static final List<String> TEST_OBJECTS_LIST = Collections.unmodifiableList(Arrays.asList(new String[]{"Account", "Contact"}));
 	private static final String TEST_OBJECTS_LIST_STRING = "Account%2CContact";
-	
-	private static Map<String, Object> TEST_FIELDS;
+    private static final String TEST_OTHER_OBJECT_TYPE_PLURAL = "testOtherObjectTypes";
+
+    private static Map<String, Object> TEST_FIELDS;
 	static {
 		Map<String, Object> fields = new HashMap<String, Object>();
 		fields.put("name", "testAccount");
 		fields.put("fieldX", "value with spaces");
 		TEST_FIELDS = Collections.unmodifiableMap(fields);
 	}
-	
+
+    private static Map<String, Object> TEST_OTHER_FIELDS;
+    static {
+        Map<String, Object> fields = new HashMap<String, Object>();
+        fields.put("name", "testContact");
+        fields.put("fieldY", "value with spaces");
+        TEST_OTHER_FIELDS = Collections.unmodifiableMap(fields);
+    }
+
+
 	/**
 	 * Test for getRequestForVersions
 	 */
@@ -333,11 +345,43 @@ public class RestRequestTest extends TestCase {
      * @throws JSONException
      */
     public void testGetRequestForSObjectTree() throws JSONException, IOException {
-        RestRequest request = RestRequest.getRequestForSObjectTree(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_FIELDS, new HashMap<String, Map<String, List<Map<String, Object>>>>(), new HashMap<String, String>());
+        List<RestRequest.SObjectTree> childrenTrees = new ArrayList<>();
+        childrenTrees.add(new RestRequest.SObjectTree(TEST_OTHER_OBJECT_TYPE, TEST_OTHER_OBJECT_TYPE_PLURAL, TEST_OTHER_FIELDS, null));
+        List<RestRequest.SObjectTree> recordTrees = new ArrayList<>();
+        recordTrees.add(new RestRequest.SObjectTree(TEST_OBJECT_TYPE, null, TEST_FIELDS, childrenTrees));
+
+        RestRequest request = RestRequest.getRequestForSObjectTree(TEST_API_VERSION, TEST_OBJECT_TYPE, recordTrees);
         assertEquals("Wrong method", RestMethod.POST, request.getMethod());
         assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite/tree/" + TEST_OBJECT_TYPE, request.getPath());
-        JSONTestHelper.assertSameJSON("Wrong request entity", new JSONObject("{\"records\":[]}"), new JSONObject(bodyToString(request)));
         assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());
+
+        JSONObject expectedBodyJson = new JSONObject();
+        expectedBodyJson.put("records",
+                new JSONArray(String.format(""
+                        + "["
+                        + "  {"
+                        + "    \"name\": \"testAccount\","
+                        + "    \"fieldX\": \"value with spaces\","
+                        + "    \"attributes\": {"
+                        + "      \"type\": \"%s\""
+                        + "    },"
+                        + "    \"%s\": {"
+                        + "      \"records\": ["
+                        + "        {"
+                        + "          \"name\": \"testContact\","
+                        + "          \"fieldY\": \"value with spaces\","
+                        + "          \"attributes\": {"
+                        + "            \"type\": \"%s\""
+                        + "          }"
+                        + "        }"
+                        + "      ]"
+                        + "    }"
+                        + "  }"
+                        + "]", TEST_OBJECT_TYPE, TEST_OTHER_OBJECT_TYPE_PLURAL, TEST_OTHER_OBJECT_TYPE)));
+
+        JSONObject actualBodyJson = new JSONObject(bodyToString(request));
+
+        JSONTestHelper.assertSameJSON("Wrong request entity", expectedBodyJson, actualBodyJson);
     }
 
     private static String bodyToString(final RestRequest request) throws IOException {

@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import android.util.Log;
-
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -38,6 +36,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -478,83 +477,6 @@ public class RestRequest {
 	}
 
     /**
-     * Request to create one or more sObject trees with root records of the specified type
-     * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_sobject_tree.htm
-     *
-     * @param apiVersion
-     * @param objectType                            object type of root record
-     * @param fields                                fields for root record (must include referenceId)
-     * @param refIdToObjectTypeToListChildrenFields ref id of parent to map of sobject type of children to list of children fields with that sobject type
-     * @param objectTypeToObjectTypePlural          Map of object type to object type plural
-     * @return
-     * @throws JSONException
-     */
-    public static RestRequest getRequestForSObjectTree(String apiVersion, String objectType, Map<String, Object> fields,
-                                                       Map<String, Map<String, List<Map<String, Object>>>> refIdToObjectTypeToListChildrenFields,
-                                                       Map<String, String> objectTypeToObjectTypePlural) throws JSONException {
-        JSONObject recordTree = buildJsonForRecordTree(objectType, fields, refIdToObjectTypeToListChildrenFields, objectTypeToObjectTypePlural);
-        JSONArray recordTrees = new JSONArray();
-        recordTrees.put(recordTree);
-
-        RequestBody body = RequestBody.create(MEDIA_TYPE_JSON, JSONObjectHelper.makeJSONObject(RECORDS, recordTrees).toString());
-        return new RestRequest(RestMethod.POST, RestAction.SOBJECT_TREE.getPath(apiVersion, objectType), body);
-    }
-
-    /**
-     * Helper method to build JSONObject for record tree
-     *
-     * @param objectType                            Object type of root record
-     * @param fields                                Fields of root record (must include referenceId)
-     * @param refIdToObjectTypeToListChildrenFields Complete tree (map of reference id of parent to children fields grouped by their object type)
-     * @param objectTypeToObjectTypePlural          Map of object type to object type plural
-     * @return
-     * @throws JSONException
-     */
-    private static JSONObject buildJsonForRecordTree(String objectType, Map<String, Object> fields,
-                                                     Map<String, Map<String, List<Map<String, Object>>>> refIdToObjectTypeToListChildrenFields,
-                                                     Map<String, String> objectTypeToObjectTypePlural) throws JSONException {
-        JSONObject parentJson = buildJsonForRecord(objectType, fields);
-
-        Map<String, List<Map<String, Object>>> objectTypeToChildrenFields = refIdToObjectTypeToListChildrenFields.get(fields.get(REFERENCE_ID));
-
-        if (objectTypeToChildrenFields != null) {
-            for (Map.Entry<String, List<Map<String, Object>>> entry : objectTypeToChildrenFields.entrySet()) {
-                String childrenObjectType = entry.getKey();
-                List<Map<String, Object>> childrenFields = entry.getValue();
-                JSONArray childrenJsonArray = new JSONArray();
-
-                for (Map<String, Object> childFields : childrenFields) {
-                    JSONObject childJson = buildJsonForRecord(childrenObjectType, childFields);
-                    childrenJsonArray.put(childJson);
-                }
-
-                parentJson.put(objectTypeToObjectTypePlural.get(childrenObjectType), JSONObjectHelper.makeJSONObject(RECORDS, childrenJsonArray));
-            }
-        }
-
-        return parentJson;
-    }
-
-    /**
-     *
-     * @param objectType    Object type of record
-     * @param fields        Map of field name to field value (must include referenceId)
-     * @return
-     * @throws JSONException
-     */
-    private static JSONObject buildJsonForRecord(String objectType, Map<String, Object> fields) throws JSONException {
-        JSONObject jsonForAttributes = new JSONObject();
-        jsonForAttributes.put(REFERENCE_ID, fields.get(REFERENCE_ID));
-        jsonForAttributes.put(TYPE, objectType);
-
-        JSONObject jsonForRecord = new JSONObject(fields);
-        jsonForRecord.put(ATTRIBUTES, jsonForAttributes);
-        jsonForRecord.remove(REFERENCE_ID);
-
-        return jsonForRecord;
-    }
-
-    /**
 	 * Composite request
 	 * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_composite.htm
 	 *
@@ -612,4 +534,91 @@ public class RestRequest {
         return new RestRequest(RestMethod.POST, RestAction.BATCH.getPath(apiVersion), batchRequestJson);
     }
 
+    /**
+     * Request to create one or more sObject trees with root records of the specified type
+     * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_sobject_tree.htm
+     *
+     * @param apiVersion
+     * @param objectType
+     * @param objectTrees
+     * @return
+     * @throws JSONException
+     */
+    public static RestRequest getRequestForSObjectTree(String apiVersion, String objectType, List<SObjectTree> objectTrees) throws JSONException {
+        JSONArray jsonTrees = new JSONArray();
+        for (SObjectTree objectTree : objectTrees) {
+            jsonTrees.put(objectTree.asJSON());
+        }
+
+        RequestBody body = RequestBody.create(MEDIA_TYPE_JSON, JSONObjectHelper.makeJSONObject(RECORDS, jsonTrees).toString());
+        return new RestRequest(RestMethod.POST, RestAction.SOBJECT_TREE.getPath(apiVersion, objectType), body);
+    }
+
+    /**
+     * Helper class for getRequestForSObjectTree
+     */
+    public static class SObjectTree {
+        final String objectType;
+        final String objectTypePlural;
+        final Map<String, Object> fields;
+        final List<SObjectTree> childrenTrees;
+
+        public SObjectTree(String objectType, String objectTypePlural, Map<String, Object> fields, List<SObjectTree> childrenTrees) {
+            this.objectType = objectType;
+            this.objectTypePlural = objectTypePlural;
+            this.fields = fields;
+            this.childrenTrees = childrenTrees;
+        }
+
+        public JSONObject asJSON() throws JSONException {
+            JSONObject parentJson = buildJsonForRecord(objectType, fields);
+
+            if (childrenTrees != null) {
+                // Grouping children trees by type and figuring out object type to object type plural mapping
+                Map<String, String> objectTypeToObjectTypePlural = new HashMap<>();
+                Map<String, List<SObjectTree>> objectTypeToChildrenTrees = new HashMap<>();
+                for (SObjectTree childTree : childrenTrees) {
+                    String childObjectType = childTree.objectType;
+
+                    if (!objectTypeToObjectTypePlural.containsKey(childObjectType)) {
+                        objectTypeToObjectTypePlural.put(childObjectType, childTree.objectTypePlural);
+                    }
+
+                    if (!objectTypeToChildrenTrees.containsKey(childObjectType)) {
+                        objectTypeToChildrenTrees.put(childObjectType, new ArrayList<SObjectTree>());
+                    }
+
+                    objectTypeToChildrenTrees.get(childObjectType).add(childTree);
+                }
+
+                // Iterating through children
+                for (Map.Entry<String, List<SObjectTree>> entry : objectTypeToChildrenTrees.entrySet()) {
+                    String childrenObjectType = entry.getKey();
+                    List<SObjectTree> childrenTreesForType = entry.getValue();
+                    JSONArray childrenJsonArray = new JSONArray();
+                    for (SObjectTree childTree : childrenTreesForType) {
+                        JSONObject childJson = buildJsonForRecord(childrenObjectType, childTree.fields);
+                        childrenJsonArray.put(childJson);
+                    }
+
+                    parentJson.put(objectTypeToObjectTypePlural.get(childrenObjectType), JSONObjectHelper.makeJSONObject(RECORDS, childrenJsonArray));
+                }
+            }
+
+            // Done
+            return parentJson;
+        }
+
+        private JSONObject buildJsonForRecord(String objectType, Map<String, Object> fields) throws JSONException {
+            JSONObject jsonForAttributes = new JSONObject();
+            jsonForAttributes.put(REFERENCE_ID, fields.get(REFERENCE_ID));
+            jsonForAttributes.put(TYPE, objectType);
+
+            JSONObject jsonForRecord = new JSONObject(fields);
+            jsonForRecord.put(ATTRIBUTES, jsonForAttributes);
+            jsonForRecord.remove(REFERENCE_ID);
+
+            return jsonForRecord;
+        }
+    }
 }
