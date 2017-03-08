@@ -679,10 +679,10 @@ public class RestClientTest extends InstrumentationTestCase {
         assertFalse("Batch had errors", jsonResponse.getBoolean("hasErrors"));
         JSONArray jsonResults = jsonResponse.getJSONArray("results");
         assertEquals("Wrong number of results", 4, jsonResults.length());
-        assertEquals("Wrong status for first request", 201, jsonResults.getJSONObject(0).getInt("statusCode"));
-        assertEquals("Wrong status for second request", 201, jsonResults.getJSONObject(1).getInt("statusCode"));
-        assertEquals("Wrong status for third request", 200, jsonResults.getJSONObject(2).getInt("statusCode"));
-        assertEquals("Wrong status for fourth request", 200, jsonResults.getJSONObject(3).getInt("statusCode"));
+        assertEquals("Wrong status for first request", HttpURLConnection.HTTP_CREATED, jsonResults.getJSONObject(0).getInt("statusCode"));
+        assertEquals("Wrong status for second request", HttpURLConnection.HTTP_CREATED, jsonResults.getJSONObject(1).getInt("statusCode"));
+        assertEquals("Wrong status for third request", HttpURLConnection.HTTP_OK, jsonResults.getJSONObject(2).getInt("statusCode"));
+        assertEquals("Wrong status for fourth request", HttpURLConnection.HTTP_OK, jsonResults.getJSONObject(3).getInt("statusCode"));
 
         // Queries should have returned ids of newly created account and contact
         String accountId =  jsonResults.getJSONObject(0).getJSONObject("result").getString("id");
@@ -734,9 +734,9 @@ public class RestClientTest extends InstrumentationTestCase {
 
         JSONArray jsonResults = jsonResponse.getJSONArray("compositeResponse");
         assertEquals("Wrong number of results", 3, jsonResults.length());
-        assertEquals("Wrong status for first request", 201, jsonResults.getJSONObject(0).getInt("httpStatusCode"));
-        assertEquals("Wrong status for second request", 201, jsonResults.getJSONObject(1).getInt("httpStatusCode"));
-        assertEquals("Wrong status for third request", 200, jsonResults.getJSONObject(2).getInt("httpStatusCode"));
+        assertEquals("Wrong status for first request", HttpURLConnection.HTTP_CREATED, jsonResults.getJSONObject(0).getInt("httpStatusCode"));
+        assertEquals("Wrong status for second request", HttpURLConnection.HTTP_CREATED, jsonResults.getJSONObject(1).getInt("httpStatusCode"));
+        assertEquals("Wrong status for third request", HttpURLConnection.HTTP_OK, jsonResults.getJSONObject(2).getInt("httpStatusCode"));
 
         // Query should have returned ids of newly created account and contact
         String accountId =  jsonResults.getJSONObject(0).getJSONObject("body").getString("id");
