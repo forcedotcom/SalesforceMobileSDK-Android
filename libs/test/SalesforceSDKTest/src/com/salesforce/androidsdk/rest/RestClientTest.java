@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.auth.OAuth2.TokenEndpointResponse;
 import com.salesforce.androidsdk.rest.RestClient.AuthTokenProvider;
 import com.salesforce.androidsdk.rest.RestClient.ClientInfo;
 import com.salesforce.androidsdk.rest.RestRequest.RestMethod;
+import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -52,6 +53,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -631,6 +633,48 @@ public class RestClientTest extends InstrumentationTestCase {
         } finally {
             response.consumeQuietly();
         }
+    }
+
+    /**
+     * Test for batch request
+     *
+     * @throws IOException
+     * @throws JSONException
+     */
+    public void testBatchRequest() throws IOException, JSONException {
+        Map<String, Object> fields = new HashMap<String, Object>();
+        String newAccountName = ENTITY_NAME_PREFIX + System.nanoTime();
+        fields.put("name", newAccountName);
+        RestRequest firstRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields);
+
+        Map<String, Object> fields2 = new HashMap<String, Object>();
+        String newAccountName2 = ENTITY_NAME_PREFIX + System.nanoTime();
+        fields2.put("name", newAccountName2);
+        RestRequest secondRequest = RestRequest.getRequestForCreate(TestCredentials.API_VERSION, "account", fields2);
+
+        RestRequest thirdRequest = RestRequest.getRequestForSearch(TestCredentials.API_VERSION, "find {" + ENTITY_NAME_PREFIX + "}");
+
+        // Send batch
+        RestResponse response = restClient.sendSync(RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, new RestRequest[] {firstRequest, secondRequest, thirdRequest}));
+
+        // Checking response
+        JSONObject jsonResponse = response.asJSONObject();
+
+        checkKeys(jsonResponse, "hasErrors", "results");
+        assertFalse("Batch had errors", jsonResponse.getBoolean("hasErrors"));
+        JSONArray jsonResults = jsonResponse.getJSONArray("results");
+        assertEquals("Wrong number of results", 3, jsonResults.length());
+        assertEquals("Wrong status for first request", 201, jsonResults.getJSONObject(0).getInt("statusCode"));
+        assertEquals("Wrong status for second request", 201, jsonResults.getJSONObject(1).getInt("statusCode"));
+        assertEquals("Wrong status for third request", 200, jsonResults.getJSONObject(2).getInt("statusCode"));
+
+        // Search should have returned id created by request 1 and 2
+        String firstAccountId =  jsonResults.getJSONObject(0).getJSONObject("result").getString("id");
+        String secondAccountId =  jsonResults.getJSONObject(1).getJSONObject("result").getString("id");
+        HashSet<Object> idsFromSearch = new HashSet<>(JSONObjectHelper.pluck(jsonResults.getJSONObject(2).getJSONArray("result"), "Id"));
+        assertEquals("wrong number of results for search request", 2, idsFromSearch.size());
+        assertTrue("First id not returned by search", idsFromSearch.contains(firstAccountId));
+        assertTrue("Second id not returned by search", idsFromSearch.contains(secondAccountId));
     }
 
     //
