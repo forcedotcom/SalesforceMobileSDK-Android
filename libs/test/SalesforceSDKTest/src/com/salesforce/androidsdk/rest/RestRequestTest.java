@@ -64,8 +64,10 @@ public class RestRequestTest extends TestCase {
 	private static final List<String> TEST_OBJECTS_LIST = Collections.unmodifiableList(Arrays.asList(new String[]{"Account", "Contact"}));
 	private static final String TEST_OBJECTS_LIST_STRING = "Account%2CContact";
     private static final String TEST_OTHER_OBJECT_TYPE_PLURAL = "testOtherObjectTypes";
+	public static final String TEST_REF_PARENT = "testRefParent";
+	public static final String TEST_REF_CHILD = "testRefChild";
 
-    private static Map<String, Object> TEST_FIELDS;
+	private static Map<String, Object> TEST_FIELDS;
 	static {
 		Map<String, Object> fields = new HashMap<String, Object>();
 		fields.put("name", "testAccount");
@@ -346,9 +348,9 @@ public class RestRequestTest extends TestCase {
      */
     public void testGetRequestForSObjectTree() throws JSONException, IOException {
         List<RestRequest.SObjectTree> childrenTrees = new ArrayList<>();
-        childrenTrees.add(new RestRequest.SObjectTree(TEST_OTHER_OBJECT_TYPE, TEST_OTHER_OBJECT_TYPE_PLURAL, TEST_OTHER_FIELDS, null));
+        childrenTrees.add(new RestRequest.SObjectTree(TEST_OTHER_OBJECT_TYPE, TEST_OTHER_OBJECT_TYPE_PLURAL, TEST_REF_CHILD, TEST_OTHER_FIELDS, null));
         List<RestRequest.SObjectTree> recordTrees = new ArrayList<>();
-        recordTrees.add(new RestRequest.SObjectTree(TEST_OBJECT_TYPE, null, TEST_FIELDS, childrenTrees));
+        recordTrees.add(new RestRequest.SObjectTree(TEST_OBJECT_TYPE, null, TEST_REF_PARENT, TEST_FIELDS, childrenTrees));
 
         RestRequest request = RestRequest.getRequestForSObjectTree(TEST_API_VERSION, TEST_OBJECT_TYPE, recordTrees);
         assertEquals("Wrong method", RestMethod.POST, request.getMethod());
@@ -363,7 +365,8 @@ public class RestRequestTest extends TestCase {
                         + "    \"name\": \"testAccount\","
                         + "    \"fieldX\": \"value with spaces\","
                         + "    \"attributes\": {"
-                        + "      \"type\": \"%s\""
+                        + "      \"type\": \"%s\","
+						+ "      \"referenceId\": \"%s\""
                         + "    },"
                         + "    \"%s\": {"
                         + "      \"records\": ["
@@ -371,13 +374,19 @@ public class RestRequestTest extends TestCase {
                         + "          \"name\": \"testContact\","
                         + "          \"fieldY\": \"value with spaces\","
                         + "          \"attributes\": {"
-                        + "            \"type\": \"%s\""
+                        + "            \"type\": \"%s\","
+						+ "            \"referenceId\": \"%s\""
                         + "          }"
                         + "        }"
                         + "      ]"
                         + "    }"
                         + "  }"
-                        + "]", TEST_OBJECT_TYPE, TEST_OTHER_OBJECT_TYPE_PLURAL, TEST_OTHER_OBJECT_TYPE)));
+                        + "]",
+						TEST_OBJECT_TYPE,
+						TEST_REF_PARENT,
+						TEST_OTHER_OBJECT_TYPE_PLURAL,
+						TEST_OTHER_OBJECT_TYPE,
+						TEST_REF_CHILD)));
 
         JSONObject actualBodyJson = new JSONObject(bodyToString(request));
 

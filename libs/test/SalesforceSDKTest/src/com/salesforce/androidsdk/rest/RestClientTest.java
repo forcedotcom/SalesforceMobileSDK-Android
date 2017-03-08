@@ -763,24 +763,21 @@ public class RestClientTest extends InstrumentationTestCase {
         Map<String, Object> accountFields = new HashMap<String, Object>();
         String accountName = ENTITY_NAME_PREFIX + System.nanoTime();
         accountFields.put("Name", accountName);
-        accountFields.put("referenceId", "refAccount");
 
         Map<String, Object> contactFields = new HashMap<String, Object>();
         String contactName = ENTITY_NAME_PREFIX + System.nanoTime();
         contactFields.put("LastName", contactName);
-        contactFields.put("referenceId", "refContact");
 
         Map<String, Object> otherContactFields = new HashMap<String, Object>();
         String otherContactName = ENTITY_NAME_PREFIX + System.nanoTime();
         otherContactFields.put("LastName", otherContactName);
-        otherContactFields.put("referenceId", "refOtherContact");
 
         List<RestRequest.SObjectTree> childrenTrees = new ArrayList<>();
-        childrenTrees.add(new RestRequest.SObjectTree("contact", "Contacts", contactFields, null));
-        childrenTrees.add(new RestRequest.SObjectTree("contact", "Contacts", otherContactFields, null));
+        childrenTrees.add(new RestRequest.SObjectTree("contact", "Contacts", "refContact", contactFields, null));
+        childrenTrees.add(new RestRequest.SObjectTree("contact", "Contacts", "refOtherContact", otherContactFields, null));
 
         List<RestRequest.SObjectTree> recordTrees = new ArrayList<>();
-        recordTrees.add(new RestRequest.SObjectTree("account", null, accountFields, childrenTrees));
+        recordTrees.add(new RestRequest.SObjectTree("account", null, "refAccount", accountFields, childrenTrees));
 
         // Build sobject tree request
         RestRequest sobjectTreeRequest = RestRequest.getRequestForSObjectTree(TestCredentials.API_VERSION, "account", recordTrees);

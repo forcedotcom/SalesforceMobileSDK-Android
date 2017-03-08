@@ -560,18 +560,20 @@ public class RestRequest {
     public static class SObjectTree {
         final String objectType;
         final String objectTypePlural;
+        final String referenceId;
         final Map<String, Object> fields;
         final List<SObjectTree> childrenTrees;
 
-        public SObjectTree(String objectType, String objectTypePlural, Map<String, Object> fields, List<SObjectTree> childrenTrees) {
+        public SObjectTree(String objectType, String objectTypePlural, String referenceId, Map<String, Object> fields, List<SObjectTree> childrenTrees) {
             this.objectType = objectType;
             this.objectTypePlural = objectTypePlural;
+            this.referenceId = referenceId;
             this.fields = fields;
             this.childrenTrees = childrenTrees;
         }
 
         public JSONObject asJSON() throws JSONException {
-            JSONObject parentJson = buildJsonForRecord(objectType, fields);
+            JSONObject parentJson = buildJsonForRecord(objectType, referenceId, fields);
 
             if (childrenTrees != null) {
                 // Grouping children trees by type and figuring out object type to object type plural mapping
@@ -597,7 +599,7 @@ public class RestRequest {
                     List<SObjectTree> childrenTreesForType = entry.getValue();
                     JSONArray childrenJsonArray = new JSONArray();
                     for (SObjectTree childTree : childrenTreesForType) {
-                        JSONObject childJson = buildJsonForRecord(childrenObjectType, childTree.fields);
+                        JSONObject childJson = buildJsonForRecord(childrenObjectType, childTree.referenceId, childTree.fields);
                         childrenJsonArray.put(childJson);
                     }
 
@@ -609,14 +611,13 @@ public class RestRequest {
             return parentJson;
         }
 
-        private JSONObject buildJsonForRecord(String objectType, Map<String, Object> fields) throws JSONException {
+        private JSONObject buildJsonForRecord(String objectType, String referenceId, Map<String, Object> fields) throws JSONException {
             JSONObject jsonForAttributes = new JSONObject();
-            jsonForAttributes.put(REFERENCE_ID, fields.get(REFERENCE_ID));
+            jsonForAttributes.put(REFERENCE_ID, referenceId);
             jsonForAttributes.put(TYPE, objectType);
 
             JSONObject jsonForRecord = new JSONObject(fields);
             jsonForRecord.put(ATTRIBUTES, jsonForAttributes);
-            jsonForRecord.remove(REFERENCE_ID);
 
             return jsonForRecord;
         }
