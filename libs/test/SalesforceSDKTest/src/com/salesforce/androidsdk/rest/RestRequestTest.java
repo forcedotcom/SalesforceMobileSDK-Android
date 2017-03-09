@@ -41,10 +41,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import okio.Buffer;
 
@@ -270,7 +269,7 @@ public class RestRequestTest extends TestCase {
      * @throws JSONException
      */
     public void testGetCompositeRequest() throws JSONException, IOException {
-        SortedMap<String, RestRequest> requests = new TreeMap<>();
+        LinkedHashMap<String, RestRequest> requests = new LinkedHashMap<>();
         requests.put("ref1", RestRequest.getRequestForUpdate(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID, TEST_FIELDS));
         requests.put("ref2", RestRequest.getRequestForDelete(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID));
 

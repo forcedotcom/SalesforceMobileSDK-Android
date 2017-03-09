@@ -47,10 +47,9 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 /**
  * Target for sync that uploads parent with children records
@@ -63,6 +62,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     public static final String REFERENCE_ID = "referenceId";
     public static final String COMPOSITE_RESPONSE = "compositeResponse";
     public static final String BODY = "body";
+    public static final String HTTP_STATUS_CODE = "httpStatusCode";
 
     private ParentInfo parentInfo;
     private ChildrenInfo childrenInfo;
@@ -131,12 +131,8 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
 
     @Override
     public boolean updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
-        // FIXME
-        // Not handling locally deleted or remotely deleted record
-        // Not using mergeMode at all yet
-
         // Preparing requests for parent
-        SortedMap<String, RestRequest> refIdToRequests = new TreeMap<>();
+        LinkedHashMap<String, RestRequest> refIdToRequests = new LinkedHashMap<>();
         String parentId = record.getString(getIdFieldName());
         RestRequest parentRequest = buildRequestForRecord(syncManager.apiVersion,
                 record,
@@ -145,7 +141,8 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                 parentInfo,
                 null);
 
-        refIdToRequests.put(parentId, parentRequest);
+        // Parent request goes first unless it's a delete
+        if (parentRequest != null && !isLocallyDeleted(record)) refIdToRequests.put(parentId, parentRequest);
 
         // Getting children
         JSONArray children = ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
@@ -163,9 +160,12 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                     childrenCreateFieldlist,
                     childrenUpdateFieldlist,
                     childrenInfo,
-                    parentId);
-            refIdToRequests.put(childId, childRequest);
+                    isLocallyDeleted(record) ? null : parentId);
+            if (childRequest != null) refIdToRequests.put(childId, childRequest);
         }
+
+        // Parent request goes last when it's a delete
+        if (parentRequest != null && isLocallyDeleted(record)) refIdToRequests.put(parentId, parentRequest);
 
         // Building composite request
         RestRequest request = RestRequest.getCompositeRequest(syncManager.apiVersion, true, refIdToRequests);
@@ -173,23 +173,59 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         // Sending request
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
-        Log.i("--response-->", response.asJSONObject().toString(2));
-
-        // Updated record
+        // Build refId to serverId map
         Map<String, String> refIdToServerId = parseIdsFromResponse(response);
-        updateReferences(record, getIdFieldName(), refIdToServerId);
-        JSONArray updatedChildren = new JSONArray();
+        Map<String, Integer> refIdToHttpStatusCode = parseStatusCodesFromResponse(response);
+
+        // Update parent in local store
+        updateRecordInLocalStore(syncManager, record, soupName, getIdFieldName(), null, refIdToServerId, refIdToHttpStatusCode);
+
+        // Update children local store
         for (int i = 0; i < children.length(); i++) {
             JSONObject childRecord = children.getJSONObject(i);
-            updateReferences(childRecord, childrenInfo.idFieldName, refIdToServerId);
-            updateReferences(childRecord, childrenInfo.parentIdFieldName, refIdToServerId);
-            updatedChildren.put(childRecord);
+            updateRecordInLocalStore(syncManager, childRecord, childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.parentIdFieldName, refIdToServerId, refIdToHttpStatusCode);
         }
-        record.put(childrenInfo.sobjectTypePlural, updatedChildren);
 
-        cleanAndSaveInLocalStore(syncManager, soupName, record);
+        // Did all the requests go through
+        boolean success = true;
+        for (int statusCode : refIdToHttpStatusCode.values()) {
+            if (!RestResponse.isSuccess(statusCode)) {
+                success = false;
+                break;
+            }
+        }
 
-        return true; // fixme what should we do with errors
+        return success;
+    }
+
+    /**
+     *
+     * @param syncManager
+     * @param record
+     * @param soupName
+     * @param idFieldName               Field containing server id of record
+     * @param parentIdFieldName         Field containing server id of parent record (only in children)
+     * @param refIdToServerId
+     * @param refIdToHttpStatusCode
+     * @throws JSONException
+     */
+    protected void updateRecordInLocalStore(SyncManager syncManager, JSONObject record, String soupName, String idFieldName, String parentIdFieldName, Map<String, String> refIdToServerId, Map<String, Integer> refIdToHttpStatusCode) throws JSONException {
+        if (isLocallyDeleted(record)) {
+            if (isLocallyCreated(record) // we didn't go to the sever
+                || RestResponse.isSuccess(refIdToHttpStatusCode.get(record.getString(idFieldName)))) // or we successfully deleted on the server
+            {
+                deleteFromLocalStore(syncManager, soupName, record);
+            }
+            // Otherwise leave record alone
+        }
+        else {
+            // Replace local id by server id
+            updateReferences(record, idFieldName, refIdToServerId);
+            // Replace parent local id by server id (in children)
+            if (parentIdFieldName != null) updateReferences(record, parentIdFieldName, refIdToServerId);
+            // Clean and save
+            cleanAndSaveInLocalStore(syncManager, soupName, record);
+        }
     }
 
     protected RestRequest buildRequestForRecord(String apiVersion,
@@ -199,38 +235,36 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                                                      ParentInfo info,
                                                      String parentId) throws IOException, JSONException {
 
-        assert(parentId == null || info instanceof ChildrenInfo);
-
         String id = record.getString(info.idFieldName);
 
-        if (super.isLocallyDeleted(record) && super.isLocallyCreated(record)) {
-            return null;
-        }
-        else if (super.isLocallyDeleted(record) && !super.isLocallyCreated(record)) {
+        if (super.isLocallyDeleted(record) && !super.isLocallyCreated(record)) {
             return RestRequest.getRequestForDelete(apiVersion,
                             info.sobjectType,
                             id);
         }
         else if (super.isLocallyCreated(record)) {
             Map<String, Object> fields = buildFieldsMap(record, createFieldlist, info.idFieldName, info.modificationDateFieldName);
-            if (info instanceof ChildrenInfo) {
+            if (info instanceof ChildrenInfo && parentId != null) {
                 fields.put(((ChildrenInfo) info).parentIdFieldName, String.format("@{%s.%s}", parentId, Constants.LID));
             }
             return RestRequest.getRequestForCreate(apiVersion,
                             info.sobjectType,
                             fields);
         }
-        else {
+        else if (super.isLocallyUpdated(record)) {
             Map<String, Object> fields = buildFieldsMap(record, updateFieldlist, info.idFieldName, info.modificationDateFieldName);
             return RestRequest.getRequestForUpdate(apiVersion,
                             info.sobjectType,
                             id,
                             fields);
         }
+        else {
+            return null;
+        }
     }
 
     /**
-     * Return ref id to server id if successful or null otherwise
+     * Return ref id to server id map if successful or null otherwise
      */
     protected Map<String, String> parseIdsFromResponse(RestResponse response) throws JSONException, IOException {
         if (response.isSuccess()) {
@@ -238,7 +272,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
             JSONArray results = response.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
             for (int i=0; i<results.length(); i++) {
                 JSONObject result = results.getJSONObject(i);
-                if (result.getInt("httpStatusCode") == HttpURLConnection.HTTP_CREATED) {
+                if (result.getInt(HTTP_STATUS_CODE) == HttpURLConnection.HTTP_CREATED) {
                     String refId = result.getString(REFERENCE_ID);
                     String serverId = result.getJSONObject(BODY).getString(Constants.LID);
                     refIdtoId.put(refId, serverId);
@@ -252,6 +286,28 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         }
     }
 
+    /**
+     * Return ref id to http status code map if successful or null otherwise
+     */
+    protected Map<String, Integer> parseStatusCodesFromResponse(RestResponse response) throws JSONException, IOException {
+        if (response.isSuccess()) {
+            Map<String, Integer> refIdToStatusCode = new HashMap<>();
+            JSONArray results = response.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
+            for (int i=0; i<results.length(); i++) {
+                JSONObject result = results.getJSONObject(i);
+                String refId = result.getString(REFERENCE_ID);
+                int httpStatusCode = result.getInt(HTTP_STATUS_CODE);
+                refIdToStatusCode.put(refId, httpStatusCode);
+            }
+            return refIdToStatusCode;
+        }
+        else {
+            Log.e(TAG, "parseStatusCodesFromResponse failed:" + response.asString());
+            return null;
+        }
+    }
+
+
     protected void updateReferences(JSONObject record, String fieldWithRefId, Map<String, String> refIdToServerId) throws JSONException {
         String refId = record.getString(fieldWithRefId);
         if (refIdToServerId.containsKey(refId)) {
@@ -263,14 +319,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     public String fetchLastModifiedDate(SyncManager syncManager, JSONObject record) {
         // TBD
         return super.fetchLastModifiedDate(syncManager, record);
-    }
-
-    @Override
-    public void cleanAndSaveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
-        // NB: method is called during sync up so for this target records contain parent and children
-        JSONArray recordTrees = new JSONArray();
-        recordTrees.put(record);
-        ParentChildrenSyncTargetHelper.saveRecordTreesToLocalStore(syncManager, this, parentInfo, childrenInfo, recordTrees);
     }
 
     @Override

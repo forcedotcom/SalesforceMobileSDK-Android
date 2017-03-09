@@ -38,9 +38,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -482,10 +482,10 @@ public class RestRequest {
 	 *
      * @param apiVersion
      * @param allOrNone
-	 * @param refIdToRequests    Sorted map of reference id to refIdToRequests
+	 * @param refIdToRequests    Linked map of reference id to refIdToRequests (will be played in order requests were added)
 	 * @return
 	 */
-	public static RestRequest getCompositeRequest(String apiVersion, boolean allOrNone, SortedMap<String, RestRequest> refIdToRequests) throws JSONException {
+	public static RestRequest getCompositeRequest(String apiVersion, boolean allOrNone, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException {
 		JSONArray requestsArrayJson = new JSONArray();
         for(Map.Entry<String,RestRequest> entry : refIdToRequests.entrySet()) {
             String referenceId = entry.getKey();
