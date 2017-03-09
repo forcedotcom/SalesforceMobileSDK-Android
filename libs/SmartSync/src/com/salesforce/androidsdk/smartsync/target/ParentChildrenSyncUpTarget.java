@@ -44,6 +44,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -172,25 +173,23 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         // Sending request
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
+        Log.i("--response-->", response.asJSONObject().toString(2));
+
         // Updated record
         Map<String, String> refIdToServerId = parseIdsFromResponse(response);
-        if (refIdToServerId == null) {
-            return false;
+        updateReferences(record, getIdFieldName(), refIdToServerId);
+        JSONArray updatedChildren = new JSONArray();
+        for (int i = 0; i < children.length(); i++) {
+            JSONObject childRecord = children.getJSONObject(i);
+            updateReferences(childRecord, childrenInfo.idFieldName, refIdToServerId);
+            updateReferences(childRecord, childrenInfo.parentIdFieldName, refIdToServerId);
+            updatedChildren.put(childRecord);
         }
-        else {
-            updateReferences(record, getIdFieldName(), refIdToServerId);
-            JSONArray updatedChildren = new JSONArray();
-            for (int i=0; i<children.length(); i++) {
-                JSONObject childRecord = children.getJSONObject(i);
-                updateReferences(childRecord, childrenInfo.idFieldName, refIdToServerId);
-                updateReferences(childRecord, childrenInfo.parentIdFieldName, refIdToServerId);
-                updatedChildren.put(childRecord);
-            }
-            record.put(childrenInfo.sobjectTypePlural, updatedChildren);
+        record.put(childrenInfo.sobjectTypePlural, updatedChildren);
 
-            cleanAndSaveInLocalStore(syncManager, soupName, record);
-            return true;
-        }
+        cleanAndSaveInLocalStore(syncManager, soupName, record);
+
+        return true; // fixme what should we do with errors
     }
 
     protected RestRequest buildRequestForRecord(String apiVersion,
@@ -239,9 +238,11 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
             JSONArray results = response.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
             for (int i=0; i<results.length(); i++) {
                 JSONObject result = results.getJSONObject(i);
-                String refId = result.getString(REFERENCE_ID);
-                String serverId = result.getJSONObject(BODY).getString(Constants.LID);
-                refIdtoId.put(refId, serverId);
+                if (result.getInt("httpStatusCode") == HttpURLConnection.HTTP_CREATED) {
+                    String refId = result.getString(REFERENCE_ID);
+                    String serverId = result.getJSONObject(BODY).getString(Constants.LID);
+                    refIdtoId.put(refId, serverId);
+                }
             }
             return refIdtoId;
         }
@@ -252,7 +253,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     }
 
     protected void updateReferences(JSONObject record, String fieldWithRefId, Map<String, String> refIdToServerId) throws JSONException {
-        record.put(fieldWithRefId, refIdToServerId.get(record.getString(fieldWithRefId)));
+        String refId = record.getString(fieldWithRefId);
+        if (refIdToServerId.containsKey(refId)) {
+            record.put(fieldWithRefId, refIdToServerId.get(refId));
+        }
     }
 
     @Override
