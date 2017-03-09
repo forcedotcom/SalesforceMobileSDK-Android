@@ -796,9 +796,13 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         String accountIdDeleted = accountIds[0]; // account that will be deleted along with some of the children
         String[] idsLocallyDeleted = {accountIdDeleted};
         deleteRecordsLocally(ACCOUNTS_SOUP, idsLocallyDeleted);
-        // TODO delete some children
+        String[] childrenContactIds = accountIdContactIdToFields.get(accountIdDeleted).keySet().toArray(new String[0]);
+        String[] contactIdsLocallyDeleted = new String[] { childrenContactIds[0], childrenContactIds[2]};
+        deleteRecordsLocally(CONTACTS_SOUP, contactIdsLocallyDeleted);
         String otherAccountId = accountIds[1]; // account that will not be deleted but will have deleted children
-        // TODO delete some children
+        String[] otherChildrenContactIds = accountIdContactIdToFields.get(otherAccountId).keySet().toArray(new String[0]);
+        String[] otherContactIdsLocallyDeleted = new String[] { otherChildrenContactIds[0], otherChildrenContactIds[2]};
+        deleteRecordsLocally(CONTACTS_SOUP, otherContactIdsLocallyDeleted);
 
         // Sync up
         ParentChildrenSyncUpTarget syncUpTarget = getAccountContactsSyncUpTarget(RelationshipType.LOOKUP);
@@ -806,11 +810,13 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // Check db
         checkDbDeleted(ACCOUNTS_SOUP, idsLocallyDeleted, Constants.ID);
-        // TODO check contact soup also
+        checkDbDeleted(CONTACTS_SOUP, contactIdsLocallyDeleted, Constants.ID);
+        checkDbDeleted(CONTACTS_SOUP, otherContactIdsLocallyDeleted, Constants.ID);
 
         // Check server
         checkServerDeleted(idsLocallyDeleted, Constants.ACCOUNT);
-        // TODO check contacts also
+        checkServerDeleted(contactIdsLocallyDeleted, Constants.CONTACT);
+        checkServerDeleted(otherContactIdsLocallyDeleted, Constants.CONTACT);
     }
 
 

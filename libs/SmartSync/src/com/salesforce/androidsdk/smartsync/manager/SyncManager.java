@@ -415,14 +415,10 @@ public class SyncManager {
             action = Action.delete;
         else if (locallyCreated)
             action = Action.create;
-        else if (locallyUpdated)
+        // This method is called with records considered dirty by the target
+        // If it's not a create or delete then we will do an update
+        else
             action = Action.update;
-
-        if (action == null) {
-
-            // Nothing to do for this record
-            return;
-        }
 
         /*
          * Checks if we are attempting to update a record that has been updated
