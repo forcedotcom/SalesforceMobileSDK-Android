@@ -34,6 +34,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -42,6 +43,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,33 +128,34 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
-     * Save locally created record back to server
+     * Save locally created record back to server and update local store afterwards
      * @param syncManager
      * @param record
      * @param fieldlist fields to sync up (this.createFieldlist will be used instead if provided)
-     * @return updated record (with server id) or null if creation failed
+     * @param soupName
+     * @param mergeMode
+     * @return true if successful
      * @throws JSONException
      * @throws IOException
      */
-    public JSONObject createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
+    public boolean createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
         fieldlist = this.createFieldlist != null ? this.createFieldlist : fieldlist;
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
 
         // Get values
-        Map<String, Object> fields = buildFieldsMap(record, fieldlist);
+        Map<String, Object> fields = buildFieldsMap(record, fieldlist, getIdFieldName(), getModificationDateFieldName());
 
         // Create on server
         String serverId = createOnServer(syncManager, objectType, fields);
 
-        // Updated record
-        if (serverId == null) {
-            return null;
+        // Update local store
+        if (serverId != null) {
+            record.put(getIdFieldName(), serverId);
+            cleanAndSaveInLocalStore(syncManager, soupName, record);
+            return true;
         }
         else {
-            JSONObject updatedRecord = new JSONObject(record.toString());
-            cleanRecord(updatedRecord);
-            updatedRecord.put(getIdFieldName(), serverId);
-            return updatedRecord;
+            return false;
         }
     }
 
@@ -160,12 +163,14 @@ public class SyncUpTarget extends SyncTarget {
      * Build map with the values for the fields in fieldlist from record
      * @param record
      * @param fieldlist
+     * @param idFieldName
+     * @param modificationDateFieldName
      * @return
      */
-    protected Map<String, Object> buildFieldsMap(JSONObject record, List<String> fieldlist) {
+    protected Map<String, Object> buildFieldsMap(JSONObject record, List<String> fieldlist, String idFieldName, String modificationDateFieldName) {
         Map<String,Object> fields = new HashMap<>();
         for (String fieldName : fieldlist) {
-            if (!fieldName.equals(getIdFieldName()) && !fieldName.equals(getModificationDateFieldName())) {
+            if (!fieldName.equals(idFieldName) && !fieldName.equals(modificationDateFieldName)) {
                 fields.put(fieldName, SmartStore.project(record, fieldName));
             }
         }
@@ -196,18 +201,30 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
-     * Delete locally deleted record from server
+     * Delete locally deleted record from server and then from local store
      * @param syncManager
      * @param record
-     * @return server response status code
+     * @param soupName
+     * @param mergeMode
+     * @return true if successful
      * @throws JSONException
      * @throws IOException
      */
-    public int deleteOnServer(SyncManager syncManager, JSONObject record) throws JSONException, IOException {
+    public boolean deleteOnServer(SyncManager syncManager, JSONObject record, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(getIdFieldName());
 
-        return deleteOnServer(syncManager, objectType, objectId);
+        int statusCode = (isLocallyCreated(record)
+                ? HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
+                : deleteOnServer(syncManager, objectType, objectId));
+
+        if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
+            deleteFromLocalStore(syncManager, soupName, record);
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
     /**
@@ -227,28 +244,46 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
-     * Save locally updated record back to server
+     * Save locally updated record back to server and update local store
      * @param syncManager
      * @param record
      * @param fieldlist fields to sync up (this.updateFieldlist will be used instead if provided)
+     * @param soupName
+     * @param mergeMode to be used to handle case where record was remotely deleted
      * @return true if successful
      * @throws JSONException
      * @throws IOException
      */
-    public int updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
-        fieldlist = this.updateFieldlist != null ? this.updateFieldlist : fieldlist;
+    public boolean updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(getIdFieldName());
 
         // Get values
         Map<String,Object> fields = new HashMap<>();
-        for (String fieldName : fieldlist) {
+        for (String fieldName : updateFieldlist != null ? updateFieldlist : fieldlist) {
             if (!fieldName.equals(getIdFieldName()) && !fieldName.equals(MODIFICATION_DATE_FIELD_NAME)) {
                 fields.put(fieldName, SmartStore.project(record, fieldName));
             }
         }
 
-        return updateOnServer(syncManager, objectType, objectId, fields);
+        int statusCode = updateOnServer(syncManager, objectType, objectId, fields);
+
+        if (RestResponse.isSuccess(statusCode)) {
+            cleanAndSaveInLocalStore(syncManager, soupName, record);
+            return true;
+        }
+        // Handling remotely deleted records
+        else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
+            if (mergeMode == SyncState.MergeMode.OVERWRITE) {
+                return createOnServer(syncManager, record, createFieldlist != null ? createFieldlist : fieldlist, soupName, mergeMode);
+            } else {
+                // Leave local record alone
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
     }
 
     /**

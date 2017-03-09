@@ -36,6 +36,7 @@ import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
+import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -47,6 +48,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 /**
  * Target for sync that uploads parent with children records
@@ -56,9 +59,9 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
 
     public static final String CHILDREN_CREATE_FIELDLIST = "childrenCreateFieldlist";
     public static final String CHILDREN_UPDATE_FIELDLIST = "childrenUpdateFieldlist";
-    public static final String RESULTS = "results";
     public static final String REFERENCE_ID = "referenceId";
-    public static final String REF_1 = "ref1";
+    public static final String COMPOSITE_RESPONSE = "compositeResponse";
+    public static final String BODY = "body";
 
     private ParentInfo parentInfo;
     private ChildrenInfo childrenInfo;
@@ -113,7 +116,36 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public JSONObject createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
+    public boolean createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
+        // updateOnServer handle all cases
+        return updateOnServer(syncManager, record, fieldlist, soupName, mergeMode);
+    }
+
+    @Override
+    public boolean deleteOnServer(SyncManager syncManager, JSONObject record, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
+        // updateOnServer handle all cases
+        // the field list does not matter because the parent record is getting deleted
+        return updateOnServer(syncManager, record, new ArrayList<String>(), soupName, mergeMode);
+    }
+
+    @Override
+    public boolean updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
+        // FIXME
+        // Not handling locally deleted or remotely deleted record
+        // Not using mergeMode at all yet
+
+        // Preparing requests for parent
+        SortedMap<String, RestRequest> refIdToRequests = new TreeMap<>();
+        String parentId = record.getString(getIdFieldName());
+        RestRequest parentRequest = buildRequestForRecord(syncManager.apiVersion,
+                record,
+                createFieldlist == null ? fieldlist : createFieldlist,
+                updateFieldlist == null ? fieldlist : updateFieldlist,
+                parentInfo,
+                null);
+
+        refIdToRequests.put(parentId, parentRequest);
+
         // Getting children
         JSONArray children = ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
                 syncManager.getSmartStore(),
@@ -121,50 +153,81 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                 record,
                 childrenInfo);
 
-        // Preparing SObjectTree's for children
-        List<RestRequest.SObjectTree> childrenTrees = new ArrayList<>();
+        // Preparing requests for children
         for (int i=0; i<children.length(); i++) {
-            JSONObject child = children.getJSONObject(i);
-            Map<String, Object> childFields = buildFieldsMap(child, childrenCreateFieldlist);
-            childrenTrees.add(new RestRequest.SObjectTree(childrenInfo.sobjectType, childrenInfo.sobjectTypePlural, getRefForChild(i), childFields, null));
+            JSONObject childRecord = children.getJSONObject(i);
+            String childId = childRecord.getString(childrenInfo.idFieldName);
+            RestRequest childRequest = buildRequestForRecord(syncManager.apiVersion,
+                    childRecord,
+                    childrenCreateFieldlist,
+                    childrenUpdateFieldlist,
+                    childrenInfo,
+                    parentId);
+            refIdToRequests.put(childId, childRequest);
         }
 
-        // Preparing SObjectTree for parent
-        fieldlist = createFieldlist != null ? createFieldlist : fieldlist;
-        Map<String, Object> parentFields = buildFieldsMap(record, fieldlist);
-        RestRequest.SObjectTree parentTree = new RestRequest.SObjectTree(parentInfo.sobjectType, null, REF_1, parentFields, childrenTrees);
-
-        List<RestRequest.SObjectTree> parentTrees = new ArrayList<>();
-        parentTrees.add(parentTree);
-
-        // Building request
-        RestRequest request = RestRequest.getRequestForSObjectTree(syncManager.apiVersion, parentInfo.sobjectType, parentTrees);
+        // Building composite request
+        RestRequest request = RestRequest.getCompositeRequest(syncManager.apiVersion, true, refIdToRequests);
 
         // Sending request
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
         // Updated record
-        Map<String, String> refIdToId = parseIdsFromResponse(response);
-        if (refIdToId == null) {
-            return null;
+        Map<String, String> refIdToServerId = parseIdsFromResponse(response);
+        if (refIdToServerId == null) {
+            return false;
         }
         else {
-            JSONObject updatedRecord = new JSONObject(record.toString());
-            updatedRecord.put(getIdFieldName(), refIdToId.get(REF_1));
+            updateReferences(record, getIdFieldName(), refIdToServerId);
             JSONArray updatedChildren = new JSONArray();
             for (int i=0; i<children.length(); i++) {
-                JSONObject updatedChild = children.getJSONObject(i);
-                updatedChild.put(childrenInfo.idFieldName, refIdToId.get(getRefForChild(i)));
-                updatedChildren.put(updatedChild);
+                JSONObject childRecord = children.getJSONObject(i);
+                updateReferences(childRecord, childrenInfo.idFieldName, refIdToServerId);
+                updateReferences(childRecord, childrenInfo.parentIdFieldName, refIdToServerId);
+                updatedChildren.put(childRecord);
             }
-            updatedRecord.put(childrenInfo.sobjectTypePlural, updatedChildren);
+            record.put(childrenInfo.sobjectTypePlural, updatedChildren);
 
-            return updatedRecord;
+            cleanAndSaveInLocalStore(syncManager, soupName, record);
+            return true;
         }
     }
 
-    protected String getRefForChild(int childIndex) {
-        return  "ref" + (childIndex+2); // first child should be ref2, parent if ref1
+    protected RestRequest buildRequestForRecord(String apiVersion,
+                                                     JSONObject record,
+                                                     List<String> createFieldlist,
+                                                     List<String> updateFieldlist,
+                                                     ParentInfo info,
+                                                     String parentId) throws IOException, JSONException {
+
+        assert(parentId == null || info instanceof ChildrenInfo);
+
+        String id = record.getString(info.idFieldName);
+
+        if (super.isLocallyDeleted(record) && super.isLocallyCreated(record)) {
+            return null;
+        }
+        else if (super.isLocallyDeleted(record) && !super.isLocallyCreated(record)) {
+            return RestRequest.getRequestForDelete(apiVersion,
+                            info.sobjectType,
+                            id);
+        }
+        else if (super.isLocallyCreated(record)) {
+            Map<String, Object> fields = buildFieldsMap(record, createFieldlist, info.idFieldName, info.modificationDateFieldName);
+            if (info instanceof ChildrenInfo) {
+                fields.put(((ChildrenInfo) info).parentIdFieldName, String.format("@{%s.%s}", parentId, Constants.LID));
+            }
+            return RestRequest.getRequestForCreate(apiVersion,
+                            info.sobjectType,
+                            fields);
+        }
+        else {
+            Map<String, Object> fields = buildFieldsMap(record, updateFieldlist, info.idFieldName, info.modificationDateFieldName);
+            return RestRequest.getRequestForUpdate(apiVersion,
+                            info.sobjectType,
+                            id,
+                            fields);
+        }
     }
 
     /**
@@ -173,31 +236,23 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     protected Map<String, String> parseIdsFromResponse(RestResponse response) throws JSONException, IOException {
         if (response.isSuccess()) {
             Map<String, String> refIdtoId = new HashMap<>();
-            JSONArray results = response.asJSONObject().getJSONArray(RESULTS);
+            JSONArray results = response.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
             for (int i=0; i<results.length(); i++) {
                 JSONObject result = results.getJSONObject(i);
                 String refId = result.getString(REFERENCE_ID);
-                String serverId = result.getString(Constants.LID);
+                String serverId = result.getJSONObject(BODY).getString(Constants.LID);
                 refIdtoId.put(refId, serverId);
             }
             return refIdtoId;
         }
         else {
-            Log.e(TAG, "createOnServer failed:" + response.asString());
+            Log.e(TAG, "parseIdsFromResponse failed:" + response.asString());
             return null;
         }
     }
 
-    @Override
-    public int deleteOnServer(SyncManager syncManager, JSONObject record) throws JSONException, IOException {
-        // TBD
-        return super.deleteOnServer(syncManager, record);
-    }
-
-    @Override
-    public int updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist) throws JSONException, IOException {
-        // TBD
-        return super.updateOnServer(syncManager, record, fieldlist);
+    protected void updateReferences(JSONObject record, String fieldWithRefId, Map<String, String> refIdToServerId) throws JSONException {
+        record.put(fieldWithRefId, refIdToServerId.get(record.getString(fieldWithRefId)));
     }
 
     @Override
@@ -207,7 +262,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public void saveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
+    public void cleanAndSaveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
         // NB: method is called during sync up so for this target records contain parent and children
         JSONArray recordTrees = new JSONArray();
         recordTrees.put(record);

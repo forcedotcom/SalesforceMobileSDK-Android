@@ -31,7 +31,6 @@ import com.salesforce.androidsdk.smartsync.target.RefreshSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SoqlSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SoslSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
-import com.salesforce.androidsdk.smartsync.target.SyncTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.target.TestSyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.Constants;
@@ -264,7 +263,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		// Delete a few entries locally
 		String[] allIds = idToFields.keySet().toArray(new String[0]);
 		String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
-		deleteAccountsLocally(idsLocallyDeleted);
+		deleteRecordsLocally(ACCOUNTS_SOUP, idsLocallyDeleted);
 		
 		// Sync up
 		trySyncUp(3, MergeMode.OVERWRITE);
@@ -292,7 +291,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
         String[] allIds = idToFieldsCreated.keySet().toArray(new String[0]);
         String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
-        deleteAccountsLocally(idsLocallyDeleted);
+        deleteRecordsLocally(ACCOUNTS_SOUP, idsLocallyDeleted);
 
         // Sync up
         trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
@@ -311,7 +310,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		// Delete a few entries locally
 		String[] allIds = idToFields.keySet().toArray(new String[0]);
 		String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
-		deleteAccountsLocally(idsLocallyDeleted);
+		deleteRecordsLocally(ACCOUNTS_SOUP, idsLocallyDeleted);
 
 		// Update entries on server
         Thread.sleep(1000); // time stamp precision is in seconds
@@ -400,7 +399,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Delete a few entries locally
         String[] allIds = idToFields.keySet().toArray(new String[0]);
         String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
-        deleteAccountsLocally(idsLocallyDeleted);
+        deleteRecordsLocally(ACCOUNTS_SOUP, idsLocallyDeleted);
 
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
@@ -529,7 +528,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Delete a few entries locally
         String[] allIds = idToFields.keySet().toArray(new String[0]);
         String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
-        deleteAccountsLocally(idsLocallyDeleted);
+        deleteRecordsLocally(ACCOUNTS_SOUP, idsLocallyDeleted);
 
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
@@ -556,7 +555,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Delete a few entries locally
         String[] allIds = idToFields.keySet().toArray(new String[0]);
         String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
-        deleteAccountsLocally(idsLocallyDeleted);
+        deleteRecordsLocally(ACCOUNTS_SOUP, idsLocallyDeleted);
 
         // Sync up
         TestSyncUpTarget.ActionCollector collector = new TestSyncUpTarget.ActionCollector();
@@ -583,7 +582,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         // Delete record locally
         String[] allIds = idToFields.keySet().toArray(new String[0]);
         String[] idsLocallyDeleted = new String[] { allIds[0], allIds[1], allIds[2] };
-        deleteAccountsLocally(idsLocallyDeleted);
+        deleteRecordsLocally(ACCOUNTS_SOUP, idsLocallyDeleted);
 
         // Delete same records on server
         deleteRecordsOnServer(idToFields.keySet(), Constants.ACCOUNT);
@@ -1087,22 +1086,6 @@ public class SyncManagerTest extends SyncManagerTestCase {
         trySyncUp(new SyncUpTarget(), numberChanges, options, false);
     }
 
-
-    /**
-	 * Delete accounts locally
-	 * @param idsLocallyDeleted
-	 * @throws JSONException 
-	 */
-	private void deleteAccountsLocally(String[] idsLocallyDeleted) throws JSONException {
-		for (String id : idsLocallyDeleted) {
-			JSONObject account = smartStore.retrieve(ACCOUNTS_SOUP, smartStore.lookupSoupEntryId(ACCOUNTS_SOUP, Constants.ID, id)).getJSONObject(0);
-			account.put(SyncTarget.LOCAL, true);
-			account.put(SyncTarget.LOCALLY_CREATED, false);
-			account.put(SyncTarget.LOCALLY_DELETED, true);
-			account.put(SyncTarget.LOCALLY_UPDATED, false);
-			smartStore.upsert(ACCOUNTS_SOUP, account);
-		}
-	}
 
     /**
      * Return array of names

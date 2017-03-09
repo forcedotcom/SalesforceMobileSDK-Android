@@ -53,7 +53,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -441,41 +440,16 @@ public class SyncManager {
         	return;
         }
 
-        // Create/update/delete record on server and update smartstore
-        JSONObject updatedRecord;
-        int statusCode;
+        // Create/update/delete record on server and update local store
         switch (action) {
             case create:
-                updatedRecord = target.createOnServer(this, record, options.getFieldlist());
-                if (updatedRecord != null) {
-                    target.saveInLocalStore(this, soupName, updatedRecord);
-                }
+                target.createOnServer(this, record, options.getFieldlist(), soupName, mergeMode);
                 break;
             case delete:
-                statusCode = (locallyCreated
-                        ? HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
-                        : target.deleteOnServer(this, record));
-                if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                    target.deleteFromLocalStore(this, soupName, record);
-                }
+                target.deleteOnServer(this, record, soupName, mergeMode);
                 break;
             case update:
-                statusCode = target.updateOnServer(this, record, options.getFieldlist());
-                if (RestResponse.isSuccess(statusCode)) {
-                    target.saveInLocalStore(this, soupName, record);
-                }
-                // Handling remotely deleted records
-                else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
-                    if (mergeMode == MergeMode.OVERWRITE) {
-                        updatedRecord = target.createOnServer(this, record, options.getFieldlist());
-                        if (updatedRecord != null) {
-                            target.saveInLocalStore(this, soupName, updatedRecord);
-                        }
-                    }
-                    else {
-                        // Leave local record alone
-                    }
-                }
+                target.updateOnServer(this, record, options.getFieldlist(), soupName, mergeMode);
                 break;
         }
     }

@@ -56,7 +56,7 @@ public class ParentInfo {
     }
 
     public ParentInfo(String sobjectType, String soupName) {
-        this(sobjectType, null, null, null);
+        this(sobjectType, soupName, null, null);
     }
 
     public ParentInfo(String sobjectType, String soupName, String idFieldName, String modificationDateFieldName) {

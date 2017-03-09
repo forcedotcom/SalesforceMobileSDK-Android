@@ -729,6 +729,92 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     /**
+     * Create test accounts and contacts
+     * Sync down the test accounts and contacts
+     * Modify an account and some of its children contacts
+     * Modify some children contacts of a unchanged account
+     * Sync up
+     * Check smartstore and server
+     */
+    public void testSyncUpWithLocallyUpdatedRecords() throws Exception {
+        final int numberAccounts = 4;
+        final int numberContactsPerAccount = 3;
+
+        // Creating test accounts and contacts on server
+        createAccountsAndContactsOnServer(numberAccounts, numberContactsPerAccount);
+
+        // Sync down
+        ParentChildrenSyncDownTarget syncDownTarget = getAccountContactsSyncDownTarget(RelationshipType.LOOKUP,
+                String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
+        trySyncDown(SyncState.MergeMode.OVERWRITE, syncDownTarget, ACCOUNTS_SOUP, numberAccounts, 1);
+
+        // Make some local changes
+        String[] accountIds = accountIdToFields.keySet().toArray(new String[0]);
+        String accountIdUpdated = accountIds[0]; // account that will be updated along with some of the children
+        Map<String, Map<String, Object>> accountIdToFieldsUpdated = makeLocalChanges(accountIdToFields, ACCOUNTS_SOUP, new String[] {accountIdUpdated});
+        Map<String, Map<String, Object>> contactIdToFieldsUpdated = makeLocalChanges(accountIdContactIdToFields.get(accountIdUpdated), CONTACTS_SOUP);
+        String otherAccountId = accountIds[1]; // account that will not be updated but will have updated children
+        Map<String, Map<String, Object>> otherContactIdToFieldsUpdated = makeLocalChanges(accountIdContactIdToFields.get(otherAccountId), CONTACTS_SOUP);
+
+        // Sync up
+        ParentChildrenSyncUpTarget syncUpTarget = getAccountContactsSyncUpTarget(RelationshipType.LOOKUP);
+        trySyncUp(syncUpTarget, 2, SyncState.MergeMode.OVERWRITE);
+
+        // Check that db doesn't show entries as locally modified anymore
+        checkDbStateFlags(accountIdToFieldsUpdated.keySet(), false, false, false, ACCOUNTS_SOUP);
+        checkDbStateFlags(contactIdToFieldsUpdated.keySet(), false, false, false, CONTACTS_SOUP);
+        checkDbStateFlags(otherContactIdToFieldsUpdated.keySet(), false, false, false, CONTACTS_SOUP);
+
+        // Check server
+        checkServer(accountIdToFieldsUpdated, Constants.ACCOUNT);
+        checkServer(contactIdToFieldsUpdated, Constants.CONTACT);
+        checkServer(otherContactIdToFieldsUpdated, Constants.CONTACT);
+    }
+
+    /**
+     * Create test accounts and contacts
+     * Sync down the test accounts and contacts
+     * Delete an account locally and some of its children contacts
+     * Delete some children contacts of a unchanged account
+     * Sync up
+     * Check smartstore and server
+     */
+    public void testSyncUpWithLocallyDeletedRecords() throws Exception {
+        final int numberAccounts = 4;
+        final int numberContactsPerAccount = 3;
+
+        // Creating test accounts and contacts on server
+        createAccountsAndContactsOnServer(numberAccounts, numberContactsPerAccount);
+
+        // Sync down
+        ParentChildrenSyncDownTarget syncDownTarget = getAccountContactsSyncDownTarget(RelationshipType.LOOKUP,
+                String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
+        trySyncDown(SyncState.MergeMode.OVERWRITE, syncDownTarget, ACCOUNTS_SOUP, numberAccounts, 1);
+
+        // Make some local changes
+        String[] accountIds = accountIdToFields.keySet().toArray(new String[0]);
+        String accountIdDeleted = accountIds[0]; // account that will be deleted along with some of the children
+        String[] idsLocallyDeleted = {accountIdDeleted};
+        deleteRecordsLocally(ACCOUNTS_SOUP, idsLocallyDeleted);
+        // TODO delete some children
+        String otherAccountId = accountIds[1]; // account that will not be deleted but will have deleted children
+        // TODO delete some children
+
+        // Sync up
+        ParentChildrenSyncUpTarget syncUpTarget = getAccountContactsSyncUpTarget(RelationshipType.LOOKUP);
+        trySyncUp(syncUpTarget, 2, SyncState.MergeMode.OVERWRITE);
+
+        // Check db
+        checkDbDeleted(ACCOUNTS_SOUP, idsLocallyDeleted, Constants.ID);
+        // TODO check contact soup also
+
+        // Check server
+        checkServerDeleted(idsLocallyDeleted, Constants.ACCOUNT);
+        // TODO check contacts also
+    }
+
+
+    /**
      * Helper method for testSyncUpWithLocallyCreatedRecords*
      * @param syncUpMergeMode
      * @throws Exception

@@ -538,4 +538,22 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         }
         return idToFields;
     }
+
+    /**
+	 * Delete accounts locally
+	 *
+     * @param soupName
+     * @param idsLocallyDeleted
+     * @throws JSONException
+	 */
+    protected void deleteRecordsLocally(String soupName, String[] idsLocallyDeleted) throws JSONException {
+		for (String id : idsLocallyDeleted) {
+			JSONObject record = smartStore.retrieve(soupName, smartStore.lookupSoupEntryId(soupName, Constants.ID, id)).getJSONObject(0);
+			record.put(SyncTarget.LOCAL, true);
+			record.put(SyncTarget.LOCALLY_CREATED, false);
+			record.put(SyncTarget.LOCALLY_DELETED, true);
+			record.put(SyncTarget.LOCALLY_UPDATED, false);
+			smartStore.upsert(soupName, record);
+		}
+	}
 }
