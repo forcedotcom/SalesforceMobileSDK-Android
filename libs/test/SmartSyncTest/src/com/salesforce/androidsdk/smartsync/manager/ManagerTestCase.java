@@ -30,6 +30,7 @@ import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
 import android.test.InstrumentationTestCase;
+import android.util.Log;
 
 import com.salesforce.androidsdk.auth.HttpAccess;
 import com.salesforce.androidsdk.auth.OAuth2;
@@ -214,6 +215,9 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
 
         // Go to server
         RestResponse response = restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
+
+        Log.i("--response-->", response.asJSONObject().toString(2));
+
         assertTrue("Creates failed", response.isSuccess() && !response.asJSONObject().getBoolean("hasErrors"));
 
         Map<String, Map <String, Object>> idToFields = new HashMap<>();
@@ -239,8 +243,9 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         for (String id : ids) {
             requests.add(RestRequest.getRequestForDelete(apiVersion, objectType, id));
         }
-        restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
+        RestResponse response = restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
 
+        Log.i("--response-delete-->", response.asJSONObject().toString(2));
     }
 
     /**
