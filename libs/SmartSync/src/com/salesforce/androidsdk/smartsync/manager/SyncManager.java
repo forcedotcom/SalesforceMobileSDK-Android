@@ -408,7 +408,6 @@ public class SyncManager {
         // Do we need to do a create, update or delete
         boolean locallyDeleted = target.isLocallyDeleted(record);
         boolean locallyCreated = target.isLocallyCreated(record);
-        boolean locallyUpdated = target.isLocallyUpdated(record);
 
         Action action = null;
         if (locallyDeleted)

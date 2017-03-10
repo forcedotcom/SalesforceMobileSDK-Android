@@ -191,7 +191,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
-        assertEquals("SELECT DISTINCT {ParentSoup:IdForQuery} FROM {childrenSoup},{ParentSoup} WHERE {childrenSoup:parentLocalId} = {ParentSoup:_soupEntryId} AND ({ParentSoup:__local__} = 'true' OR {childrenSoup:__local__} = 'true')", target.getDirtyRecordIdsSql("ParentSoup", "IdForQuery"));
+        assertEquals("SELECT DISTINCT {ParentSoup:IdForQuery} FROM {ParentSoup} WHERE {ParentSoup:__local__} = 'true' OR EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:parentLocalId} = {ParentSoup:_soupEntryId} AND {childrenSoup:__local__} = 'true')", target.getDirtyRecordIdsSql("ParentSoup", "IdForQuery"));
     }
 
 
@@ -207,7 +207,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 Arrays.asList("ChildName", "School"),
                 RelationshipType.LOOKUP);
 
-        assertEquals("SELECT {ParentSoup:IdForQuery} FROM {ParentSoup} WHERE {ParentSoup:_soupEntryId} NOT IN (SELECT DISTINCT {ParentSoup:_soupEntryId} FROM {childrenSoup},{ParentSoup} WHERE {childrenSoup:parentLocalId} = {ParentSoup:_soupEntryId} AND ({ParentSoup:__local__} = 'true' OR {childrenSoup:__local__} = 'true'))", target.getNonDirtyRecordIdsSql("ParentSoup", "IdForQuery"));
+        assertEquals("SELECT DISTINCT {ParentSoup:IdForQuery} FROM {ParentSoup} WHERE {ParentSoup:__local__} = 'false' AND NOT EXISTS (SELECT {childrenSoup:ChildId} FROM {childrenSoup} WHERE {childrenSoup:parentLocalId} = {ParentSoup:_soupEntryId} AND {childrenSoup:__local__} = 'true')", target.getNonDirtyRecordIdsSql("ParentSoup", "IdForQuery"));
 
     }
 
@@ -932,7 +932,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // If there was no remote change
         if (remoteChangeForAccount == Change.NONE || remoteChangeForContact == Change.NONE) {
-            // Sync up with leave-if-changed should not upload anything
+            // Sync up with leave-if-changed should upload one record tree
             trySyncUp(syncUpTarget, 1, SyncState.MergeMode.LEAVE_IF_CHANGED);
 
             // Check db and server - local changes should have made it over
@@ -943,7 +943,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         }
         // If there was a remote change
         else {
-            // Sync up with leave-if-changed should upload one record tree
+            // Sync up with leave-if-changed should not upload any record tree
             trySyncUp(syncUpTarget, 0, SyncState.MergeMode.LEAVE_IF_CHANGED);
 
             // Check db - local changes should still be there

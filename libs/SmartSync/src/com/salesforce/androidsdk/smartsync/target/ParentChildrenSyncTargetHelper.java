@@ -100,24 +100,18 @@ public class ParentChildrenSyncTargetHelper {
 
     public static String getDirtyRecordIdsSql(String soupName, String idField, ChildrenInfo childrenInfo) {
         return String.format(
-                "SELECT DISTINCT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND ({%s:%s} = 'true' OR {%s:%s} = 'true')",
-                soupName, idField,
-                childrenInfo.soupName, soupName,
-                childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
-                soupName, SmartStore.SOUP_ENTRY_ID,
-                soupName, SyncTarget.LOCAL,
-                childrenInfo.soupName, SyncTarget.LOCAL);
+                "SELECT DISTINCT {%s:%s} FROM {%s} WHERE {%s:%s} = 'true' OR EXISTS (SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} = 'true')",
+                soupName, idField, soupName, soupName, SyncTarget.LOCAL,
+                childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.soupName, childrenInfo.soupName, childrenInfo.parentLocalIdFieldName, soupName, SmartStore.SOUP_ENTRY_ID, childrenInfo.soupName, SyncTarget.LOCAL);
     }
 
     public static String getNonDirtyRecordIdsSql(String soupName, String idField, ChildrenInfo childrenInfo) {
         return String.format(
-                "SELECT {%s:%s} FROM {%s} WHERE {%s:%s} NOT IN (%s)",
-                soupName, idField,
-                soupName,
-                soupName, SmartStore.SOUP_ENTRY_ID,
-                getDirtyRecordIdsSql(soupName, SmartStore.SOUP_ENTRY_ID, childrenInfo)
-        );
+                "SELECT DISTINCT {%s:%s} FROM {%s} WHERE {%s:%s} = 'false' AND NOT EXISTS (SELECT {%s:%s} FROM {%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} = 'true')",
+                soupName, idField, soupName, soupName, SyncTarget.LOCAL,
+                childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.soupName, childrenInfo.soupName, childrenInfo.parentLocalIdFieldName, soupName, SmartStore.SOUP_ENTRY_ID, childrenInfo.soupName, SyncTarget.LOCAL);
     }
+
 
     public static void deleteChildrenFromLocalStore(SmartStore smartStore, String soupName, String[] ids, String idField, ChildrenInfo childrenInfo) {
         QuerySpec querySpec = getQueryForChildren(soupName, SmartStore.SOUP_ENTRY_ID, ids, idField, childrenInfo);
