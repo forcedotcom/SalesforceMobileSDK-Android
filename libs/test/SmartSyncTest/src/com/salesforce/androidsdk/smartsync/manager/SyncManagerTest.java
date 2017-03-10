@@ -26,6 +26,7 @@
  */
 package com.salesforce.androidsdk.smartsync.manager;
 
+
 import com.salesforce.androidsdk.smartsync.target.MruSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.RefreshSyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SoqlSyncDownTarget;
@@ -319,7 +320,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
 		final Map<String, Map<String, Object>> idToFieldsRemotelyUpdated = new HashMap<>();
         for (int i = 0; i < idsLocallyDeleted.length; i++) {
             String id = idsLocallyDeleted[i];
-            Map<String, Object> updatedFields = updatedFields(idToFields.get(id));
+            Map<String, Object> updatedFields = updatedFields(idToFields.get(id), REMOTELY_UPDATED);
             idToFieldsRemotelyUpdated.put(id, updatedFields);
         }
         updateRecordsOnServer(idToFieldsRemotelyUpdated, Constants.ACCOUNT);
