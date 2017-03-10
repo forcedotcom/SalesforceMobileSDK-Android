@@ -666,7 +666,7 @@ public class RestClientTest extends InstrumentationTestCase {
 
 
         // Build batch request
-        RestRequest batchRequest = RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, new RestRequest[]{firstRequest, secondRequest, thirdRequest, fourthRequest});
+        RestRequest batchRequest = RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, Arrays.asList(new RestRequest[]{firstRequest, secondRequest, thirdRequest, fourthRequest}));
 
         // Send batch request
         RestResponse response = restClient.sendSync(batchRequest);

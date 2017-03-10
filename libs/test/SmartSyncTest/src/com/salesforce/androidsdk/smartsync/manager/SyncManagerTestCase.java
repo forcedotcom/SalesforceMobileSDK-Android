@@ -274,21 +274,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
     }
 
     /**
-     * Update records on server
-     * @param idToFieldsUpdated
-     * @param sObjectType
-     * @throws Exception
-     */
-    protected void updateRecordsOnServer(Map<String, Map<String, Object>> idToFieldsUpdated, String sObjectType) throws Exception {
-        for (String id : idToFieldsUpdated.keySet()) {
-            RestRequest request = RestRequest.getRequestForUpdate(ApiVersionStrings.getVersionNumber(targetContext), sObjectType, id, idToFieldsUpdated.get(id));
-            // Response
-            RestResponse response = restClient.sendSync(request);
-            assertTrue("Updated failed", response.isSuccess());
-        }
-    }
-
-    /**
      * Make remote changes
      * @throws JSONException
      * @param idToFields
@@ -557,4 +542,36 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 		}
 	}
 
+    /**
+     * Helper method to update a single record on the server
+     *
+     * @param objectType
+     * @param id
+     * @param fields
+     * @return
+     */
+    protected Map<String, Map<String, Object>> updateRecordOnServer(String objectType, String id, Map<String, Object> fields) throws Exception {
+        Map<String, Map<String, Object>> idToFieldsRemotelyUpdated = new HashMap<>();
+        Map<String, Object> updatedFields = updatedFields(fields);
+        idToFieldsRemotelyUpdated.put(id, updatedFields);
+        updateRecordsOnServer(idToFieldsRemotelyUpdated, objectType);
+        return idToFieldsRemotelyUpdated;
+    }
+
+    /**
+     * Helper method to update a single record locally
+     *
+     * @param soupName
+     * @param id
+     * @param fields
+     * @return
+     * @throws JSONException
+     */
+    protected Map<String, Map<String, Object>> updateRecordLocally(String soupName, String id, Map<String, Object> fields) throws JSONException {
+        Map<String, Map<String, Object>> idToFieldsLocallyUpdated = new HashMap<>();
+        Map<String, Object> updatedFields = updatedFields(fields);
+        idToFieldsLocallyUpdated.put(id, updatedFields);
+        updateRecordsLocally(idToFieldsLocallyUpdated, soupName);
+        return idToFieldsLocallyUpdated;
+    }
 }

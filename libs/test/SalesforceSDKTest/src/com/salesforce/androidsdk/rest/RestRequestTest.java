@@ -313,7 +313,7 @@ public class RestRequestTest extends TestCase {
                 RestRequest.getRequestForDelete(TEST_API_VERSION, TEST_OBJECT_TYPE, TEST_OBJECT_ID)
         };
 
-        RestRequest request = RestRequest.getBatchRequest(TEST_API_VERSION, true, requests);
+        RestRequest request = RestRequest.getBatchRequest(TEST_API_VERSION, true, Arrays.asList(requests));
         assertEquals("Wrong method", RestMethod.POST, request.getMethod());
         assertEquals("Wrong path", "/services/data/" + TEST_API_VERSION + "/composite/batch", request.getPath());
         assertNull("Wrong additional headers", request.getAdditionalHttpHeaders());

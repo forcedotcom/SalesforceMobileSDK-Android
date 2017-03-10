@@ -509,12 +509,12 @@ public class RestRequest {
     /**
      * Batch request
      * See https://developer.salesforce.com/docs/atlas.en-us.api_rest.meta/api_rest/resources_composite_batch.htm
-     *
      * @param apiVersion
      * @param haltOnError
-     *@param requests  @return
+     * @param requests
+     * @return
      */
-    public static RestRequest getBatchRequest(String apiVersion, boolean haltOnError, RestRequest[] requests) throws JSONException {
+    public static RestRequest getBatchRequest(String apiVersion, boolean haltOnError, List<RestRequest> requests) throws JSONException {
         JSONArray requestsArrayJson = new JSONArray();
         for (RestRequest request : requests) {
             // Note: unfortunately batch sub request and composite sub request differ

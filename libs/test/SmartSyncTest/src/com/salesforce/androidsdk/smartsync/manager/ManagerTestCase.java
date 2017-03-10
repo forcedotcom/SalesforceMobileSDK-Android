@@ -49,11 +49,17 @@ import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.util.EventsObservable.EventType;
 import com.salesforce.androidsdk.util.test.EventsListenerQueue;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -76,11 +82,13 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
     protected RestClient restClient;
     protected HttpAccess httpAccess;
     protected SmartStore smartStore;
+    protected String apiVersion;
 
     @Override
     public void setUp() throws Exception {
         super.setUp();
         targetContext = getInstrumentation().getTargetContext();
+        apiVersion = ApiVersionStrings.getVersionNumber(targetContext);
         final Application app = Instrumentation.newApplication(TestForceApp.class,
         		targetContext);
         getInstrumentation().callApplicationOnCreate(app);
@@ -167,7 +175,8 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
      * @throws Exception
      */
     protected Map<String, Map<String, Object>> createRecordsOnServerReturnFields(int count, String objectType, Map<String, Object> additionalFields) throws Exception {
-        Map<String, Map <String, Object>> idToFields = new HashMap<>();
+        List<RestRequest> requests = new ArrayList<>();
+        List<Map <String, Object>> listFields = new ArrayList<>();
         for (int i = 0; i < count; i++) {
 
             // Request.
@@ -199,13 +208,22 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
                     break;
             }
 
-            RestRequest request = RestRequest.getRequestForCreate(ApiVersionStrings.getVersionNumber(targetContext), objectType, fields);
+            requests.add(RestRequest.getRequestForCreate(apiVersion, objectType, fields));
+            listFields.add(fields);
+        }
 
-            // Response.
-            RestResponse response = restClient.sendSync(request);
-            assertNotNull("Response should not be null", response);
-            assertTrue("Response status should be success", response.isSuccess());
-            String id = response.asJSONObject().getString(LID);
+        // Go to server
+        RestResponse response = restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
+        assertTrue("Creates failed", response.isSuccess() && !response.asJSONObject().getBoolean("hasErrors"));
+
+        Map<String, Map <String, Object>> idToFields = new HashMap<>();
+        JSONArray results = response.asJSONObject().getJSONArray("results");
+        for (int i = 0; i< results.length(); i++) {
+            JSONObject result = results.getJSONObject(i);
+            assertEquals("Status should be HTTP_CREATED", HttpURLConnection.HTTP_CREATED, result.getInt("statusCode"));
+            String id = result.getJSONObject("result").getString(LID);
+            Map<String, Object> fields = listFields.get(i);
+
             idToFields.put(id, fields);
         }
         return idToFields;
@@ -217,10 +235,12 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
      * @throws Exception
      */
     protected void deleteRecordsOnServer(Set<String> ids, String objectType) throws Exception {
+        List<RestRequest> requests = new ArrayList<>();
         for (String id : ids) {
-            RestRequest request = RestRequest.getRequestForDelete(ApiVersionStrings.getVersionNumber(targetContext), objectType, id);
-            restClient.sendSync(request);
+            requests.add(RestRequest.getRequestForDelete(apiVersion, objectType, id));
         }
+        restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
+
     }
 
     /**
@@ -229,5 +249,20 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
     @SuppressWarnings("resource")
     protected String createRecordName(String objectType) {
         return String.format(Locale.US, "ManagerTest_%s_%08d", objectType, System.currentTimeMillis());
+    }
+
+    /**
+     * Update records on server
+     * @param idToFieldsUpdated
+     * @param sObjectType
+     * @throws Exception
+     */
+    protected void updateRecordsOnServer(Map<String, Map<String, Object>> idToFieldsUpdated, String sObjectType) throws Exception {
+        List<RestRequest> requests = new ArrayList<>();
+        for (String id : idToFieldsUpdated.keySet()) {
+            requests.add(RestRequest.getRequestForUpdate(apiVersion, sObjectType, id, idToFieldsUpdated.get(id)));
+        }
+        RestResponse response = restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
+        assertTrue("Updates failed", response.isSuccess() && !response.asJSONObject().getBoolean("hasErrors"));
     }
 }
