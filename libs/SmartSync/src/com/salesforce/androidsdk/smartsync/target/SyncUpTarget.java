@@ -324,6 +324,7 @@ public class SyncUpTarget extends SyncTarget {
             return records != null && records.length() > 0 ? records.optJSONObject(0).optString(getModificationDateFieldName()) : null;
         }
         catch (Exception e) {
+            Log.e(TAG, "fetchLastModifiedDate threw an exception: " + e.getMessage());
             // Caller expects null to be returned if the last modified date could not be fetched
             return null;
         }

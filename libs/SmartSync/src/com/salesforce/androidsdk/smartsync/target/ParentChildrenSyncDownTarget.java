@@ -28,7 +28,6 @@ package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
 
-import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.target.ParentChildrenSyncTargetHelper.RelationshipType;
 import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;

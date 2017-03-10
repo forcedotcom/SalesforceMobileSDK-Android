@@ -301,7 +301,9 @@ public class SyncManagerTest extends SyncManagerTestCase {
     }
 
 	/**
-	 * Sync down the test accounts, delete a few, sync up with merge mode LEAVE_IF_CHANGED, check smartstore and server afterwards
+	 * Sync down the test accounts, delete a few locally,
+     * update a few on server,
+     * Sync up with merge mode LEAVE_IF_CHANGED, check smartstore and server afterwards
 	 */
 	public void testSyncUpWithLocallyDeletedRecordsWithoutOverwrite() throws Exception {
 		// First sync down

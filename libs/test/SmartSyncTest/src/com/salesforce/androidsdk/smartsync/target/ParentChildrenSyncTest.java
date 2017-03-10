@@ -791,7 +791,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
         trySyncDown(SyncState.MergeMode.OVERWRITE, syncDownTarget, ACCOUNTS_SOUP, numberAccounts, 1);
 
-        // Make some local changes
+        // Delete some records locally
         String[] accountIds = accountIdToFields.keySet().toArray(new String[0]);
         String accountIdDeleted = accountIds[0]; // account that will be deleted along with some of the children
         String[] idsLocallyDeleted = {accountIdDeleted};
@@ -819,6 +819,83 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         checkServerDeleted(otherContactIdsLocallyDeleted, Constants.CONTACT);
     }
 
+    /**
+     * Create test accounts and contacts
+     * Sync down the test accounts and contacts
+     * Delete an account locally and some of its children contacts
+     * Delete some children contacts of a unchanged account
+     * Update deleted records on server
+     * Sync up with merge mode LEAVE_IF_CHANGED
+     * Check smartstore and server (locally deleted and remotely updated records should have been left alone)
+     * Sync up a second time with OVERRIDE
+     * Check smartstore and server (locally deleted records should be gone)
+     *
+     * Sync down the test accounts, delete a few, sync up with merge mode LEAVE_IF_CHANGED, check smartstore and server afterwards
+     */
+    public void testSyncUpWithLocallyDeletedRecordsWithoutOverwrite() throws Exception {
+        final int numberAccounts = 6;
+        final int numberContactsPerAccount = 3;
+
+        // Creating test accounts and contacts on server
+        createAccountsAndContactsOnServer(numberAccounts, numberContactsPerAccount);
+
+        // Sync down
+        ParentChildrenSyncDownTarget syncDownTarget = getAccountContactsSyncDownTarget(RelationshipType.LOOKUP,
+                String.format("%s IN %s", Constants.ID, makeInClause(accountIdToFields.keySet())));
+        trySyncDown(SyncState.MergeMode.OVERWRITE, syncDownTarget, ACCOUNTS_SOUP, numberAccounts, 1);
+
+
+        String[] accountIds = accountIdToFields.keySet().toArray(new String[0]);
+        ParentChildrenSyncUpTarget syncUpTarget = getAccountContactsSyncUpTarget(RelationshipType.LOOKUP);
+
+        // Delete first account locally
+        // Also update it remotely
+        // Sync up with leave-changed - check db and server
+        // Sync up with overwrite - check db and server
+        String firstAccountId = accountIds[0];
+        deleteRecordsLocally(ACCOUNTS_SOUP, firstAccountId);
+        Thread.sleep(1000); // time stamp precision is in seconds
+        Map<String, Map<String, Object>> remoteUpdates1 = updateRecordOnServer(Constants.ACCOUNT, firstAccountId, accountIdToFields.get(firstAccountId));
+        trySyncUp(syncUpTarget, 1, SyncState.MergeMode.LEAVE_IF_CHANGED);
+        checkDbStateFlags(Arrays.asList(firstAccountId), false, false, true, ACCOUNTS_SOUP);
+        checkServer(remoteUpdates1, Constants.ACCOUNT);
+        trySyncUp(syncUpTarget, 1, SyncState.MergeMode.OVERWRITE);
+        checkDbDeleted(ACCOUNTS_SOUP, new String[] { firstAccountId }, Constants.ID);
+        checkServerDeleted(new String[] { firstAccountId }, Constants.ACCOUNT);
+
+        // Delete contact of second account locally
+        // Also update second account remotely
+        // Sync up with leave-changed - check db and server
+        // Sync up with overwrite - check db and server
+        String secondAccountId = accountIds[1];
+        String contactOfSecondAccountId = accountIdContactIdToFields.get(secondAccountId).keySet().toArray(new String[0])[0];
+        deleteRecordsLocally(CONTACTS_SOUP, contactOfSecondAccountId);
+        Thread.sleep(1000); // time stamp precision is in seconds
+        Map<String, Map<String, Object>> remoteUpdates2 = updateRecordOnServer(Constants.ACCOUNT, secondAccountId, accountIdToFields.get(secondAccountId));
+        trySyncUp(syncUpTarget, 1, SyncState.MergeMode.LEAVE_IF_CHANGED);
+        checkDbStateFlags(Arrays.asList(contactOfSecondAccountId), false, false, true, CONTACTS_SOUP);
+        checkServer(remoteUpdates2, Constants.ACCOUNT);
+        checkServer(accountIdContactIdToFields.get(secondAccountId), Constants.CONTACT);
+        trySyncUp(syncUpTarget, 1, SyncState.MergeMode.OVERWRITE);
+        checkDbDeleted(CONTACTS_SOUP, new String[] { contactOfSecondAccountId }, Constants.ID);
+        checkServerDeleted(new String[] { contactOfSecondAccountId }, Constants.CONTACT);
+        checkServer(remoteUpdates2, Constants.ACCOUNT);
+    }
+
+    /**
+     * Helper method to update a single record on the server
+     * @param objectType
+     * @param id
+     * @param fields
+     * @return
+     */
+    private Map<String, Map<String, Object>> updateRecordOnServer(String objectType, String id, Map<String, Object> fields) throws Exception {
+        Map<String, Map<String, Object>> idToFieldsRemotelyUpdated = new HashMap<>();
+        Map<String, Object> updatedFields = updatedFields(fields);
+        idToFieldsRemotelyUpdated.put(id, updatedFields);
+        updateRecordsOnServer(idToFieldsRemotelyUpdated, objectType);
+        return idToFieldsRemotelyUpdated;
+    }
 
     /**
      * Helper method for testSyncUpWithLocallyCreatedRecords*
