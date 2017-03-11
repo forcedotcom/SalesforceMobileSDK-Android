@@ -27,6 +27,8 @@
 
 package com.salesforce.androidsdk.smartsync.target;
 
+import com.salesforce.androidsdk.rest.RestRequest;
+import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.IndexSpec;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartSqlHelper;
@@ -46,11 +48,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 
@@ -931,20 +935,20 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // Sync up with leave-if-changed
 
         // If there was no remote change
-        if (remoteChangeForAccount == Change.NONE || remoteChangeForContact == Change.NONE) {
-            // Sync up with leave-if-changed should upload one record tree
+        if (remoteChangeForAccount == Change.NONE && remoteChangeForContact == Change.NONE) {
+            // Sync up with leave-if-changed
             trySyncUp(syncUpTarget, 1, SyncState.MergeMode.LEAVE_IF_CHANGED);
 
             // Check db and server - local changes should have made it over
             checkDbAndServerAfterCompletedSyncUp(accountId, contactId, localChangeForAccount, localChangeForContact, localUpdatesAccount, localUpdatesContact);
 
-            // Sync up with overwrite - there should not be anything left to do
+            // Sync up with overwrite - there should be dirty records found
             trySyncUp(syncUpTarget, 0, SyncState.MergeMode.OVERWRITE);
         }
         // If there was a remote change
         else {
-            // Sync up with leave-if-changed should not upload any record tree
-            trySyncUp(syncUpTarget, 0, SyncState.MergeMode.LEAVE_IF_CHANGED);
+            // Sync up with leave-if-changed
+            trySyncUp(syncUpTarget, 1, SyncState.MergeMode.LEAVE_IF_CHANGED);
 
             // Check db - local changes should still be there
             checkDbStateFlags(Arrays.asList(accountId), false, localChangeForAccount == Change.UPDATE, localChangeForAccount == Change.DELETE, ACCOUNTS_SOUP);
@@ -1293,15 +1297,55 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         accountIdToFields = new HashMap<>();
         accountIdContactIdToFields = new HashMap<>();
 
-        // Create accounts and contacts on server
-        accountIdToFields = createRecordsOnServerReturnFields(numberAccounts, Constants.ACCOUNT, null);
+        Map<String, Map<String, Object>> refIdToFields = new HashMap<>();
+        List<RestRequest.SObjectTree> accountTrees = new ArrayList<>();
+        List<Map<String, Object>> listAccountFields = buildFieldsMapForRecords(numberAccounts, Constants.ACCOUNT, null);
+        for (int i = 0; i<listAccountFields.size(); i++) {
+            List<Map<String, Object>> listContactFields = buildFieldsMapForRecords(numberContactsPerAccount, Constants.CONTACT, null);
 
-        if (numberContactsPerAccount > 0) {
-            for (String accountId : accountIdToFields.keySet()) {
-                Map<String, Object> additionalFields = new HashMap<>();
-                additionalFields.put(ACCOUNT_ID, accountId);
-                Map<String, Map<String, Object>> contactIdToFields = createRecordsOnServerReturnFields(numberContactsPerAccount, Constants.CONTACT, additionalFields);
-                accountIdContactIdToFields.put(accountId, contactIdToFields);
+            String refIdAccount = "refAccount_" + i;
+            Map<String, Object> accountFields = listAccountFields.get(i);
+            refIdToFields.put(refIdAccount, accountFields);
+
+            List<RestRequest.SObjectTree> contactTrees = new ArrayList<>();
+            for (int j = 0; j<listContactFields.size(); j++) {
+                String refIdContact = refIdAccount + ":refContact_" + j;
+                Map<String, Object> contactFields = listContactFields.get(j);
+                refIdToFields.put(refIdContact, contactFields);
+                contactTrees.add(new RestRequest.SObjectTree(Constants.CONTACT, Constants.CONTACTS, refIdContact, contactFields, null));
+            }
+            accountTrees.add(new RestRequest.SObjectTree(Constants.ACCOUNT, null, refIdAccount, accountFields, contactTrees));
+        }
+
+        RestRequest request = RestRequest.getRequestForSObjectTree(apiVersion, Constants.ACCOUNT, accountTrees);
+
+        // Send request
+        RestResponse response =  restClient.sendSync(request);
+
+        // Parse response
+        Map<String, String> refIdToId = new HashMap<>();
+        JSONArray results = response.asJSONObject().getJSONArray("results");
+        for (int i=0; i<results.length(); i++) {
+            JSONObject result = results.getJSONObject(i);
+            String refId = result.getString(RestRequest.REFERENCE_ID);
+            String id = result.getString(Constants.LID);
+            refIdToId.put(refId, id);
+        }
+
+        // Populate accountIdToFields and accountIdContactIdToFields
+        for (String refId : refIdToId.keySet()) {
+            Map<String, Object> fields = refIdToFields.get(refId);
+            String[] parts = refId.split(":");
+            String accountId = refIdToId.get(parts[0]);
+            String contactId = parts.length > 1 ? refIdToId.get(refId) : null;
+
+            if (contactId == null) {
+                accountIdToFields.put(accountId, fields);
+            }
+            else {
+                if (!accountIdContactIdToFields.containsKey(accountId))
+                    accountIdContactIdToFields.put(accountId, new HashMap<String, Map<String, Object>>());
+                accountIdContactIdToFields.get(accountId).put(contactId, fields);
             }
         }
     }

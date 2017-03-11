@@ -29,6 +29,7 @@ package com.salesforce.androidsdk.smartsync.manager;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
+import android.support.annotation.NonNull;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 
@@ -176,7 +177,42 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
      * @throws Exception
      */
     protected Map<String, Map<String, Object>> createRecordsOnServerReturnFields(int count, String objectType, Map<String, Object> additionalFields) throws Exception {
+        List<Map<String, Object>> listFields = buildFieldsMapForRecords(count, objectType, additionalFields);
+
+        // Prepare request
         List<RestRequest> requests = new ArrayList<>();
+        for (Map<String, Object> fields : listFields) {
+            requests.add(RestRequest.getRequestForCreate(apiVersion, objectType, fields));
+        }
+        final RestRequest batchRequest = RestRequest.getBatchRequest(apiVersion, false, requests);
+
+        // Go to server
+        RestResponse response = restClient.sendSync(batchRequest);
+
+        assertTrue("Creates failed", response.isSuccess() && !response.asJSONObject().getBoolean("hasErrors"));
+
+        Map<String, Map <String, Object>> idToFields = new HashMap<>();
+        JSONArray results = response.asJSONObject().getJSONArray("results");
+        for (int i = 0; i< results.length(); i++) {
+            JSONObject result = results.getJSONObject(i);
+            assertEquals("Status should be HTTP_CREATED", HttpURLConnection.HTTP_CREATED, result.getInt("statusCode"));
+            String id = result.getJSONObject("result").getString(LID);
+            Map<String, Object> fields = listFields.get(i);
+
+            idToFields.put(id, fields);
+        }
+        return idToFields;
+    }
+
+    /**
+     * Helper method to build field name to field value maps
+     *
+     * @param count
+     * @param objectType
+     * @param additionalFields
+     * @return
+     */
+    protected List<Map<String, Object>> buildFieldsMapForRecords(int count, String objectType, Map<String, Object> additionalFields) {
         List<Map <String, Object>> listFields = new ArrayList<>();
         for (int i = 0; i < count; i++) {
 
@@ -209,28 +245,9 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
                     break;
             }
 
-            requests.add(RestRequest.getRequestForCreate(apiVersion, objectType, fields));
             listFields.add(fields);
         }
-
-        // Go to server
-        RestResponse response = restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
-
-        Log.i("--response-->", response.asJSONObject().toString(2));
-
-        assertTrue("Creates failed", response.isSuccess() && !response.asJSONObject().getBoolean("hasErrors"));
-
-        Map<String, Map <String, Object>> idToFields = new HashMap<>();
-        JSONArray results = response.asJSONObject().getJSONArray("results");
-        for (int i = 0; i< results.length(); i++) {
-            JSONObject result = results.getJSONObject(i);
-            assertEquals("Status should be HTTP_CREATED", HttpURLConnection.HTTP_CREATED, result.getInt("statusCode"));
-            String id = result.getJSONObject("result").getString(LID);
-            Map<String, Object> fields = listFields.get(i);
-
-            idToFields.put(id, fields);
-        }
-        return idToFields;
+        return listFields;
     }
 
     /**

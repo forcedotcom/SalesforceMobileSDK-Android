@@ -182,12 +182,15 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         Map<String, Integer> refIdToHttpStatusCode = parseStatusCodesFromResponse(response);
 
         // Update parent in local store
+        boolean isParentNew = isLocallyCreated(record);
         updateRecordInLocalStore(syncManager, record, soupName, getIdFieldName(), null, refIdToServerId, refIdToHttpStatusCode);
 
         // Update children local store
         for (int i = 0; i < children.length(); i++) {
             JSONObject childRecord = children.getJSONObject(i);
-            updateRecordInLocalStore(syncManager, childRecord, childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.parentIdFieldName, refIdToServerId, refIdToHttpStatusCode);
+            if (isDirty(childRecord) || isParentNew) {
+                updateRecordInLocalStore(syncManager, childRecord, childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.parentIdFieldName, refIdToServerId, refIdToHttpStatusCode);
+            }
         }
 
         // Did all the requests go through

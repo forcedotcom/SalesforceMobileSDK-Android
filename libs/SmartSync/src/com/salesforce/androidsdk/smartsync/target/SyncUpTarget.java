@@ -341,7 +341,7 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
-     * Given a "dirty" record, return true if it was locally created
+     * Given a record, return true if it was locally created
      * @param record
      * @return
      * @throws JSONException
@@ -351,7 +351,7 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
-     * Given a "dirty" record, return true if it was locally updated
+     * Given a record, return true if it was locally updated
      * @param record
      * @return
      * @throws JSONException
@@ -361,13 +361,23 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
-     * Given a "dirty" record, return true if it was locally deleted
+     * Given a record, return true if it was locally deleted
      * @param record
      * @return
      * @throws JSONException
      */
     public boolean isLocallyDeleted(JSONObject record) throws JSONException {
         return record.getBoolean(LOCALLY_DELETED);
+    }
+
+    /**
+     * Given a record, return true if it was locally created/updated or deleted
+     * @param record
+     * @return
+     * @throws JSONException
+     */
+    public boolean isDirty(JSONObject record) throws JSONException {
+        return record.getBoolean(LOCAL);
     }
 
     /**
