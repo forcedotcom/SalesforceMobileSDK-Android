@@ -217,8 +217,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
      */
     protected void updateRecordInLocalStore(SyncManager syncManager, JSONObject record, String soupName, String idFieldName, String parentIdFieldName, Map<String, String> refIdToServerId, Map<String, Integer> refIdToHttpStatusCode) throws JSONException {
         if (isLocallyDeleted(record)) {
+            final Integer statusCode = refIdToHttpStatusCode.get(record.getString(idFieldName));
             if (isLocallyCreated(record) // we didn't go to the sever
-                    || RestResponse.isSuccess(refIdToHttpStatusCode.get(record.getString(idFieldName)))) // or we successfully deleted on the server
+                    || RestResponse.isSuccess(statusCode) // or we successfully deleted on the server
+                    || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
             {
                 deleteFromLocalStore(syncManager, soupName, record);
             }
