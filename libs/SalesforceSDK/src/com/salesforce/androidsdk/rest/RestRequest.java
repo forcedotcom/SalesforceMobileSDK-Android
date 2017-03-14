@@ -43,6 +43,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
 import okhttp3.MediaType;
 import okhttp3.RequestBody;
@@ -104,6 +105,9 @@ public class RestRequest {
      * HTTP date format
      */
     public static final DateFormat HTTP_DATE_FORMAT = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
+    static {
+        HTTP_DATE_FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
+    }
 
     /**
 	 * Enumeration for all HTTP methods.

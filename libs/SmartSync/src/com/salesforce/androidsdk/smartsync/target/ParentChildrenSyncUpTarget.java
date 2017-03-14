@@ -131,9 +131,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
 
     @Override
     public boolean updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
-        boolean locallyCreated = isLocallyCreated(record);
-        boolean locallyDeleted = isLocallyDeleted(record);
-        boolean locallyUpdated = isLocallyUpdated(record) && !locallyCreated && !locallyDeleted; // true update
+        boolean isCreate = isLocallyCreated(record);
+        boolean isDelete = isLocallyDeleted(record);
+
+        Log.i("--updateOnServer-->", record.toString(2));
 
         // Preparing requests for parent
         LinkedHashMap<String, RestRequest> refIdToRequests = new LinkedHashMap<>();
@@ -147,7 +148,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                 mergeMode);
 
         // Parent request goes first unless it's a delete
-        if (parentRequest != null && !locallyDeleted)
+        if (parentRequest != null && !isDelete)
             refIdToRequests.put(parentId, parentRequest);
 
         // Getting children
@@ -166,17 +167,16 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                     childrenCreateFieldlist,
                     childrenUpdateFieldlist,
                     childrenInfo,
-                    locallyDeleted ? null : parentId, mergeMode);
+                    isDelete ? null : parentId, mergeMode);
             if (childRequest != null) refIdToRequests.put(childId, childRequest);
         }
 
-
         // Parent request goes last when it's a delete
-        if (parentRequest != null && locallyDeleted)
+        if (parentRequest != null && isDelete)
             refIdToRequests.put(parentId, parentRequest);
 
         // Add SOQL query to get updated modification date in the case of an update
-        if (locallyUpdated)
+        if (!isCreate && !isDelete)
             refIdToRequests.put(REF_TIME_STAMPS, getRequestForTimestamps(syncManager.apiVersion, parentId));
 
         // Sending composite request
@@ -185,16 +185,15 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         // Build refId to server id / status code / time stamp maps
         Map<String, String> refIdToServerId = parseIdsFromResponse(refIdToResponses);
         Map<String, Integer> refIdToHttpStatusCode = parseStatusCodesFromResponse(refIdToResponses);
-        Map<String, String> refIdToTimestamps = locallyUpdated ? parseTimestampsFromResponse(refIdToResponses) : null;
+        Map<String, String> refIdToTimestamps = parseTimestampsFromResponse(refIdToResponses);
 
         // Update parent in local store
-        boolean isParentNew = isLocallyCreated(record);
         updateRecordInLocalStore(syncManager, record, true, refIdToHttpStatusCode, refIdToTimestamps, refIdToServerId);
 
         // Update children local store
         for (int i = 0; i < children.length(); i++) {
             JSONObject childRecord = children.getJSONObject(i);
-            if (isDirty(childRecord) || isParentNew) {
+            if (isDirty(childRecord) || isCreate) {
                 updateRecordInLocalStore(syncManager, childRecord, false, refIdToHttpStatusCode, refIdToTimestamps, refIdToServerId);
             }
         }
@@ -318,18 +317,23 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
      * Return ref id to time stamp
      */
     private Map<String, String> parseTimestampsFromResponse(Map<String, JSONObject> refIdToResponses) throws IOException, JSONException {
-        Map<String, String> refIdToTimestamps = new HashMap<>();
-        JSONObject response = refIdToResponses.get(REF_TIME_STAMPS).getJSONObject(BODY).getJSONArray(Constants.RECORDS).getJSONObject(0);
+        if (refIdToResponses.containsKey(REF_TIME_STAMPS) && RestResponse.isSuccess(refIdToResponses.get(REF_TIME_STAMPS).getInt(HTTP_STATUS_CODE))) {
+            Map<String, String> refIdToTimestamps = new HashMap<>();
+            JSONObject response = refIdToResponses.get(REF_TIME_STAMPS).getJSONObject(BODY).getJSONArray(Constants.RECORDS).getJSONObject(0);
 
-        refIdToTimestamps.put(response.getString(getIdFieldName()), response.getString(getModificationDateFieldName()));
-        if (response.has(childrenInfo.sobjectTypePlural) && !response.isNull(childrenInfo.sobjectTypePlural)) {
-            JSONArray childrenRows = response.getJSONObject(childrenInfo.sobjectTypePlural).getJSONArray(Constants.RECORDS);
-            for (int i = 0; i < childrenRows.length(); i++) {
-                final JSONObject childRow = childrenRows.getJSONObject(i);
-                refIdToTimestamps.put(childRow.getString(childrenInfo.idFieldName), childRow.getString(childrenInfo.modificationDateFieldName));
+            refIdToTimestamps.put(response.getString(getIdFieldName()), response.getString(getModificationDateFieldName()));
+            if (response.has(childrenInfo.sobjectTypePlural) && !response.isNull(childrenInfo.sobjectTypePlural)) {
+                JSONArray childrenRows = response.getJSONObject(childrenInfo.sobjectTypePlural).getJSONArray(Constants.RECORDS);
+                for (int i = 0; i < childrenRows.length(); i++) {
+                    final JSONObject childRow = childrenRows.getJSONObject(i);
+                    refIdToTimestamps.put(childRow.getString(childrenInfo.idFieldName), childRow.getString(childrenInfo.modificationDateFieldName));
+                }
             }
+            return refIdToTimestamps;
         }
-        return refIdToTimestamps;
+        else {
+            return null;
+        }
     }
 
     /**

@@ -291,7 +291,7 @@ public class SyncUpTarget extends SyncTarget {
         String updatedModificationDate = result.second;
 
         if (RestResponse.isSuccess(statusCode)) {
-            record.put(getModificationDateFieldName(), updatedModificationDate);
+            if (updatedModificationDate != null) record.put(getModificationDateFieldName(), updatedModificationDate);
             cleanAndSaveInLocalStore(syncManager, soupName, record);
             return true;
         }
@@ -356,10 +356,15 @@ public class SyncUpTarget extends SyncTarget {
             refIdToRequests.put("refRetrieve", RestRequest.getRequestForRetrieve(syncManager.apiVersion, objectType, objectId, Arrays.asList(new String[]{getIdFieldName(), getModificationDateFieldName()})));
         }
         Map<String, JSONObject> refIdToResponses = sendCompositeRequest(syncManager, refIdToRequests);
-        return new Pair<>(
-                refIdToResponses.get(REF_UPDATE).getInt(HTTP_STATUS_CODE),
-                refIdToResponses.get(REF_RETRIEVE).getJSONObject(BODY).getString(getModificationDateFieldName())
-        );
+
+        int statusCode = refIdToResponses.get(REF_UPDATE).getInt(HTTP_STATUS_CODE);
+        String updatedModificationDate = null;
+
+        if (refIdToResponses.containsKey(REF_RETRIEVE) && RestResponse.isSuccess(refIdToResponses.get(REF_RETRIEVE).getInt(HTTP_STATUS_CODE))) {
+            updatedModificationDate = refIdToResponses.get(REF_RETRIEVE).getJSONObject(BODY).getString(getModificationDateFieldName());
+        }
+
+        return new Pair<>(statusCode, updatedModificationDate);
     }
 
     protected Map<String, JSONObject> sendCompositeRequest(SyncManager syncManager, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException, IOException {
