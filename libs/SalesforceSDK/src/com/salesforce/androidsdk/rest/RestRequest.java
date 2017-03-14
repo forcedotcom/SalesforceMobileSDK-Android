@@ -39,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -100,6 +101,7 @@ public class RestRequest {
     public static final String REFERENCE_ID = "referenceId";
     public static final String TYPE = "type";
     public static final String ATTRIBUTES = "attributes";
+    public static final String IF_UNMODIFIED_SINCE = "If-Unmodified-Since";
 
     /**
      * HTTP date format
@@ -404,11 +406,12 @@ public class RestRequest {
      * @param objectType
      * @param objectId
      * @param fields
-     * @param additionalHttpHeaders
+     * @param ifUnmodifiedSinceDate
      * @return
      * @throws IOException
      */
-    public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields, Map<String, String> additionalHttpHeaders) throws IOException  {
+    public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields, Date ifUnmodifiedSinceDate) throws IOException  {
+        Map<String, String> additionalHttpHeaders = prepareConditionalHeader(IF_UNMODIFIED_SINCE, ifUnmodifiedSinceDate);
         return new RestRequest(RestMethod.PATCH, RestAction.UPDATE.getPath(apiVersion, objectType, objectId), fields == null ? null : new JSONObject(fields), additionalHttpHeaders);
     }
 	
@@ -448,14 +451,15 @@ public class RestRequest {
      * @param apiVersion
      * @param objectType
      * @param objectId
-     * @param additionalHttpHeaders
+     * @param ifUnmodifiedSinceDate
      * @return
      */
-    public static RestRequest getRequestForDelete(String apiVersion, String objectType, String objectId, Map<String, String> additionalHttpHeaders)  {
+    public static RestRequest getRequestForDelete(String apiVersion, String objectType, String objectId, Date ifUnmodifiedSinceDate)  {
+        Map<String, String> additionalHttpHeaders = prepareConditionalHeader(IF_UNMODIFIED_SINCE, ifUnmodifiedSinceDate);
         return new RestRequest(RestMethod.DELETE, RestAction.DELETE.getPath(apiVersion, objectType, objectId), (JSONObject) null, additionalHttpHeaders);
     }
 
-	/**
+    /**
 	 * Request to execute the specified SOSL search. 
 	 * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_search.htm
 	 * 
@@ -594,6 +598,22 @@ public class RestRequest {
     }
 
     /**
+     * Helper method
+     *
+     * @param headerName
+     * @param date
+     * @return
+     */
+    private static Map<String, String> prepareConditionalHeader(String headerName, Date date) {
+        Map<String, String> additionalHttpHeaders = new HashMap<>();
+        if (date != null) {
+            additionalHttpHeaders.put(headerName, HTTP_DATE_FORMAT.format(date));
+        }
+        return additionalHttpHeaders;
+    }
+
+
+    /**
      * Helper class for getRequestForSObjectTree
      */
     public static class SObjectTree {
@@ -661,4 +681,5 @@ public class RestRequest {
             return jsonForRecord;
         }
     }
+
 }

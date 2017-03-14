@@ -48,6 +48,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -274,13 +275,15 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
 
         String id = record.getString(info.idFieldName);
 
-        final Map<String, String> additionalHttpHeaders = getAdditionalHttpHeaders(record, mergeMode);
+        final Date ifUnmodifiedSinceDate = mergeMode == SyncState.MergeMode.LEAVE_IF_CHANGED
+                ? getModificationDate(record, info.modificationDateFieldName)
+                : null;
 
         if (super.isLocallyDeleted(record) && !super.isLocallyCreated(record)) {
             return RestRequest.getRequestForDelete(apiVersion,
                     info.sobjectType,
                     id,
-                    additionalHttpHeaders);
+                    ifUnmodifiedSinceDate);
         } else if (super.isLocallyCreated(record)) {
             Map<String, Object> fields = buildFieldsMap(record, createFieldlist, info.idFieldName, info.modificationDateFieldName);
             if (info instanceof ChildrenInfo && parentId != null) {
@@ -295,7 +298,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                     info.sobjectType,
                     id,
                     fields,
-                    additionalHttpHeaders);
+                    ifUnmodifiedSinceDate);
         } else {
             return null;
         }

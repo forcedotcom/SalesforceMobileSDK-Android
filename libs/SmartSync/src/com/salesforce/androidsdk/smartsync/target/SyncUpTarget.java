@@ -46,6 +46,7 @@ import java.lang.reflect.Constructor;
 import java.net.HttpURLConnection;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -63,7 +64,6 @@ public class SyncUpTarget extends SyncTarget {
     public static final String TAG = "SyncUpTarget";
     public static final String CREATE_FIELDLIST = "createFieldlist";
     public static final String UPDATE_FIELDLIST = "updateFieldlist";
-    public static final String IF_UNMODIFIED_SINCE = "If-Unmodified-Since";
     public static final String COMPOSITE_RESPONSE = "compositeResponse";
     public static final String REFERENCE_ID = "referenceId";
     public static final String BODY = "body";
@@ -225,13 +225,15 @@ public class SyncUpTarget extends SyncTarget {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(getIdFieldName());
 
-        // Prepare if-modified-since header if applicable
-        Map<String, String> additionalHttpHeaders = getAdditionalHttpHeaders(record, mergeMode);
+        // Compute if-unmodified-since date if applicable
+        final Date ifUnmodifiedSinceDate = mergeMode == SyncState.MergeMode.LEAVE_IF_CHANGED
+                ? getModificationDate(record, getModificationDateFieldName())
+                : null;
 
         // Go to server
         int statusCode = (isLocallyCreated(record)
                 ? HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
-                : deleteOnServer(syncManager, objectType, objectId, additionalHttpHeaders));
+                : deleteOnServer(syncManager, objectType, objectId, ifUnmodifiedSinceDate));
 
         if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
             deleteFromLocalStore(syncManager, soupName, record);
@@ -243,17 +245,17 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
-     * Delete locally deleted record from server (original method)
+     * Delete locally deleted record from server - closest to original signature
      * Called by deleteOnServer(SyncManager syncManager, JSONObject record)
      * @param syncManager
      * @param objectType
      * @param objectId
-     * @param additionalHttpHeaders
+     * @param ifUnmodifiedSinceDate
      * @return server response status code
      * @throws IOException
      */
-    protected int deleteOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, String> additionalHttpHeaders) throws IOException {
-        RestRequest request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId, additionalHttpHeaders);
+    protected int deleteOnServer(SyncManager syncManager, String objectType, String objectId, Date ifUnmodifiedSinceDate) throws IOException {
+        RestRequest request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId, ifUnmodifiedSinceDate);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
         return response.getStatusCode();
@@ -282,11 +284,13 @@ public class SyncUpTarget extends SyncTarget {
             }
         }
 
-        // Prepare if-modified-since header if applicable
-        Map<String, String> additionalHttpHeaders = getAdditionalHttpHeaders(record, mergeMode);
+        // Compute if-unmodified-since date if applicable
+        final Date ifUnmodifiedSinceDate = mergeMode == SyncState.MergeMode.LEAVE_IF_CHANGED
+                ? getModificationDate(record, getModificationDateFieldName())
+                : null;
 
         // Go to server
-        Pair<Integer, String> result = updateOnServer(syncManager, objectType, objectId, fields, additionalHttpHeaders);
+        Pair<Integer, String> result = updateOnServer(syncManager, objectType, objectId, fields, ifUnmodifiedSinceDate);
         int statusCode = result.first;
         String updatedModificationDate = result.second;
 
@@ -314,44 +318,41 @@ public class SyncUpTarget extends SyncTarget {
     }
 
     /**
-     * Prepare if-modified-since header if mergeMode is leave-if-changed and record has a modification date
+     * Get record modification date if there is one
      *
      * @param record
-     * @param mergeMode
+     * @param modificationDateFieldName
      * @return
      * @throws JSONException
      */
-    protected Map<String, String> getAdditionalHttpHeaders(JSONObject record, SyncState.MergeMode mergeMode) throws JSONException {
-        Map<String, String> additionalHttpHeaders = null;
-        if (mergeMode == SyncState.MergeMode.LEAVE_IF_CHANGED && getModificationDateFieldName() != null) {
-            String modificationDate = JSONObjectHelper.optString(record, getModificationDateFieldName(), null);
+    protected Date getModificationDate(JSONObject record, String modificationDateFieldName) throws JSONException {
+        if (modificationDateFieldName != null) {
+            String modificationDate = JSONObjectHelper.optString(record, modificationDateFieldName, null);
             if (modificationDate != null) {
                 try {
-                    String modicationDateFormatted = RestRequest.HTTP_DATE_FORMAT.format(Constants.TIMESTAMP_FORMAT.parse(modificationDate));
-                    additionalHttpHeaders = new HashMap<>();
-                    additionalHttpHeaders.put(IF_UNMODIFIED_SINCE, modicationDateFormatted);
+                    return Constants.TIMESTAMP_FORMAT.parse(modificationDate);
                 } catch (ParseException e) {
-                    Log.e(TAG, "getAdditionalHttpHeaders: could not format modification date: " + e.getMessage());
+                    Log.e(TAG, "getModificationDate: could not format modification date: " + e.getMessage());
                 }
             }
         }
-        return additionalHttpHeaders;
+        return null;
     }
 
     /**
-     * Save locally updated record back to server - original signature
+     * Save locally updated record back to server - closest to original signature
      * Called by updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist)
      * @param syncManager
      * @param objectType
      * @param objectId
      * @param fields
-     * @param additionalHttpHeaders
+     * @param ifUnmodifiedSinceDate
      * @return status code and (new) modified date
      * @throws IOException
      */
-    protected Pair<Integer, String> updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields, Map<String, String> additionalHttpHeaders) throws IOException, JSONException {
+    protected Pair<Integer, String> updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields, Date ifUnmodifiedSinceDate) throws IOException, JSONException {
         LinkedHashMap<String, RestRequest> refIdToRequests = new LinkedHashMap<>();
-        refIdToRequests.put("refUpdate", RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields, additionalHttpHeaders));
+        refIdToRequests.put("refUpdate", RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields, ifUnmodifiedSinceDate));
         if (getModificationDateFieldName() != null) {
             refIdToRequests.put("refRetrieve", RestRequest.getRequestForRetrieve(syncManager.apiVersion, objectType, objectId, Arrays.asList(new String[]{getIdFieldName(), getModificationDateFieldName()})));
         }
