@@ -26,8 +26,6 @@
  */
 package com.salesforce.androidsdk.rest;
 
-import android.util.Log;
-
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -539,8 +537,6 @@ public class RestRequest {
 		JSONObject compositeRequestJson =  new JSONObject();
 		compositeRequestJson.put(COMPOSITE_REQUEST, requestsArrayJson);
         compositeRequestJson.put(ALL_OR_NONE, allOrNone);
-
-        Log.i("--composite-request-->", compositeRequestJson.toString(2));
 
 		return new RestRequest(RestMethod.POST, RestAction.COMPOSITE.getPath(apiVersion), compositeRequestJson);
 	}

@@ -26,7 +26,10 @@
  */
 package com.salesforce.androidsdk.smartsync.target;
 
+import android.util.Pair;
+
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
+import com.salesforce.androidsdk.smartsync.util.Constants;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -34,6 +37,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -108,10 +112,10 @@ public class TestSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields, Map<String, String> additionalHttpHeaders) throws IOException {
+    public Pair<Integer, String> updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields, Map<String, String> additionalHttpHeaders) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
-                return HttpURLConnection.HTTP_BAD_REQUEST;
+                return new Pair<>(HttpURLConnection.HTTP_BAD_REQUEST, null);
             case HARD_FAIL_ON_SYNC:
                 throw new RuntimeException("update hard fail");
             default: // case NO_FAIL:
@@ -119,7 +123,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
                     actionCollector.updatedRecordIds.add(objectId);
                 }
 
-                return HttpURLConnection.HTTP_OK;
+                return new Pair<>(HttpURLConnection.HTTP_OK, Constants.TIMESTAMP_FORMAT.format(new Date()));
         }
     }
 

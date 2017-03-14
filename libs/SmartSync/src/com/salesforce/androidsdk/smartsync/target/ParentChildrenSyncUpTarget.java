@@ -62,10 +62,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     private static final String TAG = "Parent..SyncUpTarget";
     public static final String CHILDREN_CREATE_FIELDLIST = "childrenCreateFieldlist";
     public static final String CHILDREN_UPDATE_FIELDLIST = "childrenUpdateFieldlist";
-    public static final String REFERENCE_ID = "referenceId";
-    public static final String COMPOSITE_RESPONSE = "compositeResponse";
-    public static final String BODY = "body";
-    public static final String HTTP_STATUS_CODE = "httpStatusCode";
     public static final String REF_TIME_STAMPS = "refTimeStamps";
 
     private ParentInfo parentInfo;
@@ -135,6 +131,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
 
     @Override
     public boolean updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
+        boolean locallyCreated = isLocallyCreated(record);
+        boolean locallyDeleted = isLocallyDeleted(record);
+        boolean locallyUpdated = isLocallyUpdated(record) && !locallyCreated && !locallyDeleted; // true update
+
         // Preparing requests for parent
         LinkedHashMap<String, RestRequest> refIdToRequests = new LinkedHashMap<>();
         String parentId = record.getString(getIdFieldName());
@@ -147,7 +147,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                 mergeMode);
 
         // Parent request goes first unless it's a delete
-        if (parentRequest != null && !isLocallyDeleted(record))
+        if (parentRequest != null && !locallyDeleted)
             refIdToRequests.put(parentId, parentRequest);
 
         // Getting children
@@ -166,33 +166,26 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                     childrenCreateFieldlist,
                     childrenUpdateFieldlist,
                     childrenInfo,
-                    isLocallyDeleted(record) ? null : parentId, mergeMode);
+                    locallyDeleted ? null : parentId, mergeMode);
             if (childRequest != null) refIdToRequests.put(childId, childRequest);
         }
 
 
         // Parent request goes last when it's a delete
-        if (parentRequest != null && isLocallyDeleted(record))
+        if (parentRequest != null && locallyDeleted)
             refIdToRequests.put(parentId, parentRequest);
 
-        // Add SOQL query to get updated modification date
-        refIdToRequests.put(REF_TIME_STAMPS, getRequestForTimestamps(syncManager.apiVersion, parentId));
+        // Add SOQL query to get updated modification date in the case of an update
+        if (locallyUpdated)
+            refIdToRequests.put(REF_TIME_STAMPS, getRequestForTimestamps(syncManager.apiVersion, parentId));
 
-        // Building composite request
-        RestRequest request = RestRequest.getCompositeRequest(syncManager.apiVersion, true, refIdToRequests);
+        // Sending composite request
+        Map<String, JSONObject> refIdToResponses = sendCompositeRequest(syncManager, refIdToRequests);
 
-        // Sending request
-        RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-
-        Log.i("--response-->" , response.asJSONObject().toString(2));
-
-        // Build refId to serverId map
-
-        // TODO add helper that parses refid to sub-response to simplify the next three calls
-
-        Map<String, String> refIdToServerId = parseIdsFromResponse(response);
-        Map<String, Integer> refIdToHttpStatusCode = parseStatusCodesFromResponse(response);
-        Map<String, String> refIdToTimestamps = parseTimestampsFromResponse(response);
+        // Build refId to server id / status code / time stamp maps
+        Map<String, String> refIdToServerId = parseIdsFromResponse(refIdToResponses);
+        Map<String, Integer> refIdToHttpStatusCode = parseStatusCodesFromResponse(refIdToResponses);
+        Map<String, String> refIdToTimestamps = locallyUpdated ? parseTimestampsFromResponse(refIdToResponses) : null;
 
         // Update parent in local store
         boolean isParentNew = isLocallyCreated(record);
@@ -229,7 +222,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     protected void updateRecordInLocalStore(SyncManager syncManager, JSONObject record, boolean isParent, Map<String, Integer> refIdToHttpStatusCode, Map<String, String> refIdToTimestamps, Map<String, String> refIdToServerId) throws JSONException {
         final String soupName = isParent ? parentInfo.soupName : childrenInfo.soupName;
         final String idFieldName = isParent ? getIdFieldName() : childrenInfo.idFieldName;
-        final String modificationDateFieldName = isParent ? getModificationDateFieldName() : childrenInfo.modificationDateFieldName;
         final String refId = record.getString(idFieldName);
 
         if (isLocallyDeleted(record)) {
@@ -248,7 +240,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
             if (!isParent)
                 updateReferences(record, childrenInfo.parentIdFieldName, refIdToServerId);
             // Replace time stamp
-            record.put(modificationDateFieldName, refIdToTimestamps.get(refId));
+            if (refIdToTimestamps != null) {
+                final String modificationDateFieldName = isParent ? getModificationDateFieldName() : childrenInfo.modificationDateFieldName;
+                record.put(modificationDateFieldName, refIdToTimestamps.get(refId));
+            }
 
             // Clean and save
             cleanAndSaveInLocalStore(syncManager, soupName, record);
@@ -294,67 +289,47 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     /**
      * Return ref id to server id map if successful or null otherwise
      */
-    protected Map<String, String> parseIdsFromResponse(RestResponse response) throws JSONException, IOException {
-        if (response.isSuccess()) {
-            Map<String, String> refIdtoId = new HashMap<>();
-            JSONArray results = response.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
-            for (int i = 0; i < results.length(); i++) {
-                JSONObject result = results.getJSONObject(i);
-                if (result.getInt(HTTP_STATUS_CODE) == HttpURLConnection.HTTP_CREATED) {
-                    String refId = result.getString(REFERENCE_ID);
-                    String serverId = result.getJSONObject(BODY).getString(Constants.LID);
-                    refIdtoId.put(refId, serverId);
-                }
+    protected Map<String, String> parseIdsFromResponse(Map<String, JSONObject> refIdToResponses) throws JSONException, IOException {
+        Map<String, String> refIdtoId = new HashMap<>();
+        for (String refId : refIdToResponses.keySet()) {
+            JSONObject response = refIdToResponses.get(refId);
+            if (response.getInt(HTTP_STATUS_CODE) == HttpURLConnection.HTTP_CREATED) {
+                String serverId = response.getJSONObject(BODY).getString(Constants.LID);
+                refIdtoId.put(refId, serverId);
             }
-            return refIdtoId;
-        } else {
-            Log.e(TAG, "parseIdsFromResponse failed:" + response.asString());
-            return null;
         }
+        return refIdtoId;
     }
 
     /**
      * Return ref id to http status code map if successful or null otherwise
      */
-    protected Map<String, Integer> parseStatusCodesFromResponse(RestResponse response) throws JSONException, IOException {
-        if (response.isSuccess()) {
-            Map<String, Integer> refIdToStatusCode = new HashMap<>();
-            JSONArray results = response.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
-            for (int i = 0; i < results.length(); i++) {
-                JSONObject result = results.getJSONObject(i);
-                String refId = result.getString(REFERENCE_ID);
-                int httpStatusCode = result.getInt(HTTP_STATUS_CODE);
+    protected Map<String, Integer> parseStatusCodesFromResponse(Map<String, JSONObject> refIdToResponses) throws JSONException, IOException {
+        Map<String, Integer> refIdToStatusCode = new HashMap<>();
+        for (String refId : refIdToResponses.keySet()) {
+            JSONObject response = refIdToResponses.get(refId);
+                int httpStatusCode = response.getInt(HTTP_STATUS_CODE);
                 refIdToStatusCode.put(refId, httpStatusCode);
             }
-            return refIdToStatusCode;
-        } else {
-            Log.e(TAG, "parseStatusCodesFromResponse failed:" + response.asString());
-            return null;
-        }
+        return refIdToStatusCode;
     }
 
     /**
      * Return ref id to time stamp
      */
-    private Map<String, String> parseTimestampsFromResponse(RestResponse response) throws IOException, JSONException {
-        if (response.isSuccess()) {
-            Map<String, String> refIdToTimestamps = new HashMap<>();
-            JSONArray results = response.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
-            JSONObject row = results.getJSONObject(results.length() - 1).getJSONObject(RestRequest.BODY).getJSONArray(RestRequest.RECORDS).getJSONObject(0);
+    private Map<String, String> parseTimestampsFromResponse(Map<String, JSONObject> refIdToResponses) throws IOException, JSONException {
+        Map<String, String> refIdToTimestamps = new HashMap<>();
+        JSONObject response = refIdToResponses.get(REF_TIME_STAMPS).getJSONObject(BODY).getJSONArray(Constants.RECORDS).getJSONObject(0);
 
-            refIdToTimestamps.put(row.getString(getIdFieldName()), row.getString(getModificationDateFieldName()));
-            if (row.has(childrenInfo.sobjectTypePlural) && !row.isNull(childrenInfo.sobjectTypePlural)) {
-                JSONArray childrenRows = row.getJSONObject(childrenInfo.sobjectTypePlural).getJSONArray(Constants.RECORDS);
-                for (int i = 0; i < childrenRows.length(); i++) {
-                    final JSONObject childRow = childrenRows.getJSONObject(i);
-                    refIdToTimestamps.put(childRow.getString(childrenInfo.idFieldName), childRow.getString(childrenInfo.modificationDateFieldName));
-                }
+        refIdToTimestamps.put(response.getString(getIdFieldName()), response.getString(getModificationDateFieldName()));
+        if (response.has(childrenInfo.sobjectTypePlural) && !response.isNull(childrenInfo.sobjectTypePlural)) {
+            JSONArray childrenRows = response.getJSONObject(childrenInfo.sobjectTypePlural).getJSONArray(Constants.RECORDS);
+            for (int i = 0; i < childrenRows.length(); i++) {
+                final JSONObject childRow = childrenRows.getJSONObject(i);
+                refIdToTimestamps.put(childRow.getString(childrenInfo.idFieldName), childRow.getString(childrenInfo.modificationDateFieldName));
             }
-            return refIdToTimestamps;
-        } else {
-            Log.e(TAG, "parseTimestampsFromResponse failed:" + response.asString());
-            return null;
         }
+        return refIdToTimestamps;
     }
 
     /**

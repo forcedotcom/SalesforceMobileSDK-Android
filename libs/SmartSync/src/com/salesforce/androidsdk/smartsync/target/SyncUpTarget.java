@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartsync.target;
 
 import android.util.Log;
+import android.util.Pair;
 
 import com.salesforce.androidsdk.rest.RestRequest;
 import com.salesforce.androidsdk.rest.RestResponse;
@@ -44,7 +45,9 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.HttpURLConnection;
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -61,6 +64,13 @@ public class SyncUpTarget extends SyncTarget {
     public static final String CREATE_FIELDLIST = "createFieldlist";
     public static final String UPDATE_FIELDLIST = "updateFieldlist";
     public static final String IF_UNMODIFIED_SINCE = "If-Unmodified-Since";
+    public static final String COMPOSITE_RESPONSE = "compositeResponse";
+    public static final String REFERENCE_ID = "referenceId";
+    public static final String BODY = "body";
+    public static final String HTTP_STATUS_CODE = "httpStatusCode";
+    public static final String HAS_ERRORS = "hasErrors";
+    public static final String REF_UPDATE = "refUpdate";
+    public static final String REF_RETRIEVE = "refRetrieve";
 
     // Fields
     protected List<String> createFieldlist;
@@ -276,9 +286,12 @@ public class SyncUpTarget extends SyncTarget {
         Map<String, String> additionalHttpHeaders = getAdditionalHttpHeaders(record, mergeMode);
 
         // Go to server
-        int statusCode = updateOnServer(syncManager, objectType, objectId, fields, additionalHttpHeaders);
+        Pair<Integer, String> result = updateOnServer(syncManager, objectType, objectId, fields, additionalHttpHeaders);
+        int statusCode = result.first;
+        String updatedModificationDate = result.second;
 
         if (RestResponse.isSuccess(statusCode)) {
+            record.put(getModificationDateFieldName(), updatedModificationDate);
             cleanAndSaveInLocalStore(syncManager, soupName, record);
             return true;
         }
@@ -333,16 +346,37 @@ public class SyncUpTarget extends SyncTarget {
      * @param objectId
      * @param fields
      * @param additionalHttpHeaders
-     * @return true if successful
+     * @return status code and (new) modified date
      * @throws IOException
      */
-    protected int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields, Map<String, String> additionalHttpHeaders) throws IOException {
-        RestRequest request = RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields, additionalHttpHeaders);
-        RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
+    protected Pair<Integer, String> updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields, Map<String, String> additionalHttpHeaders) throws IOException, JSONException {
+        LinkedHashMap<String, RestRequest> refIdToRequests = new LinkedHashMap<>();
+        refIdToRequests.put("refUpdate", RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields, additionalHttpHeaders));
+        if (getModificationDateFieldName() != null) {
+            refIdToRequests.put("refRetrieve", RestRequest.getRequestForRetrieve(syncManager.apiVersion, objectType, objectId, Arrays.asList(new String[]{getIdFieldName(), getModificationDateFieldName()})));
+        }
+        Map<String, JSONObject> refIdToResponses = sendCompositeRequest(syncManager, refIdToRequests);
+        return new Pair<>(
+                refIdToResponses.get(REF_UPDATE).getInt(HTTP_STATUS_CODE),
+                refIdToResponses.get(REF_RETRIEVE).getJSONObject(BODY).getString(getModificationDateFieldName())
+        );
+    }
 
-        // fixme should be sending a composite request with update + retrieve time stamp
+    protected Map<String, JSONObject> sendCompositeRequest(SyncManager syncManager, LinkedHashMap<String, RestRequest> refIdToRequests) throws JSONException, IOException {
+        RestRequest compositeRequest = RestRequest.getCompositeRequest(syncManager.apiVersion, true, refIdToRequests);
+        RestResponse compositeResponse = syncManager.sendSyncWithSmartSyncUserAgent(compositeRequest);
 
-        return response.getStatusCode();
+        JSONArray responses = compositeResponse.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
+
+        Log.i("--sendComposite-request-->", compositeRequest.getRequestBodyAsJson().toString(2));
+        Log.i("--sendComposite-response-->", responses.toString(2));
+
+        Map<String, JSONObject> refIdToResponses = new HashMap<>();
+        for (int i = 0; i < responses.length(); i++) {
+            JSONObject response = responses.getJSONObject(i);
+            refIdToResponses.put(response.getString(REFERENCE_ID), response);
+        }
+        return refIdToResponses;
     }
 
     /**

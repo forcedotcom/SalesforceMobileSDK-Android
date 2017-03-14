@@ -148,9 +148,6 @@ public abstract class SyncTarget {
             ids.addAll(toSortedSet(results));
         }
 
-        Log.i("--ids-with-query-->", idsSql);
-        Log.i("--ids-with-query-->", new JSONArray(ids).toString(2));
-
         return ids;
     }
 

@@ -936,9 +936,11 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         // Sync up
 
         if (tryLeaveIfChangedFirst) {
-            // If there was no remote change
-            if (remoteChangeForAccount == Change.NONE && remoteChangeForContact == Change.NONE) {
-
+            // If there was no remote change or it's remote delete with a local delete
+            if ((remoteChangeForAccount == Change.NONE && remoteChangeForContact == Change.NONE)
+                    || (remoteChangeForAccount == Change.DELETE && localChangeForAccount == Change.DELETE)
+                    || (remoteChangeForContact == Change.DELETE && localChangeForContact == Change.DELETE))
+            {
                 // Sync up with leave-if-changed
                 trySyncUp(syncUpTarget, 1, SyncState.MergeMode.LEAVE_IF_CHANGED);
 

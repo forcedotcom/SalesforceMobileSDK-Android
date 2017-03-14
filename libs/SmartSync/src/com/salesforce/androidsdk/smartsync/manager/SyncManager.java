@@ -362,12 +362,6 @@ public class SyncManager {
         final Set<String> dirtyRecordIds = target.getIdsOfRecordsToSyncUp(this, soupName);
 		int totalSize = dirtyRecordIds.size();
         sync.setTotalSize(totalSize);
-
-
-        Log.i("--total-size-->", "" + totalSize);
-
-
-
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         int i = 0;
         for (final String id : dirtyRecordIds) {
