@@ -222,9 +222,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         final String soupName = isParent ? parentInfo.soupName : childrenInfo.soupName;
         final String idFieldName = isParent ? getIdFieldName() : childrenInfo.idFieldName;
         final String refId = record.getString(idFieldName);
+        final Integer statusCode = refIdToHttpStatusCode.containsKey(refId) ? refIdToHttpStatusCode.get(refId) : -1;
 
+        // Delete case
         if (isLocallyDeleted(record)) {
-            final Integer statusCode = refIdToHttpStatusCode.get(refId);
             if (isLocallyCreated(record) // we didn't go to the sever
                     || RestResponse.isSuccess(statusCode) // or we successfully deleted on the server
                     || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
@@ -232,20 +233,35 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                 deleteFromLocalStore(syncManager, soupName, record);
             }
             // Otherwise leave record alone
-        } else {
-            // Replace local id by server id
-            updateReferences(record, idFieldName, refIdToServerId);
-            // Replace parent local id by server id (in children)
-            if (!isParent)
-                updateReferences(record, childrenInfo.parentIdFieldName, refIdToServerId);
-            // Replace time stamp
-            if (refIdToTimestamps != null) {
-                final String modificationDateFieldName = isParent ? getModificationDateFieldName() : childrenInfo.modificationDateFieldName;
-                record.put(modificationDateFieldName, refIdToTimestamps.get(refId));
+            else {
+                Log.i(TAG, String.format("Locally deleted record %s not deleted on server (server responded:%d)", refId, statusCode));
             }
+        }
 
-            // Clean and save
-            cleanAndSaveInLocalStore(syncManager, soupName, record);
+        // Create / update case
+        else {
+            if (RestResponse.isSuccess(statusCode)) // we successfully updated on the server
+            {
+                // Replace local id by server id
+                updateReferences(record, idFieldName, refIdToServerId);
+
+                // Replace parent local id by server id (in children)
+                if (!isParent)
+                    updateReferences(record, childrenInfo.parentIdFieldName, refIdToServerId);
+
+                // Replace time stamp
+                if (refIdToTimestamps != null) {
+                    final String modificationDateFieldName = isParent ? getModificationDateFieldName() : childrenInfo.modificationDateFieldName;
+                    record.put(modificationDateFieldName, refIdToTimestamps.get(refId));
+                }
+
+                // Clean and save
+                cleanAndSaveInLocalStore(syncManager, soupName, record);
+            }
+            // Otherwise leave record alone
+            else {
+                Log.i(TAG, String.format("Locally %s record %s not synced up to server (server responded:%d)", (isLocallyCreated(record) ? "created":  "updated"), refId, statusCode));
+            }
         }
     }
 
