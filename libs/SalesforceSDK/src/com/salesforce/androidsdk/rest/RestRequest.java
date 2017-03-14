@@ -605,11 +605,13 @@ public class RestRequest {
      * @return
      */
     private static Map<String, String> prepareConditionalHeader(String headerName, Date date) {
-        Map<String, String> additionalHttpHeaders = new HashMap<>();
         if (date != null) {
+            Map<String, String> additionalHttpHeaders = new HashMap<>();
             additionalHttpHeaders.put(headerName, HTTP_DATE_FORMAT.format(date));
+            return additionalHttpHeaders;
+        } else {
+            return null;
         }
-        return additionalHttpHeaders;
     }
 
 
