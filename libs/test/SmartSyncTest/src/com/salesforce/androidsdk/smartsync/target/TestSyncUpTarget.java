@@ -92,7 +92,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
+    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, String> additionalHttpHeaders) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
                 return HttpURLConnection.HTTP_BAD_REQUEST;
@@ -108,7 +108,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
+    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields, Map<String, String> additionalHttpHeaders) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
                 return HttpURLConnection.HTTP_BAD_REQUEST;
@@ -135,7 +135,6 @@ public class TestSyncUpTarget extends SyncUpTarget {
         public List<String> createdRecordIds = new ArrayList<String>();
         public List<String> updatedRecordIds = new ArrayList<String>();
         public List<String> deletedRecordIds = new ArrayList<String>();
-        public List<String> fetchLastModifiedDateRecordIds = new ArrayList<String>();
     }
 
 }

@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartsync.target;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.smartstore.store.QuerySpec;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
@@ -146,6 +147,10 @@ public abstract class SyncTarget {
             hasMore = (results.length() == PAGE_SIZE);
             ids.addAll(toSortedSet(results));
         }
+
+        Log.i("--ids-with-query-->", idsSql);
+        Log.i("--ids-with-query-->", new JSONArray(ids).toString(2));
+
         return ids;
     }
 
@@ -161,6 +166,9 @@ public abstract class SyncTarget {
 
     protected void cleanAndSaveInSmartStore(SmartStore smartStore, String soupName, JSONObject record, boolean handleTx) throws JSONException {
         cleanRecord(record);
+
+        Log.i("--clean-and-save-->", record.toString(2));
+
         if (record.has(SmartStore.SOUP_ENTRY_ID)) {
             // Record came from smartstore
             smartStore.update(soupName, record, record.getLong(SmartStore.SOUP_ENTRY_ID), handleTx);

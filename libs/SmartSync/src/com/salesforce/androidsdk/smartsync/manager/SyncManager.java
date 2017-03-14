@@ -42,7 +42,6 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
-import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
@@ -363,6 +362,12 @@ public class SyncManager {
         final Set<String> dirtyRecordIds = target.getIdsOfRecordsToSyncUp(this, soupName);
 		int totalSize = dirtyRecordIds.size();
         sync.setTotalSize(totalSize);
+
+
+        Log.i("--total-size-->", "" + totalSize);
+
+
+
         updateSync(sync, SyncState.Status.RUNNING, 0, callback);
         int i = 0;
         for (final String id : dirtyRecordIds) {
@@ -379,28 +384,6 @@ public class SyncManager {
             i++;
         }
 	}
-
-    private boolean isNewerThanServer(SyncUpTarget target, JSONObject record) throws JSONException, IOException {
-        final String lastModStr = record.optString(target.getModificationDateFieldName());
-
-        if (lastModStr == null) {
-            // We didn't capture the last modified date so we can't really enforce merge mode, returning true so that we will behave like an "overwrite" merge mode
-            return true;
-        }
-        try {
-            String serverLastModStr = target.fetchLastModifiedDate(this, record);
-            if (serverLastModStr == null) {
-                // We were unable to get the last modified date from the server
-                return true;
-            }
-            long lastModifiedDate = Constants.TIMESTAMP_FORMAT.parse(lastModStr).getTime();
-            long serverLastModifiedDate = Constants.TIMESTAMP_FORMAT.parse(serverLastModStr).getTime();
-            return (serverLastModifiedDate <= lastModifiedDate);
-        } catch (Exception e) {
-            Log.e(TAG, "Couldn't figure out last modified date", e);
-            throw new SmartSyncException(e);
-        }
-    }
 
     private void syncUpOneRecord(SyncUpTarget target, String soupName,
                                  JSONObject record, SyncOptions options) throws JSONException, IOException {
@@ -419,21 +402,10 @@ public class SyncManager {
         else
             action = Action.update;
 
-        /*
-         * Checks if we are attempting to update a record that has been updated
-         * on the server AFTER the client's last sync down. If the merge mode
-         * passed in tells us to leave the record alone under these
-         * circumstances, we will do nothing and return here.
-         */
+        // Target's updateOnServer and deleteOnServer should not update/delete server
+        // when merge mode is LEAVE_IF_CHANGED and server's record is more recent that client's record
         final MergeMode mergeMode = options.getMergeMode();
-        if (mergeMode == MergeMode.LEAVE_IF_CHANGED &&
-        		!locallyCreated &&
-        		!isNewerThanServer(target, record)) {
 
-        	// Nothing to do for this record
-    		Log.i(TAG, "Record not synced since client does not have the latest from server");
-        	return;
-        }
 
         // Create/update/delete record on server and update local store
         switch (action) {

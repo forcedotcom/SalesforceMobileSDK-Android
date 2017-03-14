@@ -45,6 +45,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -65,6 +66,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     public static final String COMPOSITE_RESPONSE = "compositeResponse";
     public static final String BODY = "body";
     public static final String HTTP_STATUS_CODE = "httpStatusCode";
+    public static final String REF_TIME_STAMPS = "refTimeStamps";
 
     private ParentInfo parentInfo;
     private ChildrenInfo childrenInfo;
@@ -141,7 +143,8 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                 createFieldlist == null ? fieldlist : createFieldlist,
                 updateFieldlist == null ? fieldlist : updateFieldlist,
                 parentInfo,
-                null);
+                null,
+                mergeMode);
 
         // Parent request goes first unless it's a delete
         if (parentRequest != null && !isLocallyDeleted(record))
@@ -163,13 +166,17 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                     childrenCreateFieldlist,
                     childrenUpdateFieldlist,
                     childrenInfo,
-                    isLocallyDeleted(record) ? null : parentId);
+                    isLocallyDeleted(record) ? null : parentId, mergeMode);
             if (childRequest != null) refIdToRequests.put(childId, childRequest);
         }
+
 
         // Parent request goes last when it's a delete
         if (parentRequest != null && isLocallyDeleted(record))
             refIdToRequests.put(parentId, parentRequest);
+
+        // Add SOQL query to get updated modification date
+        refIdToRequests.put(REF_TIME_STAMPS, getRequestForTimestamps(syncManager.apiVersion, parentId));
 
         // Building composite request
         RestRequest request = RestRequest.getCompositeRequest(syncManager.apiVersion, true, refIdToRequests);
@@ -177,19 +184,25 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         // Sending request
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
+        Log.i("--response-->" , response.asJSONObject().toString(2));
+
         // Build refId to serverId map
+
+        // TODO add helper that parses refid to sub-response to simplify the next three calls
+
         Map<String, String> refIdToServerId = parseIdsFromResponse(response);
         Map<String, Integer> refIdToHttpStatusCode = parseStatusCodesFromResponse(response);
+        Map<String, String> refIdToTimestamps = parseTimestampsFromResponse(response);
 
         // Update parent in local store
         boolean isParentNew = isLocallyCreated(record);
-        updateRecordInLocalStore(syncManager, record, soupName, getIdFieldName(), null, refIdToServerId, refIdToHttpStatusCode);
+        updateRecordInLocalStore(syncManager, record, true, refIdToHttpStatusCode, refIdToTimestamps, refIdToServerId);
 
         // Update children local store
         for (int i = 0; i < children.length(); i++) {
             JSONObject childRecord = children.getJSONObject(i);
             if (isDirty(childRecord) || isParentNew) {
-                updateRecordInLocalStore(syncManager, childRecord, childrenInfo.soupName, childrenInfo.idFieldName, childrenInfo.parentIdFieldName, refIdToServerId, refIdToHttpStatusCode);
+                updateRecordInLocalStore(syncManager, childRecord, false, refIdToHttpStatusCode, refIdToTimestamps, refIdToServerId);
             }
         }
 
@@ -208,16 +221,19 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
     /**
      * @param syncManager
      * @param record
-     * @param soupName
-     * @param idFieldName           Field containing server id of record
-     * @param parentIdFieldName     Field containing server id of parent record (only in children)
-     * @param refIdToServerId
-     * @param refIdToHttpStatusCode
-     * @throws JSONException
+     * @param isParent
+     *@param refIdToHttpStatusCode
+     * @param refIdToTimestamps
+     * @param refIdToServerId    @throws JSONException
      */
-    protected void updateRecordInLocalStore(SyncManager syncManager, JSONObject record, String soupName, String idFieldName, String parentIdFieldName, Map<String, String> refIdToServerId, Map<String, Integer> refIdToHttpStatusCode) throws JSONException {
+    protected void updateRecordInLocalStore(SyncManager syncManager, JSONObject record, boolean isParent, Map<String, Integer> refIdToHttpStatusCode, Map<String, String> refIdToTimestamps, Map<String, String> refIdToServerId) throws JSONException {
+        final String soupName = isParent ? parentInfo.soupName : childrenInfo.soupName;
+        final String idFieldName = isParent ? getIdFieldName() : childrenInfo.idFieldName;
+        final String modificationDateFieldName = isParent ? getModificationDateFieldName() : childrenInfo.modificationDateFieldName;
+        final String refId = record.getString(idFieldName);
+
         if (isLocallyDeleted(record)) {
-            final Integer statusCode = refIdToHttpStatusCode.get(record.getString(idFieldName));
+            final Integer statusCode = refIdToHttpStatusCode.get(refId);
             if (isLocallyCreated(record) // we didn't go to the sever
                     || RestResponse.isSuccess(statusCode) // or we successfully deleted on the server
                     || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
@@ -229,8 +245,11 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
             // Replace local id by server id
             updateReferences(record, idFieldName, refIdToServerId);
             // Replace parent local id by server id (in children)
-            if (parentIdFieldName != null)
-                updateReferences(record, parentIdFieldName, refIdToServerId);
+            if (!isParent)
+                updateReferences(record, childrenInfo.parentIdFieldName, refIdToServerId);
+            // Replace time stamp
+            record.put(modificationDateFieldName, refIdToTimestamps.get(refId));
+
             // Clean and save
             cleanAndSaveInLocalStore(syncManager, soupName, record);
         }
@@ -241,14 +260,17 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
                                                 List<String> createFieldlist,
                                                 List<String> updateFieldlist,
                                                 ParentInfo info,
-                                                String parentId) throws IOException, JSONException {
+                                                String parentId, SyncState.MergeMode mergeMode) throws IOException, JSONException {
 
         String id = record.getString(info.idFieldName);
+
+        final Map<String, String> additionalHttpHeaders = getAdditionalHttpHeaders(record, mergeMode);
 
         if (super.isLocallyDeleted(record) && !super.isLocallyCreated(record)) {
             return RestRequest.getRequestForDelete(apiVersion,
                     info.sobjectType,
-                    id);
+                    id,
+                    additionalHttpHeaders);
         } else if (super.isLocallyCreated(record)) {
             Map<String, Object> fields = buildFieldsMap(record, createFieldlist, info.idFieldName, info.modificationDateFieldName);
             if (info instanceof ChildrenInfo && parentId != null) {
@@ -262,7 +284,8 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
             return RestRequest.getRequestForUpdate(apiVersion,
                     info.sobjectType,
                     id,
-                    fields);
+                    fields,
+                    additionalHttpHeaders);
         } else {
             return null;
         }
@@ -310,44 +333,58 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         }
     }
 
+    /**
+     * Return ref id to time stamp
+     */
+    private Map<String, String> parseTimestampsFromResponse(RestResponse response) throws IOException, JSONException {
+        if (response.isSuccess()) {
+            Map<String, String> refIdToTimestamps = new HashMap<>();
+            JSONArray results = response.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
+            JSONObject row = results.getJSONObject(results.length() - 1).getJSONObject(RestRequest.BODY).getJSONArray(RestRequest.RECORDS).getJSONObject(0);
+
+            refIdToTimestamps.put(row.getString(getIdFieldName()), row.getString(getModificationDateFieldName()));
+            if (row.has(childrenInfo.sobjectTypePlural) && !row.isNull(childrenInfo.sobjectTypePlural)) {
+                JSONArray childrenRows = row.getJSONObject(childrenInfo.sobjectTypePlural).getJSONArray(Constants.RECORDS);
+                for (int i = 0; i < childrenRows.length(); i++) {
+                    final JSONObject childRow = childrenRows.getJSONObject(i);
+                    refIdToTimestamps.put(childRow.getString(childrenInfo.idFieldName), childRow.getString(childrenInfo.modificationDateFieldName));
+                }
+            }
+            return refIdToTimestamps;
+        } else {
+            Log.e(TAG, "parseTimestampsFromResponse failed:" + response.asString());
+            return null;
+        }
+    }
+
+    /**
+     * Build SOQL request to get current time stamps
+     *
+     * @param apiVersion
+     * @param parentId
+     * @return
+     * @throws UnsupportedEncodingException
+     */
+    private RestRequest getRequestForTimestamps(String apiVersion, String parentId) throws UnsupportedEncodingException {
+        SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(childrenInfo.idFieldName, childrenInfo.modificationDateFieldName);
+        builderNested.from(childrenInfo.sobjectTypePlural);
+
+        SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(getIdFieldName(), getModificationDateFieldName(), String.format("(%s)", builderNested.build()));
+        builder.from(parentInfo.sobjectType);
+        builder.where(String.format("%s = '%s'", getIdFieldName(), parentId));
+
+        RestRequest request = RestRequest.getRequestForQuery(apiVersion, builder.build());
+
+        return request;
+    }
+
+
+
 
     protected void updateReferences(JSONObject record, String fieldWithRefId, Map<String, String> refIdToServerId) throws JSONException {
         String refId = record.getString(fieldWithRefId);
         if (refIdToServerId.containsKey(refId)) {
             record.put(fieldWithRefId, refIdToServerId.get(refId));
-        }
-    }
-
-    @Override
-    public String fetchLastModifiedDate(SyncManager syncManager, JSONObject record) {
-        try {
-            SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(childrenInfo.modificationDateFieldName);
-            builderNested.from(childrenInfo.sobjectTypePlural);
-
-            SOQLBuilder builder = SOQLBuilder.getInstanceWithFields(getModificationDateFieldName(), String.format("(%s)", builderNested.build()));
-            builder.from(parentInfo.sobjectType);
-            builder.where(String.format("%s = '%s'", getIdFieldName(), record.getString(getIdFieldName())));
-
-            RestRequest request = RestRequest.getRequestForQuery(syncManager.apiVersion, builder.build());
-            RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
-
-            JSONObject row = response.asJSONObject().getJSONArray(Constants.RECORDS).getJSONObject(0);
-            String lastModifiedDate = row.getString(getModificationDateFieldName());
-
-            if (row.has(childrenInfo.sobjectTypePlural) && !row.isNull(childrenInfo.sobjectTypePlural)) {
-                JSONArray childrenRows = row.getJSONObject(childrenInfo.sobjectTypePlural).getJSONArray(Constants.RECORDS);
-                for (int i = 0; i < childrenRows.length(); i++) {
-                    String childLastModifiedDate = childrenRows.getJSONObject(i).getString(childrenInfo.modificationDateFieldName);
-                    lastModifiedDate = childLastModifiedDate.compareTo(lastModifiedDate) > 0 ? childLastModifiedDate : lastModifiedDate;
-                }
-            }
-
-            return lastModifiedDate;
-
-        } catch (Exception e) {
-            Log.e(TAG, "fetchLastModifiedDate threw an exception: " + e.getMessage());
-            // Caller expects null to be returned if the last modified date could not be fetched
-            return null;
         }
     }
 

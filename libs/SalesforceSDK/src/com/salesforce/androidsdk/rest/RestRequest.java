@@ -26,6 +26,8 @@
  */
 package com.salesforce.androidsdk.rest;
 
+import android.util.Log;
+
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
 import org.json.JSONArray;
@@ -36,6 +38,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -99,8 +103,12 @@ public class RestRequest {
     public static final String ATTRIBUTES = "attributes";
 
     /**
+     * HTTP date format
+     */
+    public static final DateFormat HTTP_DATE_FORMAT = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z");
+
+    /**
 	 * Enumeration for all HTTP methods.
-	 *
 	 */
 	public enum RestMethod {
 		GET, POST, PUT, DELETE, HEAD, PATCH
@@ -383,9 +391,24 @@ public class RestRequest {
 	 * @throws IOException 
 	 */
 	public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields) throws IOException  {
-		return new RestRequest(RestMethod.PATCH, RestAction.UPDATE.getPath(apiVersion, objectType, objectId), fields == null ? null : new JSONObject(fields));
+        return getRequestForUpdate(apiVersion, objectType, objectId, fields, null);
 	}
-	
+
+    /**
+     * Request to update a record.
+     * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
+     *
+     * @param apiVersion
+     * @param objectType
+     * @param objectId
+     * @param fields
+     * @param additionalHttpHeaders
+     * @return
+     * @throws IOException
+     */
+    public static RestRequest getRequestForUpdate(String apiVersion, String objectType, String objectId, Map<String, Object> fields, Map<String, String> additionalHttpHeaders) throws IOException  {
+        return new RestRequest(RestMethod.PATCH, RestAction.UPDATE.getPath(apiVersion, objectType, objectId), fields == null ? null : new JSONObject(fields), additionalHttpHeaders);
+    }
 	
 	/**
 	 * Request to upsert (update or insert) a record. 
@@ -413,8 +436,22 @@ public class RestRequest {
 	 * @return a RestRequest
 	 */
 	public static RestRequest getRequestForDelete(String apiVersion, String objectType, String objectId)  {
-		return new RestRequest(RestMethod.DELETE, RestAction.DELETE.getPath(apiVersion, objectType, objectId));
+        return getRequestForDelete(apiVersion, objectType, objectId, null);
 	}
+
+    /**
+     * Request to delete a record.
+     * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
+     *
+     * @param apiVersion
+     * @param objectType
+     * @param objectId
+     * @param additionalHttpHeaders
+     * @return
+     */
+    public static RestRequest getRequestForDelete(String apiVersion, String objectType, String objectId, Map<String, String> additionalHttpHeaders)  {
+        return new RestRequest(RestMethod.DELETE, RestAction.DELETE.getPath(apiVersion, objectType, objectId), (JSONObject) null, additionalHttpHeaders);
+    }
 
 	/**
 	 * Request to execute the specified SOSL search. 
@@ -502,6 +539,8 @@ public class RestRequest {
 		JSONObject compositeRequestJson =  new JSONObject();
 		compositeRequestJson.put(COMPOSITE_REQUEST, requestsArrayJson);
         compositeRequestJson.put(ALL_OR_NONE, allOrNone);
+
+        Log.i("--composite-request-->", compositeRequestJson.toString(2));
 
 		return new RestRequest(RestMethod.POST, RestAction.COMPOSITE.getPath(apiVersion), compositeRequestJson);
 	}

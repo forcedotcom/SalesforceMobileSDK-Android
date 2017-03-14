@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.smartsync.manager;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -236,6 +237,8 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
      * @throws JSONException
      */
     protected void checkStatus(SyncState sync, SyncState.Type expectedType, long expectedId, SyncTarget expectedTarget, SyncOptions expectedOptions, SyncState.Status expectedStatus, int expectedProgress, int expectedTotalSize) throws JSONException {
+        Log.i("--sync-state-->", sync.asJSON().toString(2));
+
         assertEquals("Wrong type", expectedType, sync.getType());
         assertEquals("Wrong id", expectedId, sync.getId());
         JSONTestHelper.assertSameJSON("Wrong target", (expectedTarget == null ? null : expectedTarget.asJSON()), (sync.getTarget() == null ? null : sync.getTarget().asJSON()));
@@ -400,6 +403,9 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             JSONArray row = accountsFromDb.getJSONArray(i);
             JSONObject soupElt = row.getJSONObject(0);
             String id = soupElt.getString(Constants.ID);
+
+            Log.i("--soupElt-->", soupElt.toString(2));
+
             assertEquals("Wrong local flag", expectLocallyCreated || expectLocallyUpdated || expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCAL));
             assertEquals("Wrong local flag", expectLocallyCreated, soupElt.getBoolean(SyncTarget.LOCALLY_CREATED));
             assertEquals("Id was not updated", expectLocallyCreated, id.startsWith(LOCAL_ID_PREFIX));
@@ -557,6 +563,9 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         Map<String, Object> updatedFields = updatedFields(fields, REMOTELY_UPDATED);
         idToFieldsRemotelyUpdated.put(id, updatedFields);
         updateRecordsOnServer(idToFieldsRemotelyUpdated, objectType);
+
+        Log.i("--update-record-on-server-->", new JSONObject(idToFieldsRemotelyUpdated).toString(2));
+
         return idToFieldsRemotelyUpdated;
     }
 

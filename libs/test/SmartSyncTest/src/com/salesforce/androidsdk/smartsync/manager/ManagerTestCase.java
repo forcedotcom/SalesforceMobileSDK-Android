@@ -285,6 +285,9 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
             requests.add(RestRequest.getRequestForUpdate(apiVersion, sObjectType, id, idToFieldsUpdated.get(id)));
         }
         RestResponse response = restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
+
+        Log.i("--response-update-->", response.asJSONObject().toString(2));
+
         assertTrue("Updates failed", response.isSuccess() && !response.asJSONObject().getBoolean("hasErrors"));
     }
 }
