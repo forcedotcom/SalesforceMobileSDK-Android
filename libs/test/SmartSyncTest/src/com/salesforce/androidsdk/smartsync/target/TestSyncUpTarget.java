@@ -83,7 +83,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
     public String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws JSONException, IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
-                throw new SyncManager.SmartSyncSoftException("create soft fail");
+                return null;
             case HARD_FAIL_ON_SYNC:
                 throw new RuntimeException("create hard fail");
             default: // case NO_FAIL:
@@ -99,7 +99,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
     public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
-                throw new SyncManager.SmartSyncSoftException("delete soft fail");
+                return HttpURLConnection.HTTP_NOT_FOUND;
             case HARD_FAIL_ON_SYNC:
                 throw new RuntimeException("delete hard fail");
             default: // case NO_FAIL:
@@ -114,7 +114,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
     public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
-                throw new SyncManager.SmartSyncSoftException("update soft fail");
+                return HttpURLConnection.HTTP_NOT_FOUND;
             case HARD_FAIL_ON_SYNC:
                 throw new RuntimeException("update hard fail");
             default: // case NO_FAIL:

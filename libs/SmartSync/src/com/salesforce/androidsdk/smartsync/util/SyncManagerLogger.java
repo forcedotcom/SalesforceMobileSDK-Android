@@ -84,19 +84,21 @@ public class SyncManagerLogger {
         else if (obj instanceof Throwable) {
             StringWriter sw = new StringWriter();
             PrintWriter pw = new PrintWriter(sw);
-            pw.print(((Throwable) obj).getMessage());
-            ((Throwable) obj).printStackTrace(pw);
+            final Throwable err = (Throwable) obj;
+            pw.print(err.getMessage());
+            err.printStackTrace(pw);
             return sw.toString();
         }
         else if (obj instanceof RestResponse) {
+            final RestResponse response = (RestResponse) obj;
             try {
-                return toString(((RestResponse) obj).asJSONObject());
+                return toString(response.asJSONObject());
             } catch (Exception e) {
                 try {
-                    return toString(((RestResponse) obj).asJSONArray());
+                    return toString(response.asJSONArray());
                 } catch (Exception e1) {
                     try {
-                        return ((RestResponse) obj).asString();
+                        return response.asString();
                     } catch (IOException e2) {
                         return obj.toString();
                     }
