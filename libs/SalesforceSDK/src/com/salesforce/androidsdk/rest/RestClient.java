@@ -146,7 +146,7 @@ public class RestClient {
 	 * Clear cache of org-id/user-id to OkHttpClient.Builder
 	 */
 	public static void clearOkClientBuildersCache() {
-		OK_CLIENTS = null;
+		OK_CLIENT_BUILDERS = null;
 	}
 
     /**
