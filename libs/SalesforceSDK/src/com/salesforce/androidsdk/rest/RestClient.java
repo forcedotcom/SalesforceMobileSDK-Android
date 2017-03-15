@@ -188,20 +188,18 @@ public class RestClient {
 			OK_CLIENTS = new HashMap<>();
 		}
 		final String uniqueId = this.oAuthRefreshInterceptor.clientInfo.buildUniqueId();
-		OkHttpClient curOkHttpClient = null;
-		if (uniqueId != null) {
-			curOkHttpClient = OK_CLIENTS.get(uniqueId);
-			if (curOkHttpClient == null) {
-				if (okHttpClient == null) {
-					curOkHttpClient = getOkHttpClientBuilder().build();
-					OK_CLIENTS.put(uniqueId, curOkHttpClient);
-				} else {
-					OK_CLIENTS.put(uniqueId, okHttpClient);
-				}
-			} else if (okHttpClient != null) {
-				OK_CLIENTS.put(uniqueId, okHttpClient);
-			}
-		}
+        if (uniqueId == null) {
+            return;
+        }
+
+        // If a valid client passed in, caches it. If not, creates a new one.
+        if (okHttpClient != null) {
+            OK_CLIENTS.put(uniqueId, okHttpClient);
+        } else if (!OK_CLIENTS.containsKey(uniqueId)) {
+            OK_CLIENTS.put(uniqueId, getOkHttpClientBuilder().build());
+        }
+
+        // Uses the cached client.
 		this.okHttpClient = OK_CLIENTS.get(uniqueId);
 	}
 
