@@ -195,6 +195,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws IOException
      */
     public void testCallWithBadAuthToken() throws URISyntaxException, IOException {
+        RestClient.clearOkClientBuildersCache();
         RestClient.clearOkClientsCache();
         RestClient unauthenticatedRestClient = new RestClient(clientInfo, BAD_TOKEN, httpAccess, null);
         RestResponse response = unauthenticatedRestClient.sendSync(RestRequest.getRequestForResources(TestCredentials.API_VERSION));
@@ -209,6 +210,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws IOException
      */
     public void testCallWithBadTokenAndTokenProvider() throws URISyntaxException, IOException {
+        RestClient.clearOkClientBuildersCache();
         RestClient.clearOkClientsCache();
         AuthTokenProvider authTokenProvider = new AuthTokenProvider() {
             @Override
@@ -244,6 +246,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws IOException
      */
     public void testCallWithBadInstanceUrl() throws URISyntaxException, IOException {
+        RestClient.clearOkClientBuildersCache();
         RestClient.clearOkClientsCache();
         AuthTokenProvider authTokenProvider = new AuthTokenProvider() {
             @Override

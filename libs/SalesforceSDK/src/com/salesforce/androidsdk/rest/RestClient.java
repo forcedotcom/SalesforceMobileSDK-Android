@@ -67,10 +67,11 @@ public class RestClient {
 	private static final String COMMUNITY_ID = "communityId";
 	private static final String COMMUNITY_URL = "communityUrl";
 
-
+	private static Map<String, OkHttpClient.Builder> OK_CLIENT_BUILDERS;
     private static Map<String, OkHttpClient> OK_CLIENTS;
     private HttpAccess httpAccessor;
     private OAuthRefreshInterceptor oAuthRefreshInterceptor;
+	private OkHttpClient.Builder okHttpClientBuilder;
 	private OkHttpClient okHttpClient;
 
 	/** 
@@ -136,8 +137,16 @@ public class RestClient {
 
 	public RestClient(HttpAccess httpAccessor, OAuthRefreshInterceptor httpInterceptor) {
         this.httpAccessor = httpAccessor;
-        this.oAuthRefreshInterceptor = httpInterceptor;
-		setOkHttpClient();
+		this.oAuthRefreshInterceptor = httpInterceptor;
+		setOkHttpClientBuilder();
+		setOkHttpClient(null);
+	}
+
+	/**
+	 * Clear cache of org-id/user-id to OkHttpClient.Builder
+	 */
+	public static void clearOkClientBuildersCache() {
+		OK_CLIENTS = null;
 	}
 
     /**
@@ -148,35 +157,52 @@ public class RestClient {
     }
 
 	/**
+	 * Sets the OkHttpclient.Builder associated with this user account. The OkHttpclient.Builder
+	 * are cached in a map and reused as and when a user account
+	 * switch occurs, to prevent multiple threads being spawned unnecessarily.
+	 */
+	private synchronized void setOkHttpClientBuilder() {
+		if (OK_CLIENT_BUILDERS == null) {
+			OK_CLIENT_BUILDERS = new HashMap<>();
+		}
+		final String uniqueId = this.oAuthRefreshInterceptor.clientInfo.buildUniqueId();
+		OkHttpClient.Builder okHttpClientBuilder = null;
+		if (uniqueId != null) {
+			okHttpClientBuilder = OK_CLIENT_BUILDERS.get(uniqueId);
+			if (okHttpClientBuilder == null) {
+				okHttpClientBuilder = httpAccessor.getOkHttpClientBuilder()
+						.addInterceptor(oAuthRefreshInterceptor);
+				OK_CLIENT_BUILDERS.put(uniqueId, okHttpClientBuilder);
+			}
+		}
+		this.okHttpClientBuilder = okHttpClientBuilder;
+	}
+
+	/**
 	 * Sets the OkHttpclient associated with this user account. The OkHttpclient
 	 * are cached in a map and reused as and when a user account
 	 * switch occurs, to prevent multiple threads being spawned unnecessarily.
 	 */
-	private synchronized void setOkHttpClient() {
+	public synchronized void setOkHttpClient(OkHttpClient okHttpClient) {
 		if (OK_CLIENTS == null) {
 			OK_CLIENTS = new HashMap<>();
 		}
 		final String uniqueId = this.oAuthRefreshInterceptor.clientInfo.buildUniqueId();
-		OkHttpClient okHttpClient = null;
+		OkHttpClient curOkHttpClient = null;
 		if (uniqueId != null) {
-			okHttpClient = OK_CLIENTS.get(uniqueId);
-			if (okHttpClient == null) {
-				okHttpClient = httpAccessor.getOkHttpClientBuilder()
-                        .addInterceptor(oAuthRefreshInterceptor)
-                        .build();
-
-                OK_CLIENTS.put(uniqueId, okHttpClient);
+			curOkHttpClient = OK_CLIENTS.get(uniqueId);
+			if (curOkHttpClient == null) {
+				if (okHttpClient == null) {
+					curOkHttpClient = getOkHttpClientBuilder().build();
+					OK_CLIENTS.put(uniqueId, curOkHttpClient);
+				} else {
+					OK_CLIENTS.put(uniqueId, okHttpClient);
+				}
+			} else if (okHttpClient != null) {
+				OK_CLIENTS.put(uniqueId, okHttpClient);
 			}
 		}
-		this.okHttpClient = okHttpClient;
-	}
-
-	/**
-	 * Used by tests
-	 * @param okHttpClient
-	 */
-	public void setOkHttpClient(OkHttpClient okHttpClient) {
-		this.okHttpClient = okHttpClient;
+		this.okHttpClient = OK_CLIENTS.get(uniqueId);
 	}
 
 	/**
@@ -239,6 +265,13 @@ public class RestClient {
 	 */
 	public ClientInfo getClientInfo() {
 		return oAuthRefreshInterceptor.clientInfo;
+	}
+
+	/**
+	 * @return underlying OkHttpClient.Builder
+	 */
+	public OkHttpClient.Builder getOkHttpClientBuilder() {
+		return okHttpClientBuilder;
 	}
 
 	/**
@@ -547,7 +580,7 @@ public class RestClient {
         private ClientInfo clientInfo;
 
         /**
-         * Constructs a SalesforceHttpInterceptor with the given clientInfo, authToken, httpAccessor and authTokenProvider.
+         * Constructs a SalesforceHttpInterceptor with the given clientInfo, authToken and authTokenProvider.
          * When it gets a 401 (not authorized) response from the server:
          * <ul>
          * <li> If authTokenProvider is not null, it will ask the authTokenProvider for a new access token and retry the request a second time.</li>
