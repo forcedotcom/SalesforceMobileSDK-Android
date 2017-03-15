@@ -27,6 +27,7 @@
 package com.salesforce.androidsdk.app;
 
 import android.accounts.AccountManager;
+import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -42,6 +43,7 @@ import com.salesforce.androidsdk.analytics.manager.AnalyticsManager;
 import com.salesforce.androidsdk.analytics.model.DeviceAppAttributes;
 import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManagerTest;
+import com.salesforce.androidsdk.ui.LoginActivity;
 
 import static android.content.ContentValues.TAG;
 
@@ -59,10 +61,10 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
      * has been called.
      */
     public void testOverrideAiltnAppNameBeforeSDKManagerInit() {
-        SalesforceSDKManager.setAiltnAppName(TEST_APP_NAME);
-        SalesforceSDKManager.initNative(getInstrumentation().getTargetContext(),
+        SalesforceSDKTestManager.setAiltnAppName(TEST_APP_NAME);
+        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(),
                 new KeyImpl(), MainActivity.class);
-        SalesforceSDKManager.getInstance().setIsTestRun(true);
+        SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(TEST_APP_NAME);
     }
 
@@ -71,10 +73,10 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
      * has been called.
      */
     public void testOverrideAiltnAppNameAfterSDKManagerInit() {
-        SalesforceSDKManager.initNative(getInstrumentation().getTargetContext(),
+        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(),
                 new KeyImpl(), MainActivity.class);
-        SalesforceSDKManager.setAiltnAppName(TEST_APP_NAME);
-        SalesforceSDKManager.getInstance().setIsTestRun(true);
+        SalesforceSDKTestManager.setAiltnAppName(TEST_APP_NAME);
+        SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(TEST_APP_NAME);
     }
 
@@ -82,9 +84,9 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
      * Test for default analytics app name.
      */
     public void testDefaultAiltnAppName() {
-        SalesforceSDKManager.initNative(getInstrumentation().getTargetContext(),
+        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(),
                 new KeyImpl(), MainActivity.class);
-        SalesforceSDKManager.getInstance().setIsTestRun(true);
+        SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(getDefaultAppName());
     }
 
@@ -92,15 +94,15 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
      * Test for setting an invalid analytics app name.
      */
     public void testOverrideInvalidAiltnAppName() {
-        SalesforceSDKManager.initNative(getInstrumentation().getTargetContext(),
+        SalesforceSDKTestManager.init(getInstrumentation().getTargetContext(),
                 new KeyImpl(), MainActivity.class);
-        SalesforceSDKManager.setAiltnAppName(null);
-        SalesforceSDKManager.getInstance().setIsTestRun(true);
+        SalesforceSDKTestManager.setAiltnAppName(null);
+        SalesforceSDKTestManager.getInstance().setIsTestRun(true);
         compareAiltnAppNames(getDefaultAppName());
     }
 
     private void compareAiltnAppNames(String expectedAppName) {
-        final UserAccountManager userAccMgr = SalesforceSDKManager.getInstance().getUserAccountManager();
+        final UserAccountManager userAccMgr = SalesforceSDKTestManager.getInstance().getUserAccountManager();
         final Context targetContext = getInstrumentation().getTargetContext();
         final ClientManager clientManager = new ClientManager(targetContext,
                 ClientManagerTest.TEST_ACCOUNT_TYPE, null, true);
@@ -121,10 +123,11 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
         assertNotNull("Device attributes should NOT be null", deviceAppAttributes);
         final String ailtnAppName = deviceAppAttributes.getAppName();
         assertEquals("DeviceAppAttributes - App names do NOT match", expectedAppName, ailtnAppName);
-        assertEquals("SalesforceSDKManager - App names do NOT match", expectedAppName, SalesforceSDKManager.getAiltnAppName());
+        assertEquals("SalesforceSDKManager - App names do NOT match", expectedAppName, SalesforceSDKTestManager.getAiltnAppName());
         SalesforceAnalyticsManager.reset(curUser);
         clientManager.removeAccounts(accMgr.getAccountsByType(ClientManagerTest.TEST_ACCOUNT_TYPE));
-        SalesforceSDKManager.resetAiltnAppName();
+        SalesforceSDKTestManager.resetAiltnAppName();
+        SalesforceSDKTestManager.resetInstance();
     }
 
     private String getDefaultAppName() {
@@ -137,5 +140,55 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
             Log.e(TAG, "Package not found", e);
         }
         return ailtnAppName;
+    }
+
+    /**
+     * Mock version of SalesforceSDKManager.
+     */
+    private static class SalesforceSDKTestManager extends SalesforceSDKManager {
+
+        /**
+         * Protected constructor.
+         *
+         * @param context Application context.
+         * @param keyImpl Implementation of KeyInterface.
+         * @param mainActivity Activity to be launched after the login flow.
+         * @param loginActivity Login activity.
+         */
+        protected SalesforceSDKTestManager(Context context, KeyInterface keyImpl,
+                                       Class<? extends Activity> mainActivity, Class<? extends Activity> loginActivity) {
+            super(context, keyImpl, mainActivity, loginActivity);
+        }
+
+        /**
+         * Initializes this component.
+         *
+         * @param context Application context.
+         * @param keyImpl Implementation of KeyInterface.
+         * @param mainActivity Activity to be launched after the login flow.
+         */
+        public static void init(Context context, KeyInterface keyImpl,
+                                 Class<? extends Activity> mainActivity) {
+            if (INSTANCE == null) {
+                INSTANCE = new SalesforceSDKTestManager(context, keyImpl, mainActivity, LoginActivity.class);
+            }
+            initInternal(context);
+        }
+
+        /**
+         * Resets the app name to be used by the analytics framework.
+         * This is meant to be used ONLY by tests.
+         */
+        public static void resetAiltnAppName() {
+            AILTN_APP_NAME = null;
+        }
+
+        /**
+         * Resets the current instance being used.
+         * This is meant to be used ONLY by tests.
+         */
+        public static void resetInstance() {
+            INSTANCE = null;
+        }
     }
 }

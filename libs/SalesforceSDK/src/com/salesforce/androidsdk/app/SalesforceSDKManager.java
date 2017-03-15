@@ -103,7 +103,7 @@ public class SalesforceSDKManager {
      */
     private static final String DEFAULT_APP_DISPLAY_NAME = "Salesforce";
     private static final String TAG = "SalesforceSDKManager";
-    private static String AILTN_APP_NAME;
+    protected static String AILTN_APP_NAME;
 
     /**
      * Instance of the SalesforceSDKManager to use for this process.
@@ -182,14 +182,6 @@ public class SalesforceSDKManager {
      */
     public static String getAiltnAppName() {
         return AILTN_APP_NAME;
-    }
-
-    /**
-     * Resets the app name to be used by the analytics framework.
-     * This is meant to be used ONLY by tests.
-     */
-    public static void resetAiltnAppName() {
-        AILTN_APP_NAME = null;
     }
 
     /**
