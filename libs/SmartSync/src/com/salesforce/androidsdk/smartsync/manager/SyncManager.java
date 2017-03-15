@@ -538,17 +538,17 @@ public class SyncManager {
 	 * @throws IOException
 	 */
 	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
-        logger.d(this, "sendSyncWithSmartSyncUserAgent:request:", restRequest);
         RestResponse restResponse = restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
         if (restResponse.isSuccess() || restResponse.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+            logger.d(this, "sendSyncWithSmartSyncUserAgent:request:", restRequest);
             logger.d(this, "sendSyncWithSmartSyncUserAgent:response:", restResponse);
-            return restResponse;
         }
         else {
-            // this is bad - stop sync
+            // Request failed, it should be seen by developer
+            logger.i(this, "sendSyncWithSmartSyncUserAgent:request:", restRequest);
             logger.e(this, "sendSyncWithSmartSyncUserAgent:response:", restResponse);
-            throw new SmartSyncException("Request failed with unexpected error:" + restResponse.getStatusCode());
         }
+        return restResponse;
     }
 
     /**
