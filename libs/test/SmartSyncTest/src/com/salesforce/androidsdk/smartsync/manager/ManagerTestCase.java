@@ -119,6 +119,8 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         metadataManager.setRestClient(restClient);
         syncManager.setRestClient(restClient);
         smartStore = cacheManager.getSmartStore();
+        // Debug logs during tests
+        syncManager.getLogger().setLogLevel(Log.DEBUG);
     }
 
     @Override
@@ -260,9 +262,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
         for (String id : ids) {
             requests.add(RestRequest.getRequestForDelete(apiVersion, objectType, id));
         }
-        RestResponse response = restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
-
-        Log.i("--response-delete-->", response.asJSONObject().toString(2));
+        restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
     }
 
     /**
@@ -285,9 +285,6 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
             requests.add(RestRequest.getRequestForUpdate(apiVersion, sObjectType, id, idToFieldsUpdated.get(id)));
         }
         RestResponse response = restClient.sendSync(RestRequest.getBatchRequest(apiVersion, false, requests));
-
-        Log.i("--response-update-->", response.asJSONObject().toString(2));
-
         assertTrue("Updates failed", response.isSuccess() && !response.asJSONObject().getBoolean("hasErrors"));
     }
 }

@@ -26,7 +26,6 @@
  */
 package com.salesforce.androidsdk.smartsync.target;
 
-import android.util.Log;
 import android.util.Pair;
 
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -34,6 +33,7 @@ import com.salesforce.androidsdk.rest.RestResponse;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartsync.manager.SyncManager;
 import com.salesforce.androidsdk.smartsync.util.Constants;
+import com.salesforce.androidsdk.smartsync.util.SyncManagerLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
@@ -71,6 +71,18 @@ public class SyncUpTarget extends SyncTarget {
     public static final String HAS_ERRORS = "hasErrors";
     public static final String REF_UPDATE = "refUpdate";
     public static final String REF_RETRIEVE = "refRetrieve";
+
+    // For SyncManagerLogger
+    public static final String UPDATE_ON_SERVER_RECORD_REMOTELY_DELETED_RE_CREATING = "update on server:record remotely deleted - re-creating";
+    public static final String UPDATE_ON_SERVER_RECORD_REMOTELY_DELETED_LEAVING_THINGS_UNCHANGED = "update on server:record remotely deleted - leaving things unchanged";
+    public static final String UPDATE_ON_SERVER_RECORD_REMOTELY_UPDATED_LEAVING_THINGS_UNCHANGED = "update on server:record remotely updated - leaving things unchanged";
+    public static final String UPDATE_ON_SERVER_GOT_UNEXPECTED_STATUS = "update on server: got unexpected status:";
+    public static final String CREATE_ON_SERVER_SERVER_CREATE_SUCCEEDED_SAVING_LOCALLY = "create on server:server create succeeded - saving locally";
+    public static final String DELETE_ON_SERVER_NO_NEED_TO_DELETE_ON_SERVER_LOCALLY_CREATED_DELETING_LOCALLY = "delete on server:no need to delete on server (locally created) - deleting locally";
+    public static final String DELETE_ON_SERVER_SERVER_DELETE_SUCCEEDED_DELETING_LOCALLY = "delete on server:server delete succeeded - deleting locally";
+    public static final String DELETE_ON_SERVER_FAILED = "delete on server failed:";
+    public static final String UPDATE_ON_SERVER_SERVER_UPDATE_SUCCEEDED_SAVING_LOCALLY = "update on server:server update succeeded - saving locally";
+    public static final String CREATE_ON_SERVER_FAILED = "create on server failed:";
 
     // Fields
     protected List<String> createFieldlist;
@@ -149,7 +161,7 @@ public class SyncUpTarget extends SyncTarget {
      * @throws JSONException
      * @throws IOException
      */
-    public boolean createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
+    public void createOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
         fieldlist = this.createFieldlist != null ? this.createFieldlist : fieldlist;
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
 
@@ -158,16 +170,11 @@ public class SyncUpTarget extends SyncTarget {
 
         // Create on server
         String serverId = createOnServer(syncManager, objectType, fields);
+        syncManager.getLogger().d(this, CREATE_ON_SERVER_SERVER_CREATE_SUCCEEDED_SAVING_LOCALLY, record);
 
         // Update local store
-        if (serverId != null) {
-            record.put(getIdFieldName(), serverId);
-            cleanAndSaveInLocalStore(syncManager, soupName, record);
-            return true;
-        }
-        else {
-            return false;
-        }
+        record.put(getIdFieldName(), serverId);
+        cleanAndSaveInLocalStore(syncManager, soupName, record);
     }
 
     /**
@@ -194,7 +201,7 @@ public class SyncUpTarget extends SyncTarget {
      * @param syncManager
      * @param objectType
      * @param fields
-     * @return server record id or null if creation failed
+     * @return server record id
      * @throws IOException
      * @throws JSONException
      */
@@ -206,8 +213,7 @@ public class SyncUpTarget extends SyncTarget {
             return response.asJSONObject().getString(Constants.LID);
         }
         else {
-            Log.e(TAG, "createOnServer failed:" + response.asString());
-            return null;
+            throw new SyncManager.SmartSyncException(CREATE_ON_SERVER_FAILED + response.asString());
         }
     }
 
@@ -217,31 +223,29 @@ public class SyncUpTarget extends SyncTarget {
      * @param record
      * @param soupName
      * @param mergeMode
-     * @return true if successful
      * @throws JSONException
      * @throws IOException
      */
-    public boolean deleteOnServer(SyncManager syncManager, JSONObject record, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
+    public void deleteOnServer(SyncManager syncManager, JSONObject record, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(getIdFieldName());
 
         // Compute if-unmodified-since date if applicable
         final Date ifUnmodifiedSinceDate = mergeMode == SyncState.MergeMode.LEAVE_IF_CHANGED
-                ? getModificationDate(record, getModificationDateFieldName())
+                ? getModificationDate(syncManager.getLogger(), getModificationDateFieldName(), record)
                 : null;
 
-        // Go to server
-        int statusCode = (isLocallyCreated(record)
-                ? HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
-                : deleteOnServer(syncManager, objectType, objectId, ifUnmodifiedSinceDate));
-
-        if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
-            deleteFromLocalStore(syncManager, soupName, record);
-            return true;
+        // Go to server if needed
+        if (isLocallyCreated(record)) {
+            syncManager.getLogger().d(this, DELETE_ON_SERVER_NO_NEED_TO_DELETE_ON_SERVER_LOCALLY_CREATED_DELETING_LOCALLY, record);
         }
         else {
-            return false;
+            deleteOnServer(syncManager, objectType, objectId);
+            syncManager.getLogger().d(this, DELETE_ON_SERVER_SERVER_DELETE_SUCCEEDED_DELETING_LOCALLY, record);
         }
+
+        // Delete locally
+        deleteFromLocalStore(syncManager, soupName, record);
     }
 
     /**
@@ -250,15 +254,18 @@ public class SyncUpTarget extends SyncTarget {
      * @param syncManager
      * @param objectType
      * @param objectId
-     * @param ifUnmodifiedSinceDate
-     * @return server response status code
      * @throws IOException
      */
-    protected int deleteOnServer(SyncManager syncManager, String objectType, String objectId, Date ifUnmodifiedSinceDate) throws IOException {
-        RestRequest request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId, ifUnmodifiedSinceDate);
+    protected void deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
+        RestRequest request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
-        return response.getStatusCode();
+        if (response.isSuccess() || response.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
+            return;
+        }
+        else {
+            throw new SyncManager.SmartSyncException(DELETE_ON_SERVER_FAILED + response.asString());
+        }
     }
 
     /**
@@ -268,11 +275,10 @@ public class SyncUpTarget extends SyncTarget {
      * @param fieldlist fields to sync up (this.updateFieldlist will be used instead if provided)
      * @param soupName
      * @param mergeMode to be used to handle case where record was remotely deleted
-     * @return true if successful
      * @throws JSONException
      * @throws IOException
      */
-    public boolean updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
+    public void updateOnServer(SyncManager syncManager, JSONObject record, List<String> fieldlist, String soupName, SyncState.MergeMode mergeMode) throws JSONException, IOException {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(getIdFieldName());
 
@@ -286,7 +292,7 @@ public class SyncUpTarget extends SyncTarget {
 
         // Compute if-unmodified-since date if applicable
         final Date ifUnmodifiedSinceDate = mergeMode == SyncState.MergeMode.LEAVE_IF_CHANGED
-                ? getModificationDate(record, getModificationDateFieldName())
+                ? getModificationDate(syncManager.getLogger(), getModificationDateFieldName(), record)
                 : null;
 
         // Go to server
@@ -294,45 +300,50 @@ public class SyncUpTarget extends SyncTarget {
         int statusCode = result.first;
         String updatedModificationDate = result.second;
 
+        syncManager.getLogger().d(this, "updateOnServer:", String.format("status:%d,updatedDate:%d", result.first, result.second));
+
         if (RestResponse.isSuccess(statusCode)) {
+            syncManager.getLogger().d(this, UPDATE_ON_SERVER_SERVER_UPDATE_SUCCEEDED_SAVING_LOCALLY, record);
             if (updatedModificationDate != null) record.put(getModificationDateFieldName(), updatedModificationDate);
             cleanAndSaveInLocalStore(syncManager, soupName, record);
-            return true;
-        }
-        // Remote record was left alone because if recently changed
-        else if (statusCode == HttpURLConnection.HTTP_PRECON_FAILED) {
-            return false;
         }
         // Handling remotely deleted records
         else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
             if (mergeMode == SyncState.MergeMode.OVERWRITE) {
-                return createOnServer(syncManager, record, createFieldlist != null ? createFieldlist : fieldlist, soupName, mergeMode);
-            } else {
-                // Leave local record alone
-                return false;
+                syncManager.getLogger().d(this, UPDATE_ON_SERVER_RECORD_REMOTELY_DELETED_RE_CREATING, record);
+                createOnServer(syncManager, record, createFieldlist != null ? createFieldlist : fieldlist, soupName, mergeMode);
+            }
+            else {
+                syncManager.getLogger().d(this, UPDATE_ON_SERVER_RECORD_REMOTELY_DELETED_LEAVING_THINGS_UNCHANGED, record);
             }
         }
+        // Remote record was left alone because if recently changed
+        else if (statusCode == HttpURLConnection.HTTP_PRECON_FAILED && mergeMode == SyncState.MergeMode.LEAVE_IF_CHANGED) {
+            syncManager.getLogger().d(this, UPDATE_ON_SERVER_RECORD_REMOTELY_UPDATED_LEAVING_THINGS_UNCHANGED, record);
+        }
+        // Unexpected
         else {
-            return false;
+            throw new SyncManager.SmartSyncException(UPDATE_ON_SERVER_GOT_UNEXPECTED_STATUS + statusCode);
         }
     }
 
     /**
      * Get record modification date if there is one
      *
-     * @param record
+     * @param logger
      * @param modificationDateFieldName
+     * @param record
      * @return
      * @throws JSONException
      */
-    protected Date getModificationDate(JSONObject record, String modificationDateFieldName) throws JSONException {
+    protected Date getModificationDate(SyncManagerLogger logger, String modificationDateFieldName, JSONObject record) throws JSONException {
         if (modificationDateFieldName != null) {
             String modificationDate = JSONObjectHelper.optString(record, modificationDateFieldName, null);
             if (modificationDate != null) {
                 try {
                     return Constants.TIMESTAMP_FORMAT.parse(modificationDate);
                 } catch (ParseException e) {
-                    Log.e(TAG, "getModificationDate: could not format modification date: " + e.getMessage());
+                    logger.e(this, "getModificationDate: could not format modification date: ", e);
                 }
             }
         }
@@ -372,11 +383,11 @@ public class SyncUpTarget extends SyncTarget {
         RestRequest compositeRequest = RestRequest.getCompositeRequest(syncManager.apiVersion, true, refIdToRequests);
         RestResponse compositeResponse = syncManager.sendSyncWithSmartSyncUserAgent(compositeRequest);
 
+        if (!compositeResponse.isSuccess()) {
+            throw new SyncManager.SmartSyncException("sendCompositeRequest:" + compositeResponse.toString());
+        }
+
         JSONArray responses = compositeResponse.asJSONObject().getJSONArray(COMPOSITE_RESPONSE);
-
-        Log.i("--sendComposite-request-->", compositeRequest.getRequestBodyAsJson().toString(2));
-        Log.i("--sendComposite-response-->", responses.toString(2));
-
         Map<String, JSONObject> refIdToResponses = new HashMap<>();
         for (int i = 0; i < responses.length(); i++) {
             JSONObject response = responses.getJSONObject(i);

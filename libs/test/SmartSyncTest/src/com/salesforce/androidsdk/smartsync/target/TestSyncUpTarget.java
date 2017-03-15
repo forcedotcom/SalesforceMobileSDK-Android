@@ -96,10 +96,11 @@ public class TestSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId, Date ifUnmodifiedSinceDate) throws IOException {
+    public void deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
-                return HttpURLConnection.HTTP_BAD_REQUEST;
+                // return HttpURLConnection.HTTP_BAD_REQUEST;
+                break;
             case HARD_FAIL_ON_SYNC:
                 throw new RuntimeException("delete hard fail");
             default: // case NO_FAIL:
@@ -107,7 +108,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
                     actionCollector.deletedRecordIds.add(objectId);
                 }
 
-                return HttpURLConnection.HTTP_OK;
+                // return HttpURLConnection.HTTP_OK;
         }
     }
 

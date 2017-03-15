@@ -42,6 +42,7 @@ import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
+import com.salesforce.androidsdk.smartsync.util.SyncManagerLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncOptions;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.smartsync.util.SyncState.MergeMode;
@@ -83,6 +84,7 @@ public class SyncManager {
     private final ExecutorService threadPool = Executors.newFixedThreadPool(1);
 	private SmartStore smartStore;
 	private RestClient restClient;
+    private SyncManagerLogger logger;
 
     /**
      * Private constructor
@@ -92,6 +94,7 @@ public class SyncManager {
         apiVersion = ApiVersionStrings.getVersionNumber(SalesforceSDKManager.getInstance().getAppContext());
         this.smartStore = smartStore;
         this.restClient = restClient;
+        this.logger = new SyncManagerLogger(Log.INFO);
         SyncState.setupSyncsSoupIfNeeded(smartStore);
     }
 
@@ -205,7 +208,8 @@ public class SyncManager {
      */
     public SyncState syncDown(SyncDownTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
     	SyncState sync = SyncState.createSyncDown(smartStore, target, options, soupName);
-		runSync(sync, callback);
+        logger.d(this, "syncDown:", sync);
+        runSync(sync, callback);
 		return sync;
     }
 
@@ -227,6 +231,7 @@ public class SyncManager {
             throw new SmartSyncException("Cannot run reSync:" + syncId + ": wrong type:" + sync.getType());
         }
         sync.setTotalSize(-1);
+        logger.d(this, "reSync:", sync);
         runSync(sync, callback);
         return sync;
     }
@@ -252,7 +257,7 @@ public class SyncManager {
                     }
                     updateSync(sync, SyncState.Status.DONE, 100, callback);
                 } catch (Exception e) {
-                    Log.e("SmartSyncMgr:runSync", "Error during sync: " + sync.getId(), e);
+                    logger.e("SmartSyncMgr:runSync", "Error during sync: " + sync.getId(), e);
                     // Update status to failed
                     updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
                 }
@@ -271,6 +276,7 @@ public class SyncManager {
      */
     public SyncState syncUp(SyncUpTarget target, SyncOptions options, String soupName, SyncUpdateCallback callback) throws JSONException {
     	SyncState sync = SyncState.createSyncUp(smartStore, target, options, soupName);
+        logger.d(this, "syncUp:", sync);
     	runSync(sync, callback);
     	return sync;
     }
@@ -294,6 +300,9 @@ public class SyncManager {
         if (sync.getType() != SyncState.Type.syncDown) {
             throw new SmartSyncException("Cannot run cleanResyncGhosts:" + syncId + ": wrong type:" + sync.getType());
         }
+
+        logger.d(this, "cleanResyncGhosts:", sync);
+
         final String soupName = sync.getSoupName();
         final SyncDownTarget target = (SyncDownTarget) sync.getTarget();
 
@@ -338,7 +347,7 @@ public class SyncManager {
                         attributes.put("syncId", sync.getId());
                         attributes.put("syncTarget", sync.getTarget().getClass().getName());
                     } catch (JSONException e) {
-                        Log.e(TAG, "Exception thrown while building attributes", e);
+                        logger.e(this, "Exception thrown while building attributes", e);
                     }
                     EventBuilderHelper.createAndStoreEvent(sync.getType().name(), null, TAG, attributes);
                     runningSyncIds.remove(sync.getId());
@@ -346,9 +355,9 @@ public class SyncManager {
             }
             sync.save(smartStore);
     	} catch (JSONException e) {
-    		Log.e(TAG, "Unexpected json error for sync: " + sync.getId(), e);
+    		logger.e(this, "Unexpected json error for sync: " + sync.getId(), e);
     	} catch (SmartStoreException e) {
-            Log.e(TAG, "Unexpected smart store error for sync: " + sync.getId(), e);
+            logger.e(this, "Unexpected smart store error for sync: " + sync.getId(), e);
         }
         finally {
             callback.onUpdate(sync);
@@ -366,7 +375,13 @@ public class SyncManager {
         int i = 0;
         for (final String id : dirtyRecordIds) {
             JSONObject record = target.getFromLocalStore(this, soupName, id);
-            syncUpOneRecord(target, soupName, record, options);
+            try {
+                syncUpOneRecord(target, soupName, record, options);
+            }
+            catch (Exception e) {
+                // Sync up should keep going even if there are failures
+                logger.e("SmartSyncMgr:syncUp", "syncUpOneRecord failed: " + sync.getId(), e);
+            }
 
             // Updating status
             int progress = (i + 1) * 100 / totalSize;
@@ -473,7 +488,10 @@ public class SyncManager {
 	 * @throws IOException
 	 */
 	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
-        return restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
+        logger.d(this, "sendSyncWithSmartSyncUserAgent:request:", restRequest);
+        RestResponse restResponse = restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
+        logger.d(this, "sendSyncWithSmartSyncUserAgent:response:", restResponse);
+        return restResponse;
     }
 
     /**
@@ -481,6 +499,13 @@ public class SyncManager {
      */
     public SmartStore getSmartStore() {
         return smartStore;
+    }
+
+    /**
+     * return SyncManagerLogger used by this SyncManager
+     */
+    public SyncManagerLogger getLogger() {
+        return logger;
     }
 
     /**

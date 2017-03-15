@@ -402,8 +402,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
             JSONObject soupElt = row.getJSONObject(0);
             String id = soupElt.getString(Constants.ID);
 
-            Log.i("--soupElt-->", soupElt.toString(2));
-
             assertEquals("Wrong local flag", expectLocallyCreated || expectLocallyUpdated || expectLocallyDeleted, soupElt.getBoolean(SyncTarget.LOCAL));
             assertEquals("Wrong local flag", expectLocallyCreated, soupElt.getBoolean(SyncTarget.LOCALLY_CREATED));
             assertEquals("Id was not updated", expectLocallyCreated, id.startsWith(LOCAL_ID_PREFIX));
@@ -561,9 +559,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         Map<String, Object> updatedFields = updatedFields(fields, REMOTELY_UPDATED);
         idToFieldsRemotelyUpdated.put(id, updatedFields);
         updateRecordsOnServer(idToFieldsRemotelyUpdated, objectType);
-
-        Log.i("--update-record-on-server-->", new JSONObject(idToFieldsRemotelyUpdated).toString(2));
-
         return idToFieldsRemotelyUpdated;
     }
 
