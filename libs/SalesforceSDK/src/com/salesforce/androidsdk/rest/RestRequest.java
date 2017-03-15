@@ -441,23 +441,8 @@ public class RestRequest {
 	 * @return a RestRequest
 	 */
 	public static RestRequest getRequestForDelete(String apiVersion, String objectType, String objectId)  {
-        return getRequestForDelete(apiVersion, objectType, objectId, null);
+        return new RestRequest(RestMethod.DELETE, RestAction.DELETE.getPath(apiVersion, objectType, objectId));
 	}
-
-    /**
-     * Request to delete a record.
-     * See http://www.salesforce.com/us/developer/docs/api_rest/Content/resources_sobject_retrieve.htm
-     *
-     * @param apiVersion
-     * @param objectType
-     * @param objectId
-     * @param ifUnmodifiedSinceDate
-     * @return
-     */
-    public static RestRequest getRequestForDelete(String apiVersion, String objectType, String objectId, Date ifUnmodifiedSinceDate)  {
-        Map<String, String> additionalHttpHeaders = prepareConditionalHeader(IF_UNMODIFIED_SINCE, ifUnmodifiedSinceDate);
-        return new RestRequest(RestMethod.DELETE, RestAction.DELETE.getPath(apiVersion, objectType, objectId), (JSONObject) null, additionalHttpHeaders);
-    }
 
     /**
 	 * Request to execute the specified SOSL search. 
@@ -533,12 +518,7 @@ public class RestRequest {
         for(Map.Entry<String,RestRequest> entry : refIdToRequests.entrySet()) {
             String referenceId = entry.getKey();
             RestRequest request = entry.getValue();
-            Map<String, String> headers = request.getAdditionalHttpHeaders();
-			JSONObject requestJson = new JSONObject();
-            requestJson.put(METHOD, request.getMethod().toString());
-            requestJson.put(URL, request.getPath());
-            requestJson.put(BODY, request.getRequestBodyAsJson());
-            if (headers != null) requestJson.put(HTTP_HEADERS, new JSONObject(headers));
+            JSONObject requestJson = request.asJSON();
             requestJson.put(REFERENCE_ID, referenceId);
 			requestsArrayJson.put(requestJson);
 		}
@@ -548,6 +528,24 @@ public class RestRequest {
 
 		return new RestRequest(RestMethod.POST, RestAction.COMPOSITE.getPath(apiVersion), compositeRequestJson);
 	}
+
+    @Override
+    public String toString() {
+        try {
+            return asJSON().toString(2);
+        } catch (JSONException e) {
+            return super.toString();
+        }
+    }
+
+    protected JSONObject asJSON() throws JSONException {
+        JSONObject requestJson = new JSONObject();
+        requestJson.put(METHOD, getMethod().toString());
+        requestJson.put(URL, getPath());
+        requestJson.put(BODY, getRequestBodyAsJson());
+        if (getAdditionalHttpHeaders() != null) requestJson.put(HTTP_HEADERS, new JSONObject(getAdditionalHttpHeaders()));
+        return requestJson;
+    }
 
     /**
      * Batch request

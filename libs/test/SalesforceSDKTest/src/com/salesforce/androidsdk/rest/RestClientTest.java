@@ -477,6 +477,10 @@ public class RestClientTest extends InstrumentationTestCase {
     }
 
     /**
+     *
+     * if-unmodified-since not supported for delete
+     * Bring this test back once it is
+     *
      * Testing delete calls to the server with if-unmodified-since.
      * Create new account
      * Update it
@@ -484,6 +488,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * then delete it with last modified date unmodified since date (should delete)
      * @throws Exception
      */
+    /*
     public void testDeleteWithIfUnmodifiedSince() throws Exception {
         Map<String, Object> fields = new HashMap<>();
 
@@ -512,9 +517,6 @@ public class RestClientTest extends InstrumentationTestCase {
         // Delete with if-unmodified-since with created date - should not delete
         RestResponse blockedDeleteResponse = restClient.sendSync(RestRequest.getRequestForDelete(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, createdDate));
         assertFalse("Delete should have failed", blockedDeleteResponse.isSuccess());
-
-        Log.i("--response-->", blockedDeleteResponse.asJSONArray().toString(2));
-
         assertEquals("Expected 412", HttpURLConnection.HTTP_PRECON_FAILED, blockedDeleteResponse.getStatusCode());
 
         // Retrieve - expect success
@@ -531,6 +533,8 @@ public class RestClientTest extends InstrumentationTestCase {
         assertFalse("Retrieve should have failed", retrieveResponse.isSuccess());
         assertEquals("Expected 404", HttpURLConnection.HTTP_NOT_FOUND, retrieveResponse.getStatusCode());
     }
+    */
+
     /**
      * Testing a query call to the server.
      * Create new account then look for it using soql.
