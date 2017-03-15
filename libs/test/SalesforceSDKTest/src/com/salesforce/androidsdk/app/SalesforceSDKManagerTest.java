@@ -112,6 +112,7 @@ public class SalesforceSDKManagerTest extends InstrumentationTestCase {
         final AccountManager accMgr = AccountManager.get(targetContext);
         final UserAccount curUser = userAccMgr.getCurrentUser();
         assertNotNull("Current user should NOT be null", curUser);
+        SalesforceAnalyticsManager.reset(curUser);
         final SalesforceAnalyticsManager analyticsManager = SalesforceAnalyticsManager.getInstance(userAccMgr.getCurrentUser());
         assertNotNull("SalesforceAnalyticsManager instance should NOT be null", analyticsManager);
         final AnalyticsManager manager = analyticsManager.getAnalyticsManager();
