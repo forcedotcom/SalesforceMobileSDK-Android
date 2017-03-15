@@ -380,7 +380,7 @@ public class SyncManager {
             }
             catch (Exception e) {
                 // Sync up should keep going even if there are failures
-                logger.e("SmartSyncMgr:syncUp", "syncUpOneRecord failed: " + sync.getId(), e);
+                logger.e(this, "SmartSyncMgr:syncUp:syncUpOneRecord failed:", e);
             }
 
             // Updating status

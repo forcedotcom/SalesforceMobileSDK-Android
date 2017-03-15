@@ -186,7 +186,9 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         Map<String, String> refIdToTimestamps = parseTimestampsFromResponse(refIdToResponses);
 
         // Update parent in local store
-        updateRecordInLocalStore(syncManager, record, true, refIdToHttpStatusCode, refIdToTimestamps, refIdToServerId, mergeMode);
+        if (isDirty(record)) {
+            updateRecordInLocalStore(syncManager, record, true, refIdToHttpStatusCode, refIdToTimestamps, refIdToServerId, mergeMode);
+        }
 
         // Update children local store
         for (int i = 0; i < children.length(); i++) {
@@ -210,6 +212,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget {
         final String soupName = isParent ? parentInfo.soupName : childrenInfo.soupName;
         final String idFieldName = isParent ? getIdFieldName() : childrenInfo.idFieldName;
         final String refId = record.getString(idFieldName);
+
         final Integer statusCode = refIdToHttpStatusCode.containsKey(refId) ? refIdToHttpStatusCode.get(refId) : -1;
 
         // Delete case

@@ -300,7 +300,7 @@ public class SyncUpTarget extends SyncTarget {
         int statusCode = result.first;
         String updatedModificationDate = result.second;
 
-        syncManager.getLogger().d(this, "updateOnServer:", String.format("status:%d,updatedDate:%d", result.first, result.second));
+        syncManager.getLogger().d(this, "updateOnServer:", String.format("status:%d,updatedDate:%s", result.first, result.second));
 
         if (RestResponse.isSuccess(statusCode)) {
             syncManager.getLogger().d(this, UPDATE_ON_SERVER_SERVER_UPDATE_SUCCEEDED_SAVING_LOCALLY, record);
