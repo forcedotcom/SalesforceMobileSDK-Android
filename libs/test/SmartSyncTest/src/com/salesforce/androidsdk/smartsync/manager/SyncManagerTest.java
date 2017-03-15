@@ -185,7 +185,11 @@ public class SyncManagerTest extends SyncManagerTestCase {
 	}
 
     /**
-	 * Sync down the test accounts, modify a few, sync up with merge mode LEAVE_IF_CHANGED, check smartstore and server afterwards
+     * Sync down the test accounts, update a few locally,
+     * update a few on server,
+     * Sync up with merge mode LEAVE_IF_CHANGED, check smartstore and server
+     * Then sync up again with merge mode OVERWRITE, check smartstore and server
+     *
 	 */
 	public void testSyncUpWithLocallyUpdatedRecordsWithoutOverwrite() throws Exception {
 		// First sync down
@@ -209,14 +213,24 @@ public class SyncManagerTest extends SyncManagerTestCase {
         }
         updateRecordsOnServer(idToFieldsRemotelyUpdated, Constants.ACCOUNT);
 
-		// Sync up
+		// Sync up with leave-if-changed
 		trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
 
 		// Check that db shows entries as locally modified
         checkDbStateFlags(ids, false, true, false, ACCOUNTS_SOUP);
 
-		// Check server
+		// Check server still has remote updates
         checkServer(idToFieldsRemotelyUpdated, Constants.ACCOUNT);
+
+        // Sync up with overwrite
+        trySyncUp(3, MergeMode.OVERWRITE);
+
+        // Check that db no longer shows entries as locally modified
+        checkDbStateFlags(ids, false, false, false, ACCOUNTS_SOUP);
+
+        // Check server has local updates
+        checkServer(idToFieldsLocallyUpdated, Constants.ACCOUNT);
+
 	}
 
     /**
@@ -304,7 +318,8 @@ public class SyncManagerTest extends SyncManagerTestCase {
 	/**
 	 * Sync down the test accounts, delete a few locally,
      * update a few on server,
-     * Sync up with merge mode LEAVE_IF_CHANGED, check smartstore and server afterwards
+     * Sync up with merge mode LEAVE_IF_CHANGED, check smartstore and server
+     * Then sync up again with merge mode OVERWRITE, check smartstore and server
 	 */
 	public void testSyncUpWithLocallyDeletedRecordsWithoutOverwrite() throws Exception {
 		// First sync down
@@ -325,7 +340,7 @@ public class SyncManagerTest extends SyncManagerTestCase {
         }
         updateRecordsOnServer(idToFieldsRemotelyUpdated, Constants.ACCOUNT);
 
-		// Sync up
+		// Sync up with leave-if-changed
 		trySyncUp(3, MergeMode.LEAVE_IF_CHANGED);
 		
 		// Check that db still contains those entries
@@ -333,6 +348,15 @@ public class SyncManagerTest extends SyncManagerTestCase {
 
 		// Check server
         checkServer(idToFieldsRemotelyUpdated, Constants.ACCOUNT);
+
+        // Sync up with overwrite
+        trySyncUp(3, MergeMode.OVERWRITE);
+
+        // Check that db no longer contains deleted records
+        checkDbDeleted(ACCOUNTS_SOUP, idsLocallyDeleted, Constants.ID);
+
+        // Check server no longer contains deleted record
+        checkServerDeleted(idsLocallyDeleted, Constants.ACCOUNT);
 	}
 
 

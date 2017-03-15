@@ -40,6 +40,7 @@ import com.salesforce.androidsdk.smartstore.app.SmartStoreSDKManager;
 import com.salesforce.androidsdk.smartstore.store.SmartStore;
 import com.salesforce.androidsdk.smartstore.store.SmartStore.SmartStoreException;
 import com.salesforce.androidsdk.smartsync.app.SmartSyncSDKManager;
+import com.salesforce.androidsdk.smartsync.target.AdvancedSyncUpTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncDownTarget;
 import com.salesforce.androidsdk.smartsync.target.SyncUpTarget;
 import com.salesforce.androidsdk.smartsync.util.SyncManagerLogger;
@@ -53,6 +54,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -257,7 +259,7 @@ public class SyncManager {
                     }
                     updateSync(sync, SyncState.Status.DONE, 100, callback);
                 } catch (Exception e) {
-                    logger.e("SmartSyncMgr:runSync", "Error during sync: " + sync.getId(), e);
+                    logger.e(this, "runSync:", e);
                     // Update status to failed
                     updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
                 }
@@ -378,7 +380,7 @@ public class SyncManager {
             try {
                 syncUpOneRecord(target, soupName, record, options);
             }
-            catch (Exception e) {
+            catch (SmartSyncSoftException e) {
                 // Sync up should keep going even if there are failures
                 logger.e(this, "SmartSyncMgr:syncUp:syncUpOneRecord failed:", e);
             }
@@ -397,35 +399,82 @@ public class SyncManager {
     private void syncUpOneRecord(SyncUpTarget target, String soupName,
                                  JSONObject record, SyncOptions options) throws JSONException, IOException {
 
+        /*
+         * Checks if we are attempting to sync up a record that has been updated
+         * on the server AFTER the client's last sync down. If the merge mode
+         * passed in tells us to leave the record alone under these
+         * circumstances, we will do nothing and return here.
+         */
+        final MergeMode mergeMode = options.getMergeMode();
+        if (mergeMode == MergeMode.LEAVE_IF_CHANGED &&
+                !target.isNewerThanServer(this, record)) {
+
+            // Nothing to do for this record
+            logger.d(this, "syncUpOneRecord: Record not synced since client does not have the latest from server:", record);
+            return;
+        }
+
+        // Advanced sync up target take it from here
+        if (target instanceof AdvancedSyncUpTarget) {
+            ((AdvancedSyncUpTarget) target).syncUpRecord(this, record, options.getFieldlist(), options.getMergeMode());
+            return;
+        }
+
         // Do we need to do a create, update or delete
         boolean locallyDeleted = target.isLocallyDeleted(record);
         boolean locallyCreated = target.isLocallyCreated(record);
+        boolean locallyUpdated = target.isLocallyUpdated(record);
 
         Action action = null;
         if (locallyDeleted)
             action = Action.delete;
         else if (locallyCreated)
             action = Action.create;
-        // This method is called with records considered dirty by the target
-        // If it's not a create or delete then we will do an update
-        else
+        else if (locallyUpdated)
             action = Action.update;
 
-        // Target's updateOnServer and deleteOnServer should not update/delete server
-        // when merge mode is LEAVE_IF_CHANGED and server's record is more recent that client's record
-        final MergeMode mergeMode = options.getMergeMode();
+        if (action == null) {
+            // Nothing to do for this record
+            return;
+        }
 
-
-        // Create/update/delete record on server and update local store
+        // Create/update/delete record on server and update smartstore
+        String recordServerId;
+        int statusCode;
         switch (action) {
             case create:
-                target.createOnServer(this, record, options.getFieldlist(), soupName, mergeMode);
+                recordServerId = target.createOnServer(this, record, options.getFieldlist());
+                if (recordServerId != null) {
+                    record.put(target.getIdFieldName(), recordServerId);
+                    target.cleanAndSaveInLocalStore(this, soupName, record);
+                }
                 break;
             case delete:
-                target.deleteOnServer(this, record, soupName, mergeMode);
+                statusCode = (locallyCreated
+                        ? HttpURLConnection.HTTP_NOT_FOUND // if locally created it can't exist on the server - we don't need to actually do the deleteOnServer call
+                        : target.deleteOnServer(this, record));
+                if (RestResponse.isSuccess(statusCode) || statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
+                    target.deleteFromLocalStore(this, soupName, record);
+                }
                 break;
             case update:
-                target.updateOnServer(this, record, options.getFieldlist(), soupName, mergeMode);
+                statusCode = target.updateOnServer(this, record, options.getFieldlist());
+                if (RestResponse.isSuccess(statusCode)) {
+                    target.cleanAndSaveInLocalStore(this, soupName, record);
+                }
+                // Handling remotely deleted records
+                else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
+                    if (mergeMode == MergeMode.OVERWRITE) {
+                        recordServerId = target.createOnServer(this, record, options.getFieldlist());
+                        if (recordServerId != null) {
+                            record.put(target.getIdFieldName(), recordServerId);
+                            target.cleanAndSaveInLocalStore(this, soupName, record);
+                        }
+                    }
+                    else {
+                        // Leave local record alone
+                    }
+                }
                 break;
         }
     }
@@ -447,6 +496,7 @@ public class SyncManager {
         if (mergeMode == MergeMode.LEAVE_IF_CHANGED) {
             idsToSkip = target.getIdsToSkip(this, soupName);
         }
+
         while (records != null) {
             // Figure out records to save
             JSONArray recordsToSave = idsToSkip == null ? records : removeWithIds(records, idsToSkip, idField);
@@ -534,6 +584,24 @@ public class SyncManager {
 
 		private static final long serialVersionUID = 1L;
     }
+
+    /**
+     * Exception thrown during sync that should not stop the sync
+     *
+     */
+    public static class SmartSyncSoftException extends SmartSyncException {
+
+        public SmartSyncSoftException(String message) {
+            super(message);
+        }
+
+        public SmartSyncSoftException(Throwable e) {
+            super(e);
+        }
+
+        private static final long serialVersionUID = 1L;
+    }
+
 
     /**
      * Sets the rest client to be used.

@@ -83,7 +83,7 @@ public class TestSyncUpTarget extends SyncUpTarget {
     public String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws JSONException, IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
-                return null;
+                throw new SyncManager.SmartSyncSoftException("create soft fail");
             case HARD_FAIL_ON_SYNC:
                 throw new RuntimeException("create hard fail");
             default: // case NO_FAIL:
@@ -96,35 +96,32 @@ public class TestSyncUpTarget extends SyncUpTarget {
     }
 
     @Override
-    public void deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
+    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
-                // return HttpURLConnection.HTTP_BAD_REQUEST;
-                break;
+                throw new SyncManager.SmartSyncSoftException("delete soft fail");
             case HARD_FAIL_ON_SYNC:
                 throw new RuntimeException("delete hard fail");
             default: // case NO_FAIL:
                 if (actionCollector != null) {
                     actionCollector.deletedRecordIds.add(objectId);
                 }
-
-                // return HttpURLConnection.HTTP_OK;
+                return HttpURLConnection.HTTP_OK;
         }
     }
 
     @Override
-    public Pair<Integer, String> updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields, Date ifUnmodifiedSinceDate) throws IOException {
+    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
         switch (syncBehavior) {
             case SOFT_FAIL_ON_SYNC:
-                return new Pair<>(HttpURLConnection.HTTP_BAD_REQUEST, null);
+                throw new SyncManager.SmartSyncSoftException("update soft fail");
             case HARD_FAIL_ON_SYNC:
                 throw new RuntimeException("update hard fail");
             default: // case NO_FAIL:
                 if (actionCollector != null) {
                     actionCollector.updatedRecordIds.add(objectId);
                 }
-
-                return new Pair<>(HttpURLConnection.HTTP_OK, Constants.TIMESTAMP_FORMAT.format(new Date()));
+                return HttpURLConnection.HTTP_OK;
         }
     }
 

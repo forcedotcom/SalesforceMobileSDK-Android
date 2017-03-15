@@ -36,6 +36,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 /**
  * Simple logger for sync manager
@@ -80,7 +82,11 @@ public class SyncManagerLogger {
             return "null";
         }
         else if (obj instanceof Throwable) {
-            return ((Throwable) obj).getMessage();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            pw.print(((Throwable) obj).getMessage());
+            ((Throwable) obj).printStackTrace(pw);
+            return sw.toString();
         }
         else if (obj instanceof RestResponse) {
             try {
