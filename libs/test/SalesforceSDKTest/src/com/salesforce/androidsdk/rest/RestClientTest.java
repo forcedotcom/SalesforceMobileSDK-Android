@@ -413,6 +413,36 @@ public class RestClientTest extends InstrumentationTestCase {
     }
 
     /**
+     * Testing upsert calls to the server.
+     * Create new account using a first upsert call then update it with a second upsert call then get it back
+     * @throws Exception
+     */
+    public void testUpsert() throws Exception {
+
+        // Create with upsert call
+        Map<String, Object> fields = new HashMap<String, Object>();
+        String accountName = ENTITY_NAME_PREFIX + "-" + System.nanoTime();
+        fields.put(NAME, accountName);
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForUpsert(TestCredentials.API_VERSION, ACCOUNT, "Id", null, fields));
+        Log.i("--response-->", response.toString());
+        assertTrue("Create with upsert failed", response.isSuccess());
+        String accountId = response.asJSONObject().getString("id");
+
+        // Update with upsert call
+        fields = new HashMap<String, Object>();
+        String updatedAccountName = ENTITY_NAME_PREFIX + "-" + System.nanoTime();
+        fields.put(NAME, updatedAccountName);
+        response = restClient.sendSync(RestRequest.getRequestForUpsert(TestCredentials.API_VERSION, ACCOUNT, "Id", accountId, fields));
+        Log.i("--response-->", response.toString());
+        assertTrue("Update with upsert failed", response.isSuccess());
+
+        // Retrieve - expect updated name
+        response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, accountId, Arrays.asList(new String[]{NAME})));
+        assertEquals("Wrong row returned", updatedAccountName, response.asJSONObject().getString(NAME));
+    }
+
+
+    /**
      * Testing update calls to the server with if-unmodified-since.
      * Create new account,
      * then update it with created date for unmodified since date (should update)

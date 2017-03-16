@@ -428,8 +428,15 @@ public class RestRequest {
 	 * @throws IOException 
 	 */
 	public static RestRequest getRequestForUpsert(String apiVersion, String objectType, String externalIdField, String externalId, Map<String, Object> fields) throws IOException  {
-    	return new RestRequest(RestMethod.PATCH, RestAction.UPSERT.getPath(apiVersion, objectType, externalIdField, externalId), fields == null ? null : new JSONObject(fields));
-	}
+        return new RestRequest(
+                externalId == null ? RestMethod.POST : RestMethod.PATCH,
+                RestAction.UPSERT.getPath(
+                        apiVersion,
+                        objectType,
+                        externalIdField,
+                        externalId == null ? "" : externalId),
+                fields == null ? null : new JSONObject(fields));
+    }
 	
 	/**
 	 * Request to delete a record. 
