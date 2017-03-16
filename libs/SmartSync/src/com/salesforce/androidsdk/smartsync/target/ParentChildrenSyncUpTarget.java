@@ -139,10 +139,12 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         // Preparing requests for parent
         LinkedHashMap<String, RestRequest> refIdToRequests = new LinkedHashMap<>();
         String parentId = record.getString(getIdFieldName());
+        List<String> parentCreateFieldlist = this.createFieldlist == null ? fieldlist : this.createFieldlist;
+        List<String> parentUpdateFieldlist = this.updateFieldlist == null ? fieldlist : this.updateFieldlist;
         RestRequest parentRequest = buildRequestForRecord(syncManager.apiVersion,
                 record,
-                createFieldlist == null ? fieldlist : createFieldlist,
-                updateFieldlist == null ? fieldlist : updateFieldlist,
+                parentCreateFieldlist,
+                parentUpdateFieldlist,
                 parentInfo,
                 null
         );
@@ -184,14 +186,14 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
 
         // Update parent in local store
         if (isDirty(record)) {
-            updateRecordInLocalStore(syncManager, record, true, refIdToHttpStatusCode, refIdToServerId, mergeMode);
+            updateRecordInLocalStore(syncManager, record, true, refIdToHttpStatusCode, refIdToServerId, mergeMode, parentCreateFieldlist);
         }
 
         // Update children local store
         for (int i = 0; i < children.length(); i++) {
             JSONObject childRecord = children.getJSONObject(i);
             if (isDirty(childRecord) || isCreate) {
-                updateRecordInLocalStore(syncManager, childRecord, false, refIdToHttpStatusCode, refIdToServerId, mergeMode);
+                updateRecordInLocalStore(syncManager, childRecord, false, refIdToHttpStatusCode, refIdToServerId, mergeMode, childrenCreateFieldlist);
             }
         }
     }
@@ -203,8 +205,9 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
      * @param refIdToHttpStatusCode
      * @param refIdToServerId       @throws JSONException
      * @param mergeMode
+     * @param fieldlist
      */
-    protected void updateRecordInLocalStore(SyncManager syncManager, JSONObject record, boolean isParent, Map<String, Integer> refIdToHttpStatusCode, Map<String, String> refIdToServerId, SyncState.MergeMode mergeMode) throws JSONException {
+    protected void updateRecordInLocalStore(SyncManager syncManager, JSONObject record, boolean isParent, Map<String, Integer> refIdToHttpStatusCode, Map<String, String> refIdToServerId, SyncState.MergeMode mergeMode, List<String> fieldlist) throws JSONException, IOException {
         final String soupName = isParent ? parentInfo.soupName : childrenInfo.soupName;
         final String idFieldName = isParent ? getIdFieldName() : childrenInfo.idFieldName;
         final String refId = record.getString(idFieldName);
@@ -238,7 +241,12 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             // Handling remotely deleted records
             else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                 if (mergeMode == SyncState.MergeMode.OVERWRITE) {
-                    // TBD createOnServer(syncManager, record, createFieldlist != null ? createFieldlist : fieldlist, soupName, mergeMode);
+                    String newServerId = super.createOnServer(syncManager, record, fieldlist);
+                    if (newServerId != null) {
+                        refIdToServerId.put(refId, newServerId);
+                        updateReferences(record, idFieldName, refIdToServerId);
+                        cleanAndSaveInLocalStore(syncManager, soupName, record);
+                    }
                 }
             }
         }

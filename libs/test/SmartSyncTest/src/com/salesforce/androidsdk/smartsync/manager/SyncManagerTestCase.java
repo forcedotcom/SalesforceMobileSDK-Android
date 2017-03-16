@@ -423,6 +423,7 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         RestRequest request = RestRequest.getRequestForQuery(ApiVersionStrings.getVersionNumber(targetContext), soql);
         RestResponse response = restClient.sendSync(request);
         JSONArray records = response.asJSONObject().getJSONArray(RECORDS);
+        assertEquals("Wrong number of records", idToFields.size(), records.length());
         for (int i=0; i<records.length(); i++) {
             JSONObject row = records.getJSONObject(i);
             Map<String, Object> expectedFields = idToFields.get(row.get(Constants.ID));
