@@ -45,8 +45,6 @@ import com.salesforce.androidsdk.rest.ClientManager;
 import com.salesforce.androidsdk.rest.ClientManagerTest;
 import com.salesforce.androidsdk.ui.LoginActivity;
 
-import static android.content.ContentValues.TAG;
-
 /**
  * A class that contains tests for functionality exposed in SalesforceSDKManager.
  *
@@ -54,6 +52,7 @@ import static android.content.ContentValues.TAG;
  */
 public class SalesforceSDKManagerTest extends InstrumentationTestCase {
 
+    private static final String TAG = "SFSDKManagerTest";
     private static final String TEST_APP_NAME = "OverridenAppName";
 
     /**
