@@ -59,6 +59,7 @@ import java.net.URI;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -257,7 +258,7 @@ abstract public class ManagerTestCase extends InstrumentationTestCase {
      * @param ids
      * @throws Exception
      */
-    protected void deleteRecordsOnServer(Set<String> ids, String objectType) throws Exception {
+    protected void deleteRecordsOnServer(Collection<String> ids, String objectType) throws Exception {
         List<RestRequest> requests = new ArrayList<>();
         for (String id : ids) {
             requests.add(RestRequest.getRequestForDelete(apiVersion, objectType, id));

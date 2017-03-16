@@ -1017,7 +1017,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
                 trySyncUp(syncUpTarget, 1, SyncState.MergeMode.LEAVE_IF_CHANGED);
 
                 // Check db and server - nothing should have changed
-                checkDbAndServerAfterBlockedSyncUp(accountId, contactId, localChangeForAccount, remoteChangeForAccount, localChangeForContact, remoteChangeForContact, remoteUpdatesAccount, remoteUpdatesContact);
+                checkDbAndServerAfterBlockedSyncUp(accountId, contactId, localChangeForAccount, remoteChangeForAccount, localChangeForContact, remoteChangeForContact, localUpdatesAccount, remoteUpdatesAccount, localUpdatesContact, remoteUpdatesContact);
 
                 // Sync up with overwrite
                 trySyncUp(syncUpTarget, 1, SyncState.MergeMode.OVERWRITE);
@@ -1037,11 +1037,18 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         }
     }
 
-    private void checkDbAndServerAfterBlockedSyncUp(String accountId, String contactId, Change localChangeForAccount, Change remoteChangeForAccount, Change localChangeForContact, Change remoteChangeForContact, Map<String, Map<String, Object>> remoteUpdatesAccount, Map<String, Map<String, Object>> remoteUpdatesContact) throws JSONException, IOException {
+    private void checkDbAndServerAfterBlockedSyncUp(String accountId, String contactId, Change localChangeForAccount, Change remoteChangeForAccount, Change localChangeForContact, Change remoteChangeForContact, Map<String, Map<String, Object>> localUpdatesAccount, Map<String, Map<String, Object>> remoteUpdatesAccount, Map<String, Map<String, Object>> localUpdatesContact, Map<String, Map<String, Object>> remoteUpdatesContact) throws JSONException, IOException {
 
         // Check db - local changes should still be there
         checkDbStateFlags(Arrays.asList(accountId), false, localChangeForAccount == Change.UPDATE, localChangeForAccount == Change.DELETE, ACCOUNTS_SOUP);
         checkDbStateFlags(Arrays.asList(contactId), false, localChangeForContact == Change.UPDATE, localChangeForContact == Change.DELETE, CONTACTS_SOUP);
+
+        if (localChangeForAccount == Change.UPDATE) {
+            checkDb(localUpdatesAccount, ACCOUNTS_SOUP);
+        }
+        if (localChangeForContact == Change.UPDATE) {
+            checkDb(localUpdatesContact, CONTACTS_SOUP);
+        }
 
         // Check server - remote changes should still be there
         switch (remoteChangeForAccount) {
@@ -1069,55 +1076,92 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         }
     }
 
-    private void checkDbAndServerAfterCompletedSyncUp(String accountId, String contactId, Change localChangeForAccount, Change remoteChangeForAccount, Change localChangeForContact, Change remoteChangeForContact, Map<String, Map<String, Object>> localUpdatesAccount, Map<String, Map<String, Object>> localUpdatesContact) throws JSONException, IOException {
-        switch (localChangeForAccount) {
-            case NONE:
-                checkDbStateFlags(Arrays.asList(accountId), false, false, false, ACCOUNTS_SOUP);
-                checkServer(accountIdToFields, Constants.ACCOUNT);
-                break;
-            case UPDATE:
-                if (remoteChangeForAccount == Change.DELETE) {
-                    // account was recreated - has a new id
-                    // new account id should also be in children
-                    fail("Missing checks for local update remote delete");
-                    // TBD
-                }
-                else {
-                    checkDbStateFlags(Arrays.asList(accountId), false, false, false, ACCOUNTS_SOUP);
-                    checkDb(localUpdatesAccount, ACCOUNTS_SOUP);
-                    checkServer(localUpdatesAccount, Constants.ACCOUNT);
-                }
-                break;
-            case DELETE:
-                checkDbDeleted(ACCOUNTS_SOUP, new String[]{accountId}, Constants.ID);
-                checkServerDeleted(new String[]{accountId}, Constants.ACCOUNT);
-                break;
-        }
+    private void checkDbAndServerAfterCompletedSyncUp(String accountId, String contactId, Change localChangeForAccount, Change remoteChangeForAccount, Change localChangeForContact, Change remoteChangeForContact, Map<String, Map<String, Object>> localUpdatesAccount, Map<String, Map<String, Object>> localUpdatesContact) throws Exception {
+        String newAccountId = null;
+        String newContactId = null;
 
-        if (contactId != null) {
-            switch (localChangeForContact) {
+        try {
+            switch (localChangeForAccount) {
                 case NONE:
-                    checkDbStateFlags(Arrays.asList(contactId), false, false, false, CONTACTS_SOUP);
-                    checkServer(accountIdContactIdToFields.get(accountId), Constants.CONTACT);
+                    checkDbStateFlags(Arrays.asList(accountId), false, false, false, ACCOUNTS_SOUP);
+                    checkServer(accountIdToFields, Constants.ACCOUNT);
                     break;
                 case UPDATE:
-                    if (remoteChangeForContact == Change.DELETE) {
-                        // contact was recreated - has a new id
-                        fail("Missing checks for local update remote delete");
-                        // TBD
-                    }
-                    else {
-                        checkDbStateFlags(Arrays.asList(contactId), false, false, false, ACCOUNTS_SOUP);
-                        checkDb(localUpdatesContact, CONTACTS_SOUP);
-                        checkServer(localUpdatesContact, Constants.CONTACT);
+                    if (remoteChangeForAccount == Change.DELETE) {
+                        newAccountId = checkRecordRecreated(accountId, localUpdatesAccount, Constants.NAME, ACCOUNTS_SOUP, Constants.ACCOUNT);
+                    } else {
+                        checkDbStateFlags(Arrays.asList(accountId), false, false, false, ACCOUNTS_SOUP);
+                        checkDb(localUpdatesAccount, ACCOUNTS_SOUP);
+                        checkServer(localUpdatesAccount, Constants.ACCOUNT);
                     }
                     break;
                 case DELETE:
-                    checkDbDeleted(CONTACTS_SOUP, new String[]{contactId}, Constants.ID);
-                    checkServerDeleted(new String[]{contactId}, Constants.CONTACT);
+                    checkDbDeleted(ACCOUNTS_SOUP, new String[]{accountId}, Constants.ID);
+                    checkServerDeleted(new String[]{accountId}, Constants.ACCOUNT);
                     break;
             }
+
+            if (contactId != null) {
+                switch (localChangeForContact) {
+                    case NONE:
+                        checkDbStateFlags(Arrays.asList(contactId), false, false, false, CONTACTS_SOUP);
+                        checkServer(accountIdContactIdToFields.get(accountId), Constants.CONTACT);
+                        break;
+                    case UPDATE:
+                        if (remoteChangeForContact == Change.DELETE) {
+                            newContactId = checkRecordRecreated(contactId, localUpdatesContact, Constants.LAST_NAME, CONTACTS_SOUP, Constants.CONTACT);
+                            // TODO check relationship fields
+                        } else {
+                            checkDbStateFlags(Arrays.asList(contactId), false, false, false, ACCOUNTS_SOUP);
+                            checkDb(localUpdatesContact, CONTACTS_SOUP);
+                            checkServer(localUpdatesContact, Constants.CONTACT);
+                        }
+                        break;
+                    case DELETE:
+                        checkDbDeleted(CONTACTS_SOUP, new String[]{contactId}, Constants.ID);
+                        checkServerDeleted(new String[]{contactId}, Constants.CONTACT);
+                        break;
+                }
+            }
         }
+        finally {
+            // Cleaning "recreated" records
+            if (newAccountId != null) deleteRecordsOnServer(Collections.singleton(newAccountId), Constants.ACCOUNT);
+            if (newContactId != null) deleteRecordsOnServer(Collections.singleton(newContactId), Constants.CONTACT);
+        }
+    }
+
+    /**
+     * Check records that were "recreated"
+     * A record is "recreated" when synced up locally updated and remotely deleted
+     *
+     * @param recordId
+     * @param originalIdToFields
+     * @param soupName
+     * @param objectType
+     *
+     * @return new record id
+     *
+     * @throws JSONException
+     * @throws IOException
+     */
+    private String checkRecordRecreated(String recordId, Map<String, Map<String, Object>> originalIdToFields, String nameField, String soupName, String objectType) throws JSONException, IOException {
+        String updatedName = (String) originalIdToFields.get(recordId).get(nameField);
+        Map<String, Map<String, Object>> newIdToFields = getIdToFieldsByName(soupName, new String[]{nameField}, nameField, new String[] {updatedName});
+        String newRecordId = newIdToFields.keySet().toArray(new String[0])[0];
+
+        assertFalse("Record should have new id", newRecordId.equals(recordId));
+
+        // Make sure old id is gone from db and server
+        checkDbDeleted(soupName, new String[] {recordId}, Constants.ID);
+        checkServerDeleted(new String[] {recordId}, objectType);
+
+        // Make sure record with new id is correct in db and server
+        checkDbStateFlags(Arrays.asList(newRecordId), false, false, false, soupName);
+        checkDb(newIdToFields, soupName);
+        checkServer(newIdToFields, objectType);
+
+        return newRecordId;
     }
 
     /**

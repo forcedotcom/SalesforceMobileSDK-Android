@@ -27,7 +27,6 @@
 package com.salesforce.androidsdk.smartsync.manager;
 
 import android.text.TextUtils;
-import android.util.Log;
 
 import com.salesforce.androidsdk.rest.ApiVersionStrings;
 import com.salesforce.androidsdk.rest.RestRequest;
@@ -66,7 +65,6 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
 
     protected static final String TYPE = "type";
     protected static final String RECORDS = "records";
-    protected static final String LID = "id"; // lower case id in create response
     protected static final String LOCAL_ID_PREFIX = "local_";
     protected static final String ACCOUNTS_SOUP = "accounts";
     protected static final int TOTAL_SIZE_UNKNOWN = -2;
