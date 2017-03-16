@@ -29,7 +29,6 @@ package com.salesforce.androidsdk.smartsync.manager;
 import android.app.Application;
 import android.app.Instrumentation;
 import android.content.Context;
-import android.support.annotation.NonNull;
 import android.test.InstrumentationTestCase;
 import android.util.Log;
 
@@ -65,7 +64,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Abstract super class for manager test classes

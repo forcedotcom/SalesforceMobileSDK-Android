@@ -113,13 +113,13 @@ public class ParentChildrenSyncTargetHelper {
     }
 
 
-    public static void deleteChildrenFromLocalStore(SmartStore smartStore, String soupName, String[] ids, String idField, ChildrenInfo childrenInfo) {
-        QuerySpec querySpec = getQueryForChildren(soupName, SmartStore.SOUP_ENTRY_ID, ids, idField, childrenInfo);
+    public static void deleteChildrenFromLocalStore(SmartStore smartStore, String parentSoupName, ChildrenInfo childrenInfo, Long... parentLocalIds) {
+        QuerySpec querySpec = getQueryForChildren(childrenInfo, parentSoupName, SmartStore.SOUP_ENTRY_ID, parentLocalIds);
         smartStore.deleteByQuery(childrenInfo.soupName, querySpec);
     }
 
-    public static JSONArray getChildrenFromLocalStore(SmartStore smartStore, String soupName, JSONObject parent, ChildrenInfo childrenInfo) throws JSONException {
-        QuerySpec  querySpec = getQueryForChildren(soupName, SmartSqlHelper.SOUP, new String[] {parent.getString(SmartStore.SOUP_ENTRY_ID)}, SmartStore.SOUP_ENTRY_ID, childrenInfo);
+    public static JSONArray getChildrenFromLocalStore(SmartStore smartStore, String parentSoupName, ChildrenInfo childrenInfo, JSONObject parent) throws JSONException {
+        QuerySpec  querySpec = getQueryForChildren(childrenInfo, parentSoupName, SmartSqlHelper.SOUP, parent.getLong(SmartStore.SOUP_ENTRY_ID));
         JSONArray rows = smartStore.query(querySpec, 0);
         JSONArray children = new JSONArray();
         for (int i=0; i<rows.length(); i++) {
@@ -129,18 +129,17 @@ public class ParentChildrenSyncTargetHelper {
         return children;
     }
 
-    protected static QuerySpec getQueryForChildren(String soupName, String fieldToSelect, String[] ids, String idField, ChildrenInfo childrenInfo) {
+    protected static QuerySpec getQueryForChildren(ChildrenInfo childrenInfo, String parentSoupName, String childFieldToSelect, Long... parentLocalIds) {
         String smartSql = String.format(
                 "SELECT {%s:%s} FROM {%s},{%s} WHERE {%s:%s} = {%s:%s} AND {%s:%s} IN (%s)",
-                childrenInfo.soupName, fieldToSelect,
-                childrenInfo.soupName, soupName,
+                childrenInfo.soupName, childFieldToSelect,
+                childrenInfo.soupName, parentSoupName,
                 childrenInfo.soupName, childrenInfo.parentLocalIdFieldName,
-                soupName, SmartStore.SOUP_ENTRY_ID,
-                soupName, idField,
-                "'" + TextUtils.join("', '", ids) + "'");
+                parentSoupName, SmartStore.SOUP_ENTRY_ID,
+                parentSoupName, SmartStore.SOUP_ENTRY_ID,
+                TextUtils.join(", ", parentLocalIds));
 
         return QuerySpec.buildSmartQuerySpec(smartSql, Integer.MAX_VALUE);
     }
-
 
 }

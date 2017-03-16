@@ -136,7 +136,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         boolean isCreate = isLocallyCreated(record);
         boolean isDelete = isLocallyDeleted(record);
 
-        // Preparing requests for parent
+        // Preparing request for parent
         LinkedHashMap<String, RestRequest> refIdToRequests = new LinkedHashMap<>();
         String parentId = record.getString(getIdFieldName());
         List<String> parentCreateFieldlist = this.createFieldlist == null ? fieldlist : this.createFieldlist;
@@ -154,11 +154,15 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
             refIdToRequests.put(parentId, parentRequest);
 
         // Getting children
-        JSONArray children = ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
+        JSONArray children = (relationshipType == RelationshipType.MASTER_DETAIL && parentRequest != null && isDelete)
+                // deleting master in a master-detail relationship will delete the children
+                // so no need to actually do any work on the children
+                ? new JSONArray()
+                : ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
                 syncManager.getSmartStore(),
                 parentInfo.soupName,
-                record,
-                childrenInfo);
+                childrenInfo, record
+        );
 
         // Preparing requests for children
         for (int i = 0; i < children.length(); i++) {
@@ -220,6 +224,10 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 || RestResponse.isSuccess(statusCode) // or we successfully deleted on the server
                 || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
             {
+                if (isParent && (relationshipType == RelationshipType.MASTER_DETAIL)) {
+                    ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(syncManager.getSmartStore(), soupName, childrenInfo, record.getLong(SmartStore.SOUP_ENTRY_ID));
+                }
+
                 deleteFromLocalStore(syncManager, soupName, record);
             }
         }
@@ -351,8 +359,8 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         JSONArray children = ParentChildrenSyncTargetHelper.getChildrenFromLocalStore(
                 syncManager.getSmartStore(),
                 parentInfo.soupName,
-                record,
-                childrenInfo);
+                childrenInfo, record
+        );
 
         for (int i=0; i<children.length(); i++) {
             JSONObject childRecord = children.getJSONObject(i);
@@ -442,15 +450,6 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
         if (refIdToServerId.containsKey(refId)) {
             record.put(fieldWithRefId, refIdToServerId.get(refId));
         }
-    }
-
-    @Override
-    public void deleteFromLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
-        if (relationshipType == RelationshipType.MASTER_DETAIL) {
-            ParentChildrenSyncTargetHelper.deleteChildrenFromLocalStore(syncManager.getSmartStore(),
-                    soupName, new String[]{record.getString(SmartStore.SOUP_ENTRY_ID)}, SmartStore.SOUP_ENTRY_ID, childrenInfo);
-        }
-        super.deleteFromLocalStore(syncManager, soupName, record);
     }
 
 }

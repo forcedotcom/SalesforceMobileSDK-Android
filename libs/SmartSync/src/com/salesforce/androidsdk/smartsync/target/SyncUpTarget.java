@@ -150,7 +150,7 @@ public class SyncUpTarget extends SyncTarget {
      * @throws IOException
      * @throws JSONException
      */
-    public String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws IOException, JSONException {
+    protected String createOnServer(SyncManager syncManager, String objectType, Map<String, Object> fields) throws IOException, JSONException {
         RestRequest request = RestRequest.getRequestForCreate(syncManager.apiVersion, objectType, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
@@ -183,7 +183,7 @@ public class SyncUpTarget extends SyncTarget {
      * @return server response status code
      * @throws IOException
      */
-    public int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
+    protected int deleteOnServer(SyncManager syncManager, String objectType, String objectId) throws IOException {
         RestRequest request = RestRequest.getRequestForDelete(syncManager.apiVersion, objectType, objectId);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
@@ -218,7 +218,7 @@ public class SyncUpTarget extends SyncTarget {
      * @return true if successful
      * @throws IOException
      */
-    public int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
+    protected int updateOnServer(SyncManager syncManager, String objectType, String objectId, Map<String, Object> fields) throws IOException {
         RestRequest request = RestRequest.getRequestForUpdate(syncManager.apiVersion, objectType, objectId, fields);
         RestResponse response = syncManager.sendSyncWithSmartSyncUserAgent(request);
 
@@ -274,66 +274,6 @@ public class SyncUpTarget extends SyncTarget {
      */
     public Set<String> getIdsOfRecordsToSyncUp(SyncManager syncManager, String soupName) throws JSONException {
         return getDirtyRecordIds(syncManager, soupName, SmartStore.SOUP_ENTRY_ID);
-    }
-
-    /**
-     * Given a record, return true if it was locally created
-     * @param record
-     * @return
-     * @throws JSONException
-     */
-    public boolean isLocallyCreated(JSONObject record) throws JSONException {
-        return record.getBoolean(LOCALLY_CREATED);
-    }
-
-    /**
-     * Given a record, return true if it was locally updated
-     * @param record
-     * @return
-     * @throws JSONException
-     */
-    public boolean isLocallyUpdated(JSONObject record) throws JSONException {
-        return record.getBoolean(LOCALLY_UPDATED);
-    }
-
-    /**
-     * Given a record, return true if it was locally deleted
-     * @param record
-     * @return
-     * @throws JSONException
-     */
-    public boolean isLocallyDeleted(JSONObject record) throws JSONException {
-        return record.getBoolean(LOCALLY_DELETED);
-    }
-
-    /**
-     * Given a record, return true if it was locally created/updated or deleted
-     * @param record
-     * @return
-     * @throws JSONException
-     */
-    public boolean isDirty(JSONObject record) throws JSONException {
-        return record.getBoolean(LOCAL);
-    }
-
-    /**
-     * Get record from local store by storeId
-     * @param syncManager
-     * @param storeId
-     * @throws  JSONException
-     */
-    public JSONObject getFromLocalStore(SyncManager syncManager, String soupName, String storeId) throws JSONException {
-        return syncManager.getSmartStore().retrieve(soupName, Long.valueOf(storeId)).getJSONObject(0);
-    }
-
-    /**
-     * Delete record from local store
-     * @param syncManager
-     * @param soupName
-     * @param record
-     */
-    public void deleteFromLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
-        syncManager.getSmartStore().delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
     }
 
     /**

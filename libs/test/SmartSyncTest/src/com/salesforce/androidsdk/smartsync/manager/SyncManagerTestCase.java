@@ -175,6 +175,24 @@ abstract public class SyncManagerTestCase extends ManagerTestCase {
         assertEquals("All records should have been returned from smartstore", ids.length, records.length());
     }
 
+    /**
+     * Check relationships field of children
+     * @param childrenIds
+     * @param expectedParentId
+     * @param soupName
+     * @param idFieldName
+     * @param parentIdFieldName
+     */
+    protected void checkDbRelationships(Collection<String> childrenIds, String expectedParentId, String soupName, String idFieldName, String parentIdFieldName) throws JSONException {
+        QuerySpec smartStoreQuery = QuerySpec.buildSmartQuerySpec("SELECT {" + soupName + ":_soup} FROM {" + soupName + "} WHERE {" + soupName + ":" + idFieldName + "} IN " + makeInClause(childrenIds), childrenIds.size());
+        JSONArray rows = smartStore.query(smartStoreQuery, 0);
+        assertEquals("All records should have been returned from smartstore", childrenIds.size(), rows.length());
+        for (int i=0; i<rows.length(); i++) {
+            JSONObject childRecord = rows.getJSONArray(i).getJSONObject(0);
+            assertEquals("Wrong parent id", expectedParentId, childRecord.getString(parentIdFieldName));
+        }
+    }
+
 
     protected String makeInClause(String[] values) {
         return makeInClause(Arrays.asList(values));

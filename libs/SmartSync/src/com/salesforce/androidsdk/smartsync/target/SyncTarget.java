@@ -231,4 +231,64 @@ public abstract class SyncTarget {
         }
         return set;
     }
+
+    /**
+     * Given a record, return true if it was locally created
+     * @param record
+     * @return
+     * @throws JSONException
+     */
+    public boolean isLocallyCreated(JSONObject record) throws JSONException {
+        return record.getBoolean(LOCALLY_CREATED);
+    }
+
+    /**
+     * Given a record, return true if it was locally updated
+     * @param record
+     * @return
+     * @throws JSONException
+     */
+    public boolean isLocallyUpdated(JSONObject record) throws JSONException {
+        return record.getBoolean(LOCALLY_UPDATED);
+    }
+
+    /**
+     * Given a record, return true if it was locally deleted
+     * @param record
+     * @return
+     * @throws JSONException
+     */
+    public boolean isLocallyDeleted(JSONObject record) throws JSONException {
+        return record.getBoolean(LOCALLY_DELETED);
+    }
+
+    /**
+     * Given a record, return true if it was locally created/updated or deleted
+     * @param record
+     * @return
+     * @throws JSONException
+     */
+    public boolean isDirty(JSONObject record) throws JSONException {
+        return record.getBoolean(LOCAL);
+    }
+
+    /**
+     * Get record from local store by storeId
+     * @param syncManager
+     * @param storeId
+     * @throws  JSONException
+     */
+    public JSONObject getFromLocalStore(SyncManager syncManager, String soupName, String storeId) throws JSONException {
+        return syncManager.getSmartStore().retrieve(soupName, Long.valueOf(storeId)).getJSONObject(0);
+    }
+
+    /**
+     * Delete record from local store
+     * @param syncManager
+     * @param soupName
+     * @param record
+     */
+    public void deleteFromLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
+        syncManager.getSmartStore().delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
+    }
 }
