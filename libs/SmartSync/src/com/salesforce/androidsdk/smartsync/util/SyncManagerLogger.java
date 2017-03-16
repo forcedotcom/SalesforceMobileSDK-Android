@@ -65,6 +65,10 @@ public class SyncManagerLogger {
         println(Log.INFO, origin, msg, obj);
     }
 
+    public void w(Object origin, String msg, Object obj) {
+        println(Log.WARN, origin, msg, obj);
+    }
+
     public void e(Object origin, String msg, Object obj) {
         println(Log.ERROR, origin, msg, obj);
     }
@@ -73,7 +77,7 @@ public class SyncManagerLogger {
         if (priority >= minPriority) {
             String originStr = origin.getClass().getSimpleName();
             String objStr = toString(obj);
-            Log.println(priority, TAG, originStr + ":" + msg + objStr);
+            Log.println(priority, TAG, originStr + ":" + msg + ":" + objStr);
         }
     }
 

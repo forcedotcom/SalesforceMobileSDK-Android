@@ -35,7 +35,6 @@ import com.salesforce.androidsdk.smartsync.util.ChildrenInfo;
 import com.salesforce.androidsdk.smartsync.util.Constants;
 import com.salesforce.androidsdk.smartsync.util.ParentInfo;
 import com.salesforce.androidsdk.smartsync.util.SOQLBuilder;
-import com.salesforce.androidsdk.smartsync.util.SyncManagerLogger;
 import com.salesforce.androidsdk.smartsync.util.SyncState;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
 
@@ -57,29 +56,13 @@ import java.util.Map;
 public class ParentChildrenSyncUpTarget extends SyncUpTarget implements AdvancedSyncUpTarget {
 
     // Constants
-    private static final String TAG = "Parent..SyncUpTarget";
     public static final String CHILDREN_CREATE_FIELDLIST = "childrenCreateFieldlist";
     public static final String CHILDREN_UPDATE_FIELDLIST = "childrenUpdateFieldlist";
-    public static final String REF_TIME_STAMPS = "refTimeStamps";
 
     public static final String COMPOSITE_RESPONSE = "compositeResponse";
     public static final String REFERENCE_ID = "referenceId";
     public static final String BODY = "body";
     public static final String HTTP_STATUS_CODE = "httpStatusCode";
-
-    // For SyncManagerLogger
-    public static final String UPDATE_ON_SERVER_RECORD_REMOTELY_DELETED_RE_CREATING = "update on server:record remotely deleted - re-creating";
-    public static final String UPDATE_ON_SERVER_RECORD_REMOTELY_DELETED_LEAVING_THINGS_UNCHANGED = "update on server:record remotely deleted - leaving things unchanged";
-    public static final String UPDATE_ON_SERVER_RECORD_REMOTELY_UPDATED_LEAVING_THINGS_UNCHANGED = "update on server:record remotely updated - leaving things unchanged";
-    public static final String UPDATE_ON_SERVER_GOT_UNEXPECTED_STATUS = "update on server: got unexpected status:";
-    public static final String CREATE_ON_SERVER_SERVER_CREATE_SUCCEEDED_SAVING_LOCALLY = "create on server:server create succeeded - saving locally";
-    public static final String DELETE_ON_SERVER_NO_NEED_TO_DELETE_ON_SERVER_LOCALLY_CREATED_DELETING_LOCALLY = "delete on server:no need to delete on server (locally created) - deleting locally";
-    public static final String DELETE_ON_SERVER_SERVER_DELETE_SUCCEEDED_DELETING_LOCALLY = "delete on server:server delete succeeded - deleting locally";
-    public static final String DELETE_ON_SERVER_FAILED = "delete on server failed:";
-    public static final String UPDATE_ON_SERVER_SERVER_UPDATE_SUCCEEDED_SAVING_LOCALLY = "update on server:server update succeeded - saving locally";
-    public static final String CREATE_ON_SERVER_FAILED = "create on server failed:";
-    public static final String DELETE_ON_SERVER_RECORD_REMOTELY_DELETED_LEAVING_THINGS_UNCHANGED = "delete on server:record remotely deleted - leaving things unchanged";
-    public static final String DELETE_ON_SERVER_RECORD_REMOTELY_UPDATED_LEAVING_THINGS_UNCHANGED = "delete on server:record remotely updated - leaving things unchanged";
 
     private ParentInfo parentInfo;
     private ChildrenInfo childrenInfo;
@@ -161,8 +144,8 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 createFieldlist == null ? fieldlist : createFieldlist,
                 updateFieldlist == null ? fieldlist : updateFieldlist,
                 parentInfo,
-                null,
-                mergeMode, syncManager.getLogger());
+                null
+        );
 
         // Parent request goes first unless it's a delete
         if (parentRequest != null && !isDelete)
@@ -184,7 +167,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                     childrenCreateFieldlist,
                     childrenUpdateFieldlist,
                     childrenInfo,
-                    isDelete ? null : parentId, mergeMode, syncManager.getLogger());
+                    isDelete ? null : parentId);
             if (childRequest != null) refIdToRequests.put(childId, childRequest);
         }
 
@@ -230,17 +213,11 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
 
         // Delete case
         if (isLocallyDeleted(record)) {
-            if (isLocallyCreated(record)) { // we didn't go to the sever
-                syncManager.getLogger().d(this, DELETE_ON_SERVER_NO_NEED_TO_DELETE_ON_SERVER_LOCALLY_CREATED_DELETING_LOCALLY, record);
-            } else if (RestResponse.isSuccess(statusCode) // or we successfully deleted on the server
-                    || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
+            if (isLocallyCreated(record)  // we didn't go to the sever
+                || RestResponse.isSuccess(statusCode) // or we successfully deleted on the server
+                || statusCode == HttpURLConnection.HTTP_NOT_FOUND) // or the record was already deleted on the server
             {
-                syncManager.getLogger().d(this, DELETE_ON_SERVER_SERVER_DELETE_SUCCEEDED_DELETING_LOCALLY, record);
                 deleteFromLocalStore(syncManager, soupName, record);
-            }
-            // Something went wrong
-            else {
-                throw new SyncManager.SmartSyncException(DELETE_ON_SERVER_FAILED + statusCode);
             }
         }
 
@@ -255,27 +232,14 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                 if (!isParent)
                     updateReferences(record, childrenInfo.parentIdFieldName, refIdToServerId);
 
-                syncManager.getLogger().d(this, UPDATE_ON_SERVER_SERVER_UPDATE_SUCCEEDED_SAVING_LOCALLY, record);
-
                 // Clean and save
                 cleanAndSaveInLocalStore(syncManager, soupName, record);
             }
             // Handling remotely deleted records
             else if (statusCode == HttpURLConnection.HTTP_NOT_FOUND) {
                 if (mergeMode == SyncState.MergeMode.OVERWRITE) {
-                    syncManager.getLogger().d(this, UPDATE_ON_SERVER_RECORD_REMOTELY_DELETED_RE_CREATING, record);
                     // TBD createOnServer(syncManager, record, createFieldlist != null ? createFieldlist : fieldlist, soupName, mergeMode);
-                } else {
-                    syncManager.getLogger().d(this, UPDATE_ON_SERVER_RECORD_REMOTELY_DELETED_LEAVING_THINGS_UNCHANGED, record);
                 }
-            }
-            // Remote record was left alone because it has recently changed
-            else if (statusCode == HttpURLConnection.HTTP_PRECON_FAILED && mergeMode == SyncState.MergeMode.LEAVE_IF_CHANGED) {
-                syncManager.getLogger().d(this, UPDATE_ON_SERVER_RECORD_REMOTELY_UPDATED_LEAVING_THINGS_UNCHANGED, record);
-            }
-            // Unexpected
-            else {
-                throw new SyncManager.SmartSyncException(UPDATE_ON_SERVER_GOT_UNEXPECTED_STATUS + statusCode);
             }
         }
     }
@@ -285,7 +249,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
                                                 List<String> createFieldlist,
                                                 List<String> updateFieldlist,
                                                 ParentInfo info,
-                                                String parentId, SyncState.MergeMode mergeMode, SyncManagerLogger logger) throws IOException, JSONException {
+                                                String parentId) throws IOException, JSONException {
 
         String id = record.getString(info.idFieldName);
 
@@ -434,7 +398,7 @@ public class ParentChildrenSyncUpTarget extends SyncUpTarget implements Advanced
      * @return
      * @throws UnsupportedEncodingException
      */
-    private RestRequest getRequestForTimestamps(String apiVersion, String parentId) throws UnsupportedEncodingException {
+    protected RestRequest getRequestForTimestamps(String apiVersion, String parentId) throws UnsupportedEncodingException {
         SOQLBuilder builderNested = SOQLBuilder.getInstanceWithFields(childrenInfo.idFieldName, childrenInfo.modificationDateFieldName);
         builderNested.from(childrenInfo.sobjectTypePlural);
 

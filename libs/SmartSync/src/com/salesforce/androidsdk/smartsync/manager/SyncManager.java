@@ -259,7 +259,7 @@ public class SyncManager {
                     }
                     updateSync(sync, SyncState.Status.DONE, 100, callback);
                 } catch (Exception e) {
-                    logger.e(this, "runSync:", e);
+                    logger.e(this, "runSync", e);
                     // Update status to failed
                     updateSync(sync, SyncState.Status.FAILED, UNCHANGED, callback);
                 }
@@ -377,13 +377,7 @@ public class SyncManager {
         int i = 0;
         for (final String id : dirtyRecordIds) {
             JSONObject record = target.getFromLocalStore(this, soupName, id);
-            try {
-                syncUpOneRecord(target, soupName, record, options);
-            }
-            catch (SmartSyncSoftException e) {
-                // Sync up should keep going even if there are failures
-                logger.e(this, "SmartSyncMgr:syncUp:syncUpOneRecord failed:", e);
-            }
+            syncUpOneRecord(target, soupName, record, options);
 
             // Updating status
             int progress = (i + 1) * 100 / totalSize;
@@ -538,15 +532,13 @@ public class SyncManager {
 	 * @throws IOException
 	 */
 	public RestResponse sendSyncWithSmartSyncUserAgent(RestRequest restRequest) throws IOException {
+        logger.d(this, "sendSyncWithSmartSyncUserAgent:request", restRequest);
         RestResponse restResponse = restClient.sendSync(restRequest, new HttpAccess.UserAgentInterceptor(SalesforceSDKManager.getInstance().getUserAgent(SMART_SYNC)));
-        if (restResponse.isSuccess() || restResponse.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND) {
-            logger.d(this, "sendSyncWithSmartSyncUserAgent:request:", restRequest);
-            logger.d(this, "sendSyncWithSmartSyncUserAgent:response:", restResponse);
+        if (restResponse.isSuccess()) {
+            logger.d(this, "sendSyncWithSmartSyncUserAgent:response", restResponse);
         }
         else {
-            // Request failed, it should be seen by developer
-            logger.i(this, "sendSyncWithSmartSyncUserAgent:request:", restRequest);
-            logger.e(this, "sendSyncWithSmartSyncUserAgent:response:", restResponse);
+            logger.w(this, "sendSyncWithSmartSyncUserAgent:response", restResponse);
         }
         return restResponse;
     }
@@ -591,24 +583,6 @@ public class SyncManager {
 
 		private static final long serialVersionUID = 1L;
     }
-
-    /**
-     * Exception thrown during sync that should not stop the sync
-     *
-     */
-    public static class SmartSyncSoftException extends SmartSyncException {
-
-        public SmartSyncSoftException(String message) {
-            super(message);
-        }
-
-        public SmartSyncSoftException(Throwable e) {
-            super(e);
-        }
-
-        private static final long serialVersionUID = 1L;
-    }
-
 
     /**
      * Sets the rest client to be used.
