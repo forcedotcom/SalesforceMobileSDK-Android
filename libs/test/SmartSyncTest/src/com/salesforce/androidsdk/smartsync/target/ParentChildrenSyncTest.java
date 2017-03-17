@@ -704,16 +704,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     /**
-     * Sync up with locally updated parent record
-     *
-     * @throws Exception
-     */
-    public void testSyncUpLocallyUpdatedParent() throws Exception {
-        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.NONE, Change.NONE);
-    }
-
-    /**
-     * Sync up with locally updated child record
+     * Sync up with locally updated child
      *
      * @throws Exception
      */
@@ -722,52 +713,25 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     /**
-     * Sync up with locally and remotely updated parent record
+     * Sync up with locally updated child remotely updated child
      *
      * @throws Exception
      */
-    public void testSyncUpLocallyAndRemotelyUpdatedParent() throws Exception {
-        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.NONE, Change.NONE);
-    }
-
-    /**
-     * Sync up with locally and remotely updated child record
-     *
-     * @throws Exception
-     */
-    public void testSyncUpLocallyAndRemotelyUpdatedChild() throws Exception {
+    public void testSyncUpLocallyUpdatedChildRemotelyUpdatedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.NONE, Change.NONE, Change.UPDATE, Change.UPDATE);
     }
 
     /**
-     * Sync up with locally updated parent record and no children
+     * Sync up with locally updated child remotely deleted child
      *
      * @throws Exception
      */
-    public void testSyncUpLocallyUpdatedParentNoChildren() throws Exception {
-        trySyncUpsWithVariousChanges(2, 0, Change.UPDATE, Change.NONE, Change.NONE, Change.NONE);
+    public void testSyncUpLocallyUpdatedChildRemotelyDeletedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.NONE, Change.NONE, Change.UPDATE, Change.DELETE);
     }
 
     /**
-     * Sync up with locally and remotely updated parent record and no children
-     *
-     * @throws Exception
-     */
-    public void testSyncUpLocallyAndRemotelyUpdatedParentNoChildren() throws Exception {
-        trySyncUpsWithVariousChanges(2, 0, Change.UPDATE, Change.UPDATE, Change.NONE, Change.NONE);
-    }
-
-    /**
-     * Sync up with locally deleted parent record
-     *
-     * @throws Exception
-     */
-    public void testSyncUpLocallyDeletedParent() throws Exception {
-        trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.NONE, Change.NONE, Change.NONE);
-    }
-
-    /**
-     * Sync up with locally deleted child record
+     * Sync up with locally deleted child
      *
      * @throws Exception
      */
@@ -776,25 +740,286 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     /**
-     * Sync up with locally and remotely deleted parent record
+     * Sync up with locally deleted child remotely updated child
      *
      * @throws Exception
      */
-    public void testSyncUpLocallyAndRemotelyDeletedParent() throws Exception {
-        trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.DELETE, Change.NONE, Change.NONE);
+    public void testSyncUpLocallyDeletedChildRemotelyUpdatedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.NONE, Change.NONE, Change.DELETE, Change.UPDATE);
     }
 
     /**
-     * Sync up with locally and remotely deleted child record
+     * Sync up with locally deleted child remotely deleted child
      *
      * @throws Exception
      */
-    public void testSyncUpLocallyAndRemotelyDeletedChild() throws Exception {
+    public void testSyncUpLocallyDeletedChildRemotelyDeletedChild() throws Exception {
         trySyncUpsWithVariousChanges(2, 2, Change.NONE, Change.NONE, Change.DELETE, Change.DELETE);
     }
 
     /**
-     * Sync up with locally deleted parent record and no children
+     * Sync up with locally updated parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.NONE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally updated parent remotely updated parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentRemotelyUpdatedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.NONE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally updated parent remotely deleted parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentRemotelyDeletedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.DELETE, Change.NONE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally updated parent updated child
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentUpdatedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.UPDATE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally updated parent updated child remotely updated child
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentUpdatedChildRemotelyUpdatedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.UPDATE, Change.UPDATE);
+    }
+
+    /**
+     * Sync up with locally updated parent updated child remotely deleted child
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentUpdatedChildRemotelyDeletedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.UPDATE, Change.DELETE);
+    }
+
+    /**
+     * Sync up with locally updated parent updated child remotely updated parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentUpdatedChildRemotelyUpdatedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.UPDATE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally updated parent updated child remotely updated parent updated child
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentUpdatedChildRemotelyUpdatedParentUpdatedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.UPDATE, Change.UPDATE);
+    }
+
+    /**
+     * Sync up with locally updated parent updated child remotely updated parent deleted child
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentUpdatedChildRemotelyUpdatedParentDeletedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.UPDATE, Change.DELETE);
+    }
+
+    /**
+     * Sync up with locally updated parent updated child remotely deleted parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentUpdatedChildRemotelyDeletedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.DELETE, Change.UPDATE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally updated parent deleted child
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentDeletedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.DELETE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally updated parent deleted child remotely updated child
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentDeletedChildRemotelyUpdatedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.DELETE, Change.UPDATE);
+    }
+
+    /**
+     * Sync up with locally updated parent deleted child remotely deleted child
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentDeletedChildRemotelyDeletedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.NONE, Change.DELETE, Change.DELETE);
+    }
+
+    /**
+     * Sync up with locally updated parent deleted child remotely updated parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentDeletedChildRemotelyUpdatedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.DELETE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally updated parent deleted child remotely updated parent updated child
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentDeletedChildRemotelyUpdatedParentUpdatedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.DELETE, Change.UPDATE);
+    }
+
+    /**
+     * Sync up with locally updated parent deleted child remotely updated parent deleted child
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentDeletedChildRemotelyUpdatedParentDeletedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.UPDATE, Change.DELETE, Change.DELETE);
+    }
+
+    /**
+     * Sync up with locally updated parent deleted child remotely deleted parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentDeletedChildRemotelyDeletedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.DELETE, Change.DELETE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally deleted parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyDeletedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.NONE, Change.NONE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally deleted parent remotely updated parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyDeletedParentRemotelyUpdatedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.UPDATE, Change.NONE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally deleted parent remotely deleted parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyDeletedParentRemotelyDeletedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.DELETE, Change.NONE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally deleted parent updated child
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyDeletedParentUpdatedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.NONE, Change.UPDATE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally deleted parent updated child remotely updated parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyDeletedParentUpdatedChildRemotelyUpdatedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.UPDATE, Change.UPDATE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally deleted parent updated child remotely deleted parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyDeletedParentUpdatedChildRemotelyDeletedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.DELETE, Change.UPDATE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally deleted parent deleted child
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyDeletedParentDeletedChild() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.NONE, Change.DELETE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally deleted parent deleted child remotely updated parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyDeletedParentDeletedChildRemotelyUpdatedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.UPDATE, Change.DELETE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally deleted parent deleted child remotely deleted parent
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyDeletedParentDeletedChildRemotelyDeletedParent() throws Exception {
+        trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.DELETE, Change.DELETE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally updated parent and no children
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentNoChildren() throws Exception {
+        trySyncUpsWithVariousChanges(2, 0, Change.UPDATE, Change.NONE, Change.NONE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally updated parent remotely updated parent and no children
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentRemotelyUpdatedParentNoChildren() throws Exception {
+        trySyncUpsWithVariousChanges(2, 0, Change.UPDATE, Change.UPDATE, Change.NONE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally updated parent remotely deleted parent and no children
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyUpdatedParentRemotelyDeletedParentNoChildren() throws Exception {
+        trySyncUpsWithVariousChanges(2, 0, Change.UPDATE, Change.DELETE, Change.NONE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally deleted parent and no children
      *
      * @throws Exception
      */
@@ -803,54 +1028,22 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
     }
 
     /**
-     * Sync up with locally and remotely deleted parent record and no children
-     * NB: will do a sync up with leave-if-changed followed by a sync up with overwrite
+     * Sync up with locally deleted parent remotely updated parent and no children
      *
      * @throws Exception
      */
-    public void testSyncUpLocallyAndRemotelyDeletedParentNoChildren() throws Exception {
+    public void testSyncUpLocallyDeletedParentRemotelyUpdatedParentNoChildren() throws Exception {
+        trySyncUpsWithVariousChanges(2, 0, Change.DELETE, Change.UPDATE, Change.NONE, Change.NONE);
+    }
+
+    /**
+     * Sync up with locally deleted parent remotely deleted parent and no children
+     *
+     * @throws Exception
+     */
+    public void testSyncUpLocallyDeletedParentRemotelyDeletedParentNoChildren() throws Exception {
         trySyncUpsWithVariousChanges(2, 0, Change.DELETE, Change.DELETE, Change.NONE, Change.NONE);
     }
-    /**
-     * Sync up with locally updated remotely deleted parent record
-     * NB: will do a sync up with leave-if-changed followed by a sync up with overwrite
-     *
-     * @throws Exception
-     */
-    public void testSyncUpLocallyUpdatedRemotelyDeletedParent() throws Exception {
-        trySyncUpsWithVariousChanges(2, 2, Change.UPDATE, Change.DELETE, Change.NONE, Change.NONE);
-    }
-
-    /**
-     * Sync up with locally updated remotely deleted child record
-     * NB: will do a sync up with leave-if-changed followed by a sync up with overwrite
-     *
-     * @throws Exception
-     */
-    public void testSyncUpLocallyUpdatedRemotelyDeletedChild() throws Exception {
-        trySyncUpsWithVariousChanges(2, 2, Change.NONE, Change.NONE, Change.UPDATE, Change.DELETE);
-    }
-
-    /**
-     * Sync up with locally deleted remotely updated parent record
-     * NB: will do a sync up with leave-if-changed followed by a sync up with overwrite
-     *
-     * @throws Exception
-     */
-    public void testSyncUpLocallyDeletedRemotelyUpdatedParent() throws Exception {
-        trySyncUpsWithVariousChanges(2, 2, Change.DELETE, Change.UPDATE, Change.NONE, Change.NONE);
-    }
-
-    /**
-     * Sync up with locally deleted remotely updated child record
-     * NB: will do a sync up with leave-if-changed followed by a sync up with overwrite
-     *
-     * @throws Exception
-     */
-    public void testSyncUpLocallyDeletedRemotelyUpdatedChild() throws Exception {
-        trySyncUpsWithVariousChanges(2, 2, Change.NONE, Change.NONE, Change.DELETE, Change.UPDATE);
-    }
-
 
     /**
      * Helper for various sync up test
@@ -890,6 +1083,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         Map<String, Object> accountFields = accountIdToFields.get(accountId);
         String[] contactIdsOfAccount = numberContactsPerAccount > 0 ? accountIdContactIdToFields.get(accountId).keySet().toArray(new String[0]) : null;
         String contactId = contactIdsOfAccount != null ? contactIdsOfAccount[0] : null;
+        String otherContactId = contactIdsOfAccount != null ? contactIdsOfAccount[1] : null;
         Map<String, Object> contactFields = contactId != null ? accountIdContactIdToFields.get(accountId).get(contactId) : null;
 
         // Build sync up target
@@ -966,7 +1160,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             trySyncUp(syncUpTarget, 1, SyncState.MergeMode.LEAVE_IF_CHANGED);
 
             // Check db and server - local changes should have made it over
-            checkDbAndServerAfterCompletedSyncUp(accountId, contactId, localChangeForAccount, remoteChangeForAccount, localChangeForContact, remoteChangeForContact, localUpdatesAccount, localUpdatesContact);
+            checkDbAndServerAfterCompletedSyncUp(accountId, contactId, otherContactId, remoteChangeForAccount, localChangeForContact, remoteChangeForContact, localUpdatesAccount, localUpdatesContact, localChangeForAccount);
 
             // Sync up with overwrite - there should be dirty records found
             trySyncUp(syncUpTarget, 0, SyncState.MergeMode.OVERWRITE);
@@ -984,7 +1178,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             trySyncUp(syncUpTarget, 1, SyncState.MergeMode.OVERWRITE);
 
             // Check db and server - local changes should have made it over
-            checkDbAndServerAfterCompletedSyncUp(accountId, contactId, localChangeForAccount, remoteChangeForAccount, localChangeForContact, remoteChangeForContact, localUpdatesAccount, localUpdatesContact);
+            checkDbAndServerAfterCompletedSyncUp(accountId, contactId, otherContactId, remoteChangeForAccount, localChangeForContact, remoteChangeForContact, localUpdatesAccount, localUpdatesContact, localChangeForAccount);
         }
     }
 
@@ -1030,7 +1224,6 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             }
 
             checkDbStateFlags(Arrays.asList(contactId), false, localChangeForContact == Change.UPDATE, localChangeForContact == Change.DELETE, CONTACTS_SOUP);
-
             checkDbRelationships(contactIdsOfAccount, accountId, CONTACTS_SOUP, Constants.ID, ACCOUNT_ID);
 
             // Check server
@@ -1054,9 +1247,10 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
         }
     }
 
-    private void checkDbAndServerAfterCompletedSyncUp(String accountId, String contactId, Change localChangeForAccount, Change remoteChangeForAccount, Change localChangeForContact, Change remoteChangeForContact, Map<String, Map<String, Object>> localUpdatesAccount, Map<String, Map<String, Object>> localUpdatesContact) throws Exception {
+    private void checkDbAndServerAfterCompletedSyncUp(String accountId, String contactId, String otherContactId, Change remoteChangeForAccount, Change localChangeForContact, Change remoteChangeForContact, Map<String, Map<String, Object>> localUpdatesAccount, Map<String, Map<String, Object>> localUpdatesContact, Change localChangeForAccount) throws Exception {
         String newAccountId = null;
         String newContactId = null;
+        String newOtherContactId = null;
 
         try {
 
@@ -1066,21 +1260,18 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
             switch (localChangeForAccount) {
                 case NONE:
-                    checkDbStateFlags(Arrays.asList(accountId), false, false, false, ACCOUNTS_SOUP);
-                    checkServer(accountIdToFields, Constants.ACCOUNT);
+                    checkRecordAfterSync(accountId, accountIdToFields.get(accountId), ACCOUNTS_SOUP, Constants.ACCOUNT, null, null);
                     break;
                 case UPDATE:
                     if (remoteChangeForAccount == Change.DELETE) {
-                        newAccountId = checkRecordRecreated(accountId, localUpdatesAccount, Constants.NAME, ACCOUNTS_SOUP, Constants.ACCOUNT);
-                    } else {
-                        checkDbStateFlags(Arrays.asList(accountId), false, false, false, ACCOUNTS_SOUP);
-                        checkDb(localUpdatesAccount, ACCOUNTS_SOUP);
-                        checkServer(localUpdatesAccount, Constants.ACCOUNT);
+                        newAccountId = checkRecordRecreated(accountId, localUpdatesAccount.get(accountId), Constants.NAME, ACCOUNTS_SOUP, Constants.ACCOUNT, null, null);
+                    }
+                    else {
+                        checkRecordAfterSync(accountId, localUpdatesAccount.get(accountId), ACCOUNTS_SOUP, Constants.ACCOUNT, null, null);
                     }
                     break;
                 case DELETE:
-                    checkDbDeleted(ACCOUNTS_SOUP, new String[]{accountId}, Constants.ID);
-                    checkServerDeleted(new String[]{accountId}, Constants.ACCOUNT);
+                    checkDeletedRecordAfterSync(accountId, ACCOUNTS_SOUP, Constants.ACCOUNT);
                     break;
             }
 
@@ -1090,41 +1281,36 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
             if (contactId != null) {
 
-                Map<String, Map<String, Object>> contactFields = accountIdContactIdToFields.get(accountId);
-                Set<String> contactIdsOfAccount = contactFields.keySet();
-                HashSet<String> otherContactIdsOfAccount = new HashSet<>(contactIdsOfAccount);
-                otherContactIdsOfAccount.remove(contactId);
-
                 if (localChangeForAccount == Change.DELETE) {
                     // Master delete => deletes children
-                    checkDbDeleted(CONTACTS_SOUP, contactIdsOfAccount.toArray(new String[0]), Constants.ID);
-                    checkServerDeleted(contactIdsOfAccount.toArray(new String[0]), Constants.CONTACT);
+                    String[] contactIdsOfAcccount = accountIdContactIdToFields.get(accountId).keySet().toArray(new String[0]);
+                    checkDbDeleted(CONTACTS_SOUP, contactIdsOfAcccount, Constants.ID);
+                    checkServerDeleted(contactIdsOfAcccount, Constants.CONTACT);
                 }
                 else {
                     switch (localChangeForContact) {
                         case NONE:
-                            checkDbStateFlags(Arrays.asList(contactId), false, false, false, CONTACTS_SOUP);
-                            checkDbRelationships(contactIdsOfAccount, newAccountId != null ? newAccountId : accountId, CONTACTS_SOUP, Constants.ID, ACCOUNT_ID);
-                            checkServer(contactFields, Constants.CONTACT);
+                            if (remoteChangeForAccount == Change.DELETE || remoteChangeForContact == Change.DELETE) {
+                                newContactId = checkRecordRecreated(contactId, accountIdContactIdToFields.get(accountId).get(contactId), Constants.LAST_NAME, CONTACTS_SOUP, Constants.CONTACT, newAccountId == null ? accountId : newAccountId, ACCOUNT_ID);
+                            } else {
+                                checkRecordAfterSync(contactId, accountIdContactIdToFields.get(accountId).get(contactId), CONTACTS_SOUP, Constants.CONTACT, accountId, ACCOUNT_ID);
+                            }
                             break;
                         case UPDATE:
-                            if (remoteChangeForContact == Change.DELETE) {
-                                newContactId = checkRecordRecreated(contactId, localUpdatesContact, Constants.LAST_NAME, CONTACTS_SOUP, Constants.CONTACT);
-                                checkDbRelationships(Collections.singleton(newContactId), newAccountId != null ? newAccountId : accountId, CONTACTS_SOUP, Constants.ID, ACCOUNT_ID);
-                                checkDbRelationships(otherContactIdsOfAccount, newAccountId != null ? newAccountId : accountId, CONTACTS_SOUP, Constants.ID, ACCOUNT_ID);
-
+                            if (remoteChangeForAccount == Change.DELETE || remoteChangeForContact == Change.DELETE) {
+                                newContactId = checkRecordRecreated(contactId, localUpdatesContact.get(contactId), Constants.LAST_NAME, CONTACTS_SOUP, Constants.CONTACT, newAccountId == null ? accountId : newAccountId, ACCOUNT_ID);
                             } else {
-                                checkDbStateFlags(Arrays.asList(contactId), false, false, false, ACCOUNTS_SOUP);
-                                checkDbRelationships(contactIdsOfAccount, newAccountId != null ? newAccountId : accountId, CONTACTS_SOUP, Constants.ID, ACCOUNT_ID);
-                                checkDb(localUpdatesContact, CONTACTS_SOUP);
-                                checkServer(localUpdatesContact, Constants.CONTACT);
+                                checkRecordAfterSync(contactId, localUpdatesContact.get(contactId), CONTACTS_SOUP, Constants.CONTACT, accountId, ACCOUNT_ID);
                             }
                             break;
                         case DELETE:
-                            checkDbDeleted(CONTACTS_SOUP, new String[]{contactId}, Constants.ID);
-                            checkDbRelationships(otherContactIdsOfAccount, newAccountId != null ? newAccountId : accountId, CONTACTS_SOUP, Constants.ID, ACCOUNT_ID);
-                            checkServerDeleted(new String[]{contactId}, Constants.CONTACT);
+                            checkDeletedRecordAfterSync(contactId, CONTACTS_SOUP, Constants.CONTACT);
                             break;
+                    }
+
+                    if (remoteChangeForAccount == Change.DELETE) {
+                        // Check that other contact was recreated also
+                        newOtherContactId = checkRecordRecreated(otherContactId, accountIdContactIdToFields.get(accountId).get(otherContactId), Constants.LAST_NAME, CONTACTS_SOUP, Constants.CONTACT, newAccountId, ACCOUNT_ID);
                     }
                 }
             }
@@ -1133,40 +1319,97 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             // Cleaning "recreated" records
             if (newAccountId != null) deleteRecordsOnServer(Collections.singleton(newAccountId), Constants.ACCOUNT);
             if (newContactId != null) deleteRecordsOnServer(Collections.singleton(newContactId), Constants.CONTACT);
+            if (newOtherContactId != null) deleteRecordsOnServer(Collections.singleton(newOtherContactId), Constants.CONTACT);
         }
     }
 
     /**
-     * Check records that were "recreated"
+     * Check record that were "recreated"
      * A record is "recreated" when synced up locally updated and remotely deleted
      *
+     * Make sure old record is gone
+     * Make sure sync flags are false
+     * Make sure fields are as expected on db and server (including parent id field if provided)
+     *
      * @param recordId
-     * @param originalIdToFields
+     * @param fields
+     * @param nameField
      * @param soupName
      * @param objectType
+     * @param parentId
+     * @param parentIdField
      *
      * @return new record id
-     *
      * @throws JSONException
      * @throws IOException
      */
-    private String checkRecordRecreated(String recordId, Map<String, Map<String, Object>> originalIdToFields, String nameField, String soupName, String objectType) throws JSONException, IOException {
-        String updatedName = (String) originalIdToFields.get(recordId).get(nameField);
-        Map<String, Map<String, Object>> newIdToFields = getIdToFieldsByName(soupName, new String[]{nameField}, nameField, new String[] {updatedName});
+    private String checkRecordRecreated(String recordId, Map<String, Object> fields, String nameField, String soupName, String objectType, String parentId, String parentIdField) throws JSONException, IOException {
+        String updatedName = (String) fields.get(nameField);
+        Map<String, Map<String, Object>> newIdToFields = getIdToFieldsByName(soupName, new String[]{nameField}, nameField, new String[]{updatedName});
         String newRecordId = newIdToFields.keySet().toArray(new String[0])[0];
 
+        // Make sure new id is really new
         assertFalse("Record should have new id", newRecordId.equals(recordId));
 
         // Make sure old id is gone from db and server
-        checkDbDeleted(soupName, new String[] {recordId}, Constants.ID);
-        checkServerDeleted(new String[] {recordId}, objectType);
+        checkDbDeleted(soupName, new String[]{recordId}, Constants.ID);
+        checkServerDeleted(new String[]{recordId}, objectType);
 
         // Make sure record with new id is correct in db and server
-        checkDbStateFlags(Arrays.asList(newRecordId), false, false, false, soupName);
-        checkDb(newIdToFields, soupName);
-        checkServer(newIdToFields, objectType);
+        checkRecordAfterSync(newRecordId, newIdToFields.get(newRecordId), soupName, objectType, parentId, parentIdField);
 
         return newRecordId;
+    }
+
+    /**
+     * Check record after a sync
+     *
+     * Make sure sync flags are false
+     * Make sure fields are as expected on db and server
+     * Make sure parent id field has correct value on db and server (if provided)
+     *
+     * @param recordId
+     * @param fields
+     * @param soupName
+     * @param objectType
+     * @param parentId
+     * @param parentIdField @return
+     * @throws JSONException
+     * @throws IOException
+     */
+    private void checkRecordAfterSync(String recordId, Map<String, Object> fields, String soupName, String objectType, String parentId, String parentIdField) throws JSONException, IOException {
+
+        // Check record is no longer marked as dirty
+        checkDbStateFlags(Arrays.asList(recordId), false, false, false, soupName);
+
+        // Prepare fields map to check (add parentId if provided)
+        Map<String, Object> fieldsCopy = new HashMap<>(fields);
+        if (parentId != null) {
+            fieldsCopy.put(parentIdField, parentId);
+        }
+        Map<String, Map<String, Object>> idToFields = new HashMap<>();
+        idToFields.put(recordId, fieldsCopy);
+
+        // Check db
+        checkDb(idToFields, soupName);
+
+        // Check server
+        checkServer(idToFields, objectType);
+    }
+
+    /**
+     * Check that deleted record is truly gone from db and server
+     *
+     * @param recordId
+     * @param soupName
+     * @param objectType
+     * @return
+     * @throws JSONException
+     * @throws IOException
+     */
+    private void checkDeletedRecordAfterSync(String recordId, String soupName, String objectType) throws JSONException, IOException {
+        checkDbDeleted(soupName, new String[]{recordId}, Constants.ID);
+        checkServerDeleted(new String[]{recordId}, objectType);
     }
 
     /**
