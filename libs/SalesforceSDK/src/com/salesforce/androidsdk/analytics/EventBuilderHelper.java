@@ -75,12 +75,17 @@ public class EventBuilderHelper {
      */
     public static void createAndStoreEvent(final String name, final UserAccount userAccount, final String className,
             final JSONObject attributes) {
-        threadPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                createAndStore(name, userAccount, className, attributes);
-            }
-        });
+        // don't run on background if this is a test run
+        if (SalesforceSDKManager.getInstance().getIsTestRun()) {
+            createAndStore(name, userAccount, className, attributes);
+        } else {
+            threadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    createAndStore(name, userAccount, className, attributes);
+                }
+            });
+        }
     }
 
     /**

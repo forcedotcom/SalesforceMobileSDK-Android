@@ -663,29 +663,40 @@ public class OAuthWebviewHelper implements KeyChainAliasCallback {
 
         callback.onAccountAuthenticatorResult(extras);
 
-        threadPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                // Logs analytics event for servers.
-                final JSONObject serverAttr = new JSONObject();
-                try {
-                    final List<LoginServerManager.LoginServer> servers = SalesforceSDKManager.getInstance().getLoginServerManager().getLoginServers();
-                    serverAttr.put("numLoginServers", (servers == null) ? 0 : servers.size());
-                    if (servers != null) {
-                        final JSONArray serversJson = new JSONArray();
-                        for (final LoginServerManager.LoginServer server : servers) {
-                            if (server != null) {
-                                serversJson.put(server.url);
-                            }
-                        }
-                        serverAttr.put("loginServers", serversJson);
-                    }
-                    EventBuilderHelper.createAndStoreEventSync("addUser", account, TAG, serverAttr);
-                } catch (JSONException e) {
-                    Log.e(TAG, "Exception thrown while creating JSON", e);
+        if (SalesforceSDKManager.getInstance().getIsTestRun()) {
+            logAddAccount(account);
+        } else {
+            threadPool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    logAddAccount(account);
                 }
+            });
+        }
+    }
+
+    /**
+     * Log the addition of a new account.
+     * @param account
+     */
+    private void logAddAccount(UserAccount account) {
+        final JSONObject serverAttr = new JSONObject();
+        try {
+            final List<LoginServerManager.LoginServer> servers = SalesforceSDKManager.getInstance().getLoginServerManager().getLoginServers();
+            serverAttr.put("numLoginServers", (servers == null) ? 0 : servers.size());
+            if (servers != null) {
+                final JSONArray serversJson = new JSONArray();
+                for (final LoginServerManager.LoginServer server : servers) {
+                    if (server != null) {
+                        serversJson.put(server.url);
+                    }
+                }
+                serverAttr.put("loginServers", serversJson);
             }
-        });
+            EventBuilderHelper.createAndStoreEventSync("addUser", account, TAG, serverAttr);
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception thrown while creating JSON", e);
+        }
     }
 
     /**

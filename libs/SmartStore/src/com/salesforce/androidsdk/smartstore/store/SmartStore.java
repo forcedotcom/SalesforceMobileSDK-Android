@@ -32,6 +32,7 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import com.salesforce.androidsdk.analytics.EventBuilderHelper;
+import com.salesforce.androidsdk.app.SalesforceSDKManager;
 import com.salesforce.androidsdk.smartstore.store.LongOperation.LongOperationType;
 import com.salesforce.androidsdk.smartstore.store.QuerySpec.QueryType;
 import com.salesforce.androidsdk.util.JSONObjectHelper;
@@ -305,11 +306,13 @@ public class SmartStore  {
 	 */
 	public void registerSoupWithSpec(final SoupSpec soupSpec, final IndexSpec[] indexSpecs) {
 		final SQLiteDatabase db = getDatabase();
-		synchronized(db) {
+		synchronized (db) {
 			String soupName = soupSpec.getSoupName();
 			if (soupName == null) throw new SmartStoreException("Bogus soup name:" + soupName);
-			if (indexSpecs.length == 0) throw new SmartStoreException("No indexSpecs specified for soup: " + soupName);
-			if (IndexSpec.hasJSON1(indexSpecs) && soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE))  throw new SmartStoreException("Can't have JSON1 index specs in externally stored soup:" + soupName);
+			if (indexSpecs.length == 0)
+				throw new SmartStoreException("No indexSpecs specified for soup: " + soupName);
+			if (IndexSpec.hasJSON1(indexSpecs) && soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE))
+				throw new SmartStoreException("Can't have JSON1 index specs in externally stored soup:" + soupName);
 			if (hasSoup(soupName)) return; // soup already exist - do nothing
 
 			// First get a table name
@@ -334,30 +337,42 @@ public class SmartStore  {
 			} finally {
 				db.endTransaction();
 			}
-			threadPool.execute(new Runnable() {
-				@Override
-				public void run() {
-					final JSONArray features = new JSONArray();
-					if (IndexSpec.hasJSON1(indexSpecs)) {
-						features.put("JSON1");
+			if (SalesforceSDKManager.getInstance().getIsTestRun()) {
+				logRegisterSoupEvent(soupSpec, indexSpecs);
+			} else {
+				threadPool.execute(new Runnable() {
+					@Override
+					public void run() {
+						logRegisterSoupEvent(soupSpec, indexSpecs);
 					}
-					if (IndexSpec.hasFTS(indexSpecs)) {
-						features.put("FTS");
-					}
-					if (soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
-						features.put("ExternalStorage");
-					}
-					final JSONObject attributes = new JSONObject();
-					try {
-						attributes.put("features", features);
-					} catch (JSONException e) {
-						Log.e(TAG, "Exception thrown while building page object", e);
-					}
-					EventBuilderHelper.createAndStoreEventSync("registerSoup", null, TAG, attributes);
-
-				}
-			});
+				});
+			}
 		}
+	}
+
+	/**
+	 * Log the soup event.
+	 * @param soupSpec
+	 * @param indexSpecs
+	 */
+	private void logRegisterSoupEvent(final SoupSpec soupSpec, final IndexSpec[] indexSpecs) {
+		final JSONArray features = new JSONArray();
+		if (IndexSpec.hasJSON1(indexSpecs)) {
+			features.put("JSON1");
+		}
+		if (IndexSpec.hasFTS(indexSpecs)) {
+			features.put("FTS");
+		}
+		if (soupSpec.getFeatures().contains(SoupSpec.FEATURE_EXTERNAL_STORAGE)) {
+			features.put("ExternalStorage");
+		}
+		final JSONObject attributes = new JSONObject();
+		try {
+			attributes.put("features", features);
+		} catch (JSONException e) {
+			Log.e(TAG, "Exception thrown while building page object", e);
+		}
+		EventBuilderHelper.createAndStoreEventSync("registerSoup", null, TAG, attributes);
 	}
 
 	/**
