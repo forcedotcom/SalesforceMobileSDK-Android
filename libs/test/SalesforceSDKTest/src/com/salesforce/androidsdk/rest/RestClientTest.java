@@ -381,7 +381,7 @@ public class RestClientTest extends InstrumentationTestCase {
      * @throws Exception
      */
     public void testRetrieve() throws Exception {
-        List<String> fields = Arrays.asList(new String[] {NAME, "ownerId"});
+        List<String> fields = Arrays.asList(NAME, "ownerId");
         IdName newAccountIdName = createAccount();
         RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, fields));
         checkResponse(response, HttpURLConnection.HTTP_OK, false);
@@ -408,7 +408,7 @@ public class RestClientTest extends InstrumentationTestCase {
         assertTrue("Update failed", updateResponse.isSuccess());
 
         // Retrieve - expect updated name
-        RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(new String[]{NAME})));
+        RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(NAME)));
         assertEquals("Wrong row returned", updatedAccountName, response.asJSONObject().getString(NAME));
     }
 
@@ -437,7 +437,7 @@ public class RestClientTest extends InstrumentationTestCase {
         assertTrue("Update with upsert failed", response.isSuccess());
 
         // Retrieve - expect updated name
-        response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, accountId, Arrays.asList(new String[]{NAME})));
+        response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, accountId, Arrays.asList(NAME)));
         assertEquals("Wrong row returned", updatedAccountName, response.asJSONObject().getString(NAME));
     }
 
@@ -458,7 +458,7 @@ public class RestClientTest extends InstrumentationTestCase {
         String originalName = newAccountIdName.name;
 
         // Retrieve to get created date
-        RestResponse retrieveResponse = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(new String[]{LAST_MODIFIED_DATE})));
+        RestResponse retrieveResponse = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(LAST_MODIFIED_DATE)));
         Date createdDate = (new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ")).parse(retrieveResponse.asJSONObject().getString(LAST_MODIFIED_DATE));
 
         // Wait a bit
@@ -471,7 +471,7 @@ public class RestClientTest extends InstrumentationTestCase {
         assertTrue("Update failed", updateResponse.isSuccess());
 
         // Retrieve - expect updated name
-        retrieveResponse = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(new String[]{NAME})));
+        retrieveResponse = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(NAME)));
         assertEquals("Wrong row returned", updatedName, retrieveResponse.asJSONObject().getString(NAME));
 
         // Second update with if-unmodified-since with created date - should not update
@@ -481,7 +481,7 @@ public class RestClientTest extends InstrumentationTestCase {
         assertEquals("Expected 412", HttpURLConnection.HTTP_PRECON_FAILED, blockedUpdateResponse.getStatusCode());
 
         // Retrieve - expect name from first update
-        retrieveResponse = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(new String[]{NAME})));
+        retrieveResponse = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, Arrays.asList(NAME)));
         assertEquals("Wrong row returned", updatedName, retrieveResponse.asJSONObject().getString(NAME));
 
     }
@@ -501,7 +501,7 @@ public class RestClientTest extends InstrumentationTestCase {
         assertTrue("Delete failed", deleteResponse.isSuccess());
 
         // Retrieve - expect 404
-        List<String> fields = Arrays.asList(new String[] {NAME});
+        List<String> fields = Arrays.asList(NAME);
         RestResponse response = restClient.sendSync(RestRequest.getRequestForRetrieve(TestCredentials.API_VERSION, ACCOUNT, newAccountIdName.id, fields));
         assertEquals("404 was expected", HttpURLConnection.HTTP_NOT_FOUND, response.getStatusCode());
     }
@@ -805,7 +805,7 @@ public class RestClientTest extends InstrumentationTestCase {
 
 
         // Build batch request
-        RestRequest batchRequest = RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, Arrays.asList(new RestRequest[]{firstRequest, secondRequest, thirdRequest, fourthRequest}));
+        RestRequest batchRequest = RestRequest.getBatchRequest(TestCredentials.API_VERSION, false, Arrays.asList(firstRequest, secondRequest, thirdRequest, fourthRequest));
 
         // Send batch request
         RestResponse response = restClient.sendSync(batchRequest);

@@ -58,9 +58,9 @@ public class RestRequestTest extends TestCase {
 	private static final String TEST_QUERY = "testQuery";
 	private static final String TEST_SEARCH = "testSearch";
 	private static final String TEST_FIELDS_STRING = "{\"fieldX\":\"value with spaces\",\"name\":\"testAccount\"}";
-	private static final List<String> TEST_FIELDS_LIST = Collections.unmodifiableList(Arrays.asList(new String[]{"name", "fieldX"}));
+	private static final List<String> TEST_FIELDS_LIST = Collections.unmodifiableList(Arrays.asList("name", "fieldX"));
 	private static final String TEST_FIELDS_LIST_STRING = "name%2CfieldX";
-	private static final List<String> TEST_OBJECTS_LIST = Collections.unmodifiableList(Arrays.asList(new String[]{"Account", "Contact"}));
+	private static final List<String> TEST_OBJECTS_LIST = Collections.unmodifiableList(Arrays.asList("Account", "Contact"));
 	private static final String TEST_OBJECTS_LIST_STRING = "Account%2CContact";
     private static final String TEST_OTHER_OBJECT_TYPE_PLURAL = "testOtherObjectTypes";
 	public static final String TEST_REF_PARENT = "testRefParent";
