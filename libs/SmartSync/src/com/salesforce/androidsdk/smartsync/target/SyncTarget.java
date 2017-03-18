@@ -158,6 +158,7 @@ public abstract class SyncTarget {
      */
     public void cleanAndSaveInLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
         cleanAndSaveInSmartStore(syncManager.getSmartStore(), soupName, record, true);
+        syncManager.getLogger().d(this, "cleanAndSaveInLocalStore", record);
     }
 
     protected void cleanAndSaveInSmartStore(SmartStore smartStore, String soupName, JSONObject record, boolean handleTx) throws JSONException {
@@ -289,6 +290,7 @@ public abstract class SyncTarget {
      * @param record
      */
     public void deleteFromLocalStore(SyncManager syncManager, String soupName, JSONObject record) throws JSONException {
+        syncManager.getLogger().d(this, "deleteFromLocalStore", record);
         syncManager.getSmartStore().delete(soupName, record.getLong(SmartStore.SOUP_ENTRY_ID));
     }
 }

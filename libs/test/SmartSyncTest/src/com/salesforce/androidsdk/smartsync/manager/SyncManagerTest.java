@@ -706,11 +706,12 @@ public class SyncManagerTest extends SyncManagerTestCase {
         checkDbStateFlags(Arrays.asList(new String[]{remotelyDeletedId}), false, true, false, ACCOUNTS_SOUP);
 
         // Check the other 2 records in db
-        idToFieldsUpdated.remove(remotelyDeletedId);
-        checkDb(idToFieldsUpdated, ACCOUNTS_SOUP);
+        HashMap<String, Map<String, Object>> otherIdtoFields = new HashMap<>(idToFieldsLocallyUpdated);
+        otherIdtoFields.remove(remotelyDeletedId);
+        checkDb(otherIdtoFields, ACCOUNTS_SOUP);
 
         // Check server
-        checkServer(idToFieldsUpdated, Constants.ACCOUNT);
+        checkServer(otherIdtoFields, Constants.ACCOUNT);
         checkServerDeleted(new String[]{remotelyDeletedId}, Constants.ACCOUNT);
     }
 

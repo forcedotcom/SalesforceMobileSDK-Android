@@ -393,6 +393,8 @@ public class SyncManager {
     private void syncUpOneRecord(SyncUpTarget target, String soupName,
                                  JSONObject record, SyncOptions options) throws JSONException, IOException {
 
+        logger.d(this, "syncUpOneRecord", record);
+
         /*
          * Checks if we are attempting to sync up a record that has been updated
          * on the server AFTER the client's last sync down. If the merge mode

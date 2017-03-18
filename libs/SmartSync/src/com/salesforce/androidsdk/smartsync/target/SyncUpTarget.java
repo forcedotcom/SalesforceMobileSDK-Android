@@ -39,6 +39,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.net.HttpURLConnection;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -49,6 +50,28 @@ import java.util.Set;
  * Target for sync up:
  * - what records to upload to server
  * - how to upload those records
+ *
+ * During a sync up, sync manager does the following:
+ *
+ * 1) it calls getIdsOfRecordsToSyncUp to get the ids of records to sync up
+ *
+ * 2) for each id it does:
+ *
+ *   a) if calls getFromLocalStore to get the record itself
+ *
+ *   b) if merge mode is leave-if-changed, it calls isNewerThanServer, if that returns false, it goes to the next id
+ *
+ *   c) otherwise it does one of the following three operations:
+ *      - calls deleteOnServer if isLocallyDeleted returns true for the record (unless it is also locally created, in which case it gets deleted locally right away)
+ *        if successful or not found is returned, it calls deleteFromLocalStore to delete record locally
+ *
+ *      - calls createOnServer if isLocallyCreated returns true for the record
+ *        if successful, it updates the id to be the id returned by the server and then calls cleanAndSaveInSmartstore to reset local flags and save the record locally
+ *
+ *      - calls updateOnServer if isLocallyUpdated returns true for the record
+ *        if successful, it calls cleanAndSaveInSmartstore to reset local flags and save the record
+ *        if not found and merge mode is overwrite, it calls createOnServer to recreate the record on the server
+ *
  */
 public class SyncUpTarget extends SyncTarget {
 
@@ -56,6 +79,7 @@ public class SyncUpTarget extends SyncTarget {
     public static final String TAG = "SyncUpTarget";
     public static final String CREATE_FIELDLIST = "createFieldlist";
     public static final String UPDATE_FIELDLIST = "updateFieldlist";
+
 
     // Fields
     protected List<String> createFieldlist;
@@ -231,19 +255,24 @@ public class SyncUpTarget extends SyncTarget {
      * @param record
      * @return
      */
-    protected String fetchLastModifiedDate(SyncManager syncManager, JSONObject record) throws JSONException, IOException {
+    protected RecordModDate fetchLastModifiedDate(SyncManager syncManager, JSONObject record) throws JSONException, IOException {
         final String objectType = (String) SmartStore.project(record, Constants.SOBJECT_TYPE);
         final String objectId = record.getString(getIdFieldName());
 
         RestRequest lastModRequest = RestRequest.getRequestForRetrieve(syncManager.apiVersion, objectType, objectId, Arrays.asList(new String[]{getModificationDateFieldName()}));
         RestResponse lastModResponse = syncManager.sendSyncWithSmartSyncUserAgent(lastModRequest);
 
-        return lastModResponse.isSuccess() ? lastModResponse.asJSONObject().getString(getModificationDateFieldName()) : null;
+        return new RecordModDate(
+                lastModResponse.isSuccess() ? lastModResponse.asJSONObject().getString(getModificationDateFieldName()) : null,
+                lastModResponse.getStatusCode() == HttpURLConnection.HTTP_NOT_FOUND
+        );
     }
 
     /**
      * Return true record is more recent than corresponding record on server
-     * NB: also return true, if that evaluation could not be completed
+     * NB: also return true if both were deleted or if local mod date is missing
+     *
+     * Used to decide whether a record should be synced up or not when using merge mode leave-if-changed
      *
      * @param syncManager
      * @param record
@@ -256,14 +285,34 @@ public class SyncUpTarget extends SyncTarget {
             return true;
         }
 
-        final String localModDate = record.optString(getModificationDateFieldName());
-        final String remoteModDate = fetchLastModifiedDate(syncManager, record);
+        final RecordModDate localModDate = new RecordModDate(
+                JSONObjectHelper.optString(record, getModificationDateFieldName()),
+                isLocallyDeleted(record)
+        );
 
-        if (localModDate != null && remoteModDate != null && remoteModDate.compareTo(localModDate) > 0) {
-            return false;
+        final RecordModDate remoteModDate = fetchLastModifiedDate(syncManager, record);
+
+        return isNewerThanServer(localModDate, remoteModDate);
+    }
+
+    /**
+     * Return true if local mod date is greater than remote mod date
+     * NB: also return true if both were deleted or if local mod date is missing
+     *
+     * @param localModDate
+     * @param remoteModDate
+     * @return
+     */
+    protected boolean isNewerThanServer(RecordModDate localModDate, RecordModDate remoteModDate) {
+
+        if ((localModDate.timestamp != null && remoteModDate.timestamp != null
+                && localModDate.timestamp.compareTo(remoteModDate.timestamp) >= 0) // we got a local and remote mod date and the local one is greater
+            || (localModDate.isDeleted && remoteModDate.isDeleted)                 // or we have a local delete and a remote delete
+            || localModDate.timestamp == null)                                     // or we don't have a local mod date
+        {
+            return true;
         }
-
-        return true;
+        return false;
     }
 
     /**
@@ -294,4 +343,16 @@ public class SyncUpTarget extends SyncTarget {
         return fields;
     }
 
+    /**
+     * Helper class used by isNewerThanServer
+     */
+    protected static class RecordModDate {
+        public final String timestamp;   // time stamp in the Constants.TIMESTAMP_FORMAT format - can be null if unknown
+        public final boolean isDeleted;  // true if the record was deleted
+
+        public RecordModDate(String timestamp, boolean isDeleted) {
+            this.timestamp = timestamp;
+            this.isDeleted = isDeleted;
+        }
+    }
 }

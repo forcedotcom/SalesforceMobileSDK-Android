@@ -533,15 +533,15 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         for (String accountId : accountIdToFields.keySet()) {
             if (accountId.equals(accountIdUpdated)) {
-                checkDbStateFlags(Arrays.asList(new String[]{accountId}), false, true, false, ACCOUNTS_SOUP);
+                checkDbStateFlags(Arrays.asList(accountId), false, true, false, ACCOUNTS_SOUP);
                 checkDb(contactIdToFieldsUpdated, CONTACTS_SOUP);
                 checkDbStateFlags(contactIdToFieldsUpdated.keySet(), false, true, false, CONTACTS_SOUP);
             } else if (accountId.equals(otherAccountId)) {
-                checkDbStateFlags(Arrays.asList(new String[]{accountId}), false, false, false, ACCOUNTS_SOUP);
+                checkDbStateFlags(Arrays.asList(accountId), false, false, false, ACCOUNTS_SOUP);
                 checkDb(otherContactIdToFieldsUpdated, CONTACTS_SOUP);
                 checkDbStateFlags(otherContactIdToFieldsUpdated.keySet(), false, true, false, CONTACTS_SOUP);
             } else {
-                checkDbStateFlags(Arrays.asList(new String[]{accountId}), false, false, false, ACCOUNTS_SOUP);
+                checkDbStateFlags(Arrays.asList(accountId), false, false, false, ACCOUNTS_SOUP);
                 checkDb(accountIdContactIdToFields.get(accountId), CONTACTS_SOUP);
                 checkDbStateFlags(accountIdContactIdToFields.get(accountId).keySet(), false, false, false, CONTACTS_SOUP);
             }
@@ -1151,10 +1151,9 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
 
         // Sync up
 
-        // If there was no remote change or it's remote delete with a local delete
-        if ((remoteChangeForAccount == Change.NONE && remoteChangeForContact == Change.NONE)
-                || (remoteChangeForAccount == Change.DELETE && localChangeForAccount == Change.DELETE)
-                || (remoteChangeForContact == Change.DELETE && localChangeForContact == Change.DELETE))
+        // In some cases, leave-if-changed will succeed
+        if ((remoteChangeForAccount == Change.NONE || (remoteChangeForAccount == Change.DELETE && localChangeForAccount == Change.DELETE))          // no remote parent change or it's a delete and we did a local delete also
+                && (remoteChangeForContact == Change.NONE || (remoteChangeForContact == Change.DELETE && localChangeForContact == Change.DELETE)))  // no remote child change  or it's a delete and we did a local delete also
         {
             // Sync up with leave-if-changed
             trySyncUp(syncUpTarget, 1, SyncState.MergeMode.LEAVE_IF_CHANGED);
@@ -1165,7 +1164,7 @@ public class ParentChildrenSyncTest extends SyncManagerTestCase {
             // Sync up with overwrite - there should be dirty records found
             trySyncUp(syncUpTarget, 0, SyncState.MergeMode.OVERWRITE);
         }
-        // If there was a remote change
+        // In all other cases, leave-if-changed will fail
         else {
 
             // Sync up with leave-if-changed
